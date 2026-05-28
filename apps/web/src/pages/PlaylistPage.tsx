@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useParams } from "react-router-dom";
 
 import { PlaylistCard } from "@/components/cards/PlaylistCard";
@@ -7,15 +8,19 @@ import { mergeForPlayback, partitionRecordings } from "@/components/collection/p
 import { ContentRow } from "@/components/discovery/ContentRow";
 import { EmptyState } from "@/components/feedback/EmptyState";
 import { Skeleton } from "@/components/feedback/Skeleton";
+import { AddToPlaylistDialog } from "@/components/playlists/AddToPlaylistDialog";
 import { usePlaylist } from "@/hooks/usePlaylist";
 import { usePlaylists } from "@/hooks/usePlaylists";
 import { useAudioPlayer, type QueueTrack } from "@/providers/AudioPlayerProvider";
+import { useAuth } from "@/providers/AuthProvider";
 
 export function PlaylistPage() {
   const { playlistId } = useParams<{ playlistId: string }>();
   const { data: playlist, isLoading, isError } = usePlaylist(playlistId);
   const { data: related } = usePlaylists(6);
   const { setQueue, currentTrack, state, togglePlay } = useAudioPlayer();
+  const { status } = useAuth();
+  const [addOpen, setAddOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -74,6 +79,14 @@ export function PlaylistPage() {
         onPlayTrack={playRecording}
         playlistIsPlaying={playlistIsPlaying}
         playlistIsPaused={playlistIsPaused}
+        onAddCollectionToPlaylist={status === "authenticated" ? () => setAddOpen(true) : undefined}
+      />
+
+      <AddToPlaylistDialog
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        recordingIds={playlist.recordings.map((r) => r.id)}
+        title={`Add "${playlist.title}" (${playlist.itemCount} tracks)`}
       />
 
       {related && related.data.length > 0 ? (

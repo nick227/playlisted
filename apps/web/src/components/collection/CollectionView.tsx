@@ -1,5 +1,5 @@
 import type { PlaylistDetail } from "@playlisted/client-sdk";
-import { Pause, Play, Share2, Shuffle, Upload } from "lucide-react";
+import { Pause, Play, Plus, Share2, Shuffle, Upload } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import { EmptyState } from "@/components/feedback/EmptyState";
@@ -26,6 +26,7 @@ export interface CollectionViewProps {
   onDescriptionChange?: (description: string) => void;
   onCoverClick?: () => void;
   onAddTracks?: () => void;
+  onAddCollectionToPlaylist?: () => void;
   onRemoveTrack?: (recordingId: string) => void;
   onMoveTrackUp?: (recordingId: string) => void;
   onMoveTrackDown?: (recordingId: string) => void;
@@ -53,6 +54,7 @@ export function CollectionView({
   onDescriptionChange,
   onCoverClick,
   onAddTracks,
+  onAddCollectionToPlaylist,
   onRemoveTrack,
   onMoveTrackUp,
   onMoveTrackDown,
@@ -180,6 +182,16 @@ export function CollectionView({
               >
                 <Share2 size={18} />
               </button>
+              {onAddCollectionToPlaylist ? (
+                <button
+                  type="button"
+                  onClick={onAddCollectionToPlaylist}
+                  className="inline-flex items-center gap-2 rounded-full border border-white/20 px-5 py-2.5 text-sm font-medium text-white hover:bg-white/10"
+                >
+                  <Plus size={18} />
+                  Add to playlist
+                </button>
+              ) : null}
             </div>
           ) : null}
           {isEdit && onAddTracks ? (
