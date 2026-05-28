@@ -41,11 +41,14 @@ const imageUpload = createUpload("images");
 export const uploadsRouter = Router();
 
 function fileUrl(req: { protocol: string; get: (header: string) => string | undefined }, subdir: string, filename: string) {
-  const base =
-    mediaBaseUrl ??
-    `${req.protocol}://${req.get("host")}/uploads`;
+  if (mediaBaseUrl) {
+    return `${mediaBaseUrl}/${subdir}/${filename}`;
+  }
 
-  return `${base}/${subdir}/${filename}`;
+  // Prefer relative URLs so the web app can proxy /uploads in dev.
+  // This also avoids cross-origin media playback quirks (range/CORS).
+  void req;
+  return `/uploads/${subdir}/${filename}`;
 }
 
 uploadsRouter.post("/audio", audioUpload.single("file"), async (req, res, next) => {
