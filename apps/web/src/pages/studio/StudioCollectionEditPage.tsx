@@ -16,12 +16,9 @@ export function StudioCollectionEditPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const coverInputRef = useRef<HTMLInputElement>(null);
-  const bulkInputRef = useRef<HTMLInputElement>(null);
+  const tracksInputRef = useRef<HTMLInputElement>(null);
   const [draft, setDraft] = useState<PlaylistDetail | null>(null);
-  const [pickerOpen, setPickerOpen] = useState(false);
-  const [bulkUploading, setBulkUploading] = useState(false);
-  const [bulkProgress, setBulkProgress] = useState<{ done: number; total: number } | null>(null);
-  const [bulkError, setBulkError] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const client = authedApi(accessToken);
 
@@ -50,12 +47,6 @@ export function StudioCollectionEditPage() {
       setDraft(updated);
       queryClient.invalidateQueries({ queryKey: ["playlist", playlistId] });
     },
-  });
-
-  const { data: myRecordings } = useQuery({
-    queryKey: ["me", "recordings"],
-    queryFn: () => client.me.recordings(),
-    enabled: Boolean(accessToken && pickerOpen),
   });
 
   const addTrackMutation = useMutation({
@@ -106,12 +97,10 @@ export function StudioCollectionEditPage() {
     setDraft(updated);
   }
 
-  async function handleBulkUpload(files: FileList | null) {
+  async function handleTrackUpload(files: FileList | null) {
     if (!accessToken || !files?.length) return;
 
-    setBulkError(null);
-    setBulkUploading(true);
-    setBulkProgress({ done: 0, total: files.length });
+    setUploadError(null);
 
     try {
       const uploaded: { url: string; mimeType: string; bytes: number; title: string }[] = [];
@@ -125,26 +114,22 @@ export function StudioCollectionEditPage() {
           bytes: result.bytes,
           title: result.title,
         });
-        setBulkProgress({ done: i + 1, total: files.length });
       }
 
       const registered = await bulkRegisterUploads(uploaded, accessToken);
 
       for (const recording of registered.recordings) {
-        await client.playlists.addItem(playlistId!, recording.id);
+        await addTrackMutation.mutateAsync(recording.id);
       }
 
       const fresh = await client.playlists.getById(playlistId!);
       setDraft(fresh);
     } catch (error) {
-      setBulkError(error instanceof Error ? error.message : "Bulk upload failed.");
+      setUploadError(error instanceof Error ? error.message : "Upload failed.");
     } finally {
-      setBulkUploading(false);
-      if (bulkInputRef.current) bulkInputRef.current.value = "";
+      if (tracksInputRef.current) tracksInputRef.current.value = "";
     }
   }
-
-  const inPlaylist = new Set(collection.recordings.map((r) => r.id));
 
   return (
     <>
@@ -154,7 +139,7 @@ export function StudioCollectionEditPage() {
         onTitleChange={(title) => setDraft({ ...playlist, title })}
         onDescriptionChange={(description) => setDraft({ ...playlist, description })}
         onCoverClick={() => coverInputRef.current?.click()}
-        onAddTracks={() => setPickerOpen(true)}
+        onAddTracks={() => tracksInputRef.current?.click()}
         onRemoveTrack={(recordingId) => removeTrackMutation.mutate(recordingId)}
         onMoveTrackUp={(recordingId) => moveTrack(recordingId, -1)}
         onMoveTrackDown={(recordingId) => moveTrack(recordingId, 1)}
@@ -173,16 +158,6 @@ export function StudioCollectionEditPage() {
               className="rounded-full border border-white/20 px-5 py-2 text-sm font-medium text-white hover:bg-white/10"
             >
               {saveMutation.isPending ? "Saving…" : "Save draft"}
-            </button>
-            <button
-              type="button"
-              onClick={() => bulkInputRef.current?.click()}
-              disabled={bulkUploading}
-              className="rounded-full border border-white/20 px-5 py-2 text-sm font-medium text-white hover:bg-white/10"
-            >
-              {bulkUploading && bulkProgress
-                ? `Uploading ${bulkProgress.done}/${bulkProgress.total}…`
-                : "Bulk upload tracks"}
             </button>
             <button
               type="button"
@@ -210,9 +185,9 @@ export function StudioCollectionEditPage() {
         }
       />
 
-      {bulkError ? (
+      {uploadError ? (
         <div className="mx-auto mt-4 max-w-6xl rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-          {bulkError}
+          {uploadError}
         </div>
       ) : null}
 
@@ -228,47 +203,13 @@ export function StudioCollectionEditPage() {
       />
 
       <input
-        ref={bulkInputRef}
+        ref={tracksInputRef}
         type="file"
         accept="audio/*"
         multiple
         className="hidden"
-        onChange={(e) => void handleBulkUpload(e.target.files)}
+        onChange={(e) => void handleTrackUpload(e.target.files)}
       />
-
-      {pickerOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-          <div className="max-h-[80vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-6">
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-white">Add from your uploads</h3>
-              <button
-                type="button"
-                onClick={() => setPickerOpen(false)}
-                className="text-sm text-[var(--color-text-muted)] hover:text-white"
-              >
-                Close
-              </button>
-            </div>
-            <div className="flex flex-col gap-2">
-              {myRecordings?.data
-                .filter((r) => !inPlaylist.has(r.id))
-                .map((recording) => (
-                  <button
-                    key={recording.id}
-                    type="button"
-                    onClick={() => {
-                      addTrackMutation.mutate(recording.id);
-                      setPickerOpen(false);
-                    }}
-                    className="rounded-lg px-3 py-2 text-left text-sm text-white hover:bg-white/10"
-                  >
-                    {recording.title}
-                  </button>
-                ))}
-            </div>
-          </div>
-        </div>
-      ) : null}
     </>
   );
 }

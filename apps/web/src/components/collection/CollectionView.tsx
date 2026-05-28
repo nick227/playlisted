@@ -202,17 +202,32 @@ export function CollectionView({
             description={isEdit ? "Upload or add tracks to build this collection." : "This collection is empty."}
           />
         ) : isEdit ? (
-          <TrackList
-            recordings={playlist.recordings as CollectionRecording[]}
-            activeId={activeTrackId}
-            playerState={playerState}
-            ownerName={playlist.owner.displayName}
-            onPlay={handlePlayRecording}
-            editMode
-            onRemove={onRemoveTrack}
-            onMoveUp={onMoveTrackUp}
-            onMoveDown={onMoveTrackDown}
-          />
+          <div className="space-y-3">
+            {onAddTracks ? (
+              <button
+                type="button"
+                onClick={onAddTracks}
+                className="flex w-full items-center justify-between rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-left transition hover:border-white/20"
+              >
+                <span className="flex items-center gap-2 text-sm font-semibold text-white">
+                  <Upload size={18} />
+                  Add Tracks
+                </span>
+                <span className="text-xs text-[var(--color-text-muted)]">Upload audio files</span>
+              </button>
+            ) : null}
+            <TrackList
+              recordings={playlist.recordings as CollectionRecording[]}
+              activeId={activeTrackId}
+              playerState={playerState}
+              ownerName={playlist.owner.displayName}
+              onPlay={handlePlayRecording}
+              editMode
+              onRemove={onRemoveTrack}
+              onMoveUp={onMoveTrackUp}
+              onMoveDown={onMoveTrackDown}
+            />
+          </div>
         ) : (
           <div className="space-y-8">
             {ownUploads.length > 0 ? (
