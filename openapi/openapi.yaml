@@ -850,10 +850,10 @@ components:
           type: [string, 'null']
         avatarUrl:
           type: [string, 'null']
-          format: uri
+          format: uri-reference
         heroImageUrl:
           type: [string, 'null']
-          format: uri
+          format: uri-reference
         role:
           $ref: '#/components/schemas/UserRole'
 
@@ -876,10 +876,10 @@ components:
           type: [string, 'null']
         avatarUrl:
           type: [string, 'null']
-          format: uri
+          format: uri-reference
         heroImageUrl:
           type: [string, 'null']
-          format: uri
+          format: uri-reference
         role:
           $ref: '#/components/schemas/UserRole'
         status:
@@ -1009,10 +1009,10 @@ components:
           type: [string, 'null']
         avatarUrl:
           type: [string, 'null']
-          format: uri
+          format: uri-reference
         heroImageUrl:
           type: [string, 'null']
-          format: uri
+          format: uri-reference
         role:
           $ref: '#/components/schemas/UserRole'
         status:
@@ -1044,7 +1044,7 @@ components:
           type: [string, 'null']
         coverArtUrl:
           type: [string, 'null']
-          format: uri
+          format: uri-reference
         type:
           $ref: '#/components/schemas/PlaylistType'
         visibility:
@@ -1115,10 +1115,10 @@ components:
           type: [string, 'null']
         avatarUrl:
           type: [string, 'null']
-          format: uri
+          format: uri-reference
         heroImageUrl:
           type: [string, 'null']
-          format: uri
+          format: uri-reference
         role:
           $ref: '#/components/schemas/UserRole'
         status:
@@ -1154,10 +1154,10 @@ components:
           type: string
         avatarUrl:
           type: [string, 'null']
-          format: uri
+          format: uri-reference
         heroImageUrl:
           type: [string, 'null']
-          format: uri
+          format: uri-reference
         role:
           $ref: '#/components/schemas/UserRole'
 
@@ -1179,7 +1179,7 @@ components:
           type: [string, 'null']
         audioUrl:
           type: string
-          format: uri
+          format: uri-reference
         audioMimeType:
           type: [string, 'null']
         audioBytes:
@@ -1188,7 +1188,7 @@ components:
           type: [integer, 'null']
         artworkUrl:
           type: [string, 'null']
-          format: uri
+          format: uri-reference
         recordingType:
           $ref: '#/components/schemas/RecordingType'
         visibility:
@@ -1277,7 +1277,7 @@ components:
           type: [string, 'null']
         audioUrl:
           type: string
-          format: uri
+          format: uri-reference
         audioMimeType:
           type: [string, 'null']
         audioBytes:
@@ -1288,7 +1288,7 @@ components:
           minimum: 0
         artworkUrl:
           type: [string, 'null']
-          format: uri
+          format: uri-reference
         recordingType:
           $ref: '#/components/schemas/RecordingType'
         visibility:
@@ -1329,7 +1329,7 @@ components:
           type: [string, 'null']
         coverArtUrl:
           type: [string, 'null']
-          format: uri
+          format: uri-reference
         type:
           $ref: '#/components/schemas/PlaylistType'
         visibility:
@@ -1378,7 +1378,7 @@ components:
           type: [string, 'null']
         coverArtUrl:
           type: [string, 'null']
-          format: uri
+          format: uri-reference
         type:
           $ref: '#/components/schemas/PlaylistType'
         visibility:
@@ -1440,7 +1440,7 @@ components:
           type: [string, 'null']
         coverArtUrl:
           type: [string, 'null']
-          format: uri
+          format: uri-reference
         type:
           $ref: '#/components/schemas/PlaylistType'
         visibility:
@@ -1467,10 +1467,10 @@ components:
           type: [string, 'null']
         avatarUrl:
           type: [string, 'null']
-          format: uri
+          format: uri-reference
         heroImageUrl:
           type: [string, 'null']
-          format: uri
+          format: uri-reference
 
     UsernameAvailabilityResponse:
       type: object
@@ -1494,7 +1494,7 @@ components:
           type: [string, 'null']
         coverArtUrl:
           type: [string, 'null']
-          format: uri
+          format: uri-reference
         type:
           $ref: '#/components/schemas/PlaylistType'
         visibility:
@@ -1543,7 +1543,7 @@ components:
           type: [string, 'null']
         audioUrl:
           type: string
-          format: uri
+          format: uri-reference
         audioMimeType:
           type: [string, 'null']
         audioBytes:
@@ -1552,7 +1552,7 @@ components:
           type: [integer, 'null']
         artworkUrl:
           type: [string, 'null']
-          format: uri
+          format: uri-reference
         recordingType:
           $ref: '#/components/schemas/RecordingType'
         visibility:

@@ -418,9 +418,9 @@ export interface components {
             displayName: string;
             password: string;
             bio?: string | null;
-            /** Format: uri */
+            /** Format: uri-reference */
             avatarUrl?: string | null;
-            /** Format: uri */
+            /** Format: uri-reference */
             heroImageUrl?: string | null;
             role?: components["schemas"]["UserRole"];
         };
@@ -431,9 +431,9 @@ export interface components {
             username: string;
             displayName: string;
             bio?: string | null;
-            /** Format: uri */
+            /** Format: uri-reference */
             avatarUrl?: string | null;
-            /** Format: uri */
+            /** Format: uri-reference */
             heroImageUrl?: string | null;
             role: components["schemas"]["UserRole"];
             status: components["schemas"]["UserStatus"];
@@ -494,9 +494,9 @@ export interface components {
             username: string;
             displayName: string;
             bio?: string | null;
-            /** Format: uri */
+            /** Format: uri-reference */
             avatarUrl?: string | null;
-            /** Format: uri */
+            /** Format: uri-reference */
             heroImageUrl?: string | null;
             role: components["schemas"]["UserRole"];
             status: components["schemas"]["UserStatus"];
@@ -512,7 +512,7 @@ export interface components {
             title: string;
             slug: string;
             description?: string | null;
-            /** Format: uri */
+            /** Format: uri-reference */
             coverArtUrl?: string | null;
             type: components["schemas"]["PlaylistType"];
             visibility: components["schemas"]["Visibility"];
@@ -542,9 +542,9 @@ export interface components {
             displayName: string;
             passwordHash?: string | null;
             bio?: string | null;
-            /** Format: uri */
+            /** Format: uri-reference */
             avatarUrl?: string | null;
-            /** Format: uri */
+            /** Format: uri-reference */
             heroImageUrl?: string | null;
             role?: components["schemas"]["UserRole"];
             status?: components["schemas"]["UserStatus"];
@@ -561,9 +561,9 @@ export interface components {
             id: string;
             username: string;
             displayName: string;
-            /** Format: uri */
+            /** Format: uri-reference */
             avatarUrl?: string | null;
-            /** Format: uri */
+            /** Format: uri-reference */
             heroImageUrl?: string | null;
             role: components["schemas"]["UserRole"];
         };
@@ -573,12 +573,12 @@ export interface components {
             publishedPlaylistId: string;
             title: string;
             description?: string | null;
-            /** Format: uri */
+            /** Format: uri-reference */
             audioUrl: string;
             audioMimeType?: string | null;
             audioBytes?: number | null;
             durationSeconds?: number | null;
-            /** Format: uri */
+            /** Format: uri-reference */
             artworkUrl?: string | null;
             recordingType: components["schemas"]["RecordingType"];
             visibility: components["schemas"]["Visibility"];
@@ -618,12 +618,12 @@ export interface components {
             publishedPlaylistId: string;
             title: string;
             description?: string | null;
-            /** Format: uri */
+            /** Format: uri-reference */
             audioUrl: string;
             audioMimeType?: string | null;
             audioBytes?: number | null;
             durationSeconds?: number | null;
-            /** Format: uri */
+            /** Format: uri-reference */
             artworkUrl?: string | null;
             recordingType?: components["schemas"]["RecordingType"];
             visibility?: components["schemas"]["Visibility"];
@@ -643,7 +643,7 @@ export interface components {
             title: string;
             slug: string;
             description?: string | null;
-            /** Format: uri */
+            /** Format: uri-reference */
             coverArtUrl?: string | null;
             type: components["schemas"]["PlaylistType"];
             visibility: components["schemas"]["Visibility"];
@@ -667,7 +667,7 @@ export interface components {
             title: string;
             slug: string;
             description?: string | null;
-            /** Format: uri */
+            /** Format: uri-reference */
             coverArtUrl?: string | null;
             type: components["schemas"]["PlaylistType"];
             visibility: components["schemas"]["Visibility"];
@@ -694,7 +694,7 @@ export interface components {
             ownerId: string;
             title: string;
             description?: string | null;
-            /** Format: uri */
+            /** Format: uri-reference */
             coverArtUrl?: string | null;
             type?: components["schemas"]["PlaylistType"];
             visibility?: components["schemas"]["Visibility"];
@@ -706,9 +706,9 @@ export interface components {
             displayName?: string;
             username?: string;
             bio?: string | null;
-            /** Format: uri */
+            /** Format: uri-reference */
             avatarUrl?: string | null;
-            /** Format: uri */
+            /** Format: uri-reference */
             heroImageUrl?: string | null;
         };
         UsernameAvailabilityResponse: {
@@ -718,7 +718,7 @@ export interface components {
         UpdatePlaylistRequest: {
             title?: string;
             description?: string | null;
-            /** Format: uri */
+            /** Format: uri-reference */
             coverArtUrl?: string | null;
             type?: components["schemas"]["PlaylistType"];
             visibility?: components["schemas"]["Visibility"];
@@ -739,12 +739,12 @@ export interface components {
             publishedPlaylistId: string;
             title: string;
             description?: string | null;
-            /** Format: uri */
+            /** Format: uri-reference */
             audioUrl: string;
             audioMimeType?: string | null;
             audioBytes?: number | null;
             durationSeconds?: number | null;
-            /** Format: uri */
+            /** Format: uri-reference */
             artworkUrl?: string | null;
             recordingType: components["schemas"]["RecordingType"];
             visibility: components["schemas"]["Visibility"];
