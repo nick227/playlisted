@@ -11,7 +11,7 @@ import { requireAuth } from "../lib/requireAuth.js";
 import { slugify } from "../utils/slug.js";
 
 const uploadsDir = path.resolve(process.cwd(), process.env.UPLOADS_DIR ?? "uploads");
-const mediaBaseUrl = (process.env.MEDIA_BASE_URL ?? "http://localhost:4000/uploads").replace(/\/$/, "");
+const mediaBaseUrl = process.env.MEDIA_BASE_URL?.replace(/\/$/, "") ?? null;
 
 function createUpload(subdir: "audio" | "images") {
   const storage = multer.diskStorage({
@@ -40,8 +40,12 @@ const imageUpload = createUpload("images");
 
 export const uploadsRouter = Router();
 
-function fileUrl(subdir: string, filename: string) {
-  return `${mediaBaseUrl}/${subdir}/${filename}`;
+function fileUrl(req: { protocol: string; get: (header: string) => string | undefined }, subdir: string, filename: string) {
+  const base =
+    mediaBaseUrl ??
+    `${req.protocol}://${req.get("host")}/uploads`;
+
+  return `${base}/${subdir}/${filename}`;
 }
 
 uploadsRouter.post("/audio", audioUpload.single("file"), async (req, res, next) => {
@@ -57,7 +61,7 @@ uploadsRouter.post("/audio", audioUpload.single("file"), async (req, res, next) 
       });
     }
 
-    const url = fileUrl("audio", file.filename);
+    const url = fileUrl(req, "audio", file.filename);
     const title = path.basename(file.originalname, path.extname(file.originalname));
 
     res.status(201).json({
@@ -85,7 +89,7 @@ uploadsRouter.post("/images", imageUpload.single("file"), async (req, res, next)
     }
 
     res.status(201).json({
-      url: fileUrl("images", file.filename),
+      url: fileUrl(req, "images", file.filename),
       mimeType: file.mimetype,
       bytes: file.size,
     });

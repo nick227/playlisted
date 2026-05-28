@@ -48,7 +48,7 @@ function MainRoutes() {
         <Route
           path="/studio"
           element={
-            <ProtectedRoute roles={["CREATOR", "ADMIN"]}>
+            <ProtectedRoute>
               <StudioPage />
             </ProtectedRoute>
           }
@@ -56,7 +56,7 @@ function MainRoutes() {
         <Route
           path="/studio/uploads"
           element={
-            <ProtectedRoute roles={["CREATOR", "ADMIN"]}>
+            <ProtectedRoute>
               <StudioUploadsPage />
             </ProtectedRoute>
           }
@@ -64,7 +64,7 @@ function MainRoutes() {
         <Route
           path="/studio/collections"
           element={
-            <ProtectedRoute roles={["CREATOR", "ADMIN"]}>
+            <ProtectedRoute>
               <StudioCollectionsPage />
             </ProtectedRoute>
           }
@@ -72,7 +72,7 @@ function MainRoutes() {
         <Route
           path="/studio/collections/:playlistId/edit"
           element={
-            <ProtectedRoute roles={["CREATOR", "ADMIN"]}>
+            <ProtectedRoute>
               <StudioCollectionEditPage />
             </ProtectedRoute>
           }
