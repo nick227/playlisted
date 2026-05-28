@@ -20,7 +20,8 @@ export function memberPath(userId: string): string {
 }
 
 export function profilePath(username: string): string {
-  return `/@${username}`;
+  const clean = username.replace(/^@/, "");
+  return `/@${encodeURIComponent(clean)}`;
 }
 
 export function studioCollectionEditPath(playlistId: string): string {
