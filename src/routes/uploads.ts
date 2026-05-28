@@ -107,7 +107,13 @@ uploadsRouter.post("/audio/bulk-register", async (req, res, next) => {
     if (!auth) return;
 
     const body = req.body as {
-      files: { url: string; mimeType?: string; bytes?: number; title?: string }[];
+      files: {
+        url: string;
+        mimeType?: string;
+        bytes?: number;
+        title?: string;
+        durationSeconds?: number | null;
+      }[];
     };
 
     if (!Array.isArray(body.files) || body.files.length === 0) {
@@ -129,6 +135,7 @@ uploadsRouter.post("/audio/bulk-register", async (req, res, next) => {
           audioUrl: file.url,
           audioMimeType: file.mimeType ?? null,
           audioBytes: file.bytes != null ? BigInt(file.bytes) : null,
+          durationSeconds: typeof file.durationSeconds === "number" ? Math.max(0, Math.floor(file.durationSeconds)) : null,
           status: "PUBLISHED",
           visibility: "PUBLIC",
           publishedAt: new Date(),

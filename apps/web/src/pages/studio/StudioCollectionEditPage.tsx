@@ -1,24 +1,33 @@
 import type { PlaylistDetail } from "@playlisted/client-sdk";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 
 import { CollectionView } from "@/components/collection/CollectionView";
 import { EmptyState } from "@/components/feedback/EmptyState";
 import { Skeleton } from "@/components/feedback/Skeleton";
+import { TrackUploadQueue } from "@/components/uploads/TrackUploadQueue";
 import { authedApi, bulkRegisterUploads, uploadAudioFile, uploadImageFile } from "@/lib/authedApi";
-import { playlistPath } from "@/lib/routes";
+import { getAudioDurationSeconds } from "@/lib/getAudioDuration";
 import { useAuth } from "@/providers/AuthProvider";
+
+type UploadQueueItem = {
+  id: string;
+  file: File;
+  progress01: number;
+  status: "queued" | "uploading" | "registering" | "adding" | "done" | "error";
+  error?: string;
+};
 
 export function StudioCollectionEditPage() {
   const { playlistId } = useParams<{ playlistId: string }>();
   const { accessToken } = useAuth();
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const coverInputRef = useRef<HTMLInputElement>(null);
   const tracksInputRef = useRef<HTMLInputElement>(null);
   const [draft, setDraft] = useState<PlaylistDetail | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [trackUploadQueue, setTrackUploadQueue] = useState<UploadQueueItem[]>([]);
 
   const client = authedApi(accessToken);
 
@@ -107,31 +116,76 @@ export function StudioCollectionEditPage() {
     if (!accessToken || !files?.length) return;
 
     setUploadError(null);
+    const batch: UploadQueueItem[] = Array.from(files).map((file) => ({
+      id: crypto.randomUUID(),
+      file,
+      progress01: 0,
+      status: "queued",
+    }));
+    setTrackUploadQueue(batch);
 
     try {
-      const uploaded: { url: string; mimeType: string; bytes: number; title: string }[] = [];
+      for (let i = 0; i < batch.length; i++) {
+        const item = batch[i];
 
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const result = await uploadAudioFile(file, accessToken);
-        uploaded.push({
-          url: result.url,
-          mimeType: result.mimeType,
-          bytes: result.bytes,
-          title: result.title,
+        setTrackUploadQueue((prev) =>
+          prev.map((q) => (q.id === item.id ? { ...q, status: "uploading", progress01: 0 } : q)),
+        );
+
+        const uploaded = await uploadAudioFile(item.file, accessToken, {
+          onProgress: (progress01) => {
+            setTrackUploadQueue((prev) =>
+              prev.map((q) => (q.id === item.id ? { ...q, progress01 } : q)),
+            );
+          },
         });
-      }
 
-      const registered = await bulkRegisterUploads(uploaded, accessToken);
+        setTrackUploadQueue((prev) =>
+          prev.map((q) => (q.id === item.id ? { ...q, status: "registering", progress01: 1 } : q)),
+        );
 
-      for (const recording of registered.recordings) {
+        const registered = await bulkRegisterUploads(
+          [
+            {
+              url: uploaded.url,
+              mimeType: uploaded.mimeType,
+              bytes: uploaded.bytes,
+              title: uploaded.title,
+              durationSeconds: await getAudioDurationSeconds(item.file).catch(() => null),
+            },
+          ],
+          accessToken,
+        );
+
+        const recording = registered.recordings[0];
+
+        setTrackUploadQueue((prev) =>
+          prev.map((q) => (q.id === item.id ? { ...q, status: "adding" } : q)),
+        );
+
         await addTrackMutation.mutateAsync(recording.id);
+
+        setTrackUploadQueue((prev) =>
+          prev.map((q) => (q.id === item.id ? { ...q, status: "done" } : q)),
+        );
       }
 
       const fresh = await client.playlists.getById(playlistId!);
       setDraft(fresh);
+      setTrackUploadQueue([]);
     } catch (error) {
       setUploadError(error instanceof Error ? error.message : "Upload failed.");
+      setTrackUploadQueue((prev) =>
+        prev.map((q) =>
+          q.status === "done"
+            ? q
+            : {
+                ...q,
+                status: "error",
+                error: error instanceof Error ? error.message : "Upload failed.",
+              },
+        ),
+      );
     } finally {
       if (tracksInputRef.current) tracksInputRef.current.value = "";
     }
@@ -149,6 +203,19 @@ export function StudioCollectionEditPage() {
         onRemoveTrack={(recordingId) => removeTrackMutation.mutate(recordingId)}
         onMoveTrackUp={(recordingId) => moveTrack(recordingId, -1)}
         onMoveTrackDown={(recordingId) => moveTrack(recordingId, 1)}
+        uploadProgress={
+          trackUploadQueue.length > 0 ? (
+            <TrackUploadQueue
+              items={trackUploadQueue.map((q) => ({
+                id: q.id,
+                name: q.file.name,
+                progress01: q.progress01,
+                status: q.status,
+                error: q.error,
+              }))}
+            />
+          ) : null
+        }
         editToolbar={
           <>
             <button
@@ -194,20 +261,6 @@ export function StudioCollectionEditPage() {
               className="rounded-full bg-[var(--color-brand)] px-5 py-2 text-sm font-semibold text-white"
             >
               Publish
-            </button>
-            <Link
-              to={playlistPath(playlist.id)}
-              target="_blank"
-              className="rounded-full bg-white px-5 py-2 text-sm font-semibold text-black"
-            >
-              Preview live
-            </Link>
-            <button
-              type="button"
-              onClick={() => navigate("/studio/collections")}
-              className="text-sm text-[var(--color-text-muted)] hover:text-white"
-            >
-              Back to collections
             </button>
           </>
         }
