@@ -1,6 +1,6 @@
 import type { PlaylistDetail } from "@playlisted/client-sdk";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 
 import { CollectionView } from "@/components/collection/CollectionView";
@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/feedback/Skeleton";
 import { TrackUploadQueue } from "@/components/uploads/TrackUploadQueue";
 import { authedApi, bulkRegisterUploads, uploadAudioFile, uploadImageFile } from "@/lib/authedApi";
 import { getAudioDurationSeconds } from "@/lib/getAudioDuration";
+import { useAudioPlayer, type QueueTrack } from "@/providers/AudioPlayerProvider";
 import { useAuth } from "@/providers/AuthProvider";
 
 type UploadQueueItem = {
@@ -23,6 +24,7 @@ export function StudioCollectionEditPage() {
   const { playlistId } = useParams<{ playlistId: string }>();
   const { accessToken } = useAuth();
   const queryClient = useQueryClient();
+  const { setQueue, currentTrack, state, togglePlay } = useAudioPlayer();
   const coverInputRef = useRef<HTMLInputElement>(null);
   const tracksInputRef = useRef<HTMLInputElement>(null);
   const [draft, setDraft] = useState<PlaylistDetail | null>(null);
@@ -39,6 +41,36 @@ export function StudioCollectionEditPage() {
 
   const playlist = draft ?? data;
 
+  const lastSavedTitleRef = useRef<string | undefined>(undefined);
+  const lastSavedDescriptionRef = useRef<string | null | undefined>(undefined);
+
+  if (data && lastSavedTitleRef.current === undefined) {
+    lastSavedTitleRef.current = data.title;
+    lastSavedDescriptionRef.current = data.description;
+  }
+
+  useEffect(() => {
+    if (!playlist) return;
+
+    const currentTitle = playlist.title;
+    const currentDescription = playlist.description;
+
+    const hasChanges =
+      (lastSavedTitleRef.current !== undefined && currentTitle !== lastSavedTitleRef.current) ||
+      (lastSavedDescriptionRef.current !== undefined && currentDescription !== lastSavedDescriptionRef.current);
+
+    if (!hasChanges) return;
+
+    const timer = setTimeout(() => {
+      saveMutation.mutate({
+        title: currentTitle,
+        description: currentDescription ?? null,
+      });
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [playlist?.title, playlist?.description]);
+
   const saveMutation = useMutation({
     mutationFn: (body: Parameters<typeof client.playlists.update>[1]) =>
       client.playlists.update(playlistId!, body),
@@ -46,37 +78,51 @@ export function StudioCollectionEditPage() {
       setDraft(updated);
       queryClient.invalidateQueries({ queryKey: ["playlist", playlistId] });
       queryClient.invalidateQueries({ queryKey: ["me", "playlists"] });
-    },
-  });
-
-  const publishMutation = useMutation({
-    mutationFn: () =>
-      client.playlists.update(playlistId!, { status: "PUBLISHED" }),
-    onSuccess: (updated) => {
-      setDraft(updated);
-      queryClient.invalidateQueries({ queryKey: ["playlist", playlistId] });
+      lastSavedTitleRef.current = updated.title;
+      lastSavedDescriptionRef.current = updated.description;
     },
   });
 
   const visibilityMutation = useMutation({
     mutationFn: (visibility: PlaylistDetail["visibility"]) =>
-      client.playlists.update(playlistId!, { visibility }),
-    onSuccess: (updated) => setDraft(updated),
+      client.playlists.update(playlistId!, {
+        visibility,
+        ...(visibility === "PUBLIC" ? { status: "PUBLISHED" } : {}),
+      }),
+    onSuccess: (updated) => {
+      setDraft(updated);
+      queryClient.invalidateQueries({ queryKey: ["playlist", playlistId] });
+      queryClient.invalidateQueries({ queryKey: ["me", "playlists"] });
+      lastSavedTitleRef.current = updated.title;
+      lastSavedDescriptionRef.current = updated.description;
+    },
   });
 
   const addTrackMutation = useMutation({
     mutationFn: (recordingId: string) => client.playlists.addItem(playlistId!, recordingId),
-    onSuccess: (updated) => setDraft(updated),
+    onSuccess: (updated) => {
+      setDraft(updated);
+      lastSavedTitleRef.current = updated.title;
+      lastSavedDescriptionRef.current = updated.description;
+    },
   });
 
   const removeTrackMutation = useMutation({
     mutationFn: (recordingId: string) => client.playlists.removeItem(playlistId!, recordingId),
-    onSuccess: (updated) => setDraft(updated),
+    onSuccess: (updated) => {
+      setDraft(updated);
+      lastSavedTitleRef.current = updated.title;
+      lastSavedDescriptionRef.current = updated.description;
+    },
   });
 
   const reorderMutation = useMutation({
     mutationFn: (recordingIds: string[]) => client.playlists.reorderItems(playlistId!, recordingIds),
-    onSuccess: (updated) => setDraft(updated),
+    onSuccess: (updated) => {
+      setDraft(updated);
+      lastSavedTitleRef.current = updated.title;
+      lastSavedDescriptionRef.current = updated.description;
+    },
   });
 
   if (isLoading || !playlist) {
@@ -93,6 +139,24 @@ export function StudioCollectionEditPage() {
   }
 
   const collection = playlist;
+
+  const queueTracks: QueueTrack[] = collection.recordings.map((r) => ({
+    ...r,
+    playlistTitle: collection.title,
+    ownerName: collection.owner.displayName,
+  }));
+
+  function playRecording(recordingId: string) {
+    const index = queueTracks.findIndex((t) => t.id === recordingId);
+    if (index < 0) return;
+
+    if (currentTrack?.id === recordingId) {
+      togglePlay();
+      return;
+    }
+
+    setQueue(queueTracks, index, { playlistId: collection.id, sourceContext: "studio-editor" });
+  }
 
   function moveTrack(recordingId: string, direction: -1 | 1) {
     const ids = collection.recordings.map((r) => r.id);
@@ -196,10 +260,13 @@ export function StudioCollectionEditPage() {
       <CollectionView
         playlist={playlist}
         mode="edit"
+        activeTrackId={currentTrack?.id}
+        playerState={state}
         onTitleChange={(title) => setDraft({ ...playlist, title })}
         onDescriptionChange={(description) => setDraft({ ...playlist, description })}
         onCoverClick={() => coverInputRef.current?.click()}
         onAddTracks={() => tracksInputRef.current?.click()}
+        onPlayTrack={(recording) => playRecording(recording.id)}
         onRemoveTrack={(recordingId) => removeTrackMutation.mutate(recordingId)}
         onMoveTrackUp={(recordingId) => moveTrack(recordingId, -1)}
         onMoveTrackDown={(recordingId) => moveTrack(recordingId, 1)}
@@ -218,20 +285,6 @@ export function StudioCollectionEditPage() {
         }
         editToolbar={
           <>
-            <button
-              type="button"
-              onClick={() =>
-                saveMutation.mutate({
-                  title: playlist.title,
-                  description: playlist.description,
-                  coverArtUrl: playlist.coverArtUrl,
-                })
-              }
-              disabled={saveMutation.isPending}
-              className="rounded-full border border-white/20 px-5 py-2 text-sm font-medium text-white hover:bg-white/10"
-            >
-              {saveMutation.isPending ? "Saving…" : "Save draft"}
-            </button>
             <div className="flex items-center gap-2 rounded-full border border-white/20 p-1">
               <button
                 type="button"
@@ -254,14 +307,23 @@ export function StudioCollectionEditPage() {
                 Private
               </button>
             </div>
-            <button
-              type="button"
-              onClick={() => publishMutation.mutate()}
-              disabled={publishMutation.isPending}
-              className="rounded-full bg-[var(--color-brand)] px-5 py-2 text-sm font-semibold text-white"
-            >
-              Publish
-            </button>
+
+            <div className="flex items-center gap-2 px-3 py-2 text-xs text-[var(--color-text-muted)] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-full select-none">
+              {saveMutation.isPending ||
+              (playlist &&
+                (playlist.title !== lastSavedTitleRef.current ||
+                  playlist.description !== lastSavedDescriptionRef.current)) ? (
+                <>
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-500" />
+                  <span>Saving...</span>
+                </>
+              ) : (
+                <>
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  <span>Saved</span>
+                </>
+              )}
+            </div>
           </>
         }
       />
