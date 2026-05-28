@@ -31,6 +31,7 @@ interface AudioPlayerContextValue {
   state: PlayerState;
   currentTime: number;
   duration: number;
+  playbackContext: PlaybackContext;
   queueOpen: boolean;
   setQueueOpen: (open: boolean) => void;
   playTrack: (track: QueueTrack, queue?: QueueTrack[], context?: PlaybackContext) => void;
@@ -41,6 +42,7 @@ interface AudioPlayerContextValue {
   seek: (time: number) => void;
   appendToQueue: (track: QueueTrack) => void;
   removeFromQueue: (trackId: string) => void;
+  updateQueuePlaylistTitle: (playlistId: string, title: string) => void;
 }
 
 const AudioPlayerContext = createContext<AudioPlayerContextValue | null>(null);
@@ -55,6 +57,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<PlayerState>("idle");
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [playbackContext, setPlaybackContext] = useState<PlaybackContext>({ sourceContext: "player" });
   const [queueOpen, setQueueOpen] = useState(false);
 
   const currentTrack = queueIndex >= 0 ? queue[queueIndex] ?? null : null;
@@ -105,7 +108,10 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
         flushPlayback(currentTrack, audioRef.current?.currentTime ?? currentTime, false);
         loggedTrackRef.current = null;
       }
-      if (context) playbackContextRef.current = context;
+      if (context) {
+        playbackContextRef.current = context;
+        setPlaybackContext(context);
+      }
       const tracks = nextQueue ?? [track];
       const index = tracks.findIndex((t) => t.id === track.id);
       setQueueState(tracks);
@@ -122,7 +128,10 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
         flushPlayback(currentTrack, audioRef.current?.currentTime ?? currentTime, false);
         loggedTrackRef.current = null;
       }
-      if (context) playbackContextRef.current = context;
+      if (context) {
+        playbackContextRef.current = context;
+        setPlaybackContext(context);
+      }
       const index = Math.min(Math.max(startIndex, 0), tracks.length - 1);
       setQueueState(tracks);
       setQueueIndex(index);
@@ -130,6 +139,11 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     },
     [currentTrack, currentTime, flushPlayback, loadTrack],
   );
+
+  const updateQueuePlaylistTitle = useCallback((playlistId: string, title: string) => {
+    if (playbackContextRef.current.playlistId !== playlistId) return;
+    setQueueState((prev) => prev.map((t) => ({ ...t, playlistTitle: title })));
+  }, []);
 
   const togglePlay = useCallback(() => {
     const audio = audioRef.current;
@@ -239,6 +253,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       state,
       currentTime,
       duration,
+      playbackContext,
       queueOpen,
       setQueueOpen,
       playTrack,
@@ -249,6 +264,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       seek,
       appendToQueue,
       removeFromQueue,
+      updateQueuePlaylistTitle,
     }),
     [
       currentTrack,
@@ -256,6 +272,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       state,
       currentTime,
       duration,
+      playbackContext,
       queueOpen,
       playTrack,
       setQueue,
@@ -265,6 +282,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       seek,
       appendToQueue,
       removeFromQueue,
+      updateQueuePlaylistTitle,
     ],
   );
 

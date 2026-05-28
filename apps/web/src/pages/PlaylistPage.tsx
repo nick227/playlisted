@@ -18,7 +18,7 @@ export function PlaylistPage() {
   const { playlistId } = useParams<{ playlistId: string }>();
   const { data: playlist, isLoading, isError } = usePlaylist(playlistId);
   const { data: related } = usePlaylists(6);
-  const { setQueue, currentTrack, state, togglePlay } = useAudioPlayer();
+  const { setQueue, currentTrack, state, togglePlay, playbackContext } = useAudioPlayer();
   const { status } = useAuth();
   const [addOpen, setAddOpen] = useState(false);
 
@@ -49,7 +49,7 @@ export function PlaylistPage() {
   }));
 
   const currentPlaylistId = playlist.id;
-  const playlistHasCurrent = currentTrack ? currentTrack.publishedPlaylistId === currentPlaylistId : false;
+  const playlistHasCurrent = playbackContext.playlistId === currentPlaylistId;
   const playlistIsPlaying = playlistHasCurrent && state === "playing";
   const playlistIsPaused = playlistHasCurrent && state === "paused";
 

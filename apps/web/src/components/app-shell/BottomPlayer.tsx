@@ -8,9 +8,10 @@ import {
   SkipForward,
   Volume2,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 
 import { formatDuration } from "@/lib/format";
-import { coverFallback } from "@/lib/routes";
+import { coverFallback, playlistPath } from "@/lib/routes";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 
 export function BottomPlayer() {
@@ -19,6 +20,7 @@ export function BottomPlayer() {
     state,
     currentTime,
     duration,
+    playbackContext,
     togglePlay,
     playNext,
     playPrevious,
@@ -64,10 +66,28 @@ export function BottomPlayer() {
             <div className="h-12 w-12 shrink-0 rounded" style={artStyle} />
           )}
           <div className="min-w-0">
-            <p className="truncate text-sm font-medium text-white">{currentTrack.title}</p>
-            <p className="truncate text-xs text-[var(--color-text-muted)]">
-              {[currentTrack.ownerName, currentTrack.playlistTitle].filter(Boolean).join(" • ")}
-            </p>
+            {playbackContext.playlistId ? (
+              <Link
+                to={`${playlistPath(playbackContext.playlistId)}#track-${currentTrack.id}`}
+                className="block truncate text-sm font-medium text-white hover:underline"
+              >
+                {currentTrack.title}
+              </Link>
+            ) : (
+              <p className="truncate text-sm font-medium text-white">{currentTrack.title}</p>
+            )}
+            {playbackContext.playlistId ? (
+              <Link
+                to={playlistPath(playbackContext.playlistId)}
+                className="block truncate text-xs text-[var(--color-text-muted)] hover:underline"
+              >
+                {[currentTrack.ownerName, currentTrack.playlistTitle].filter(Boolean).join(" • ")}
+              </Link>
+            ) : (
+              <p className="truncate text-xs text-[var(--color-text-muted)]">
+                {[currentTrack.ownerName, currentTrack.playlistTitle].filter(Boolean).join(" • ")}
+              </p>
+            )}
           </div>
         </div>
         <div className="flex flex-col items-center gap-1">

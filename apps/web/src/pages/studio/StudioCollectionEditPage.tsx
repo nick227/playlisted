@@ -24,7 +24,7 @@ export function StudioCollectionEditPage() {
   const { playlistId } = useParams<{ playlistId: string }>();
   const { accessToken } = useAuth();
   const queryClient = useQueryClient();
-  const { setQueue, currentTrack, state, togglePlay } = useAudioPlayer();
+  const { setQueue, currentTrack, state, togglePlay, playbackContext, updateQueuePlaylistTitle } = useAudioPlayer();
   const coverInputRef = useRef<HTMLInputElement>(null);
   const tracksInputRef = useRef<HTMLInputElement>(null);
   const [draft, setDraft] = useState<PlaylistDetail | null>(null);
@@ -78,8 +78,13 @@ export function StudioCollectionEditPage() {
       setDraft(updated);
       queryClient.invalidateQueries({ queryKey: ["playlist", playlistId] });
       queryClient.invalidateQueries({ queryKey: ["me", "playlists"] });
+      queryClient.invalidateQueries({ queryKey: ["playlists"] });
       lastSavedTitleRef.current = updated.title;
       lastSavedDescriptionRef.current = updated.description;
+
+      if (playbackContext.playlistId === updated.id) {
+        updateQueuePlaylistTitle(updated.id, updated.title);
+      }
     },
   });
 

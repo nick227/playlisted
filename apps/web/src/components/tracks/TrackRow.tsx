@@ -49,6 +49,7 @@ export function TrackRow({
   return (
     <>
       <div
+        id={`track-${recordingId}`}
         className={`group grid w-full grid-cols-[auto_1fr_auto] items-center gap-4 rounded-lg px-3 py-2 transition ${
           isActive ? "bg-white/10" : "hover:bg-[var(--color-surface-hover)]"
         }`}
