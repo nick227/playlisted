@@ -6,7 +6,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { CollectionView } from "@/components/collection/CollectionView";
 import { EmptyState } from "@/components/feedback/EmptyState";
 import { Skeleton } from "@/components/feedback/Skeleton";
-import { authedApi, uploadImageFile } from "@/lib/authedApi";
+import { authedApi, bulkRegisterUploads, uploadAudioFile, uploadImageFile } from "@/lib/authedApi";
 import { playlistPath } from "@/lib/routes";
 import { useAuth } from "@/providers/AuthProvider";
 
@@ -16,8 +16,12 @@ export function StudioCollectionEditPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const coverInputRef = useRef<HTMLInputElement>(null);
+  const bulkInputRef = useRef<HTMLInputElement>(null);
   const [draft, setDraft] = useState<PlaylistDetail | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [bulkUploading, setBulkUploading] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState<{ done: number; total: number } | null>(null);
+  const [bulkError, setBulkError] = useState<string | null>(null);
 
   const client = authedApi(accessToken);
 
@@ -102,6 +106,44 @@ export function StudioCollectionEditPage() {
     setDraft(updated);
   }
 
+  async function handleBulkUpload(files: FileList | null) {
+    if (!accessToken || !files?.length) return;
+
+    setBulkError(null);
+    setBulkUploading(true);
+    setBulkProgress({ done: 0, total: files.length });
+
+    try {
+      const uploaded: { url: string; mimeType: string; bytes: number; title: string }[] = [];
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const result = await uploadAudioFile(file, accessToken);
+        uploaded.push({
+          url: result.url,
+          mimeType: result.mimeType,
+          bytes: result.bytes,
+          title: result.title,
+        });
+        setBulkProgress({ done: i + 1, total: files.length });
+      }
+
+      const registered = await bulkRegisterUploads(uploaded, accessToken);
+
+      for (const recording of registered.recordings) {
+        await client.playlists.addItem(playlistId!, recording.id);
+      }
+
+      const fresh = await client.playlists.getById(playlistId!);
+      setDraft(fresh);
+    } catch (error) {
+      setBulkError(error instanceof Error ? error.message : "Bulk upload failed.");
+    } finally {
+      setBulkUploading(false);
+      if (bulkInputRef.current) bulkInputRef.current.value = "";
+    }
+  }
+
   const inPlaylist = new Set(collection.recordings.map((r) => r.id));
 
   return (
@@ -134,6 +176,16 @@ export function StudioCollectionEditPage() {
             </button>
             <button
               type="button"
+              onClick={() => bulkInputRef.current?.click()}
+              disabled={bulkUploading}
+              className="rounded-full border border-white/20 px-5 py-2 text-sm font-medium text-white hover:bg-white/10"
+            >
+              {bulkUploading && bulkProgress
+                ? `Uploading ${bulkProgress.done}/${bulkProgress.total}…`
+                : "Bulk upload tracks"}
+            </button>
+            <button
+              type="button"
               onClick={() => publishMutation.mutate()}
               disabled={publishMutation.isPending}
               className="rounded-full bg-[var(--color-brand)] px-5 py-2 text-sm font-semibold text-white"
@@ -158,6 +210,12 @@ export function StudioCollectionEditPage() {
         }
       />
 
+      {bulkError ? (
+        <div className="mx-auto mt-4 max-w-6xl rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+          {bulkError}
+        </div>
+      ) : null}
+
       <input
         ref={coverInputRef}
         type="file"
@@ -167,6 +225,15 @@ export function StudioCollectionEditPage() {
           const file = e.target.files?.[0];
           if (file) void handleCoverFile(file);
         }}
+      />
+
+      <input
+        ref={bulkInputRef}
+        type="file"
+        accept="audio/*"
+        multiple
+        className="hidden"
+        onChange={(e) => void handleBulkUpload(e.target.files)}
       />
 
       {pickerOpen ? (
