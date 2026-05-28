@@ -86,6 +86,7 @@ export function mapRecordingInPlaylist(recording: {
     username: string;
     displayName: string;
     avatarUrl: string | null;
+    role: string;
   };
 }) {
   return {
@@ -116,6 +117,7 @@ export function mapRecordingInPlaylist(recording: {
           username: recording.uploader.username,
           displayName: recording.uploader.displayName,
           avatarUrl: recording.uploader.avatarUrl,
+          role: recording.uploader.role,
         }
       : undefined,
   };
@@ -138,7 +140,7 @@ export const playlistDetailInclude = {
       recording: {
         include: {
           uploader: {
-            select: { id: true, username: true, displayName: true, avatarUrl: true },
+            select: { id: true, username: true, displayName: true, avatarUrl: true, role: true },
           },
         },
       },
