@@ -1,10 +1,11 @@
 import type { PlaylistDetail } from "@playlisted/client-sdk";
-import { Pause, Play, Plus, Share2, Shuffle, Upload } from "lucide-react";
+import { Pause, Pencil, Play, Plus, Share2, Shuffle, Upload } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import { EmptyState } from "@/components/feedback/EmptyState";
 import { TrackList } from "@/components/tracks/TrackList";
-import { coverFallback, profilePath } from "@/lib/routes";
+import { coverFallback, profilePath, studioCollectionEditPath } from "@/lib/routes";
+import { useAuth } from "@/providers/AuthProvider";
 import {
   mergeForPlayback,
   partitionRecordings,
@@ -31,6 +32,7 @@ export interface CollectionViewProps {
   onMoveTrackUp?: (recordingId: string) => void;
   onMoveTrackDown?: (recordingId: string) => void;
   editToolbar?: React.ReactNode;
+  uploadProgress?: React.ReactNode;
 }
 
 const typeLabels: Record<string, string> = {
@@ -59,9 +61,12 @@ export function CollectionView({
   onMoveTrackUp,
   onMoveTrackDown,
   editToolbar,
+  uploadProgress,
 }: CollectionViewProps) {
+  const { user } = useAuth();
   const isEdit = mode === "edit";
   const isPodcast = playlist.type === "PODCAST_CHANNEL";
+  const isOwner = Boolean(user?.id && user.id === playlist.ownerId);
   const { ownUploads, fromOthers } = partitionRecordings(
     playlist.recordings as CollectionRecording[],
     playlist.ownerId,
@@ -78,7 +83,7 @@ export function CollectionView({
   }
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="mx-auto max-w-4xl">
       {isEdit && editToolbar ? (
         <div className="mb-6 flex flex-wrap items-center gap-3">{editToolbar}</div>
       ) : null}
@@ -96,6 +101,7 @@ export function CollectionView({
             onClick={isEdit ? onCoverClick : undefined}
             className={`block text-left ${isEdit ? "cursor-pointer ring-offset-2 hover:ring-2 hover:ring-[var(--color-brand)]" : ""}`}
             disabled={!isEdit}
+            title="Change cover art"
           >
             {playlist.coverArtUrl ? (
               <img
@@ -109,11 +115,6 @@ export function CollectionView({
                 style={coverStyle}
               />
             )}
-            {isEdit ? (
-              <span className="mt-2 block text-xs font-medium text-[var(--color-brand)]">
-                Change cover art
-              </span>
-            ) : null}
           </button>
         </div>
         <div className="min-w-0 flex-1">
@@ -182,6 +183,16 @@ export function CollectionView({
               >
                 <Share2 size={18} />
               </button>
+              {isOwner ? (
+                <Link
+                  to={studioCollectionEditPath(playlist.id)}
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/20 text-white hover:bg-white/10"
+                  aria-label="Edit playlist"
+                  title="Edit"
+                >
+                  <Pencil size={18} />
+                </Link>
+              ) : null}
               {onAddCollectionToPlaylist ? (
                 <button
                   type="button"
@@ -194,6 +205,9 @@ export function CollectionView({
               ) : null}
             </div>
           ) : null}
+        </div>
+      </div>
+      <div className="w-full flex justify-end">
           {isEdit && onAddTracks ? (
             <button
               type="button"
@@ -204,7 +218,6 @@ export function CollectionView({
               Add tracks
             </button>
           ) : null}
-        </div>
       </div>
 
       <div className={isPodcast ? "mt-10 lg:col-span-2" : "mt-10"}>
@@ -215,19 +228,11 @@ export function CollectionView({
           />
         ) : isEdit ? (
           <div className="space-y-3">
-            {onAddTracks ? (
-              <button
-                type="button"
-                onClick={onAddTracks}
-                className="flex w-full items-center justify-between rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-left transition hover:border-white/20"
-              >
-                <span className="flex items-center gap-2 text-sm font-semibold text-white">
-                  <Upload size={18} />
-                  Add Tracks
-                </span>
-                <span className="text-xs text-[var(--color-text-muted)]">Upload audio files</span>
-              </button>
-            ) : null}
+
+            <div className="min-h-[16px]">
+              {uploadProgress ? <div className="py-2">{uploadProgress}</div> : null}
+            </div>
+
             <TrackList
               recordings={playlist.recordings as CollectionRecording[]}
               activeId={activeTrackId}
