@@ -1,0 +1,326 @@
+{
+  "meta": {
+    "defaultPassword": "Playlisted123!",
+    "mediaBaseUrl": "http://localhost:4000/uploads",
+    "mediaRoots": {
+      "audio": "temp/audio",
+      "images": "temp/images"
+    }
+  },
+  "users": [
+    {
+      "key": "super-admin",
+      "email": "admin@playlisted.local",
+      "username": "super-admin",
+      "displayName": "Playlisted Admin",
+      "role": "ADMIN",
+      "bio": "Platform operations and catalog oversight.",
+      "avatarFile": "guitar-man.jpg"
+    },
+    {
+      "key": "editor",
+      "email": "editor@playlisted.local",
+      "username": "editor",
+      "displayName": "Playlisted Editorial",
+      "role": "EDITOR",
+      "bio": "Curating new sounds, local scenes, and essential releases.",
+      "avatarFile": "nod-8.png"
+    },
+    {
+      "key": "nova-lane",
+      "email": "nova@playlisted.local",
+      "username": "nova-lane",
+      "displayName": "Nova Lane",
+      "role": "CREATOR",
+      "bio": "Dream-pop producer making nocturnal hooks and synth textures.",
+      "isFeaturedArtist": true,
+      "avatarFile": "flux-lofi hip hop beautiful sunset artistic creative ae-1753562799100.jpg",
+      "heroImageFile": "flux-dramatic green art-deco studio beach the art-deco -1753509256469.jpg"
+    },
+    {
+      "key": "river-ghost",
+      "email": "river@playlisted.local",
+      "username": "river-ghost",
+      "displayName": "River Ghost",
+      "role": "CREATOR",
+      "bio": "Coastal ambient and slow-burn electronic sketches.",
+      "isFeaturedArtist": true,
+      "avatarFile": "flux-sunglasses art dilapidated and vignette hair dange-1747271452642.jpg",
+      "heroImageFile": "flux-Prosperity shot Light Angle beautiful Mysticism Il-1753510137035.jpg"
+    },
+    {
+      "key": "night-signal",
+      "email": "host@playlisted.local",
+      "username": "night-signal",
+      "displayName": "Night Signal",
+      "role": "CREATOR",
+      "bio": "Late-night conversations, deep cuts, and scene reports.",
+      "isFeaturedArtist": true,
+      "avatarFile": "photo-1504960868016-9a59a5172321.jpg"
+    },
+    {
+      "key": "crate-digger",
+      "email": "listener@playlisted.local",
+      "username": "crate-digger",
+      "displayName": "Crate Digger",
+      "role": "LISTENER",
+      "bio": "Collecting favorites and chasing fresh releases.",
+      "avatarFile": "man-portrait-male-paint.jpg"
+    }
+  ],
+  "tags": [
+    { "key": "dream-pop", "name": "Dream Pop", "slug": "dream-pop", "kind": "GENRE" },
+    { "key": "electronic", "name": "Electronic", "slug": "electronic", "kind": "GENRE" },
+    { "key": "ambient", "name": "Ambient", "slug": "ambient", "kind": "GENRE" },
+    { "key": "podcast", "name": "Podcast", "slug": "podcast", "kind": "CATEGORY" },
+    { "key": "late-night", "name": "Late Night", "slug": "late-night", "kind": "MOOD" },
+    { "key": "featured", "name": "Featured", "slug": "featured", "kind": "CATEGORY" }
+  ],
+  "collections": [
+    {
+      "key": "afterglow-transit",
+      "ownerKey": "nova-lane",
+      "title": "Afterglow Transit",
+      "slug": "afterglow-transit",
+      "description": "A neon-tinted mini album built for midnight drives and empty highways.",
+      "type": "ALBUM",
+      "coverArtFile": "flux-lofi hip hop beautiful sunset artistic creative ae-1753562799100.jpg",
+      "featured": true,
+      "isPinnedOnProfile": true,
+      "publishedAt": "2026-05-20T00:00:00.000Z",
+      "tagKeys": ["dream-pop", "electronic", "featured"],
+      "recordings": [
+        {
+          "key": "satellite-hearts",
+          "title": "Satellite Hearts",
+          "description": "Glass synths, slow pulse, and stacked harmonies drifting over a steady kick.",
+          "audioFile": "ambient disco dance humming bird dance buffalo buffalo buffalxo.mp3",
+          "artworkFile": "cherry_002.jpg",
+          "trackNumber": 1,
+          "releaseDate": "2026-05-20T00:00:00.000Z",
+          "publishedAt": "2026-05-20T00:00:00.000Z",
+          "tagKeys": ["dream-pop", "late-night"]
+        },
+        {
+          "key": "soft-static",
+          "title": "Soft Static",
+          "description": "Minimal drums and a faded-radio chorus that never quite lands on the downbeat.",
+          "audioFile": "born lucky i never lose poetic.mp3",
+          "artworkFile": "flux-grungy rocket ship on flying launch illustration w-1750099406613.jpg",
+          "trackNumber": 2,
+          "releaseDate": "2026-05-20T00:00:00.000Z",
+          "publishedAt": "2026-05-20T00:00:00.000Z",
+          "tagKeys": ["electronic", "late-night"]
+        },
+        {
+          "key": "neon-delay",
+          "title": "Neon Delay",
+          "description": "Sidechain haze and a chorus that blooms after the second verse.",
+          "audioFile": "experiment with compression compression2.mp3",
+          "artworkFile": "dezgo_a85b91acf36858f76.png",
+          "trackNumber": 3,
+          "releaseDate": "2026-05-20T00:00:00.000Z",
+          "publishedAt": "2026-05-20T00:00:00.000Z",
+          "tagKeys": ["electronic"]
+        }
+      ]
+    },
+    {
+      "key": "glass-harbor",
+      "ownerKey": "river-ghost",
+      "title": "Glass Harbor",
+      "slug": "glass-harbor",
+      "description": "Two-track EP of tide-line ambience and distant vocal samples.",
+      "type": "RELEASE",
+      "coverArtFile": "flux-Prosperity shot Light Angle beautiful Mysticism Il-1753510137035.jpg",
+      "isPinnedOnProfile": true,
+      "publishedAt": "2026-05-19T00:00:00.000Z",
+      "tagKeys": ["ambient", "electronic"],
+      "recordings": [
+        {
+          "key": "harbor-lights",
+          "title": "Harbor Lights",
+          "description": "Muted pads and field recordings from a waterfront after closing time.",
+          "audioFile": "out here in the dark city, out here in the dark city.mp3",
+          "artworkFile": "flux-8k high-resolution distinct detailed gentle rainin-1745555862269.jpg",
+          "trackNumber": 1,
+          "releaseDate": "2026-05-19T00:00:00.000Z",
+          "publishedAt": "2026-05-19T00:00:00.000Z",
+          "tagKeys": ["ambient", "late-night"]
+        },
+        {
+          "key": "tide-lines",
+          "title": "Tide Lines",
+          "description": "A patient build with granular textures and a single repeating motif.",
+          "audioFile": "lovers luck is when preparation meets opportunity.mp3",
+          "artworkFile": "photo-1466357955653-f8a10d011dcb.jpg",
+          "trackNumber": 2,
+          "releaseDate": "2026-05-19T00:00:00.000Z",
+          "publishedAt": "2026-05-19T00:00:00.000Z",
+          "tagKeys": ["ambient"]
+        }
+      ]
+    },
+    {
+      "key": "night-signal-radio",
+      "ownerKey": "night-signal",
+      "title": "Night Signal Radio",
+      "slug": "night-signal-radio",
+      "description": "A weekly podcast spotlighting emerging artists, scene talk, and deep cuts.",
+      "type": "PODCAST_CHANNEL",
+      "coverArtFile": "photo-1504960868016-9a59a5172321.jpg",
+      "isPinnedOnProfile": true,
+      "publishedAt": "2026-05-18T00:00:00.000Z",
+      "tagKeys": ["podcast", "late-night"],
+      "recordings": [
+        {
+          "key": "night-signal-ep01",
+          "title": "Episode 01: New Underground Radar",
+          "description": "A conversation about fresh releases, bedroom studios, and scenes flying under the radar.",
+          "audioFile": "he went to die all alone2.mp3",
+          "artworkFile": "flash-street-photography-6.jpg",
+          "recordingType": "PODCAST_EPISODE",
+          "episodeNumber": 1,
+          "releaseDate": "2026-05-18T00:00:00.000Z",
+          "publishedAt": "2026-05-18T00:00:00.000Z",
+          "tagKeys": ["podcast"]
+        }
+      ]
+    },
+    {
+      "key": "nova-singles",
+      "ownerKey": "nova-lane",
+      "title": "Nova Lane Singles",
+      "slug": "nova-lane-singles",
+      "description": "Standalone uploads and experiments between album cycles.",
+      "type": "RELEASE",
+      "coverArtFile": "flux-dramatic green art-deco studio beach the art-deco -1753509256469.jpg",
+      "publishedAt": "2026-05-21T00:00:00.000Z",
+      "tagKeys": ["dream-pop"],
+      "recordings": [
+        {
+          "key": "wrong-about-me",
+          "title": "You Were Wrong About Me",
+          "description": "Bittersweet pop with a dry vocal and a chorus that opens up on the last pass.",
+          "audioFile": "you were wrong about me i tried to tell you..mp3",
+          "artworkFile": "ponder-b-Untitled.jpg",
+          "trackNumber": 1,
+          "releaseDate": "2026-05-21T00:00:00.000Z",
+          "publishedAt": "2026-05-21T00:00:00.000Z",
+          "tagKeys": ["dream-pop"]
+        },
+        {
+          "key": "leave-it-up-to-you",
+          "title": "So I'll Leave It Up to You",
+          "description": "Sparse piano and a late-night vocal take recorded in one pass.",
+          "audioFile": "So I'll leave it up to you axw.mp3",
+          "artworkFile": "2025-12-27_02-52-14_9996.png",
+          "trackNumber": 2,
+          "releaseDate": "2026-05-21T00:00:00.000Z",
+          "publishedAt": "2026-05-21T00:00:00.000Z",
+          "tagKeys": ["dream-pop", "late-night"]
+        }
+      ]
+    }
+  ],
+  "playlists": [
+    {
+      "key": "late-night-commute",
+      "ownerKey": "crate-digger",
+      "title": "Late Night Commute",
+      "slug": "late-night-commute",
+      "description": "A cross-artist mix for the drive home — dream pop, ambient, and one slow-burn deep cut.",
+      "coverArtFile": "flux-party crowd dive bar country-western dance crowd p-1746861377843.jpg",
+      "publishedAt": "2026-05-22T00:00:00.000Z",
+      "tagKeys": ["late-night"],
+      "recordingKeys": [
+        "satellite-hearts",
+        "harbor-lights",
+        "neon-delay",
+        "tide-lines",
+        "wrong-about-me"
+      ]
+    },
+    {
+      "key": "editors-desk-may",
+      "ownerKey": "editor",
+      "title": "Editor's Desk: May 2026",
+      "slug": "editors-desk-may-2026",
+      "description": "Staff picks spanning new albums, harbor ambient, and this week's podcast opener.",
+      "coverArtFile": "flux-words Tropical Fusion in readable font graiphical-1754346240797.jpg",
+      "featured": true,
+      "publishedAt": "2026-05-22T00:00:00.000Z",
+      "tagKeys": ["featured"],
+      "recordingKeys": [
+        "satellite-hearts",
+        "soft-static",
+        "harbor-lights",
+        "night-signal-ep01"
+      ]
+    },
+    {
+      "key": "admin-catalog-review",
+      "ownerKey": "super-admin",
+      "title": "Catalog Review Queue",
+      "slug": "catalog-review-queue",
+      "description": "Internal listening queue for recently published uploads across creators.",
+      "visibility": "UNLISTED",
+      "publishedAt": "2026-05-22T00:00:00.000Z",
+      "recordingKeys": [
+        "neon-delay",
+        "leave-it-up-to-you",
+        "tide-lines",
+        "night-signal-ep01"
+      ]
+    }
+  ],
+  "saves": [
+    {
+      "userKey": "crate-digger",
+      "playlistKey": "afterglow-transit",
+      "kind": "FAVORITE"
+    },
+    {
+      "userKey": "crate-digger",
+      "recordingKey": "satellite-hearts",
+      "kind": "FAVORITE"
+    },
+    {
+      "userKey": "crate-digger",
+      "playlistKey": "late-night-commute",
+      "kind": "LIBRARY"
+    }
+  ],
+  "editorial": [
+    {
+      "key": "essential-midnight-releases",
+      "authorKey": "editor",
+      "kind": "FEATURE",
+      "title": "This Week's Essential Midnight Releases",
+      "slug": "essential-midnight-releases",
+      "summary": "Three records and one show shaping the mood this week.",
+      "body": "Playlisted's editorial team highlights a handful of nocturnal releases with strong atmosphere and personality — from Nova Lane's Afterglow Transit to River Ghost's harbor sketches and the latest Night Signal episode.",
+      "publishedAt": "2026-05-21T00:00:00.000Z"
+    }
+  ],
+  "homepageFeatures": [
+    {
+      "section": "FEATURED_PLAYLIST",
+      "position": 1,
+      "playlistKey": "afterglow-transit",
+      "createdByKey": "editor"
+    },
+    {
+      "section": "NEW_ARTIST",
+      "position": 1,
+      "userKey": "nova-lane",
+      "createdByKey": "editor"
+    },
+    {
+      "section": "SITE_NEWS",
+      "position": 1,
+      "editorialKey": "essential-midnight-releases",
+      "createdByKey": "editor"
+    }
+  ]
+}

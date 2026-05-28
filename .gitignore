@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+packages/*/dist/
+apps/web/dist/
+
+# TypeScript
+*.tsbuildinfo
+
+# Environment & secrets
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Prisma
+.prisma/
+
+# User-generated & seed media (copied into uploads at seed/runtime)
+uploads/
+temp/
+
+# Test & coverage
+coverage/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Vite
+.vite/
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Editors (local only)
+.idea/
+*.swp
+*.swo

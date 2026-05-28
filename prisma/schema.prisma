@@ -1,0 +1,362 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  LISTENER
+  CREATOR
+  EDITOR
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  INVITED
+}
+
+enum PlaylistType {
+  PLAYLIST
+  ALBUM
+  MIX
+  PODCAST_CHANNEL
+  RELEASE
+}
+
+enum RecordingType {
+  SONG
+  PODCAST_EPISODE
+  MIX_SEGMENT
+  OTHER
+}
+
+enum Visibility {
+  PUBLIC
+  UNLISTED
+  PRIVATE
+}
+
+enum PublishStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum SaveKind {
+  LIBRARY
+  FAVORITE
+}
+
+enum TagKind {
+  GENRE
+  MOOD
+  CATEGORY
+  SCENE
+}
+
+enum EditorialKind {
+  NEWS
+  REVIEW
+  FEATURE
+  SPOTLIGHT
+}
+
+enum HomepageSection {
+  FEATURED_PLAYLIST
+  CUSTOM_MIX
+  NEW_RELEASE
+  NEW_ARTIST
+  TRENDING
+  EDITOR_PICK
+  SITE_NEWS
+}
+
+model User {
+  id               String     @id @default(cuid()) @db.VarChar(191)
+  email            String     @unique @db.VarChar(191)
+  username         String     @unique @db.VarChar(50)
+  passwordHash     String?    @db.VarChar(255)
+  displayName      String     @db.VarChar(120)
+  bio              String?    @db.Text
+  avatarUrl        String?    @db.VarChar(2048)
+  heroImageUrl     String?    @db.VarChar(2048)
+  role             UserRole   @default(LISTENER)
+  status           UserStatus @default(ACTIVE)
+  isFeaturedArtist Boolean    @default(false)
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  ownedPlaylists         Playlist[]        @relation("PlaylistOwner")
+  uploadedRecordings     Recording[]       @relation("RecordingUploader")
+  playlistItemsAdded     PlaylistItem[]    @relation("PlaylistItemAddedBy")
+  playlistSaves          PlaylistSave[]
+  recordingSaves         RecordingSave[]
+  playbackEvents         PlaybackEvent[]
+  editorialPosts         EditorialPost[]   @relation("EditorialPostAuthor")
+  homepageFeatures       HomepageFeature[] @relation("HomepageFeatureTargetUser")
+  createdHomepageFeature HomepageFeature[] @relation("HomepageFeatureCreator")
+  following              UserFollow[]      @relation("UserFollowing")
+  followers              UserFollow[]      @relation("UserFollowers")
+  sessions               Session[]
+
+  @@index([role, status])
+}
+
+model Playlist {
+  id                   String        @id @default(cuid()) @db.VarChar(191)
+  ownerId              String        @db.VarChar(191)
+  title                String        @db.VarChar(191)
+  slug                 String        @unique @db.VarChar(191)
+  description          String?       @db.Text
+  coverArtUrl          String?       @db.VarChar(2048)
+  type                 PlaylistType  @default(PLAYLIST)
+  visibility           Visibility    @default(PUBLIC)
+  status               PublishStatus @default(DRAFT)
+  featured             Boolean       @default(false)
+  isPinnedOnProfile    Boolean       @default(false)
+  itemCount            Int           @default(0) @db.UnsignedInt
+  totalDurationSeconds Int           @default(0) @db.UnsignedInt
+  publishedAt          DateTime?
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  owner               User              @relation("PlaylistOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  items               PlaylistItem[]
+  canonicalRecordings Recording[]       @relation("RecordingPrimaryPlaylist")
+  saves               PlaylistSave[]
+  tags                PlaylistTag[]
+  homepageFeatures    HomepageFeature[] @relation("HomepageFeaturePlaylist")
+  playbackEvents      PlaybackEvent[]
+
+  @@index([ownerId])
+  @@index([type, visibility, status])
+  @@index([featured, publishedAt])
+  @@fulltext([title, description])
+}
+
+model Recording {
+  id                  String        @id @default(cuid()) @db.VarChar(191)
+  uploaderId          String        @db.VarChar(191)
+  publishedPlaylistId String        @db.VarChar(191)
+  title               String        @db.VarChar(191)
+  description         String?       @db.Text
+  audioUrl            String        @db.VarChar(2048)
+  audioMimeType       String?       @db.VarChar(191)
+  audioBytes          BigInt?       @db.UnsignedBigInt
+  durationSeconds     Int?          @db.UnsignedInt
+  artworkUrl          String?       @db.VarChar(2048)
+  recordingType       RecordingType @default(SONG)
+  visibility          Visibility    @default(PUBLIC)
+  status              PublishStatus @default(DRAFT)
+  trackNumber         Int?          @db.UnsignedInt
+  episodeNumber       Int?          @db.UnsignedInt
+  explicit            Boolean       @default(false)
+  releaseDate         DateTime?
+  publishedAt         DateTime?
+  playCount           Int           @default(0) @db.UnsignedInt
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  uploader          User            @relation("RecordingUploader", fields: [uploaderId], references: [id], onDelete: Cascade)
+  publishedPlaylist Playlist        @relation("RecordingPrimaryPlaylist", fields: [publishedPlaylistId], references: [id], onDelete: Cascade)
+  playlistItems     PlaylistItem[]
+  saves             RecordingSave[]
+  playbackEvents    PlaybackEvent[]
+  tags              RecordingTag[]
+
+  @@index([uploaderId])
+  @@index([publishedPlaylistId])
+  @@index([recordingType, visibility, status])
+  @@index([publishedAt])
+  @@fulltext([title, description])
+}
+
+model PlaylistItem {
+  id          String   @id @default(cuid()) @db.VarChar(191)
+  playlistId  String   @db.VarChar(191)
+  recordingId String   @db.VarChar(191)
+  position    Int      @db.UnsignedInt
+  addedById   String?  @db.VarChar(191)
+  note        String?  @db.VarChar(255)
+  createdAt   DateTime @default(now())
+
+  playlist  Playlist  @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  recording Recording @relation(fields: [recordingId], references: [id], onDelete: Cascade)
+  addedBy   User?     @relation("PlaylistItemAddedBy", fields: [addedById], references: [id], onDelete: SetNull)
+
+  @@unique([playlistId, position])
+  @@unique([playlistId, recordingId])
+  @@index([recordingId])
+  @@index([addedById])
+}
+
+model PlaylistSave {
+  id         String   @id @default(cuid()) @db.VarChar(191)
+  userId     String   @db.VarChar(191)
+  playlistId String   @db.VarChar(191)
+  kind       SaveKind
+  createdAt  DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  playlist Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, playlistId, kind])
+  @@index([playlistId, kind])
+}
+
+model RecordingSave {
+  id          String   @id @default(cuid()) @db.VarChar(191)
+  userId      String   @db.VarChar(191)
+  recordingId String   @db.VarChar(191)
+  kind        SaveKind
+  createdAt   DateTime @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recording Recording @relation(fields: [recordingId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, recordingId, kind])
+  @@index([recordingId, kind])
+}
+
+model PlaybackEvent {
+  id            BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  userId        String?  @db.VarChar(191)
+  recordingId   String   @db.VarChar(191)
+  playlistId    String?  @db.VarChar(191)
+  sourceContext String?  @db.VarChar(100)
+  playedSeconds Int?     @db.UnsignedInt
+  completed     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  recording Recording @relation(fields: [recordingId], references: [id], onDelete: Cascade)
+  playlist  Playlist? @relation(fields: [playlistId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([recordingId, createdAt])
+  @@index([playlistId, createdAt])
+}
+
+model Tag {
+  id        String   @id @default(cuid()) @db.VarChar(191)
+  name      String   @unique @db.VarChar(64)
+  slug      String   @unique @db.VarChar(64)
+  kind      TagKind  @default(GENRE)
+  createdAt DateTime @default(now())
+
+  playlistTags  PlaylistTag[]
+  recordingTags RecordingTag[]
+
+  @@index([kind])
+}
+
+model PlaylistTag {
+  playlistId String   @db.VarChar(191)
+  tagId      String   @db.VarChar(191)
+  createdAt  DateTime @default(now())
+
+  playlist Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  tag      Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([playlistId, tagId])
+  @@index([tagId])
+}
+
+model RecordingTag {
+  recordingId String   @db.VarChar(191)
+  tagId       String   @db.VarChar(191)
+  createdAt   DateTime @default(now())
+
+  recording Recording @relation(fields: [recordingId], references: [id], onDelete: Cascade)
+  tag       Tag       @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([recordingId, tagId])
+  @@index([tagId])
+}
+
+model EditorialPost {
+  id            String        @id @default(cuid()) @db.VarChar(191)
+  authorId      String        @db.VarChar(191)
+  kind          EditorialKind
+  title         String        @db.VarChar(191)
+  slug          String        @unique @db.VarChar(191)
+  summary       String?       @db.VarChar(512)
+  body          String        @db.LongText
+  coverImageUrl String?       @db.VarChar(2048)
+  status        PublishStatus @default(DRAFT)
+  publishedAt   DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  author           User              @relation("EditorialPostAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  homepageFeatures HomepageFeature[] @relation("HomepageFeatureEditorialPost")
+
+  @@index([authorId])
+  @@index([kind, status, publishedAt])
+  @@fulltext([title, summary, body])
+}
+
+/// Each homepage feature should target exactly one of playlistId, userId, or editorialPostId.
+model HomepageFeature {
+  id               String          @id @default(cuid()) @db.VarChar(191)
+  section          HomepageSection
+  position         Int             @db.UnsignedInt
+  titleOverride    String?         @db.VarChar(191)
+  subtitleOverride String?         @db.VarChar(191)
+  description      String?         @db.Text
+  imageUrl         String?         @db.VarChar(2048)
+  isActive         Boolean         @default(true)
+  startsAt         DateTime?
+  endsAt           DateTime?
+  playlistId       String?         @db.VarChar(191)
+  userId           String?         @db.VarChar(191)
+  editorialPostId  String?         @db.VarChar(191)
+  createdById      String?         @db.VarChar(191)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  playlist      Playlist?      @relation("HomepageFeaturePlaylist", fields: [playlistId], references: [id], onDelete: SetNull)
+  user          User?          @relation("HomepageFeatureTargetUser", fields: [userId], references: [id], onDelete: SetNull)
+  editorialPost EditorialPost? @relation("HomepageFeatureEditorialPost", fields: [editorialPostId], references: [id], onDelete: SetNull)
+  createdBy     User?          @relation("HomepageFeatureCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@unique([section, position])
+  @@index([isActive, startsAt, endsAt])
+  @@index([playlistId])
+  @@index([userId])
+  @@index([editorialPostId])
+}
+
+model UserFollow {
+  id          String   @id @default(cuid()) @db.VarChar(191)
+  followerId  String   @db.VarChar(191)
+  followingId String   @db.VarChar(191)
+  createdAt   DateTime @default(now())
+
+  follower  User @relation("UserFollowing", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("UserFollowers", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@index([followingId])
+}
+
+model Session {
+  id         String    @id @default(cuid()) @db.VarChar(191)
+  userId     String    @db.VarChar(191)
+  tokenHash  String    @unique @db.VarChar(64)
+  expiresAt  DateTime
+  lastUsedAt DateTime?
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@index([expiresAt])
+}

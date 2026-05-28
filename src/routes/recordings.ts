@@ -1,0 +1,237 @@
+import { PublishStatus, RecordingType, Visibility } from "@prisma/client";
+import { Router } from "express";
+
+import { prisma } from "../lib/prisma.js";
+
+const DEFAULT_PAGE = 1;
+const DEFAULT_PAGE_SIZE = 20;
+
+export const recordingsRouter = Router();
+
+function mapRecordingSummary(recording: any) {
+  return {
+    id: recording.id,
+    uploaderId: recording.uploaderId,
+    publishedPlaylistId: recording.publishedPlaylistId,
+    title: recording.title,
+    description: recording.description,
+    audioUrl: recording.audioUrl,
+    audioMimeType: recording.audioMimeType,
+    audioBytes: recording.audioBytes ? Number(recording.audioBytes) : null,
+    durationSeconds: recording.durationSeconds,
+    artworkUrl: recording.artworkUrl,
+    recordingType: recording.recordingType,
+    visibility: recording.visibility,
+    status: recording.status,
+    trackNumber: recording.trackNumber,
+    episodeNumber: recording.episodeNumber,
+    explicit: recording.explicit,
+    releaseDate: recording.releaseDate?.toISOString() ?? null,
+    publishedAt: recording.publishedAt?.toISOString() ?? null,
+    playCount: recording.playCount,
+    createdAt: recording.createdAt.toISOString(),
+    updatedAt: recording.updatedAt.toISOString(),
+  };
+}
+
+function mapRecordingDetail(recording: any) {
+  return {
+    ...mapRecordingSummary(recording),
+    uploader: {
+      id: recording.uploader.id,
+      username: recording.uploader.username,
+      displayName: recording.uploader.displayName,
+      avatarUrl: recording.uploader.avatarUrl,
+      heroImageUrl: recording.uploader.heroImageUrl,
+      role: recording.uploader.role,
+    },
+    publishedPlaylist: {
+      id: recording.publishedPlaylist.id,
+      ownerId: recording.publishedPlaylist.ownerId,
+      title: recording.publishedPlaylist.title,
+      slug: recording.publishedPlaylist.slug,
+      type: recording.publishedPlaylist.type,
+      visibility: recording.publishedPlaylist.visibility,
+      status: recording.publishedPlaylist.status,
+    },
+  };
+}
+
+async function syncPlaylistStats(playlistId: string) {
+  const items = await prisma.playlistItem.findMany({
+    where: { playlistId },
+    include: { recording: { select: { durationSeconds: true } } },
+  });
+
+  const itemCount = items.length;
+  const totalDurationSeconds = items.reduce(
+    (sum, item) => sum + (item.recording.durationSeconds ?? 0),
+    0,
+  );
+
+  await prisma.playlist.update({
+    where: { id: playlistId },
+    data: { itemCount, totalDurationSeconds },
+  });
+}
+
+recordingsRouter.get("/", async (req, res, next) => {
+  try {
+    const page = Number(req.query.page ?? DEFAULT_PAGE);
+    const pageSize = Number(req.query.pageSize ?? DEFAULT_PAGE_SIZE);
+    const uploaderId = typeof req.query.uploaderId === "string" ? req.query.uploaderId : undefined;
+    const playlistId = typeof req.query.playlistId === "string" ? req.query.playlistId : undefined;
+    const recordingType = typeof req.query.recordingType === "string" ? req.query.recordingType : undefined;
+    const visibility = typeof req.query.visibility === "string" ? req.query.visibility : undefined;
+    const status = typeof req.query.status === "string" ? req.query.status : undefined;
+
+    const where = {
+      ...(uploaderId ? { uploaderId } : {}),
+      ...(playlistId ? { publishedPlaylistId: playlistId } : {}),
+      ...(recordingType ? { recordingType: recordingType as RecordingType } : {}),
+      ...(visibility ? { visibility: visibility as Visibility } : {}),
+      ...(status ? { status: status as PublishStatus } : {}),
+    };
+
+    const [items, total] = await Promise.all([
+      prisma.recording.findMany({
+        where,
+        orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      prisma.recording.count({ where }),
+    ]);
+
+    res.json({
+      data: items.map(mapRecordingSummary),
+      meta: { page, pageSize, total },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+recordingsRouter.get("/:recordingId", async (req, res, next) => {
+  try {
+    const recording = await prisma.recording.findUnique({
+      where: { id: req.params.recordingId },
+      include: {
+        uploader: true,
+        publishedPlaylist: true,
+      },
+    });
+
+    if (!recording) {
+      return res.status(404).json({
+        error: "recording_not_found",
+        message: `Recording ${req.params.recordingId} was not found.`,
+      });
+    }
+
+    return res.json(mapRecordingDetail(recording));
+  } catch (error) {
+    return next(error);
+  }
+});
+
+recordingsRouter.post("/", async (req, res, next) => {
+  try {
+    const body = req.body as {
+      uploaderId: string;
+      publishedPlaylistId: string;
+      title: string;
+      description?: string | null;
+      audioUrl: string;
+      audioMimeType?: string | null;
+      audioBytes?: number | null;
+      durationSeconds?: number | null;
+      artworkUrl?: string | null;
+      recordingType?: RecordingType;
+      visibility?: Visibility;
+      status?: PublishStatus;
+      trackNumber?: number | null;
+      episodeNumber?: number | null;
+      explicit?: boolean;
+      releaseDate?: string | null;
+      publishedAt?: string | null;
+    };
+
+    const [uploader, playlist, maxPosition] = await Promise.all([
+      prisma.user.findUnique({ where: { id: body.uploaderId }, select: { id: true } }),
+      prisma.playlist.findUnique({ where: { id: body.publishedPlaylistId }, select: { id: true } }),
+      prisma.playlistItem.aggregate({
+        where: { playlistId: body.publishedPlaylistId },
+        _max: { position: true },
+      }),
+    ]);
+
+    if (!uploader) {
+      return res.status(404).json({
+        error: "uploader_not_found",
+        message: `User ${body.uploaderId} does not exist.`,
+      });
+    }
+
+    if (!playlist) {
+      return res.status(404).json({
+        error: "playlist_not_found",
+        message: `Playlist ${body.publishedPlaylistId} does not exist.`,
+      });
+    }
+
+    const created = await prisma.$transaction(async (tx) => {
+      const recording = await tx.recording.create({
+        data: {
+          uploaderId: body.uploaderId,
+          publishedPlaylistId: body.publishedPlaylistId,
+          title: body.title,
+          description: body.description ?? null,
+          audioUrl: body.audioUrl,
+          audioMimeType: body.audioMimeType ?? null,
+          audioBytes: body.audioBytes != null ? BigInt(body.audioBytes) : null,
+          durationSeconds: body.durationSeconds ?? null,
+          artworkUrl: body.artworkUrl ?? null,
+          recordingType: body.recordingType ?? "SONG",
+          visibility: body.visibility ?? "PUBLIC",
+          status: body.status ?? "DRAFT",
+          trackNumber: body.trackNumber ?? null,
+          episodeNumber: body.episodeNumber ?? null,
+          explicit: body.explicit ?? false,
+          releaseDate: body.releaseDate ? new Date(body.releaseDate) : null,
+          publishedAt: body.publishedAt ? new Date(body.publishedAt) : null,
+        },
+      });
+
+      await tx.playlistItem.create({
+        data: {
+          playlistId: body.publishedPlaylistId,
+          recordingId: recording.id,
+          position: (maxPosition._max.position ?? 0) + 1,
+          addedById: body.uploaderId,
+        },
+      });
+
+      return tx.recording.findUniqueOrThrow({
+        where: { id: recording.id },
+        include: {
+          uploader: true,
+          publishedPlaylist: true,
+        },
+      });
+    });
+
+    await syncPlaylistStats(body.publishedPlaylistId);
+
+    return res.status(201).json(mapRecordingDetail(created));
+  } catch (error) {
+    if (error && typeof error === "object" && "code" in error && (error as { code?: string }).code === "P2002") {
+      return res.status(409).json({
+        error: "recording_conflict",
+        message: "A recording with that unique value already exists.",
+      });
+    }
+
+    return next(error);
+  }
+});

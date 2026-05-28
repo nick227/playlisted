@@ -1,0 +1,1671 @@
+openapi: 3.1.0
+info:
+  title: Playlisted API
+  version: 0.2.0
+  summary: OpenAPI-first REST API for the Playlisted audio platform.
+  description: |
+    Contract for the Playlisted backend. The server validates requests and responses
+    against this document, and the client SDK is generated from the same source.
+servers:
+  - url: http://localhost:4000
+    description: Local development
+security: []
+tags:
+  - name: System
+  - name: Auth
+  - name: Homepage
+  - name: Me
+  - name: Users
+  - name: Playlists
+  - name: Recordings
+paths:
+  /api/v1/health:
+    get:
+      tags: [System]
+      operationId: getHealth
+      summary: Health check
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /api/v1/auth/register:
+    post:
+      tags: [Auth]
+      operationId: register
+      summary: Register a user and create a session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Registration succeeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '409':
+          description: User already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/auth/login:
+    post:
+      tags: [Auth]
+      operationId: login
+      summary: Log in with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login succeeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/auth/me:
+    get:
+      tags: [Auth]
+      operationId: getMe
+      summary: Get the current authenticated user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/auth/logout:
+    post:
+      tags: [Auth]
+      operationId: logout
+      summary: Revoke the current session
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Logged out
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/me/playlists:
+    get:
+      tags: [Me]
+      operationId: listMyPlaylists
+      summary: List playlists owned by the current user
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Owned playlists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaylistListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/me/recordings:
+    get:
+      tags: [Me]
+      operationId: listMyRecordings
+      summary: List recordings uploaded by the current user
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Owned recordings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecordingListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/me/playback-events:
+    post:
+      tags: [Me]
+      operationId: createPlaybackEvent
+      summary: Log a playback event for the current user
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePlaybackEventRequest'
+      responses:
+        '201':
+          description: Event recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaybackEventCreated'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Recording or playlist not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/me/playback-history:
+    get:
+      tags: [Me]
+      operationId: listPlaybackHistory
+      summary: List recent playback history for the current user
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Playback history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaybackHistoryResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/homepage:
+    get:
+      tags: [Homepage]
+      operationId: getHomepage
+      summary: Get curated homepage sections
+      responses:
+        '200':
+          description: Homepage data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HomepageResponse'
+
+  /api/v1/users:
+    get:
+      tags: [Users]
+      operationId: listUsers
+      summary: List users
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+        - in: query
+          name: role
+          schema:
+            $ref: '#/components/schemas/UserRole'
+        - in: query
+          name: status
+          schema:
+            $ref: '#/components/schemas/UserStatus'
+        - in: query
+          name: featured
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: User collection
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserListResponse'
+    post:
+      tags: [Users]
+      operationId: createUser
+      summary: Create a user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '201':
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDetail'
+        '409':
+          description: User already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/users/{userId}:
+    get:
+      tags: [Users]
+      operationId: getUserById
+      summary: Get user detail
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDetail'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/users/check-username:
+    get:
+      tags: [Users]
+      operationId: checkUsername
+      summary: Check whether a username is available
+      parameters:
+        - in: query
+          name: username
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Availability result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsernameAvailabilityResponse'
+        '400':
+          description: Username required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/users/by-username/{username}:
+    get:
+      tags: [Users]
+      operationId: getUserByUsername
+      summary: Get user detail by username
+      parameters:
+        - in: path
+          name: username
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDetail'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/users/me:
+    patch:
+      tags: [Users]
+      operationId: updateMyProfile
+      summary: Update the current user's profile
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProfileRequest'
+      responses:
+        '200':
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDetail'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Username taken
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/playlists:
+    get:
+      tags: [Playlists]
+      operationId: listPlaylists
+      summary: List playlists
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+        - in: query
+          name: ownerId
+          schema:
+            type: string
+        - in: query
+          name: visibility
+          schema:
+            $ref: '#/components/schemas/Visibility'
+        - in: query
+          name: status
+          schema:
+            $ref: '#/components/schemas/PublishStatus'
+      responses:
+        '200':
+          description: Playlist collection
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaylistListResponse'
+    post:
+      tags: [Playlists]
+      operationId: createPlaylist
+      summary: Create a playlist
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePlaylistRequest'
+      responses:
+        '201':
+          description: Playlist created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaylistDetail'
+        '404':
+          description: Owner not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Slug already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/playlists/{playlistId}:
+    get:
+      tags: [Playlists]
+      operationId: getPlaylistById
+      summary: Get playlist detail
+      parameters:
+        - in: path
+          name: playlistId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Playlist detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaylistDetail'
+        '404':
+          description: Playlist not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      tags: [Playlists]
+      operationId: updatePlaylist
+      summary: Update a playlist owned by the current user
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: playlistId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePlaylistRequest'
+      responses:
+        '200':
+          description: Updated playlist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaylistDetail'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Playlist not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/playlists/{playlistId}/items:
+    post:
+      tags: [Playlists]
+      operationId: addPlaylistItem
+      summary: Add a recording to a playlist
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: playlistId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddPlaylistItemRequest'
+      responses:
+        '200':
+          description: Updated playlist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaylistDetail'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Playlist or recording not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Item already in playlist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/playlists/{playlistId}/items/{recordingId}:
+    delete:
+      tags: [Playlists]
+      operationId: removePlaylistItem
+      summary: Remove a recording from a playlist
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: playlistId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: recordingId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Updated playlist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaylistDetail'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Playlist not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/playlists/{playlistId}/items/reorder:
+    put:
+      tags: [Playlists]
+      operationId: reorderPlaylistItems
+      summary: Reorder tracks in a playlist
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: playlistId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReorderPlaylistItemsRequest'
+      responses:
+        '200':
+          description: Updated playlist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaylistDetail'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Playlist not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/recordings:
+    get:
+      tags: [Recordings]
+      operationId: listRecordings
+      summary: List recordings
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+        - in: query
+          name: uploaderId
+          schema:
+            type: string
+        - in: query
+          name: playlistId
+          schema:
+            type: string
+        - in: query
+          name: recordingType
+          schema:
+            $ref: '#/components/schemas/RecordingType'
+        - in: query
+          name: visibility
+          schema:
+            $ref: '#/components/schemas/Visibility'
+        - in: query
+          name: status
+          schema:
+            $ref: '#/components/schemas/PublishStatus'
+      responses:
+        '200':
+          description: Recording collection
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecordingListResponse'
+    post:
+      tags: [Recordings]
+      operationId: createRecording
+      summary: Create a recording and attach it to its canonical playlist
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRecordingRequest'
+      responses:
+        '201':
+          description: Recording created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecordingDetail'
+        '404':
+          description: Uploader or playlist not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Recording conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/recordings/{recordingId}:
+    get:
+      tags: [Recordings]
+      operationId: getRecordingById
+      summary: Get recording detail
+      parameters:
+        - in: path
+          name: recordingId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Recording detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecordingDetail'
+        '404':
+          description: Recording not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: opaque
+
+  parameters:
+    Page:
+      in: query
+      name: page
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PageSize:
+      in: query
+      name: pageSize
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+  schemas:
+    UserRole:
+      type: string
+      enum: [LISTENER, CREATOR, EDITOR, ADMIN]
+    UserStatus:
+      type: string
+      enum: [ACTIVE, SUSPENDED, INVITED]
+    PlaylistType:
+      type: string
+      enum: [PLAYLIST, ALBUM, MIX, PODCAST_CHANNEL, RELEASE]
+    RecordingType:
+      type: string
+      enum: [SONG, PODCAST_EPISODE, MIX_SEGMENT, OTHER]
+    Visibility:
+      type: string
+      enum: [PUBLIC, UNLISTED, PRIVATE]
+    PublishStatus:
+      type: string
+      enum: [DRAFT, PUBLISHED, ARCHIVED]
+    TagKind:
+      type: string
+      enum: [GENRE, MOOD, CATEGORY, SCENE]
+
+    HealthResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, service, version]
+      properties:
+        ok:
+          type: boolean
+          const: true
+        service:
+          type: string
+        version:
+          type: string
+
+    LoginRequest:
+      type: object
+      additionalProperties: false
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+          maxLength: 200
+
+    RegisterRequest:
+      type: object
+      additionalProperties: false
+      required: [email, displayName, password]
+      properties:
+        email:
+          type: string
+          format: email
+        username:
+          type: string
+          minLength: 1
+          maxLength: 50
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 120
+        password:
+          type: string
+          minLength: 8
+          maxLength: 200
+        bio:
+          type: [string, 'null']
+        avatarUrl:
+          type: [string, 'null']
+          format: uri
+        heroImageUrl:
+          type: [string, 'null']
+          format: uri
+        role:
+          $ref: '#/components/schemas/UserRole'
+
+    AuthUser:
+      type: object
+      additionalProperties: false
+      required:
+        [id, email, username, displayName, role, status, isFeaturedArtist, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+          format: email
+        username:
+          type: string
+        displayName:
+          type: string
+        bio:
+          type: [string, 'null']
+        avatarUrl:
+          type: [string, 'null']
+          format: uri
+        heroImageUrl:
+          type: [string, 'null']
+          format: uri
+        role:
+          $ref: '#/components/schemas/UserRole'
+        status:
+          $ref: '#/components/schemas/UserStatus'
+        isFeaturedArtist:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    AuthResponse:
+      type: object
+      additionalProperties: false
+      required: [accessToken, tokenType, expiresAt, user]
+      properties:
+        accessToken:
+          type: string
+        tokenType:
+          type: string
+          enum: [Bearer]
+        expiresAt:
+          type: string
+          format: date-time
+        user:
+          $ref: '#/components/schemas/AuthUser'
+
+    MeResponse:
+      type: object
+      additionalProperties: false
+      required: [user]
+      properties:
+        user:
+          $ref: '#/components/schemas/AuthUser'
+
+    ErrorResponse:
+      type: object
+      additionalProperties: true
+      required: [error, message]
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        details: {}
+
+    PaginationMeta:
+      type: object
+      additionalProperties: false
+      required: [page, pageSize, total]
+      properties:
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        total:
+          type: integer
+
+    HomepageTargetType:
+      type: string
+      enum: [PLAYLIST, USER, EDITORIAL_POST]
+
+    HomepageItem:
+      type: object
+      additionalProperties: false
+      required: [id, targetType, title, href]
+      properties:
+        id:
+          type: string
+        targetType:
+          $ref: '#/components/schemas/HomepageTargetType'
+        title:
+          type: string
+        subtitle:
+          type: [string, 'null']
+        description:
+          type: [string, 'null']
+        imageUrl:
+          type: [string, 'null']
+          format: uri
+        href:
+          type: string
+
+    HomepageSection:
+      type: object
+      additionalProperties: false
+      required: [section, title, items]
+      properties:
+        section:
+          type: string
+          enum: [FEATURED_PLAYLIST, CUSTOM_MIX, NEW_RELEASE, NEW_ARTIST, TRENDING, EDITOR_PICK, SITE_NEWS]
+        title:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/HomepageItem'
+
+    HomepageResponse:
+      type: object
+      additionalProperties: false
+      required: [sections]
+      properties:
+        sections:
+          type: array
+          items:
+            $ref: '#/components/schemas/HomepageSection'
+
+    UserSummary:
+      type: object
+      additionalProperties: false
+      required:
+        [id, email, username, displayName, role, status, isFeaturedArtist, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+          format: email
+        username:
+          type: string
+        displayName:
+          type: string
+        bio:
+          type: [string, 'null']
+        avatarUrl:
+          type: [string, 'null']
+          format: uri
+        heroImageUrl:
+          type: [string, 'null']
+          format: uri
+        role:
+          $ref: '#/components/schemas/UserRole'
+        status:
+          $ref: '#/components/schemas/UserStatus'
+        isFeaturedArtist:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    UserPlaylistSummary:
+      type: object
+      additionalProperties: false
+      required:
+        [id, ownerId, title, slug, type, visibility, status, featured, isPinnedOnProfile, itemCount, totalDurationSeconds, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+        ownerId:
+          type: string
+        title:
+          type: string
+        slug:
+          type: string
+        description:
+          type: [string, 'null']
+        coverArtUrl:
+          type: [string, 'null']
+          format: uri
+        type:
+          $ref: '#/components/schemas/PlaylistType'
+        visibility:
+          $ref: '#/components/schemas/Visibility'
+        status:
+          $ref: '#/components/schemas/PublishStatus'
+        featured:
+          type: boolean
+        isPinnedOnProfile:
+          type: boolean
+        itemCount:
+          type: integer
+        totalDurationSeconds:
+          type: integer
+        publishedAt:
+          type: [string, 'null']
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    UserDetail:
+      allOf:
+        - $ref: '#/components/schemas/UserSummary'
+        - type: object
+          additionalProperties: false
+          required: [publicPlaylists]
+          properties:
+            publicPlaylists:
+              type: array
+              items:
+                $ref: '#/components/schemas/UserPlaylistSummary'
+
+    UserListResponse:
+      type: object
+      additionalProperties: false
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserSummary'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    CreateUserRequest:
+      type: object
+      additionalProperties: false
+      required: [email, displayName]
+      properties:
+        email:
+          type: string
+          format: email
+        username:
+          type: string
+          minLength: 1
+          maxLength: 50
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 120
+        passwordHash:
+          type: [string, 'null']
+        bio:
+          type: [string, 'null']
+        avatarUrl:
+          type: [string, 'null']
+          format: uri
+        heroImageUrl:
+          type: [string, 'null']
+          format: uri
+        role:
+          $ref: '#/components/schemas/UserRole'
+        status:
+          $ref: '#/components/schemas/UserStatus'
+        isFeaturedArtist:
+          type: boolean
+          default: false
+
+    Tag:
+      type: object
+      additionalProperties: false
+      required: [id, name, slug, kind]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+        kind:
+          $ref: '#/components/schemas/TagKind'
+
+    OwnerSummary:
+      type: object
+      additionalProperties: false
+      required: [id, username, displayName, role]
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        displayName:
+          type: string
+        avatarUrl:
+          type: [string, 'null']
+          format: uri
+        heroImageUrl:
+          type: [string, 'null']
+          format: uri
+        role:
+          $ref: '#/components/schemas/UserRole'
+
+    RecordingSummary:
+      type: object
+      additionalProperties: false
+      required:
+        [id, uploaderId, publishedPlaylistId, title, audioUrl, recordingType, visibility, status, explicit, playCount, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+        uploaderId:
+          type: string
+        publishedPlaylistId:
+          type: string
+        title:
+          type: string
+        description:
+          type: [string, 'null']
+        audioUrl:
+          type: string
+          format: uri
+        audioMimeType:
+          type: [string, 'null']
+        audioBytes:
+          type: [integer, 'null']
+        durationSeconds:
+          type: [integer, 'null']
+        artworkUrl:
+          type: [string, 'null']
+          format: uri
+        recordingType:
+          $ref: '#/components/schemas/RecordingType'
+        visibility:
+          $ref: '#/components/schemas/Visibility'
+        status:
+          $ref: '#/components/schemas/PublishStatus'
+        trackNumber:
+          type: [integer, 'null']
+        episodeNumber:
+          type: [integer, 'null']
+        explicit:
+          type: boolean
+        releaseDate:
+          type: [string, 'null']
+          format: date-time
+        publishedAt:
+          type: [string, 'null']
+          format: date-time
+        playCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    PublishedPlaylistReference:
+      type: object
+      additionalProperties: false
+      required: [id, ownerId, title, slug, type, visibility, status]
+      properties:
+        id:
+          type: string
+        ownerId:
+          type: string
+        title:
+          type: string
+        slug:
+          type: string
+        type:
+          $ref: '#/components/schemas/PlaylistType'
+        visibility:
+          $ref: '#/components/schemas/Visibility'
+        status:
+          $ref: '#/components/schemas/PublishStatus'
+
+    RecordingDetail:
+      allOf:
+        - $ref: '#/components/schemas/RecordingSummary'
+        - type: object
+          additionalProperties: false
+          required: [uploader, publishedPlaylist]
+          properties:
+            uploader:
+              $ref: '#/components/schemas/OwnerSummary'
+            publishedPlaylist:
+              $ref: '#/components/schemas/PublishedPlaylistReference'
+
+    RecordingListResponse:
+      type: object
+      additionalProperties: false
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecordingSummary'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    CreateRecordingRequest:
+      type: object
+      additionalProperties: false
+      required: [uploaderId, publishedPlaylistId, title, audioUrl]
+      properties:
+        uploaderId:
+          type: string
+        publishedPlaylistId:
+          type: string
+        title:
+          type: string
+          minLength: 1
+          maxLength: 191
+        description:
+          type: [string, 'null']
+        audioUrl:
+          type: string
+          format: uri
+        audioMimeType:
+          type: [string, 'null']
+        audioBytes:
+          type: [integer, 'null']
+          minimum: 0
+        durationSeconds:
+          type: [integer, 'null']
+          minimum: 0
+        artworkUrl:
+          type: [string, 'null']
+          format: uri
+        recordingType:
+          $ref: '#/components/schemas/RecordingType'
+        visibility:
+          $ref: '#/components/schemas/Visibility'
+        status:
+          $ref: '#/components/schemas/PublishStatus'
+        trackNumber:
+          type: [integer, 'null']
+          minimum: 0
+        episodeNumber:
+          type: [integer, 'null']
+          minimum: 0
+        explicit:
+          type: boolean
+          default: false
+        releaseDate:
+          type: [string, 'null']
+          format: date-time
+        publishedAt:
+          type: [string, 'null']
+          format: date-time
+
+    PlaylistSummary:
+      type: object
+      additionalProperties: false
+      required:
+        [id, ownerId, title, slug, type, visibility, status, featured, isPinnedOnProfile, itemCount, totalDurationSeconds, createdAt, updatedAt, owner]
+      properties:
+        id:
+          type: string
+        ownerId:
+          type: string
+        title:
+          type: string
+        slug:
+          type: string
+        description:
+          type: [string, 'null']
+        coverArtUrl:
+          type: [string, 'null']
+          format: uri
+        type:
+          $ref: '#/components/schemas/PlaylistType'
+        visibility:
+          $ref: '#/components/schemas/Visibility'
+        status:
+          $ref: '#/components/schemas/PublishStatus'
+        featured:
+          type: boolean
+        isPinnedOnProfile:
+          type: boolean
+        itemCount:
+          type: integer
+        totalDurationSeconds:
+          type: integer
+        publishedAt:
+          type: [string, 'null']
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        owner:
+          $ref: '#/components/schemas/OwnerSummary'
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+
+    PlaylistDetail:
+      type: object
+      additionalProperties: false
+      required:
+        [id, ownerId, title, slug, type, visibility, status, featured, isPinnedOnProfile, itemCount, totalDurationSeconds, createdAt, updatedAt, owner, recordings]
+      properties:
+        id:
+          type: string
+        ownerId:
+          type: string
+        title:
+          type: string
+        slug:
+          type: string
+        description:
+          type: [string, 'null']
+        coverArtUrl:
+          type: [string, 'null']
+          format: uri
+        type:
+          $ref: '#/components/schemas/PlaylistType'
+        visibility:
+          $ref: '#/components/schemas/Visibility'
+        status:
+          $ref: '#/components/schemas/PublishStatus'
+        featured:
+          type: boolean
+        isPinnedOnProfile:
+          type: boolean
+        itemCount:
+          type: integer
+        totalDurationSeconds:
+          type: integer
+        publishedAt:
+          type: [string, 'null']
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        owner:
+          $ref: '#/components/schemas/OwnerSummary'
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+        recordings:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecordingInPlaylist'
+
+    PlaylistListResponse:
+      type: object
+      additionalProperties: false
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlaylistSummary'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    CreatePlaylistRequest:
+      type: object
+      additionalProperties: false
+      required: [ownerId, title]
+      properties:
+        ownerId:
+          type: string
+        title:
+          type: string
+          minLength: 1
+          maxLength: 191
+        description:
+          type: [string, 'null']
+        coverArtUrl:
+          type: [string, 'null']
+          format: uri
+        type:
+          $ref: '#/components/schemas/PlaylistType'
+        visibility:
+          $ref: '#/components/schemas/Visibility'
+        status:
+          $ref: '#/components/schemas/PublishStatus'
+        publishedAt:
+          type: [string, 'null']
+          format: date-time
+
+    UpdateProfileRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 120
+        username:
+          type: string
+          minLength: 1
+          maxLength: 50
+        bio:
+          type: [string, 'null']
+        avatarUrl:
+          type: [string, 'null']
+          format: uri
+        heroImageUrl:
+          type: [string, 'null']
+          format: uri
+
+    UsernameAvailabilityResponse:
+      type: object
+      additionalProperties: false
+      required: [username, available]
+      properties:
+        username:
+          type: string
+        available:
+          type: boolean
+
+    UpdatePlaylistRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 191
+        description:
+          type: [string, 'null']
+        coverArtUrl:
+          type: [string, 'null']
+          format: uri
+        type:
+          $ref: '#/components/schemas/PlaylistType'
+        visibility:
+          $ref: '#/components/schemas/Visibility'
+        status:
+          $ref: '#/components/schemas/PublishStatus'
+        isPinnedOnProfile:
+          type: boolean
+        publishedAt:
+          type: [string, 'null']
+          format: date-time
+
+    AddPlaylistItemRequest:
+      type: object
+      additionalProperties: false
+      required: [recordingId]
+      properties:
+        recordingId:
+          type: string
+
+    ReorderPlaylistItemsRequest:
+      type: object
+      additionalProperties: false
+      required: [recordingIds]
+      properties:
+        recordingIds:
+          type: array
+          items:
+            type: string
+
+    RecordingInPlaylist:
+      type: object
+      additionalProperties: false
+      required:
+        [id, uploaderId, publishedPlaylistId, title, audioUrl, recordingType, visibility, status, explicit, playCount, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+        uploaderId:
+          type: string
+        publishedPlaylistId:
+          type: string
+        title:
+          type: string
+        description:
+          type: [string, 'null']
+        audioUrl:
+          type: string
+          format: uri
+        audioMimeType:
+          type: [string, 'null']
+        audioBytes:
+          type: [integer, 'null']
+        durationSeconds:
+          type: [integer, 'null']
+        artworkUrl:
+          type: [string, 'null']
+          format: uri
+        recordingType:
+          $ref: '#/components/schemas/RecordingType'
+        visibility:
+          $ref: '#/components/schemas/Visibility'
+        status:
+          $ref: '#/components/schemas/PublishStatus'
+        trackNumber:
+          type: [integer, 'null']
+        episodeNumber:
+          type: [integer, 'null']
+        explicit:
+          type: boolean
+        releaseDate:
+          type: [string, 'null']
+          format: date-time
+        publishedAt:
+          type: [string, 'null']
+          format: date-time
+        playCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        uploader:
+          $ref: '#/components/schemas/OwnerSummary'
+
+    CreatePlaybackEventRequest:
+      type: object
+      additionalProperties: false
+      required: [recordingId]
+      properties:
+        recordingId:
+          type: string
+        playlistId:
+          type: [string, 'null']
+        sourceContext:
+          type: [string, 'null']
+        playedSeconds:
+          type: [integer, 'null']
+          minimum: 0
+        completed:
+          type: boolean
+          default: false
+
+    PlaybackEventCreated:
+      type: object
+      additionalProperties: false
+      required: [id, recordingId, completed, createdAt]
+      properties:
+        id:
+          type: string
+        recordingId:
+          type: string
+        playlistId:
+          type: [string, 'null']
+        sourceContext:
+          type: [string, 'null']
+        playedSeconds:
+          type: [integer, 'null']
+        completed:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    PlaybackHistoryPlaylistRef:
+      type: object
+      additionalProperties: false
+      required: [id, title]
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+
+    PlaybackHistoryItem:
+      type: object
+      additionalProperties: false
+      required: [id, recordingId, completed, createdAt, recording]
+      properties:
+        id:
+          type: string
+        recordingId:
+          type: string
+        playlistId:
+          type: [string, 'null']
+        sourceContext:
+          type: [string, 'null']
+        playedSeconds:
+          type: [integer, 'null']
+        completed:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        recording:
+          $ref: '#/components/schemas/RecordingSummary'
+        playlist:
+          oneOf:
+            - $ref: '#/components/schemas/PlaybackHistoryPlaylistRef'
+            - type: 'null'
+
+    PlaybackHistoryResponse:
+      type: object
+      additionalProperties: false
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlaybackHistoryItem'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
