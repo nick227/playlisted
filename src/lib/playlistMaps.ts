@@ -31,7 +31,7 @@ export function mapPlaylistSummary(playlist: {
     title: playlist.title,
     slug: playlist.slug,
     description: playlist.description,
-    coverArtUrl: playlist.coverArtUrl,
+    coverArtUrl: normalizeUploadUrl(playlist.coverArtUrl),
     type: playlist.type,
     visibility: playlist.visibility,
     status: playlist.status,
@@ -46,8 +46,8 @@ export function mapPlaylistSummary(playlist: {
       id: playlist.owner.id,
       username: playlist.owner.username,
       displayName: playlist.owner.displayName,
-      avatarUrl: playlist.owner.avatarUrl,
-      heroImageUrl: playlist.owner.heroImageUrl,
+      avatarUrl: normalizeUploadUrl(playlist.owner.avatarUrl),
+      heroImageUrl: normalizeUploadUrl(playlist.owner.heroImageUrl),
       role: playlist.owner.role,
     },
     tags: playlist.tags.map(({ tag }) => ({
@@ -57,6 +57,22 @@ export function mapPlaylistSummary(playlist: {
       kind: tag.kind,
     })),
   };
+}
+
+function normalizeUploadUrl(url: string | null): string | null {
+  if (!url) return url;
+  if (url.startsWith("/uploads/")) return url;
+
+  try {
+    const parsed = new URL(url);
+    if (parsed.pathname.startsWith("/uploads/")) {
+      return parsed.pathname;
+    }
+  } catch {
+    // ignore parse errors (non-absolute URLs)
+  }
+
+  return url;
 }
 
 export function mapRecordingInPlaylist(recording: {
@@ -95,10 +111,10 @@ export function mapRecordingInPlaylist(recording: {
     publishedPlaylistId: recording.publishedPlaylistId,
     title: recording.title,
     description: recording.description,
-    audioUrl: recording.audioUrl,
+    audioUrl: normalizeUploadUrl(recording.audioUrl) ?? recording.audioUrl,
     audioMimeType: recording.audioMimeType,
     audioBytes: recording.audioBytes ? Number(recording.audioBytes) : null,
-    artworkUrl: recording.artworkUrl,
+    artworkUrl: normalizeUploadUrl(recording.artworkUrl),
     durationSeconds: recording.durationSeconds,
     trackNumber: recording.trackNumber,
     episodeNumber: recording.episodeNumber,
