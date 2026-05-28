@@ -17,6 +17,7 @@ tags:
   - name: Me
   - name: Analytics
   - name: Charts
+  - name: Library
   - name: Users
   - name: Playlists
   - name: Recordings
@@ -163,6 +164,142 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RecordingListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/me/favorites/recordings:
+    get:
+      tags: [Me]
+      operationId: listFavoriteRecordings
+      summary: List the current user's favorited recordings
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Favorite recordings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FavoriteRecordingsResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/me/favorites/recordings/{recordingId}:
+    post:
+      tags: [Me]
+      operationId: addFavoriteRecording
+      summary: Add a recording to favorites
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: recordingId
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FavoriteSavedResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Recording not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags: [Me]
+      operationId: removeFavoriteRecording
+      summary: Remove a recording from favorites
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: recordingId
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Removed
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/me/most-played:
+    get:
+      tags: [Me]
+      operationId: getMostPlayed
+      summary: Get the current user's most-played recordings
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+      responses:
+        '200':
+          description: Most-played recordings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MostPlayedResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/me/recently-played:
+    get:
+      tags: [Me]
+      operationId: getRecentlyPlayed
+      summary: Get the current user's recently played recordings (distinct)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+      responses:
+        '200':
+          description: Recently played recordings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecentlyPlayedResponse'
         '401':
           description: Unauthorized
           content:
@@ -381,6 +518,46 @@ paths:
               schema:
                 $ref: '#/components/schemas/TopArtistsResponse'
 
+  /api/v1/library/genres:
+    get:
+      tags: [Library]
+      operationId: getLibraryGenres
+      summary: List all genre tags with song counts
+      responses:
+        '200':
+          description: Genre list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LibraryGenresResponse'
+
+  /api/v1/library/songs:
+    get:
+      tags: [Library]
+      operationId: getLibrarySongs
+      summary: List all public published songs, optionally filtered by genre
+      parameters:
+        - in: query
+          name: genre
+          schema:
+            type: string
+          description: Genre tag slug to filter by
+        - $ref: '#/components/parameters/Page'
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 200
+      responses:
+        '200':
+          description: Song list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LibrarySongsResponse'
+
   /api/v1/users:
     get:
       tags: [Users]
@@ -531,6 +708,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PlaylistDetail'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: User or playlist not found
           content:
@@ -646,6 +835,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PlaylistDetail'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Playlist not found
           content:
@@ -846,6 +1047,51 @@ paths:
       responses:
         '200':
           description: Updated playlist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaylistDetail'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Playlist not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/playlists/{playlistId}/tags:
+    put:
+      tags: [Playlists]
+      operationId: setPlaylistTags
+      summary: Replace all tag associations on a playlist
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: playlistId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetPlaylistTagsRequest'
+      responses:
+        '200':
+          description: Updated playlist with new tags
           content:
             application/json:
               schema:
@@ -1236,9 +1482,11 @@ components:
       type: object
       additionalProperties: false
       required:
-        [id, ownerId, title, slug, type, visibility, status, featured, isPinnedOnProfile, itemCount, totalDurationSeconds, createdAt, updatedAt]
+        [id, href, ownerId, title, slug, type, visibility, status, featured, isPinnedOnProfile, itemCount, totalDurationSeconds, createdAt, updatedAt]
       properties:
         id:
+          type: string
+        href:
           type: string
         ownerId:
           type: string
@@ -1521,9 +1769,11 @@ components:
       type: object
       additionalProperties: false
       required:
-        [id, ownerId, title, slug, type, visibility, status, featured, isPinnedOnProfile, itemCount, totalDurationSeconds, createdAt, updatedAt, owner]
+        [id, href, ownerId, title, slug, type, visibility, status, featured, isPinnedOnProfile, itemCount, totalDurationSeconds, createdAt, updatedAt, owner]
       properties:
         id:
+          type: string
+        href:
           type: string
         ownerId:
           type: string
@@ -1570,9 +1820,11 @@ components:
       type: object
       additionalProperties: false
       required:
-        [id, ownerId, title, slug, type, visibility, status, featured, isPinnedOnProfile, itemCount, totalDurationSeconds, createdAt, updatedAt, owner, recordings]
+        [id, href, ownerId, title, slug, type, visibility, status, featured, isPinnedOnProfile, itemCount, totalDurationSeconds, createdAt, updatedAt, owner, recordings]
       properties:
         id:
+          type: string
+        href:
           type: string
         ownerId:
           type: string
@@ -1787,6 +2039,10 @@ components:
           format: date-time
         uploader:
           $ref: '#/components/schemas/OwnerSummary'
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
 
     CreatePlaybackEventRequest:
       type: object
@@ -1830,9 +2086,11 @@ components:
     PlaybackHistoryPlaylistRef:
       type: object
       additionalProperties: false
-      required: [id, title]
+      required: [id, href, title]
       properties:
         id:
+          type: string
+        href:
           type: string
         title:
           type: string
@@ -1913,21 +2171,43 @@ components:
     TopSongItem:
       type: object
       additionalProperties: false
-      required: [rank, recordingId, title, playCount, uploader, playlist]
+      required:
+        [rank, recordingId, uploaderId, publishedPlaylistId, title, audioUrl, recordingType, visibility, status, explicit, playCount, createdAt, updatedAt, uploader, playlist]
       properties:
         rank:
           type: integer
         recordingId:
           type: string
+        uploaderId:
+          type: string
+        publishedPlaylistId:
+          type: string
         title:
           type: string
+        audioUrl:
+          type: string
+          format: uri-reference
         artworkUrl:
           type: [string, 'null']
           format: uri-reference
         durationSeconds:
           type: [integer, 'null']
+        recordingType:
+          $ref: '#/components/schemas/RecordingType'
+        visibility:
+          $ref: '#/components/schemas/Visibility'
+        status:
+          $ref: '#/components/schemas/PublishStatus'
+        explicit:
+          type: boolean
         playCount:
           type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
         uploader:
           $ref: '#/components/schemas/ChartArtistRef'
         playlist:
@@ -2083,3 +2363,256 @@ components:
             $ref: '#/components/schemas/AnalyticsRecordingItem'
         meta:
           $ref: '#/components/schemas/PaginationMeta'
+
+    SetPlaylistTagsRequest:
+      type: object
+      additionalProperties: false
+      required: [tagIds]
+      properties:
+        tagIds:
+          type: array
+          items:
+            type: string
+
+    LibraryGenre:
+      type: object
+      additionalProperties: false
+      required: [id, name, slug, songCount]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+        songCount:
+          type: integer
+
+    LibraryGenresResponse:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/LibraryGenre'
+
+    LibraryPlaylistRef:
+      type: object
+      additionalProperties: false
+      required: [id, slug, title]
+      properties:
+        id:
+          type: string
+        slug:
+          type: string
+        title:
+          type: string
+
+    LibrarySong:
+      type: object
+      additionalProperties: false
+      required: [id, uploaderId, publishedPlaylistId, title, audioUrl, recordingType, visibility, status, explicit, playCount, createdAt, updatedAt, uploader, playlist, genres]
+      properties:
+        id:
+          type: string
+        uploaderId:
+          type: string
+        publishedPlaylistId:
+          type: string
+        title:
+          type: string
+        description:
+          type: [string, 'null']
+        audioUrl:
+          type: string
+          format: uri-reference
+        audioMimeType:
+          type: [string, 'null']
+        audioBytes:
+          type: [integer, 'null']
+        durationSeconds:
+          type: [integer, 'null']
+        artworkUrl:
+          type: [string, 'null']
+          format: uri-reference
+        recordingType:
+          $ref: '#/components/schemas/RecordingType'
+        visibility:
+          $ref: '#/components/schemas/Visibility'
+        status:
+          $ref: '#/components/schemas/PublishStatus'
+        trackNumber:
+          type: [integer, 'null']
+        episodeNumber:
+          type: [integer, 'null']
+        explicit:
+          type: boolean
+        releaseDate:
+          type: [string, 'null']
+          format: date-time
+        publishedAt:
+          type: [string, 'null']
+          format: date-time
+        playCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        uploader:
+          $ref: '#/components/schemas/ChartArtistRef'
+        playlist:
+          $ref: '#/components/schemas/LibraryPlaylistRef'
+        genres:
+          type: array
+          items:
+            $ref: '#/components/schemas/LibraryGenre'
+
+    LibrarySongsResponse:
+      type: object
+      additionalProperties: false
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/LibrarySong'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    PersonalTrackItem:
+      type: object
+      additionalProperties: false
+      required: [id, uploaderId, publishedPlaylistId, title, audioUrl, recordingType, visibility, status, explicit, playCount, createdAt, updatedAt, uploader]
+      properties:
+        id:
+          type: string
+        uploaderId:
+          type: string
+        publishedPlaylistId:
+          type: string
+        title:
+          type: string
+        description:
+          type: [string, 'null']
+        audioUrl:
+          type: string
+          format: uri-reference
+        audioMimeType:
+          type: [string, 'null']
+        audioBytes:
+          type: [integer, 'null']
+        durationSeconds:
+          type: [integer, 'null']
+        artworkUrl:
+          type: [string, 'null']
+          format: uri-reference
+        recordingType:
+          $ref: '#/components/schemas/RecordingType'
+        visibility:
+          $ref: '#/components/schemas/Visibility'
+        status:
+          $ref: '#/components/schemas/PublishStatus'
+        trackNumber:
+          type: [integer, 'null']
+        episodeNumber:
+          type: [integer, 'null']
+        explicit:
+          type: boolean
+        releaseDate:
+          type: [string, 'null']
+          format: date-time
+        publishedAt:
+          type: [string, 'null']
+          format: date-time
+        playCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        uploader:
+          $ref: '#/components/schemas/ChartArtistRef'
+
+    FavoriteRecordingItem:
+      allOf:
+        - $ref: '#/components/schemas/PersonalTrackItem'
+        - type: object
+          additionalProperties: false
+          required: [savedAt]
+          properties:
+            savedAt:
+              type: string
+              format: date-time
+
+    FavoriteRecordingsResponse:
+      type: object
+      additionalProperties: false
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/FavoriteRecordingItem'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    FavoriteSavedResponse:
+      type: object
+      additionalProperties: false
+      required: [id, recordingId, savedAt]
+      properties:
+        id:
+          type: string
+        recordingId:
+          type: string
+        savedAt:
+          type: string
+          format: date-time
+
+    MostPlayedItem:
+      allOf:
+        - $ref: '#/components/schemas/PersonalTrackItem'
+        - type: object
+          additionalProperties: false
+          required: [userPlayCount]
+          properties:
+            userPlayCount:
+              type: integer
+
+    MostPlayedResponse:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/MostPlayedItem'
+
+    RecentlyPlayedItem:
+      allOf:
+        - $ref: '#/components/schemas/PersonalTrackItem'
+        - type: object
+          additionalProperties: false
+          required: [lastPlayedAt]
+          properties:
+            lastPlayedAt:
+              type: string
+              format: date-time
+
+    RecentlyPlayedResponse:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecentlyPlayedItem'

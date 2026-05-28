@@ -123,6 +123,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/favorites/recordings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the current user's favorited recordings */
+        get: operations["listFavoriteRecordings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/favorites/recordings/{recordingId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add a recording to favorites */
+        post: operations["addFavoriteRecording"];
+        /** Remove a recording from favorites */
+        delete: operations["removeFavoriteRecording"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/most-played": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the current user's most-played recordings */
+        get: operations["getMostPlayed"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/recently-played": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the current user's recently played recordings (distinct) */
+        get: operations["getRecentlyPlayed"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me/playback-events": {
         parameters: {
             query?: never;
@@ -251,6 +320,40 @@ export interface paths {
         };
         /** Get top artists by play count */
         get: operations["getTopArtists"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/library/genres": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List all genre tags with song counts */
+        get: operations["getLibraryGenres"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/library/songs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List all public published songs, optionally filtered by genre */
+        get: operations["getLibrarySongs"];
         put?: never;
         post?: never;
         delete?: never;
@@ -450,6 +553,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/playlists/{playlistId}/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Replace all tag associations on a playlist */
+        put: operations["setPlaylistTags"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/recordings": {
         parameters: {
             query?: never;
@@ -611,6 +731,7 @@ export interface components {
         };
         UserPlaylistSummary: {
             id: string;
+            href: string;
             ownerId: string;
             title: string;
             slug: string;
@@ -742,6 +863,7 @@ export interface components {
         };
         PlaylistSummary: {
             id: string;
+            href: string;
             ownerId: string;
             title: string;
             slug: string;
@@ -766,6 +888,7 @@ export interface components {
         };
         PlaylistDetail: {
             id: string;
+            href: string;
             ownerId: string;
             title: string;
             slug: string;
@@ -865,6 +988,7 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
             uploader?: components["schemas"]["OwnerSummary"];
+            tags?: components["schemas"]["Tag"][];
         };
         CreatePlaybackEventRequest: {
             recordingId: string;
@@ -886,6 +1010,7 @@ export interface components {
         };
         PlaybackHistoryPlaylistRef: {
             id: string;
+            href: string;
             title: string;
         };
         PlaybackHistoryItem: {
@@ -925,11 +1050,23 @@ export interface components {
         TopSongItem: {
             rank: number;
             recordingId: string;
+            uploaderId: string;
+            publishedPlaylistId: string;
             title: string;
+            /** Format: uri-reference */
+            audioUrl: string;
             /** Format: uri-reference */
             artworkUrl?: string | null;
             durationSeconds?: number | null;
+            recordingType: components["schemas"]["RecordingType"];
+            visibility: components["schemas"]["Visibility"];
+            status: components["schemas"]["PublishStatus"];
+            explicit: boolean;
             playCount: number;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
             uploader: components["schemas"]["ChartArtistRef"];
             playlist: components["schemas"]["ChartPlaylistRef"];
         };
@@ -996,6 +1133,116 @@ export interface components {
         AnalyticsRecordingsResponse: {
             data: components["schemas"]["AnalyticsRecordingItem"][];
             meta: components["schemas"]["PaginationMeta"];
+        };
+        SetPlaylistTagsRequest: {
+            tagIds: string[];
+        };
+        LibraryGenre: {
+            id: string;
+            name: string;
+            slug: string;
+            songCount: number;
+        };
+        LibraryGenresResponse: {
+            data: components["schemas"]["LibraryGenre"][];
+        };
+        LibraryPlaylistRef: {
+            id: string;
+            slug: string;
+            title: string;
+        };
+        LibrarySong: {
+            id: string;
+            uploaderId: string;
+            publishedPlaylistId: string;
+            title: string;
+            description?: string | null;
+            /** Format: uri-reference */
+            audioUrl: string;
+            audioMimeType?: string | null;
+            audioBytes?: number | null;
+            durationSeconds?: number | null;
+            /** Format: uri-reference */
+            artworkUrl?: string | null;
+            recordingType: components["schemas"]["RecordingType"];
+            visibility: components["schemas"]["Visibility"];
+            status: components["schemas"]["PublishStatus"];
+            trackNumber?: number | null;
+            episodeNumber?: number | null;
+            explicit: boolean;
+            /** Format: date-time */
+            releaseDate?: string | null;
+            /** Format: date-time */
+            publishedAt?: string | null;
+            playCount: number;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            uploader: components["schemas"]["ChartArtistRef"];
+            playlist: components["schemas"]["LibraryPlaylistRef"];
+            genres: components["schemas"]["LibraryGenre"][];
+        };
+        LibrarySongsResponse: {
+            data: components["schemas"]["LibrarySong"][];
+            meta: components["schemas"]["PaginationMeta"];
+        };
+        PersonalTrackItem: {
+            id: string;
+            uploaderId: string;
+            publishedPlaylistId: string;
+            title: string;
+            description?: string | null;
+            /** Format: uri-reference */
+            audioUrl: string;
+            audioMimeType?: string | null;
+            audioBytes?: number | null;
+            durationSeconds?: number | null;
+            /** Format: uri-reference */
+            artworkUrl?: string | null;
+            recordingType: components["schemas"]["RecordingType"];
+            visibility: components["schemas"]["Visibility"];
+            status: components["schemas"]["PublishStatus"];
+            trackNumber?: number | null;
+            episodeNumber?: number | null;
+            explicit: boolean;
+            /** Format: date-time */
+            releaseDate?: string | null;
+            /** Format: date-time */
+            publishedAt?: string | null;
+            playCount: number;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            uploader: components["schemas"]["ChartArtistRef"];
+        };
+        FavoriteRecordingItem: components["schemas"]["PersonalTrackItem"] & {
+            /** Format: date-time */
+            savedAt: string;
+        };
+        FavoriteRecordingsResponse: {
+            data: components["schemas"]["FavoriteRecordingItem"][];
+            meta: components["schemas"]["PaginationMeta"];
+        };
+        FavoriteSavedResponse: {
+            id: string;
+            recordingId: string;
+            /** Format: date-time */
+            savedAt: string;
+        };
+        MostPlayedItem: components["schemas"]["PersonalTrackItem"] & {
+            userPlayCount: number;
+        };
+        MostPlayedResponse: {
+            data: components["schemas"]["MostPlayedItem"][];
+        };
+        RecentlyPlayedItem: components["schemas"]["PersonalTrackItem"] & {
+            /** Format: date-time */
+            lastPlayedAt: string;
+        };
+        RecentlyPlayedResponse: {
+            data: components["schemas"]["RecentlyPlayedItem"][];
         };
     };
     responses: never;
@@ -1202,6 +1449,169 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RecordingListResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listFavoriteRecordings: {
+        parameters: {
+            query?: {
+                page?: components["parameters"]["Page"];
+                pageSize?: components["parameters"]["PageSize"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Favorite recordings */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FavoriteRecordingsResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    addFavoriteRecording: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recordingId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Saved */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FavoriteSavedResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Recording not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    removeFavoriteRecording: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recordingId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Removed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getMostPlayed: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Most-played recordings */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MostPlayedResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getRecentlyPlayed: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Recently played recordings */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecentlyPlayedResponse"];
                 };
             };
             /** @description Unauthorized */
@@ -1444,6 +1854,51 @@ export interface operations {
             };
         };
     };
+    getLibraryGenres: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Genre list */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryGenresResponse"];
+                };
+            };
+        };
+    };
+    getLibrarySongs: {
+        parameters: {
+            query?: {
+                /** @description Genre tag slug to filter by */
+                genre?: string;
+                page?: components["parameters"]["Page"];
+                pageSize?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Song list */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibrarySongsResponse"];
+                };
+            };
+        };
+    };
     listUsers: {
         parameters: {
             query?: {
@@ -1617,6 +2072,24 @@ export interface operations {
                     "application/json": components["schemas"]["PlaylistDetail"];
                 };
             };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description User or playlist not found */
             404: {
                 headers: {
@@ -1756,6 +2229,24 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PlaylistDetail"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Playlist not found */
@@ -1997,6 +2488,59 @@ export interface operations {
         };
         responses: {
             /** @description Updated playlist */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaylistDetail"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Playlist not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    setPlaylistTags: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                playlistId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetPlaylistTagsRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated playlist with new tags */
             200: {
                 headers: {
                     [name: string]: unknown;
