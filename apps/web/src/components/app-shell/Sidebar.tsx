@@ -1,4 +1,4 @@
-import { Compass, Heart, Home, Library, ListMusic, Plus, Settings, TrendingUp } from "lucide-react";
+import { Compass, Heart, Home, Library, ListMusic, Lock, Plus, Settings, TrendingUp } from "lucide-react";
 import { NavLink } from "react-router-dom";
 
 import { usePlaylists } from "@/hooks/usePlaylists";
@@ -39,8 +39,8 @@ function NavItem({ to, label, icon: Icon }: { to: string; label: string; icon: t
 }
 
 export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
-  const { data } = usePlaylists(12);
   const { user } = useAuth();
+  const { data } = usePlaylists(12, user?.id);
   const panelPath = user ? panelPathForRole(user.role) : null;
 
   return (
@@ -124,12 +124,15 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
                   to={`/playlists/${playlist.id}`}
                   onClick={onClose}
                   className={({ isActive }) =>
-                    `truncate rounded-lg px-3 py-1.5 text-sm transition ${
+                    `rounded-lg px-3 py-1.5 text-sm transition ${
                       isActive ? "text-white" : "text-[var(--color-text-muted)] hover:text-white"
                     }`
                   }
                 >
-                  {playlist.title}
+                  <span className="flex items-center gap-2 truncate">
+                    {playlist.visibility === "PRIVATE" ? <Lock size={14} className="shrink-0 opacity-70" /> : null}
+                    <span className="truncate">{playlist.title}</span>
+                  </span>
                 </NavLink>
               ))}
             </div>
