@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/feedback/Skeleton";
 import { TrackUploadQueue } from "@/components/uploads/TrackUploadQueue";
 import { authedApi, bulkRegisterUploads, uploadAudioFile, uploadImageFile } from "@/lib/authedApi";
 import { getAudioDurationSeconds } from "@/lib/getAudioDuration";
+import { playlistPath } from "@/lib/routes";
 import { useAudioPlayer, type QueueTrack } from "@/providers/AudioPlayerProvider";
 import { useAuth } from "@/providers/AuthProvider";
 
@@ -347,6 +348,15 @@ export function StudioCollectionEditPage() {
             >
               {deleteMutation.isPending ? "Deleting…" : "Delete"}
             </button>
+
+            <a
+              href={playlistPath(playlist.id)}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-full border border-white/20 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10"
+            >
+              View page
+            </a>
           </>
         }
       />
