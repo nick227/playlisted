@@ -1,6 +1,6 @@
-import type { PlaylistDetail } from "@playlisted/client-sdk";
+import { PlaylistedApiError, type components, type PlaylistDetail } from "@playlisted/client-sdk";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 
 import { CollectionView } from "@/components/collection/CollectionView";
@@ -12,6 +12,7 @@ import { getAudioDurationSeconds } from "@/lib/getAudioDuration";
 import { playlistIdPath } from "@/lib/routes";
 import { useAudioPlayer, type QueueTrack } from "@/providers/AudioPlayerProvider";
 import { useAuth } from "@/providers/AuthProvider";
+import { useLibraryGenres } from "@/hooks/useLibrary";
 
 type UploadQueueItem = {
   id: string;
@@ -21,26 +22,62 @@ type UploadQueueItem = {
   error?: string;
 };
 
+type RecordingWithTags = components["schemas"]["RecordingInPlaylist"] & {
+  tags?: components["schemas"]["Tag"][];
+};
+
+type PlaylistDetailWithTags = PlaylistDetail & {
+  recordings: RecordingWithTags[];
+};
+
 export function StudioCollectionEditPage() {
   const { playlistId } = useParams<{ playlistId: string }>();
-  const { accessToken } = useAuth();
+  const { user, accessToken } = useAuth();
   const queryClient = useQueryClient();
   const { setQueue, currentTrack, state, togglePlay, playbackContext, updateQueuePlaylistTitle } = useAudioPlayer();
+  const genresQuery = useLibraryGenres();
   const coverInputRef = useRef<HTMLInputElement>(null);
   const tracksInputRef = useRef<HTMLInputElement>(null);
-  const [draft, setDraft] = useState<PlaylistDetail | null>(null);
+  const [draft, setDraft] = useState<PlaylistDetailWithTags | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [trackUploadQueue, setTrackUploadQueue] = useState<UploadQueueItem[]>([]);
 
   const client = authedApi(accessToken);
 
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError, error: loadError } = useQuery<PlaylistDetailWithTags>({
     queryKey: ["playlist", playlistId, "edit"],
-    queryFn: () => client.playlists.getById(playlistId!),
-    enabled: Boolean(playlistId && accessToken),
+    queryFn: async () => {
+      const loaded = (await client.playlists.getById(playlistId!)) as PlaylistDetailWithTags;
+      if (user && loaded.ownerId !== user.id) {
+        throw new PlaylistedApiError(
+          "You do not own this collection.",
+          403,
+          new Response(null, { status: 403 }),
+        );
+      }
+      return loaded;
+    },
+    enabled: Boolean(playlistId && accessToken && user),
   });
 
   const playlist = draft ?? data;
+  const [selectedGenreId, setSelectedGenreId] = useState<string | null>(null);
+
+  const availableGenres = genresQuery.data?.data ?? [];
+  const playlistGenreIds = useMemo(
+    () => playlist?.tags?.filter((tag) => tag.kind === "GENRE").map((tag) => tag.id) ?? [],
+    [playlist?.tags],
+  );
+  const playlistNonGenreTagIds = useMemo(
+    () => playlist?.tags?.filter((tag) => tag.kind !== "GENRE").map((tag) => tag.id) ?? [],
+    [playlist?.tags],
+  );
+
+  const currentGenreId = playlistGenreIds[0] ?? null;
+
+  useEffect(() => {
+    setSelectedGenreId(currentGenreId);
+  }, [currentGenreId]);
 
   const lastSavedTitleRef = useRef<string | undefined>(undefined);
   const lastSavedDescriptionRef = useRef<string | null | undefined>(undefined);
@@ -131,14 +168,109 @@ export function StudioCollectionEditPage() {
     },
   });
 
+  const updateRecordingTagsMutation = useMutation({
+    mutationFn: async ({ recordingId, tagSlugs }: { recordingId: string; tagSlugs: string[] }) => {
+      const base = import.meta.env.VITE_API_BASE_URL ?? "";
+      const response = await fetch(`${base}/api/v1/recordings/${recordingId}/tags`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken ?? ""}`,
+        },
+        body: JSON.stringify({ tagSlugs }),
+      });
+
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(
+          typeof body === "object" && body && "message" in body
+            ? String((body as { message: string }).message)
+            : "Failed to update tags.",
+        );
+      }
+
+      return response.json() as Promise<{ tags: RecordingWithTags["tags"] }>;
+    },
+    onSuccess: ({ tags }, variables) => {
+      if (!playlist) return;
+
+      setDraft({
+        ...playlist,
+        recordings: playlist.recordings.map((recording) =>
+          recording.id === variables.recordingId ? { ...recording, tags } : recording,
+        ),
+      });
+      queryClient.invalidateQueries({ queryKey: ["playlist", playlistId] });
+      queryClient.invalidateQueries({ queryKey: ["playlist", playlistId, "edit"] });
+    },
+  });
+
+  const setPlaylistTagsMutation = useMutation({
+    mutationFn: async ({ genreId, preservedTagIds }: { genreId: string | null; preservedTagIds: string[] }) => {
+      const base = import.meta.env.VITE_API_BASE_URL ?? "";
+      const response = await fetch(`${base}/api/v1/playlists/${playlistId}/tags`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken ?? ""}`,
+        },
+        body: JSON.stringify({ tagIds: genreId ? [...preservedTagIds, genreId] : preservedTagIds }),
+      });
+
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(
+          typeof body === "object" && body && "message" in body
+            ? String((body as { message: string }).message)
+            : "Failed to update playlist tags.",
+        );
+      }
+
+      return response.json() as Promise<PlaylistDetailWithTags>;
+    },
+    onSuccess: (updated) => {
+      setDraft(updated);
+      queryClient.invalidateQueries({ queryKey: ["playlist", playlistId] });
+      queryClient.invalidateQueries({ queryKey: ["me", "playlists"] });
+      queryClient.invalidateQueries({ queryKey: ["playlists"] });
+    },
+  });
+
   const deleteMutation = useMutation({
     mutationFn: () => client.playlists.delete(playlistId!),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["me", "playlists"] });
       await queryClient.invalidateQueries({ queryKey: ["playlists"] });
+      await queryClient.invalidateQueries({ queryKey: ["playlist", playlistId] });
       window.location.href = "/studio/collections";
     },
+    onError: async (err) => {
+      if (err instanceof PlaylistedApiError && err.status === 404) {
+        await queryClient.invalidateQueries({ queryKey: ["me", "playlists"] });
+        await queryClient.invalidateQueries({ queryKey: ["playlists"] });
+        window.location.href = "/studio/collections";
+        return;
+      }
+      setUploadError(err instanceof Error ? err.message : "Failed to delete collection.");
+    },
   });
+
+  function handleGenreChange(nextGenreId: string | null) {
+    setSelectedGenreId(nextGenreId);
+    setPlaylistTagsMutation.mutate({ genreId: nextGenreId, preservedTagIds: playlistNonGenreTagIds });
+  }
+
+  if (isError) {
+    if (loadError instanceof PlaylistedApiError && loadError.status === 403) {
+      return (
+        <EmptyState
+          title="Not your collection"
+          description="You can only edit and delete collections you own."
+        />
+      );
+    }
+    return <EmptyState title="Collection not found" />;
+  }
 
   if (isLoading || !playlist) {
     return (
@@ -147,10 +279,6 @@ export function StudioCollectionEditPage() {
         <Skeleton className="h-8 w-64" />
       </div>
     );
-  }
-
-  if (isError) {
-    return <EmptyState title="Collection not found" />;
   }
 
   const collection = playlist;
@@ -290,6 +418,14 @@ export function StudioCollectionEditPage() {
         onRemoveTrack={(recordingId) => removeTrackMutation.mutate(recordingId)}
         onMoveTrackUp={(recordingId) => moveTrack(recordingId, -1)}
         onMoveTrackDown={(recordingId) => moveTrack(recordingId, 1)}
+        onUpdateTrackTags={(recordingId, tagSlugs) =>
+          updateRecordingTagsMutation.mutate({ recordingId, tagSlugs })
+        }
+        selectedGenreId={selectedGenreId}
+        onGenreChange={handleGenreChange}
+        genreOptions={availableGenres}
+        genreLoading={genresQuery.isLoading}
+        genreSaving={setPlaylistTagsMutation.isPending}
         uploadProgress={
           trackUploadQueue.length > 0 ? (
             <TrackUploadQueue

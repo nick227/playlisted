@@ -27,9 +27,33 @@ export type PlaybackHistoryResponse = components["schemas"]["PlaybackHistoryResp
 export type PlaybackEventCreated = components["schemas"]["PlaybackEventCreated"];
 export type UsernameAvailabilityResponse = components["schemas"]["UsernameAvailabilityResponse"];
 
+export type ChartRange = components["schemas"]["ChartRange"];
+export type TopSongsResponse = components["schemas"]["TopSongsResponse"];
+export type TopPlaylistsResponse = components["schemas"]["TopPlaylistsResponse"];
+export type TopArtistsResponse = components["schemas"]["TopArtistsResponse"];
+export type TopSongItem = components["schemas"]["TopSongItem"];
+export type TopPlaylistItem = components["schemas"]["TopPlaylistItem"];
+export type TopArtistItem = components["schemas"]["TopArtistItem"];
+export type AnalyticsSummaryResponse = components["schemas"]["AnalyticsSummaryResponse"];
+export type AnalyticsRecordingsResponse = components["schemas"]["AnalyticsRecordingsResponse"];
+export type FavoriteRecordingItem = components["schemas"]["FavoriteRecordingItem"];
+export type FavoriteRecordingsResponse = components["schemas"]["FavoriteRecordingsResponse"];
+export type MostPlayedItem = components["schemas"]["MostPlayedItem"];
+export type MostPlayedResponse = components["schemas"]["MostPlayedResponse"];
+export type RecentlyPlayedItem = components["schemas"]["RecentlyPlayedItem"];
+export type RecentlyPlayedResponse = components["schemas"]["RecentlyPlayedResponse"];
+export type LibraryGenre = components["schemas"]["LibraryGenre"];
+export type LibrarySong = components["schemas"]["LibrarySong"];
+export type LibraryGenresResponse = components["schemas"]["LibraryGenresResponse"];
+export type LibrarySongsResponse = components["schemas"]["LibrarySongsResponse"];
+
 export type ListUsersQuery = NonNullable<operations["listUsers"]["parameters"]["query"]>;
 export type ListPlaylistsQuery = NonNullable<operations["listPlaylists"]["parameters"]["query"]>;
 export type ListRecordingsQuery = NonNullable<operations["listRecordings"]["parameters"]["query"]>;
+
+export type ChartsQuery = { range?: ChartRange; limit?: number };
+export type AnalyticsQuery = { range?: ChartRange };
+export type AnalyticsRecordingsQuery = { range?: ChartRange; sortBy?: "plays" | "duration" | "completion"; order?: "asc" | "desc"; page?: number; pageSize?: number };
 
 export interface PlaylistedApi {
   readonly raw: RawPlaylistedClient;
@@ -60,6 +84,11 @@ export interface PlaylistedApi {
     recordings(): Promise<RecordingListResponse>;
     playbackHistory(): Promise<PlaybackHistoryResponse>;
     recordPlayback(body: CreatePlaybackEventRequest): Promise<PlaybackEventCreated>;
+    favoriteRecordings(query?: { page?: number; pageSize?: number }): Promise<FavoriteRecordingsResponse>;
+    addFavorite(recordingId: string): Promise<{ id: string; recordingId: string; savedAt: string }>;
+    removeFavorite(recordingId: string): Promise<void>;
+    mostPlayed(query?: { limit?: number }): Promise<MostPlayedResponse>;
+    recentlyPlayed(query?: { limit?: number }): Promise<RecentlyPlayedResponse>;
   };
   playlists: {
     list(query?: ListPlaylistsQuery): Promise<PlaylistListResponse>;
@@ -75,6 +104,19 @@ export interface PlaylistedApi {
     list(query?: ListRecordingsQuery): Promise<RecordingListResponse>;
     getById(recordingId: string): Promise<RecordingDetail>;
     create(body: CreateRecordingRequest): Promise<RecordingDetail>;
+  };
+  charts: {
+    topSongs(query?: ChartsQuery): Promise<TopSongsResponse>;
+    topPlaylists(query?: ChartsQuery): Promise<TopPlaylistsResponse>;
+    topArtists(query?: ChartsQuery): Promise<TopArtistsResponse>;
+  };
+  analytics: {
+    summary(query?: AnalyticsQuery): Promise<AnalyticsSummaryResponse>;
+    recordings(query?: AnalyticsRecordingsQuery): Promise<AnalyticsRecordingsResponse>;
+  };
+  library: {
+    genres(): Promise<LibraryGenresResponse>;
+    songs(query?: { genre?: string; page?: number; pageSize?: number }): Promise<LibrarySongsResponse>;
   };
 }
 
@@ -163,8 +205,8 @@ async function unwrap<TData, TError = ErrorResponse>(
 ): Promise<TData> {
   const { data, error, response } = await request;
 
-  if (response.ok && data !== undefined) {
-    return data;
+  if (response.ok) {
+    return data as TData;
   }
 
   const errorMessage = getErrorField(error, "message");
@@ -281,6 +323,40 @@ export function createPlaylistedApi(options: PlaylistedClientOptions = {}): Play
           "Failed to record playback.",
         );
       },
+      favoriteRecordings(query = {}) {
+        return unwrap(
+          raw.GET("/api/v1/me/favorites/recordings", { params: { query } }),
+          "Failed to load favorites.",
+        );
+      },
+      addFavorite(recordingId) {
+        return unwrap(
+          raw.POST("/api/v1/me/favorites/recordings/{recordingId}", {
+            params: { path: { recordingId } },
+          }),
+          "Failed to add favorite.",
+        );
+      },
+      removeFavorite(recordingId) {
+        return unwrap(
+          raw.DELETE("/api/v1/me/favorites/recordings/{recordingId}", {
+            params: { path: { recordingId } },
+          }),
+          "Failed to remove favorite.",
+        ).then(() => undefined);
+      },
+      mostPlayed(query = {}) {
+        return unwrap(
+          raw.GET("/api/v1/me/most-played", { params: { query } }),
+          "Failed to load most played.",
+        );
+      },
+      recentlyPlayed(query = {}) {
+        return unwrap(
+          raw.GET("/api/v1/me/recently-played", { params: { query } }),
+          "Failed to load recently played.",
+        );
+      },
     },
     playlists: {
       list(query = {}) {
@@ -370,6 +446,51 @@ export function createPlaylistedApi(options: PlaylistedClientOptions = {}): Play
         return unwrap(
           raw.POST("/api/v1/recordings", { body }),
           "Failed to create recording.",
+        );
+      },
+    },
+    charts: {
+      topSongs(query = {}) {
+        return unwrap(
+          raw.GET("/api/v1/charts/top-songs", { params: { query } }),
+          "Failed to load top songs.",
+        );
+      },
+      topPlaylists(query = {}) {
+        return unwrap(
+          raw.GET("/api/v1/charts/top-playlists", { params: { query } }),
+          "Failed to load top playlists.",
+        );
+      },
+      topArtists(query = {}) {
+        return unwrap(
+          raw.GET("/api/v1/charts/top-artists", { params: { query } }),
+          "Failed to load top artists.",
+        );
+      },
+    },
+    analytics: {
+      summary(query = {}) {
+        return unwrap(
+          raw.GET("/api/v1/me/analytics/summary", { params: { query } }),
+          "Failed to load analytics summary.",
+        );
+      },
+      recordings(query = {}) {
+        return unwrap(
+          raw.GET("/api/v1/me/analytics/recordings", { params: { query } }),
+          "Failed to load recording analytics.",
+        );
+      },
+    },
+    library: {
+      genres() {
+        return unwrap(raw.GET("/api/v1/library/genres"), "Failed to load genres.");
+      },
+      songs(query = {}) {
+        return unwrap(
+          raw.GET("/api/v1/library/songs", { params: { query } }),
+          "Failed to load library songs.",
         );
       },
     },
