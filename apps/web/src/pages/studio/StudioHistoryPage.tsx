@@ -70,6 +70,7 @@ export function StudioHistoryPage() {
           {items.map((item) => (
             <div key={item.id}>
               <TrackRow
+                recordingId={item.recording.id}
                 title={item.recording.title}
                 durationSeconds={item.recording.durationSeconds}
                 artworkUrl={item.recording.artworkUrl}

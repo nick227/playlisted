@@ -49,6 +49,12 @@ export function StudioCollectionEditPage() {
     },
   });
 
+  const visibilityMutation = useMutation({
+    mutationFn: (visibility: PlaylistDetail["visibility"]) =>
+      client.playlists.update(playlistId!, { visibility }),
+    onSuccess: (updated) => setDraft(updated),
+  });
+
   const addTrackMutation = useMutation({
     mutationFn: (recordingId: string) => client.playlists.addItem(playlistId!, recordingId),
     onSuccess: (updated) => setDraft(updated),
@@ -159,6 +165,28 @@ export function StudioCollectionEditPage() {
             >
               {saveMutation.isPending ? "Saving…" : "Save draft"}
             </button>
+            <div className="flex items-center gap-2 rounded-full border border-white/20 p-1">
+              <button
+                type="button"
+                onClick={() => visibilityMutation.mutate("PUBLIC")}
+                disabled={visibilityMutation.isPending}
+                className={`rounded-full px-4 py-1.5 text-sm font-semibold ${
+                  playlist.visibility === "PUBLIC" ? "bg-white text-black" : "text-white hover:bg-white/10"
+                }`}
+              >
+                Public
+              </button>
+              <button
+                type="button"
+                onClick={() => visibilityMutation.mutate("PRIVATE")}
+                disabled={visibilityMutation.isPending}
+                className={`rounded-full px-4 py-1.5 text-sm font-semibold ${
+                  playlist.visibility === "PRIVATE" ? "bg-white text-black" : "text-white hover:bg-white/10"
+                }`}
+              >
+                Private
+              </button>
+            </div>
             <button
               type="button"
               onClick={() => publishMutation.mutate()}

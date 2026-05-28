@@ -1,9 +1,13 @@
-import { ChevronDown, ChevronUp, MoreHorizontal, Pause, Play, X } from "lucide-react";
+import { ChevronDown, ChevronUp, MoreHorizontal, Pause, Play, Plus, X } from "lucide-react";
+import { useState } from "react";
 
 import { formatDuration } from "@/lib/format";
 import { MediaCover } from "@/components/cards/MediaCover";
+import { AddToPlaylistDialog } from "@/components/playlists/AddToPlaylistDialog";
+import { useAuth } from "@/providers/AuthProvider";
 
 interface TrackRowProps {
+  recordingId: string;
   index?: number;
   title: string;
   creator?: string | null;
@@ -22,6 +26,7 @@ interface TrackRowProps {
 }
 
 export function TrackRow({
+  recordingId,
   index,
   title,
   creator,
@@ -38,12 +43,16 @@ export function TrackRow({
   onMoveUp,
   onMoveDown,
 }: TrackRowProps) {
+  const { status } = useAuth();
+  const [addOpen, setAddOpen] = useState(false);
+
   return (
-    <div
-      className={`group grid w-full grid-cols-[auto_1fr_auto] items-center gap-4 rounded-lg px-3 py-2 transition ${
-        isActive ? "bg-white/10" : "hover:bg-[var(--color-surface-hover)]"
-      }`}
-    >
+    <>
+      <div
+        className={`group grid w-full grid-cols-[auto_1fr_auto] items-center gap-4 rounded-lg px-3 py-2 transition ${
+          isActive ? "bg-white/10" : "hover:bg-[var(--color-surface-hover)]"
+        }`}
+      >
       <button
         type="button"
         onClick={onPlay}
@@ -75,9 +84,7 @@ export function TrackRow({
         </div>
       </button>
       <div className="flex items-center gap-2">
-        <span className="text-xs text-[var(--color-text-muted)]">
-          {formatDuration(durationSeconds)}
-        </span>
+        <span className="text-xs text-[var(--color-text-muted)]">{formatDuration(durationSeconds)}</span>
         {editMode ? (
           <>
             <button
@@ -107,10 +114,27 @@ export function TrackRow({
               <X size={16} />
             </button>
           </>
+        ) : status === "authenticated" ? (
+          <button
+            type="button"
+            onClick={() => setAddOpen(true)}
+            className="rounded p-1 text-[var(--color-text-muted)] opacity-0 transition hover:bg-white/10 hover:text-white group-hover:opacity-100"
+            aria-label="Add to playlist"
+          >
+            <Plus size={16} />
+          </button>
         ) : (
           <MoreHorizontal size={18} className="text-[var(--color-text-subtle)] opacity-0 group-hover:opacity-100" />
         )}
       </div>
     </div>
+
+      <AddToPlaylistDialog
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        recordingIds={[recordingId]}
+        title={title}
+      />
+    </>
   );
 }

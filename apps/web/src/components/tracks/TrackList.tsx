@@ -41,6 +41,7 @@ export function TrackList({
       {recordings.map((recording, index) => (
         <TrackRow
           key={recording.id}
+          recordingId={recording.id}
           index={index}
           title={recording.title}
           creator={ownerName}
