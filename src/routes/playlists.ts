@@ -358,3 +358,26 @@ playlistsRouter.put("/:playlistId/items/reorder", async (req, res, next) => {
     return next(error);
   }
 });
+
+playlistsRouter.delete("/:playlistId", async (req, res, next) => {
+  try {
+    const auth = await requireAuth(req, res);
+    if (!auth) return;
+
+    const access = await assertPlaylistOwner(req.params.playlistId, auth.user.id);
+    if (access.error === "not_found") {
+      return res.status(404).json({
+        error: "playlist_not_found",
+        message: `Playlist ${req.params.playlistId} was not found.`,
+      });
+    }
+    if (access.error === "forbidden") {
+      return res.status(403).json({ error: "forbidden", message: "You do not own this playlist." });
+    }
+
+    await prisma.playlist.delete({ where: { id: req.params.playlistId } });
+    return res.status(204).send();
+  } catch (error) {
+    return next(error);
+  }
+});

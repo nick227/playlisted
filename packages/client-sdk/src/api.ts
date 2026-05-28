@@ -65,6 +65,7 @@ export interface PlaylistedApi {
     getById(playlistId: string): Promise<PlaylistDetail>;
     create(body: CreatePlaylistRequest): Promise<PlaylistDetail>;
     update(playlistId: string, body: UpdatePlaylistRequest): Promise<PlaylistDetail>;
+    delete(playlistId: string): Promise<void>;
     addItem(playlistId: string, recordingId: string): Promise<PlaylistDetail>;
     removeItem(playlistId: string, recordingId: string): Promise<PlaylistDetail>;
     reorderItems(playlistId: string, recordingIds: string[]): Promise<PlaylistDetail>;
@@ -303,6 +304,14 @@ export function createPlaylistedApi(options: PlaylistedClientOptions = {}): Play
           }),
           `Failed to update playlist ${playlistId}.`,
         );
+      },
+      delete(playlistId) {
+        return unwrap(
+          raw.DELETE("/api/v1/playlists/{playlistId}", {
+            params: { path: { playlistId } },
+          }),
+          `Failed to delete playlist ${playlistId}.`,
+        ).then(() => undefined);
       },
       addItem(playlistId, recordingId) {
         return unwrap(

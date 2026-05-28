@@ -130,6 +130,15 @@ export function StudioCollectionEditPage() {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: () => client.playlists.delete(playlistId!),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["me", "playlists"] });
+      await queryClient.invalidateQueries({ queryKey: ["playlists"] });
+      window.location.href = "/studio/collections";
+    },
+  });
+
   if (isLoading || !playlist) {
     return (
       <div className="space-y-6">
@@ -329,6 +338,15 @@ export function StudioCollectionEditPage() {
                 </>
               )}
             </div>
+
+            <button
+              type="button"
+              onClick={() => deleteMutation.mutate()}
+              disabled={deleteMutation.isPending}
+              className="rounded-full border border-red-500/40 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-200 hover:bg-red-500/20 disabled:opacity-60"
+            >
+              {deleteMutation.isPending ? "Deleting…" : "Delete"}
+            </button>
           </>
         }
       />
