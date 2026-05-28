@@ -88,6 +88,17 @@ playlistsRouter.get("/:playlistId", async (req, res, next) => {
       });
     }
 
+    if (playlist.visibility === "PRIVATE" || playlist.status !== "PUBLISHED") {
+      const auth = await requireAuth(req, res);
+      if (!auth) return;
+      if (auth.user.id !== playlist.ownerId) {
+        return res.status(404).json({
+          error: "playlist_not_found",
+          message: `Playlist ${req.params.playlistId} was not found.`,
+        });
+      }
+    }
+
     return res.json(mapPlaylistDetail(playlist));
   } catch (error) {
     return next(error);
@@ -123,7 +134,7 @@ playlistsRouter.post("/", async (req, res, next) => {
     let slug = baseSlug;
     let suffix = 1;
 
-    while (await prisma.playlist.findUnique({ where: { slug }, select: { id: true } })) {
+    while (await prisma.playlist.findFirst({ where: { ownerId: body.ownerId, slug }, select: { id: true } })) {
       suffix += 1;
       slug = `${baseSlug}-${suffix}`;
     }

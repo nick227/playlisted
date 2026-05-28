@@ -1,6 +1,7 @@
 import { UserRole, UserStatus } from "@prisma/client";
 import { Router } from "express";
 
+import { getAuthContextFromRequest } from "../lib/auth.js";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth } from "../lib/requireAuth.js";
 import { slugify } from "../utils/slug.js";
@@ -106,6 +107,65 @@ usersRouter.get("/check-username", async (req, res, next) => {
   }
 });
 
+usersRouter.get("/by-username/:username/playlists/:slug", async (req, res, next) => {
+  try {
+    const username = slugify(req.params.username);
+    const slug = slugify(req.params.slug);
+
+    const user = await prisma.user.findUnique({
+      where: { username },
+      select: { id: true },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        error: "user_not_found",
+        message: `User @${username} was not found.`,
+      });
+    }
+
+    const playlist = await prisma.playlist.findFirst({
+      where: { ownerId: user.id, slug },
+      include: {
+        owner: true,
+        tags: { include: { tag: true } },
+        items: {
+          include: {
+            recording: {
+              include: {
+                uploader: { select: { id: true, username: true, displayName: true, avatarUrl: true, role: true } },
+              },
+            },
+          },
+          orderBy: { position: "asc" as const },
+        },
+      },
+    });
+
+    if (!playlist) {
+      return res.status(404).json({
+        error: "playlist_not_found",
+        message: `Playlist @${username}/${slug} was not found.`,
+      });
+    }
+
+    if (playlist.visibility === "PRIVATE" || playlist.status !== "PUBLISHED") {
+      const auth = await getAuthContextFromRequest(req);
+      if (!auth || auth.user.id !== playlist.ownerId) {
+        return res.status(404).json({
+          error: "playlist_not_found",
+          message: `Playlist @${username}/${slug} was not found.`,
+        });
+      }
+    }
+
+    const { mapPlaylistDetail } = await import("../lib/playlistMaps.js");
+    return res.json(mapPlaylistDetail(playlist as any));
+  } catch (error) {
+    return next(error);
+  }
+});
+
 usersRouter.get("/by-username/:username", async (req, res, next) => {
   try {
     const username = slugify(req.params.username);
@@ -126,7 +186,19 @@ usersRouter.get("/by-username/:username", async (req, res, next) => {
       });
     }
 
-    return res.json(mapUserDetail(user));
+    res.json(mapUserDetail(user));
+
+    // Fire-and-forget: log profile view without blocking response
+    getAuthContextFromRequest(req).then((auth) => {
+      const viewerId = auth?.user.id ?? null;
+      if (viewerId === user.id) return; // don't count own visits
+      const referrer = typeof req.headers.referer === "string" ? req.headers.referer.slice(0, 255) : null;
+      prisma.profileViewEvent.create({
+        data: { profileUserId: user.id, viewerId, referrer },
+      }).catch(() => undefined);
+    }).catch(() => undefined);
+
+    return;
   } catch (error) {
     return next(error);
   }

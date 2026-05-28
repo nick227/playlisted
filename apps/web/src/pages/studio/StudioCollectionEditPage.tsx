@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/feedback/Skeleton";
 import { TrackUploadQueue } from "@/components/uploads/TrackUploadQueue";
 import { authedApi, bulkRegisterUploads, uploadAudioFile, uploadImageFile } from "@/lib/authedApi";
 import { getAudioDurationSeconds } from "@/lib/getAudioDuration";
-import { playlistPath } from "@/lib/routes";
+import { playlistIdPath } from "@/lib/routes";
 import { useAudioPlayer, type QueueTrack } from "@/providers/AudioPlayerProvider";
 import { useAuth } from "@/providers/AuthProvider";
 
@@ -170,7 +170,12 @@ export function StudioCollectionEditPage() {
       return;
     }
 
-    setQueue(queueTracks, index, { playlistId: collection.id, sourceContext: "studio-editor" });
+    setQueue(queueTracks, index, {
+      playlistId: collection.id,
+      playlistOwnerUsername: collection.owner.username,
+      playlistSlug: collection.slug,
+      sourceContext: "studio-editor",
+    });
   }
 
   function moveTrack(recordingId: string, direction: -1 | 1) {
@@ -350,7 +355,7 @@ export function StudioCollectionEditPage() {
             </button>
 
             <a
-              href={playlistPath(playlist.id)}
+              href={playlistIdPath(playlist.id)}
               target="_blank"
               rel="noreferrer"
               className="rounded-full border border-white/20 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10"

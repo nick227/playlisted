@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import { PlaylistCard } from "@/components/cards/PlaylistCard";
@@ -9,14 +9,14 @@ import { ContentRow } from "@/components/discovery/ContentRow";
 import { EmptyState } from "@/components/feedback/EmptyState";
 import { Skeleton } from "@/components/feedback/Skeleton";
 import { AddToPlaylistDialog } from "@/components/playlists/AddToPlaylistDialog";
-import { usePlaylist } from "@/hooks/usePlaylist";
+import { usePlaylistByUsernameSlug } from "@/hooks/usePlaylistByUsernameSlug";
 import { usePlaylists } from "@/hooks/usePlaylists";
 import { useAudioPlayer, type QueueTrack } from "@/providers/AudioPlayerProvider";
 import { useAuth } from "@/providers/AuthProvider";
 
-export function PlaylistPage() {
-  const { playlistId } = useParams<{ playlistId: string }>();
-  const { data: playlist, isLoading, isError } = usePlaylist(playlistId);
+export function CanonicalPlaylistPage() {
+  const { username, slug } = useParams<{ username: string; slug: string }>();
+  const { data: playlist, isLoading, isError } = usePlaylistByUsernameSlug(username, slug);
   const { data: related } = usePlaylists(6);
   const { setQueue, currentTrack, state, togglePlay, playbackContext } = useAudioPlayer();
   const { status } = useAuth();
@@ -51,15 +51,9 @@ export function PlaylistPage() {
     ownerName: pl.owner.displayName,
   }));
 
-  const currentPlaylistId = pl.id;
-  const playlistHasCurrent = playbackContext.playlistId === currentPlaylistId;
+  const playlistHasCurrent = playbackContext.playlistId === pl.id;
   const playlistIsPlaying = playlistHasCurrent && state === "playing";
   const playlistIsPaused = playlistHasCurrent && state === "paused";
-
-  useEffect(() => {
-    if (!playlist?.owner?.username || !playlist.slug) return;
-    navigate(`/@${playlist.owner.username}/${playlist.slug}`, { replace: true });
-  }, [navigate, playlist?.owner?.username, playlist?.slug]);
 
   function playAll(shuffle = false) {
     if (playlistHasCurrent) {
@@ -69,7 +63,7 @@ export function PlaylistPage() {
     const tracks = shuffle ? [...queueTracks].sort(() => Math.random() - 0.5) : queueTracks;
     if (tracks.length > 0) {
       setQueue(tracks, 0, {
-        playlistId: currentPlaylistId,
+        playlistId: pl.id,
         playlistOwnerUsername: pl.owner.username,
         playlistSlug: pl.slug,
         sourceContext: "playlist",
@@ -79,11 +73,16 @@ export function PlaylistPage() {
 
   function playRecording(_recording: CollectionRecording, index: number) {
     setQueue(queueTracks, index, {
-      playlistId: currentPlaylistId,
+      playlistId: pl.id,
       playlistOwnerUsername: pl.owner.username,
       playlistSlug: pl.slug,
       sourceContext: "playlist",
     });
+  }
+
+  // Keep the URL normalized to /@username/:slug
+  if (username !== pl.owner.username || slug !== pl.slug) {
+    navigate(`/@${pl.owner.username}/${pl.slug}`, { replace: true });
   }
 
   return (
@@ -128,3 +127,4 @@ export function PlaylistPage() {
     </>
   );
 }
+

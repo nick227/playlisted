@@ -6,7 +6,7 @@ import { EmptyState } from "@/components/feedback/EmptyState";
 import { Skeleton } from "@/components/feedback/Skeleton";
 import { TrackRow } from "@/components/tracks/TrackRow";
 import { authedApi } from "@/lib/authedApi";
-import { playlistPath } from "@/lib/routes";
+import { playlistIdPath } from "@/lib/routes";
 import { useAuth } from "@/providers/AuthProvider";
 import { useAudioPlayer, type QueueTrack } from "@/providers/AudioPlayerProvider";
 
@@ -46,6 +46,8 @@ export function StudioHistoryPage() {
     };
     playTrack(track, [track], {
       playlistId: item.playlistId ?? undefined,
+      playlistOwnerUsername: undefined,
+      playlistSlug: undefined,
       sourceContext: "history",
     });
   }
@@ -85,7 +87,7 @@ export function StudioHistoryPage() {
               />
               {item.playlist ? (
                 <Link
-                  to={playlistPath(item.playlist.id)}
+                  to={playlistIdPath(item.playlist.id)}
                   className="ml-14 block pb-2 text-xs text-[var(--color-brand)] hover:underline"
                 >
                   Open collection

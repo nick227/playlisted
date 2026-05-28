@@ -11,6 +11,7 @@ import { PlaceholderPage } from "@/pages/PlaceholderPage";
 import { PlaylistPage } from "@/pages/PlaylistPage";
 import { RegisterPage } from "@/pages/RegisterPage";
 import { SearchPage } from "@/pages/SearchPage";
+import { CanonicalPlaylistPage } from "@/pages/CanonicalPlaylistPage";
 import { StudioPage } from "@/pages/StudioPage";
 import { StudioCollectionEditPage } from "@/pages/studio/StudioCollectionEditPage";
 import { StudioCollectionsPage } from "@/pages/studio/StudioCollectionsPage";
@@ -24,6 +25,7 @@ function MainRoutes() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/search" element={<SearchPage />} />
+        <Route path="/@:username/:slug" element={<CanonicalPlaylistPage />} />
         <Route path="/playlists/:playlistId" element={<PlaylistPage />} />
         <Route path="/@:username" element={<MemberPage />} />
         <Route path="/members/:userId" element={<MemberPage />} />

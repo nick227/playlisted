@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 
-import { playlistPath } from "@/lib/routes";
+import { playlistIdPath } from "@/lib/routes";
 import { MediaCover } from "./MediaCover";
 
 interface PlaylistCardProps {
@@ -22,7 +22,7 @@ export function PlaylistCard({
 }: PlaylistCardProps) {
   return (
     <Link
-      to={playlistPath(id)}
+      to={playlistIdPath(id)}
       className="group flex w-40 shrink-0 flex-col gap-2 transition hover:opacity-90"
     >
       <MediaCover title={title} imageUrl={coverArtUrl} onPlay={onPlay} />

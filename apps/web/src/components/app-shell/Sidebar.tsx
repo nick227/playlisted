@@ -2,7 +2,7 @@ import { Compass, Heart, Home, Library, ListMusic, Lock, Plus, Settings, Trendin
 import { NavLink } from "react-router-dom";
 
 import { usePlaylists } from "@/hooks/usePlaylists";
-import { ADMIN_PATH, panelPathForRole } from "@/lib/routes";
+import { ADMIN_PATH, panelPathForRole, playlistPath } from "@/lib/routes";
 import { useAuth } from "@/providers/AuthProvider";
 
 interface SidebarProps {
@@ -121,7 +121,7 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
               {data?.data.map((playlist) => (
                 <NavLink
                   key={playlist.id}
-                  to={`/playlists/${playlist.id}`}
+                  to={playlistPath(playlist)}
                   onClick={onClose}
                   className={({ isActive }) =>
                     `rounded-lg px-3 py-1.5 text-sm transition ${

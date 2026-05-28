@@ -91,18 +91,20 @@ model User {
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
 
-  ownedPlaylists         Playlist[]        @relation("PlaylistOwner")
-  uploadedRecordings     Recording[]       @relation("RecordingUploader")
-  playlistItemsAdded     PlaylistItem[]    @relation("PlaylistItemAddedBy")
+  ownedPlaylists         Playlist[]         @relation("PlaylistOwner")
+  uploadedRecordings     Recording[]        @relation("RecordingUploader")
+  playlistItemsAdded     PlaylistItem[]     @relation("PlaylistItemAddedBy")
   playlistSaves          PlaylistSave[]
   recordingSaves         RecordingSave[]
   playbackEvents         PlaybackEvent[]
-  editorialPosts         EditorialPost[]   @relation("EditorialPostAuthor")
-  homepageFeatures       HomepageFeature[] @relation("HomepageFeatureTargetUser")
-  createdHomepageFeature HomepageFeature[] @relation("HomepageFeatureCreator")
-  following              UserFollow[]      @relation("UserFollowing")
-  followers              UserFollow[]      @relation("UserFollowers")
+  editorialPosts         EditorialPost[]    @relation("EditorialPostAuthor")
+  homepageFeatures       HomepageFeature[]  @relation("HomepageFeatureTargetUser")
+  createdHomepageFeature HomepageFeature[]  @relation("HomepageFeatureCreator")
+  following              UserFollow[]       @relation("UserFollowing")
+  followers              UserFollow[]       @relation("UserFollowers")
   sessions               Session[]
+  receivedProfileViews   ProfileViewEvent[] @relation("ProfileViews")
+  viewedProfiles         ProfileViewEvent[] @relation("ViewerActivities")
 
   @@index([role, status])
 }
@@ -111,7 +113,7 @@ model Playlist {
   id                   String        @id @default(cuid()) @db.VarChar(191)
   ownerId              String        @db.VarChar(191)
   title                String        @db.VarChar(191)
-  slug                 String        @unique @db.VarChar(191)
+  slug                 String        @db.VarChar(191)
   description          String?       @db.Text
   coverArtUrl          String?       @db.VarChar(2048)
   type                 PlaylistType  @default(PLAYLIST)
@@ -134,6 +136,7 @@ model Playlist {
   playbackEvents      PlaybackEvent[]
 
   @@index([ownerId])
+  @@unique([ownerId, slug])
   @@index([type, visibility, status])
   @@index([featured, publishedAt])
   @@fulltext([title, description])
@@ -343,6 +346,19 @@ model UserFollow {
 
   @@unique([followerId, followingId])
   @@index([followingId])
+}
+
+model ProfileViewEvent {
+  id            BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  profileUserId String   @db.VarChar(191)
+  viewerId      String?  @db.VarChar(191)
+  referrer      String?  @db.VarChar(255)
+  createdAt     DateTime @default(now())
+
+  profileUser User  @relation("ProfileViews", fields: [profileUserId], references: [id], onDelete: Cascade)
+  viewer      User? @relation("ViewerActivities", fields: [viewerId], references: [id], onDelete: SetNull)
+
+  @@index([profileUserId, createdAt])
 }
 
 model Session {

@@ -7,7 +7,7 @@ import { EmptyState } from "@/components/feedback/EmptyState";
 import { Skeleton } from "@/components/feedback/Skeleton";
 import { useUser } from "@/hooks/useUser";
 import { useUserByUsername } from "@/hooks/useUserByUsername";
-import { coverFallback } from "@/lib/routes";
+import { coverFallback, playlistPath } from "@/lib/routes";
 
 export function MemberPage() {
   const { userId, username } = useParams<{ userId?: string; username?: string }>();
@@ -84,7 +84,7 @@ export function MemberPage() {
             <p className="mt-2 text-sm text-[var(--color-text-muted)]">{pinned.description}</p>
           </div>
           <Link
-            to={`/playlists/${pinned.id}`}
+            to={playlistPath({ id: pinned.id, slug: pinned.slug, owner: { username: user.username } })}
             className="inline-flex items-center gap-2 self-start rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-black md:self-center"
           >
             <Play size={18} fill="currentColor" />

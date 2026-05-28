@@ -20,6 +20,8 @@ export type QueueTrack = components["schemas"]["RecordingSummary"] & {
 
 export type PlaybackContext = {
   playlistId?: string;
+  playlistOwnerUsername?: string;
+  playlistSlug?: string;
   sourceContext?: string;
 };
 

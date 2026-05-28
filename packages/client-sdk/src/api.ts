@@ -50,6 +50,7 @@ export interface PlaylistedApi {
     list(query?: ListUsersQuery): Promise<UserListResponse>;
     getById(userId: string): Promise<UserDetail>;
     getByUsername(username: string): Promise<UserDetail>;
+    getPlaylistByUsernameAndSlug(username: string, slug: string): Promise<PlaylistDetail>;
     checkUsername(username: string): Promise<UsernameAvailabilityResponse>;
     updateMe(body: UpdateProfileRequest): Promise<UserDetail>;
     create(body: CreateUserRequest): Promise<UserDetail>;
@@ -239,6 +240,14 @@ export function createPlaylistedApi(options: PlaylistedClientOptions = {}): Play
             params: { path: { username } },
           }),
           `Failed to load user @${username}.`,
+        );
+      },
+      getPlaylistByUsernameAndSlug(username, slug) {
+        return unwrap(
+          raw.GET("/api/v1/users/by-username/{username}/playlists/{slug}", {
+            params: { path: { username, slug } },
+          }),
+          `Failed to load playlist @${username}/${slug}.`,
         );
       },
       checkUsername(username) {

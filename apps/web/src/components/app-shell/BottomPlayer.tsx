@@ -11,7 +11,7 @@ import {
 import { Link } from "react-router-dom";
 
 import { formatDuration } from "@/lib/format";
-import { coverFallback, playlistPath } from "@/lib/routes";
+import { coverFallback, playlistIdPath } from "@/lib/routes";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 
 export function BottomPlayer() {
@@ -42,6 +42,13 @@ export function BottomPlayer() {
     ? undefined
     : { background: coverFallback(currentTrack.title) };
 
+  const playlistHref =
+    playbackContext.playlistOwnerUsername && playbackContext.playlistSlug
+      ? `/@${encodeURIComponent(playbackContext.playlistOwnerUsername)}/${encodeURIComponent(playbackContext.playlistSlug)}`
+      : playbackContext.playlistId
+        ? playlistIdPath(playbackContext.playlistId)
+        : null;
+
   return (
     <footer className="sticky bottom-0 z-50 shrink-0 border-t border-[var(--color-border)] bg-[var(--color-canvas-alt)]">
       <div
@@ -68,7 +75,7 @@ export function BottomPlayer() {
           <div className="min-w-0">
             {playbackContext.playlistId ? (
               <Link
-                to={`${playlistPath(playbackContext.playlistId)}#track-${currentTrack.id}`}
+                to={`${playlistHref ?? ""}#track-${currentTrack.id}`}
                 className="block truncate text-sm font-medium text-white hover:underline"
               >
                 {currentTrack.title}
@@ -76,9 +83,9 @@ export function BottomPlayer() {
             ) : (
               <p className="truncate text-sm font-medium text-white">{currentTrack.title}</p>
             )}
-            {playbackContext.playlistId ? (
+            {playlistHref ? (
               <Link
-                to={playlistPath(playbackContext.playlistId)}
+                to={playlistHref}
                 className="block truncate text-xs text-[var(--color-text-muted)] hover:underline"
               >
                 {[currentTrack.ownerName, currentTrack.playlistTitle].filter(Boolean).join(" • ")}

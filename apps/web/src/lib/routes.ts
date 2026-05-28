@@ -11,8 +11,21 @@ export function panelPathForRole(role: AuthUser["role"]): string | null {
   return null;
 }
 
-export function playlistPath(id: string): string {
+export function playlistIdPath(id: string): string {
   return `/playlists/${id}`;
+}
+
+export function playlistPath(playlist: {
+  id: string;
+  slug?: string | null;
+  owner?: { username?: string | null } | null;
+}): string {
+  const username = playlist.owner?.username;
+  const slug = playlist.slug;
+  if (username && slug) {
+    return `/@${encodeURIComponent(username)}/${encodeURIComponent(slug)}`;
+  }
+  return playlistIdPath(playlist.id);
 }
 
 export function memberPath(userId: string): string {
@@ -29,7 +42,7 @@ export function studioCollectionEditPath(playlistId: string): string {
 }
 
 export function resolveItemPath(item: HomepageItem): string {
-  if (item.targetType === "PLAYLIST") return playlistPath(item.id);
+  if (item.targetType === "PLAYLIST") return playlistIdPath(item.id);
   if (item.targetType === "USER") {
     const username = item.subtitle?.replace(/^@/, "") ?? item.id;
     return profilePath(username);

@@ -140,6 +140,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/analytics/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get analytics summary for the current creator */
+        get: operations["getAnalyticsSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/analytics/recordings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get per-track analytics for the current creator */
+        get: operations["getAnalyticsRecordings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me/playback-history": {
         parameters: {
             query?: never;
@@ -166,6 +200,57 @@ export interface paths {
         };
         /** Get curated homepage sections */
         get: operations["getHomepage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/charts/top-songs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get top songs by play count */
+        get: operations["getTopSongs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/charts/top-playlists": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get top playlists by play count */
+        get: operations["getTopPlaylists"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/charts/top-artists": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get top artists by play count */
+        get: operations["getTopArtists"];
         put?: never;
         post?: never;
         delete?: never;
@@ -235,6 +320,23 @@ export interface paths {
         };
         /** Get user detail by username */
         get: operations["getUserByUsername"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/users/by-username/{username}/playlists/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get playlist detail by owner username and slug */
+        get: operations["getPlaylistByUsernameAndSlug"];
         put?: never;
         post?: never;
         delete?: never;
@@ -802,6 +904,99 @@ export interface components {
             data: components["schemas"]["PlaybackHistoryItem"][];
             meta: components["schemas"]["PaginationMeta"];
         };
+        /**
+         * @default 30d
+         * @enum {string}
+         */
+        ChartRange: "7d" | "30d" | "all";
+        ChartArtistRef: {
+            id: string;
+            username: string;
+            displayName: string;
+            /** Format: uri-reference */
+            avatarUrl?: string | null;
+            role: components["schemas"]["UserRole"];
+        };
+        ChartPlaylistRef: {
+            id: string;
+            title: string;
+            slug: string;
+        };
+        TopSongItem: {
+            rank: number;
+            recordingId: string;
+            title: string;
+            /** Format: uri-reference */
+            artworkUrl?: string | null;
+            durationSeconds?: number | null;
+            playCount: number;
+            uploader: components["schemas"]["ChartArtistRef"];
+            playlist: components["schemas"]["ChartPlaylistRef"];
+        };
+        TopSongsResponse: {
+            range: components["schemas"]["ChartRange"];
+            data: components["schemas"]["TopSongItem"][];
+        };
+        TopPlaylistItem: {
+            rank: number;
+            playlistId: string;
+            title: string;
+            slug: string;
+            /** Format: uri-reference */
+            coverArtUrl?: string | null;
+            type: components["schemas"]["PlaylistType"];
+            itemCount: number;
+            totalDurationSeconds: number;
+            playCount: number;
+            owner: components["schemas"]["ChartArtistRef"];
+        };
+        TopPlaylistsResponse: {
+            range: components["schemas"]["ChartRange"];
+            data: components["schemas"]["TopPlaylistItem"][];
+        };
+        TopArtistItem: {
+            rank: number;
+            userId: string;
+            username: string;
+            displayName: string;
+            /** Format: uri-reference */
+            avatarUrl?: string | null;
+            /** Format: uri-reference */
+            heroImageUrl?: string | null;
+            role: components["schemas"]["UserRole"];
+            playCount: number;
+        };
+        TopArtistsResponse: {
+            range: components["schemas"]["ChartRange"];
+            data: components["schemas"]["TopArtistItem"][];
+        };
+        MetricTrend: {
+            current: number;
+            previous: number;
+            changePercent: number;
+        };
+        AnalyticsSummaryResponse: {
+            summary: {
+                totalPageViews: components["schemas"]["MetricTrend"];
+                totalPlays: components["schemas"]["MetricTrend"];
+                totalPlaySeconds: components["schemas"]["MetricTrend"];
+                avgCompletionRate: components["schemas"]["MetricTrend"];
+            };
+        };
+        AnalyticsRecordingItem: {
+            recordingId: string;
+            title: string;
+            /** Format: uri-reference */
+            artworkUrl?: string | null;
+            durationSeconds?: number | null;
+            totalPlays: number;
+            totalPlaySeconds: number;
+            completionRate: number;
+        };
+        AnalyticsRecordingsResponse: {
+            data: components["schemas"]["AnalyticsRecordingItem"][];
+            meta: components["schemas"]["PaginationMeta"];
+        };
     };
     responses: never;
     parameters: {
@@ -1062,6 +1257,72 @@ export interface operations {
             };
         };
     };
+    getAnalyticsSummary: {
+        parameters: {
+            query?: {
+                range?: components["schemas"]["ChartRange"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Analytics summary */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalyticsSummaryResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getAnalyticsRecordings: {
+        parameters: {
+            query?: {
+                range?: components["schemas"]["ChartRange"];
+                sortBy?: "plays" | "duration" | "completion";
+                order?: "asc" | "desc";
+                page?: components["parameters"]["Page"];
+                pageSize?: components["parameters"]["PageSize"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Per-track analytics */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalyticsRecordingsResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     listPlaybackHistory: {
         parameters: {
             query?: {
@@ -1110,6 +1371,75 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HomepageResponse"];
+                };
+            };
+        };
+    };
+    getTopSongs: {
+        parameters: {
+            query?: {
+                range?: components["schemas"]["ChartRange"];
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Top songs chart */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TopSongsResponse"];
+                };
+            };
+        };
+    };
+    getTopPlaylists: {
+        parameters: {
+            query?: {
+                range?: components["schemas"]["ChartRange"];
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Top playlists chart */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TopPlaylistsResponse"];
+                };
+            };
+        };
+    };
+    getTopArtists: {
+        parameters: {
+            query?: {
+                range?: components["schemas"]["ChartRange"];
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Top artists chart */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TopArtistsResponse"];
                 };
             };
         };
@@ -1256,6 +1586,38 @@ export interface operations {
                 };
             };
             /** @description User not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getPlaylistByUsernameAndSlug: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                username: string;
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Playlist detail */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaylistDetail"];
+                };
+            };
+            /** @description User or playlist not found */
             404: {
                 headers: {
                     [name: string]: unknown;

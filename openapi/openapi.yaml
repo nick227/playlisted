@@ -15,6 +15,8 @@ tags:
   - name: Auth
   - name: Homepage
   - name: Me
+  - name: Analytics
+  - name: Charts
   - name: Users
   - name: Playlists
   - name: Recordings
@@ -201,6 +203,72 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /api/v1/me/analytics/summary:
+    get:
+      tags: [Analytics]
+      operationId: getAnalyticsSummary
+      summary: Get analytics summary for the current creator
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: range
+          schema:
+            $ref: '#/components/schemas/ChartRange'
+      responses:
+        '200':
+          description: Analytics summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyticsSummaryResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/me/analytics/recordings:
+    get:
+      tags: [Analytics]
+      operationId: getAnalyticsRecordings
+      summary: Get per-track analytics for the current creator
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: range
+          schema:
+            $ref: '#/components/schemas/ChartRange'
+        - in: query
+          name: sortBy
+          schema:
+            type: string
+            enum: [plays, duration, completion]
+            default: plays
+        - in: query
+          name: order
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Per-track analytics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyticsRecordingsResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /api/v1/me/playback-history:
     get:
       tags: [Me]
@@ -237,6 +305,81 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HomepageResponse'
+
+  /api/v1/charts/top-songs:
+    get:
+      tags: [Charts]
+      operationId: getTopSongs
+      summary: Get top songs by play count
+      parameters:
+        - in: query
+          name: range
+          schema:
+            $ref: '#/components/schemas/ChartRange'
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+      responses:
+        '200':
+          description: Top songs chart
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TopSongsResponse'
+
+  /api/v1/charts/top-playlists:
+    get:
+      tags: [Charts]
+      operationId: getTopPlaylists
+      summary: Get top playlists by play count
+      parameters:
+        - in: query
+          name: range
+          schema:
+            $ref: '#/components/schemas/ChartRange'
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+      responses:
+        '200':
+          description: Top playlists chart
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TopPlaylistsResponse'
+
+  /api/v1/charts/top-artists:
+    get:
+      tags: [Charts]
+      operationId: getTopArtists
+      summary: Get top artists by play count
+      parameters:
+        - in: query
+          name: range
+          schema:
+            $ref: '#/components/schemas/ChartRange'
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+      responses:
+        '200':
+          description: Top artists chart
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TopArtistsResponse'
 
   /api/v1/users:
     get:
@@ -360,6 +503,36 @@ paths:
                 $ref: '#/components/schemas/UserDetail'
         '404':
           description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/users/by-username/{username}/playlists/{slug}:
+    get:
+      tags: [Users]
+      operationId: getPlaylistByUsernameAndSlug
+      summary: Get playlist detail by owner username and slug
+      parameters:
+        - in: path
+          name: username
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Playlist detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaylistDetail'
+        '404':
+          description: User or playlist not found
           content:
             application/json:
               schema:
@@ -1700,5 +1873,213 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/PlaybackHistoryItem'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    ChartRange:
+      type: string
+      enum: [7d, 30d, all]
+      default: 30d
+
+    ChartArtistRef:
+      type: object
+      additionalProperties: false
+      required: [id, username, displayName, role]
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        displayName:
+          type: string
+        avatarUrl:
+          type: [string, 'null']
+          format: uri-reference
+        role:
+          $ref: '#/components/schemas/UserRole'
+
+    ChartPlaylistRef:
+      type: object
+      additionalProperties: false
+      required: [id, title, slug]
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        slug:
+          type: string
+
+    TopSongItem:
+      type: object
+      additionalProperties: false
+      required: [rank, recordingId, title, playCount, uploader, playlist]
+      properties:
+        rank:
+          type: integer
+        recordingId:
+          type: string
+        title:
+          type: string
+        artworkUrl:
+          type: [string, 'null']
+          format: uri-reference
+        durationSeconds:
+          type: [integer, 'null']
+        playCount:
+          type: integer
+        uploader:
+          $ref: '#/components/schemas/ChartArtistRef'
+        playlist:
+          $ref: '#/components/schemas/ChartPlaylistRef'
+
+    TopSongsResponse:
+      type: object
+      additionalProperties: false
+      required: [range, data]
+      properties:
+        range:
+          $ref: '#/components/schemas/ChartRange'
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/TopSongItem'
+
+    TopPlaylistItem:
+      type: object
+      additionalProperties: false
+      required: [rank, playlistId, title, slug, type, itemCount, totalDurationSeconds, playCount, owner]
+      properties:
+        rank:
+          type: integer
+        playlistId:
+          type: string
+        title:
+          type: string
+        slug:
+          type: string
+        coverArtUrl:
+          type: [string, 'null']
+          format: uri-reference
+        type:
+          $ref: '#/components/schemas/PlaylistType'
+        itemCount:
+          type: integer
+        totalDurationSeconds:
+          type: integer
+        playCount:
+          type: integer
+        owner:
+          $ref: '#/components/schemas/ChartArtistRef'
+
+    TopPlaylistsResponse:
+      type: object
+      additionalProperties: false
+      required: [range, data]
+      properties:
+        range:
+          $ref: '#/components/schemas/ChartRange'
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/TopPlaylistItem'
+
+    TopArtistItem:
+      type: object
+      additionalProperties: false
+      required: [rank, userId, username, displayName, role, playCount]
+      properties:
+        rank:
+          type: integer
+        userId:
+          type: string
+        username:
+          type: string
+        displayName:
+          type: string
+        avatarUrl:
+          type: [string, 'null']
+          format: uri-reference
+        heroImageUrl:
+          type: [string, 'null']
+          format: uri-reference
+        role:
+          $ref: '#/components/schemas/UserRole'
+        playCount:
+          type: integer
+
+    TopArtistsResponse:
+      type: object
+      additionalProperties: false
+      required: [range, data]
+      properties:
+        range:
+          $ref: '#/components/schemas/ChartRange'
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/TopArtistItem'
+
+    MetricTrend:
+      type: object
+      additionalProperties: false
+      required: [current, previous, changePercent]
+      properties:
+        current:
+          type: number
+        previous:
+          type: number
+        changePercent:
+          type: number
+
+    AnalyticsSummaryResponse:
+      type: object
+      additionalProperties: false
+      required: [summary]
+      properties:
+        summary:
+          type: object
+          additionalProperties: false
+          required: [totalPageViews, totalPlays, totalPlaySeconds, avgCompletionRate]
+          properties:
+            totalPageViews:
+              $ref: '#/components/schemas/MetricTrend'
+            totalPlays:
+              $ref: '#/components/schemas/MetricTrend'
+            totalPlaySeconds:
+              $ref: '#/components/schemas/MetricTrend'
+            avgCompletionRate:
+              $ref: '#/components/schemas/MetricTrend'
+
+    AnalyticsRecordingItem:
+      type: object
+      additionalProperties: false
+      required: [recordingId, title, totalPlays, totalPlaySeconds, completionRate]
+      properties:
+        recordingId:
+          type: string
+        title:
+          type: string
+        artworkUrl:
+          type: [string, 'null']
+          format: uri-reference
+        durationSeconds:
+          type: [integer, 'null']
+        totalPlays:
+          type: integer
+        totalPlaySeconds:
+          type: integer
+        completionRate:
+          type: number
+
+    AnalyticsRecordingsResponse:
+      type: object
+      additionalProperties: false
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnalyticsRecordingItem'
         meta:
           $ref: '#/components/schemas/PaginationMeta'
