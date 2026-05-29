@@ -1,6 +1,7 @@
 import type { UserDetail } from "@playlisted/client-sdk";
 import { Pause, Play } from "lucide-react";
 import { useEffect, useRef } from "react";
+import { Link } from "react-router-dom";
 
 import type { CollectionRecording } from "@/components/collection/collectionTypes";
 import { Skeleton } from "@/components/feedback/Skeleton";
@@ -10,7 +11,7 @@ import { useAddCollectionPlaylist, useCollectionPlaylists } from "@/hooks/useCol
 import { useAuthAction } from "@/hooks/useAuthAction";
 import { usePlaylistByUsernameSlug } from "@/hooks/usePlaylistByUsernameSlug";
 import { formatPlayCount } from "@/lib/format";
-import { coverFallback } from "@/lib/routes";
+import { coverFallback, playlistPath } from "@/lib/routes";
 import { useAudioPlayer, type QueueTrack } from "@/providers/AudioPlayerProvider";
 import { useAuth } from "@/providers/AuthProvider";
 
@@ -87,6 +88,13 @@ export function ArtistProfileCollectionPanel({ playlist, owner }: ArtistProfileC
     requireAuth(() => addCollection.mutate(playlist.id));
   }
 
+  const href = playlistPath({
+    id: playlist.id,
+    href: playlist.href,
+    username: owner.username,
+    slug: playlist.slug,
+  });
+
   return (
     <article className="border-b border-white/8 py-6 last:border-b-0">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
@@ -110,7 +118,11 @@ export function ArtistProfileCollectionPanel({ playlist, owner }: ArtistProfileC
         </button>
 
         <div className="min-w-0 flex-1">
-          <h3 className="text-lg font-medium text-white">{playlist.title}</h3>
+          <h3 className="text-lg font-medium">
+            <Link to={href} className="text-white transition hover:text-[var(--color-brand)] hover:underline">
+              {playlist.title}
+            </Link>
+          </h3>
           <p className="mt-1 text-sm text-[var(--color-text-muted)]">
             {playlist.itemCount} tracks
             {!isLoading && recordings.length > 0
@@ -120,13 +132,6 @@ export function ArtistProfileCollectionPanel({ playlist, owner }: ArtistProfileC
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            onClick={playAll}
-            className="text-sm text-[var(--color-text-muted)] transition hover:text-white"
-          >
-            {isPlaying ? "Pause" : "Play all"}
-          </button>
           <div className="flex items-center gap-1.5 text-sm text-[var(--color-text-muted)]">
             <FavoriteHeartButton target="playlist" id={playlist.id} variant="inline" className="!opacity-100 !p-0" />
             Like
@@ -144,7 +149,7 @@ export function ArtistProfileCollectionPanel({ playlist, owner }: ArtistProfileC
         </div>
       </div>
 
-      <div className="mt-4 pl-0 sm:pl-24">
+      <div className="mt-4">
         {isLoading ? (
           <div className="space-y-2">
             {Array.from({ length: Math.min(playlist.itemCount, 4) }).map((_, index) => (
