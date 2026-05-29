@@ -1,5 +1,9 @@
+import type { Prisma, PublishStatus } from "@prisma/client";
+
 import { PUBLIC_PUBLISHED_RECORDING } from "./publicRecordingFilter.js";
 import { slugify } from "../utils/slug.js";
+
+const PUBLIC_SEARCH_STATUSES: PublishStatus[] = ["PUBLISHED", "DRAFT"];
 
 /**
  * Playlists discoverable via public search.
@@ -7,10 +11,10 @@ import { slugify } from "../utils/slug.js";
  */
 export const SEARCHABLE_PLAYLIST = {
   OR: [
-    { visibility: "PUBLIC" as const, status: { in: ["PUBLISHED", "DRAFT"] as const } },
-    { visibility: "UNLISTED" as const, status: "PUBLISHED" as const },
+    { visibility: "PUBLIC", status: { in: PUBLIC_SEARCH_STATUSES } },
+    { visibility: "UNLISTED", status: "PUBLISHED" },
   ],
-};
+} satisfies Prisma.PlaylistWhereInput;
 
 /** Case-sensitive substring match fields for titles and descriptions. */
 export function textContainsMatch(q: string) {
@@ -34,21 +38,21 @@ export function playlistTitleOrSlugMatch(q: string) {
   return matches;
 }
 
-export function searchablePlaylistTitleMatch(q: string) {
+export function searchablePlaylistTitleMatch(q: string): Prisma.PlaylistWhereInput {
   return {
     AND: [SEARCHABLE_PLAYLIST, { OR: [...playlistTitleOrSlugMatch(q)] }],
   };
 }
 
 /** Songs whose canonical published playlist matches the query. */
-export function songPublishedPlaylistTitleMatch(q: string) {
+export function songPublishedPlaylistTitleMatch(q: string): Prisma.RecordingWhereInput {
   return {
     publishedPlaylist: searchablePlaylistTitleMatch(q),
   };
 }
 
 /** Songs belonging to a searchable playlist matched by title or slug. */
-export function songInPublicPlaylistTitleMatch(q: string) {
+export function songInPublicPlaylistTitleMatch(q: string): Prisma.RecordingWhereInput {
   return {
     playlistItems: {
       some: {
@@ -79,7 +83,7 @@ export function tagContainsMatch(q: string) {
   };
 }
 
-export function searchablePlaylistWhereWithTextMatch(q: string) {
+export function searchablePlaylistWhereWithTextMatch(q: string): Prisma.PlaylistWhereInput {
   return {
     AND: [
       SEARCHABLE_PLAYLIST,
