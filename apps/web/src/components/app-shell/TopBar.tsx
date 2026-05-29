@@ -1,8 +1,8 @@
-import { LogOut, Menu, Search, Settings, User } from "lucide-react";
-import type { FormEvent } from "react";
+import { LogOut, Menu, Settings, User } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
+import { SearchAutocomplete } from "@/components/search/SearchAutocomplete";
 import { ADMIN_PATH, STUDIO_PATH, panelPathForRole, profilePath } from "@/lib/routes";
 import { useAuth } from "@/providers/AuthProvider";
 
@@ -14,13 +14,6 @@ export function TopBar({ onMenuClick }: TopBarProps) {
   const navigate = useNavigate();
   const { status, user, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
-
-  function handleSearch(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const form = new FormData(e.currentTarget);
-    const q = String(form.get("q") ?? "").trim();
-    if (q) navigate(`/search?q=${encodeURIComponent(q)}`);
-  }
 
   async function handleLogout() {
     setMenuOpen(false);
@@ -43,20 +36,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
       <Link to="/" className="shrink-0 text-lg font-bold tracking-tight text-white">
         Music<span className="text-[var(--color-brand)]">Pop</span>
       </Link>
-      <form onSubmit={handleSearch} className="mx-auto hidden max-w-xl flex-1 md:block">
-        <div className="relative">
-          <Search
-            size={18}
-            className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-text-subtle)]"
-          />
-          <input
-            name="q"
-            type="search"
-            placeholder="Search songs, playlists, artists..."
-            className="w-full rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] py-2.5 pl-11 pr-4 text-sm text-white placeholder:text-[var(--color-text-subtle)] outline-none focus:border-white/20"
-          />
-        </div>
-      </form>
+      <SearchAutocomplete className="mx-auto hidden max-w-xl flex-1 md:block" />
       <div className="relative ml-auto flex items-center gap-2">
         {status === "authenticated" && user ? (
           <>
