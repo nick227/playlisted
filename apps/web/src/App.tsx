@@ -25,6 +25,7 @@ import { StudioCollectionsPage } from "@/pages/studio/StudioCollectionsPage";
 import { StudioProfilePage } from "@/pages/studio/StudioProfilePage";
 import { StudioAnalyticsPage } from "@/pages/studio/StudioAnalyticsPage";
 import { StudioHistoryPage } from "@/pages/studio/StudioHistoryPage";
+import { StudioDeveloperPage } from "@/pages/studio/StudioDeveloperPage";
 
 function LegacyProfileRedirect() {
   const { username } = useParams<{ username?: string }>();
@@ -91,6 +92,14 @@ function MainRoutes() {
           element={
             <ProtectedRoute roles={["CREATOR", "ADMIN", "LISTENER"]}>
               <StudioProfilePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/studio/developer"
+          element={
+            <ProtectedRoute>
+              <StudioDeveloperPage />
             </ProtectedRoute>
           }
         />

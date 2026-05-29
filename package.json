@@ -47,6 +47,7 @@
     "dotenv": "^16.5.0",
     "express": "^4.21.2",
     "express-openapi-validator": "^5.5.8",
+    "express-rate-limit": "^8.5.2",
     "multer": "^2.1.1",
     "prisma": "^6.8.2",
     "swagger-ui-express": "^5.0.1",

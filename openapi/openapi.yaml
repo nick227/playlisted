@@ -22,6 +22,7 @@ tags:
   - name: Users
   - name: Playlists
   - name: Recordings
+  - name: Developer
   - name: Admin
 paths:
   /api/v1/health:
@@ -2177,6 +2178,81 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /api/v1/developer/keys:
+    get:
+      tags: [Developer]
+      operationId: listApiKeys
+      summary: List active API keys for the current user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: API key list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKeyListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags: [Developer]
+      operationId: createApiKey
+      summary: Create a new API key — raw key returned once
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateApiKeyRequest'
+      responses:
+        '201':
+          description: API key created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKeyCreatedResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/developer/keys/{keyId}:
+    delete:
+      tags: [Developer]
+      operationId: revokeApiKey
+      summary: Revoke an API key
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: keyId
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Revoked
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Key not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
 components:
   securitySchemes:
     bearerAuth:
@@ -4315,3 +4391,67 @@ components:
                 format: uri-reference
               artist:
                 type: string
+
+    ApiKey:
+      type: object
+      additionalProperties: false
+      required: [id, name, prefix, lastUsedAt, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        prefix:
+          type: string
+        lastUsedAt:
+          type: [string, 'null']
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ApiKeyCreatedResponse:
+      type: object
+      additionalProperties: false
+      required: [id, name, prefix, key, lastUsedAt, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        prefix:
+          type: string
+        key:
+          type: string
+        lastUsedAt:
+          type: [string, 'null']
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ApiKeyListResponse:
+      type: object
+      additionalProperties: false
+      required: [keys]
+      properties:
+        keys:
+          type: array
+          items:
+            $ref: '#/components/schemas/ApiKey'
+
+    CreateApiKeyRequest:
+      type: object
+      additionalProperties: false
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100

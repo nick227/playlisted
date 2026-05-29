@@ -7,8 +7,6 @@ import { useAuth } from "@/providers/AuthProvider";
 import { panelPathForRole } from "@/lib/routes";
 import { usePageMeta } from "@/hooks/usePageMeta";
 
-type AccountKind = "listener" | "artist";
-
 export function RegisterPage() {
   const navigate = useNavigate();
   const { status, register, getErrorMessage } = useAuth();
@@ -18,7 +16,6 @@ export function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [accountKind] = useState<AccountKind>("listener");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -42,7 +39,6 @@ export function RegisterPage() {
         email: email.trim(),
         displayName: displayName.trim(),
         password,
-        role: accountKind === "artist" ? "CREATOR" : "LISTENER",
       });
       navigate(panelPathForRole(newUser.role) ?? "/", { replace: true });
     } catch (err) {

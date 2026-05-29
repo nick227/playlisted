@@ -77,6 +77,11 @@ export type AdminUpdatePlaylistRequest = components["schemas"]["AdminUpdatePlayl
 export type AdminDashboardResponse = components["schemas"]["AdminDashboardResponse"];
 export type AdminContentTagRef = components["schemas"]["AdminContentTagRef"];
 
+export type ApiKey = components["schemas"]["ApiKey"];
+export type ApiKeyListResponse = components["schemas"]["ApiKeyListResponse"];
+export type ApiKeyCreatedResponse = components["schemas"]["ApiKeyCreatedResponse"];
+export type CreateApiKeyRequest = components["schemas"]["CreateApiKeyRequest"];
+
 export type LibraryArtistGenre = { id: string; name: string; slug: string };
 export type LibraryArtist = {
   id: string;
@@ -190,6 +195,11 @@ export interface PlaylistedApi {
   };
   search: {
     unified(query: { q: string; pageSize?: number }): Promise<SearchResponse>;
+  };
+  developer: {
+    listKeys(): Promise<ApiKeyListResponse>;
+    createKey(body: CreateApiKeyRequest): Promise<ApiKeyCreatedResponse>;
+    revokeKey(keyId: string): Promise<void>;
   };
 }
 
@@ -711,6 +721,20 @@ export function createPlaylistedApi(options: PlaylistedClientOptions = {}): Play
           raw.GET("/api/v1/me/analytics/recordings", { params: { query } }),
           "Failed to load recording analytics.",
         );
+      },
+    },
+    developer: {
+      listKeys() {
+        return unwrap(raw.GET("/api/v1/developer/keys"), "Failed to load API keys.");
+      },
+      createKey(body) {
+        return unwrap(raw.POST("/api/v1/developer/keys", { body }), "Failed to create API key.");
+      },
+      revokeKey(keyId) {
+        return unwrap(
+          raw.DELETE("/api/v1/developer/keys/{keyId}", { params: { path: { keyId } } }),
+          "Failed to revoke API key.",
+        ).then(() => undefined);
       },
     },
     library: {

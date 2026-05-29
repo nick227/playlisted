@@ -9,6 +9,7 @@ const links = [
   { to: "/studio/collections", title: "Collections", desc: "Albums, playlists, podcasts" },
   { to: "/studio/history", title: "Play history", desc: "Tracks you have listened to" },
   { to: "/studio/profile", title: "Profile & URL", desc: "Username and public page" },
+  { to: "/studio/developer", title: "API Keys", desc: "Manage keys for the Ingest API" },
 ];
 
 export function StudioPage() {

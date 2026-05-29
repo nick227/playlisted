@@ -12,6 +12,8 @@ import swaggerUi from "swagger-ui-express";
 import YAML from "yaml";
 
 import { authRouter } from "./routes/auth.js";
+import { developerKeysRouter } from "./routes/developer/keys.js";
+import { developerKeyLimiter } from "./lib/rateLimiter.js";
 import { analyticsRouter } from "./routes/analytics.js";
 import { adminDashboardRouter } from "./routes/admin/dashboard.js";
 import { adminHomepageRouter } from "./routes/admin/homepage.js";
@@ -78,6 +80,7 @@ export function createApp() {
   app.use("/api/v1/admin/tags", adminTagsRouter);
   app.use("/api/v1/admin/homepage-features", adminHomepageRouter);
   app.use("/api/v1/admin/users", adminUsersRouter);
+  app.use("/api/v1/developer/keys", developerKeyLimiter, developerKeysRouter);
 
   installWebApp(app);
 

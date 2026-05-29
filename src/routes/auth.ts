@@ -76,7 +76,7 @@ authRouter.post("/register", async (req, res, next) => {
           bio: body.bio ?? null,
           avatarUrl: body.avatarUrl ?? null,
           heroImageUrl: body.heroImageUrl ?? null,
-          role: "LISTENER",
+          role: "CREATOR",
           status: UserStatus.ACTIVE,
         },
       });

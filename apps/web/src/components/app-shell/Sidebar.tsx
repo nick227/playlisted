@@ -1,4 +1,4 @@
-import { BookOpen, Heart, Home, ListMusic, Lock, Plus, Settings, type LucideIcon } from "lucide-react";
+import { BookOpen, Code2, Heart, Home, ListMusic, Lock, Plus, Settings, type LucideIcon } from "lucide-react";
 import { NavLink } from "react-router-dom";
 
 import { useCollectionPlaylists } from "@/hooks/useCollections";
@@ -81,10 +81,10 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
       >
         <nav className="flex flex-1 flex-col gap-6 overflow-y-auto px-3 py-4">
           <div>
-            <p className="text-3xl font-bold tracking-tight text-white mb-4">
+            <NavLink to="/" onClick={onClose} className="text-4xl font-bold tracking-tight text-white">
               Play<span className="text-[var(--color-brand)]">listed</span>
-            </p>
-            <div className="flex flex-col gap-0.5">
+            </NavLink>
+            <div className="flex flex-col gap-0.5 mt-4">
               {discoverLinks.map((link) => (
                 <NavItem key={link.to} {...link} onClick={onClose} />
               ))}
@@ -122,6 +122,16 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
                 <Plus size={18} />
                 My Studio
               </NavLink>
+              {panelPath === "/studio" ? (
+                <NavLink
+                  to="/studio/developer"
+                  onClick={onClose}
+                  className={({ isActive }) => navClass(isActive)}
+                >
+                  <Code2 size={18} />
+                  API Keys
+                </NavLink>
+              ) : null}
             </div>
           ) : null}
           <div>
