@@ -3,8 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 
 import { SmartPlaylistCard } from "@/components/cards/SmartPlaylistCard";
 import { CollectionView } from "@/components/collection/CollectionView";
-import type { CollectionRecording } from "@/components/collection/partitionRecordings";
-import { mergeForPlayback, partitionRecordings } from "@/components/collection/partitionRecordings";
+import type { CollectionRecording } from "@/components/collection/collectionTypes";
 import { ContentRow } from "@/components/discovery/ContentRow";
 import { PlaylistAccessEmptyState } from "@/components/feedback/PlaylistAccessEmptyState";
 import { Skeleton } from "@/components/feedback/Skeleton";
@@ -53,13 +52,9 @@ export function PlaylistPage() {
 
   const pl = playlist;
 
-  const { ownUploads, fromOthers } = partitionRecordings(
-    pl.recordings as CollectionRecording[],
-    pl.ownerId,
-  );
-  const playbackOrder = mergeForPlayback(ownUploads, fromOthers);
+  const recordings = pl.recordings as CollectionRecording[];
 
-  const queueTracks: QueueTrack[] = playbackOrder.map((r) => ({
+  const queueTracks: QueueTrack[] = recordings.map((r) => ({
     ...r,
     playlistTitle: pl.title,
     ownerName: pl.owner.displayName,
@@ -115,7 +110,7 @@ export function PlaylistPage() {
       />
 
       {related && related.data.length > 0 ? (
-        <div className="mx-auto mt-14 max-w-6xl">
+        <div className="mx-auto mt-14 max-w-4xl">
           <ContentRow title="More playlists">
             {related.data
               .filter((p) => p.id !== pl.id)

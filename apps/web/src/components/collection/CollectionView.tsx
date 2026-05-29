@@ -9,11 +9,7 @@ import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
 import { playlistShareUrl, shareContent } from "@/lib/shareContent";
 import type { PlaylistTrackContext } from "@/lib/queueTrack";
 import { useAuth } from "@/providers/AuthProvider";
-import {
-  mergeForPlayback,
-  partitionRecordings,
-  type CollectionRecording,
-} from "./partitionRecordings";
+import type { CollectionRecording } from "./collectionTypes";
 
 export type CollectionViewMode = "view" | "edit";
 
@@ -78,11 +74,7 @@ export function CollectionView({
   const isEdit = mode === "edit";
   const isPodcast = playlist.type === "PODCAST_CHANNEL";
   const isOwner = Boolean(user?.id && user.id === playlist.ownerId);
-  const { ownUploads, fromOthers } = partitionRecordings(
-    playlist.recordings as CollectionRecording[],
-    playlist.ownerId,
-  );
-  const playbackOrder = mergeForPlayback(ownUploads, fromOthers);
+  const recordings = playlist.recordings as CollectionRecording[];
 
   const coverStyle = playlist.coverArtUrl
     ? undefined
@@ -108,12 +100,12 @@ export function CollectionView({
   }
 
   function handlePlayRecording(recording: CollectionRecording, _index: number) {
-    const globalIndex = playbackOrder.findIndex((r) => r.id === recording.id);
+    const globalIndex = recordings.findIndex((r) => r.id === recording.id);
     onPlayTrack?.(recording, globalIndex >= 0 ? globalIndex : 0);
   }
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="mx-auto max-w-4xl">
       {isEdit && editToolbar ? (
         <div className="mb-6 flex flex-wrap items-center gap-3">{editToolbar}</div>
       ) : null}
@@ -294,7 +286,7 @@ export function CollectionView({
       </div>
 
       <div className={isPodcast ? "mt-10 lg:col-span-2" : "mt-10"}>
-        {playbackOrder.length === 0 ? (
+        {recordings.length === 0 ? (
           <EmptyState
             title="No tracks yet"
             description={isEdit ? "Upload or add tracks to build this collection." : "This collection is empty."}
@@ -319,30 +311,12 @@ export function CollectionView({
             />
           </div>
         ) : (
-          <div className="space-y-8">
-            {ownUploads.length > 0 ? (
-              <section>
-                <TrackList
-                  recordings={ownUploads}
-                  ownerName={playlist.owner.displayName}
-                  playlistContext={playlistContext}
-                  onPlay={handlePlayRecording}
-                />
-              </section>
-            ) : null}
-            {fromOthers.length > 0 ? (
-              <section>
-                <h2 className="mb-3 px-3 text-xs font-semibold uppercase tracking-wider text-[var(--color-text-subtle)]">
-                  From the community
-                </h2>
-                <TrackList
-                  recordings={fromOthers}
-                  playlistContext={playlistContext}
-                  onPlay={handlePlayRecording}
-                />
-              </section>
-            ) : null}
-          </div>
+          <TrackList
+            recordings={recordings}
+            ownerName={playlist.owner.displayName}
+            playlistContext={playlistContext}
+            onPlay={handlePlayRecording}
+          />
         )}
       </div>
     </div>

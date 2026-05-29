@@ -1,6 +1,6 @@
 import type { components } from "@playlisted/client-sdk";
 
-import type { CollectionRecording } from "@/components/collection/partitionRecordings";
+import type { CollectionRecording } from "@/components/collection/collectionTypes";
 import {
   type PlaylistTrackContext,
   recordingShareUrlForContext,
@@ -59,6 +59,7 @@ export function TrackList({
             title={recording.title}
             creator={displayOwner}
             meta={recording.recordingType}
+            playCount={recording.playCount}
             durationSeconds={recording.durationSeconds}
             artworkUrl={recording.artworkUrl}
             onPlay={() => onPlay(recording, index)}
