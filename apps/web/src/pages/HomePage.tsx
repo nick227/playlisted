@@ -1,12 +1,11 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { BarChart2, Headphones, Mic2, Pause, Play } from "lucide-react";
-import type { components } from "@playlisted/client-sdk";
-import type { LibrarySong, TopSongItem } from "@playlisted/client-sdk";
+import type { components, LibrarySong, TopSongItem } from "@playlisted/client-sdk";
 
 import { ArtistCard } from "@/components/cards/ArtistCard";
 import { ChartSongCard } from "@/components/cards/ChartSongCard";
-import { PlaylistCard } from "@/components/cards/PlaylistCard";
+import { SmartPlaylistCard } from "@/components/cards/SmartPlaylistCard";
 import { HeroSpotlight } from "@/components/discovery/HeroSpotlight";
 import { RowSkeleton } from "@/components/feedback/Skeleton";
 import { useHomepage } from "@/hooks/useHomepage";
@@ -15,16 +14,30 @@ import { useTrackPlayback } from "@/hooks/useTrackPlayback";
 import { useLibrarySongs } from "@/hooks/useLibrary";
 import { useAuth } from "@/providers/AuthProvider";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
-import { coverFallback, resolveItemPath } from "@/lib/routes";
+import { RecordingActionMenu } from "@/components/media/RecordingActionMenu";
 import {
   chartItemPlaybackContext,
   librarySongToQueueTrack,
   topSongToQueueTrack,
 } from "@/lib/queueTrack";
+import { coverFallback, resolveItemPath } from "@/lib/routes";
+import { recordingShareUrl } from "@/lib/shareContent";
 
 type HomepageItem = components["schemas"]["HomepageItem"];
 
+const CHART_RANGE_LABELS: Record<"7d" | "30d" | "all", string> = {
+  "7d": "last 7 days",
+  "30d": "last 30 days",
+  all: "all time",
+};
+
 // ── layout helpers ────────────────────────────────────────────────────────────
+
+function usernameFromHomepageUser(item: HomepageItem): string {
+  const match = item.href.match(/^\/@\/([^/]+)/);
+  if (match?.[1]) return decodeURIComponent(match[1]);
+  return item.subtitle?.replace(/^@/, "") ?? item.id;
+}
 
 function HomeSection({
   title,
@@ -74,69 +87,86 @@ function HomeSongRow({
   const { isActive, isPlaying } = useTrackPlayback(song.id);
 
   return (
-    <button
-      type="button"
-      onClick={onPlay}
-      aria-label={isActive ? (isPlaying ? "Pause" : "Resume") : "Play"}
+    <div
       className={[
-        "group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition",
+        "group/card flex w-full items-center gap-1 rounded-lg px-2 py-2 transition",
         isActive ? "bg-white/[0.08]" : "hover:bg-white/[0.05]",
       ].join(" ")}
     >
-      {/* Artwork with play overlay */}
-      <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-md">
-        {song.artworkUrl ? (
-          <img src={song.artworkUrl} alt="" className="h-full w-full object-cover" />
-        ) : (
-          <div
-            className="h-full w-full"
-            style={{ background: coverFallback(song.title) }}
-            aria-hidden
-          />
-        )}
-        <div
-          className={[
-            "absolute inset-0 flex items-center justify-center bg-black/60 transition-opacity",
-            isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100",
-          ].join(" ")}
-        >
-          {isPlaying ? (
-            <Pause size={12} fill="currentColor" className="text-white" />
+      <button
+        type="button"
+        onClick={onPlay}
+        aria-label={isActive ? (isPlaying ? "Pause" : "Resume") : "Play"}
+        className="flex min-w-0 flex-1 items-center gap-3 text-left"
+      >
+        {/* Artwork with play overlay */}
+        <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-md">
+          {song.artworkUrl ? (
+            <img src={song.artworkUrl} alt="" className="h-full w-full object-cover" />
           ) : (
-            <Play size={12} fill="currentColor" className="ml-px text-white" />
+            <div
+              className="h-full w-full"
+              style={{ background: coverFallback(song.title) }}
+              aria-hidden
+            />
+          )}
+          <div
+            className={[
+              "absolute inset-0 flex items-center justify-center bg-black/60 transition-opacity",
+              isActive ? "opacity-100" : "opacity-0 group-hover/card:opacity-100",
+            ].join(" ")}
+          >
+            {isPlaying ? (
+              <Pause size={12} fill="currentColor" className="text-white" />
+            ) : (
+              <Play size={12} fill="currentColor" className="ml-px text-white" />
+            )}
+          </div>
+          {isActive && (
+            <div className="pointer-events-none absolute inset-0 rounded-md ring-1 ring-inset ring-[var(--color-brand)]" />
           )}
         </div>
-        {isActive && (
-          <div className="pointer-events-none absolute inset-0 rounded-md ring-1 ring-inset ring-[var(--color-brand)]" />
-        )}
-      </div>
 
-      <div className="min-w-0 flex-1">
-        <p
-          className={[
-            "truncate text-sm font-semibold leading-snug",
-            isActive ? "text-[var(--color-brand)]" : "text-white",
-          ].join(" ")}
-        >
-          {song.title}
-        </p>
-        <p className="truncate text-xs text-[var(--color-text-muted)]">
-          {song.uploader.displayName}
-        </p>
-      </div>
+        <div className="min-w-0 flex-1">
+          <p
+            className={[
+              "truncate text-sm font-semibold leading-snug",
+              isActive ? "text-[var(--color-brand)]" : "text-white",
+            ].join(" ")}
+          >
+            {song.title}
+          </p>
+          <p className="truncate text-xs text-[var(--color-text-muted)]">
+            {song.uploader.displayName}
+          </p>
+        </div>
 
-      <span className="shrink-0">
-        {isPlaying ? (
-          <Pause size={15} fill="currentColor" className="text-[var(--color-brand)]" />
-        ) : (
-          <Play
-            size={15}
-            fill="currentColor"
-            className="text-white/30 transition group-hover:text-white/80"
-          />
-        )}
-      </span>
-    </button>
+        <span className="shrink-0 pr-1">
+          {isPlaying ? (
+            <Pause size={15} fill="currentColor" className="text-[var(--color-brand)]" />
+          ) : (
+            <Play
+              size={15}
+              fill="currentColor"
+              className="text-white/30 transition group-hover/card:text-white/80"
+            />
+          )}
+        </span>
+      </button>
+
+      <RecordingActionMenu
+        className="shrink-0"
+        recordingId={song.id}
+        title={song.title}
+        queueTrack={librarySongToQueueTrack(song)}
+        shareUrl={recordingShareUrl({
+          playlistId: song.playlist.id,
+          recordingId: song.id,
+          username: song.uploader.username,
+          slug: song.playlist.slug,
+        })}
+      />
+    </div>
   );
 }
 
@@ -388,12 +418,6 @@ export function HomePage() {
 
   const chartsLoading = topSongs.isLoading || topPlaylists.isLoading || topArtists.isLoading;
 
-  const rangeSubtitle: Record<"7d" | "30d" | "all", string> = {
-    "7d": "last 7 days",
-    "30d": "last 30 days",
-    all: "all time",
-  };
-
   const firstName = user?.displayName?.split(" ")[0];
 
   function handleSongPlay(song: LibrarySong, queue: LibrarySong[], context: string) {
@@ -483,7 +507,7 @@ export function HomePage() {
           {(topSongs.data?.data.length ?? 0) > 0 && (
             <HomeSection
               title="Top Songs"
-              subtitle={`Most-played — ${rangeSubtitle[chartsRange]}`}
+              subtitle={`Most-played — ${CHART_RANGE_LABELS[chartsRange]}`}
               cols="grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6"
             >
               {topSongs.data!.data.map((item) => (
@@ -502,11 +526,11 @@ export function HomePage() {
           {(topPlaylists.data?.data.length ?? 0) > 0 && (
             <HomeSection
               title="Top Playlists"
-              subtitle={`Most-played collections — ${rangeSubtitle[chartsRange]}`}
+              subtitle={`Most-played collections — ${CHART_RANGE_LABELS[chartsRange]}`}
               cols="grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
             >
               {topPlaylists.data!.data.map((item) => (
-                <PlaylistCard
+                <SmartPlaylistCard
                   key={item.playlistId}
                   id={item.playlistId}
                   title={item.title}
@@ -524,7 +548,7 @@ export function HomePage() {
           {(topArtists.data?.data.length ?? 0) > 0 && (
             <HomeSection
               title="Top Artists"
-              subtitle={`Creators driving the most plays — ${rangeSubtitle[chartsRange]}`}
+              subtitle={`Creators driving the most plays — ${CHART_RANGE_LABELS[chartsRange]}`}
               cols="grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6"
             >
               {topArtists.data!.data.map((item) => (
@@ -552,7 +576,7 @@ export function HomePage() {
         >
           {editorialFeaturedPlaylists.length > 0
             ? editorialFeaturedPlaylists.map((item) => (
-                <PlaylistCard
+                <SmartPlaylistCard
                   key={item.id}
                   id={item.id}
                   title={item.title}
@@ -562,7 +586,7 @@ export function HomePage() {
                 />
               ))
             : fallbackFeaturedPlaylists.map((item) => (
-                <PlaylistCard
+                <SmartPlaylistCard
                   key={item.playlistId}
                   id={item.playlistId}
                   title={item.title}
@@ -588,14 +612,14 @@ export function HomePage() {
             ? editorialFeaturedArtists.map((item) => (
                 <ArtistCard
                   key={item.id}
-                  username={item.subtitle?.replace(/^@/, "") ?? item.id}
+                  username={usernameFromHomepageUser(item)}
                   displayName={item.title}
                   avatarUrl={item.imageUrl}
                   subtitle={item.subtitle}
                   className="w-full"
                 />
               ))
-            : pinnedArtists.data!.data.map((item) => (
+            : (pinnedArtists.data?.data ?? []).map((item) => (
                 <ArtistCard
                   key={item.userId}
                   username={item.username}
@@ -619,14 +643,14 @@ export function HomePage() {
             item.targetType === "USER" ? (
               <ArtistCard
                 key={item.id}
-                username={item.subtitle?.replace(/^@/, "") ?? item.id}
+                username={usernameFromHomepageUser(item)}
                 displayName={item.title}
                 avatarUrl={item.imageUrl}
                 subtitle={item.subtitle}
                 className="w-full"
               />
             ) : (
-              <PlaylistCard
+              <SmartPlaylistCard
                 key={item.id}
                 id={item.id}
                 title={item.title}
@@ -648,7 +672,7 @@ export function HomePage() {
           cols="grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
         >
           {discovered.map((item) => (
-            <PlaylistCard
+            <SmartPlaylistCard
               key={item.playlistId}
               id={item.playlistId}
               title={item.title}

@@ -2,8 +2,11 @@ import { Pause, Play } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { TopSongItem } from "@playlisted/client-sdk";
 
+import { RecordingActionMenu } from "@/components/media/RecordingActionMenu";
 import { useTrackPlayback } from "@/hooks/useTrackPlayback";
+import { topSongToQueueTrack } from "@/lib/queueTrack";
 import { coverFallback, profilePath } from "@/lib/routes";
+import { recordingShareUrl } from "@/lib/shareContent";
 
 interface ChartSongCardProps {
   item: TopSongItem;
@@ -17,7 +20,7 @@ export function ChartSongCard({ item, className, onPlay }: ChartSongCardProps) {
   const isTop3 = item.rank <= 3;
 
   return (
-    <div className={`flex flex-col gap-2 ${className ?? "w-52 shrink-0"}`}>
+    <div className={`group/card flex flex-col gap-2 ${className ?? "w-52 shrink-0"}`}>
       {/* Artwork */}
       <div
         role={onPlay ? "button" : undefined}
@@ -48,6 +51,19 @@ export function ChartSongCard({ item, className, onPlay }: ChartSongCardProps) {
             aria-hidden
           />
         )}
+
+        <RecordingActionMenu
+          className="absolute right-1.5 top-1.5 z-20"
+          recordingId={item.recordingId}
+          title={item.title}
+          queueTrack={topSongToQueueTrack(item)}
+          shareUrl={recordingShareUrl({
+            playlistId: item.playlist.id,
+            recordingId: item.recordingId,
+            username: item.uploader.username,
+            slug: item.playlist.slug,
+          })}
+        />
 
         {/* Rank badge — always visible */}
         <span
