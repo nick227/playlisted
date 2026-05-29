@@ -1,14 +1,25 @@
 import { Router } from "express";
 
 import { prisma } from "../lib/prisma.js";
+import {
+  PUBLIC_PUBLISHED_RECORDING,
+  PUBLIC_RECORDING_TAG_COUNT_SELECT,
+} from "../lib/publicRecordingFilter.js";
 
 export const libraryRouter = Router();
 
 libraryRouter.get("/genres", async (_req, res, next) => {
   try {
     const genres = await prisma.tag.findMany({
-      where: { kind: "GENRE" },
-      include: { _count: { select: { recordingTags: true } } },
+      where: {
+        kind: "GENRE",
+        recordingTags: {
+          some: {
+            recording: PUBLIC_PUBLISHED_RECORDING,
+          },
+        },
+      },
+      include: { _count: { select: PUBLIC_RECORDING_TAG_COUNT_SELECT } },
       orderBy: { name: "asc" },
     });
 
