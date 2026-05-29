@@ -54,6 +54,7 @@ interface AudioPlayerContextValue {
   appendToQueue: (track: QueueTrack) => void;
   removeFromQueue: (trackId: string) => void;
   updateQueuePlaylistTitle: (playlistId: string, title: string) => void;
+  updateQueuePlaylistSlug: (playlistId: string, slug: string) => void;
 }
 
 const AudioPlayerContext = createContext<AudioPlayerContextValue | null>(null);
@@ -186,6 +187,13 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   const updateQueuePlaylistTitle = useCallback((playlistId: string, title: string) => {
     if (playbackContextRef.current.playlistId !== playlistId) return;
     setQueueState((prev) => prev.map((t) => ({ ...t, playlistTitle: title })));
+  }, []);
+
+  const updateQueuePlaylistSlug = useCallback((playlistId: string, slug: string) => {
+    if (playbackContextRef.current.playlistId !== playlistId) return;
+    const next = { ...playbackContextRef.current, playlistSlug: slug };
+    playbackContextRef.current = next;
+    setPlaybackContext(next);
   }, []);
 
   const togglePlay = useCallback(() => {
@@ -348,6 +356,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       appendToQueue,
       removeFromQueue,
       updateQueuePlaylistTitle,
+      updateQueuePlaylistSlug,
     }),
     [
       currentTrack,
@@ -373,6 +382,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       appendToQueue,
       removeFromQueue,
       updateQueuePlaylistTitle,
+      updateQueuePlaylistSlug,
     ],
   );
 

@@ -9,7 +9,7 @@ import {
 import { prisma } from "../lib/prisma.js";
 import { requireAuth } from "../lib/requireAuth.js";
 import { syncPlaylistStats } from "../lib/playlistStats.js";
-import { slugify } from "../utils/slug.js";
+import { resolveUniquePlaylistSlug } from "../lib/playlistSlug.js";
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_PAGE_SIZE = 20;
@@ -130,14 +130,7 @@ playlistsRouter.post("/", async (req, res, next) => {
       });
     }
 
-    const baseSlug = slugify(body.title) || "playlist";
-    let slug = baseSlug;
-    let suffix = 1;
-
-    while (await prisma.playlist.findFirst({ where: { ownerId: body.ownerId, slug }, select: { id: true } })) {
-      suffix += 1;
-      slug = `${baseSlug}-${suffix}`;
-    }
+    const slug = await resolveUniquePlaylistSlug(body.ownerId, body.title);
 
     const created = await prisma.playlist.create({
       data: {
@@ -202,10 +195,35 @@ playlistsRouter.patch("/:playlistId", async (req, res, next) => {
       publishedAt?: string | null;
     };
 
+    const existing = await prisma.playlist.findUnique({
+      where: { id: req.params.playlistId },
+      select: { title: true, slug: true, ownerId: true },
+    });
+
+    if (!existing) {
+      return res.status(404).json({
+        error: "playlist_not_found",
+        message: `Playlist ${req.params.playlistId} was not found.`,
+      });
+    }
+
+    let nextSlug: string | undefined;
+    if (body.title && body.title !== existing.title) {
+      const candidate = await resolveUniquePlaylistSlug(
+        existing.ownerId,
+        body.title,
+        req.params.playlistId,
+      );
+      if (candidate !== existing.slug) {
+        nextSlug = candidate;
+      }
+    }
+
     const updated = await prisma.playlist.update({
       where: { id: req.params.playlistId },
       data: {
         ...(body.title ? { title: body.title } : {}),
+        ...(nextSlug ? { slug: nextSlug } : {}),
         ...(body.description !== undefined ? { description: body.description } : {}),
         ...(body.coverArtUrl !== undefined ? { coverArtUrl: body.coverArtUrl } : {}),
         ...(body.type ? { type: body.type } : {}),

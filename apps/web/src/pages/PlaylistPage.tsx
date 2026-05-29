@@ -18,7 +18,7 @@ export function PlaylistPage() {
   const { playlistId } = useParams<{ playlistId: string }>();
   const { data: playlist, isLoading, isError, error } = usePlaylist(playlistId);
   const { data: related } = usePlaylists(6);
-  const { setQueue, togglePlay, playbackContext, state } = useAudioPlayer();
+  const { setQueue, currentTrack, togglePlay, playbackContext, state } = useAudioPlayer();
   const { status, user } = useAuth();
   const savedCollections = useCollectionPlaylists(100);
   const addCollection = useAddCollectionPlaylist();
@@ -84,7 +84,12 @@ export function PlaylistPage() {
     }
   }
 
-  function playRecording(_recording: CollectionRecording, index: number) {
+  function playRecording(recording: CollectionRecording, index: number) {
+    if (currentTrack?.id === recording.id) {
+      togglePlay();
+      return;
+    }
+
     setQueue(queueTracks, index, {
       playlistId: currentPlaylistId,
       playlistOwnerUsername: pl.owner.username,

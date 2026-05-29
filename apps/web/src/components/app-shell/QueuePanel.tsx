@@ -42,7 +42,7 @@ function QueueItem({
 }
 
 export function QueuePanel() {
-  const { queue, currentTrack, queueOpen, setQueueOpen, playTrack, removeFromQueue } =
+  const { queue, currentTrack, queueOpen, setQueueOpen, playTrack, togglePlay, removeFromQueue } =
     useAudioPlayer();
 
   if (!queueOpen) return null;
@@ -77,7 +77,13 @@ export function QueuePanel() {
                 key={track.id}
                 track={track}
                 isActive={track.id === currentTrack?.id}
-                onPlay={() => playTrack(track, queue)}
+                onPlay={() => {
+                  if (track.id === currentTrack?.id) {
+                    togglePlay();
+                    return;
+                  }
+                  playTrack(track, queue);
+                }}
                 onRemove={() => removeFromQueue(track.id)}
               />
             ))

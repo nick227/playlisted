@@ -95,6 +95,7 @@ export async function uploadImageFile(file: File, accessToken: string) {
 
 export async function bulkRegisterUploads(
   files: { url: string; mimeType: string; bytes: number; title: string; durationSeconds?: number | null }[],
+  playlistId: string,
   accessToken: string,
 ) {
   const base = import.meta.env.VITE_API_BASE_URL ?? "";
@@ -104,7 +105,7 @@ export async function bulkRegisterUploads(
       Authorization: `Bearer ${accessToken}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ files }),
+    body: JSON.stringify({ playlistId, files }),
   });
 
   if (!response.ok) {
@@ -118,6 +119,6 @@ export async function bulkRegisterUploads(
 
   return response.json() as Promise<{
     recordings: { id: string; title: string; audioUrl: string }[];
-    inboxPlaylistId: string;
+    playlistId: string;
   }>;
 }

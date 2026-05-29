@@ -45,8 +45,8 @@ adminPlaylistsRouter.get("/", async (req, res, next) => {
   try {
     if (!(await requireAdmin(req, res))) return;
 
-    const page = Math.max(1, Number(req.query.page ?? DEFAULT_PAGE));
-    const pageSize = Math.min(100, Math.max(1, Number(req.query.pageSize ?? DEFAULT_PAGE_SIZE)));
+    const page = Math.max(1, parseInt(req.query.page as string, 10) || DEFAULT_PAGE);
+    const pageSize = Math.min(100, Math.max(1, parseInt(req.query.pageSize as string, 10) || DEFAULT_PAGE_SIZE));
     const status = typeof req.query.status === "string" ? req.query.status : undefined;
     const visibility = typeof req.query.visibility === "string" ? req.query.visibility : undefined;
     const type = typeof req.query.type === "string" ? req.query.type : undefined;
@@ -54,8 +54,9 @@ adminPlaylistsRouter.get("/", async (req, res, next) => {
     const ownerId = typeof req.query.ownerId === "string" ? req.query.ownerId : undefined;
     const genreSlug = typeof req.query.genre === "string" ? req.query.genre : undefined;
     const q = typeof req.query.q === "string" ? req.query.q.trim() : undefined;
-    const sortBy = (req.query.sortBy as string) ?? "createdAt";
-    const order = ((req.query.order as string) ?? "desc") as "asc" | "desc";
+    const rawSortBy = req.query.sortBy as string;
+    const sortBy = ["saves", "items", "duration", "title", "createdAt"].includes(rawSortBy) ? rawSortBy : "createdAt";
+    const order: "asc" | "desc" = req.query.order === "asc" ? "asc" : "desc";
 
     const where: any = {
       ...(status ? { status: status as PublishStatus } : {}),

@@ -5,7 +5,6 @@ import path from "node:path";
 import { Router } from "express";
 import multer from "multer";
 
-import { ensureInboxPlaylist } from "../lib/inboxPlaylist.js";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth } from "../lib/requireAuth.js";
 import { slugify } from "../utils/slug.js";
@@ -107,6 +106,7 @@ uploadsRouter.post("/audio/bulk-register", async (req, res, next) => {
     if (!auth) return;
 
     const body = req.body as {
+      playlistId?: string;
       files: {
         url: string;
         mimeType?: string;
@@ -116,6 +116,13 @@ uploadsRouter.post("/audio/bulk-register", async (req, res, next) => {
       }[];
     };
 
+    if (!body.playlistId) {
+      return res.status(400).json({
+        error: "playlist_required",
+        message: "Provide playlistId for the collection these uploads should be added to.",
+      });
+    }
+
     if (!Array.isArray(body.files) || body.files.length === 0) {
       return res.status(400).json({
         error: "files_required",
@@ -123,37 +130,59 @@ uploadsRouter.post("/audio/bulk-register", async (req, res, next) => {
       });
     }
 
-    const inboxId = await ensureInboxPlaylist(auth.user.id);
+    const playlist = await prisma.playlist.findUnique({
+      where: { id: body.playlistId },
+      select: { id: true, ownerId: true, status: true, visibility: true },
+    });
+
+    if (!playlist) {
+      return res.status(404).json({
+        error: "playlist_not_found",
+        message: `Playlist ${body.playlistId} was not found.`,
+      });
+    }
+
+    if (playlist.ownerId !== auth.user.id) {
+      return res.status(403).json({
+        error: "forbidden",
+        message: "You do not own this collection.",
+      });
+    }
+
     const created = [];
 
     for (const file of body.files) {
-      const recording = await prisma.recording.create({
-        data: {
-          uploaderId: auth.user.id,
-          publishedPlaylistId: inboxId,
-          title: file.title ?? "Untitled",
-          audioUrl: file.url,
-          audioMimeType: file.mimeType ?? null,
-          audioBytes: file.bytes != null ? BigInt(file.bytes) : null,
-          durationSeconds: typeof file.durationSeconds === "number" ? Math.max(0, Math.floor(file.durationSeconds)) : null,
-          status: "PUBLISHED",
-          visibility: "PUBLIC",
-          publishedAt: new Date(),
-        },
-      });
+      const recording = await prisma.$transaction(async (tx) => {
+        const createdRecording = await tx.recording.create({
+          data: {
+            uploaderId: auth.user.id,
+            publishedPlaylistId: playlist.id,
+            title: file.title ?? "Untitled",
+            audioUrl: file.url,
+            audioMimeType: file.mimeType ?? null,
+            audioBytes: file.bytes != null ? BigInt(file.bytes) : null,
+            durationSeconds: typeof file.durationSeconds === "number" ? Math.max(0, Math.floor(file.durationSeconds)) : null,
+            status: playlist.status,
+            visibility: playlist.visibility,
+            publishedAt: playlist.status === "PUBLISHED" ? new Date() : null,
+          },
+        });
 
-      const maxPosition = await prisma.playlistItem.aggregate({
-        where: { playlistId: inboxId },
-        _max: { position: true },
-      });
+        const maxPosition = await tx.playlistItem.aggregate({
+          where: { playlistId: playlist.id },
+          _max: { position: true },
+        });
 
-      await prisma.playlistItem.create({
-        data: {
-          playlistId: inboxId,
-          recordingId: recording.id,
-          position: (maxPosition._max.position ?? 0) + 1,
-          addedById: auth.user.id,
-        },
+        await tx.playlistItem.create({
+          data: {
+            playlistId: playlist.id,
+            recordingId: createdRecording.id,
+            position: (maxPosition._max.position ?? 0) + 1,
+            addedById: auth.user.id,
+          },
+        });
+
+        return createdRecording;
       });
 
       created.push({
@@ -164,9 +193,9 @@ uploadsRouter.post("/audio/bulk-register", async (req, res, next) => {
     }
 
     const { syncPlaylistStats } = await import("../lib/playlistStats.js");
-    await syncPlaylistStats(inboxId);
+    await syncPlaylistStats(playlist.id);
 
-    res.status(201).json({ recordings: created, inboxPlaylistId: inboxId });
+    res.status(201).json({ recordings: created, playlistId: playlist.id });
   } catch (error) {
     next(error);
   }

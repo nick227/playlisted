@@ -15,8 +15,6 @@ adminDashboardRouter.get("/", async (req, res, next) => {
     todayStart.setHours(0, 0, 0, 0);
     const weekStart = new Date(now);
     weekStart.setDate(now.getDate() - 7);
-    const monthStart = new Date(now);
-    monthStart.setDate(now.getDate() - 30);
 
     const [
       totalUsers, newUsersToday, newUsersWeek,
@@ -38,7 +36,7 @@ adminDashboardRouter.get("/", async (req, res, next) => {
       prisma.playbackEvent.count({ where: { createdAt: { gte: todayStart } } }),
       prisma.playbackEvent.aggregate({ _sum: { playedSeconds: true } }).then((r) => r._sum.playedSeconds ?? 0),
       prisma.playbackEvent.aggregate({ where: { createdAt: { gte: todayStart } }, _sum: { playedSeconds: true } }).then((r) => r._sum.playedSeconds ?? 0),
-      prisma.recordingSave.count().then((r) => r + 0).catch(() => 0),
+      Promise.all([prisma.recordingSave.count(), prisma.playlistSave.count()]).then(([r, p]) => r + p),
       prisma.userFollow.count(),
     ]);
 

@@ -38,7 +38,6 @@ export function ArtistProfileView({ user, preview }: ArtistProfileViewProps) {
 
       {sortedPlaylists.length > 0 ? (
         <section>
-          <h2 className="mb-2 text-sm font-medium text-[var(--color-text-muted)]">Collections</h2>
           <div>
             {sortedPlaylists.map((playlist) => (
               <ArtistProfileCollectionPanel key={playlist.id} playlist={playlist} owner={user} />

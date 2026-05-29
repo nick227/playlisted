@@ -53,6 +53,20 @@ function GenreChips({ tags }: { tags: AdminContentTagRef[] }) {
   );
 }
 
+function SortHeader({ col, label, sortBy, order, onSort }: {
+  col: string; label: string; sortBy: string; order: string;
+  onSort: (col: string) => void;
+}) {
+  return (
+    <th
+      className="px-4 py-3 cursor-pointer select-none hover:text-white transition whitespace-nowrap"
+      onClick={() => onSort(col)}
+    >
+      {label} {sortBy === col ? (order === "desc" ? "↓" : "↑") : ""}
+    </th>
+  );
+}
+
 export function AdminPlaylistsPage() {
   const { accessToken } = useAuth();
   const api = useMemo(() => authedApi(accessToken), [accessToken]);
@@ -96,10 +110,18 @@ export function AdminPlaylistsPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  useEffect(() => () => { if (debounceRef.current) clearTimeout(debounceRef.current); }, []);
+
   const handleSearchChange = (value: string) => {
     setSearchInput(value);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => { setPage(1); setSearch(value); }, 350);
+  };
+
+  const handleSort = (col: string) => {
+    if (sortBy === col) setOrder((o) => o === "asc" ? "desc" : "asc");
+    else { setSortBy(col); setOrder("desc"); }
+    setPage(1);
   };
 
   const update = async (playlistId: string, patch: { status?: Status; visibility?: Visibility; featured?: boolean }) => {
@@ -116,15 +138,6 @@ export function AdminPlaylistsPage() {
   };
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
-
-  const SortHeader = ({ col, label }: { col: string; label: string }) => (
-    <th
-      className="px-4 py-3 cursor-pointer select-none hover:text-white transition whitespace-nowrap"
-      onClick={() => { if (sortBy === col) setOrder((o) => o === "asc" ? "desc" : "asc"); else { setSortBy(col); setOrder("desc"); } setPage(1); }}
-    >
-      {label} {sortBy === col ? (order === "desc" ? "↓" : "↑") : ""}
-    </th>
-  );
 
   return (
     <div className="space-y-4">
@@ -184,14 +197,14 @@ export function AdminPlaylistsPage() {
               <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface)] text-left text-xs text-[var(--color-text-muted)]">
                 <th className="px-4 py-3">Playlist</th>
                 <th className="px-4 py-3">Type</th>
-                <SortHeader col="items" label="Tracks" />
-                <SortHeader col="duration" label="Duration" />
+                <SortHeader col="items" label="Tracks" sortBy={sortBy} order={order} onSort={handleSort} />
+                <SortHeader col="duration" label="Duration" sortBy={sortBy} order={order} onSort={handleSort} />
                 <th className="px-4 py-3">Genres</th>
-                <SortHeader col="saves" label="Saves" />
+                <SortHeader col="saves" label="Saves" sortBy={sortBy} order={order} onSort={handleSort} />
                 <th className="px-4 py-3">Featured</th>
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3">Visibility</th>
-                <SortHeader col="createdAt" label="Created" />
+                <SortHeader col="createdAt" label="Created" sortBy={sortBy} order={order} onSort={handleSort} />
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--color-border)] bg-[var(--color-surface)]">

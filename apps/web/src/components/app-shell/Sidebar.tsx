@@ -1,4 +1,4 @@
-import { BookOpen, Heart, Home, ListMusic, Lock, Plus, Settings } from "lucide-react";
+import { BookOpen, Heart, Home, ListMusic, Lock, Plus, Settings, type LucideIcon } from "lucide-react";
 import { NavLink } from "react-router-dom";
 
 import { useCollectionPlaylists } from "@/hooks/useCollections";
@@ -20,16 +20,33 @@ const libraryLinks = [
   { to: "/library/favorites", label: "Favorites", icon: Heart },
 ];
 
-function NavItem({ to, label, icon: Icon }: { to: string; label: string; icon: typeof Home }) {
+const baseNavClass = "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition";
+const inactiveNavClass = "text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)] hover:text-white";
+const activeNavClass = "bg-white/10 text-white shadow-inner";
+
+function navClass(isActive: boolean, extra = "") {
+  return `${baseNavClass} ${isActive ? activeNavClass : inactiveNavClass} ${extra}`.trim();
+}
+
+function NavItem({
+  to,
+  label,
+  icon: Icon,
+  onClick,
+  end = true,
+}: {
+  to: string;
+  label: string;
+  icon: LucideIcon;
+  onClick?: () => void;
+  end?: boolean;
+}) {
   return (
     <NavLink
       to={to}
-      end
-      className={({ isActive }) =>
-        `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ${
-          isActive ? "bg-white/10 text-white" : "text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)] hover:text-white"
-        }`
-      }
+      end={end}
+      onClick={onClick}
+      className={({ isActive }) => navClass(isActive)}
     >
       <Icon size={20} />
       {label}
@@ -64,12 +81,12 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
       >
         <nav className="flex flex-1 flex-col gap-6 overflow-y-auto px-3 py-4">
           <div>
-            <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-[var(--color-text-subtle)]">
-              Discover
+            <p className="text-3xl font-bold tracking-tight text-white mb-4">
+              Play<span className="text-[var(--color-brand)]">listed</span>
             </p>
             <div className="flex flex-col gap-0.5">
               {discoverLinks.map((link) => (
-                <NavItem key={link.to} {...link} />
+                <NavItem key={link.to} {...link} onClick={onClose} />
               ))}
             </div>
           </div>
@@ -79,7 +96,7 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
             </p>
             <div className="flex flex-col gap-0.5">
               {libraryLinks.map((link) => (
-                <NavItem key={link.to} {...link} />
+                <NavItem key={link.to} {...link} onClick={onClose} />
               ))}
             </div>
           </div>
@@ -91,31 +108,22 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
               <NavLink
                 to={panelPath}
                 onClick={onClose}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ${
-                    isActive
-                      ? "bg-white/10 text-white"
-                      : "text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)] hover:text-white"
-                  }`
-                }
+                end={panelPath !== ADMIN_PATH}
+                className={({ isActive }) => navClass(isActive)}
               >
                 <Settings size={20} />
                 {panelPath === ADMIN_PATH ? "Admin panel" : "Artist studio"}
               </NavLink>
+              <NavLink
+                to="/studio/collections"
+                onClick={onClose}
+                className={({ isActive }) => navClass(isActive)}
+              >
+                <Plus size={18} />
+                My Studio
+              </NavLink>
             </div>
           ) : null}
-          <div>
-            <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-[var(--color-text-subtle)]">
-              Create
-            </p>
-            <NavLink
-              to="/playlists/new"
-              className="flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/15"
-            >
-              <Plus size={18} />
-              Collections
-            </NavLink>
-          </div>
           <div>
             <p className="mb-2 flex items-center gap-2 px-3 text-xs font-semibold uppercase tracking-wider text-[var(--color-text-subtle)]">
               <ListMusic size={14} />
@@ -133,9 +141,12 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
                   })}
                   onClick={onClose}
                   className={({ isActive }) =>
-                    `rounded-lg px-3 py-1.5 text-sm transition ${
-                      isActive ? "text-white" : "text-[var(--color-text-muted)] hover:text-white"
-                    }`
+                    [
+                      "rounded-lg px-3 py-1.5 text-sm transition",
+                      isActive
+                        ? "bg-white/10 text-white shadow-inner"
+                        : "text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)] hover:text-white",
+                    ].join(" ")
                   }
                 >
                   <span className="flex items-center gap-2 truncate">

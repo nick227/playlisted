@@ -5,7 +5,6 @@ import { profilePath } from "@/lib/routes";
 
 const links = [
   { to: "/studio/analytics", title: "Analytics", desc: "Profile views, plays, and completion rates" },
-  { to: "/studio/uploads", title: "Bulk upload", desc: "Add multiple tracks at once" },
   { to: "/studio/collections", title: "Collections", desc: "Albums, playlists, podcasts" },
   { to: "/studio/history", title: "Play history", desc: "Tracks you have listened to" },
   { to: "/studio/profile", title: "Profile & URL", desc: "Username and public page" },

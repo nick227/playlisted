@@ -17,7 +17,7 @@ type HistoryItem = components["schemas"]["PlaybackHistoryItem"];
 export function StudioHistoryPage() {
   const { accessToken } = useAuth();
   const client = authedApi(accessToken);
-  const { playTrack } = useAudioPlayer();
+  const { playTrack, currentTrack, togglePlay } = useAudioPlayer();
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["me", "playback-history"],
@@ -42,6 +42,11 @@ export function StudioHistoryPage() {
   const items = data?.data ?? [];
 
   function playItem(item: HistoryItem) {
+    if (currentTrack?.id === item.recording.id) {
+      togglePlay();
+      return;
+    }
+
     const track: QueueTrack = {
       ...item.recording,
       playlistTitle: item.playlist?.title,

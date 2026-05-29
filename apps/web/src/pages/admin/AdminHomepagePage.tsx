@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import type { AdminHomepageFeature, AdminCreateHomepageFeatureRequest, PlaylistSummary, UserSummary } from "@playlisted/client-sdk";
 import { authedApi } from "@/lib/authedApi";
-import { api as publicApi } from "@/lib/api";
 import { useAuth } from "@/providers/AuthProvider";
 
 type Section = "FEATURED_PLAYLIST" | "CUSTOM_MIX" | "NEW_RELEASE" | "NEW_ARTIST" | "TRENDING" | "EDITOR_PICK" | "SITE_NEWS";
@@ -168,8 +167,8 @@ export function AdminHomepagePage() {
   useEffect(() => { load(); }, [load]);
 
   useEffect(() => {
-    publicApi.playlists.list({ pageSize: 100, status: "PUBLISHED" as any }).then((r) => setPlaylists(r.data)).catch(() => undefined);
-    publicApi.users.list({ pageSize: 100 }).then((r) => setUsers(r.data)).catch(() => undefined);
+    api.playlists.list({ pageSize: 100, status: "PUBLISHED" as any }).then((r) => setPlaylists(r.data)).catch(() => undefined);
+    api.admin.listUsers({ pageSize: 100 }).then((r) => setUsers(r.data)).catch(() => undefined);
   }, []);
 
   const sectionFeatures = features

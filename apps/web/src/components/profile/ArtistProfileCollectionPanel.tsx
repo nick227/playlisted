@@ -31,7 +31,7 @@ export function ArtistProfileCollectionPanel({ playlist, owner }: ArtistProfileC
   const savedCollections = useCollectionPlaylists(100);
   const addCollection = useAddCollectionPlaylist();
   const { data: detail, isLoading } = usePlaylistByUsernameSlug(owner.username, playlist.slug);
-  const { setQueue, togglePlay, playbackContext, state } = useAudioPlayer();
+  const { setQueue, currentTrack, togglePlay, playbackContext, state } = useAudioPlayer();
 
   const isActive = playbackContext.playlistId === playlist.id;
   const isPlaying = isActive && state === "playing";
@@ -75,7 +75,12 @@ export function ArtistProfileCollectionPanel({ playlist, owner }: ArtistProfileC
     });
   }
 
-  function playTrack(_recording: CollectionRecording, index: number) {
+  function playTrack(recording: CollectionRecording, index: number) {
+    if (currentTrack?.id === recording.id) {
+      togglePlay();
+      return;
+    }
+
     setQueue(queueTracks, index, {
       playlistId: playlist.id,
       playlistOwnerUsername: owner.username,

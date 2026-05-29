@@ -30,8 +30,8 @@ adminUsersRouter.get("/", async (req, res, next) => {
   try {
     if (!(await requireAdmin(req, res))) return;
 
-    const page = Number(req.query.page ?? DEFAULT_PAGE);
-    const pageSize = Math.min(Number(req.query.pageSize ?? DEFAULT_PAGE_SIZE), 100);
+    const page = Math.max(1, parseInt(req.query.page as string, 10) || DEFAULT_PAGE);
+    const pageSize = Math.min(100, Math.max(1, parseInt(req.query.pageSize as string, 10) || DEFAULT_PAGE_SIZE));
     const role = typeof req.query.role === "string" ? req.query.role : undefined;
     const status = typeof req.query.status === "string" ? req.query.status : undefined;
     const q = typeof req.query.q === "string" ? req.query.q.trim() : undefined;
@@ -81,6 +81,14 @@ adminUsersRouter.patch("/:userId", async (req, res, next) => {
       status?: string;
       isFeaturedArtist?: boolean;
     };
+
+    // Only ADMIN may assign roles or change account status — EDITOR has read access only here
+    if (auth.user.role !== "ADMIN" && (body.role !== undefined || body.status !== undefined)) {
+      return res.status(403).json({
+        error: "forbidden",
+        message: "Only admins may change user roles or status.",
+      });
+    }
 
     const data: Record<string, unknown> = {};
     if (body.role !== undefined) data.role = body.role as UserRole;

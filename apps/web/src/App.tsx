@@ -25,7 +25,6 @@ import { StudioCollectionsPage } from "@/pages/studio/StudioCollectionsPage";
 import { StudioProfilePage } from "@/pages/studio/StudioProfilePage";
 import { StudioAnalyticsPage } from "@/pages/studio/StudioAnalyticsPage";
 import { StudioHistoryPage } from "@/pages/studio/StudioHistoryPage";
-import { StudioUploadsPage } from "@/pages/studio/StudioUploadsPage";
 
 function LegacyProfileRedirect() {
   const { username } = useParams<{ username?: string }>();
@@ -52,14 +51,6 @@ function MainRoutes() {
           element={
             <ProtectedRoute>
               <StudioPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/studio/uploads"
-          element={
-            <ProtectedRoute>
-              <StudioUploadsPage />
             </ProtectedRoute>
           }
         />

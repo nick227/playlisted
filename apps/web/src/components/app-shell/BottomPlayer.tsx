@@ -51,9 +51,9 @@ export function BottomPlayer() {
 
   if (!currentTrack) {
     return (
-      <footer className="sticky bottom-0 z-50 flex h-[var(--spacing-player)] shrink-0 items-center justify-center border-t border-[var(--color-border)] bg-[var(--color-canvas-alt)] text-sm text-[var(--color-text-muted)]">
-        Select a track to start listening
-      </footer>
+<footer className="sticky bottom-0 z-50 flex h-[var(--spacing-player-mobile)] sm:h-[var(--spacing-player)] shrink-0 items-center justify-center border-t border-[var(--color-border)] bg-[var(--color-canvas-alt)] text-sm text-[var(--color-text-muted)]">
+  Select a track to start listening
+</footer>
     );
   }
 

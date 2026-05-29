@@ -10,7 +10,7 @@ export function useLibraryGenres() {
   });
 }
 
-export function useLibrarySongs(genreSlug?: string | null) {
+export function useLibrarySongs(genreSlug?: string | null, enabled = true) {
   const genre = genreSlug?.trim() || undefined;
   return useQuery({
     queryKey: ["library", "songs", genre ?? "all"],
@@ -19,6 +19,7 @@ export function useLibrarySongs(genreSlug?: string | null) {
         pageSize: 200,
         ...(genre ? { genre } : {}),
       }),
+    enabled,
     staleTime: 2 * 60_000,
   });
 }

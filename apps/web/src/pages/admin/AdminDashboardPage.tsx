@@ -26,7 +26,7 @@ function StatCard({ label, value, sub, accent }: { label: string; value: string;
   );
 }
 
-function Sparkbar({ data, valueKey, color = "bg-amber-400" }: { data: Record<string, number>[]; valueKey: string; color?: string }) {
+function Sparkbar({ data, valueKey, label = "plays", color = "bg-amber-400" }: { data: Record<string, number>[]; valueKey: string; label?: string; color?: string }) {
   if (!data.length) return <div className="h-16 flex items-end text-xs text-[var(--color-text-muted)] px-1">No data yet</div>;
   const max = Math.max(...data.map((d) => d[valueKey] ?? 0), 1);
   return (
@@ -36,7 +36,7 @@ function Sparkbar({ data, valueKey, color = "bg-amber-400" }: { data: Record<str
         return (
           <div
             key={i}
-            title={`${d[valueKey]} plays`}
+            title={`${d[valueKey]} ${label}`}
             style={{ height: `${pct}%`, flex: 1 }}
             className={`${color} rounded-sm opacity-80 hover:opacity-100 transition-opacity min-w-[2px]`}
           />
@@ -94,19 +94,19 @@ export function AdminDashboardPage() {
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
           <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-3">Plays — last 24h (by hour)</p>
-          <Sparkbar data={hourlyPlays as any} valueKey="plays" color="bg-amber-400" />
+          <Sparkbar data={hourlyPlays as any} valueKey="plays" label="plays" color="bg-amber-400" />
           <p className="mt-2 text-xs text-[var(--color-text-muted)]">{hourlyPlays.length} hours with activity</p>
         </div>
 
         <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
           <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-3">Plays — last 30 days</p>
-          <Sparkbar data={dailyPlays as any} valueKey="plays" color="bg-blue-400" />
+          <Sparkbar data={dailyPlays as any} valueKey="plays" label="plays" color="bg-blue-400" />
           <p className="mt-2 text-xs text-[var(--color-text-muted)]">{dailyPlays.reduce((a, d) => a + d.plays, 0)} plays in window</p>
         </div>
 
         <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
           <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-3">New users — last 30 days</p>
-          <Sparkbar data={dailyNewUsers as any} valueKey="newUsers" color="bg-green-400" />
+          <Sparkbar data={dailyNewUsers as any} valueKey="newUsers" label="new users" color="bg-green-400" />
           <p className="mt-2 text-xs text-[var(--color-text-muted)]">{dailyNewUsers.reduce((a, d) => a + d.newUsers, 0)} new users in window</p>
         </div>
       </div>
