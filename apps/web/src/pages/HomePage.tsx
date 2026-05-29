@@ -259,6 +259,19 @@ function editorPicksGridLimit(available: number): number {
   return available;
 }
 
+function mergeUniqueHomepageItems(...lists: HomepageItem[][]): HomepageItem[] {
+  const seen = new Set<string>();
+  const merged: HomepageItem[] = [];
+  for (const list of lists) {
+    for (const item of list) {
+      if (seen.has(item.id)) continue;
+      seen.add(item.id);
+      merged.push(item);
+    }
+  }
+  return merged;
+}
+
 function HomepageEditorialCard({ item }: { item: HomepageItem }) {
   if (item.targetType === "USER") {
     return (
@@ -322,11 +335,33 @@ export function HomePage() {
     return null;
   }, [editorPicks, editorial.data]);
 
+  const newReleases = sectionMap["NEW_RELEASE"] ?? [];
+  const customMixes = sectionMap["CUSTOM_MIX"] ?? [];
+
   const editorPicksGrid = useMemo(() => {
     const heroId = heroItem?.id;
-    const pool = editorPicks.filter((i) => i.id !== heroId);
+    const pool = mergeUniqueHomepageItems(
+      editorPicks.filter((i) => i.id !== heroId),
+      newReleases,
+      customMixes,
+    );
     return pool.slice(0, editorPicksGridLimit(pool.length));
-  }, [editorPicks, heroItem]);
+  }, [editorPicks, heroItem, newReleases, customMixes]);
+
+  const editorPickGridIds = useMemo(
+    () => new Set(editorPicksGrid.map((i) => i.id)),
+    [editorPicksGrid],
+  );
+
+  const newReleasesSection = useMemo(
+    () => newReleases.filter((i) => !editorPickGridIds.has(i.id)),
+    [newReleases, editorPickGridIds],
+  );
+
+  const customMixesSection = useMemo(
+    () => customMixes.filter((i) => !editorPickGridIds.has(i.id)),
+    [customMixes, editorPickGridIds],
+  );
 
   // Featured playlists
   const editorialFeaturedPlaylists = sectionMap["FEATURED_PLAYLIST"] ?? [];
@@ -337,9 +372,6 @@ export function HomePage() {
 
   // Featured artists
   const editorialFeaturedArtists = sectionMap["NEW_ARTIST"] ?? [];
-
-  const newReleases = sectionMap["NEW_RELEASE"] ?? [];
-  const customMixes = sectionMap["CUSTOM_MIX"] ?? [];
 
   // For You / Discover
   const discovered = useMemo(() => {
@@ -621,17 +653,17 @@ export function HomePage() {
         </HomeSection>
       )}
 
-      {newReleases.length > 0 && (
+      {newReleasesSection.length > 0 && (
         <HomeSection title="New Releases" cols="grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
-          {newReleases.map((item) => (
+          {newReleasesSection.map((item) => (
             <HomepageEditorialCard key={item.id} item={item} />
           ))}
         </HomeSection>
       )}
 
-      {customMixes.length > 0 && (
+      {customMixesSection.length > 0 && (
         <HomeSection title="Custom Mix" cols="grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
-          {customMixes.map((item) => (
+          {customMixesSection.map((item) => (
             <HomepageEditorialCard key={item.id} item={item} />
           ))}
         </HomeSection>

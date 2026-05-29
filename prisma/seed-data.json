@@ -1,7 +1,7 @@
 {
   "meta": {
     "defaultPassword": "Playlisted123!",
-    "mediaBaseUrl": "http://localhost:4000/uploads",
+    "mediaBaseUrl": "/uploads",
     "mediaRoots": {
       "audio": "temp/audio",
       "images": "temp/images"
@@ -49,6 +49,50 @@
       "heroImageFile": "flux-Prosperity shot Light Angle beautiful Mysticism Il-1753510137035.jpg"
     },
     {
+      "key": "hex-wave",
+      "email": "hex@playlisted.local",
+      "username": "hex-wave",
+      "displayName": "Hex Wave",
+      "role": "CREATOR",
+      "bio": "808s, distorted leads, and dark energy from an undisclosed location.",
+      "isFeaturedArtist": true,
+      "avatarFile": "flash-street-photography-6.jpg",
+      "heroImageFile": "flux-party crowd dive bar country-western dance crowd p-1746861377843.jpg"
+    },
+    {
+      "key": "jade-mirror",
+      "email": "jade@playlisted.local",
+      "username": "jade-mirror",
+      "displayName": "Jade Mirror",
+      "role": "CREATOR",
+      "bio": "Soulful vocals and lush chord progressions for late-night reflection.",
+      "isFeaturedArtist": true,
+      "avatarFile": "2025-01-26_23-C-06_8899.jpg",
+      "heroImageFile": "2025-12-27_02-52-14_9996.png"
+    },
+    {
+      "key": "static-bloom",
+      "email": "static@playlisted.local",
+      "username": "static-bloom",
+      "displayName": "Static Bloom",
+      "role": "CREATOR",
+      "bio": "Guitar-driven songs about small victories and long drives.",
+      "isFeaturedArtist": true,
+      "avatarFile": "photo-1466357955653-f8a10d011dcb.jpg",
+      "heroImageFile": "flux-the exact words AUSTIN TX simple font-1754261500580.jpg"
+    },
+    {
+      "key": "pulse-drift",
+      "email": "pulse@playlisted.local",
+      "username": "pulse-drift",
+      "displayName": "Pulse Drift",
+      "role": "CREATOR",
+      "bio": "Floor-ready tracks built from modular synthesis and analog hardware.",
+      "isFeaturedArtist": true,
+      "avatarFile": "upscalemedia-transform444888ed.png",
+      "heroImageFile": "flux-middle sharp focus c sharp drinking country-wester-1746862295774.jpg"
+    },
+    {
       "key": "night-signal",
       "email": "host@playlisted.local",
       "username": "night-signal",
@@ -56,7 +100,8 @@
       "role": "CREATOR",
       "bio": "Late-night conversations, deep cuts, and scene reports.",
       "isFeaturedArtist": true,
-      "avatarFile": "photo-1504960868016-9a59a5172321.jpg"
+      "avatarFile": "photo-1504960868016-9a59a5172321.jpg",
+      "heroImageFile": "flux-All-caps “3AM STUDIO” in modern typography style-1754956994761.jpg"
     },
     {
       "key": "crate-digger",
@@ -72,6 +117,11 @@
     { "key": "dream-pop", "name": "Dream Pop", "slug": "dream-pop", "kind": "GENRE" },
     { "key": "electronic", "name": "Electronic", "slug": "electronic", "kind": "GENRE" },
     { "key": "ambient", "name": "Ambient", "slug": "ambient", "kind": "GENRE" },
+    { "key": "hip-hop", "name": "Hip-Hop", "slug": "hip-hop", "kind": "GENRE" },
+    { "key": "r-and-b", "name": "R&B", "slug": "r-and-b", "kind": "GENRE" },
+    { "key": "indie", "name": "Indie", "slug": "indie", "kind": "GENRE" },
+    { "key": "dance", "name": "Dance", "slug": "dance", "kind": "GENRE" },
+    { "key": "soul", "name": "Soul", "slug": "soul", "kind": "GENRE" },
     { "key": "podcast", "name": "Podcast", "slug": "podcast", "kind": "CATEGORY" },
     { "key": "late-night", "name": "Late Night", "slug": "late-night", "kind": "MOOD" },
     { "key": "featured", "name": "Featured", "slug": "featured", "kind": "CATEGORY" }
@@ -99,7 +149,7 @@
           "trackNumber": 1,
           "releaseDate": "2026-05-20T00:00:00.000Z",
           "publishedAt": "2026-05-20T00:00:00.000Z",
-          "tagKeys": ["dream-pop", "late-night"]
+          "tagKeys": ["dream-pop", "electronic"]
         },
         {
           "key": "soft-static",
@@ -110,7 +160,7 @@
           "trackNumber": 2,
           "releaseDate": "2026-05-20T00:00:00.000Z",
           "publishedAt": "2026-05-20T00:00:00.000Z",
-          "tagKeys": ["electronic", "late-night"]
+          "tagKeys": ["electronic", "dream-pop"]
         },
         {
           "key": "neon-delay",
@@ -122,68 +172,6 @@
           "releaseDate": "2026-05-20T00:00:00.000Z",
           "publishedAt": "2026-05-20T00:00:00.000Z",
           "tagKeys": ["electronic"]
-        }
-      ]
-    },
-    {
-      "key": "glass-harbor",
-      "ownerKey": "river-ghost",
-      "title": "Glass Harbor",
-      "slug": "glass-harbor",
-      "description": "Two-track EP of tide-line ambience and distant vocal samples.",
-      "type": "RELEASE",
-      "coverArtFile": "flux-Prosperity shot Light Angle beautiful Mysticism Il-1753510137035.jpg",
-      "isPinnedOnProfile": true,
-      "publishedAt": "2026-05-19T00:00:00.000Z",
-      "tagKeys": ["ambient", "electronic"],
-      "recordings": [
-        {
-          "key": "harbor-lights",
-          "title": "Harbor Lights",
-          "description": "Muted pads and field recordings from a waterfront after closing time.",
-          "audioFile": "out here in the dark city, out here in the dark city.mp3",
-          "artworkFile": "flux-8k high-resolution distinct detailed gentle rainin-1745555862269.jpg",
-          "trackNumber": 1,
-          "releaseDate": "2026-05-19T00:00:00.000Z",
-          "publishedAt": "2026-05-19T00:00:00.000Z",
-          "tagKeys": ["ambient", "late-night"]
-        },
-        {
-          "key": "tide-lines",
-          "title": "Tide Lines",
-          "description": "A patient build with granular textures and a single repeating motif.",
-          "audioFile": "lovers luck is when preparation meets opportunity.mp3",
-          "artworkFile": "photo-1466357955653-f8a10d011dcb.jpg",
-          "trackNumber": 2,
-          "releaseDate": "2026-05-19T00:00:00.000Z",
-          "publishedAt": "2026-05-19T00:00:00.000Z",
-          "tagKeys": ["ambient"]
-        }
-      ]
-    },
-    {
-      "key": "night-signal-radio",
-      "ownerKey": "night-signal",
-      "title": "Night Signal Radio",
-      "slug": "night-signal-radio",
-      "description": "A weekly podcast spotlighting emerging artists, scene talk, and deep cuts.",
-      "type": "PODCAST_CHANNEL",
-      "coverArtFile": "photo-1504960868016-9a59a5172321.jpg",
-      "isPinnedOnProfile": true,
-      "publishedAt": "2026-05-18T00:00:00.000Z",
-      "tagKeys": ["podcast", "late-night"],
-      "recordings": [
-        {
-          "key": "night-signal-ep01",
-          "title": "Episode 01: New Underground Radar",
-          "description": "A conversation about fresh releases, bedroom studios, and scenes flying under the radar.",
-          "audioFile": "he went to die all alone2.mp3",
-          "artworkFile": "flash-street-photography-6.jpg",
-          "recordingType": "PODCAST_EPISODE",
-          "episodeNumber": 1,
-          "releaseDate": "2026-05-18T00:00:00.000Z",
-          "publishedAt": "2026-05-18T00:00:00.000Z",
-          "tagKeys": ["podcast"]
         }
       ]
     },
@@ -218,7 +206,236 @@
           "trackNumber": 2,
           "releaseDate": "2026-05-21T00:00:00.000Z",
           "publishedAt": "2026-05-21T00:00:00.000Z",
-          "tagKeys": ["dream-pop", "late-night"]
+          "tagKeys": ["dream-pop"]
+        }
+      ]
+    },
+    {
+      "key": "glass-harbor",
+      "ownerKey": "river-ghost",
+      "title": "Glass Harbor",
+      "slug": "glass-harbor",
+      "description": "Two-track EP of tide-line ambience and distant vocal samples.",
+      "type": "RELEASE",
+      "coverArtFile": "flux-Prosperity shot Light Angle beautiful Mysticism Il-1753510137035.jpg",
+      "isPinnedOnProfile": true,
+      "publishedAt": "2026-05-19T00:00:00.000Z",
+      "tagKeys": ["ambient", "electronic"],
+      "recordings": [
+        {
+          "key": "harbor-lights",
+          "title": "Harbor Lights",
+          "description": "Muted pads and field recordings from a waterfront after closing time.",
+          "audioFile": "out here in the dark city, out here in the dark city.mp3",
+          "artworkFile": "flux-8k high-resolution distinct detailed gentle rainin-1745555862269.jpg",
+          "trackNumber": 1,
+          "releaseDate": "2026-05-19T00:00:00.000Z",
+          "publishedAt": "2026-05-19T00:00:00.000Z",
+          "tagKeys": ["ambient"]
+        },
+        {
+          "key": "tide-lines",
+          "title": "Tide Lines",
+          "description": "A patient build with granular textures and a single repeating motif.",
+          "audioFile": "lovers luck is when preparation meets opportunity.mp3",
+          "artworkFile": "photo-1466357955653-f8a10d011dcb.jpg",
+          "trackNumber": 2,
+          "releaseDate": "2026-05-19T00:00:00.000Z",
+          "publishedAt": "2026-05-19T00:00:00.000Z",
+          "tagKeys": ["ambient"]
+        }
+      ]
+    },
+    {
+      "key": "dark-matter-vol1",
+      "ownerKey": "hex-wave",
+      "title": "Dark Matter Vol. 1",
+      "slug": "dark-matter-vol-1",
+      "description": "Three tracks of dense production — trap architecture, hard electronics, and static pressure.",
+      "type": "ALBUM",
+      "coverArtFile": "flux-party crowd dive bar country-western dance crowd p-1746861377843.jpg",
+      "featured": true,
+      "isPinnedOnProfile": true,
+      "publishedAt": "2026-05-22T00:00:00.000Z",
+      "tagKeys": ["hip-hop", "electronic", "featured"],
+      "recordings": [
+        {
+          "key": "cloud-nine-collapse",
+          "title": "Cloud Nine Collapse",
+          "description": "Distorted 808 swells and ghostly synth work anchored by a crumbling, off-axis rhythm.",
+          "audioFile": "born lucky i never lose poeticzzzzzz.mp3",
+          "artworkFile": "flash-street-photography-6.jpg",
+          "trackNumber": 1,
+          "releaseDate": "2026-05-22T00:00:00.000Z",
+          "publishedAt": "2026-05-22T00:00:00.000Z",
+          "tagKeys": ["hip-hop", "electronic"]
+        },
+        {
+          "key": "pressure-system",
+          "title": "Pressure System",
+          "description": "Raw hi-hat rolls and punishing bass locked into a relentless forward-motion loop.",
+          "audioFile": "HAMMER MCfe BEAT x clouding my results creative (Mashfefefefefefaup).mp3",
+          "artworkFile": "flux-grungy rocket ship on flying launch illustration w-1750099406613.jpg",
+          "trackNumber": 2,
+          "releaseDate": "2026-05-22T00:00:00.000Z",
+          "publishedAt": "2026-05-22T00:00:00.000Z",
+          "tagKeys": ["hip-hop"]
+        },
+        {
+          "key": "midnight-circuit",
+          "title": "Midnight Circuit",
+          "description": "Chopped pads and a staggered kick that feels like a system reboot at 3am.",
+          "audioFile": "experiment with compression compression2.mp3",
+          "artworkFile": "dezgo_a85b91acf36858f76.png",
+          "trackNumber": 3,
+          "releaseDate": "2026-05-22T00:00:00.000Z",
+          "publishedAt": "2026-05-22T00:00:00.000Z",
+          "tagKeys": ["electronic", "hip-hop"]
+        }
+      ]
+    },
+    {
+      "key": "mirror-hour-ep",
+      "ownerKey": "jade-mirror",
+      "title": "Mirror Hour EP",
+      "slug": "mirror-hour",
+      "description": "Three songs written between 2am and 4am. Soft rhythm, warm chords, and a voice that doesn't apologize.",
+      "type": "RELEASE",
+      "coverArtFile": "ponder-b-Untitled.jpg",
+      "isPinnedOnProfile": true,
+      "publishedAt": "2026-05-21T00:00:00.000Z",
+      "tagKeys": ["r-and-b", "soul"],
+      "recordings": [
+        {
+          "key": "skin-deep",
+          "title": "Skin Deep",
+          "description": "A confessional over warm-pressed Rhodes and a ghost of reverb.",
+          "audioFile": "sendingy.mp3",
+          "artworkFile": "ponder-b-Untitled.jpg",
+          "trackNumber": 1,
+          "releaseDate": "2026-05-21T00:00:00.000Z",
+          "publishedAt": "2026-05-21T00:00:00.000Z",
+          "tagKeys": ["r-and-b"]
+        },
+        {
+          "key": "witness",
+          "title": "Witness",
+          "description": "Layered vocals and a jazz-adjacent chord change that resolves somewhere unexpected.",
+          "audioFile": "lovers luck is when preparation meets opportunity.mp3",
+          "artworkFile": "cherry_002.jpg",
+          "trackNumber": 2,
+          "releaseDate": "2026-05-21T00:00:00.000Z",
+          "publishedAt": "2026-05-21T00:00:00.000Z",
+          "tagKeys": ["r-and-b", "soul"]
+        },
+        {
+          "key": "undertow",
+          "title": "Undertow",
+          "description": "Slow-wave soul with a breakup lyric that doesn't spell itself out.",
+          "audioFile": "he went to die all alone2.mp3",
+          "artworkFile": "photo-1466357955653-f8a10d011dcb.jpg",
+          "trackNumber": 3,
+          "releaseDate": "2026-05-21T00:00:00.000Z",
+          "publishedAt": "2026-05-21T00:00:00.000Z",
+          "tagKeys": ["soul", "r-and-b"]
+        }
+      ]
+    },
+    {
+      "key": "low-signal-season",
+      "ownerKey": "static-bloom",
+      "title": "Low Signal Season",
+      "slug": "low-signal-season",
+      "description": "An indie record about being halfway between two places and unsure which one to miss.",
+      "type": "ALBUM",
+      "coverArtFile": "2025-01-26_23-C-06_8899.jpg",
+      "isPinnedOnProfile": true,
+      "publishedAt": "2026-05-20T00:00:00.000Z",
+      "tagKeys": ["indie", "dream-pop"],
+      "recordings": [
+        {
+          "key": "half-life",
+          "title": "Half-Life",
+          "description": "A guitar song about staying too long in something comfortable.",
+          "audioFile": "the whole world wild .mp3",
+          "artworkFile": "2025-01-26_23-C-06_8899.jpg",
+          "trackNumber": 1,
+          "releaseDate": "2026-05-20T00:00:00.000Z",
+          "publishedAt": "2026-05-20T00:00:00.000Z",
+          "tagKeys": ["indie"]
+        },
+        {
+          "key": "dead-channel",
+          "title": "Dead Channel",
+          "description": "Distorted guitars over a stuttering loop — like a signal from somewhere you don't recognize.",
+          "audioFile": "out here in the dark city, out here in the dark city.mp3",
+          "artworkFile": "flux-8k high-resolution distinct detailed gentle rainin-1745555862269.jpg",
+          "trackNumber": 2,
+          "releaseDate": "2026-05-20T00:00:00.000Z",
+          "publishedAt": "2026-05-20T00:00:00.000Z",
+          "tagKeys": ["indie", "dream-pop"]
+        }
+      ]
+    },
+    {
+      "key": "machine-sleep-ep",
+      "ownerKey": "pulse-drift",
+      "title": "Machine Sleep EP",
+      "slug": "machine-sleep",
+      "description": "Two sides of the same circuit board — floor energy and its aftermath.",
+      "type": "RELEASE",
+      "coverArtFile": "flux-middle sharp focus c sharp drinking country-wester-1746862295774.jpg",
+      "isPinnedOnProfile": true,
+      "publishedAt": "2026-05-23T00:00:00.000Z",
+      "tagKeys": ["dance", "electronic"],
+      "recordings": [
+        {
+          "key": "zero-crossing",
+          "title": "Zero Crossing",
+          "description": "A peak-time waveform — synthesized tension and mechanical drive.",
+          "audioFile": "ambient disco dance humming bird dance buffalo buffalo buffalxo.mp3",
+          "artworkFile": "flux-middle sharp focus c sharp drinking country-wester-1746862295774.jpg",
+          "trackNumber": 1,
+          "releaseDate": "2026-05-23T00:00:00.000Z",
+          "publishedAt": "2026-05-23T00:00:00.000Z",
+          "tagKeys": ["dance", "electronic"]
+        },
+        {
+          "key": "feedback-loop",
+          "title": "Feedback Loop",
+          "description": "The aftermath — slower, more meditative, built from the residue of what came before.",
+          "audioFile": "HAMMER MCfe BEAT x clouding my results creative (Mashfefefefefefaup).mp3",
+          "artworkFile": "flux-Prosperity shot Light Angle beautiful Mysticism Il-1753510137035.jpg",
+          "trackNumber": 2,
+          "releaseDate": "2026-05-23T00:00:00.000Z",
+          "publishedAt": "2026-05-23T00:00:00.000Z",
+          "tagKeys": ["dance", "electronic"]
+        }
+      ]
+    },
+    {
+      "key": "night-signal-radio",
+      "ownerKey": "night-signal",
+      "title": "Night Signal Radio",
+      "slug": "night-signal-radio",
+      "description": "A weekly podcast spotlighting emerging artists, scene talk, and deep cuts.",
+      "type": "PODCAST_CHANNEL",
+      "coverArtFile": "photo-1504960868016-9a59a5172321.jpg",
+      "isPinnedOnProfile": true,
+      "publishedAt": "2026-05-18T00:00:00.000Z",
+      "tagKeys": ["podcast", "late-night"],
+      "recordings": [
+        {
+          "key": "night-signal-ep01",
+          "title": "Episode 01: New Underground Radar",
+          "description": "A conversation about fresh releases, bedroom studios, and scenes flying under the radar.",
+          "audioFile": "born lucky i never lose poetic.mp3",
+          "artworkFile": "flash-street-photography-6.jpg",
+          "recordingType": "PODCAST_EPISODE",
+          "episodeNumber": 1,
+          "releaseDate": "2026-05-18T00:00:00.000Z",
+          "publishedAt": "2026-05-18T00:00:00.000Z",
+          "tagKeys": ["podcast"]
         }
       ]
     }
@@ -226,41 +443,119 @@
   "playlists": [
     {
       "key": "late-night-commute",
-      "ownerKey": "crate-digger",
+      "ownerKey": "river-ghost",
       "title": "Late Night Commute",
       "slug": "late-night-commute",
       "description": "A cross-artist mix for the drive home — dream pop, ambient, and one slow-burn deep cut.",
-      "coverArtFile": "flux-party crowd dive bar country-western dance crowd p-1746861377843.jpg",
+      "coverArtFile": "flux-dramatic green art-deco studio beach the art-deco -1753509256469.jpg",
       "publishedAt": "2026-05-22T00:00:00.000Z",
-      "tagKeys": ["late-night"],
+      "tagKeys": ["late-night", "dream-pop"],
       "recordingKeys": [
         "satellite-hearts",
         "harbor-lights",
         "neon-delay",
         "tide-lines",
-        "wrong-about-me"
+        "wrong-about-me",
+        "leave-it-up-to-you"
       ]
     },
     {
       "key": "editors-desk-may",
-      "ownerKey": "editor",
+      "ownerKey": "nova-lane",
       "title": "Editor's Desk: May 2026",
       "slug": "editors-desk-may-2026",
-      "description": "Staff picks spanning new albums, harbor ambient, and this week's podcast opener.",
+      "description": "Staff picks spanning new albums, harbor ambient, indie guitars, and this week's standout tracks.",
       "coverArtFile": "flux-words Tropical Fusion in readable font graiphical-1754346240797.jpg",
       "featured": true,
       "publishedAt": "2026-05-22T00:00:00.000Z",
       "tagKeys": ["featured"],
       "recordingKeys": [
+        "wrong-about-me",
+        "cloud-nine-collapse",
+        "skin-deep",
+        "harbor-lights",
+        "half-life",
+        "zero-crossing",
+        "satellite-hearts"
+      ]
+    },
+    {
+      "key": "machine-and-soul",
+      "ownerKey": "pulse-drift",
+      "title": "Machine & Soul",
+      "slug": "machine-and-soul",
+      "description": "Electronic craft meets soulful warmth — staff picks where the boundary dissolves.",
+      "coverArtFile": "upscalemedia-transform444888ed.png",
+      "featured": true,
+      "publishedAt": "2026-05-23T00:00:00.000Z",
+      "tagKeys": ["featured", "electronic"],
+      "recordingKeys": [
+        "zero-crossing",
+        "skin-deep",
+        "midnight-circuit",
+        "witness",
+        "harbor-lights",
+        "satellite-hearts"
+      ]
+    },
+    {
+      "key": "after-midnight",
+      "ownerKey": "jade-mirror",
+      "title": "After Midnight",
+      "slug": "after-midnight",
+      "description": "Post-show cool-down — R&B, indie, and dream-pop when everyone else has gone home.",
+      "coverArtFile": "flux-party crowd dive bar country-western dance crowd p-1746861377843.jpg",
+      "publishedAt": "2026-05-23T00:00:00.000Z",
+      "tagKeys": ["late-night", "r-and-b"],
+      "recordingKeys": [
+        "skin-deep",
+        "wrong-about-me",
+        "witness",
+        "leave-it-up-to-you",
+        "undertow",
+        "half-life"
+      ]
+    },
+    {
+      "key": "indie-signal",
+      "ownerKey": "static-bloom",
+      "title": "Indie Signal",
+      "slug": "indie-signal",
+      "description": "Guitar and feeling. Songs that know when to get loud and when to hold back.",
+      "coverArtFile": "flux-the exact words AUSTIN TX simple font-1754261500580.jpg",
+      "publishedAt": "2026-05-24T00:00:00.000Z",
+      "tagKeys": ["indie"],
+      "recordingKeys": [
+        "half-life",
+        "dead-channel",
         "satellite-hearts",
         "soft-static",
-        "harbor-lights",
-        "night-signal-ep01"
+        "wrong-about-me"
+      ]
+    },
+    {
+      "key": "frequency-check",
+      "ownerKey": "hex-wave",
+      "title": "Frequency Check: May",
+      "slug": "frequency-check-may",
+      "description": "The freshest uploads across the platform this month — one from every corner of the catalog.",
+      "coverArtFile": "flux-lofi hip hop beautiful sunset artistic creative ae-1753562799100.jpg",
+      "featured": true,
+      "publishedAt": "2026-05-24T00:00:00.000Z",
+      "tagKeys": ["featured"],
+      "recordingKeys": [
+        "cloud-nine-collapse",
+        "skin-deep",
+        "zero-crossing",
+        "half-life",
+        "neon-delay",
+        "satellite-hearts",
+        "witness"
       ]
     },
     {
       "key": "admin-catalog-review",
-      "ownerKey": "super-admin",
+      "ownerKey": "night-signal",
       "title": "Catalog Review Queue",
       "slug": "catalog-review-queue",
       "description": "Internal listening queue for recently published uploads across creators.",
@@ -270,14 +565,51 @@
         "neon-delay",
         "leave-it-up-to-you",
         "tide-lines",
-        "night-signal-ep01"
+        "night-signal-ep01",
+        "feedback-loop",
+        "undertow"
       ]
     }
   ],
   "saves": [
     {
+      "userKey": "super-admin",
+      "playlistKey": "frequency-check",
+      "kind": "FAVORITE"
+    },
+    {
+      "userKey": "super-admin",
+      "playlistKey": "admin-catalog-review",
+      "kind": "LIBRARY"
+    },
+    {
+      "userKey": "super-admin",
+      "playlistKey": "editors-desk-may",
+      "kind": "LIBRARY"
+    },
+    {
+      "userKey": "super-admin",
+      "recordingKey": "cloud-nine-collapse",
+      "kind": "FAVORITE"
+    },
+    {
+      "userKey": "super-admin",
+      "recordingKey": "zero-crossing",
+      "kind": "FAVORITE"
+    },
+    {
+      "userKey": "super-admin",
+      "recordingKey": "wrong-about-me",
+      "kind": "FAVORITE"
+    },
+    {
       "userKey": "crate-digger",
       "playlistKey": "afterglow-transit",
+      "kind": "FAVORITE"
+    },
+    {
+      "userKey": "crate-digger",
+      "playlistKey": "machine-and-soul",
       "kind": "FAVORITE"
     },
     {
@@ -287,8 +619,80 @@
     },
     {
       "userKey": "crate-digger",
+      "recordingKey": "wrong-about-me",
+      "kind": "FAVORITE"
+    },
+    {
+      "userKey": "crate-digger",
+      "recordingKey": "skin-deep",
+      "kind": "FAVORITE"
+    },
+    {
+      "userKey": "crate-digger",
       "playlistKey": "late-night-commute",
       "kind": "LIBRARY"
+    },
+    {
+      "userKey": "crate-digger",
+      "playlistKey": "after-midnight",
+      "kind": "LIBRARY"
+    }
+  ],
+  "userPlaybackEvents": [
+    {
+      "userKey": "super-admin",
+      "recordingKey": "cloud-nine-collapse",
+      "playlistKey": "frequency-check",
+      "sourceContext": "admin-review",
+      "count": 7,
+      "playedSeconds": 132,
+      "completed": true,
+      "daysAgoStart": 0.2,
+      "daysAgoEnd": 12
+    },
+    {
+      "userKey": "super-admin",
+      "recordingKey": "zero-crossing",
+      "playlistKey": "machine-sleep-ep",
+      "sourceContext": "admin-review",
+      "count": 5,
+      "playedSeconds": 118,
+      "completed": true,
+      "daysAgoStart": 1,
+      "daysAgoEnd": 15
+    },
+    {
+      "userKey": "super-admin",
+      "recordingKey": "wrong-about-me",
+      "playlistKey": "nova-singles",
+      "sourceContext": "admin-review",
+      "count": 4,
+      "playedSeconds": 106,
+      "completed": true,
+      "daysAgoStart": 2,
+      "daysAgoEnd": 18
+    },
+    {
+      "userKey": "super-admin",
+      "recordingKey": "night-signal-ep01",
+      "playlistKey": "admin-catalog-review",
+      "sourceContext": "catalog-review",
+      "count": 3,
+      "playedSeconds": 180,
+      "completed": false,
+      "daysAgoStart": 0.5,
+      "daysAgoEnd": 8
+    },
+    {
+      "userKey": "super-admin",
+      "recordingKey": "undertow",
+      "playlistKey": "admin-catalog-review",
+      "sourceContext": "catalog-review",
+      "count": 2,
+      "playedSeconds": 96,
+      "completed": true,
+      "daysAgoStart": 6,
+      "daysAgoEnd": 21
     }
   ],
   "editorial": [
@@ -298,17 +702,125 @@
       "kind": "FEATURE",
       "title": "This Week's Essential Midnight Releases",
       "slug": "essential-midnight-releases",
-      "summary": "Three records and one show shaping the mood this week.",
-      "body": "Playlisted's editorial team highlights a handful of nocturnal releases with strong atmosphere and personality — from Nova Lane's Afterglow Transit to River Ghost's harbor sketches and the latest Night Signal episode.",
-      "publishedAt": "2026-05-21T00:00:00.000Z"
+      "summary": "Five records and one show shaping the mood this week.",
+      "body": "Playlisted's editorial team highlights nocturnal releases with strong atmosphere — from Nova Lane's Afterglow Transit to Hex Wave's Dark Matter and Jade Mirror's late-night R&B sketches.",
+      "coverImageFile": "Screenshot 2026-05-20 213139.png",
+      "publishedAt": "2026-05-23T00:00:00.000Z"
+    },
+    {
+      "key": "new-faces-may",
+      "authorKey": "editor",
+      "kind": "FEATURE",
+      "title": "New Faces: May's Breakthrough Artists",
+      "slug": "new-faces-may-2026",
+      "summary": "Hex Wave, Jade Mirror, Static Bloom, and Pulse Drift — four debuts worth your full attention.",
+      "body": "Four new creators launched this month and each one brings something distinct. Hex Wave works in heavyweight electronics and trap architecture. Jade Mirror writes soul from the inside out. Static Bloom's guitars are understated and precise. Pulse Drift builds for the floor.",
+      "coverImageFile": "flux-words Tropical Fusion in readable font graiphical-1754346240797.jpg",
+      "publishedAt": "2026-05-24T00:00:00.000Z"
     }
   ],
   "homepageFeatures": [
+    {
+      "section": "EDITOR_PICK",
+      "position": 1,
+      "playlistKey": "editors-desk-may",
+      "createdByKey": "editor",
+      "titleOverride": "Editor's Desk: May 2026",
+      "subtitleOverride": "Staff picks — seven tracks worth your full attention this week"
+    },
+    {
+      "section": "EDITOR_PICK",
+      "position": 2,
+      "editorialKey": "new-faces-may",
+      "createdByKey": "editor"
+    },
+    {
+      "section": "EDITOR_PICK",
+      "position": 3,
+      "playlistKey": "afterglow-transit",
+      "createdByKey": "editor"
+    },
+    {
+      "section": "EDITOR_PICK",
+      "position": 4,
+      "playlistKey": "glass-harbor",
+      "createdByKey": "editor"
+    },
+    {
+      "section": "EDITOR_PICK",
+      "position": 5,
+      "playlistKey": "dark-matter-vol1",
+      "createdByKey": "editor"
+    },
+    {
+      "section": "EDITOR_PICK",
+      "position": 6,
+      "playlistKey": "late-night-commute",
+      "createdByKey": "editor"
+    },
+    {
+      "section": "EDITOR_PICK",
+      "position": 7,
+      "playlistKey": "machine-and-soul",
+      "createdByKey": "editor"
+    },
+    {
+      "section": "EDITOR_PICK",
+      "position": 8,
+      "playlistKey": "after-midnight",
+      "createdByKey": "editor"
+    },
+    {
+      "section": "EDITOR_PICK",
+      "position": 9,
+      "playlistKey": "frequency-check",
+      "createdByKey": "editor"
+    },
     {
       "section": "FEATURED_PLAYLIST",
       "position": 1,
       "playlistKey": "afterglow-transit",
       "createdByKey": "editor"
+    },
+    {
+      "section": "FEATURED_PLAYLIST",
+      "position": 2,
+      "playlistKey": "machine-and-soul",
+      "createdByKey": "editor"
+    },
+    {
+      "section": "FEATURED_PLAYLIST",
+      "position": 3,
+      "playlistKey": "glass-harbor",
+      "createdByKey": "editor"
+    },
+    {
+      "section": "FEATURED_PLAYLIST",
+      "position": 4,
+      "playlistKey": "frequency-check",
+      "createdByKey": "editor"
+    },
+    {
+      "section": "FEATURED_PLAYLIST",
+      "position": 5,
+      "playlistKey": "dark-matter-vol1",
+      "createdByKey": "editor"
+    },
+    {
+      "section": "CUSTOM_MIX",
+      "position": 1,
+      "playlistKey": "late-night-commute",
+      "createdByKey": "editor",
+      "titleOverride": "Late Night Commute",
+      "subtitleOverride": "A listener mix moving through dream-pop, ambient, and slow-burn cuts"
+    },
+    {
+      "section": "CUSTOM_MIX",
+      "position": 2,
+      "playlistKey": "after-midnight",
+      "createdByKey": "editor",
+      "titleOverride": "After Midnight",
+      "subtitleOverride": "R&B, indie, and dream-pop for the post-show cool-down"
     },
     {
       "section": "NEW_ARTIST",
@@ -317,9 +829,79 @@
       "createdByKey": "editor"
     },
     {
+      "section": "NEW_ARTIST",
+      "position": 2,
+      "userKey": "hex-wave",
+      "createdByKey": "editor"
+    },
+    {
+      "section": "NEW_ARTIST",
+      "position": 3,
+      "userKey": "jade-mirror",
+      "createdByKey": "editor"
+    },
+    {
+      "section": "NEW_ARTIST",
+      "position": 4,
+      "userKey": "river-ghost",
+      "createdByKey": "editor"
+    },
+    {
+      "section": "NEW_ARTIST",
+      "position": 5,
+      "userKey": "static-bloom",
+      "createdByKey": "editor"
+    },
+    {
+      "section": "NEW_ARTIST",
+      "position": 6,
+      "userKey": "pulse-drift",
+      "createdByKey": "editor"
+    },
+    {
+      "section": "NEW_RELEASE",
+      "position": 1,
+      "playlistKey": "nova-singles",
+      "createdByKey": "editor"
+    },
+    {
+      "section": "NEW_RELEASE",
+      "position": 2,
+      "playlistKey": "dark-matter-vol1",
+      "createdByKey": "editor"
+    },
+    {
+      "section": "NEW_RELEASE",
+      "position": 3,
+      "playlistKey": "machine-sleep-ep",
+      "createdByKey": "editor"
+    },
+    {
+      "section": "TRENDING",
+      "position": 1,
+      "playlistKey": "frequency-check",
+      "createdByKey": "editor",
+      "titleOverride": "Frequency Check: May",
+      "subtitleOverride": "Fresh uploads rising across the catalog"
+    },
+    {
+      "section": "TRENDING",
+      "position": 2,
+      "playlistKey": "machine-and-soul",
+      "createdByKey": "editor",
+      "titleOverride": "Machine & Soul",
+      "subtitleOverride": "Electronic craft meeting warm vocal records"
+    },
+    {
       "section": "SITE_NEWS",
       "position": 1,
       "editorialKey": "essential-midnight-releases",
+      "createdByKey": "editor"
+    },
+    {
+      "section": "SITE_NEWS",
+      "position": 2,
+      "editorialKey": "new-faces-may",
       "createdByKey": "editor"
     }
   ]
