@@ -1,4 +1,4 @@
-import { Loader2, Pause, Play } from "lucide-react";
+import { Pause, Play } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { TopSongItem } from "@playlisted/client-sdk";
 
@@ -9,7 +9,6 @@ interface ChartSongCardProps {
   className?: string;
   isActive?: boolean;
   isPlaying?: boolean;
-  isLoading?: boolean;
   onPlay?: () => void;
 }
 
@@ -18,12 +17,10 @@ export function ChartSongCard({
   className,
   isActive = false,
   isPlaying = false,
-  isLoading = false,
   onPlay,
 }: ChartSongCardProps) {
   const rankLabel = item.rank <= 3 ? ["#1", "#2", "#3"][item.rank - 1] : `#${item.rank}`;
   const isTop3 = item.rank <= 3;
-  const showPause = isActive && !isLoading;
 
   return (
     <div className={`flex flex-col gap-2 ${className ?? "w-52 shrink-0"}`}>
@@ -31,7 +28,7 @@ export function ChartSongCard({
       <div
         role={onPlay ? "button" : undefined}
         tabIndex={onPlay ? 0 : undefined}
-        aria-label={onPlay ? (showPause ? (isPlaying ? "Pause" : "Resume") : "Play") : undefined}
+        aria-label={onPlay ? (isActive ? (isPlaying ? "Pause" : "Resume") : "Play") : undefined}
         className={[
           "group relative aspect-square w-full overflow-hidden rounded-lg",
           onPlay ? "cursor-pointer" : "",
@@ -86,17 +83,15 @@ export function ChartSongCard({
           </p>
         </div>
 
-        {/* Play / pause overlay — visible when active, hover-only otherwise */}
+        {/* Play / pause overlay — always visible when active or playing */}
         {onPlay && (
           <div
             className={[
               "absolute inset-0 flex items-center justify-center bg-black/50 transition-opacity",
-              isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100",
+              isActive || isPlaying ? "opacity-100" : "opacity-0 group-hover:opacity-100",
             ].join(" ")}
           >
-            {isLoading ? (
-              <Loader2 size={32} className="animate-spin text-white drop-shadow-lg" />
-            ) : showPause ? (
+            {isPlaying || isActive ? (
               <Pause size={32} fill="currentColor" className="text-white drop-shadow-lg" />
             ) : (
               <Play size={32} fill="currentColor" className="ml-1 text-white drop-shadow-lg" />

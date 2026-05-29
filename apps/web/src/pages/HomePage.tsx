@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { BarChart2, Headphones, Loader2, Mic2, Pause, Play } from "lucide-react";
+import { BarChart2, Headphones, Mic2, Pause, Play } from "lucide-react";
 import type { components } from "@playlisted/client-sdk";
 import type { LibrarySong, TopSongItem } from "@playlisted/client-sdk";
 
@@ -67,22 +67,18 @@ function HomeSongRow({
   song,
   isActive,
   isPlaying,
-  isLoading,
   onPlay,
 }: {
   song: LibrarySong;
   isActive: boolean;
   isPlaying: boolean;
-  isLoading?: boolean;
   onPlay: () => void;
 }) {
-  const showPause = isActive && !isLoading;
-
   return (
     <button
       type="button"
       onClick={onPlay}
-      aria-label={showPause ? (isPlaying ? "Pause" : "Resume") : "Play"}
+      aria-label={isActive ? (isPlaying ? "Pause" : "Resume") : "Play"}
       className={[
         "group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition",
         isActive ? "bg-white/[0.08]" : "hover:bg-white/[0.05]",
@@ -105,9 +101,7 @@ function HomeSongRow({
             isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100",
           ].join(" ")}
         >
-          {isLoading ? (
-            <Loader2 size={12} className="animate-spin text-white" />
-          ) : showPause ? (
+          {isActive ? (
             <Pause size={12} fill="currentColor" className="text-white" />
           ) : (
             <Play size={12} fill="currentColor" className="ml-px text-white" />
@@ -133,9 +127,7 @@ function HomeSongRow({
       </div>
 
       <span className="shrink-0">
-        {isLoading ? (
-          <Loader2 size={15} className="animate-spin text-[var(--color-brand)]" />
-        ) : showPause ? (
+        {isPlaying ? (
           <Pause size={15} fill="currentColor" className="text-[var(--color-brand)]" />
         ) : (
           <Play
@@ -499,7 +491,6 @@ export function HomePage() {
                 const trackId = item.recordingId;
                 const isActive = currentTrack?.id === trackId;
                 const isPlaying = isActive && state === "playing";
-                const isLoading = isActive && state === "loading";
                 return (
                   <ChartSongCard
                     key={trackId}
@@ -507,7 +498,6 @@ export function HomePage() {
                     className="w-full"
                     isActive={isActive}
                     isPlaying={isPlaying}
-                    isLoading={isLoading}
                     onPlay={() =>
                       handleChartSongPlay(item, topSongs.data!.data, "Top Songs")
                     }
@@ -695,14 +685,12 @@ export function HomePage() {
             {limited.map((song) => {
               const isActive = currentTrack?.id === song.id;
               const isPlaying = isActive && state === "playing";
-              const isLoading = isActive && state === "loading";
               return (
                 <HomeSongRow
                   key={song.id}
                   song={song}
                   isActive={isActive}
                   isPlaying={isPlaying}
-                  isLoading={isLoading}
                   onPlay={() => handleSongPlay(song, limited, name)}
                 />
               );
