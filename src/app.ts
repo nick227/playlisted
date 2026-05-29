@@ -2,6 +2,8 @@ import "dotenv/config";
 
 import cors from "cors";
 import express from "express";
+import { getCorsOptions } from "./lib/corsOptions.js";
+import { installWebApp } from "./lib/serveWeb.js";
 import OpenApiValidator from "express-openapi-validator";
 import fs from "node:fs";
 import path from "node:path";
@@ -23,6 +25,7 @@ import { homepageRouter } from "./routes/homepage.js";
 import { meRouter } from "./routes/me.js";
 import { playlistsRouter } from "./routes/playlists.js";
 import { recordingsRouter } from "./routes/recordings.js";
+import { searchRouter } from "./routes/search.js";
 import { uploadsRouter } from "./routes/uploads.js";
 import { usersRouter } from "./routes/users.js";
 
@@ -33,7 +36,11 @@ export function createApp() {
   const app = express();
   const uploadsDir = path.resolve(process.cwd(), process.env.UPLOADS_DIR ?? "uploads");
 
-  app.use(cors());
+  if (process.env.TRUST_PROXY === "1") {
+    app.set("trust proxy", 1);
+  }
+
+  app.use(cors(getCorsOptions()));
   app.use(express.json());
   app.use("/uploads", express.static(uploadsDir));
   app.use("/api/v1/uploads", uploadsRouter);
@@ -60,6 +67,7 @@ export function createApp() {
   app.use("/api/v1/users", usersRouter);
   app.use("/api/v1/playlists", playlistsRouter);
   app.use("/api/v1/recordings", recordingsRouter);
+  app.use("/api/v1/search", searchRouter);
   app.use("/api/v1/charts", chartsRouter);
   app.use("/api/v1/library", libraryRouter);
   app.use("/api/v1/admin/dashboard", adminDashboardRouter);
@@ -68,6 +76,8 @@ export function createApp() {
   app.use("/api/v1/admin/tags", adminTagsRouter);
   app.use("/api/v1/admin/homepage-features", adminHomepageRouter);
   app.use("/api/v1/admin/users", adminUsersRouter);
+
+  installWebApp(app);
 
   app.use((req, res) => {
     res.status(404).json({
