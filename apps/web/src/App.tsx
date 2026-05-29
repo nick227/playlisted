@@ -4,8 +4,11 @@ import { AuthLayout } from "@/components/auth/AuthLayout";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AppShell } from "@/components/app-shell/AppShell";
 import { AdminPage } from "@/pages/AdminPage";
-import { AdminTagsPage } from "@/pages/admin/AdminTagsPage";
+import { AdminDashboardPage } from "@/pages/admin/AdminDashboardPage";
 import { AdminHomepagePage } from "@/pages/admin/AdminHomepagePage";
+import { AdminPlaylistsPage } from "@/pages/admin/AdminPlaylistsPage";
+import { AdminSongsPage } from "@/pages/admin/AdminSongsPage";
+import { AdminTagsPage } from "@/pages/admin/AdminTagsPage";
 import { AdminUsersPage } from "@/pages/admin/AdminUsersPage";
 import { HomePage } from "@/pages/HomePage";
 import { FavoritesPage } from "@/pages/FavoritesPage";
@@ -108,10 +111,12 @@ function MainRoutes() {
             </ProtectedRoute>
           }
         >
-          <Route index element={<Navigate to="/admin/tags" replace />} />
-          <Route path="tags" element={<AdminTagsPage />} />
-          <Route path="homepage" element={<AdminHomepagePage />} />
+          <Route index element={<AdminDashboardPage />} />
+          <Route path="songs" element={<AdminSongsPage />} />
+          <Route path="playlists" element={<AdminPlaylistsPage />} />
           <Route path="users" element={<AdminUsersPage />} />
+          <Route path="homepage" element={<AdminHomepagePage />} />
+          <Route path="tags" element={<AdminTagsPage />} />
         </Route>
         <Route
           path="/playlists/new"

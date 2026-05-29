@@ -1,4 +1,4 @@
-import { Play } from "lucide-react";
+import { Pause, Play } from "lucide-react";
 
 import { coverFallback } from "@/lib/routes";
 
@@ -7,10 +7,20 @@ interface MediaCoverProps {
   imageUrl?: string | null;
   shape?: "square" | "circle";
   onPlay?: () => void;
+  isPlaying?: boolean;
+  isActive?: boolean;
 }
 
-export function MediaCover({ title, imageUrl, shape = "square", onPlay }: MediaCoverProps) {
+export function MediaCover({
+  title,
+  imageUrl,
+  shape = "square",
+  onPlay,
+  isPlaying = false,
+  isActive = false,
+}: MediaCoverProps) {
   const rounded = shape === "circle" ? "rounded-full" : "rounded-lg";
+  const showOverlay = Boolean(onPlay);
 
   return (
     <div className={`group relative aspect-square w-full overflow-hidden ${rounded}`}>
@@ -23,21 +33,31 @@ export function MediaCover({ title, imageUrl, shape = "square", onPlay }: MediaC
           aria-hidden
         />
       )}
-      {onPlay ? (
+      {showOverlay ? (
         <button
           type="button"
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            onPlay();
+            onPlay?.();
           }}
-          className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition group-hover:opacity-100"
-          aria-label={`Play ${title}`}
+          className={[
+            "absolute inset-0 flex items-center justify-center bg-black/40 transition",
+            isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100",
+          ].join(" ")}
+          aria-label={isPlaying ? `Pause ${title}` : `Play ${title}`}
         >
           <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-brand)] shadow-lg">
-            <Play size={22} fill="white" className="text-white" />
+            {isPlaying ? (
+              <Pause size={22} fill="white" className="text-white" />
+            ) : (
+              <Play size={22} fill="white" className="text-white" />
+            )}
           </span>
         </button>
+      ) : null}
+      {isActive ? (
+        <div className={`pointer-events-none absolute inset-0 ring-2 ring-inset ring-[var(--color-brand)] ${rounded}`} />
       ) : null}
     </div>
   );

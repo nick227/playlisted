@@ -21,7 +21,7 @@ export async function ensureInboxPlaylist(userId: string) {
   let slug = baseSlug;
   let suffix = 1;
 
-  while (await prisma.playlist.findUnique({ where: { slug }, select: { id: true } })) {
+  while (await prisma.playlist.findUnique({ where: { ownerId_slug: { ownerId: userId, slug } }, select: { id: true } })) {
     suffix += 1;
     slug = `${baseSlug}-${suffix}`;
   }

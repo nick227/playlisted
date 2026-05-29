@@ -745,6 +745,91 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/dashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Admin dashboard stats and time-series data */
+        get: operations["adminGetDashboard"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/songs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List all recordings with full metadata and metrics (admin) */
+        get: operations["adminListSongs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/songs/{songId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update a song's status, visibility, or explicit flag (admin) */
+        patch: operations["adminUpdateSong"];
+        trace?: never;
+    };
+    "/api/v1/admin/playlists": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List all playlists with full metadata and metrics (admin) */
+        get: operations["adminListPlaylists"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/playlists/{playlistId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update a playlist's status, visibility, or featured flag (admin) */
+        patch: operations["adminUpdatePlaylist"];
+        trace?: never;
+    };
     "/api/v1/admin/tags/bulk": {
         parameters: {
             query?: never;
@@ -1667,6 +1752,138 @@ export interface components {
             role?: components["schemas"]["UserRole"];
             status?: components["schemas"]["UserStatus"];
             isFeaturedArtist?: boolean;
+        };
+        AdminContentUploaderRef: {
+            id: string;
+            username: string;
+            displayName: string;
+            /** Format: uri-reference */
+            avatarUrl?: string | null;
+        };
+        AdminContentTagRef: {
+            id: string;
+            name: string;
+            slug: string;
+            kind: components["schemas"]["TagKind"];
+        };
+        AdminSong: {
+            id: string;
+            title: string;
+            description?: string | null;
+            /** Format: uri-reference */
+            audioUrl: string;
+            /** Format: uri-reference */
+            artworkUrl?: string | null;
+            durationSeconds?: number | null;
+            recordingType: components["schemas"]["RecordingType"];
+            visibility: components["schemas"]["Visibility"];
+            status: components["schemas"]["PublishStatus"];
+            explicit: boolean;
+            playCount: number;
+            savesCount: number;
+            /** Format: date-time */
+            publishedAt?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            uploader: components["schemas"]["AdminContentUploaderRef"];
+            playlist: {
+                id: string;
+                title: string;
+                slug: string;
+            };
+            tags: components["schemas"]["AdminContentTagRef"][];
+        };
+        AdminSongListResponse: {
+            data: components["schemas"]["AdminSong"][];
+            meta: components["schemas"]["PaginationMeta"];
+        };
+        AdminUpdateSongRequest: {
+            status?: components["schemas"]["PublishStatus"];
+            visibility?: components["schemas"]["Visibility"];
+            explicit?: boolean;
+        };
+        AdminPlaylist: {
+            id: string;
+            title: string;
+            description?: string | null;
+            /** Format: uri-reference */
+            coverArtUrl?: string | null;
+            type: components["schemas"]["PlaylistType"];
+            visibility: components["schemas"]["Visibility"];
+            status: components["schemas"]["PublishStatus"];
+            featured: boolean;
+            itemCount: number;
+            totalDurationSeconds: number;
+            savesCount: number;
+            playCount: number;
+            /** Format: date-time */
+            publishedAt?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            owner: components["schemas"]["AdminContentUploaderRef"];
+            tags: components["schemas"]["AdminContentTagRef"][];
+        };
+        AdminPlaylistListResponse: {
+            data: components["schemas"]["AdminPlaylist"][];
+            meta: components["schemas"]["PaginationMeta"];
+        };
+        AdminUpdatePlaylistRequest: {
+            status?: components["schemas"]["PublishStatus"];
+            visibility?: components["schemas"]["Visibility"];
+            featured?: boolean;
+        };
+        AdminDashboardTotals: {
+            users: {
+                total: number;
+                newToday: number;
+                newThisWeek: number;
+            };
+            songs: {
+                total: number;
+                published: number;
+                draft: number;
+            };
+            playlists: {
+                total: number;
+                published: number;
+            };
+            plays: {
+                total: number;
+                today: number;
+            };
+            playSeconds: {
+                total: number;
+                today: number;
+            };
+            saves: number;
+            follows: number;
+        };
+        AdminDashboardResponse: {
+            totals: components["schemas"]["AdminDashboardTotals"];
+            hourlyPlays: {
+                hour: string;
+                plays: number;
+            }[];
+            dailyPlays: {
+                day: string;
+                plays: number;
+            }[];
+            dailyNewUsers: {
+                day: string;
+                newUsers: number;
+            }[];
+            topSongsToday: {
+                recordingId: string;
+                plays: number;
+                title: string;
+                /** Format: uri-reference */
+                artworkUrl?: string | null;
+                artist: string;
+            }[];
         };
     };
     responses: never;
@@ -3526,6 +3743,250 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    adminGetDashboard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Dashboard data */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminDashboardResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    adminListSongs: {
+        parameters: {
+            query?: {
+                page?: components["parameters"]["Page"];
+                pageSize?: components["parameters"]["PageSize"];
+                status?: components["schemas"]["PublishStatus"];
+                visibility?: components["schemas"]["Visibility"];
+                recordingType?: components["schemas"]["RecordingType"];
+                explicit?: boolean;
+                genre?: string;
+                uploaderId?: string;
+                q?: string;
+                sortBy?: "createdAt" | "plays" | "title" | "duration";
+                order?: "asc" | "desc";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Song list */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminSongListResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    adminUpdateSong: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                songId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminUpdateSongRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated song */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminSong"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    adminListPlaylists: {
+        parameters: {
+            query?: {
+                page?: components["parameters"]["Page"];
+                pageSize?: components["parameters"]["PageSize"];
+                status?: components["schemas"]["PublishStatus"];
+                visibility?: components["schemas"]["Visibility"];
+                type?: components["schemas"]["PlaylistType"];
+                featured?: boolean;
+                genre?: string;
+                ownerId?: string;
+                q?: string;
+                sortBy?: "createdAt" | "saves" | "items" | "duration" | "title";
+                order?: "asc" | "desc";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Playlist list */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminPlaylistListResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    adminUpdatePlaylist: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                playlistId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminUpdatePlaylistRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated playlist */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminPlaylist"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

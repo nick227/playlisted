@@ -1534,6 +1534,259 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /api/v1/admin/dashboard:
+    get:
+      tags: [Admin]
+      operationId: adminGetDashboard
+      summary: Admin dashboard stats and time-series data
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Dashboard data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminDashboardResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/admin/songs:
+    get:
+      tags: [Admin]
+      operationId: adminListSongs
+      summary: List all recordings with full metadata and metrics (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+        - in: query
+          name: status
+          schema:
+            $ref: '#/components/schemas/PublishStatus'
+        - in: query
+          name: visibility
+          schema:
+            $ref: '#/components/schemas/Visibility'
+        - in: query
+          name: recordingType
+          schema:
+            $ref: '#/components/schemas/RecordingType'
+        - in: query
+          name: explicit
+          schema:
+            type: boolean
+        - in: query
+          name: genre
+          schema:
+            type: string
+        - in: query
+          name: uploaderId
+          schema:
+            type: string
+        - in: query
+          name: q
+          schema:
+            type: string
+        - in: query
+          name: sortBy
+          schema:
+            type: string
+            enum: [createdAt, plays, title, duration]
+        - in: query
+          name: order
+          schema:
+            type: string
+            enum: [asc, desc]
+      responses:
+        '200':
+          description: Song list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminSongListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/admin/songs/{songId}:
+    patch:
+      tags: [Admin]
+      operationId: adminUpdateSong
+      summary: Update a song's status, visibility, or explicit flag (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: songId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminUpdateSongRequest'
+      responses:
+        '200':
+          description: Updated song
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminSong'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/admin/playlists:
+    get:
+      tags: [Admin]
+      operationId: adminListPlaylists
+      summary: List all playlists with full metadata and metrics (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+        - in: query
+          name: status
+          schema:
+            $ref: '#/components/schemas/PublishStatus'
+        - in: query
+          name: visibility
+          schema:
+            $ref: '#/components/schemas/Visibility'
+        - in: query
+          name: type
+          schema:
+            $ref: '#/components/schemas/PlaylistType'
+        - in: query
+          name: featured
+          schema:
+            type: boolean
+        - in: query
+          name: genre
+          schema:
+            type: string
+        - in: query
+          name: ownerId
+          schema:
+            type: string
+        - in: query
+          name: q
+          schema:
+            type: string
+        - in: query
+          name: sortBy
+          schema:
+            type: string
+            enum: [createdAt, saves, items, duration, title]
+        - in: query
+          name: order
+          schema:
+            type: string
+            enum: [asc, desc]
+      responses:
+        '200':
+          description: Playlist list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminPlaylistListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/admin/playlists/{playlistId}:
+    patch:
+      tags: [Admin]
+      operationId: adminUpdatePlaylist
+      summary: Update a playlist's status, visibility, or featured flag (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: playlistId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminUpdatePlaylistRequest'
+      responses:
+        '200':
+          description: Updated playlist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminPlaylist'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /api/v1/admin/tags/bulk:
     post:
       tags: [Admin]
@@ -3699,3 +3952,300 @@ components:
           $ref: '#/components/schemas/UserStatus'
         isFeaturedArtist:
           type: boolean
+
+    AdminContentUploaderRef:
+      type: object
+      additionalProperties: false
+      required: [id, username, displayName]
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        displayName:
+          type: string
+        avatarUrl:
+          type: [string, 'null']
+          format: uri-reference
+
+    AdminContentTagRef:
+      type: object
+      additionalProperties: false
+      required: [id, name, slug, kind]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+        kind:
+          $ref: '#/components/schemas/TagKind'
+
+    AdminSong:
+      type: object
+      additionalProperties: false
+      required: [id, title, audioUrl, recordingType, visibility, status, explicit, playCount, savesCount, createdAt, updatedAt, uploader, playlist, tags]
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: [string, 'null']
+        audioUrl:
+          type: string
+          format: uri-reference
+        artworkUrl:
+          type: [string, 'null']
+          format: uri-reference
+        durationSeconds:
+          type: [integer, 'null']
+        recordingType:
+          $ref: '#/components/schemas/RecordingType'
+        visibility:
+          $ref: '#/components/schemas/Visibility'
+        status:
+          $ref: '#/components/schemas/PublishStatus'
+        explicit:
+          type: boolean
+        playCount:
+          type: integer
+        savesCount:
+          type: integer
+        publishedAt:
+          type: [string, 'null']
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        uploader:
+          $ref: '#/components/schemas/AdminContentUploaderRef'
+        playlist:
+          type: object
+          additionalProperties: false
+          required: [id, title, slug]
+          properties:
+            id:
+              type: string
+            title:
+              type: string
+            slug:
+              type: string
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminContentTagRef'
+
+    AdminSongListResponse:
+      type: object
+      additionalProperties: false
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminSong'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    AdminUpdateSongRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        status:
+          $ref: '#/components/schemas/PublishStatus'
+        visibility:
+          $ref: '#/components/schemas/Visibility'
+        explicit:
+          type: boolean
+
+    AdminPlaylist:
+      type: object
+      additionalProperties: false
+      required: [id, title, type, visibility, status, featured, itemCount, totalDurationSeconds, savesCount, playCount, createdAt, updatedAt, owner, tags]
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: [string, 'null']
+        coverArtUrl:
+          type: [string, 'null']
+          format: uri-reference
+        type:
+          $ref: '#/components/schemas/PlaylistType'
+        visibility:
+          $ref: '#/components/schemas/Visibility'
+        status:
+          $ref: '#/components/schemas/PublishStatus'
+        featured:
+          type: boolean
+        itemCount:
+          type: integer
+        totalDurationSeconds:
+          type: integer
+        savesCount:
+          type: integer
+        playCount:
+          type: integer
+        publishedAt:
+          type: [string, 'null']
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        owner:
+          $ref: '#/components/schemas/AdminContentUploaderRef'
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminContentTagRef'
+
+    AdminPlaylistListResponse:
+      type: object
+      additionalProperties: false
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminPlaylist'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    AdminUpdatePlaylistRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        status:
+          $ref: '#/components/schemas/PublishStatus'
+        visibility:
+          $ref: '#/components/schemas/Visibility'
+        featured:
+          type: boolean
+
+    AdminDashboardTotals:
+      type: object
+      additionalProperties: false
+      required: [users, songs, playlists, plays, playSeconds, saves, follows]
+      properties:
+        users:
+          type: object
+          additionalProperties: false
+          required: [total, newToday, newThisWeek]
+          properties:
+            total:
+              type: integer
+            newToday:
+              type: integer
+            newThisWeek:
+              type: integer
+        songs:
+          type: object
+          additionalProperties: false
+          required: [total, published, draft]
+          properties:
+            total:
+              type: integer
+            published:
+              type: integer
+            draft:
+              type: integer
+        playlists:
+          type: object
+          additionalProperties: false
+          required: [total, published]
+          properties:
+            total:
+              type: integer
+            published:
+              type: integer
+        plays:
+          type: object
+          additionalProperties: false
+          required: [total, today]
+          properties:
+            total:
+              type: integer
+            today:
+              type: integer
+        playSeconds:
+          type: object
+          additionalProperties: false
+          required: [total, today]
+          properties:
+            total:
+              type: integer
+            today:
+              type: integer
+        saves:
+          type: integer
+        follows:
+          type: integer
+
+    AdminDashboardResponse:
+      type: object
+      additionalProperties: false
+      required: [totals, hourlyPlays, dailyPlays, dailyNewUsers, topSongsToday]
+      properties:
+        totals:
+          $ref: '#/components/schemas/AdminDashboardTotals'
+        hourlyPlays:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [hour, plays]
+            properties:
+              hour:
+                type: string
+              plays:
+                type: integer
+        dailyPlays:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [day, plays]
+            properties:
+              day:
+                type: string
+              plays:
+                type: integer
+        dailyNewUsers:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [day, newUsers]
+            properties:
+              day:
+                type: string
+              newUsers:
+                type: integer
+        topSongsToday:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [recordingId, plays, title, artist]
+            properties:
+              recordingId:
+                type: string
+              plays:
+                type: integer
+              title:
+                type: string
+              artworkUrl:
+                type: [string, 'null']
+                format: uri-reference
+              artist:
+                type: string

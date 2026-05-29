@@ -10,8 +10,11 @@ import YAML from "yaml";
 
 import { authRouter } from "./routes/auth.js";
 import { analyticsRouter } from "./routes/analytics.js";
-import { adminTagsRouter } from "./routes/admin/tags.js";
+import { adminDashboardRouter } from "./routes/admin/dashboard.js";
 import { adminHomepageRouter } from "./routes/admin/homepage.js";
+import { adminPlaylistsRouter } from "./routes/admin/playlists.js";
+import { adminSongsRouter } from "./routes/admin/songs.js";
+import { adminTagsRouter } from "./routes/admin/tags.js";
 import { adminUsersRouter } from "./routes/admin/users.js";
 import { chartsRouter } from "./routes/charts.js";
 import { libraryRouter } from "./routes/library.js";
@@ -59,6 +62,9 @@ export function createApp() {
   app.use("/api/v1/recordings", recordingsRouter);
   app.use("/api/v1/charts", chartsRouter);
   app.use("/api/v1/library", libraryRouter);
+  app.use("/api/v1/admin/dashboard", adminDashboardRouter);
+  app.use("/api/v1/admin/songs", adminSongsRouter);
+  app.use("/api/v1/admin/playlists", adminPlaylistsRouter);
   app.use("/api/v1/admin/tags", adminTagsRouter);
   app.use("/api/v1/admin/homepage-features", adminHomepageRouter);
   app.use("/api/v1/admin/users", adminUsersRouter);

@@ -67,6 +67,14 @@ export type AdminCreateHomepageFeatureRequest = components["schemas"]["AdminCrea
 export type AdminUpdateHomepageFeatureRequest = components["schemas"]["AdminUpdateHomepageFeatureRequest"];
 export type AdminUpdateUserRequest = components["schemas"]["AdminUpdateUserRequest"];
 export type AdminHomepageSection = components["schemas"]["AdminHomepageSection"];
+export type AdminSong = components["schemas"]["AdminSong"];
+export type AdminSongListResponse = components["schemas"]["AdminSongListResponse"];
+export type AdminUpdateSongRequest = components["schemas"]["AdminUpdateSongRequest"];
+export type AdminPlaylist = components["schemas"]["AdminPlaylist"];
+export type AdminPlaylistListResponse = components["schemas"]["AdminPlaylistListResponse"];
+export type AdminUpdatePlaylistRequest = components["schemas"]["AdminUpdatePlaylistRequest"];
+export type AdminDashboardResponse = components["schemas"]["AdminDashboardResponse"];
+export type AdminContentTagRef = components["schemas"]["AdminContentTagRef"];
 
 export type LibraryArtistGenre = { id: string; name: string; slug: string };
 export type LibraryArtist = {
@@ -103,6 +111,11 @@ export interface PlaylistedApi {
     deleteHomepageFeature(featureId: string): Promise<void>;
     listUsers(query?: { page?: number; pageSize?: number; role?: string; status?: string; q?: string }): Promise<UserListResponse>;
     updateUser(userId: string, body: AdminUpdateUserRequest): Promise<UserSummary>;
+    getDashboard(): Promise<AdminDashboardResponse>;
+    listSongs(query?: { page?: number; pageSize?: number; status?: string; visibility?: string; recordingType?: string; explicit?: boolean; genre?: string; uploaderId?: string; q?: string; sortBy?: string; order?: string }): Promise<AdminSongListResponse>;
+    updateSong(songId: string, body: AdminUpdateSongRequest): Promise<AdminSong>;
+    listPlaylists(query?: { page?: number; pageSize?: number; status?: string; visibility?: string; type?: string; featured?: boolean; genre?: string; ownerId?: string; q?: string; sortBy?: string; order?: string }): Promise<AdminPlaylistListResponse>;
+    updatePlaylist(playlistId: string, body: AdminUpdatePlaylistRequest): Promise<AdminPlaylist>;
   };
   auth: {
     register(body: RegisterRequest): Promise<AuthResponse>;
@@ -338,6 +351,33 @@ export function createPlaylistedApi(options: PlaylistedClientOptions = {}): Play
         return unwrap(
           raw.PATCH("/api/v1/admin/users/{userId}", { params: { path: { userId } }, body }),
           "Failed to update user.",
+        );
+      },
+      getDashboard() {
+        return unwrap(raw.GET("/api/v1/admin/dashboard"), "Failed to load dashboard.");
+      },
+      listSongs(query = {}) {
+        return unwrap(
+          raw.GET("/api/v1/admin/songs", { params: { query: query as any } }),
+          "Failed to load songs.",
+        );
+      },
+      updateSong(songId, body) {
+        return unwrap(
+          raw.PATCH("/api/v1/admin/songs/{songId}", { params: { path: { songId } }, body }),
+          "Failed to update song.",
+        );
+      },
+      listPlaylists(query = {}) {
+        return unwrap(
+          raw.GET("/api/v1/admin/playlists", { params: { query: query as any } }),
+          "Failed to load playlists.",
+        );
+      },
+      updatePlaylist(playlistId, body) {
+        return unwrap(
+          raw.PATCH("/api/v1/admin/playlists/{playlistId}", { params: { path: { playlistId } }, body }),
+          "Failed to update playlist.",
         );
       },
     },

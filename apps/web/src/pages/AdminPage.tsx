@@ -2,9 +2,12 @@ import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "@/providers/AuthProvider";
 
 const NAV = [
-  { to: "/admin/tags", label: "Genres & Tags" },
-  { to: "/admin/homepage", label: "Homepage" },
+  { to: "/admin", label: "Dashboard", end: true },
+  { to: "/admin/songs", label: "Songs" },
+  { to: "/admin/playlists", label: "Playlists" },
   { to: "/admin/users", label: "Users" },
+  { to: "/admin/homepage", label: "Homepage" },
+  { to: "/admin/tags", label: "Tags" },
 ];
 
 export function AdminPage() {
@@ -25,8 +28,9 @@ export function AdminPage() {
           <NavLink
             key={item.to}
             to={item.to}
+            end={(item as any).end}
             className={({ isActive }) =>
-              `px-4 py-2.5 text-sm font-medium transition border-b-2 -mb-px ${
+              `px-4 py-2.5 text-sm font-medium transition border-b-2 -mb-px whitespace-nowrap ${
                 isActive
                   ? "border-amber-400 text-white"
                   : "border-transparent text-[var(--color-text-muted)] hover:text-white"
