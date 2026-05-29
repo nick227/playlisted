@@ -7,10 +7,9 @@ import {
   PUBLIC_RECORDING_TAG_COUNT_SELECT,
 } from "../lib/publicRecordingFilter.js";
 import {
-  playlistTitleOrSlugMatch,
-  publicPublishedPlaylistTitleMatch,
-  publicPublishedRecordingInPlaylistItemsMatch,
+  searchablePlaylistWhereWithTextMatch,
   songInPublicPlaylistTitleMatch,
+  songPublishedPlaylistTitleMatch,
   tagContainsMatch,
   textContainsMatch,
 } from "../lib/searchQuery.js";
@@ -75,7 +74,7 @@ searchRouter.get("/unified", async (req, res, next) => {
           OR: [
             ...textContainsMatch(q),
             { uploader: { OR: [{ displayName: { contains: q } }, { username: { contains: q } }] } },
-            { publishedPlaylist: publicPublishedPlaylistTitleMatch(q) },
+            songPublishedPlaylistTitleMatch(q),
             songInPublicPlaylistTitleMatch(q),
             { tags: { some: tagMatch } },
           ],
@@ -94,17 +93,7 @@ searchRouter.get("/unified", async (req, res, next) => {
         take: pageSize,
       }),
       prisma.playlist.findMany({
-        where: {
-          visibility: "PUBLIC",
-          status: "PUBLISHED",
-          OR: [
-            ...playlistTitleOrSlugMatch(q),
-            { description: { contains: q } },
-            { owner: { OR: [{ displayName: { contains: q } }, { username: { contains: q } }] } },
-            { tags: { some: tagMatch } },
-            publicPublishedRecordingInPlaylistItemsMatch(q),
-          ],
-        },
+        where: searchablePlaylistWhereWithTextMatch(q),
         include: {
           owner: true,
           tags: { include: { tag: true } },

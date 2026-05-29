@@ -57,7 +57,7 @@ export function StudioCollectionsPage() {
         ownerId: user!.id,
         title: "Untitled collection",
         type,
-        status: "DRAFT",
+        status: "PUBLISHED",
         visibility: "PUBLIC",
       }),
     onSuccess: (created) => {

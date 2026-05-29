@@ -1,4 +1,16 @@
 import { PUBLIC_PUBLISHED_RECORDING } from "./publicRecordingFilter.js";
+import { slugify } from "../utils/slug.js";
+
+/**
+ * Playlists discoverable via public search.
+ * Includes PUBLIC+DRAFT for studio collections saved before publish status syncs.
+ */
+export const SEARCHABLE_PLAYLIST = {
+  OR: [
+    { visibility: "PUBLIC" as const, status: { in: ["PUBLISHED", "DRAFT"] as const } },
+    { visibility: "UNLISTED" as const, status: "PUBLISHED" as const },
+  ],
+};
 
 /** Case-sensitive substring match fields for titles and descriptions. */
 export function textContainsMatch(q: string) {
@@ -6,23 +18,41 @@ export function textContainsMatch(q: string) {
 }
 
 export function playlistTitleOrSlugMatch(q: string) {
-  return [{ title: { contains: q } }, { slug: { contains: q } }] as const;
+  const normalizedSlug = slugify(q);
+  const matches: Array<{ title?: { contains: string }; slug?: string | { contains: string } }> = [
+    { title: { contains: q } },
+    { slug: { contains: q } },
+  ];
+
+  if (normalizedSlug) {
+    matches.push({ slug: normalizedSlug });
+    if (normalizedSlug !== q) {
+      matches.push({ slug: { contains: normalizedSlug } });
+    }
+  }
+
+  return matches;
 }
 
-export function publicPublishedPlaylistTitleMatch(q: string) {
+export function searchablePlaylistTitleMatch(q: string) {
   return {
-    visibility: "PUBLIC" as const,
-    status: "PUBLISHED" as const,
-    OR: [...playlistTitleOrSlugMatch(q)],
+    AND: [SEARCHABLE_PLAYLIST, { OR: [...playlistTitleOrSlugMatch(q)] }],
   };
 }
 
-/** Songs belonging to a public published playlist matched by title or slug. */
+/** Songs whose canonical published playlist matches the query. */
+export function songPublishedPlaylistTitleMatch(q: string) {
+  return {
+    publishedPlaylist: searchablePlaylistTitleMatch(q),
+  };
+}
+
+/** Songs belonging to a searchable playlist matched by title or slug. */
 export function songInPublicPlaylistTitleMatch(q: string) {
   return {
     playlistItems: {
       some: {
-        playlist: publicPublishedPlaylistTitleMatch(q),
+        playlist: searchablePlaylistTitleMatch(q),
       },
     },
   };
@@ -46,5 +76,22 @@ export function tagContainsMatch(q: string) {
     tag: {
       OR: [{ name: { contains: q } }, { slug: { contains: q } }],
     },
+  };
+}
+
+export function searchablePlaylistWhereWithTextMatch(q: string) {
+  return {
+    AND: [
+      SEARCHABLE_PLAYLIST,
+      {
+        OR: [
+          ...playlistTitleOrSlugMatch(q),
+          { description: { contains: q } },
+          { owner: { OR: [{ displayName: { contains: q } }, { username: { contains: q } }] } },
+          { tags: { some: tagContainsMatch(q) } },
+          publicPublishedRecordingInPlaylistItemsMatch(q),
+        ],
+      },
+    ],
   };
 }

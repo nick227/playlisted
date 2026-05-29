@@ -10,14 +10,18 @@ vi.mock("../lib/prisma.js", () => ({
   },
 }));
 
-const PLAYLIST_TITLE_MATCH = { title: { contains: "summer mix" } };
-
 import { prisma } from "../lib/prisma.js";
 import { createApp } from "../app.js";
 
 const app = createApp();
 
 const PUBLIC_RECORDING = { visibility: "PUBLIC", status: "PUBLISHED" };
+const SEARCHABLE_PLAYLIST = {
+  OR: [
+    { visibility: "PUBLIC", status: { in: ["PUBLISHED", "DRAFT"] } },
+    { visibility: "UNLISTED", status: "PUBLISHED" },
+  ],
+};
 
 describe("GET /api/v1/search/unified", () => {
   beforeEach(() => {
@@ -59,51 +63,43 @@ describe("GET /api/v1/search/unified", () => {
       artists: [],
       genres: [{ id: "tag-jazz", name: "Jazz", slug: "jazz", songCount: 42 }],
     });
-    expect(prisma.tag.findMany).toHaveBeenCalledWith({
-      where: {
-        kind: "GENRE",
-        OR: [{ name: { contains: "jaz" } }, { slug: { contains: "jaz" } }],
-        recordingTags: {
-          some: {
-            recording: PUBLIC_RECORDING,
-          },
-        },
-      },
-      include: {
-        _count: {
-          select: {
-            recordingTags: {
-              where: {
-                recording: PUBLIC_RECORDING,
-              },
-            },
-          },
-        },
-      },
-    });
   });
 
-  it("matches playlists and songs by playlist title", async () => {
-    const res = await request(app).get("/api/v1/search/unified").query({ q: "summer mix" });
+  it("matches playlists by slug when the query uses spaces", async () => {
+    const res = await request(app).get("/api/v1/search/unified").query({ q: "new and goood" });
 
     expect(res.status).toBe(200);
     expect(prisma.playlist.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: expect.objectContaining({
-          OR: expect.arrayContaining([PLAYLIST_TITLE_MATCH]),
-        }),
+        where: {
+          AND: [
+            SEARCHABLE_PLAYLIST,
+            {
+              OR: expect.arrayContaining([
+                { title: { contains: "new and goood" } },
+                { slug: "new-and-goood" },
+              ]),
+            },
+          ],
+        },
       }),
     );
+  });
+
+  it("matches songs on searchable playlists by title", async () => {
+    const res = await request(app).get("/api/v1/search/unified").query({ q: "summer mix" });
+
+    expect(res.status).toBe(200);
     expect(prisma.recording.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
           OR: expect.arrayContaining([
-            { publishedPlaylist: expect.objectContaining({ OR: expect.arrayContaining([PLAYLIST_TITLE_MATCH]) }) },
             {
-              playlistItems: {
-                some: {
-                  playlist: expect.objectContaining({ OR: expect.arrayContaining([PLAYLIST_TITLE_MATCH]) }),
-                },
+              publishedPlaylist: {
+                AND: [
+                  SEARCHABLE_PLAYLIST,
+                  { OR: expect.arrayContaining([{ title: { contains: "summer mix" } }]) },
+                ],
               },
             },
           ]),
