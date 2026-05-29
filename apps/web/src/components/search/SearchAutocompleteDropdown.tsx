@@ -1,4 +1,4 @@
-import { Clock, ListMusic, Music2, Search, User } from "lucide-react";
+import { Clock, ListMusic, Music2, Search, Tag, User } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 import { HighlightMatch } from "@/components/search/HighlightMatch";
@@ -9,6 +9,7 @@ const KIND_ICON: Record<SearchSuggestionOption["kind"], LucideIcon> = {
   song: Music2,
   playlist: ListMusic,
   artist: User,
+  genre: Tag,
   recent: Clock,
   "view-all": Search,
 };

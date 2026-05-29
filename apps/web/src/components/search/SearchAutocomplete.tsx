@@ -52,7 +52,10 @@ export function SearchAutocomplete({ className = "" }: SearchAutocompleteProps) 
   const groups = hasQuery ? resultGroups : recentGroups;
   const flatOptions = flattenGroups(groups);
   const resultCount =
-    (data?.songs.length ?? 0) + (data?.playlists.length ?? 0) + (data?.artists.length ?? 0);
+    (data?.songs.length ?? 0) +
+    (data?.artists.length ?? 0) +
+    (data?.playlists.length ?? 0) +
+    (data?.genres.length ?? 0);
 
   const showPanel = open;
   const loading = hasQuery && (isLoading || isFetching) && !data;

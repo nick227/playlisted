@@ -59,7 +59,7 @@ searchRouter.get("/unified", async (req, res, next) => {
     ];
     const tagMatch = { tag: { OR: [{ name: { contains: q } }, { slug: { contains: q } }] } };
 
-    const [songs, playlists, artists] = await Promise.all([
+    const [songs, playlists, artists, genres] = await Promise.all([
       prisma.recording.findMany({
         where: {
           visibility: "PUBLIC",
@@ -137,6 +137,15 @@ searchRouter.get("/unified", async (req, res, next) => {
         orderBy: [{ isFeaturedArtist: "desc" }, { createdAt: "desc" }, { id: "asc" }],
         take: pageSize,
       }),
+      prisma.tag.findMany({
+        where: {
+          kind: "GENRE",
+          OR: [{ name: { contains: q } }, { slug: { contains: q } }],
+        },
+        include: { _count: { select: { recordingTags: true } } },
+        orderBy: [{ recordingTags: { _count: "desc" } }, { name: "asc" }],
+        take: pageSize,
+      }),
     ]);
 
     return res.json({
@@ -168,6 +177,12 @@ searchRouter.get("/unified", async (req, res, next) => {
       })),
       playlists: playlists.map(mapPlaylistSummary),
       artists: artists.map(mapUserSummary),
+      genres: genres.map((genre) => ({
+        id: genre.id,
+        name: genre.name,
+        slug: genre.slug,
+        songCount: genre._count.recordingTags,
+      })),
     });
   } catch (error) {
     return next(error);

@@ -1,13 +1,13 @@
-import type { LibrarySong, PlaylistSummary, SearchResponse, UserSummary } from "@playlisted/client-sdk";
+import type { LibraryGenre, LibrarySong, PlaylistSummary, SearchResponse, UserSummary } from "@playlisted/client-sdk";
 
 import { formatDuration } from "@/lib/format";
-import { libraryRecordingPath } from "@/lib/libraryPaths";
+import { libraryGenrePath, libraryRecordingPath } from "@/lib/libraryPaths";
 import { playlistPath, profilePath } from "@/lib/routes";
 
 export const SEARCH_DEBOUNCE_MS = 250;
 export const SUGGESTION_PAGE_SIZE = 5;
 
-export type SearchSuggestionKind = "song" | "playlist" | "artist" | "recent" | "view-all";
+export type SearchSuggestionKind = "song" | "playlist" | "artist" | "genre" | "recent" | "view-all";
 
 export interface SearchSuggestionOption {
   id: string;
@@ -58,6 +58,17 @@ function artistOption(artist: UserSummary): SearchSuggestionOption {
   };
 }
 
+function genreOption(genre: LibraryGenre): SearchSuggestionOption {
+  const trackLabel = genre.songCount === 1 ? "track" : "tracks";
+  return {
+    id: `genre-${genre.id}`,
+    kind: "genre",
+    label: genre.name,
+    meta: `${genre.songCount.toLocaleString()} ${trackLabel}`,
+    href: libraryGenrePath(genre.slug),
+  };
+}
+
 function cap<T>(items: T[]): T[] {
   return items.slice(0, SUGGESTION_PAGE_SIZE);
 }
@@ -80,13 +91,20 @@ export function buildRecentGroups(recentSearches: string[]): SearchSuggestionGro
 export function buildResultGroups(query: string, data: SearchResponse): SearchSuggestionGroup[] {
   const groups: SearchSuggestionGroup[] = [];
   const songs = cap(data.songs);
-  const playlists = cap(data.playlists);
   const artists = cap(data.artists);
+  const playlists = cap(data.playlists);
+  const genres = cap(data.genres);
 
   if (songs.length > 0) {
     groups.push({
       label: "Songs",
       options: songs.map(songOption),
+    });
+  }
+  if (artists.length > 0) {
+    groups.push({
+      label: "Artists",
+      options: artists.map(artistOption),
     });
   }
   if (playlists.length > 0) {
@@ -95,10 +113,10 @@ export function buildResultGroups(query: string, data: SearchResponse): SearchSu
       options: playlists.map(playlistOption),
     });
   }
-  if (artists.length > 0) {
+  if (genres.length > 0) {
     groups.push({
-      label: "Artists",
-      options: artists.map(artistOption),
+      label: "Genres",
+      options: genres.map(genreOption),
     });
   }
 

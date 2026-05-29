@@ -1,4 +1,4 @@
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 import { ArtistCard } from "@/components/cards/ArtistCard";
 import { SmartPlaylistCard } from "@/components/cards/SmartPlaylistCard";
@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/feedback/EmptyState";
 import { RowSkeleton } from "@/components/feedback/Skeleton";
 import { LibraryTrackRow } from "@/components/library/LibraryTrackRow";
 import { api } from "@/lib/api";
+import { libraryGenrePath } from "@/lib/libraryPaths";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { librarySongToQueueTrack } from "@/lib/queueTrack";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
@@ -30,8 +31,9 @@ export function SearchPage() {
   });
 
   const songResults = results?.songs ?? [];
-  const playlistResults = results?.playlists ?? [];
   const artistResults = results?.artists ?? [];
+  const playlistResults = results?.playlists ?? [];
+  const genreResults = results?.genres ?? [];
 
   function playSong(song: (typeof songResults)[number]) {
     if (currentTrack?.id === song.id) {
@@ -62,7 +64,11 @@ export function SearchPage() {
     );
   }
 
-  const hasResults = playlistResults.length > 0 || songResults.length > 0 || artistResults.length > 0;
+  const hasResults =
+    songResults.length > 0 ||
+    artistResults.length > 0 ||
+    playlistResults.length > 0 ||
+    genreResults.length > 0;
 
   if (isLoading && !hasResults) return <RowSkeleton />;
 
@@ -92,6 +98,20 @@ export function SearchPage() {
           </div>
         </section>
       ) : null}
+      {artistResults.length > 0 ? (
+        <ContentRow title="Artists">
+          {artistResults.map((u) => (
+            <ArtistCard
+              key={u.id}
+              id={u.id}
+              username={u.username}
+              displayName={u.displayName}
+              subtitle={`@${u.username}`}
+              avatarUrl={u.avatarUrl}
+            />
+          ))}
+        </ContentRow>
+      ) : null}
       {playlistResults.length > 0 ? (
         <ContentRow title="Playlists">
           {playlistResults.map((p) => (
@@ -107,19 +127,25 @@ export function SearchPage() {
           ))}
         </ContentRow>
       ) : null}
-      {artistResults.length > 0 ? (
-        <ContentRow title="Artists">
-          {artistResults.map((u) => (
-            <ArtistCard
-              key={u.id}
-              id={u.id}
-              username={u.username}
-              displayName={u.displayName}
-              subtitle={`@${u.username}`}
-              avatarUrl={u.avatarUrl}
-            />
-          ))}
-        </ContentRow>
+      {genreResults.length > 0 ? (
+        <section className="mb-10">
+          <h2 className="mb-4 text-xl font-semibold">Genres</h2>
+          <ul className="flex flex-wrap gap-2">
+            {genreResults.map((genre) => (
+              <li key={genre.id}>
+                <Link
+                  to={libraryGenrePath(genre.slug)}
+                  className="inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2 text-sm text-white transition hover:border-white/20 hover:bg-[var(--color-surface-hover)]"
+                >
+                  <span className="font-medium">{genre.name}</span>
+                  <span className="text-[var(--color-text-muted)]">
+                    {genre.songCount.toLocaleString()} {genre.songCount === 1 ? "track" : "tracks"}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
       ) : null}
     </div>
   );

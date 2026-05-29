@@ -23,6 +23,7 @@ tags:
   - name: Playlists
   - name: Recordings
   - name: Developer
+  - name: Ingest
   - name: Admin
 paths:
   /api/v1/health:
@@ -824,7 +825,7 @@ paths:
     get:
       tags: [Search]
       operationId: unifiedSearch
-      summary: Search songs, playlists, and artists
+      summary: Search songs, playlists, artists, and genres
       parameters:
         - in: query
           name: q
@@ -2173,6 +2174,189 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/ingest/uploads:
+    post:
+      tags: [Ingest]
+      operationId: ingestUpload
+      summary: Upload an audio or image file using an API key (MVP multipart)
+      description: >
+        MVP multipart upload — the file is received by the app server and written
+        to local storage. Maximum file size is **100 MB**. Requires a Bearer API
+        key; session tokens are rejected.
+
+        Allowed audio: mp3, wav, m4a, flac, ogg, aac, webm.
+        Allowed image: jpg, jpeg, png, webp.
+
+        Returns a stable `uploadId` that must be passed to the recording/playlist
+        ingest endpoints to reference this asset.
+
+        Note: a future milestone will replace this endpoint with a presigned-URL
+        intent flow for direct client-to-storage uploads.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: kind
+          required: true
+          schema:
+            type: string
+            enum: [audio, image]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Max 100 MB
+      responses:
+        '201':
+          description: File uploaded and asset record created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestUploadResponse'
+        '400':
+          description: Missing file or invalid kind
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized — valid API key required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '413':
+          description: File exceeds the 100 MB limit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '415':
+          description: Unsupported file type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/ingest/playlists:
+    post:
+      tags: [Ingest]
+      operationId: ingestPlaylist
+      summary: Upsert a playlist by externalSource + externalId
+      description: >
+        Creates or updates a playlist owned by the API key holder.
+        Upsert key is `ownerId + externalSource + externalId`.
+        Visibility defaults to PRIVATE and status to DRAFT on creation.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IngestPlaylistRequest'
+      responses:
+        '200':
+          description: Playlist updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestPlaylistResponse'
+        '201':
+          description: Playlist created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestPlaylistResponse'
+        '400':
+          description: Invalid upload asset kind
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Upload asset belongs to a different user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Upload asset not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/ingest/recordings:
+    post:
+      tags: [Ingest]
+      operationId: ingestRecording
+      summary: Upsert a recording by externalSource + externalId
+      description: >
+        Creates or updates a recording owned by the API key holder.
+        Upsert key is `uploaderId + externalSource + externalId`.
+        The recording is linked to the playlist identified by `playlistExternalId`
+        (must already exist under the same externalSource for this user).
+        `uploaderId` is always derived from the API key — it cannot be supplied by the caller.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IngestRecordingRequest'
+      responses:
+        '200':
+          description: Recording updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestRecordingResponse'
+        '201':
+          description: Recording created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestRecordingResponse'
+        '400':
+          description: Invalid upload asset kind
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Upload asset belongs to a different user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Playlist or upload asset not found
           content:
             application/json:
               schema:
@@ -3545,7 +3729,7 @@ components:
     SearchResponse:
       type: object
       additionalProperties: false
-      required: [songs, playlists, artists]
+      required: [songs, playlists, artists, genres]
       properties:
         songs:
           type: array
@@ -3559,6 +3743,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/UserSummary'
+        genres:
+          type: array
+          items:
+            $ref: '#/components/schemas/LibraryGenre'
 
     LibraryArtistGenre:
       type: object
@@ -4446,6 +4634,165 @@ components:
           items:
             $ref: '#/components/schemas/ApiKey'
 
+    IngestPlaylistRequest:
+      type: object
+      additionalProperties: false
+      required: [externalSource, externalId, title]
+      properties:
+        externalSource:
+          type: string
+          maxLength: 100
+          description: Stable identifier for the source system (e.g. "desktop-sync")
+        externalId:
+          type: string
+          maxLength: 255
+          description: Unique ID within that source system
+        title:
+          type: string
+          minLength: 1
+          maxLength: 191
+        description:
+          type: [string, 'null']
+        visibility:
+          $ref: '#/components/schemas/Visibility'
+        type:
+          $ref: '#/components/schemas/PlaylistType'
+        coverUploadId:
+          type: [string, 'null']
+          description: uploadId returned from POST /api/v1/ingest/uploads (kind=image)
+
+    IngestRecordingRequest:
+      type: object
+      additionalProperties: false
+      required: [externalSource, externalId, playlistExternalId, title, audioUploadId]
+      properties:
+        externalSource:
+          type: string
+          maxLength: 100
+        externalId:
+          type: string
+          maxLength: 255
+        playlistExternalId:
+          type: string
+          maxLength: 255
+          description: externalId of the target playlist (must already exist under the same externalSource)
+        title:
+          type: string
+          minLength: 1
+          maxLength: 191
+        audioUploadId:
+          type: string
+          description: uploadId returned from POST /api/v1/ingest/uploads (kind=audio)
+        coverUploadId:
+          type: [string, 'null']
+          description: uploadId returned from POST /api/v1/ingest/uploads (kind=image)
+        trackNumber:
+          type: [integer, 'null']
+          minimum: 1
+        durationSeconds:
+          type: [number, 'null']
+          minimum: 0
+        description:
+          type: [string, 'null']
+
+    IngestPlaylistData:
+      type: object
+      additionalProperties: false
+      required: [id, ownerId, title, slug, type, visibility, status, externalSource, externalId, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+        ownerId:
+          type: string
+        title:
+          type: string
+        slug:
+          type: string
+        description:
+          type: [string, 'null']
+        coverArtUrl:
+          type: [string, 'null']
+        type:
+          $ref: '#/components/schemas/PlaylistType'
+        visibility:
+          $ref: '#/components/schemas/Visibility'
+        status:
+          $ref: '#/components/schemas/PublishStatus'
+        externalSource:
+          type: [string, 'null']
+        externalId:
+          type: [string, 'null']
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    IngestPlaylistResponse:
+      type: object
+      additionalProperties: false
+      required: [created, playlist]
+      properties:
+        created:
+          type: boolean
+        playlist:
+          $ref: '#/components/schemas/IngestPlaylistData'
+
+    IngestRecordingData:
+      type: object
+      additionalProperties: false
+      required: [id, uploaderId, playlistId, title, audioUrl, recordingType, visibility, status, externalSource, externalId, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+        uploaderId:
+          type: string
+        playlistId:
+          type: string
+        title:
+          type: string
+        description:
+          type: [string, 'null']
+        audioUrl:
+          type: string
+        audioMimeType:
+          type: [string, 'null']
+        audioBytes:
+          type: [integer, 'null']
+        durationSeconds:
+          type: [integer, 'null']
+        artworkUrl:
+          type: [string, 'null']
+        trackNumber:
+          type: [integer, 'null']
+        recordingType:
+          $ref: '#/components/schemas/RecordingType'
+        visibility:
+          $ref: '#/components/schemas/Visibility'
+        status:
+          $ref: '#/components/schemas/PublishStatus'
+        externalSource:
+          type: [string, 'null']
+        externalId:
+          type: [string, 'null']
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    IngestRecordingResponse:
+      type: object
+      additionalProperties: false
+      required: [created, recording]
+      properties:
+        created:
+          type: boolean
+        recording:
+          $ref: '#/components/schemas/IngestRecordingData'
+
     CreateApiKeyRequest:
       type: object
       additionalProperties: false
@@ -4455,3 +4802,24 @@ components:
           type: string
           minLength: 1
           maxLength: 100
+
+    IngestUploadResponse:
+      type: object
+      additionalProperties: false
+      required: [uploadId, url, kind, mimeType, bytes, originalName]
+      properties:
+        uploadId:
+          type: string
+          description: Stable asset ID (upl_…) — pass this to recording/playlist ingest endpoints
+        url:
+          type: string
+          description: Public URL of the uploaded file
+        kind:
+          type: string
+          enum: [audio, image]
+        mimeType:
+          type: string
+        bytes:
+          type: integer
+        originalName:
+          type: string

@@ -491,7 +491,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Search songs, playlists, and artists */
+        /** Search songs, playlists, artists, and genres */
         get: operations["unifiedSearch"];
         put?: never;
         post?: never;
@@ -950,6 +950,69 @@ export interface paths {
         head?: never;
         /** Update a user's role, status, or featured flag (admin) */
         patch: operations["adminUpdateUser"];
+        trace?: never;
+    };
+    "/api/v1/ingest/uploads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload an audio or image file using an API key (MVP multipart)
+         * @description MVP multipart upload — the file is received by the app server and written to local storage. Maximum file size is **100 MB**. Requires a Bearer API key; session tokens are rejected.
+         *     Allowed audio: mp3, wav, m4a, flac, ogg, aac, webm. Allowed image: jpg, jpeg, png, webp.
+         *     Returns a stable `uploadId` that must be passed to the recording/playlist ingest endpoints to reference this asset.
+         *     Note: a future milestone will replace this endpoint with a presigned-URL intent flow for direct client-to-storage uploads.
+         */
+        post: operations["ingestUpload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ingest/playlists": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upsert a playlist by externalSource + externalId
+         * @description Creates or updates a playlist owned by the API key holder. Upsert key is `ownerId + externalSource + externalId`. Visibility defaults to PRIVATE and status to DRAFT on creation.
+         */
+        post: operations["ingestPlaylist"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ingest/recordings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upsert a recording by externalSource + externalId
+         * @description Creates or updates a recording owned by the API key holder. Upsert key is `uploaderId + externalSource + externalId`. The recording is linked to the playlist identified by `playlistExternalId` (must already exist under the same externalSource for this user). `uploaderId` is always derived from the API key — it cannot be supplied by the caller.
+         */
+        post: operations["ingestRecording"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/developer/keys": {
@@ -1578,6 +1641,7 @@ export interface components {
             songs: components["schemas"]["LibrarySong"][];
             playlists: components["schemas"]["PlaylistSummary"][];
             artists: components["schemas"]["UserSummary"][];
+            genres: components["schemas"]["LibraryGenre"][];
         };
         LibraryArtistGenre: {
             id: string;
@@ -1967,8 +2031,92 @@ export interface components {
         ApiKeyListResponse: {
             keys: components["schemas"]["ApiKey"][];
         };
+        IngestPlaylistRequest: {
+            /** @description Stable identifier for the source system (e.g. "desktop-sync") */
+            externalSource: string;
+            /** @description Unique ID within that source system */
+            externalId: string;
+            title: string;
+            description?: string | null;
+            visibility?: components["schemas"]["Visibility"];
+            type?: components["schemas"]["PlaylistType"];
+            /** @description uploadId returned from POST /api/v1/ingest/uploads (kind=image) */
+            coverUploadId?: string | null;
+        };
+        IngestRecordingRequest: {
+            externalSource: string;
+            externalId: string;
+            /** @description externalId of the target playlist (must already exist under the same externalSource) */
+            playlistExternalId: string;
+            title: string;
+            /** @description uploadId returned from POST /api/v1/ingest/uploads (kind=audio) */
+            audioUploadId: string;
+            /** @description uploadId returned from POST /api/v1/ingest/uploads (kind=image) */
+            coverUploadId?: string | null;
+            trackNumber?: number | null;
+            durationSeconds?: number | null;
+            description?: string | null;
+        };
+        IngestPlaylistData: {
+            id: string;
+            ownerId: string;
+            title: string;
+            slug: string;
+            description?: string | null;
+            coverArtUrl?: string | null;
+            type: components["schemas"]["PlaylistType"];
+            visibility: components["schemas"]["Visibility"];
+            status: components["schemas"]["PublishStatus"];
+            externalSource: string | null;
+            externalId: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        IngestPlaylistResponse: {
+            created: boolean;
+            playlist: components["schemas"]["IngestPlaylistData"];
+        };
+        IngestRecordingData: {
+            id: string;
+            uploaderId: string;
+            playlistId: string;
+            title: string;
+            description?: string | null;
+            audioUrl: string;
+            audioMimeType?: string | null;
+            audioBytes?: number | null;
+            durationSeconds?: number | null;
+            artworkUrl?: string | null;
+            trackNumber?: number | null;
+            recordingType: components["schemas"]["RecordingType"];
+            visibility: components["schemas"]["Visibility"];
+            status: components["schemas"]["PublishStatus"];
+            externalSource: string | null;
+            externalId: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        IngestRecordingResponse: {
+            created: boolean;
+            recording: components["schemas"]["IngestRecordingData"];
+        };
         CreateApiKeyRequest: {
             name: string;
+        };
+        IngestUploadResponse: {
+            /** @description Stable asset ID (upl_…) — pass this to recording/playlist ingest endpoints */
+            uploadId: string;
+            /** @description Public URL of the uploaded file */
+            url: string;
+            /** @enum {string} */
+            kind: "audio" | "image";
+            mimeType: string;
+            bytes: number;
+            originalName: string;
         };
     };
     responses: never;
@@ -4551,6 +4699,212 @@ export interface operations {
                 };
             };
             /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    ingestUpload: {
+        parameters: {
+            query: {
+                kind: "audio" | "image";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /**
+                     * Format: binary
+                     * @description Max 100 MB
+                     */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description File uploaded and asset record created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IngestUploadResponse"];
+                };
+            };
+            /** @description Missing file or invalid kind */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized — valid API key required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description File exceeds the 100 MB limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unsupported file type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    ingestPlaylist: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IngestPlaylistRequest"];
+            };
+        };
+        responses: {
+            /** @description Playlist updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IngestPlaylistResponse"];
+                };
+            };
+            /** @description Playlist created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IngestPlaylistResponse"];
+                };
+            };
+            /** @description Invalid upload asset kind */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Upload asset belongs to a different user */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Upload asset not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    ingestRecording: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IngestRecordingRequest"];
+            };
+        };
+        responses: {
+            /** @description Recording updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IngestRecordingResponse"];
+                };
+            };
+            /** @description Recording created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IngestRecordingResponse"];
+                };
+            };
+            /** @description Invalid upload asset kind */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Upload asset belongs to a different user */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Playlist or upload asset not found */
             404: {
                 headers: {
                     [name: string]: unknown;
