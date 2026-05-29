@@ -79,10 +79,14 @@ export type AdminDashboardResponse = components["schemas"]["AdminDashboardRespon
 export type AdminContentTagRef = components["schemas"]["AdminContentTagRef"];
 
 export type IngestUploadResponse = components["schemas"]["IngestUploadResponse"];
+export type IngestUploadData = components["schemas"]["IngestUploadData"];
+export type IngestUploadsListResponse = components["schemas"]["IngestUploadsListResponse"];
 export type IngestPlaylistRequest = components["schemas"]["IngestPlaylistRequest"];
 export type IngestPlaylistResponse = components["schemas"]["IngestPlaylistResponse"];
+export type IngestPlaylistsListResponse = components["schemas"]["IngestPlaylistsListResponse"];
 export type IngestRecordingRequest = components["schemas"]["IngestRecordingRequest"];
 export type IngestRecordingResponse = components["schemas"]["IngestRecordingResponse"];
+export type IngestRecordingsListResponse = components["schemas"]["IngestRecordingsListResponse"];
 export type ApiKey = components["schemas"]["ApiKey"];
 export type ApiKeyListResponse = components["schemas"]["ApiKeyListResponse"];
 export type ApiKeyCreatedResponse = components["schemas"]["ApiKeyCreatedResponse"];
@@ -209,8 +213,11 @@ export interface PlaylistedApi {
   };
   ingest: {
     upload(file: File | Blob, kind: "audio" | "image"): Promise<IngestUploadResponse>;
+    listUploads(query?: { kind?: "audio" | "image"; page?: number; pageSize?: number }): Promise<IngestUploadsListResponse>;
     upsertPlaylist(body: IngestPlaylistRequest): Promise<IngestPlaylistResponse>;
+    listPlaylists(query?: { externalSource?: string; externalId?: string; page?: number; pageSize?: number }): Promise<IngestPlaylistsListResponse>;
     upsertRecording(body: IngestRecordingRequest): Promise<IngestRecordingResponse>;
+    listRecordings(query?: { externalSource?: string; externalId?: string; playlistId?: string; page?: number; pageSize?: number }): Promise<IngestRecordingsListResponse>;
   };
 }
 
@@ -735,16 +742,34 @@ export function createPlaylistedApi(options: PlaylistedClientOptions = {}): Play
       },
     },
     ingest: {
+      listUploads(query = {}) {
+        return unwrap(
+          raw.GET("/api/v1/ingest/uploads", { params: { query } }),
+          "Failed to list uploads.",
+        );
+      },
       upsertPlaylist(body) {
         return unwrap(
           raw.POST("/api/v1/ingest/playlists", { body }),
           "Failed to upsert playlist.",
         );
       },
+      listPlaylists(query = {}) {
+        return unwrap(
+          raw.GET("/api/v1/ingest/playlists", { params: { query } }),
+          "Failed to list ingest playlists.",
+        );
+      },
       upsertRecording(body) {
         return unwrap(
           raw.POST("/api/v1/ingest/recordings", { body }),
           "Failed to upsert recording.",
+        );
+      },
+      listRecordings(query = {}) {
+        return unwrap(
+          raw.GET("/api/v1/ingest/recordings", { params: { query } }),
+          "Failed to list ingest recordings.",
         );
       },
       async upload(file, kind) {

@@ -104,6 +104,7 @@ model User {
   followers              UserFollow[]       @relation("UserFollowers")
   sessions               Session[]
   apiKeys                ApiKey[]
+  uploadAssets           UploadAsset[]
   receivedProfileViews   ProfileViewEvent[] @relation("ProfileViews")
   viewedProfiles         ProfileViewEvent[] @relation("ViewerActivities")
 
@@ -124,6 +125,8 @@ model Playlist {
   isPinnedOnProfile    Boolean       @default(false)
   itemCount            Int           @default(0) @db.UnsignedInt
   totalDurationSeconds Int           @default(0) @db.UnsignedInt
+  externalSource       String?       @db.VarChar(100)
+  externalId           String?       @db.VarChar(255)
   publishedAt          DateTime?
   createdAt            DateTime      @default(now())
   updatedAt            DateTime      @updatedAt
@@ -138,6 +141,7 @@ model Playlist {
 
   @@index([ownerId])
   @@unique([ownerId, slug])
+  @@unique([ownerId, externalSource, externalId])
   @@index([type, visibility, status])
   @@index([featured, publishedAt])
   @@fulltext([title, description])
@@ -160,6 +164,8 @@ model Recording {
   trackNumber         Int?          @db.UnsignedInt
   episodeNumber       Int?          @db.UnsignedInt
   explicit            Boolean       @default(false)
+  externalSource      String?       @db.VarChar(100)
+  externalId          String?       @db.VarChar(255)
   releaseDate         DateTime?
   publishedAt         DateTime?
   playCount           Int           @default(0) @db.UnsignedInt
@@ -175,6 +181,7 @@ model Recording {
 
   @@index([uploaderId])
   @@index([publishedPlaylistId])
+  @@unique([uploaderId, externalSource, externalId])
   @@index([recordingType, visibility, status])
   @@index([publishedAt])
   @@fulltext([title, description])
@@ -376,6 +383,23 @@ model Session {
 
   @@index([userId, expiresAt])
   @@index([expiresAt])
+}
+
+model UploadAsset {
+  id           String   @id @db.VarChar(48)
+  userId       String   @db.VarChar(191)
+  kind         String   @db.VarChar(10)
+  url          String   @db.VarChar(2048)
+  storageKey   String?  @db.VarChar(512)
+  mimeType     String   @db.VarChar(100)
+  bytes        Int      @db.UnsignedInt
+  originalName String   @db.VarChar(255)
+  status       String   @default("READY") @db.VarChar(20)
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model ApiKey {

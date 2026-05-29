@@ -2180,6 +2180,33 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 
   /api/v1/ingest/uploads:
+    get:
+      tags: [Ingest]
+      operationId: listIngestUploads
+      summary: List upload assets for the current API key user
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: kind
+          schema:
+            type: string
+            enum: [audio, image]
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Upload asset list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestUploadsListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     post:
       tags: [Ingest]
       operationId: ingestUpload
@@ -2251,6 +2278,37 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 
   /api/v1/ingest/playlists:
+    get:
+      tags: [Ingest]
+      operationId: listIngestPlaylists
+      summary: List playlists ingested by the current API key user
+      description: Filtered to playlists owned by the authenticated user. Optionally filter by externalSource for sync-client reconciliation.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: externalSource
+          schema:
+            type: string
+        - in: query
+          name: externalId
+          schema:
+            type: string
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Playlist list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestPlaylistsListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     post:
       tags: [Ingest]
       operationId: ingestPlaylist
@@ -2306,6 +2364,41 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 
   /api/v1/ingest/recordings:
+    get:
+      tags: [Ingest]
+      operationId: listIngestRecordings
+      summary: List recordings ingested by the current API key user
+      description: Filtered to recordings uploaded by the authenticated user. Filter by externalSource and optionally by playlistId.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: externalSource
+          schema:
+            type: string
+        - in: query
+          name: externalId
+          schema:
+            type: string
+        - in: query
+          name: playlistId
+          schema:
+            type: string
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Recording list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestRecordingsListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     post:
       tags: [Ingest]
       operationId: ingestRecording
@@ -4633,6 +4726,78 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ApiKey'
+
+    IngestListMeta:
+      type: object
+      additionalProperties: false
+      required: [page, pageSize, total]
+      properties:
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        total:
+          type: integer
+
+    IngestUploadData:
+      type: object
+      additionalProperties: false
+      required: [uploadId, kind, url, mimeType, bytes, originalName, status, createdAt]
+      properties:
+        uploadId:
+          type: string
+        kind:
+          type: string
+          enum: [audio, image]
+        url:
+          type: string
+        mimeType:
+          type: string
+        bytes:
+          type: integer
+        originalName:
+          type: string
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    IngestUploadsListResponse:
+      type: object
+      additionalProperties: false
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/IngestUploadData'
+        meta:
+          $ref: '#/components/schemas/IngestListMeta'
+
+    IngestPlaylistsListResponse:
+      type: object
+      additionalProperties: false
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/IngestPlaylistData'
+        meta:
+          $ref: '#/components/schemas/IngestListMeta'
+
+    IngestRecordingsListResponse:
+      type: object
+      additionalProperties: false
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/IngestRecordingData'
+        meta:
+          $ref: '#/components/schemas/IngestListMeta'
 
     IngestPlaylistRequest:
       type: object

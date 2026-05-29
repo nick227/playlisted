@@ -13,7 +13,7 @@ import YAML from "yaml";
 
 import { authRouter } from "./routes/auth.js";
 import { developerKeysRouter } from "./routes/developer/keys.js";
-import { developerKeyLimiter } from "./lib/rateLimiter.js";
+import { developerKeyLimiter, ingestUploadLimiter } from "./lib/rateLimiter.js";
 import { analyticsRouter } from "./routes/analytics.js";
 import { adminDashboardRouter } from "./routes/admin/dashboard.js";
 import { adminHomepageRouter } from "./routes/admin/homepage.js";
@@ -30,6 +30,9 @@ import { playlistsRouter } from "./routes/playlists.js";
 import { recordingsRouter } from "./routes/recordings.js";
 import { searchRouter } from "./routes/search.js";
 import { uploadsRouter } from "./routes/uploads.js";
+import { ingestUploadsRouter } from "./routes/ingest/uploads.js";
+import { ingestPlaylistsRouter } from "./routes/ingest/playlists.js";
+import { ingestRecordingsRouter } from "./routes/ingest/recordings.js";
 import { usersRouter } from "./routes/users.js";
 
 const openApiPath = path.resolve(process.cwd(), "openapi/openapi.yaml");
@@ -47,6 +50,8 @@ export function createApp() {
   app.use(express.json());
   app.use("/uploads", express.static(uploadsDir));
   app.use("/api/v1/uploads", uploadsRouter);
+  // Ingest upload: multipart — mounted before OpenAPI validator
+  app.use("/api/v1/ingest/uploads", ingestUploadLimiter, ingestUploadsRouter);
 
   if (isApiDocsEnabled()) {
     app.get("/openapi.yaml", (_req, res) => {
@@ -81,6 +86,8 @@ export function createApp() {
   app.use("/api/v1/admin/homepage-features", adminHomepageRouter);
   app.use("/api/v1/admin/users", adminUsersRouter);
   app.use("/api/v1/developer/keys", developerKeyLimiter, developerKeysRouter);
+  app.use("/api/v1/ingest/playlists", ingestPlaylistsRouter);
+  app.use("/api/v1/ingest/recordings", ingestRecordingsRouter);
 
   installWebApp(app);
 

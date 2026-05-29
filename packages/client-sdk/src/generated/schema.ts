@@ -959,7 +959,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** List upload assets for the current API key user */
+        get: operations["listIngestUploads"];
         put?: never;
         /**
          * Upload an audio or image file using an API key (MVP multipart)
@@ -982,7 +983,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * List playlists ingested by the current API key user
+         * @description Filtered to playlists owned by the authenticated user. Optionally filter by externalSource for sync-client reconciliation.
+         */
+        get: operations["listIngestPlaylists"];
         put?: never;
         /**
          * Upsert a playlist by externalSource + externalId
@@ -1002,7 +1007,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * List recordings ingested by the current API key user
+         * @description Filtered to recordings uploaded by the authenticated user. Filter by externalSource and optionally by playlistId.
+         */
+        get: operations["listIngestRecordings"];
         put?: never;
         /**
          * Upsert a recording by externalSource + externalId
@@ -2030,6 +2039,35 @@ export interface components {
         };
         ApiKeyListResponse: {
             keys: components["schemas"]["ApiKey"][];
+        };
+        IngestListMeta: {
+            page: number;
+            pageSize: number;
+            total: number;
+        };
+        IngestUploadData: {
+            uploadId: string;
+            /** @enum {string} */
+            kind: "audio" | "image";
+            url: string;
+            mimeType: string;
+            bytes: number;
+            originalName: string;
+            status: string;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        IngestUploadsListResponse: {
+            data: components["schemas"]["IngestUploadData"][];
+            meta: components["schemas"]["IngestListMeta"];
+        };
+        IngestPlaylistsListResponse: {
+            data: components["schemas"]["IngestPlaylistData"][];
+            meta: components["schemas"]["IngestListMeta"];
+        };
+        IngestRecordingsListResponse: {
+            data: components["schemas"]["IngestRecordingData"][];
+            meta: components["schemas"]["IngestListMeta"];
         };
         IngestPlaylistRequest: {
             /** @description Stable identifier for the source system (e.g. "desktop-sync") */
@@ -4709,6 +4747,39 @@ export interface operations {
             };
         };
     };
+    listIngestUploads: {
+        parameters: {
+            query?: {
+                kind?: "audio" | "image";
+                page?: components["parameters"]["Page"];
+                pageSize?: components["parameters"]["PageSize"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Upload asset list */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IngestUploadsListResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     ingestUpload: {
         parameters: {
             query: {
@@ -4768,6 +4839,40 @@ export interface operations {
             };
             /** @description Unsupported file type */
             415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listIngestPlaylists: {
+        parameters: {
+            query?: {
+                externalSource?: string;
+                externalId?: string;
+                page?: components["parameters"]["Page"];
+                pageSize?: components["parameters"]["PageSize"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Playlist list */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IngestPlaylistsListResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4837,6 +4942,41 @@ export interface operations {
             };
             /** @description Upload asset not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listIngestRecordings: {
+        parameters: {
+            query?: {
+                externalSource?: string;
+                externalId?: string;
+                playlistId?: string;
+                page?: components["parameters"]["Page"];
+                pageSize?: components["parameters"]["PageSize"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Recording list */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IngestRecordingsListResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -38,7 +38,9 @@
     "web:dev": "npm --prefix apps/web run dev",
     "web:build": "npm run sdk:build && npm --prefix apps/web run build",
     "ports:free": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/free-ports.ps1",
-    "dev:full": "npm run ports:free && npx concurrently -k -n api,web -c blue,green \"npm run dev\" \"npm run web:dev\""
+    "dev:full": "npm run ports:free && npx concurrently -k -n api,web -c blue,green \"npm run dev\" \"npm run web:dev\"",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@prisma/client": "^6.8.2",
@@ -59,11 +61,14 @@
     "@types/express": "^5.0.1",
     "@types/multer": "^2.1.0",
     "@types/node": "^22.15.30",
+    "@types/supertest": "^7.2.0",
     "@types/swagger-ui-express": "^4.1.8",
     "music-metadata": "^11.12.3",
     "openapi-typescript": "^7.8.0",
+    "supertest": "^7.2.2",
     "swagger-cli": "^4.0.4",
     "tsx": "^4.19.4",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vitest": "^4.1.7"
   }
 }
