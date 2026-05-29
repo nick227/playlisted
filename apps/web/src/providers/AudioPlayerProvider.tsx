@@ -31,11 +31,19 @@ interface AudioPlayerContextValue {
   currentTrack: QueueTrack | null;
   queue: QueueTrack[];
   state: PlayerState;
+  /** True while the current track is playing or starting (loading). Use for play/pause button UI. */
+  isPlaying: boolean;
   currentTime: number;
   duration: number;
   playbackContext: PlaybackContext;
   queueOpen: boolean;
   setQueueOpen: (open: boolean) => void;
+  shuffle: boolean;
+  toggleShuffle: () => void;
+  repeatMode: "off" | "one" | "all";
+  cycleRepeat: () => void;
+  volume: number;
+  setVolume: (v: number) => void;
   playTrack: (track: QueueTrack, queue?: QueueTrack[], context?: PlaybackContext) => void;
   setQueue: (tracks: QueueTrack[], startIndex?: number, context?: PlaybackContext) => void;
   togglePlay: () => void;
@@ -54,6 +62,8 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const playbackContextRef = useRef<PlaybackContext>({ sourceContext: "player" });
   const loggedTrackRef = useRef<string | null>(null);
+  const shuffleRef = useRef(false);
+  const repeatRef = useRef<"off" | "one" | "all">("off");
   const [queue, setQueueState] = useState<QueueTrack[]>([]);
   const [queueIndex, setQueueIndex] = useState(-1);
   const [state, setState] = useState<PlayerState>("idle");
@@ -61,8 +71,36 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   const [duration, setDuration] = useState(0);
   const [playbackContext, setPlaybackContext] = useState<PlaybackContext>({ sourceContext: "player" });
   const [queueOpen, setQueueOpen] = useState(false);
+  const [shuffle, setShuffleState] = useState(false);
+  const [repeatMode, setRepeatModeState] = useState<"off" | "one" | "all">("off");
+  const [volume, setVolumeState] = useState(1);
 
   const currentTrack = queueIndex >= 0 ? queue[queueIndex] ?? null : null;
+  const isPlaying =
+    currentTrack !== null && (state === "playing" || state === "loading");
+
+  const queueRef = useRef(queue);
+  const queueIndexRef = useRef(queueIndex);
+  queueRef.current = queue;
+  queueIndexRef.current = queueIndex;
+
+  const toggleShuffle = useCallback(() => {
+    shuffleRef.current = !shuffleRef.current;
+    setShuffleState(shuffleRef.current);
+  }, []);
+
+  const cycleRepeat = useCallback(() => {
+    const next: "off" | "one" | "all" =
+      repeatRef.current === "off" ? "all" : repeatRef.current === "all" ? "one" : "off";
+    repeatRef.current = next;
+    setRepeatModeState(next);
+  }, []);
+
+  const setVolume = useCallback((v: number) => {
+    const clamped = Math.max(0, Math.min(1, v));
+    setVolumeState(clamped);
+    if (audioRef.current) audioRef.current.volume = clamped;
+  }, []);
 
   const flushPlayback = useCallback(
     (track: QueueTrack, seconds: number, completed: boolean) => {
@@ -101,7 +139,9 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     setState("loading");
     audio.src = track.audioUrl;
     audio.load();
-    audio.play().catch(() => setState("paused"));
+    void audio.play().then(() => {
+      if (!audio.paused) setState("playing");
+    }).catch(() => setState("paused"));
   }, []);
 
   const playTrack = useCallback(
@@ -151,17 +191,27 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     const audio = audioRef.current;
     if (!audio || !currentTrack) return;
     if (audio.paused) {
-      audio.play().catch(() => setState("paused"));
+      void audio.play().then(() => {
+        if (!audio.paused) setState("playing");
+      }).catch(() => setState("paused"));
     } else {
       audio.pause();
     }
   }, [currentTrack]);
 
   const playNext = useCallback(() => {
-    if (queueIndex < queue.length - 1) {
+    if (shuffleRef.current && queue.length > 1) {
+      let next: number;
+      do { next = Math.floor(Math.random() * queue.length); } while (next === queueIndex);
+      setQueueIndex(next);
+      loadTrack(queue[next]);
+    } else if (queueIndex < queue.length - 1) {
       const next = queueIndex + 1;
       setQueueIndex(next);
       loadTrack(queue[next]);
+    } else if (repeatRef.current === "all" && queue.length > 0) {
+      setQueueIndex(0);
+      loadTrack(queue[0]);
     }
   }, [queue, queueIndex, loadTrack]);
 
@@ -214,18 +264,28 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     const onMeta = () => setDuration(audio.duration || 0);
     const onPlay = () => {
       setState("playing");
-      const track = queueIndex >= 0 ? queue[queueIndex] : null;
+      const idx = queueIndexRef.current;
+      const track = idx >= 0 ? queueRef.current[idx] : null;
       if (track) logPlaybackStart(track);
     };
     const onPause = () => setState("paused");
-    const onWaiting = () => setState("loading");
+    const onWaiting = () => {
+      if (!audio.paused) return;
+      setState("loading");
+    };
     const onEnded = () => {
-      const track = queueIndex >= 0 ? queue[queueIndex] : null;
+      const idx = queueIndexRef.current;
+      const track = idx >= 0 ? queueRef.current[idx] : null;
       if (track) {
         flushPlayback(track, audio.duration || currentTime, true);
         loggedTrackRef.current = null;
       }
-      playNext();
+      if (repeatRef.current === "one") {
+        audio.currentTime = 0;
+        audio.play().catch(() => setState("paused"));
+      } else {
+        playNext();
+      }
     };
     const onError = () => setState("error");
 
@@ -246,18 +306,25 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       audio.removeEventListener("ended", onEnded);
       audio.removeEventListener("error", onError);
     };
-  }, [playNext, queue, queueIndex, currentTime, flushPlayback, logPlaybackStart]);
+  }, [playNext, currentTime, flushPlayback, logPlaybackStart]);
 
   const value = useMemo<AudioPlayerContextValue>(
     () => ({
       currentTrack,
       queue,
       state,
+      isPlaying,
       currentTime,
       duration,
       playbackContext,
       queueOpen,
       setQueueOpen,
+      shuffle,
+      toggleShuffle,
+      repeatMode,
+      cycleRepeat,
+      volume,
+      setVolume,
       playTrack,
       setQueue,
       togglePlay,
@@ -272,10 +339,17 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       currentTrack,
       queue,
       state,
+      isPlaying,
       currentTime,
       duration,
       playbackContext,
       queueOpen,
+      shuffle,
+      toggleShuffle,
+      repeatMode,
+      cycleRepeat,
+      volume,
+      setVolume,
       playTrack,
       setQueue,
       togglePlay,

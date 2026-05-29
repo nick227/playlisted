@@ -11,6 +11,7 @@ import { HeroSpotlight } from "@/components/discovery/HeroSpotlight";
 import { RowSkeleton } from "@/components/feedback/Skeleton";
 import { useHomepage } from "@/hooks/useHomepage";
 import { useTopArtists, useTopPlaylists, useTopSongs } from "@/hooks/useCharts";
+import { useTrackPlayback } from "@/hooks/useTrackPlayback";
 import { useLibrarySongs } from "@/hooks/useLibrary";
 import { useAuth } from "@/providers/AuthProvider";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
@@ -65,15 +66,13 @@ function HomeSection({
 
 function HomeSongRow({
   song,
-  isActive,
-  isPlaying,
   onPlay,
 }: {
   song: LibrarySong;
-  isActive: boolean;
-  isPlaying: boolean;
   onPlay: () => void;
 }) {
+  const { isActive, isPlaying } = useTrackPlayback(song.id);
+
   return (
     <button
       type="button"
@@ -101,7 +100,7 @@ function HomeSongRow({
             isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100",
           ].join(" ")}
         >
-          {isActive ? (
+          {isPlaying ? (
             <Pause size={12} fill="currentColor" className="text-white" />
           ) : (
             <Play size={12} fill="currentColor" className="ml-px text-white" />
@@ -320,7 +319,7 @@ export function HomePage() {
   const pinnedArtists = useTopArtists("30d", 8);
   const songsQuery = useLibrarySongs();
 
-  const { playTrack, currentTrack, state, togglePlay } = useAudioPlayer();
+  const { playTrack, currentTrack, togglePlay } = useAudioPlayer();
 
   // Parse editorial sections into a keyed map
   const sectionMap = useMemo(() => {
@@ -487,23 +486,16 @@ export function HomePage() {
               subtitle={`Most-played — ${rangeSubtitle[chartsRange]}`}
               cols="grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6"
             >
-              {topSongs.data!.data.map((item) => {
-                const trackId = item.recordingId;
-                const isActive = currentTrack?.id === trackId;
-                const isPlaying = isActive && state === "playing";
-                return (
-                  <ChartSongCard
-                    key={trackId}
-                    item={item}
-                    className="w-full"
-                    isActive={isActive}
-                    isPlaying={isPlaying}
-                    onPlay={() =>
-                      handleChartSongPlay(item, topSongs.data!.data, "Top Songs")
-                    }
-                  />
-                );
-              })}
+              {topSongs.data!.data.map((item) => (
+                <ChartSongCard
+                  key={item.recordingId}
+                  item={item}
+                  className="w-full"
+                  onPlay={() =>
+                    handleChartSongPlay(item, topSongs.data!.data, "Top Songs")
+                  }
+                />
+              ))}
             </HomeSection>
           )}
 
@@ -682,19 +674,13 @@ export function HomePage() {
             viewAllHref={`/library?view=genres&genre=${slug}`}
             cols="grid-cols-1 sm:grid-cols-2"
           >
-            {limited.map((song) => {
-              const isActive = currentTrack?.id === song.id;
-              const isPlaying = isActive && state === "playing";
-              return (
-                <HomeSongRow
-                  key={song.id}
-                  song={song}
-                  isActive={isActive}
-                  isPlaying={isPlaying}
-                  onPlay={() => handleSongPlay(song, limited, name)}
-                />
-              );
-            })}
+            {limited.map((song) => (
+              <HomeSongRow
+                key={song.id}
+                song={song}
+                onPlay={() => handleSongPlay(song, limited, name)}
+              />
+            ))}
           </HomeSection>
         );
       })}

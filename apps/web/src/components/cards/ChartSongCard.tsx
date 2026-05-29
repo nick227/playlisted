@@ -2,23 +2,17 @@ import { Pause, Play } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { TopSongItem } from "@playlisted/client-sdk";
 
+import { useTrackPlayback } from "@/hooks/useTrackPlayback";
 import { coverFallback, profilePath } from "@/lib/routes";
 
 interface ChartSongCardProps {
   item: TopSongItem;
   className?: string;
-  isActive?: boolean;
-  isPlaying?: boolean;
   onPlay?: () => void;
 }
 
-export function ChartSongCard({
-  item,
-  className,
-  isActive = false,
-  isPlaying = false,
-  onPlay,
-}: ChartSongCardProps) {
+export function ChartSongCard({ item, className, onPlay }: ChartSongCardProps) {
+  const { isActive, isPlaying } = useTrackPlayback(item.recordingId);
   const rankLabel = item.rank <= 3 ? ["#1", "#2", "#3"][item.rank - 1] : `#${item.rank}`;
   const isTop3 = item.rank <= 3;
 
@@ -28,7 +22,7 @@ export function ChartSongCard({
       <div
         role={onPlay ? "button" : undefined}
         tabIndex={onPlay ? 0 : undefined}
-        aria-label={onPlay ? (isActive ? (isPlaying ? "Pause" : "Resume") : "Play") : undefined}
+        aria-label={onPlay ? (isPlaying ? "Pause" : isActive ? "Resume" : "Play") : undefined}
         className={[
           "group relative aspect-square w-full overflow-hidden rounded-lg",
           onPlay ? "cursor-pointer" : "",
@@ -83,15 +77,15 @@ export function ChartSongCard({
           </p>
         </div>
 
-        {/* Play / pause overlay — always visible when active or playing */}
+        {/* Play / pause overlay — visible when this track is active */}
         {onPlay && (
           <div
             className={[
               "absolute inset-0 flex items-center justify-center bg-black/50 transition-opacity",
-              isActive || isPlaying ? "opacity-100" : "opacity-0 group-hover:opacity-100",
+              isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100",
             ].join(" ")}
           >
-            {isPlaying || isActive ? (
+            {isPlaying ? (
               <Pause size={32} fill="currentColor" className="text-white drop-shadow-lg" />
             ) : (
               <Play size={32} fill="currentColor" className="ml-1 text-white drop-shadow-lg" />
