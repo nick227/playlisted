@@ -18,6 +18,7 @@ tags:
   - name: Analytics
   - name: Charts
   - name: Library
+  - name: Search
   - name: Users
   - name: Playlists
   - name: Recordings
@@ -818,6 +819,41 @@ paths:
               schema:
                 $ref: '#/components/schemas/LibraryArtistsResponse'
 
+  /api/v1/search/unified:
+    get:
+      tags: [Search]
+      operationId: unifiedSearch
+      summary: Search songs, playlists, and artists
+      parameters:
+        - in: query
+          name: q
+          required: true
+          schema:
+            type: string
+            minLength: 1
+          description: Search query
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+          description: Maximum results to return per group
+      responses:
+        '200':
+          description: Grouped search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+        '400':
+          description: Missing or empty search query
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /api/v1/users:
     get:
       tags: [Users]
@@ -849,7 +885,9 @@ paths:
     post:
       tags: [Users]
       operationId: createUser
-      summary: Create a user
+      summary: Create a user (admin)
+      security:
+        - bearerAuth: []
       requestBody:
         required: true
         content:
@@ -863,6 +901,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserDetail'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '409':
           description: User already exists
           content:
@@ -2228,8 +2278,6 @@ components:
         heroImageUrl:
           type: [string, 'null']
           format: uri-reference
-        role:
-          $ref: '#/components/schemas/UserRole'
 
     AuthUser:
       type: object
@@ -3417,6 +3465,24 @@ components:
             $ref: '#/components/schemas/LibrarySong'
         meta:
           $ref: '#/components/schemas/PaginationMeta'
+
+    SearchResponse:
+      type: object
+      additionalProperties: false
+      required: [songs, playlists, artists]
+      properties:
+        songs:
+          type: array
+          items:
+            $ref: '#/components/schemas/LibrarySong'
+        playlists:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlaylistSummary'
+        artists:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserSummary'
 
     LibraryArtistGenre:
       type: object

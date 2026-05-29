@@ -1,4 +1,4 @@
-import { UserRole, UserStatus } from "@prisma/client";
+import { UserStatus } from "@prisma/client";
 import { Router } from "express";
 
 import {
@@ -50,7 +50,6 @@ authRouter.post("/register", async (req, res, next) => {
       bio?: string | null;
       avatarUrl?: string | null;
       heroImageUrl?: string | null;
-      role?: UserRole;
     };
 
     const baseUsername = (body.username && slugify(body.username)) || slugify(body.displayName) || "user";
@@ -77,7 +76,7 @@ authRouter.post("/register", async (req, res, next) => {
           bio: body.bio ?? null,
           avatarUrl: body.avatarUrl ?? null,
           heroImageUrl: body.heroImageUrl ?? null,
-          role: body.role ?? "LISTENER",
+          role: "LISTENER",
           status: UserStatus.ACTIVE,
         },
       });

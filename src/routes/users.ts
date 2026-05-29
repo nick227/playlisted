@@ -3,6 +3,7 @@ import { Router } from "express";
 
 import { getAuthContextFromRequest } from "../lib/auth.js";
 import { prisma } from "../lib/prisma.js";
+import { requireAdmin } from "../lib/requireAdmin.js";
 import { requireAuth } from "../lib/requireAuth.js";
 import { slugify } from "../utils/slug.js";
 
@@ -304,6 +305,9 @@ usersRouter.get("/:userId", async (req, res, next) => {
 
 usersRouter.post("/", async (req, res, next) => {
   try {
+    const auth = await requireAdmin(req, res);
+    if (!auth) return;
+
     const body = req.body as {
       email: string;
       username?: string;
@@ -324,6 +328,13 @@ usersRouter.post("/", async (req, res, next) => {
     while (await prisma.user.findUnique({ where: { username: candidate }, select: { id: true } })) {
       suffix += 1;
       candidate = `${username}-${suffix}`;
+    }
+
+    if (auth.user.role !== "ADMIN" && (body.role !== undefined || body.status !== undefined)) {
+      return res.status(403).json({
+        error: "forbidden",
+        message: "Only admins may set user role or status.",
+      });
     }
 
     const created = await prisma.user.create({

@@ -10,8 +10,10 @@ healthRouter.get("/", async (_req, res) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
     dbOk = true;
-  } catch (error) {
-    console.error("Health check database probe failed:", error);
+  } catch {
+    if (process.env.NODE_ENV !== "production") {
+      console.error("Health check database probe failed");
+    }
   }
 
   const body = {

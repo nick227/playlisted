@@ -484,6 +484,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/search/unified": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Search songs, playlists, and artists */
+        get: operations["unifiedSearch"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/users": {
         parameters: {
             query?: never;
@@ -494,7 +511,7 @@ export interface paths {
         /** List users */
         get: operations["listUsers"];
         put?: never;
-        /** Create a user */
+        /** Create a user (admin) */
         post: operations["createUser"];
         delete?: never;
         options?: never;
@@ -975,7 +992,6 @@ export interface components {
             avatarUrl?: string | null;
             /** Format: uri-reference */
             heroImageUrl?: string | null;
-            role?: components["schemas"]["UserRole"];
         };
         AuthUser: {
             id: string;
@@ -1522,6 +1538,11 @@ export interface components {
         LibrarySongsResponse: {
             data: components["schemas"]["LibrarySong"][];
             meta: components["schemas"]["PaginationMeta"];
+        };
+        SearchResponse: {
+            songs: components["schemas"]["LibrarySong"][];
+            playlists: components["schemas"]["PlaylistSummary"][];
+            artists: components["schemas"]["UserSummary"][];
         };
         LibraryArtistGenre: {
             id: string;
@@ -2881,6 +2902,40 @@ export interface operations {
             };
         };
     };
+    unifiedSearch: {
+        parameters: {
+            query: {
+                /** @description Search query */
+                q: string;
+                /** @description Maximum results to return per group */
+                pageSize?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Grouped search results */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SearchResponse"];
+                };
+            };
+            /** @description Missing or empty search query */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     listUsers: {
         parameters: {
             query?: {
@@ -2927,6 +2982,24 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UserDetail"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description User already exists */

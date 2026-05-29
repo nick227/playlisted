@@ -2,6 +2,7 @@ import "dotenv/config";
 
 import cors from "cors";
 import express from "express";
+import { isApiDocsEnabled } from "./lib/apiDocs.js";
 import { getCorsOptions } from "./lib/corsOptions.js";
 import { installWebApp } from "./lib/serveWeb.js";
 import OpenApiValidator from "express-openapi-validator";
@@ -45,11 +46,12 @@ export function createApp() {
   app.use("/uploads", express.static(uploadsDir));
   app.use("/api/v1/uploads", uploadsRouter);
 
-  app.get("/openapi.yaml", (_req, res) => {
-    res.sendFile(openApiPath);
-  });
-
-  app.use("/docs", swaggerUi.serve, swaggerUi.setup(openApiDocument));
+  if (isApiDocsEnabled()) {
+    app.get("/openapi.yaml", (_req, res) => {
+      res.sendFile(openApiPath);
+    });
+    app.use("/docs", swaggerUi.serve, swaggerUi.setup(openApiDocument));
+  }
 
   app.use(
     OpenApiValidator.middleware({
