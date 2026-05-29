@@ -10,6 +10,7 @@ import { AdminPlaylistsPage } from "@/pages/admin/AdminPlaylistsPage";
 import { AdminSongsPage } from "@/pages/admin/AdminSongsPage";
 import { AdminTagsPage } from "@/pages/admin/AdminTagsPage";
 import { AdminUsersPage } from "@/pages/admin/AdminUsersPage";
+import { AdminApiKeysPage } from "@/pages/admin/AdminApiKeysPage";
 import { HomePage } from "@/pages/HomePage";
 import { FavoritesPage } from "@/pages/FavoritesPage";
 import { LibraryPage } from "@/pages/LibraryPage";
@@ -117,6 +118,7 @@ function MainRoutes() {
           <Route path="users" element={<AdminUsersPage />} />
           <Route path="homepage" element={<AdminHomepagePage />} />
           <Route path="tags" element={<AdminTagsPage />} />
+          <Route path="api-keys" element={<AdminApiKeysPage />} />
         </Route>
         <Route
           path="/playlists/new"

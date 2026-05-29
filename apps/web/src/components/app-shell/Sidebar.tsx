@@ -1,9 +1,11 @@
-import { BookOpen, Code2, Heart, Home, ListMusic, Lock, Plus, Settings, type LucideIcon } from "lucide-react";
-import { NavLink } from "react-router-dom";
+import { PanelsTopLeft, BookOpen, Code2, Heart, Home, ListMusic, Lock, Plus, Settings, type LucideIcon } from "lucide-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { NavLink, useNavigate } from "react-router-dom";
 
 import { useCollectionPlaylists } from "@/hooks/useCollections";
 import { usePlaylists } from "@/hooks/usePlaylists";
-import { ADMIN_PATH, panelPathForRole, playlistPath } from "@/lib/routes";
+import { authedApi } from "@/lib/authedApi";
+import { ADMIN_PATH, panelPathForRole, playlistPath, studioCollectionEditPath } from "@/lib/routes";
 import { useAuth } from "@/providers/AuthProvider";
 
 interface SidebarProps {
@@ -55,7 +57,10 @@ function NavItem({
 }
 
 export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
-  const { user } = useAuth();
+  const { user, accessToken } = useAuth();
+  const client = authedApi(accessToken);
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { data: ownedCollections } = usePlaylists(12, user?.id);
   const { data: savedCollections } = useCollectionPlaylists(12);
   const panelPath = user ? panelPathForRole(user.role) : null;
@@ -63,6 +68,22 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
     ...(ownedCollections?.data ?? []),
     ...(savedCollections?.data ?? []),
   ].filter((playlist, index, all) => all.findIndex((item) => item.id === playlist.id) === index);
+
+  const createCollectionMutation = useMutation({
+    mutationFn: () =>
+      client.playlists.create({
+        ownerId: user!.id,
+        title: "Untitled collection",
+        type: "PLAYLIST",
+        status: "PUBLISHED",
+        visibility: "PUBLIC",
+      }),
+    onSuccess: (created) => {
+      queryClient.invalidateQueries({ queryKey: ["me", "playlists"] });
+      onClose();
+      navigate(studioCollectionEditPath(created.id));
+    },
+  });
 
   return (
     <>
@@ -119,7 +140,7 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
                 onClick={onClose}
                 className={({ isActive }) => navClass(isActive)}
               >
-                <Plus size={18} />
+                <PanelsTopLeft size={18} />
                 My Studio
               </NavLink>
               {panelPath === "/studio" ? (
@@ -140,6 +161,18 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
               Collections
             </p>
             <div className="flex flex-col gap-0.5">
+              <button
+                type="button"
+                onClick={() => {
+                  if (!user || createCollectionMutation.isPending) return;
+                  createCollectionMutation.mutate();
+                }}
+                disabled={!user || createCollectionMutation.isPending}
+                className={navClass(false, "text-left disabled:opacity-60 cursor-pointer")}
+              >
+                <Plus size={20} />
+                {createCollectionMutation.isPending ? "Creating..." : "Add Collection"}
+              </button>
               {collections.map((playlist) => (
                 <NavLink
                   key={playlist.id}

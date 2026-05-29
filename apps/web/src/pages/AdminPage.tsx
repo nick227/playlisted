@@ -8,6 +8,7 @@ const NAV = [
   { to: "/admin/users", label: "Users" },
   { to: "/admin/homepage", label: "Homepage" },
   { to: "/admin/tags", label: "Tags" },
+  { to: "/admin/api-keys", label: "API Keys" },
 ];
 
 export function AdminPage() {

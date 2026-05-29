@@ -78,6 +78,9 @@ export type AdminPlaylistListResponse = components["schemas"]["AdminPlaylistList
 export type AdminUpdatePlaylistRequest = components["schemas"]["AdminUpdatePlaylistRequest"];
 export type AdminDashboardResponse = components["schemas"]["AdminDashboardResponse"];
 export type AdminContentTagRef = components["schemas"]["AdminContentTagRef"];
+export type AdminApiKey = components["schemas"]["AdminApiKey"];
+export type AdminApiKeyStats = components["schemas"]["AdminApiKeyStats"];
+export type AdminApiKeyListResponse = components["schemas"]["AdminApiKeyListResponse"];
 
 export type IngestUploadResponse = components["schemas"]["IngestUploadResponse"];
 export type IngestUploadData = components["schemas"]["IngestUploadData"];
@@ -129,6 +132,8 @@ export interface PlaylistedApi {
     listUsers(query?: { page?: number; pageSize?: number; role?: string; status?: string; q?: string }): Promise<UserListResponse>;
     updateUser(userId: string, body: AdminUpdateUserRequest): Promise<UserSummary>;
     getDashboard(): Promise<AdminDashboardResponse>;
+    listApiKeys(query?: { status?: "all" | "active" | "revoked"; q?: string; userId?: string; page?: number; pageSize?: number }): Promise<AdminApiKeyListResponse>;
+    revokeApiKey(keyId: string): Promise<void>;
     listSongs(query?: { page?: number; pageSize?: number; status?: string; visibility?: string; recordingType?: string; explicit?: boolean; genre?: string; uploaderId?: string; q?: string; sortBy?: string; order?: string }): Promise<AdminSongListResponse>;
     updateSong(songId: string, body: AdminUpdateSongRequest): Promise<AdminSong>;
     listPlaylists(query?: { page?: number; pageSize?: number; status?: string; visibility?: string; type?: string; featured?: boolean; genre?: string; ownerId?: string; q?: string; sortBy?: string; order?: string }): Promise<AdminPlaylistListResponse>;
@@ -389,6 +394,18 @@ export function createPlaylistedApi(options: PlaylistedClientOptions = {}): Play
       },
       getDashboard() {
         return unwrap(raw.GET("/api/v1/admin/dashboard"), "Failed to load dashboard.");
+      },
+      listApiKeys(query = {}) {
+        return unwrap(
+          raw.GET("/api/v1/admin/developer/keys", { params: { query } }),
+          "Failed to load API keys.",
+        );
+      },
+      revokeApiKey(keyId: string) {
+        return unwrap(
+          raw.DELETE("/api/v1/admin/developer/keys/{keyId}", { params: { path: { keyId } } }),
+          "Failed to revoke API key.",
+        ).then(() => undefined);
       },
       listSongs(query = {}) {
         return unwrap(

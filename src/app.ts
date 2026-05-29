@@ -21,6 +21,7 @@ import { adminPlaylistsRouter } from "./routes/admin/playlists.js";
 import { adminSongsRouter } from "./routes/admin/songs.js";
 import { adminTagsRouter } from "./routes/admin/tags.js";
 import { adminUsersRouter } from "./routes/admin/users.js";
+import { adminDeveloperKeysRouter } from "./routes/admin/developerKeys.js";
 import { chartsRouter } from "./routes/charts.js";
 import { libraryRouter } from "./routes/library.js";
 import { healthRouter } from "./routes/health.js";
@@ -85,6 +86,7 @@ export function createApp() {
   app.use("/api/v1/admin/tags", adminTagsRouter);
   app.use("/api/v1/admin/homepage-features", adminHomepageRouter);
   app.use("/api/v1/admin/users", adminUsersRouter);
+  app.use("/api/v1/admin/developer/keys", adminDeveloperKeysRouter);
   app.use("/api/v1/developer/keys", developerKeyLimiter, developerKeysRouter);
   app.use("/api/v1/ingest/playlists", ingestPlaylistsRouter);
   app.use("/api/v1/ingest/recordings", ingestRecordingsRouter);

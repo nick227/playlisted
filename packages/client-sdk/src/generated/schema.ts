@@ -1025,6 +1025,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/developer/keys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List all API keys across all users (admin) */
+        get: operations["adminListApiKeys"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/developer/keys/{keyId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Revoke any user's API key (admin) */
+        delete: operations["adminRevokeApiKey"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/developer/keys": {
         parameters: {
             query?: never;
@@ -2047,6 +2081,34 @@ export interface components {
         };
         ApiKeyListResponse: {
             keys: components["schemas"]["ApiKey"][];
+        };
+        AdminApiKey: {
+            id: string;
+            name: string;
+            prefix: string;
+            /** Format: date-time */
+            lastUsedAt: string | null;
+            /** Format: date-time */
+            revokedAt: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            user: {
+                id: string;
+                email: string;
+                username: string;
+                displayName: string;
+            };
+        };
+        AdminApiKeyStats: {
+            totalActive: number;
+            totalRevoked: number;
+            /** @description Active keys that were used in the last 7 days */
+            usedLast7d: number;
+        };
+        AdminApiKeyListResponse: {
+            data: components["schemas"]["AdminApiKey"][];
+            meta: components["schemas"]["PaginationMeta"];
+            stats: components["schemas"]["AdminApiKeyStats"];
         };
         IngestListMeta: {
             page: number;
@@ -5115,6 +5177,98 @@ export interface operations {
                 };
             };
             /** @description Playlist or upload asset not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    adminListApiKeys: {
+        parameters: {
+            query?: {
+                status?: "all" | "active" | "revoked";
+                /** @description Search by key name, prefix, user email, username, or display name */
+                q?: string;
+                userId?: string;
+                page?: components["parameters"]["Page"];
+                pageSize?: components["parameters"]["PageSize"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description API key list with usage stats */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminApiKeyListResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    adminRevokeApiKey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                keyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Revoked */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Key not found or already revoked */
             404: {
                 headers: {
                     [name: string]: unknown;

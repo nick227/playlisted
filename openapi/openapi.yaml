@@ -2504,6 +2504,86 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /api/v1/admin/developer/keys:
+    get:
+      tags: [Admin]
+      operationId: adminListApiKeys
+      summary: List all API keys across all users (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [all, active, revoked]
+            default: all
+        - in: query
+          name: q
+          schema:
+            type: string
+          description: Search by key name, prefix, user email, username, or display name
+        - in: query
+          name: userId
+          schema:
+            type: string
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: API key list with usage stats
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminApiKeyListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/admin/developer/keys/{keyId}:
+    delete:
+      tags: [Admin]
+      operationId: adminRevokeApiKey
+      summary: Revoke any user's API key (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: keyId
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Revoked
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Key not found or already revoked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /api/v1/developer/keys:
     get:
       tags: [Developer]
@@ -4790,6 +4870,67 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ApiKey'
+
+    AdminApiKey:
+      type: object
+      additionalProperties: false
+      required: [id, name, prefix, lastUsedAt, revokedAt, createdAt, user]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        prefix:
+          type: string
+        lastUsedAt:
+          type: [string, 'null']
+          format: date-time
+        revokedAt:
+          type: [string, 'null']
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        user:
+          type: object
+          additionalProperties: false
+          required: [id, email, username, displayName]
+          properties:
+            id:
+              type: string
+            email:
+              type: string
+            username:
+              type: string
+            displayName:
+              type: string
+
+    AdminApiKeyStats:
+      type: object
+      additionalProperties: false
+      required: [totalActive, totalRevoked, usedLast7d]
+      properties:
+        totalActive:
+          type: integer
+        totalRevoked:
+          type: integer
+        usedLast7d:
+          type: integer
+          description: Active keys that were used in the last 7 days
+
+    AdminApiKeyListResponse:
+      type: object
+      additionalProperties: false
+      required: [data, meta, stats]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminApiKey'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+        stats:
+          $ref: '#/components/schemas/AdminApiKeyStats'
 
     IngestListMeta:
       type: object
