@@ -1,6 +1,9 @@
-import type { LibrarySong, TopSongItem } from "@playlisted/client-sdk";
+import type { components, LibrarySong, TopSongItem } from "@playlisted/client-sdk";
 
+import { recordingShareUrl } from "@/lib/shareContent";
 import type { PlaybackContext, QueueTrack } from "@/providers/AudioPlayerProvider";
+
+type RecordingSummary = components["schemas"]["RecordingSummary"];
 
 export function librarySongToQueueTrack(song: LibrarySong, context?: string): QueueTrack {
   return {
@@ -38,4 +41,44 @@ export function chartItemPlaybackContext(item: TopSongItem): PlaybackContext {
     playlistSlug: item.playlist.slug,
     playlistOwnerUsername: item.uploader.username,
   };
+}
+
+export function recordingSummaryToQueueTrack(
+  recording: RecordingSummary,
+  context?: { playlistTitle?: string; ownerName?: string },
+): QueueTrack {
+  return {
+    ...recording,
+    ownerName: context?.ownerName,
+    playlistTitle: context?.playlistTitle,
+  };
+}
+
+export function personalTrackToQueueTrack(
+  track: RecordingSummary & { uploader: { displayName: string } },
+): QueueTrack {
+  return {
+    ...track,
+    ownerName: track.uploader.displayName,
+  };
+}
+
+export type PlaylistTrackContext = {
+  playlistId: string;
+  playlistTitle: string;
+  ownerUsername: string;
+  ownerDisplayName: string;
+  slug: string;
+};
+
+export function recordingShareUrlForContext(
+  recordingId: string,
+  playlist: Pick<PlaylistTrackContext, "playlistId" | "ownerUsername" | "slug">,
+): string {
+  return recordingShareUrl({
+    playlistId: playlist.playlistId,
+    recordingId,
+    username: playlist.ownerUsername,
+    slug: playlist.slug,
+  });
 }

@@ -1,4 +1,4 @@
-import { Compass, Heart, Home, Library, ListMusic, Lock, Plus, Settings, TrendingUp } from "lucide-react";
+import { BookOpen, Heart, Home, ListMusic, Lock, Plus, Settings } from "lucide-react";
 import { NavLink } from "react-router-dom";
 
 import { usePlaylists } from "@/hooks/usePlaylists";
@@ -12,12 +12,10 @@ interface SidebarProps {
 
 const discoverLinks = [
   { to: "/", label: "Home", icon: Home },
-  { to: "/explore", label: "Explore", icon: Compass },
-  { to: "/#trending", label: "Trending", icon: TrendingUp },
 ];
 
 const libraryLinks = [
-  { to: "/library", label: "Library", icon: Library },
+  { to: "/library", label: "Library", icon: BookOpen },
   { to: "/library/favorites", label: "Favorites", icon: Heart },
 ];
 
@@ -25,7 +23,7 @@ function NavItem({ to, label, icon: Icon }: { to: string; label: string; icon: t
   return (
     <NavLink
       to={to}
-      end={to === "/"}
+      end
       className={({ isActive }) =>
         `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ${
           isActive ? "bg-white/10 text-white" : "text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)] hover:text-white"
@@ -54,7 +52,7 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
         />
       ) : null}
       <aside
-        className={`fixed left-0 top-0 z-50 flex h-full w-[var(--spacing-sidebar)] shrink-0 flex-col border-r border-[var(--color-border)] bg-[var(--color-canvas)] transition-transform lg:static lg:translate-x-0 ${
+        className={`fixed left-0 top-0 z-50 flex h-full w-[var(--spacing-sidebar)] shrink-0 flex-col border-r border-[var(--color-border)] bg-[var(--color-canvas)] transition-transform lg:translate-x-0 ${
           mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
       >
@@ -109,19 +107,24 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
               className="flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/15"
             >
               <Plus size={18} />
-              New playlist
+              Collections
             </NavLink>
           </div>
           <div>
             <p className="mb-2 flex items-center gap-2 px-3 text-xs font-semibold uppercase tracking-wider text-[var(--color-text-subtle)]">
               <ListMusic size={14} />
-              Playlists
+              Collections
             </p>
             <div className="flex flex-col gap-0.5">
               {data?.data.map((playlist) => (
                 <NavLink
                   key={playlist.id}
-                  to={playlistPath(playlist)}
+                  to={playlistPath({
+                    id: playlist.id,
+                    href: playlist.href,
+                    username: playlist.owner.username,
+                    slug: playlist.slug,
+                  })}
                   onClick={onClose}
                   className={({ isActive }) =>
                     `rounded-lg px-3 py-1.5 text-sm transition ${

@@ -6,7 +6,9 @@ import { EmptyState } from "@/components/feedback/EmptyState";
 import { Skeleton } from "@/components/feedback/Skeleton";
 import { TrackRow } from "@/components/tracks/TrackRow";
 import { authedApi } from "@/lib/authedApi";
-import { playlistIdPath } from "@/lib/routes";
+import { recordingSummaryToQueueTrack } from "@/lib/queueTrack";
+import { playlistPath } from "@/lib/routes";
+import { recordingShareUrl } from "@/lib/shareContent";
 import { useAuth } from "@/providers/AuthProvider";
 import { useAudioPlayer, type QueueTrack } from "@/providers/AudioPlayerProvider";
 
@@ -15,7 +17,7 @@ type HistoryItem = components["schemas"]["PlaybackHistoryItem"];
 export function StudioHistoryPage() {
   const { accessToken } = useAuth();
   const client = authedApi(accessToken);
-  const { playTrack, currentTrack, state } = useAudioPlayer();
+  const { playTrack } = useAudioPlayer();
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["me", "playback-history"],
@@ -81,13 +83,22 @@ export function StudioHistoryPage() {
                     ? `From ${item.playlist.title} • ${new Date(item.createdAt).toLocaleString()}`
                     : new Date(item.createdAt).toLocaleString()
                 }
-                isActive={currentTrack?.id === item.recording.id}
-                isPlaying={currentTrack?.id === item.recording.id && state === "playing"}
                 onPlay={() => playItem(item)}
+                queueTrack={recordingSummaryToQueueTrack(item.recording, {
+                  playlistTitle: item.playlist?.title,
+                })}
+                shareUrl={
+                  item.playlist
+                    ? recordingShareUrl({
+                        playlistId: item.playlist.id,
+                        recordingId: item.recording.id,
+                      })
+                    : undefined
+                }
               />
               {item.playlist ? (
                 <Link
-                  to={playlistIdPath(item.playlist.id)}
+                  to={playlistPath({ id: item.playlist.id, href: item.playlist.href })}
                   className="ml-14 block pb-2 text-xs text-[var(--color-brand)] hover:underline"
                 >
                   Open collection

@@ -1,10 +1,12 @@
-import { ChevronDown, ChevronUp, MoreHorizontal, Pause, Play, Plus, X } from "lucide-react";
-import { useState } from "react";
+import { ChevronDown, ChevronUp, Pause, Play, X } from "lucide-react";
 
+import { RecordingActionMenu } from "@/components/media/RecordingActionMenu";
+import { useTrackPlayback } from "@/hooks/useTrackPlayback";
 import { formatDuration } from "@/lib/format";
 import { MediaCover } from "@/components/cards/MediaCover";
-import { AddToPlaylistDialog } from "@/components/playlists/AddToPlaylistDialog";
-import { useAuth } from "@/providers/AuthProvider";
+import type { QueueTrack } from "@/providers/AudioPlayerProvider";
+
+type TrackTag = { id: string; name: string; slug: string; kind: string };
 
 interface TrackRowProps {
   recordingId: string;
@@ -14,8 +16,8 @@ interface TrackRowProps {
   meta?: string | null;
   durationSeconds?: number | null;
   artworkUrl?: string | null;
-  isActive?: boolean;
-  isPlaying?: boolean;
+  tags?: TrackTag[];
+  onUpdateTags?: (tagSlugs: string[]) => void;
   onPlay?: () => void;
   editMode?: boolean;
   canMoveUp?: boolean;
@@ -23,6 +25,8 @@ interface TrackRowProps {
   onRemove?: () => void;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
+  queueTrack?: QueueTrack;
+  shareUrl?: string;
 }
 
 export function TrackRow({
@@ -33,8 +37,8 @@ export function TrackRow({
   meta,
   durationSeconds,
   artworkUrl,
-  isActive,
-  isPlaying,
+  tags,
+  onUpdateTags,
   onPlay,
   editMode,
   canMoveUp,
@@ -42,18 +46,31 @@ export function TrackRow({
   onRemove,
   onMoveUp,
   onMoveDown,
+  queueTrack,
+  shareUrl,
 }: TrackRowProps) {
-  const { status } = useAuth();
-  const [addOpen, setAddOpen] = useState(false);
+  const { isActive, isPlaying } = useTrackPlayback(editMode ? undefined : recordingId);
+  const showActions = !editMode && queueTrack && shareUrl;
+
+  function handleEditTags() {
+    if (!onUpdateTags) return;
+    const current = (tags ?? []).map((t) => t.slug).join(", ");
+    const raw = window.prompt("Tag slugs (comma-separated)", current);
+    if (raw === null) return;
+    const tagSlugs = raw
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    onUpdateTags(tagSlugs);
+  }
 
   return (
-    <>
-      <div
-        id={`track-${recordingId}`}
-        className={`group grid w-full grid-cols-[auto_1fr_auto] items-center gap-4 rounded-lg px-3 py-2 transition ${
-          isActive ? "bg-white/10" : "hover:bg-[var(--color-surface-hover)]"
-        }`}
-      >
+    <div
+      id={`track-${recordingId}`}
+      className={`group/card grid w-full grid-cols-[auto_1fr_auto] items-center gap-4 rounded-lg px-3 py-2 transition ${
+        isActive ? "bg-white/10" : "hover:bg-[var(--color-surface-hover)]"
+      }`}
+    >
       <button
         type="button"
         onClick={onPlay}
@@ -64,10 +81,10 @@ export function TrackRow({
           <Pause size={16} className="text-white" fill="currentColor" />
         ) : (
           <>
-            <span className="text-sm text-[var(--color-text-subtle)] group-hover:hidden">
+            <span className="text-sm text-[var(--color-text-subtle)] group-hover/card:hidden">
               {index != null ? index + 1 : ""}
             </span>
-            <Play size={16} className="hidden text-white group-hover:block" fill="currentColor" />
+            <Play size={16} className="hidden text-white group-hover/card:block" fill="currentColor" />
           </>
         )}
       </button>
@@ -88,6 +105,16 @@ export function TrackRow({
         <span className="text-xs text-[var(--color-text-muted)]">{formatDuration(durationSeconds)}</span>
         {editMode ? (
           <>
+            {onUpdateTags ? (
+              <button
+                type="button"
+                onClick={handleEditTags}
+                className="rounded px-2 py-1 text-xs text-[var(--color-text-muted)] hover:bg-white/10 hover:text-white"
+                aria-label="Edit tags"
+              >
+                Tags
+              </button>
+            ) : null}
             <button
               type="button"
               disabled={!canMoveUp}
@@ -115,27 +142,15 @@ export function TrackRow({
               <X size={16} />
             </button>
           </>
-        ) : status === "authenticated" ? (
-          <button
-            type="button"
-            onClick={() => setAddOpen(true)}
-            className="rounded p-1 text-[var(--color-text-muted)] opacity-0 transition hover:bg-white/10 hover:text-white group-hover:opacity-100"
-            aria-label="Add to playlist"
-          >
-            <Plus size={16} />
-          </button>
-        ) : (
-          <MoreHorizontal size={18} className="text-[var(--color-text-subtle)] opacity-0 group-hover:opacity-100" />
-        )}
+        ) : showActions ? (
+          <RecordingActionMenu
+            recordingId={recordingId}
+            title={title}
+            queueTrack={queueTrack}
+            shareUrl={shareUrl}
+          />
+        ) : null}
       </div>
     </div>
-
-      <AddToPlaylistDialog
-        open={addOpen}
-        onClose={() => setAddOpen(false)}
-        recordingIds={[recordingId]}
-        title={title}
-      />
-    </>
   );
 }

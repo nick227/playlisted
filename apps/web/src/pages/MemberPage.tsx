@@ -84,7 +84,7 @@ export function MemberPage() {
             <p className="mt-2 text-sm text-[var(--color-text-muted)]">{pinned.description}</p>
           </div>
           <Link
-            to={playlistPath({ id: pinned.id, slug: pinned.slug, owner: { username: user.username } })}
+            to={playlistPath({ id: pinned.id, href: pinned.href, username: user.username, slug: pinned.slug })}
             className="inline-flex items-center gap-2 self-start rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-black md:self-center"
           >
             <Play size={18} fill="currentColor" />

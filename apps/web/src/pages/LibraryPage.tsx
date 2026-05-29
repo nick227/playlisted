@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/feedback/EmptyState";
 import { Skeleton } from "@/components/feedback/Skeleton";
 import { useLibraryGenres, useLibrarySongs } from "@/hooks/useLibrary";
 import { librarySongToQueueTrack } from "@/lib/queueTrack";
+import { recordingShareUrl } from "@/lib/shareContent";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -16,10 +17,6 @@ const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 function firstLetter(title: string): string {
   const ch = title.trim()[0]?.toUpperCase() ?? "#";
   return /[A-Z]/.test(ch) ? ch : "#";
-}
-
-function toQueueTrack(song: LibrarySong) {
-  return librarySongToQueueTrack(song);
 }
 
 // ── view toggle ───────────────────────────────────────────────────────────────
@@ -113,15 +110,15 @@ function LetterDivider({ letter }: { letter: string }) {
 // ── track list ────────────────────────────────────────────────────────────────
 
 function TrackList({ songs }: { songs: LibrarySong[] }) {
-  const { playTrack, currentTrack, state, togglePlay } = useAudioPlayer();
+  const { playTrack, currentTrack, togglePlay } = useAudioPlayer();
 
   function handlePlay(song: LibrarySong) {
-    const queue = songs.map(toQueueTrack);
+    const queue = songs.map((s) => librarySongToQueueTrack(s));
     const idx = songs.findIndex((s) => s.id === song.id);
     if (currentTrack?.id === song.id) {
       togglePlay();
     } else {
-      playTrack(toQueueTrack(song), queue.slice(idx), { sourceContext: "library" });
+      playTrack(librarySongToQueueTrack(song), queue.slice(idx), { sourceContext: "library" });
     }
   }
 
@@ -137,9 +134,14 @@ function TrackList({ songs }: { songs: LibrarySong[] }) {
           meta={song.genres.map((g) => g.name).join(", ") || null}
           durationSeconds={song.durationSeconds}
           artworkUrl={song.artworkUrl}
-          isActive={currentTrack?.id === song.id}
-          isPlaying={currentTrack?.id === song.id && state === "playing"}
           onPlay={() => handlePlay(song)}
+          queueTrack={librarySongToQueueTrack(song)}
+          shareUrl={recordingShareUrl({
+            playlistId: song.playlist.id,
+            recordingId: song.id,
+            username: song.uploader.username,
+            slug: song.playlist.slug,
+          })}
         />
       ))}
     </div>

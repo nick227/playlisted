@@ -5,6 +5,8 @@ import { Link } from "react-router-dom";
 import { EmptyState } from "@/components/feedback/EmptyState";
 import { TrackList } from "@/components/tracks/TrackList";
 import { coverFallback, profilePath, studioCollectionEditPath } from "@/lib/routes";
+import { playlistShareUrl, shareContent } from "@/lib/shareContent";
+import type { PlaylistTrackContext } from "@/lib/queueTrack";
 import { useAuth } from "@/providers/AuthProvider";
 import {
   mergeForPlayback,
@@ -17,8 +19,6 @@ export type CollectionViewMode = "view" | "edit";
 export interface CollectionViewProps {
   playlist: PlaylistDetail;
   mode?: CollectionViewMode;
-  activeTrackId?: string | null;
-  playerState?: "idle" | "loading" | "playing" | "paused" | "error";
   onPlayAll?: (shuffle: boolean) => void;
   onPlayTrack?: (recording: CollectionRecording, index: number) => void;
   playlistIsPlaying?: boolean;
@@ -31,6 +31,12 @@ export interface CollectionViewProps {
   onRemoveTrack?: (recordingId: string) => void;
   onMoveTrackUp?: (recordingId: string) => void;
   onMoveTrackDown?: (recordingId: string) => void;
+  onUpdateTrackTags?: (recordingId: string, tagSlugs: string[]) => void;
+  selectedGenreId?: string | null;
+  onGenreChange?: (genreId: string | null) => void;
+  genreOptions?: { id: string; name: string }[];
+  genreLoading?: boolean;
+  genreSaving?: boolean;
   editToolbar?: React.ReactNode;
   uploadProgress?: React.ReactNode;
 }
@@ -46,8 +52,6 @@ const typeLabels: Record<string, string> = {
 export function CollectionView({
   playlist,
   mode = "view",
-  activeTrackId,
-  playerState,
   onPlayAll,
   onPlayTrack,
   playlistIsPlaying,
@@ -60,6 +64,12 @@ export function CollectionView({
   onRemoveTrack,
   onMoveTrackUp,
   onMoveTrackDown,
+  onUpdateTrackTags,
+  selectedGenreId,
+  onGenreChange,
+  genreOptions,
+  genreLoading,
+  genreSaving,
   editToolbar,
   uploadProgress,
 }: CollectionViewProps) {
@@ -77,13 +87,32 @@ export function CollectionView({
     ? undefined
     : { background: coverFallback(playlist.title) };
 
+  const playlistContext: PlaylistTrackContext = {
+    playlistId: playlist.id,
+    playlistTitle: playlist.title,
+    ownerUsername: playlist.owner.username,
+    ownerDisplayName: playlist.owner.displayName,
+    slug: playlist.slug,
+  };
+
+  function handleShare() {
+    void shareContent(
+      playlistShareUrl({
+        id: playlist.id,
+        username: playlist.owner.username,
+        slug: playlist.slug,
+      }),
+      playlist.title,
+    );
+  }
+
   function handlePlayRecording(recording: CollectionRecording, _index: number) {
     const globalIndex = playbackOrder.findIndex((r) => r.id === recording.id);
     onPlayTrack?.(recording, globalIndex >= 0 ? globalIndex : 0);
   }
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div className="mx-auto max-w-6xl">
       {isEdit && editToolbar ? (
         <div className="mb-6 flex flex-wrap items-center gap-3">{editToolbar}</div>
       ) : null}
@@ -142,13 +171,49 @@ export function CollectionView({
             {playlist.itemCount > 0 ? ` • ${playlist.itemCount} tracks` : null}
           </p>
           {isEdit ? (
-            <textarea
-              value={playlist.description ?? ""}
-              onChange={(e) => onDescriptionChange?.(e.target.value)}
-              rows={3}
-              placeholder="Describe this collection…"
-              className="mt-4 w-full max-w-2xl resize-none rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-sm text-white placeholder:text-[var(--color-text-subtle)] outline-none focus:border-[var(--color-brand)]"
-            />
+            <>
+              <textarea
+                value={playlist.description ?? ""}
+                onChange={(e) => onDescriptionChange?.(e.target.value)}
+                rows={3}
+                placeholder="Describe this collection…"
+                className="mt-4 w-full max-w-2xl resize-none rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-sm text-white placeholder:text-[var(--color-text-subtle)] outline-none focus:border-[var(--color-brand)]"
+              />
+              {onGenreChange ? (
+                <div className="mt-4 max-w-2xl">
+                  <label className="mb-2 block text-xs font-semibold uppercase tracking-widest text-[var(--color-text-muted)]">
+                    Primary playlist genre
+                  </label>
+                  <select
+                    value={selectedGenreId ?? ""}
+                    onChange={(event) => onGenreChange(event.target.value || null)}
+                    disabled={genreLoading}
+                    className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-sm text-white outline-none focus:border-[var(--color-brand)]"
+                  >
+                    <option value="">
+                      No genre selected
+                    </option>
+                    {genreOptions?.map((genre) => (
+                      <option
+                        key={genre.id}
+                        value={genre.id}
+                      >
+                        {genre.name}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-2 min-h-5 text-sm text-[var(--color-text-muted)]">
+                    {genreSaving
+                      ? "Saving genre…"
+                      : genreLoading
+                        ? "Loading genres…"
+                        : genreOptions?.length === 0
+                          ? "No genres available."
+                          : "Optional primary genre for this playlist."}
+                  </p>
+                </div>
+              ) : null}
+            </>
           ) : playlist.description ? (
             <p className="mt-4 max-w-2xl text-sm leading-relaxed text-[var(--color-text-muted)]">
               {playlist.description}
@@ -178,6 +243,7 @@ export function CollectionView({
               </button>
               <button
                 type="button"
+                onClick={handleShare}
                 className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/20 text-white hover:bg-white/10"
                 aria-label="Share"
               >
@@ -207,7 +273,7 @@ export function CollectionView({
           ) : null}
         </div>
       </div>
-      <div className="w-full flex justify-end">
+      <div className="w-full flex justify-center">
           {isEdit && onAddTracks ? (
             <button
               type="button"
@@ -235,28 +301,24 @@ export function CollectionView({
 
             <TrackList
               recordings={playlist.recordings as CollectionRecording[]}
-              activeId={activeTrackId}
-              playerState={playerState}
               ownerName={playlist.owner.displayName}
+              playlistContext={playlistContext}
               onPlay={handlePlayRecording}
               editMode
               onRemove={onRemoveTrack}
               onMoveUp={onMoveTrackUp}
               onMoveDown={onMoveTrackDown}
+              onUpdateTags={onUpdateTrackTags}
             />
           </div>
         ) : (
           <div className="space-y-8">
             {ownUploads.length > 0 ? (
               <section>
-                <h2 className="mb-3 px-3 text-xs font-semibold uppercase tracking-wider text-[var(--color-brand)]">
-                  Your uploads
-                </h2>
                 <TrackList
                   recordings={ownUploads}
-                  activeId={activeTrackId}
-                  playerState={playerState}
                   ownerName={playlist.owner.displayName}
+                  playlistContext={playlistContext}
                   onPlay={handlePlayRecording}
                 />
               </section>
@@ -268,8 +330,7 @@ export function CollectionView({
                 </h2>
                 <TrackList
                   recordings={fromOthers}
-                  activeId={activeTrackId}
-                  playerState={playerState}
+                  playlistContext={playlistContext}
                   onPlay={handlePlayRecording}
                 />
               </section>

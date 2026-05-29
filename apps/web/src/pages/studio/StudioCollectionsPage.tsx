@@ -8,10 +8,7 @@ import { studioCollectionEditPath } from "@/lib/routes";
 import { useAuth } from "@/providers/AuthProvider";
 
 const typeOptions = [
-  { value: "ALBUM" as const, label: "Album" },
-  { value: "PLAYLIST" as const, label: "Playlist" },
-  { value: "PODCAST_CHANNEL" as const, label: "Podcast channel" },
-  { value: "RELEASE" as const, label: "Release / singles" },
+  { value: "PLAYLIST" as const, label: "Collection" },
 ];
 
 export function StudioCollectionsPage() {

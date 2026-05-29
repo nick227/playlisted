@@ -34,13 +34,18 @@ export function StudioCollectionEditPage() {
   const { playlistId } = useParams<{ playlistId: string }>();
   const { user, accessToken } = useAuth();
   const queryClient = useQueryClient();
-  const { setQueue, currentTrack, state, togglePlay, playbackContext, updateQueuePlaylistTitle } = useAudioPlayer();
+  const { setQueue, currentTrack, togglePlay, playbackContext, updateQueuePlaylistTitle } = useAudioPlayer();
   const genresQuery = useLibraryGenres();
   const coverInputRef = useRef<HTMLInputElement>(null);
   const tracksInputRef = useRef<HTMLInputElement>(null);
   const [draft, setDraft] = useState<PlaylistDetailWithTags | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [trackUploadQueue, setTrackUploadQueue] = useState<UploadQueueItem[]>([]);
+
+  const availableGenres = useMemo(() => {
+    const raw = genresQuery.data;
+    return Array.isArray(raw) ? raw : raw?.data ?? [];
+  }, [genresQuery.data]);
 
   const client = authedApi(accessToken);
 
@@ -63,7 +68,6 @@ export function StudioCollectionEditPage() {
   const playlist = draft ?? data;
   const [selectedGenreId, setSelectedGenreId] = useState<string | null>(null);
 
-  const availableGenres = genresQuery.data?.data ?? [];
   const playlistGenreIds = useMemo(
     () => playlist?.tags?.filter((tag) => tag.kind === "GENRE").map((tag) => tag.id) ?? [],
     [playlist?.tags],
@@ -408,8 +412,6 @@ export function StudioCollectionEditPage() {
       <CollectionView
         playlist={playlist}
         mode="edit"
-        activeTrackId={currentTrack?.id}
-        playerState={state}
         onTitleChange={(title) => setDraft({ ...playlist, title })}
         onDescriptionChange={(description) => setDraft({ ...playlist, description })}
         onCoverClick={() => coverInputRef.current?.click()}

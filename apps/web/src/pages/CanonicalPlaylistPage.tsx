@@ -1,27 +1,42 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
-import { PlaylistCard } from "@/components/cards/PlaylistCard";
+import { SmartPlaylistCard } from "@/components/cards/SmartPlaylistCard";
 import { CollectionView } from "@/components/collection/CollectionView";
 import type { CollectionRecording } from "@/components/collection/partitionRecordings";
 import { mergeForPlayback, partitionRecordings } from "@/components/collection/partitionRecordings";
 import { ContentRow } from "@/components/discovery/ContentRow";
-import { EmptyState } from "@/components/feedback/EmptyState";
+import { PlaylistAccessEmptyState } from "@/components/feedback/PlaylistAccessEmptyState";
 import { Skeleton } from "@/components/feedback/Skeleton";
 import { AddToPlaylistDialog } from "@/components/playlists/AddToPlaylistDialog";
 import { usePlaylistByUsernameSlug } from "@/hooks/usePlaylistByUsernameSlug";
 import { usePlaylists } from "@/hooks/usePlaylists";
+import { playlistPath } from "@/lib/routes";
 import { useAudioPlayer, type QueueTrack } from "@/providers/AudioPlayerProvider";
 import { useAuth } from "@/providers/AuthProvider";
 
 export function CanonicalPlaylistPage() {
   const { username, slug } = useParams<{ username: string; slug: string }>();
-  const { data: playlist, isLoading, isError } = usePlaylistByUsernameSlug(username, slug);
+  const { data: playlist, isLoading, isError, error } = usePlaylistByUsernameSlug(username, slug);
   const { data: related } = usePlaylists(6);
-  const { setQueue, currentTrack, state, togglePlay, playbackContext } = useAudioPlayer();
+  const { setQueue, togglePlay, playbackContext, state } = useAudioPlayer();
   const { status } = useAuth();
   const [addOpen, setAddOpen] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!playlist) return;
+    if (username === playlist.owner.username && slug === playlist.slug) return;
+    navigate(
+      playlistPath({
+        id: playlist.id,
+        href: playlist.href,
+        username: playlist.owner.username,
+        slug: playlist.slug,
+      }),
+      { replace: true },
+    );
+  }, [navigate, playlist, username, slug]);
 
   if (isLoading) {
     return (
@@ -34,7 +49,7 @@ export function CanonicalPlaylistPage() {
   }
 
   if (isError || !playlist) {
-    return <EmptyState title="Playlist not found" description="This playlist may have been removed." />;
+    return <PlaylistAccessEmptyState error={error} />;
   }
 
   const pl = playlist;
@@ -80,18 +95,11 @@ export function CanonicalPlaylistPage() {
     });
   }
 
-  // Keep the URL normalized to /@username/:slug
-  if (username !== pl.owner.username || slug !== pl.slug) {
-    navigate(`/@${pl.owner.username}/${pl.slug}`, { replace: true });
-  }
-
   return (
     <>
       <CollectionView
         playlist={pl}
         mode="view"
-        activeTrackId={currentTrack?.id}
-        playerState={state}
         onPlayAll={playAll}
         onPlayTrack={playRecording}
         playlistIsPlaying={playlistIsPlaying}
@@ -113,12 +121,15 @@ export function CanonicalPlaylistPage() {
               .filter((p) => p.id !== pl.id)
               .slice(0, 6)
               .map((p) => (
-                <PlaylistCard
+                <SmartPlaylistCard
                   key={p.id}
                   id={p.id}
                   title={p.title}
                   creatorName={p.owner.displayName}
                   coverArtUrl={p.coverArtUrl}
+                  ownerUsername={p.owner.username}
+                  slug={p.slug}
+                  className="w-40 shrink-0"
                 />
               ))}
           </ContentRow>
@@ -127,4 +138,3 @@ export function CanonicalPlaylistPage() {
     </>
   );
 }
-
