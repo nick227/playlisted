@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/feedback/Skeleton";
 import { authedApi } from "@/lib/authedApi";
 import { studioCollectionEditPath } from "@/lib/routes";
 import { useAuth } from "@/providers/AuthProvider";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 const typeOptions = [{ value: "PLAYLIST" as const, label: "Collection" }];
 
@@ -34,6 +35,8 @@ function SummaryStat({ label, value }: { label: string; value: string }) {
 export function StudioCollectionsPage() {
   const { user, accessToken } = useAuth();
   const client = authedApi(accessToken);
+
+  usePageMeta({ title: "Collections — Studio" });
   const queryClient = useQueryClient();
 
   const ownedCollectionsQuery = useQuery({

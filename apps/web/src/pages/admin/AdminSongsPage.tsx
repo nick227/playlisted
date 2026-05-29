@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import type { AdminSong, AdminContentTagRef } from "@playlisted/client-sdk";
 import { authedApi } from "@/lib/authedApi";
 import { useAuth } from "@/providers/AuthProvider";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 type Status = "DRAFT" | "PUBLISHED" | "ARCHIVED";
 type Visibility = "PUBLIC" | "UNLISTED" | "PRIVATE";
@@ -63,6 +64,8 @@ export function AdminSongsPage() {
   const { accessToken } = useAuth();
   const api = useMemo(() => authedApi(accessToken), [accessToken]);
   const [songs, setSongs] = useState<AdminSong[]>([]);
+
+  usePageMeta({ title: "Songs — Admin" });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);

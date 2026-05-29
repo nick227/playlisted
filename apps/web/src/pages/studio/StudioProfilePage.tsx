@@ -10,9 +10,12 @@ import { authedApi } from "@/lib/authedApi";
 import { profilePath } from "@/lib/routes";
 import { useAuth } from "@/providers/AuthProvider";
 import { api } from "@/lib/api";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 export function StudioProfilePage() {
   const { user, accessToken, getErrorMessage, refreshUser } = useAuth();
+
+  usePageMeta({ title: "Profile — Studio" });
   const client = authedApi(accessToken);
   const profileQuery = useUserByUsername(user?.username);
 

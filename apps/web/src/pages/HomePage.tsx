@@ -10,6 +10,7 @@ import { HeroSpotlight } from "@/components/discovery/HeroSpotlight";
 import { RowSkeleton } from "@/components/feedback/Skeleton";
 import { Skeleton } from "@/components/feedback/Skeleton";
 import { useHomepage } from "@/hooks/useHomepage";
+import { usePageMeta } from "@/hooks/usePageMeta";
 import { useTopArtists, useTopPlaylists, useTopSongs } from "@/hooks/useCharts";
 import { useTrackPlayback } from "@/hooks/useTrackPlayback";
 import { useLibrarySongs } from "@/hooks/useLibrary";
@@ -307,6 +308,11 @@ export function HomePage() {
   const { status, user } = useAuth();
   const isGuest = status === "guest";
 
+  usePageMeta({
+    title: "Home",
+    description: "Music charts and curated playlists for independent artists.",
+  });
+
   const [chartsRange, setChartsRange] = useState<"7d" | "30d" | "all">("7d");
 
   const editorial = useHomepage();
@@ -410,8 +416,9 @@ export function HomePage() {
     if (idx < 0) return;
     playTrack(
       librarySongToQueueTrack(song, context),
-      queue.slice(idx).map((s) => librarySongToQueueTrack(s, context)),
+      queue.map((s) => librarySongToQueueTrack(s, context)),
       { sourceContext: "genre" },
+      { segmentLabel: context },
     );
   }
 
@@ -422,8 +429,10 @@ export function HomePage() {
     }
     const idx = siblings.findIndex((s) => s.recordingId === item.recordingId);
     if (idx < 0) return;
-    const queue = siblings.slice(idx).map((s) => topSongToQueueTrack(s, sectionName));
-    playTrack(topSongToQueueTrack(item, sectionName), queue, chartItemPlaybackContext(item));
+    const tracks = siblings.map((s) => topSongToQueueTrack(s, sectionName));
+    playTrack(topSongToQueueTrack(item, sectionName), tracks, chartItemPlaybackContext(item), {
+      segmentLabel: sectionName,
+    });
   }
 
   return (

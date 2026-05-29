@@ -16,6 +16,7 @@ import { recordingShareUrl } from "@/lib/shareContent";
 import { useTrackPlayback } from "@/hooks/useTrackPlayback";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 import { useAuth } from "@/providers/AuthProvider";
+import { usePageMeta } from "@/hooks/usePageMeta";
 import {
   useFavoriteRecordings,
   useFavoriteArtists,
@@ -52,8 +53,9 @@ function PersonalTrackRow({
       togglePlay();
     } else {
       const queue = allTracks.map(personalTrackToQueueTrack);
-      const idx = allTracks.findIndex((t) => t.id === track.id);
-      playTrack(personalTrackToQueueTrack(track), queue.slice(idx), { sourceContext: "library" });
+      playTrack(personalTrackToQueueTrack(track), queue, { sourceContext: "library" }, {
+        segmentLabel: "Favorites",
+      });
     }
   }
 
@@ -168,6 +170,8 @@ function Section({
 export function FavoritesPage() {
   const { status } = useAuth();
   const isAuthed = status === "authenticated";
+
+  usePageMeta({ title: "Favorites", description: "Your liked tracks, playlists, and artists." });
 
   const favorites = useFavoriteRecordings();
   const favoritePlaylists = useFavoritePlaylists();

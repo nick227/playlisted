@@ -28,6 +28,8 @@ export function BottomPlayer() {
     playPrevious,
     seek,
     setQueueOpen,
+    autoplayEnabled,
+    upNextPipeline,
     shuffle,
     toggleShuffle,
     repeatMode,
@@ -115,6 +117,11 @@ export function BottomPlayer() {
                 {[currentTrack.ownerName, currentTrack.playlistTitle].filter(Boolean).join(" • ")}
               </p>
             )}
+            {autoplayEnabled && upNextPipeline.length > 0 ? (
+              <p className="truncate text-[10px] text-[var(--color-text-subtle)]">
+                Up next · {upNextPipeline.length} queued
+              </p>
+            ) : null}
           </div>
         </div>
         <div className="flex flex-col items-center gap-1">

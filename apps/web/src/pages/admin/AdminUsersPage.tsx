@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import type { UserSummary } from "@playlisted/client-sdk";
 import { authedApi } from "@/lib/authedApi";
 import { useAuth } from "@/providers/AuthProvider";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 type UserRole = "LISTENER" | "CREATOR" | "EDITOR" | "ADMIN";
 type UserStatus = "ACTIVE" | "SUSPENDED" | "INVITED";
@@ -30,6 +31,8 @@ export function AdminUsersPage() {
   const { accessToken } = useAuth();
   const api = useMemo(() => authedApi(accessToken), [accessToken]);
   const [users, setUsers] = useState<UserSummary[]>([]);
+
+  usePageMeta({ title: "Users — Admin" });
   const [loading, setLoading] = useState(true);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");

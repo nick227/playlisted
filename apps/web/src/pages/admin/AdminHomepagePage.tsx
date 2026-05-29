@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import type { AdminHomepageFeature, AdminCreateHomepageFeatureRequest, PlaylistSummary, UserSummary } from "@playlisted/client-sdk";
 import { authedApi } from "@/lib/authedApi";
 import { useAuth } from "@/providers/AuthProvider";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 type Section = "FEATURED_PLAYLIST" | "CUSTOM_MIX" | "NEW_RELEASE" | "NEW_ARTIST" | "TRENDING" | "EDITOR_PICK" | "SITE_NEWS";
 
@@ -138,6 +139,8 @@ export function AdminHomepagePage() {
   const { accessToken } = useAuth();
   const api = useMemo(() => authedApi(accessToken), [accessToken]);
   const [features, setFeatures] = useState<AdminHomepageFeature[]>([]);
+
+  usePageMeta({ title: "Homepage — Admin" });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<Section>("FEATURED_PLAYLIST");

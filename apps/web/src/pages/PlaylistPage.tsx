@@ -9,6 +9,7 @@ import { PlaylistAccessEmptyState } from "@/components/feedback/PlaylistAccessEm
 import { Skeleton } from "@/components/feedback/Skeleton";
 import { useAddCollectionPlaylist, useCollectionPlaylists } from "@/hooks/useCollections";
 import { usePlaylist } from "@/hooks/usePlaylist";
+import { usePageMeta } from "@/hooks/usePageMeta";
 import { usePlaylists } from "@/hooks/usePlaylists";
 import { playlistPath } from "@/lib/routes";
 import { useAudioPlayer, type QueueTrack } from "@/providers/AudioPlayerProvider";
@@ -17,6 +18,12 @@ import { useAuth } from "@/providers/AuthProvider";
 export function PlaylistPage() {
   const { playlistId } = useParams<{ playlistId: string }>();
   const { data: playlist, isLoading, isError, error } = usePlaylist(playlistId);
+
+  usePageMeta({
+    title: playlist ? `${playlist.title} by ${playlist.owner.displayName}` : "Playlist",
+    description: playlist?.description ?? undefined,
+    image: playlist?.coverArtUrl,
+  });
   const { data: related } = usePlaylists(6);
   const { setQueue, currentTrack, togglePlay, playbackContext, state } = useAudioPlayer();
   const { status, user } = useAuth();
@@ -75,12 +82,17 @@ export function PlaylistPage() {
     }
     const tracks = shuffle ? [...queueTracks].sort(() => Math.random() - 0.5) : queueTracks;
     if (tracks.length > 0) {
-      setQueue(tracks, 0, {
-        playlistId: currentPlaylistId,
-        playlistOwnerUsername: pl.owner.username,
-        playlistSlug: pl.slug,
-        sourceContext: "playlist",
-      });
+      setQueue(
+        tracks,
+        0,
+        {
+          playlistId: currentPlaylistId,
+          playlistOwnerUsername: pl.owner.username,
+          playlistSlug: pl.slug,
+          sourceContext: "playlist",
+        },
+        { segmentLabel: pl.title },
+      );
     }
   }
 
@@ -90,12 +102,17 @@ export function PlaylistPage() {
       return;
     }
 
-    setQueue(queueTracks, index, {
-      playlistId: currentPlaylistId,
-      playlistOwnerUsername: pl.owner.username,
-      playlistSlug: pl.slug,
-      sourceContext: "playlist",
-    });
+    setQueue(
+      queueTracks,
+      index,
+      {
+        playlistId: currentPlaylistId,
+        playlistOwnerUsername: pl.owner.username,
+        playlistSlug: pl.slug,
+        sourceContext: "playlist",
+      },
+      { segmentLabel: pl.title },
+    );
   }
 
   return (

@@ -5,12 +5,15 @@ import { Link, Navigate, useNavigate } from "react-router-dom";
 import { AuthField } from "@/components/auth/AuthField";
 import { useAuth } from "@/providers/AuthProvider";
 import { panelPathForRole } from "@/lib/routes";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 type AccountKind = "listener" | "artist";
 
 export function RegisterPage() {
   const navigate = useNavigate();
   const { status, register, getErrorMessage } = useAuth();
+
+  usePageMeta({ title: "Sign up", description: "Create your free Playlisted account." });
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

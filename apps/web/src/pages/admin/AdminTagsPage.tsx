@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import type { AdminTag, AdminCreateTagRequest, AdminBulkCreateTagItem } from "@playlisted/client-sdk";
 import { authedApi } from "@/lib/authedApi";
 import { useAuth } from "@/providers/AuthProvider";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 const KIND_OPTIONS = ["GENRE", "MOOD", "CATEGORY", "SCENE"] as const;
 type TagKind = typeof KIND_OPTIONS[number];
@@ -54,6 +55,8 @@ export function AdminTagsPage() {
   const { accessToken } = useAuth();
   const api = useMemo(() => authedApi(accessToken), [accessToken]);
   const [tags, setTags] = useState<AdminTag[]>([]);
+
+  usePageMeta({ title: "Tags — Admin" });
   const [loading, setLoading] = useState(true);
   const [filterKind, setFilterKind] = useState<TagKind | "ALL">("ALL");
   const [newName, setNewName] = useState("");

@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import type { AdminDashboardResponse } from "@playlisted/client-sdk";
 import { authedApi } from "@/lib/authedApi";
 import { useAuth } from "@/providers/AuthProvider";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 function fmt(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
@@ -52,6 +53,8 @@ export function AdminDashboardPage() {
   const [data, setData] = useState<AdminDashboardResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  usePageMeta({ title: "Dashboard — Admin" });
 
   useEffect(() => {
     setLoading(true);

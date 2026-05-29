@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/feedback/EmptyState";
 import { RowSkeleton } from "@/components/feedback/Skeleton";
 import { LibraryTrackRow } from "@/components/library/LibraryTrackRow";
 import { api } from "@/lib/api";
+import { usePageMeta } from "@/hooks/usePageMeta";
 import { librarySongToQueueTrack } from "@/lib/queueTrack";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 import { useQuery } from "@tanstack/react-query";
@@ -16,6 +17,11 @@ export function SearchPage() {
   const q = params.get("q")?.trim() ?? "";
   const hasQuery = q.length > 0;
   const { currentTrack, playTrack, togglePlay } = useAudioPlayer();
+
+  usePageMeta({
+    title: q ? `Search: ${q}` : "Search",
+    description: q ? `Search results for "${q}" on Playlisted` : "Search songs, playlists, and artists.",
+  });
 
   const { data: results, isLoading } = useQuery({
     queryKey: ["search", "unified", q],
@@ -34,13 +40,17 @@ export function SearchPage() {
     }
 
     const queue = songResults.map((item) => librarySongToQueueTrack(item, "Search"));
-    const idx = songResults.findIndex((item) => item.id === song.id);
-    playTrack(librarySongToQueueTrack(song, "Search"), queue.slice(idx >= 0 ? idx : 0), {
-      playlistId: song.playlist.id,
-      playlistOwnerUsername: song.uploader.username,
-      playlistSlug: song.playlist.slug,
-      sourceContext: "search",
-    });
+    playTrack(
+      librarySongToQueueTrack(song, "Search"),
+      queue,
+      {
+        playlistId: song.playlist.id,
+        playlistOwnerUsername: song.uploader.username,
+        playlistSlug: song.playlist.slug,
+        sourceContext: "search",
+      },
+      { segmentLabel: "Search" },
+    );
   }
 
   if (!q) {

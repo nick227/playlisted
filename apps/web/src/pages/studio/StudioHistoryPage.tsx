@@ -8,6 +8,7 @@ import { TrackRow } from "@/components/tracks/TrackRow";
 import { authedApi } from "@/lib/authedApi";
 import { recordingSummaryToQueueTrack } from "@/lib/queueTrack";
 import { playlistPath } from "@/lib/routes";
+import { usePageMeta } from "@/hooks/usePageMeta";
 import { recordingShareUrl } from "@/lib/shareContent";
 import { useAuth } from "@/providers/AuthProvider";
 import { useAudioPlayer, type QueueTrack } from "@/providers/AudioPlayerProvider";
@@ -17,6 +18,8 @@ type HistoryItem = components["schemas"]["PlaybackHistoryItem"];
 export function StudioHistoryPage() {
   const { accessToken } = useAuth();
   const client = authedApi(accessToken);
+
+  usePageMeta({ title: "Play History — Studio" });
   const { playTrack, currentTrack, togglePlay } = useAudioPlayer();
 
   const { data, isLoading, isError } = useQuery({

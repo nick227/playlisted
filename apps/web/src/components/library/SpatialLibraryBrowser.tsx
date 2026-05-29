@@ -173,9 +173,8 @@ function TracksWithPreview({ songs }: { songs: LibrarySong[] }) {
       return;
     }
     const queue = songs.map((s) => librarySongToQueueTrack(s));
-    const idx = songs.findIndex((s) => s.id === song.id);
-    playTrack(librarySongToQueueTrack(song), queue.slice(idx >= 0 ? idx : 0), {
-      sourceContext: "library",
+    playTrack(librarySongToQueueTrack(song), queue, { sourceContext: "library" }, {
+      segmentLabel: "Library",
     });
   }
 
@@ -210,11 +209,11 @@ function SongPreviewChip({ song, queue }: { song: LibrarySong; queue: LibrarySon
   function handleClick(e: React.MouseEvent) {
     e.stopPropagation();
     if (isActive) { togglePlay(); return; }
-    const idx = queue.findIndex((s) => s.id === song.id);
     playTrack(
       librarySongToQueueTrack(song),
-      queue.slice(idx >= 0 ? idx : 0).map((s) => librarySongToQueueTrack(s)),
+      queue.map((s) => librarySongToQueueTrack(s)),
       { sourceContext: "library" },
+      { segmentLabel: "Library" },
     );
   }
 

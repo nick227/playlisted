@@ -25,12 +25,17 @@ export function useStudioCollectionPlayback(playlist: StudioCollectionListItem) 
         playlistTitle: pl.title,
         ownerName: pl.owner.displayName,
       }));
-      setQueue(queue, 0, {
-        playlistId: playlist.id,
-        playlistOwnerUsername: playlist.owner.username,
-        playlistSlug: playlist.slug,
-        sourceContext: "studio-collections",
-      });
+      setQueue(
+        queue,
+        0,
+        {
+          playlistId: playlist.id,
+          playlistOwnerUsername: playlist.owner.username,
+          playlistSlug: playlist.slug,
+          sourceContext: "studio-collections",
+        },
+        { segmentLabel: pl.title },
+      );
     },
     [playlist.id, playlist.owner.username, playlist.slug, setQueue],
   );

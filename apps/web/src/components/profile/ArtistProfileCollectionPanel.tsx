@@ -50,13 +50,18 @@ export function ArtistProfileCollectionPanel({ playlist, owner }: ArtistProfileC
   useEffect(() => {
     if (!pendingPlayRef.current || recordings.length === 0) return;
     pendingPlayRef.current = false;
-    setQueue(queueTracks, 0, {
-      playlistId: playlist.id,
-      playlistOwnerUsername: owner.username,
-      playlistSlug: playlist.slug,
-      sourceContext: "artist-profile",
-    });
-  }, [recordings, owner.username, playlist.id, playlist.slug, queueTracks, setQueue]);
+    setQueue(
+      queueTracks,
+      0,
+      {
+        playlistId: playlist.id,
+        playlistOwnerUsername: owner.username,
+        playlistSlug: playlist.slug,
+        sourceContext: "artist-profile",
+      },
+      { segmentLabel: playlist.title },
+    );
+  }, [recordings, owner.username, playlist.id, playlist.slug, playlist.title, queueTracks, setQueue]);
 
   function playAll() {
     if (isActive) {
@@ -67,12 +72,17 @@ export function ArtistProfileCollectionPanel({ playlist, owner }: ArtistProfileC
       pendingPlayRef.current = true;
       return;
     }
-    setQueue(queueTracks, 0, {
-      playlistId: playlist.id,
-      playlistOwnerUsername: owner.username,
-      playlistSlug: playlist.slug,
-      sourceContext: "artist-profile",
-    });
+    setQueue(
+      queueTracks,
+      0,
+      {
+        playlistId: playlist.id,
+        playlistOwnerUsername: owner.username,
+        playlistSlug: playlist.slug,
+        sourceContext: "artist-profile",
+      },
+      { segmentLabel: playlist.title },
+    );
   }
 
   function playTrack(recording: CollectionRecording, index: number) {
@@ -81,12 +91,17 @@ export function ArtistProfileCollectionPanel({ playlist, owner }: ArtistProfileC
       return;
     }
 
-    setQueue(queueTracks, index, {
-      playlistId: playlist.id,
-      playlistOwnerUsername: owner.username,
-      playlistSlug: playlist.slug,
-      sourceContext: "artist-profile",
-    });
+    setQueue(
+      queueTracks,
+      index,
+      {
+        playlistId: playlist.id,
+        playlistOwnerUsername: owner.username,
+        playlistSlug: playlist.slug,
+        sourceContext: "artist-profile",
+      },
+      { segmentLabel: playlist.title },
+    );
   }
 
   function handleFollow() {

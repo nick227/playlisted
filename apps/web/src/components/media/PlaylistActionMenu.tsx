@@ -7,7 +7,7 @@ import { useAuthAction } from "@/hooks/useAuthAction";
 import { useAddCollectionPlaylist, useCollectionPlaylists } from "@/hooks/useCollections";
 import { usePlaylist } from "@/hooks/usePlaylist";
 import { playlistShareUrl, shareContent } from "@/lib/shareContent";
-import type { QueueTrack } from "@/providers/AudioPlayerProvider";
+import { useAudioPlayer, type QueueTrack } from "@/providers/AudioPlayerProvider";
 
 type PlaylistActionMenuProps = {
   playlistId: string;
@@ -36,6 +36,7 @@ export function PlaylistActionMenu({
 }: PlaylistActionMenuProps) {
   const { data: playlist } = usePlaylist(playlistId);
   const { appendTracks } = useAppendToQueue();
+  const { appendUpNextSegment } = useAudioPlayer();
   const requireAuth = useAuthAction();
   const collectionPlaylists = useCollectionPlaylists();
   const addCollectionPlaylist = useAddCollectionPlaylist();
@@ -81,6 +82,23 @@ export function PlaylistActionMenu({
             flash(`Added ${result.added} track${result.added === 1 ? "" : "s"} to queue`);
           }
         });
+      },
+    },
+    {
+      id: "up-next-playlist",
+      label: "Add to up next",
+      icon: <ListPlus size={16} />,
+      onClick: () => {
+        appendUpNextSegment({
+          id: crypto.randomUUID(),
+          kind: "playlist",
+          label: title,
+          playlistId,
+          ownerUsername: ownerUsername ?? undefined,
+          slug: slug ?? undefined,
+          source: "user",
+        });
+        flash("Added to up next");
       },
     },
     {

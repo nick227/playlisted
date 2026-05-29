@@ -10,6 +10,7 @@ import { TrackUploadQueue } from "@/components/uploads/TrackUploadQueue";
 import { authedApi, bulkRegisterUploads, uploadAudioFile, uploadImageFile } from "@/lib/authedApi";
 import { getAudioDurationSeconds } from "@/lib/getAudioDuration";
 import { playlistPath } from "@/lib/routes";
+import { usePageMeta } from "@/hooks/usePageMeta";
 import { useAudioPlayer, type QueueTrack } from "@/providers/AudioPlayerProvider";
 import { useAuth } from "@/providers/AuthProvider";
 import { useLibraryGenres } from "@/hooks/useLibrary";
@@ -70,6 +71,8 @@ export function StudioCollectionEditPage() {
 
   const playlist = draft ?? data;
   const [selectedGenreId, setSelectedGenreId] = useState<string | null>(null);
+
+  usePageMeta({ title: playlist ? `${playlist.title} — Edit — Studio` : "Edit Collection — Studio" });
 
   const playlistGenreIds = useMemo(
     () => playlist?.tags?.filter((tag) => tag.kind === "GENRE").map((tag) => tag.id) ?? [],

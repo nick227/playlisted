@@ -10,6 +10,9 @@ import {
   type ReactNode,
 } from "react";
 
+import { hydrateUpNextSegment } from "@/lib/upNext/hydrateSegment";
+import { readAutoplayEnabled, writeAutoplayEnabled } from "@/lib/upNext/storage";
+import type { BeginSegmentOptions, UpNextSegment } from "@/lib/upNext/types";
 import { isPlayerShortcutSuppressed } from "@/lib/playerKeyboard";
 import { postPlaybackEvent } from "@/lib/playbackEvents";
 import { useAuth } from "@/providers/AuthProvider";
@@ -26,13 +29,19 @@ export type PlaybackContext = {
   sourceContext?: string;
 };
 
+export type { UpNextSegment };
+
 type PlayerState = "idle" | "loading" | "playing" | "paused" | "error";
 
 interface AudioPlayerContextValue {
   currentTrack: QueueTrack | null;
   queue: QueueTrack[];
+  queueIndex: number;
+  upNextPipeline: UpNextSegment[];
+  segmentLabel: string | null;
+  autoplayEnabled: boolean;
+  setAutoplayEnabled: (enabled: boolean) => void;
   state: PlayerState;
-  /** True while the current track is playing or starting (loading). Use for play/pause button UI. */
   isPlaying: boolean;
   currentTime: number;
   duration: number;
@@ -45,19 +54,42 @@ interface AudioPlayerContextValue {
   cycleRepeat: () => void;
   volume: number;
   setVolume: (v: number) => void;
-  playTrack: (track: QueueTrack, queue?: QueueTrack[], context?: PlaybackContext) => void;
-  setQueue: (tracks: QueueTrack[], startIndex?: number, context?: PlaybackContext) => void;
+  playTrack: (
+    track: QueueTrack,
+    queue?: QueueTrack[],
+    context?: PlaybackContext,
+    options?: BeginSegmentOptions,
+  ) => void;
+  setQueue: (
+    tracks: QueueTrack[],
+    startIndex?: number,
+    context?: PlaybackContext,
+    options?: BeginSegmentOptions,
+  ) => void;
   togglePlay: () => void;
   playNext: () => void;
   playPrevious: () => void;
   seek: (time: number) => void;
   appendToQueue: (track: QueueTrack) => void;
+  appendUpNextSegment: (segment: UpNextSegment) => void;
+  removeUpNextSegment: (segmentId: string) => void;
   removeFromQueue: (trackId: string) => void;
   updateQueuePlaylistTitle: (playlistId: string, title: string) => void;
   updateQueuePlaylistSlug: (playlistId: string, slug: string) => void;
 }
 
 const AudioPlayerContext = createContext<AudioPlayerContextValue | null>(null);
+
+function autopilotTail(context: PlaybackContext): UpNextSegment {
+  return {
+    id: crypto.randomUUID(),
+    kind: "autopilot",
+    label: "More to play",
+    resolver: "continue",
+    seedPlaylistId: context.playlistId,
+    source: "autopilot",
+  };
+}
 
 export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   const { accessToken } = useAuth();
@@ -66,8 +98,17 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   const loggedTrackRef = useRef<string | null>(null);
   const shuffleRef = useRef(false);
   const repeatRef = useRef<"off" | "one" | "all">("off");
+  const autoplayRef = useRef(readAutoplayEnabled());
+  const segmentEndIndexRef = useRef(-1);
+  const playedPlaylistIdsRef = useRef(new Set<string>());
+  const upNextPipelineRef = useRef<UpNextSegment[]>([]);
+  const advancingRef = useRef(false);
+
   const [queue, setQueueState] = useState<QueueTrack[]>([]);
   const [queueIndex, setQueueIndex] = useState(-1);
+  const [upNextPipeline, setUpNextPipeline] = useState<UpNextSegment[]>([]);
+  const [segmentLabel, setSegmentLabel] = useState<string | null>(null);
+  const [autoplayEnabled, setAutoplayEnabledState] = useState(() => readAutoplayEnabled());
   const [state, setState] = useState<PlayerState>("idle");
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -77,14 +118,32 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   const [repeatMode, setRepeatModeState] = useState<"off" | "one" | "all">("off");
   const [volume, setVolumeState] = useState(1);
 
+  upNextPipelineRef.current = upNextPipeline;
+
   const currentTrack = queueIndex >= 0 ? queue[queueIndex] ?? null : null;
-  const isPlaying =
-    currentTrack !== null && (state === "playing" || state === "loading");
+  const isPlaying = currentTrack !== null && (state === "playing" || state === "loading");
 
   const queueRef = useRef(queue);
   const queueIndexRef = useRef(queueIndex);
   queueRef.current = queue;
   queueIndexRef.current = queueIndex;
+
+  const setAutoplayEnabled = useCallback((enabled: boolean) => {
+    autoplayRef.current = enabled;
+    writeAutoplayEnabled(enabled);
+    setAutoplayEnabledState(enabled);
+    if (!enabled) {
+      setUpNextPipeline((prev) => prev.filter((s) => s.source !== "autopilot"));
+    }
+  }, []);
+
+  const syncAutopilotTail = useCallback((context: PlaybackContext) => {
+    if (!autoplayRef.current || !context.playlistId) return;
+    setUpNextPipeline((prev) => {
+      const userSegments = prev.filter((s) => s.source === "user");
+      return [...userSegments, autopilotTail(context)];
+    });
+  }, []);
 
   const toggleShuffle = useCallback(() => {
     shuffleRef.current = !shuffleRef.current;
@@ -146,47 +205,117 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     }).catch(() => setState("paused"));
   }, []);
 
+  const beginSegment = useCallback(
+    (
+      tracks: QueueTrack[],
+      startIndex: number,
+      context?: PlaybackContext,
+      options?: BeginSegmentOptions,
+    ) => {
+      if (tracks.length === 0) return;
+
+      const index = Math.min(Math.max(startIndex, 0), tracks.length - 1);
+      if (context) {
+        playbackContextRef.current = context;
+        setPlaybackContext(context);
+        if (context.playlistId) {
+          playedPlaylistIdsRef.current.add(context.playlistId);
+        }
+      }
+
+      segmentEndIndexRef.current = tracks.length - 1;
+      setSegmentLabel(options?.segmentLabel ?? tracks[index]?.playlistTitle ?? null);
+      setQueueState(tracks);
+      setQueueIndex(index);
+      loadTrack(tracks[index]);
+
+      const shouldSeed =
+        options?.seedAutoplay !== false && autoplayRef.current && Boolean(context?.playlistId);
+      if (shouldSeed && context) {
+        syncAutopilotTail(context);
+      }
+    },
+    [loadTrack, syncAutopilotTail],
+  );
+
+  const advanceProgram = useCallback(async () => {
+    if (advancingRef.current) return;
+    advancingRef.current = true;
+    setState("loading");
+
+    try {
+      let pipeline = [...upNextPipelineRef.current];
+
+      for (let attempt = 0; attempt < 8; attempt += 1) {
+        let segment = pipeline.shift();
+        if (!segment) {
+          if (!autoplayRef.current) break;
+          segment = autopilotTail(playbackContextRef.current);
+        }
+
+        setUpNextPipeline(pipeline);
+
+        const hydrated = await hydrateUpNextSegment(segment, playedPlaylistIdsRef.current);
+        if (!hydrated || hydrated.tracks.length === 0) continue;
+
+        if (hydrated.playlistId) {
+          playedPlaylistIdsRef.current.add(hydrated.playlistId);
+        }
+
+        beginSegment(hydrated.tracks, 0, hydrated.context, {
+          seedAutoplay: true,
+          segmentLabel: segment.label,
+        });
+        return;
+      }
+
+      setQueueIndex(-1);
+      setState("idle");
+      audioRef.current?.pause();
+    } finally {
+      advancingRef.current = false;
+    }
+  }, [beginSegment]);
+
   const playTrack = useCallback(
-    (track: QueueTrack, nextQueue?: QueueTrack[], context?: PlaybackContext) => {
+    (
+      track: QueueTrack,
+      nextQueue?: QueueTrack[],
+      context?: PlaybackContext,
+      options?: BeginSegmentOptions,
+    ) => {
       if (currentTrack && currentTrack.id !== track.id) {
         flushPlayback(currentTrack, audioRef.current?.currentTime ?? currentTime, false);
         loggedTrackRef.current = null;
       }
-      if (context) {
-        playbackContextRef.current = context;
-        setPlaybackContext(context);
-      }
       const tracks = nextQueue ?? [track];
       const index = tracks.findIndex((t) => t.id === track.id);
-      setQueueState(tracks);
-      setQueueIndex(index >= 0 ? index : 0);
-      loadTrack(track);
+      beginSegment(tracks, index >= 0 ? index : 0, context, options);
     },
-    [currentTrack, currentTime, flushPlayback, loadTrack],
+    [currentTrack, currentTime, flushPlayback, beginSegment],
   );
 
   const setQueue = useCallback(
-    (tracks: QueueTrack[], startIndex = 0, context?: PlaybackContext) => {
+    (
+      tracks: QueueTrack[],
+      startIndex = 0,
+      context?: PlaybackContext,
+      options?: BeginSegmentOptions,
+    ) => {
       if (tracks.length === 0) return;
       if (currentTrack) {
         flushPlayback(currentTrack, audioRef.current?.currentTime ?? currentTime, false);
         loggedTrackRef.current = null;
       }
-      if (context) {
-        playbackContextRef.current = context;
-        setPlaybackContext(context);
-      }
-      const index = Math.min(Math.max(startIndex, 0), tracks.length - 1);
-      setQueueState(tracks);
-      setQueueIndex(index);
-      loadTrack(tracks[index]);
+      beginSegment(tracks, startIndex, context, options);
     },
-    [currentTrack, currentTime, flushPlayback, loadTrack],
+    [currentTrack, currentTime, flushPlayback, beginSegment],
   );
 
   const updateQueuePlaylistTitle = useCallback((playlistId: string, title: string) => {
     if (playbackContextRef.current.playlistId !== playlistId) return;
     setQueueState((prev) => prev.map((t) => ({ ...t, playlistTitle: title })));
+    setSegmentLabel(title);
   }, []);
 
   const updateQueuePlaylistSlug = useCallback((playlistId: string, slug: string) => {
@@ -209,20 +338,40 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   }, [currentTrack]);
 
   const playNext = useCallback(() => {
-    if (shuffleRef.current && queue.length > 1) {
-      let next: number;
-      do { next = Math.floor(Math.random() * queue.length); } while (next === queueIndex);
-      setQueueIndex(next);
-      loadTrack(queue[next]);
-    } else if (queueIndex < queue.length - 1) {
-      const next = queueIndex + 1;
-      setQueueIndex(next);
-      loadTrack(queue[next]);
-    } else if (repeatRef.current === "all" && queue.length > 0) {
-      setQueueIndex(0);
-      loadTrack(queue[0]);
+    const end = segmentEndIndexRef.current;
+    const q = queueRef.current;
+    const idx = queueIndexRef.current;
+
+    if (repeatRef.current === "one" && idx >= 0) {
+      loadTrack(q[idx]);
+      return;
     }
-  }, [queue, queueIndex, loadTrack]);
+
+    if (shuffleRef.current && end > 0) {
+      let next: number;
+      do {
+        next = Math.floor(Math.random() * (end + 1));
+      } while (next === idx && end > 0);
+      setQueueIndex(next);
+      loadTrack(q[next]);
+      return;
+    }
+
+    if (idx < end) {
+      const next = idx + 1;
+      setQueueIndex(next);
+      loadTrack(q[next]);
+      return;
+    }
+
+    if (repeatRef.current === "all" && q.length > 0) {
+      setQueueIndex(0);
+      loadTrack(q[0]);
+      return;
+    }
+
+    void advanceProgram();
+  }, [loadTrack, advanceProgram]);
 
   const playPrevious = useCallback(() => {
     const audio = audioRef.current;
@@ -243,27 +392,50 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const appendToQueue = useCallback((track: QueueTrack) => {
-    setQueueState((prev) => [...prev, track]);
-  }, []);
-
-  const removeFromQueue = useCallback((trackId: string) => {
     setQueueState((prev) => {
-      const next = prev.filter((t) => t.id !== trackId);
-      const removedIndex = prev.findIndex((t) => t.id === trackId);
-      if (removedIndex === queueIndex && next.length > 0) {
-        const newIndex = Math.min(queueIndex, next.length - 1);
-        setQueueIndex(newIndex);
-        loadTrack(next[newIndex]);
-      } else if (next.length === 0) {
-        setQueueIndex(-1);
-        setState("idle");
-        audioRef.current?.pause();
-      } else if (removedIndex < queueIndex) {
-        setQueueIndex((i) => i - 1);
-      }
+      const next = [...prev, track];
+      segmentEndIndexRef.current = next.length - 1;
       return next;
     });
-  }, [queueIndex, loadTrack]);
+  }, []);
+
+  const appendUpNextSegment = useCallback((segment: UpNextSegment) => {
+    setUpNextPipeline((prev) => {
+      const autopilot = prev.filter((s) => s.source === "autopilot");
+      const rest = prev.filter((s) => s.source !== "autopilot");
+      return [...rest, segment, ...autopilot];
+    });
+  }, []);
+
+  const removeUpNextSegment = useCallback((segmentId: string) => {
+    setUpNextPipeline((prev) => prev.filter((s) => s.id !== segmentId));
+  }, []);
+
+  const removeFromQueue = useCallback(
+    (trackId: string) => {
+      setQueueState((prev) => {
+        const next = prev.filter((t) => t.id !== trackId);
+        const removedIndex = prev.findIndex((t) => t.id === trackId);
+        segmentEndIndexRef.current = Math.max(0, next.length - 1);
+
+        if (removedIndex === queueIndex && next.length > 0) {
+          const newIndex = Math.min(queueIndex, next.length - 1);
+          setQueueIndex(newIndex);
+          loadTrack(next[newIndex]);
+        } else if (next.length === 0) {
+          setQueueIndex(-1);
+          setState("idle");
+          audioRef.current?.pause();
+        } else if (removedIndex < queueIndex) {
+          setQueueIndex((i) => i - 1);
+        } else if (removedIndex <= segmentEndIndexRef.current) {
+          segmentEndIndexRef.current = Math.max(0, segmentEndIndexRef.current - 1);
+        }
+        return next;
+      });
+    },
+    [queueIndex, loadTrack],
+  );
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -296,7 +468,10 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
         playNext();
       }
     };
-    const onError = () => setState("error");
+    const onError = () => {
+      setState("error");
+      void advanceProgram();
+    };
 
     audio.addEventListener("timeupdate", onTime);
     audio.addEventListener("loadedmetadata", onMeta);
@@ -315,7 +490,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       audio.removeEventListener("ended", onEnded);
       audio.removeEventListener("error", onError);
     };
-  }, [playNext, currentTime, flushPlayback, logPlaybackStart]);
+  }, [playNext, currentTime, flushPlayback, logPlaybackStart, advanceProgram]);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -334,6 +509,11 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     () => ({
       currentTrack,
       queue,
+      queueIndex,
+      upNextPipeline,
+      segmentLabel,
+      autoplayEnabled,
+      setAutoplayEnabled,
       state,
       isPlaying,
       currentTime,
@@ -354,6 +534,8 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       playPrevious,
       seek,
       appendToQueue,
+      appendUpNextSegment,
+      removeUpNextSegment,
       removeFromQueue,
       updateQueuePlaylistTitle,
       updateQueuePlaylistSlug,
@@ -361,6 +543,11 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     [
       currentTrack,
       queue,
+      queueIndex,
+      upNextPipeline,
+      segmentLabel,
+      autoplayEnabled,
+      setAutoplayEnabled,
       state,
       isPlaying,
       currentTime,
@@ -380,6 +567,8 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       playPrevious,
       seek,
       appendToQueue,
+      appendUpNextSegment,
+      removeUpNextSegment,
       removeFromQueue,
       updateQueuePlaylistTitle,
       updateQueuePlaylistSlug,

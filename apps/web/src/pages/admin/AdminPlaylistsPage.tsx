@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import type { AdminPlaylist, AdminContentTagRef } from "@playlisted/client-sdk";
 import { authedApi } from "@/lib/authedApi";
 import { useAuth } from "@/providers/AuthProvider";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 type Status = "DRAFT" | "PUBLISHED" | "ARCHIVED";
 type Visibility = "PUBLIC" | "UNLISTED" | "PRIVATE";
@@ -71,6 +72,8 @@ export function AdminPlaylistsPage() {
   const { accessToken } = useAuth();
   const api = useMemo(() => authedApi(accessToken), [accessToken]);
   const [playlists, setPlaylists] = useState<AdminPlaylist[]>([]);
+
+  usePageMeta({ title: "Playlists — Admin" });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);

@@ -5,11 +5,14 @@ import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { AuthField } from "@/components/auth/AuthField";
 import { panelPathForRole } from "@/lib/routes";
 import { useAuth } from "@/providers/AuthProvider";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 export function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { status, login, getErrorMessage } = useAuth();
+
+  usePageMeta({ title: "Log in" });
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);

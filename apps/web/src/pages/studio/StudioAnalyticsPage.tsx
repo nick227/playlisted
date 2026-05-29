@@ -5,6 +5,7 @@ import { Skeleton } from "@/components/feedback/Skeleton";
 import { EmptyState } from "@/components/feedback/EmptyState";
 import { useAnalyticsSummary, useAnalyticsRecordings } from "@/hooks/useAnalytics";
 import { coverFallback } from "@/lib/routes";
+import { usePageMeta } from "@/hooks/usePageMeta";
 import type { ChartRange } from "@playlisted/client-sdk";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -132,6 +133,8 @@ const RANGES: { value: ChartRange; label: string }[] = [
 export function StudioAnalyticsPage() {
   const [range, setRange] = useState<ChartRange>("30d");
   const [sortBy, setSortBy] = useState<SortKey>("plays");
+
+  usePageMeta({ title: "Analytics — Studio" });
   const [order, setOrder] = useState<SortDir>("desc");
 
   const summary = useAnalyticsSummary(range);

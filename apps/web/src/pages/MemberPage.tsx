@@ -5,6 +5,7 @@ import { EmptyState } from "@/components/feedback/EmptyState";
 import { Skeleton } from "@/components/feedback/Skeleton";
 import { useUser } from "@/hooks/useUser";
 import { useUserByUsername } from "@/hooks/useUserByUsername";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 export function MemberPage() {
   const { userId, username } = useParams<{ userId?: string; username?: string }>();
@@ -12,6 +13,12 @@ export function MemberPage() {
   const byId = useUser(userId);
   const query = username ? byUsername : byId;
   const { data: user, isLoading, isError } = query;
+
+  usePageMeta({
+    title: user ? `${user.displayName} (@${user.username})` : "Artist",
+    description: user ? `Listen to ${user.displayName}'s playlists on Playlisted.` : undefined,
+    image: user?.avatarUrl,
+  });
 
   if (isLoading) {
     return (

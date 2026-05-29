@@ -130,12 +130,17 @@ export function SmartPlaylistCard({
         playlistTitle: pl.title,
         ownerName: pl.owner.displayName,
       }));
-      setQueue(queue, 0, {
-        playlistId: id,
-        playlistOwnerUsername: ownerUsername ?? pl.owner.username,
-        playlistSlug: slug ?? pl.slug,
-        sourceContext: "card",
-      });
+      setQueue(
+        queue,
+        0,
+        {
+          playlistId: id,
+          playlistOwnerUsername: ownerUsername ?? pl.owner.username,
+          playlistSlug: slug ?? pl.slug,
+          sourceContext: "card",
+        },
+        { segmentLabel: pl.title },
+      );
     },
     [id, ownerUsername, slug, setQueue],
   );

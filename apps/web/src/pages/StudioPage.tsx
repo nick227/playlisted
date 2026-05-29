@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 
 import { useAuth } from "@/providers/AuthProvider";
 import { profilePath } from "@/lib/routes";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 const links = [
   { to: "/studio/analytics", title: "Analytics", desc: "Profile views, plays, and completion rates" },
@@ -12,6 +13,8 @@ const links = [
 
 export function StudioPage() {
   const { user } = useAuth();
+
+  usePageMeta({ title: "Artist Studio" });
 
   return (
     <div className="mx-auto max-w-3xl">
