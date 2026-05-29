@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from "react";
 
+import { isPlayerShortcutSuppressed } from "@/lib/playerKeyboard";
 import { postPlaybackEvent } from "@/lib/playbackEvents";
 import { useAuth } from "@/providers/AuthProvider";
 
@@ -307,6 +308,19 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       audio.removeEventListener("error", onError);
     };
   }, [playNext, currentTime, flushPlayback, logPlaybackStart]);
+
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.code !== "Space" && event.key !== " ") return;
+      if (event.repeat || event.ctrlKey || event.metaKey || event.altKey) return;
+      if (isPlayerShortcutSuppressed(event)) return;
+      if (!currentTrack) return;
+      event.preventDefault();
+      togglePlay();
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [currentTrack, togglePlay]);
 
   const value = useMemo<AudioPlayerContextValue>(
     () => ({
