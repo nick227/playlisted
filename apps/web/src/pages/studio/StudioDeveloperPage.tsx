@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Copy, Check, Trash2, Plus, Key } from "lucide-react";
+import { Copy, Check, Trash2, Plus, Key, ExternalLink, Upload, ListMusic, Mic2 } from "lucide-react";
+import { Link } from "react-router-dom";
 import type { ApiKey } from "@playlisted/client-sdk";
 
 import { authedApi } from "@/lib/authedApi";
@@ -120,6 +121,12 @@ export function StudioDeveloperPage() {
 
   return (
     <div className="mx-auto max-w-2xl">
+      <Link
+        to="/studio"
+        className="mb-4 inline-flex text-sm font-semibold text-[var(--color-brand)] hover:underline"
+      >
+        ← Back to studio
+      </Link>
       <p className="text-xs font-semibold uppercase tracking-wider text-[var(--color-brand)]">
         Developer
       </p>
@@ -195,14 +202,126 @@ export function StudioDeveloperPage() {
         )}
       </div>
 
-      <div className="mt-10 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
-        <p className="mb-2 text-sm font-semibold text-white">Usage</p>
+      {/* ── What you can do ──────────────────────────────────────────── */}
+      <div className="mt-10">
+        <p className="mb-3 text-sm font-semibold text-white">What you can do with this key</p>
+        <div className="grid gap-3 sm:grid-cols-3">
+          {[
+            {
+              icon: Upload,
+              title: "Upload files",
+              body: "Upload audio (mp3, wav, flac…) and cover images (jpg, png, webp) up to 100 MB each.",
+              endpoint: "POST /api/v1/ingest/uploads",
+            },
+            {
+              icon: ListMusic,
+              title: "Upsert playlists",
+              body: "Create or update playlists by stable external ID. Safe to re-run — duplicates never created.",
+              endpoint: "POST /api/v1/ingest/playlists",
+            },
+            {
+              icon: Mic2,
+              title: "Upsert recordings",
+              body: "Attach audio uploads to playlists. Track numbers, durations, and cover art all supported.",
+              endpoint: "POST /api/v1/ingest/recordings",
+            },
+          ].map(({ icon: Icon, title, body, endpoint }) => (
+            <div
+              key={endpoint}
+              className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4"
+            >
+              <Icon size={16} className="mb-2 text-[var(--color-brand)]" />
+              <p className="text-sm font-semibold text-white">{title}</p>
+              <p className="mt-1 text-xs leading-relaxed text-[var(--color-text-muted)]">{body}</p>
+              <p className="mt-2 font-mono text-[10px] text-[var(--color-text-muted)]">{endpoint}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Authentication ───────────────────────────────────────────── */}
+      <div className="mt-8 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
+        <p className="mb-2 text-sm font-semibold text-white">Authentication</p>
         <p className="mb-3 text-xs text-[var(--color-text-muted)]">
-          Pass your key as a Bearer token in the Authorization header:
+          Pass your key as a Bearer token. Session tokens are not accepted on ingest routes.
         </p>
         <pre className="overflow-x-auto rounded-lg bg-[var(--color-canvas)] px-4 py-3 font-mono text-xs text-[var(--color-brand)]">
           {`Authorization: Bearer plt_your_key_here`}
         </pre>
+      </div>
+
+      {/* ── Quick start ──────────────────────────────────────────────── */}
+      <div className="mt-6 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
+        <p className="mb-3 text-sm font-semibold text-white">Quick start</p>
+        <p className="mb-3 text-xs text-[var(--color-text-muted)]">
+          Full workflow: upload cover → upload audio → upsert playlist → upsert recording.
+        </p>
+        <pre className="overflow-x-auto rounded-lg bg-[var(--color-canvas)] px-4 py-4 font-mono text-xs leading-relaxed text-[var(--color-text-muted)]">
+{`# 1. Upload a cover image
+curl -X POST "$BASE/api/v1/ingest/uploads?kind=image" \\
+  -H "Authorization: Bearer $PLT_API_KEY" \\
+  -F file=@cover.jpg
+# → { "uploadId": "upl_img…", "url": "…" }
+
+# 2. Upload an audio file
+curl -X POST "$BASE/api/v1/ingest/uploads?kind=audio" \\
+  -H "Authorization: Bearer $PLT_API_KEY" \\
+  -F file=@track.mp3
+# → { "uploadId": "upl_audio…", "url": "…" }
+
+# 3. Upsert a playlist (safe to re-run)
+curl -X POST "$BASE/api/v1/ingest/playlists" \\
+  -H "Authorization: Bearer $PLT_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{ "externalSource": "my-script",
+        "externalId":     "album-night-signals",
+        "title":          "Night Signals",
+        "coverUploadId":  "upl_img…" }'
+
+# 4. Upsert a recording into that playlist
+curl -X POST "$BASE/api/v1/ingest/recordings" \\
+  -H "Authorization: Bearer $PLT_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{ "externalSource":     "my-script",
+        "externalId":         "track-01",
+        "playlistExternalId": "album-night-signals",
+        "title":              "Neon Window",
+        "audioUploadId":      "upl_audio…",
+        "trackNumber":        1 }'`}
+        </pre>
+      </div>
+
+      {/* ── Resources ────────────────────────────────────────────────── */}
+      <div className="mt-6 flex flex-wrap items-center gap-4">
+        <a
+          href="/docs"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--color-brand)] transition hover:underline"
+        >
+          <ExternalLink size={13} />
+          Full API reference (Swagger)
+        </a>
+        <span className="text-[var(--color-text-muted)]">·</span>
+        <a
+          href="https://github.com/nick227/playlisted/blob/main/examples/ingest-upload-playlist-recording.mjs"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--color-text-muted)] transition hover:text-white"
+        >
+          <ExternalLink size={13} />
+          Node.js example script
+        </a>
+        <span className="text-[var(--color-text-muted)]">·</span>
+        <a
+          href="https://github.com/nick227/playlisted/blob/main/docs/ingest-api.md"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--color-text-muted)] transition hover:text-white"
+        >
+          <ExternalLink size={13} />
+          Ingest API docs
+        </a>
       </div>
     </div>
   );

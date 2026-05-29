@@ -7,7 +7,6 @@ import { Skeleton } from "@/components/feedback/Skeleton";
 import { TrackRow } from "@/components/tracks/TrackRow";
 import { authedApi } from "@/lib/authedApi";
 import { recordingSummaryToQueueTrack } from "@/lib/queueTrack";
-import { playlistPath } from "@/lib/routes";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { recordingShareUrl } from "@/lib/shareContent";
 import { useAuth } from "@/providers/AuthProvider";
@@ -64,6 +63,12 @@ export function StudioHistoryPage() {
 
   return (
     <div className="mx-auto max-w-3xl">
+      <Link
+        to="/studio"
+        className="mb-4 inline-flex text-sm font-semibold text-[var(--color-brand)] hover:underline"
+      >
+        ← Back to studio
+      </Link>
       <p className="text-xs font-semibold uppercase tracking-wider text-[var(--color-brand)]">Listening</p>
       <h1 className="mt-2 text-3xl font-extrabold text-white">Play history</h1>
       <p className="mt-2 text-sm text-[var(--color-text-muted)]">
@@ -86,9 +91,12 @@ export function StudioHistoryPage() {
                 title={item.recording.title}
                 durationSeconds={item.recording.durationSeconds}
                 artworkUrl={item.recording.artworkUrl}
+                recordingHref={item.playlist ? `${item.playlist.href}#track-${item.recording.id}` : undefined}
+                playlistHref={item.playlist?.href}
+                playlistTitle={item.playlist?.title}
                 meta={
                   item.playlist
-                    ? `From ${item.playlist.title} • ${new Date(item.createdAt).toLocaleString()}`
+                    ? new Date(item.createdAt).toLocaleString()
                     : new Date(item.createdAt).toLocaleString()
                 }
                 onPlay={() => playItem(item)}
@@ -104,14 +112,6 @@ export function StudioHistoryPage() {
                     : undefined
                 }
               />
-              {item.playlist ? (
-                <Link
-                  to={playlistPath({ id: item.playlist.id, href: item.playlist.href })}
-                  className="ml-14 block pb-2 text-xs text-[var(--color-brand)] hover:underline"
-                >
-                  Open collection
-                </Link>
-              ) : null}
             </div>
           ))}
         </div>

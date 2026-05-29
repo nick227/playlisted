@@ -33,6 +33,63 @@ const featureInclude = {
   user: { select: { id: true, username: true, displayName: true, avatarUrl: true } },
 };
 
+async function updateFeature(featureId: string, data: Record<string, unknown>) {
+  if (data.position === undefined) {
+    return prisma.homepageFeature.update({
+      where: { id: featureId },
+      data,
+      include: featureInclude,
+    });
+  }
+
+  return prisma.$transaction(async (tx) => {
+    const current = await tx.homepageFeature.findUnique({
+      where: { id: featureId },
+      select: { id: true, section: true, position: true },
+    });
+
+    if (!current) {
+      throw Object.assign(new Error("Homepage feature not found."), { code: "P2025" });
+    }
+
+    const nextSection = (data.section as HomepageSection | undefined) ?? current.section;
+    const nextPosition = data.position as number;
+
+    const occupyingFeature = await tx.homepageFeature.findFirst({
+      where: {
+        section: nextSection,
+        position: nextPosition,
+        id: { not: featureId },
+      },
+      select: { id: true },
+    });
+
+    if (occupyingFeature && nextSection === current.section) {
+      const maxPosition = await tx.homepageFeature.findFirst({
+        where: { section: current.section },
+        orderBy: { position: "desc" },
+        select: { position: true },
+      });
+      const temporaryPosition = (maxPosition?.position ?? 0) + 1;
+
+      await tx.homepageFeature.update({
+        where: { id: featureId },
+        data: { position: temporaryPosition },
+      });
+      await tx.homepageFeature.update({
+        where: { id: occupyingFeature.id },
+        data: { position: current.position },
+      });
+    }
+
+    return tx.homepageFeature.update({
+      where: { id: featureId },
+      data,
+      include: featureInclude,
+    });
+  });
+}
+
 adminHomepageRouter.get("/", async (req, res, next) => {
   try {
     if (!(await requireAdmin(req, res))) return;
@@ -127,16 +184,18 @@ adminHomepageRouter.patch("/:featureId", async (req, res, next) => {
     if (body.playlistId !== undefined) data.playlistId = body.playlistId;
     if (body.userId !== undefined) data.userId = body.userId;
 
-    const feature = await prisma.homepageFeature.update({
-      where: { id: req.params.featureId },
-      data,
-      include: featureInclude,
-    });
+    const feature = await updateFeature(req.params.featureId, data);
 
     return res.json(mapFeature(feature));
   } catch (error) {
     if (error && typeof error === "object" && "code" in error && (error as any).code === "P2025") {
       return res.status(404).json({ error: "feature_not_found", message: "Homepage feature not found." });
+    }
+    if (error && typeof error === "object" && "code" in error && (error as any).code === "P2002") {
+      return res.status(409).json({
+        error: "homepage_feature_position_conflict",
+        message: "Another homepage feature already uses that section and position.",
+      });
     }
     return next(error);
   }

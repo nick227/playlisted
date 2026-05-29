@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
+import { Link } from "react-router-dom";
 
 import { Skeleton } from "@/components/feedback/Skeleton";
 import { EmptyState } from "@/components/feedback/EmptyState";
@@ -157,6 +158,12 @@ export function StudioAnalyticsPage() {
   return (
     <div className="mx-auto max-w-5xl">
       {/* Header */}
+      <Link
+        to="/studio"
+        className="mb-4 inline-flex text-sm font-semibold text-[var(--color-brand)] hover:underline"
+      >
+        ← Back to studio
+      </Link>
       <p className="text-xs font-semibold uppercase tracking-wider text-[var(--color-brand)]">
         Artist studio
       </p>

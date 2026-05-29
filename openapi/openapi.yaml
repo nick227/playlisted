@@ -1516,6 +1516,55 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      tags: [Recordings]
+      operationId: updateRecording
+      summary: Update recording metadata
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: recordingId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRecordingRequest'
+      responses:
+        '200':
+          description: Recording updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecordingDetail'
+        '400':
+          description: Invalid recording metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Recording not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/v1/admin/tags:
     get:
@@ -3086,6 +3135,21 @@ components:
         publishedAt:
           type: [string, 'null']
           format: date-time
+
+    UpdateRecordingRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 191
+        artworkUrl:
+          type: [string, 'null']
+          format: uri-reference
+        coverArtUrl:
+          type: [string, 'null']
+          format: uri-reference
 
     PlaylistSummary:
       type: object

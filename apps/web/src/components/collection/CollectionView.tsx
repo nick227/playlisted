@@ -30,7 +30,11 @@ export interface CollectionViewProps {
   onRemoveTrack?: (recordingId: string) => void;
   onMoveTrackUp?: (recordingId: string) => void;
   onMoveTrackDown?: (recordingId: string) => void;
+  onUpdateTrackTitle?: (recordingId: string, title: string) => void;
+  onUpdateTrackArtwork?: (recordingId: string, file: File) => void;
   onUpdateTrackTags?: (recordingId: string, tagSlugs: string[]) => void;
+  trackSavingById?: Record<string, boolean>;
+  trackErrorById?: Record<string, string | undefined>;
   selectedGenreId?: string | null;
   onGenreChange?: (genreId: string | null) => void;
   genreOptions?: { id: string; name: string }[];
@@ -65,7 +69,11 @@ export function CollectionView({
   onRemoveTrack,
   onMoveTrackUp,
   onMoveTrackDown,
+  onUpdateTrackTitle,
+  onUpdateTrackArtwork,
   onUpdateTrackTags,
+  trackSavingById,
+  trackErrorById,
   selectedGenreId,
   onGenreChange,
   genreOptions,
@@ -312,7 +320,12 @@ export function CollectionView({
               onRemove={onRemoveTrack}
               onMoveUp={onMoveTrackUp}
               onMoveDown={onMoveTrackDown}
+              onUpdateTitle={onUpdateTrackTitle}
+              onUpdateArtwork={onUpdateTrackArtwork}
               onUpdateTags={onUpdateTrackTags}
+              fallbackArtworkUrl={playlist.coverArtUrl}
+              savingById={trackSavingById}
+              errorById={trackErrorById}
             />
           </div>
         ) : (

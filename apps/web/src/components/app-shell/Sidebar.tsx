@@ -115,7 +115,7 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
                 {panelPath === ADMIN_PATH ? "Admin panel" : "Artist studio"}
               </NavLink>
               <NavLink
-                to="/studio/collections"
+                to="/studio/"
                 onClick={onClose}
                 className={({ isActive }) => navClass(isActive)}
               >

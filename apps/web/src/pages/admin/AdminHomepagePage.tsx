@@ -212,13 +212,10 @@ export function AdminHomepagePage() {
 
     setSaving(feature.id);
     try {
-      const [a, b] = await Promise.all([
-        api.admin.updateHomepageFeature(feature.id, { position: swapWith.position }),
-        api.admin.updateHomepageFeature(swapWith.id, { position: feature.position }),
-      ]);
+      const updated = await api.admin.updateHomepageFeature(feature.id, { position: swapWith.position });
       setFeatures((prev) => prev.map((f) => {
-        if (f.id === a.id) return a;
-        if (f.id === b.id) return b;
+        if (f.id === updated.id) return updated;
+        if (f.id === swapWith.id) return { ...f, position: feature.position };
         return f;
       }));
     } catch (e: any) {
@@ -312,7 +309,7 @@ export function AdminHomepagePage() {
               <select
                 value={form.section}
                 onChange={(e) => setForm((f) => ({ ...f, section: e.target.value as Section }))}
-                className="w-full rounded-lg border border-[var(--color-border)] bg-black/30 px-3 py-2 text-sm text-white focus:outline-none"
+                className="w-full rounded-lg border border-[var(--color-border)] focus:outline-none"
               >
                 {ALL_SECTIONS.map((s) => <option key={s} value={s}>{SECTION_LABELS[s]}</option>)}
               </select>
@@ -322,7 +319,7 @@ export function AdminHomepagePage() {
               <select
                 value={form.targetType}
                 onChange={(e) => setForm((f) => ({ ...f, targetType: e.target.value as TargetType, playlistId: "", userId: "" }))}
-                className="w-full rounded-lg border border-[var(--color-border)] bg-black/30 px-3 py-2 text-sm text-white focus:outline-none"
+                className="w-full rounded-lg border border-[var(--color-border)] focus:outline-none"
               >
                 <option value="PLAYLIST">Playlist</option>
                 <option value="USER">Artist / User</option>
@@ -339,7 +336,7 @@ export function AdminHomepagePage() {
                 value={targetSearch}
                 onChange={(e) => setTargetSearch(e.target.value)}
                 placeholder="Type to filter…"
-                className="w-full rounded-lg border border-[var(--color-border)] bg-black/30 px-3 py-2 text-sm text-white placeholder-zinc-600 focus:outline-none"
+                className="w-full rounded-lg border border-[var(--color-border)] placeholder-zinc-600 focus:outline-none"
               />
               <div className="mt-1 max-h-40 overflow-y-auto rounded-lg border border-[var(--color-border)] bg-black/50">
                 {playlists
@@ -372,7 +369,7 @@ export function AdminHomepagePage() {
                 value={targetSearch}
                 onChange={(e) => setTargetSearch(e.target.value)}
                 placeholder="Type to filter…"
-                className="w-full rounded-lg border border-[var(--color-border)] bg-black/30 px-3 py-2 text-sm text-white placeholder-zinc-600 focus:outline-none"
+                className="w-full rounded-lg border border-[var(--color-border)] placeholder-zinc-600 focus:outline-none"
               />
               <div className="mt-1 max-h-40 overflow-y-auto rounded-lg border border-[var(--color-border)] bg-black/50">
                 {users
@@ -404,7 +401,7 @@ export function AdminHomepagePage() {
                 value={form.titleOverride}
                 onChange={(e) => setForm((f) => ({ ...f, titleOverride: e.target.value }))}
                 placeholder="Leave blank to use content title"
-                className="w-full rounded-lg border border-[var(--color-border)] bg-black/30 px-3 py-2 text-sm text-white placeholder-zinc-600 focus:outline-none"
+                className="w-full rounded-lg border border-[var(--color-border)] placeholder-zinc-600 focus:outline-none"
               />
             </div>
             <div>
@@ -413,7 +410,7 @@ export function AdminHomepagePage() {
                 value={form.subtitleOverride}
                 onChange={(e) => setForm((f) => ({ ...f, subtitleOverride: e.target.value }))}
                 placeholder="Leave blank to use content subtitle"
-                className="w-full rounded-lg border border-[var(--color-border)] bg-black/30 px-3 py-2 text-sm text-white placeholder-zinc-600 focus:outline-none"
+                className="w-full rounded-lg border border-[var(--color-border)] placeholder-zinc-600 focus:outline-none"
               />
             </div>
           </div>
@@ -423,7 +420,7 @@ export function AdminHomepagePage() {
               value={form.imageUrl}
               onChange={(e) => setForm((f) => ({ ...f, imageUrl: e.target.value }))}
               placeholder="https://… (leave blank to use content image)"
-              className="w-full rounded-lg border border-[var(--color-border)] bg-black/30 px-3 py-2 text-sm text-white placeholder-zinc-600 focus:outline-none"
+              className="w-full rounded-lg border border-[var(--color-border)] placeholder-zinc-600 focus:outline-none"
             />
           </div>
           <div className="flex items-center justify-between">

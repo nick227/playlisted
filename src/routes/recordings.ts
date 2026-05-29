@@ -137,6 +137,67 @@ recordingsRouter.get("/:recordingId", async (req, res, next) => {
   }
 });
 
+recordingsRouter.patch("/:recordingId", async (req, res, next) => {
+  try {
+    const auth = await requireAuth(req, res);
+    if (!auth) return;
+
+    const recording = await prisma.recording.findUnique({
+      where: { id: req.params.recordingId },
+      select: { id: true, uploaderId: true },
+    });
+
+    if (!recording) {
+      return res.status(404).json({
+        error: "recording_not_found",
+        message: `Recording ${req.params.recordingId} was not found.`,
+      });
+    }
+
+    if (recording.uploaderId !== auth.user.id && auth.user.role !== "ADMIN") {
+      return res.status(403).json({
+        error: "forbidden",
+        message: "You do not have permission to update this recording.",
+      });
+    }
+
+    const body = req.body as {
+      title?: string;
+      artworkUrl?: string | null;
+      coverArtUrl?: string | null;
+    };
+    const data: Record<string, unknown> = {};
+
+    if (body.title !== undefined) {
+      const title = body.title.trim();
+      if (!title) {
+        return res.status(400).json({
+          error: "invalid_title",
+          message: "Recording title cannot be blank.",
+        });
+      }
+      data.title = title;
+    }
+
+    if (body.artworkUrl !== undefined || body.coverArtUrl !== undefined) {
+      data.artworkUrl = body.artworkUrl !== undefined ? body.artworkUrl : body.coverArtUrl;
+    }
+
+    const updated = await prisma.recording.update({
+      where: { id: recording.id },
+      data,
+      include: {
+        uploader: true,
+        publishedPlaylist: true,
+      },
+    });
+
+    return res.json(mapRecordingDetail(updated));
+  } catch (error) {
+    return next(error);
+  }
+});
+
 recordingsRouter.post("/", async (req, res, next) => {
   try {
     const body = req.body as {

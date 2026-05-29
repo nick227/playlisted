@@ -741,7 +741,8 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /** Update recording metadata */
+        patch: operations["updateRecording"];
         trace?: never;
     };
     "/api/v1/admin/tags": {
@@ -1313,6 +1314,13 @@ export interface components {
             releaseDate?: string | null;
             /** Format: date-time */
             publishedAt?: string | null;
+        };
+        UpdateRecordingRequest: {
+            title?: string;
+            /** Format: uri-reference */
+            artworkUrl?: string | null;
+            /** Format: uri-reference */
+            coverArtUrl?: string | null;
         };
         PlaylistSummary: {
             id: string;
@@ -3971,6 +3979,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RecordingDetail"];
+                };
+            };
+            /** @description Recording not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    updateRecording: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recordingId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateRecordingRequest"];
+            };
+        };
+        responses: {
+            /** @description Recording updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordingDetail"];
+                };
+            };
+            /** @description Invalid recording metadata */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Recording not found */

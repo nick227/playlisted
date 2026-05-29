@@ -17,6 +17,7 @@ export type ErrorResponse = components["schemas"]["ErrorResponse"];
 export type CreateUserRequest = components["schemas"]["CreateUserRequest"];
 export type CreatePlaylistRequest = components["schemas"]["CreatePlaylistRequest"];
 export type CreateRecordingRequest = components["schemas"]["CreateRecordingRequest"];
+export type UpdateRecordingRequest = components["schemas"]["UpdateRecordingRequest"];
 export type LoginRequest = components["schemas"]["LoginRequest"];
 export type RegisterRequest = components["schemas"]["RegisterRequest"];
 export type AuthResponse = components["schemas"]["AuthResponse"];
@@ -188,6 +189,7 @@ export interface PlaylistedApi {
     list(query?: ListRecordingsQuery): Promise<RecordingListResponse>;
     getById(recordingId: string): Promise<RecordingDetail>;
     create(body: CreateRecordingRequest): Promise<RecordingDetail>;
+    update(recordingId: string, body: UpdateRecordingRequest): Promise<RecordingDetail>;
   };
   charts: {
     topSongs(query?: ChartsQuery): Promise<TopSongsResponse>;
@@ -704,6 +706,15 @@ export function createPlaylistedApi(options: PlaylistedClientOptions = {}): Play
         return unwrap(
           raw.POST("/api/v1/recordings", { body }),
           "Failed to create recording.",
+        );
+      },
+      update(recordingId, body) {
+        return unwrap(
+          raw.PATCH("/api/v1/recordings/{recordingId}", {
+            params: { path: { recordingId } },
+            body,
+          }),
+          `Failed to update recording ${recordingId}.`,
         );
       },
     },

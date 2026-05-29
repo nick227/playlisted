@@ -1,4 +1,5 @@
-import { ChevronDown, ChevronUp, Pause, Play, X } from "lucide-react";
+import { ChevronDown, ChevronUp, ImagePlus, Pause, Play, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 import { RecordingActionMenu } from "@/components/media/RecordingActionMenu";
 import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
@@ -6,6 +7,7 @@ import { useTrackPlayback } from "@/hooks/useTrackPlayback";
 import { formatDuration, formatPlayCount } from "@/lib/format";
 import { MediaCover } from "@/components/cards/MediaCover";
 import type { QueueTrack } from "@/providers/AudioPlayerProvider";
+import { Link } from "react-router-dom";
 
 type TrackTag = { id: string; name: string; slug: string; kind: string };
 
@@ -18,8 +20,15 @@ interface TrackRowProps {
   playCount?: number | null;
   durationSeconds?: number | null;
   artworkUrl?: string | null;
+  recordingHref?: string;
+  playlistHref?: string;
+  playlistTitle?: string;
   tags?: TrackTag[];
+  onUpdateTitle?: (title: string) => void;
+  onUpdateArtwork?: (file: File) => void;
   onUpdateTags?: (tagSlugs: string[]) => void;
+  saving?: boolean;
+  error?: string;
   onPlay?: () => void;
   editMode?: boolean;
   canMoveUp?: boolean;
@@ -40,8 +49,15 @@ export function TrackRow({
   playCount,
   durationSeconds,
   artworkUrl,
+  recordingHref,
+  playlistHref,
+  playlistTitle,
   tags,
+  onUpdateTitle,
+  onUpdateArtwork,
   onUpdateTags,
+  saving,
+  error,
   onPlay,
   editMode,
   canMoveUp,
@@ -54,6 +70,13 @@ export function TrackRow({
 }: TrackRowProps) {
   const { isActive, isPlaying } = useTrackPlayback(editMode ? undefined : recordingId);
   const showActions = !editMode && queueTrack && shareUrl;
+  const artworkInputRef = useRef<HTMLInputElement>(null);
+  const [draftTitle, setDraftTitle] = useState(title);
+  const [localError, setLocalError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setDraftTitle(title);
+  }, [title]);
 
   function handleEditTags() {
     if (!onUpdateTags) return;
@@ -65,6 +88,22 @@ export function TrackRow({
       .map((s) => s.trim())
       .filter(Boolean);
     onUpdateTags(tagSlugs);
+  }
+
+  function saveTitleDraft() {
+    if (!onUpdateTitle) return;
+
+    const nextTitle = draftTitle.trim();
+    if (nextTitle === title) return;
+
+    if (!nextTitle) {
+      setDraftTitle(title);
+      setLocalError("Title cannot be blank.");
+      return;
+    }
+
+    setLocalError(null);
+    onUpdateTitle(nextTitle);
   }
 
   return (
@@ -91,19 +130,99 @@ export function TrackRow({
           </>
         )}
       </button>
-      <button type="button" onClick={onPlay} className="flex min-w-0 items-center gap-3 text-left">
+      <div className="flex min-w-0 items-center gap-3 text-left">
         <div className="h-10 w-10 shrink-0">
-          <MediaCover title={title} imageUrl={artworkUrl} />
+          {editMode && onUpdateArtwork ? (
+            <>
+              <button
+                type="button"
+                onClick={() => artworkInputRef.current?.click()}
+                disabled={saving}
+                className="group/art relative block h-10 w-10 overflow-hidden rounded-lg text-left disabled:opacity-60"
+                aria-label="Change track artwork"
+                title="Change track artwork"
+              >
+                <MediaCover title={title} imageUrl={artworkUrl} />
+                <span className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition group-hover/art:opacity-100">
+                  <ImagePlus size={16} className="text-white" />
+                </span>
+              </button>
+              <input
+                ref={artworkInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) onUpdateArtwork(file);
+                  event.currentTarget.value = "";
+                }}
+              />
+            </>
+          ) : (
+            <MediaCover title={title} imageUrl={artworkUrl} />
+          )}
         </div>
         <div className="min-w-0">
-          <p className={`truncate text-sm font-medium ${isActive ? "text-[var(--color-brand)]" : "text-white"}`}>
-            {title}
-          </p>
-          <p className="truncate text-xs text-[var(--color-text-muted)]">
-            {[creator, meta].filter(Boolean).join(" • ")}
-          </p>
+          {editMode && onUpdateTitle ? (
+            <input
+              value={draftTitle}
+              onChange={(event) => {
+                setDraftTitle(event.target.value);
+                setLocalError(null);
+              }}
+              onBlur={saveTitleDraft}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.currentTarget.blur();
+                }
+                if (event.key === "Escape") {
+                  setDraftTitle(title);
+                  setLocalError(null);
+                  event.currentTarget.blur();
+                }
+              }}
+              disabled={saving}
+              className="w-full min-w-0 rounded border border-transparent bg-transparent px-1 py-0.5 text-sm font-medium text-white outline-none hover:border-white/10 focus:border-[var(--color-brand)] focus:bg-black/20 disabled:opacity-70"
+            />
+          ) : (
+            recordingHref ? (
+              <Link
+                to={recordingHref}
+                className={`block truncate text-sm font-medium hover:underline ${
+                  isActive ? "text-[var(--color-brand)]" : "text-white"
+                }`}
+              >
+                {title}
+              </Link>
+            ) : (
+              <button type="button" onClick={onPlay} className="block min-w-0 text-left">
+                <p className={`truncate text-sm font-medium ${isActive ? "text-[var(--color-brand)]" : "text-white"}`}>
+                  {title}
+                </p>
+              </button>
+            )
+          )}
+          <div className="flex min-w-0 flex-wrap items-center gap-x-1 text-xs text-[var(--color-text-muted)]">
+            {creator ? <span className="truncate">{creator}</span> : null}
+            {creator && (playlistTitle || meta) ? <span aria-hidden>•</span> : null}
+            {playlistHref && playlistTitle ? (
+              <Link to={playlistHref} className="min-w-0 truncate hover:text-white hover:underline">
+                {playlistTitle}
+              </Link>
+            ) : playlistTitle ? (
+              <span className="truncate">{playlistTitle}</span>
+            ) : null}
+            {(creator || playlistTitle) && meta ? <span aria-hidden>•</span> : null}
+            {meta ? <span className="truncate">{meta}</span> : null}
+          </div>
+          {editMode && (saving || localError || error) ? (
+            <p className={`truncate text-xs ${localError || error ? "text-red-300" : "text-amber-300"}`}>
+              {localError ?? error ?? "Saving..."}
+            </p>
+          ) : null}
         </div>
-      </button>
+      </div>
       <div className="flex items-center gap-2">
         {playCount != null && playCount > 0 && (
           <span className="hidden text-xs text-[var(--color-text-subtle)] sm:inline">
