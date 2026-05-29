@@ -3,6 +3,7 @@ import { Play, Pause } from "lucide-react";
 import type { FavoriteRecordingItem, MostPlayedItem, RecentlyPlayedItem } from "@playlisted/client-sdk";
 
 import { SmartPlaylistCard } from "@/components/cards/SmartPlaylistCard";
+import { ArtistCard } from "@/components/cards/ArtistCard";
 import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
 import { RecordingActionMenu } from "@/components/media/RecordingActionMenu";
 import { EmptyState } from "@/components/feedback/EmptyState";
@@ -17,6 +18,7 @@ import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 import { useAuth } from "@/providers/AuthProvider";
 import {
   useFavoriteRecordings,
+  useFavoriteArtists,
   useFavoritePlaylists,
   useMostPlayed,
   useRecentlyPlayed,
@@ -26,18 +28,6 @@ import { useTopPlaylists } from "@/hooks/useCharts";
 // ── helpers ───────────────────────────────────────────────────────────────────
 
 type AnyTrack = FavoriteRecordingItem | MostPlayedItem | RecentlyPlayedItem;
-
-function relativeTime(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const m = Math.floor(diff / 60_000);
-  if (m < 1) return "just now";
-  if (m < 60) return `${m}m ago`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
-  const d = Math.floor(h / 24);
-  if (d < 7) return `${d}d ago`;
-  return new Date(iso).toLocaleDateString();
-}
 
 // ── personal track row ────────────────────────────────────────────────────────
 
@@ -181,6 +171,7 @@ export function FavoritesPage() {
 
   const favorites = useFavoriteRecordings();
   const favoritePlaylists = useFavoritePlaylists();
+  const favoriteArtists = useFavoriteArtists();
   const mostPlayed = useMostPlayed(20);
   const recentlyPlayed = useRecentlyPlayed(20);
   const topPlaylists = useTopPlaylists("30d", 12);
@@ -204,6 +195,7 @@ export function FavoritesPage() {
 
   const favTracks = favorites.data?.data ?? [];
   const favPlaylistItems = favoritePlaylists.data?.data ?? [];
+  const favArtistItems = favoriteArtists.data?.data ?? [];
   const mostPlayedTracks = mostPlayed.data?.data ?? [];
   const recentTracks = recentlyPlayed.data?.data ?? [];
 
@@ -238,6 +230,31 @@ export function FavoritesPage() {
       </Section>
 
       <Section
+        title="Favorite artists"
+        subtitle="Artists you've hearted"
+        loading={favoriteArtists.isLoading}
+        empty={
+          favArtistItems.length === 0
+            ? "No favorite artists yet — heart an artist to save them here"
+            : undefined
+        }
+      >
+        <div className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-5">
+          {favArtistItems.map((artist) => (
+            <ArtistCard
+              key={artist.id}
+              id={artist.id}
+              username={artist.username}
+              displayName={artist.displayName}
+              subtitle={`@${artist.username}`}
+              avatarUrl={artist.avatarUrl}
+              className="w-full"
+            />
+          ))}
+        </div>
+      </Section>
+
+      <Section
         title="Favorites"
         subtitle="Songs you've hearted"
         loading={favorites.isLoading}
@@ -248,7 +265,7 @@ export function FavoritesPage() {
             <PersonalTrackRow
               key={track.id}
               track={track}
-              badge={new Date(track.savedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+              badge={`${formatPlayCount(track.playCount)} plays`}
               allTracks={favTracks}
             />
           ))}
@@ -285,7 +302,7 @@ export function FavoritesPage() {
             <PersonalTrackRow
               key={track.id}
               track={track}
-              badge={relativeTime(track.lastPlayedAt)}
+              badge={`${formatPlayCount(track.playCount)} plays`}
               allTracks={recentTracks}
             />
           ))}

@@ -22,6 +22,7 @@ import {
   topSongToQueueTrack,
 } from "@/lib/queueTrack";
 import { coverFallback, resolveItemPath } from "@/lib/routes";
+import { formatPlayCount } from "@/lib/format";
 import { recordingShareUrl } from "@/lib/shareContent";
 
 type HomepageItem = components["schemas"]["HomepageItem"];
@@ -139,6 +140,12 @@ function HomeSongRow({
           </p>
           <p className="truncate text-xs text-[var(--color-text-muted)]">
             {song.uploader.displayName}
+            {song.playCount > 0 ? (
+              <>
+                <span className="mx-1 text-white/20">·</span>
+                {formatPlayCount(song.playCount)} plays
+              </>
+            ) : null}
           </p>
         </div>
 
@@ -557,6 +564,7 @@ export function HomePage() {
               {topArtists.data!.data.map((item) => (
                 <ArtistCard
                   key={item.userId}
+                  id={item.userId}
                   username={item.username}
                   displayName={item.displayName}
                   avatarUrl={item.avatarUrl}
@@ -615,6 +623,7 @@ export function HomePage() {
             ? editorialFeaturedArtists.map((item) => (
                 <ArtistCard
                   key={item.id}
+                  id={item.id}
                   username={usernameFromHomepageUser(item)}
                   displayName={item.title}
                   avatarUrl={item.imageUrl}
@@ -625,6 +634,7 @@ export function HomePage() {
             : (pinnedArtists.data?.data ?? []).map((item) => (
                 <ArtistCard
                   key={item.userId}
+                  id={item.userId}
                   username={item.username}
                   displayName={item.displayName}
                   avatarUrl={item.avatarUrl}
@@ -646,6 +656,7 @@ export function HomePage() {
             item.targetType === "USER" ? (
               <ArtistCard
                 key={item.id}
+                id={item.id}
                 username={usernameFromHomepageUser(item)}
                 displayName={item.title}
                 avatarUrl={item.imageUrl}
@@ -698,7 +709,7 @@ export function HomePage() {
             key={slug}
             title={name}
             subtitle={`${songs.length} song${songs.length !== 1 ? "s" : ""}`}
-            viewAllHref={`/library?view=genres&genre=${slug}`}
+            viewAllHref={`/library?genre=${encodeURIComponent(slug)}`}
             cols="grid-cols-1 sm:grid-cols-2"
           >
             {limited.map((song) => (
