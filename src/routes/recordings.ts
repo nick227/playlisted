@@ -1,6 +1,8 @@
 import { PublishStatus, RecordingType, Visibility } from "@prisma/client";
 import { Router } from "express";
 
+import { getAllGenres, getAllSubgenres } from "../utils/genresDictionary.js";
+import { requireAuth } from "../lib/requireAuth.js";
 import { prisma } from "../lib/prisma.js";
 
 const DEFAULT_PAGE = 1;
@@ -232,6 +234,110 @@ recordingsRouter.post("/", async (req, res, next) => {
       });
     }
 
+    return next(error);
+  }
+});
+
+recordingsRouter.patch("/:recordingId/tags", async (req, res, next) => {
+  try {
+    const auth = await requireAuth(req, res);
+    if (!auth) return;
+
+    const recording = await prisma.recording.findUnique({
+      where: { id: req.params.recordingId },
+      select: { id: true, uploaderId: true },
+    });
+
+    if (!recording) {
+      return res.status(404).json({
+        error: "recording_not_found",
+        message: `Recording ${req.params.recordingId} was not found.`,
+      });
+    }
+
+    if (recording.uploaderId !== auth.user.id) {
+      return res.status(403).json({
+        error: "forbidden",
+        message: "You do not have permission to update tags for this recording.",
+      });
+    }
+
+    const body = req.body as { tagSlugs?: string[] };
+    if (!Array.isArray(body.tagSlugs)) {
+      return res.status(400).json({
+        error: "invalid_request",
+        message: "tagSlugs must be an array of tag slugs.",
+      });
+    }
+
+    const distinctSlugs = Array.from(new Set(body.tagSlugs));
+    const tagInfos = distinctSlugs
+      .map((slug) => {
+        const subgenre = getAllSubgenres().find((s) => s.slug === slug);
+        if (subgenre) {
+          return { slug, name: subgenre.name, kind: "GENRE" as const };
+        }
+
+        const genre = getAllGenres().find((g) => g.slug === slug);
+        if (genre) {
+          return { slug, name: genre.name, kind: "GENRE" as const };
+        }
+
+        return undefined;
+      })
+      .filter((info): info is { slug: string; name: string; kind: "GENRE" } => Boolean(info));
+
+    if (tagInfos.length !== distinctSlugs.length) {
+      return res.status(400).json({
+        error: "invalid_tag_slugs",
+        message: "One or more tag slugs are not recognized.",
+      });
+    }
+
+    const updated = await prisma.$transaction(async (tx) => {
+      const tags = await Promise.all(
+        tagInfos.map((info) =>
+          tx.tag.upsert({
+            where: { slug: info.slug },
+            update: {},
+            create: { name: info.name, slug: info.slug, kind: info.kind },
+          }),
+        ),
+      );
+
+      await tx.recordingTag.deleteMany({ where: { recordingId: recording.id } });
+
+      if (tags.length > 0) {
+        await tx.recordingTag.createMany({
+          data: tags.map((tag) => ({ recordingId: recording.id, tagId: tag.id })),
+        });
+      }
+
+      return tx.recording.findUnique({
+        where: { id: recording.id },
+        include: {
+          tags: { include: { tag: true } },
+        },
+      });
+    });
+
+    if (!updated) {
+      return res.status(500).json({
+        error: "update_failed",
+        message: "Failed to update recording tags.",
+      });
+    }
+
+    return res.json({
+      ...mapRecordingSummary(updated),
+      tags: updated.tags.map(({ tag }) => ({
+        id: tag.id,
+        name: tag.name,
+        slug: tag.slug,
+        kind: tag.kind,
+      })),
+    });
+  } catch (error) {
     return next(error);
   }
 });

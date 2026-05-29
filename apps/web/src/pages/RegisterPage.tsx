@@ -15,7 +15,7 @@ export function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [accountKind, setAccountKind] = useState<AccountKind>("listener");
+  const [accountKind] = useState<AccountKind>("listener");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -53,37 +53,10 @@ export function RegisterPage() {
     <div>
       <h2 className="text-3xl font-extrabold tracking-tight text-white">Start your journey</h2>
       <p className="mt-2 text-sm text-[var(--color-text-muted)]">
-        Free to join. Upload tracks, build playlists, and grow your audience.
+        Free to join. Upload tracks, listen to music, and hang out.
       </p>
 
       <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-        <div className="grid grid-cols-2 gap-3">
-          <button
-            type="button"
-            onClick={() => setAccountKind("listener")}
-            className={`rounded-xl border px-4 py-4 text-left transition ${
-              accountKind === "listener"
-                ? "border-[var(--color-brand)] bg-[var(--color-brand)]/15"
-                : "border-[var(--color-border)] hover:border-white/20"
-            }`}
-          >
-            <p className="text-sm font-bold text-white">Listener</p>
-            <p className="mt-1 text-xs text-[var(--color-text-muted)]">Save, follow, discover</p>
-          </button>
-          <button
-            type="button"
-            onClick={() => setAccountKind("artist")}
-            className={`rounded-xl border px-4 py-4 text-left transition ${
-              accountKind === "artist"
-                ? "border-[var(--color-brand)] bg-[var(--color-brand)]/15"
-                : "border-[var(--color-border)] hover:border-white/20"
-            }`}
-          >
-            <p className="text-sm font-bold text-white">Artist</p>
-            <p className="mt-1 text-xs text-[var(--color-text-muted)]">Upload & manage releases</p>
-          </button>
-        </div>
-
         <AuthField
           label="Display name"
           name="displayName"

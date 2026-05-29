@@ -92,9 +92,9 @@ playlistsRouter.get("/:playlistId", async (req, res, next) => {
       const auth = await requireAuth(req, res);
       if (!auth) return;
       if (auth.user.id !== playlist.ownerId) {
-        return res.status(404).json({
-          error: "playlist_not_found",
-          message: `Playlist ${req.params.playlistId} was not found.`,
+        return res.status(403).json({
+          error: "forbidden",
+          message: "You do not have access to this playlist.",
         });
       }
     }
@@ -227,6 +227,39 @@ playlistsRouter.patch("/:playlistId", async (req, res, next) => {
     return next(error);
   }
 });
+
+// Set playlist tags (genres/subgenres)
+playlistsRouter.put("/:playlistId/tags", async (req, res, next) => {
+  try {
+    const auth = await requireAuth(req, res);
+    if (!auth) return;
+
+    const access = await assertPlaylistOwner(req.params.playlistId, auth.user.id);
+    if (access.error === "not_found") {
+      return res.status(404).json({ error: "playlist_not_found", message: `Playlist ${req.params.playlistId} was not found.` });
+    }
+    if (access.error === "forbidden") {
+      return res.status(403).json({ error: "forbidden", message: "You do not own this playlist." });
+    }
+
+    const body = req.body as { tagIds: string[] };
+    // Remove existing tags
+    await prisma.playlistTag.deleteMany({ where: { playlistId: req.params.playlistId } });
+
+    if (Array.isArray(body.tagIds) && body.tagIds.length > 0) {
+      await prisma.playlistTag.createMany({
+        data: body.tagIds.map(tagId => ({ playlistId: req.params.playlistId, tagId })),
+        skipDuplicates: true,
+      });
+    }
+
+    const playlist = await loadPlaylistDetail(req.params.playlistId);
+    return res.json(mapPlaylistDetail(playlist!));
+  } catch (error) {
+    return next(error);
+  }
+});
+
 
 playlistsRouter.post("/:playlistId/items", async (req, res, next) => {
   try {

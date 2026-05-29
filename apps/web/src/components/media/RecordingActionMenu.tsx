@@ -1,10 +1,11 @@
-import { ListPlus, ListMusic, Share2 } from "lucide-react";
+import { Heart, ListPlus, ListMusic, Share2 } from "lucide-react";
 import { useState } from "react";
 
 import { MediaActionMenu } from "@/components/media/MediaActionMenu";
 import { AddToPlaylistDialog } from "@/components/playlists/AddToPlaylistDialog";
 import { useAppendToQueue } from "@/hooks/useAppendToQueue";
 import { useAuthAction } from "@/hooks/useAuthAction";
+import { useFavoriteIds, useToggleFavorite } from "@/hooks/useFavorites";
 import { shareContent } from "@/lib/shareContent";
 import type { QueueTrack } from "@/providers/AudioPlayerProvider";
 
@@ -25,8 +26,11 @@ export function RecordingActionMenu({
 }: RecordingActionMenuProps) {
   const { appendTrack } = useAppendToQueue();
   const requireAuth = useAuthAction();
+  const { ids: favoriteIds } = useFavoriteIds();
+  const { add: addFavorite, remove: removeFavorite } = useToggleFavorite();
   const [saveOpen, setSaveOpen] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const isFavorited = favoriteIds.has(recordingId);
 
   function flash(message: string) {
     setFeedback(message);
@@ -61,6 +65,24 @@ export function RecordingActionMenu({
         void shareContent(shareUrl, title).then((result) => {
           if (result === "copied") flash("Link copied");
           else if (result === "shared") flash("Shared");
+        });
+      },
+    },
+    {
+      id: "favorite",
+      label: isFavorited ? "Remove favorite" : "Favorite",
+      icon: <Heart size={16} fill={isFavorited ? "currentColor" : "none"} />,
+      onClick: () => {
+        requireAuth(() => {
+          if (isFavorited) {
+            removeFavorite.mutate(recordingId, {
+              onSuccess: () => flash("Removed from favorites"),
+            });
+          } else {
+            addFavorite.mutate(recordingId, {
+              onSuccess: () => flash("Added to favorites"),
+            });
+          }
         });
       },
     },

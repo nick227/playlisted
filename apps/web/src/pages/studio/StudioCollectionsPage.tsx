@@ -1,24 +1,36 @@
+import type { CollectionPlaylistItem, components } from "@playlisted/client-sdk";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 
 import { EmptyState } from "@/components/feedback/EmptyState";
 import { Skeleton } from "@/components/feedback/Skeleton";
 import { authedApi } from "@/lib/authedApi";
-import { studioCollectionEditPath } from "@/lib/routes";
+import { playlistPath, studioCollectionEditPath } from "@/lib/routes";
 import { useAuth } from "@/providers/AuthProvider";
 
 const typeOptions = [
   { value: "PLAYLIST" as const, label: "Collection" },
 ];
 
+type PlaylistSummary = components["schemas"]["PlaylistSummary"];
+type StudioCollectionListItem = (PlaylistSummary | CollectionPlaylistItem) & {
+  listSource: "owned" | "followed";
+};
+
 export function StudioCollectionsPage() {
   const { user, accessToken } = useAuth();
   const client = authedApi(accessToken);
   const queryClient = useQueryClient();
 
-  const { data, isLoading } = useQuery({
+  const ownedCollectionsQuery = useQuery({
     queryKey: ["me", "playlists"],
     queryFn: () => client.me.playlists(),
+    enabled: Boolean(accessToken),
+  });
+
+  const followedCollectionsQuery = useQuery({
+    queryKey: ["me", "collections", "playlists", 100],
+    queryFn: () => client.me.collectionPlaylists({ pageSize: 100 }),
     enabled: Boolean(accessToken),
   });
 
@@ -37,7 +49,24 @@ export function StudioCollectionsPage() {
     },
   });
 
-  if (isLoading) {
+  const removeCollectionMutation = useMutation({
+    mutationFn: (playlistId: string) => client.me.removeCollectionPlaylist(playlistId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["me", "collections", "playlists"] });
+    },
+  });
+
+  const ownedCollections = ownedCollectionsQuery.data?.data ?? [];
+  const ownedCollectionIds = new Set(ownedCollections.map((playlist) => playlist.id));
+  const followedCollections =
+    followedCollectionsQuery.data?.data.filter((playlist) => !ownedCollectionIds.has(playlist.id)) ?? [];
+  const collections: StudioCollectionListItem[] = [
+    ...ownedCollections.map((playlist) => ({ ...playlist, listSource: "owned" as const })),
+    ...followedCollections.map((playlist) => ({ ...playlist, listSource: "followed" as const })),
+  ];
+  const removingCollectionId = removeCollectionMutation.variables;
+
+  if (ownedCollectionsQuery.isLoading || followedCollectionsQuery.isLoading) {
     return <Skeleton className="h-48 w-full" />;
   }
 
@@ -45,7 +74,7 @@ export function StudioCollectionsPage() {
     <div className="mx-auto max-w-4xl">
       <h1 className="text-3xl font-extrabold text-white">Your collections</h1>
       <p className="mt-2 text-sm text-[var(--color-text-muted)]">
-        Albums, playlists, and podcast channels — edit with the same layout fans will see.
+        Albums, playlists, podcast channels, and collections you follow.
       </p>
 
       <div className="mt-8 flex flex-wrap gap-2">
@@ -62,26 +91,54 @@ export function StudioCollectionsPage() {
         ))}
       </div>
 
-      {!data?.data.length ? (
+      {!collections.length ? (
         <div className="mt-10">
-          <EmptyState title="No collections yet" description="Create an album or playlist to get started." />
+          <EmptyState title="No collections yet" description="Create or follow a collection to get started." />
         </div>
       ) : (
         <ul className="mt-10 flex flex-col gap-2">
-          {data.data.map((playlist) => (
+          {collections.map((playlist) => (
             <li key={playlist.id}>
-              <Link
-                to={studioCollectionEditPath(playlist.id)}
+              <div
                 className="flex items-center justify-between rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-4 transition hover:border-white/20"
               >
-                <div>
+                <Link
+                  to={
+                    playlist.listSource === "owned"
+                      ? studioCollectionEditPath(playlist.id)
+                      : playlistPath({
+                          id: playlist.id,
+                          href: playlist.href,
+                          username: playlist.owner.username,
+                          slug: playlist.slug,
+                        })
+                  }
+                  className="min-w-0 flex-1"
+                >
                   <p className="font-semibold text-white">{playlist.title}</p>
                   <p className="text-xs text-[var(--color-text-muted)]">
                     {playlist.type} • {playlist.status} • {playlist.itemCount} tracks
+                    {playlist.listSource === "followed" ? ` • by ${playlist.owner.displayName}` : ""}
                   </p>
-                </div>
-                <span className="text-sm text-[var(--color-brand)]">Edit</span>
-              </Link>
+                </Link>
+                {playlist.listSource === "owned" ? (
+                  <Link
+                    to={studioCollectionEditPath(playlist.id)}
+                    className="ml-4 text-sm text-[var(--color-brand)]"
+                  >
+                    Edit
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => removeCollectionMutation.mutate(playlist.id)}
+                    disabled={removeCollectionMutation.isPending}
+                    className="ml-4 text-sm font-medium text-[var(--color-text-muted)] hover:text-white disabled:opacity-60"
+                  >
+                    {removingCollectionId === playlist.id ? "Removing..." : "Unfollow"}
+                  </button>
+                )}
+              </div>
             </li>
           ))}
         </ul>

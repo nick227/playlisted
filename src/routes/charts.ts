@@ -23,7 +23,12 @@ function mapTopSongItem(
     createdAt: Date;
     updatedAt: Date;
     uploader: { id: string; username: string; displayName: string; avatarUrl: string | null; role: string };
-    publishedPlaylist: { id: string; title: string; slug: string };
+    publishedPlaylist: {
+      id: string;
+      title: string;
+      slug: string;
+      owner: { id: string; username: string; displayName: string; avatarUrl: string | null; role: string };
+    };
   },
   rank: number,
   playCount: number,
@@ -62,7 +67,14 @@ chartsRouter.get("/top-songs", async (req, res, next) => {
         take: limit,
         include: {
           uploader: { select: { id: true, username: true, displayName: true, avatarUrl: true, role: true } },
-          publishedPlaylist: { select: { id: true, title: true, slug: true } },
+          publishedPlaylist: {
+            select: {
+              id: true,
+              title: true,
+              slug: true,
+              owner: { select: { id: true, username: true, displayName: true, avatarUrl: true, role: true } },
+            },
+          },
         },
       });
       return res.json({
@@ -84,7 +96,14 @@ chartsRouter.get("/top-songs", async (req, res, next) => {
       where: { id: { in: recordingIds }, visibility: "PUBLIC", status: "PUBLISHED" },
       include: {
         uploader: { select: { id: true, username: true, displayName: true, avatarUrl: true, role: true } },
-        publishedPlaylist: { select: { id: true, title: true, slug: true } },
+        publishedPlaylist: {
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+            owner: { select: { id: true, username: true, displayName: true, avatarUrl: true, role: true } },
+          },
+        },
       },
     });
 

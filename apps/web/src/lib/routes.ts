@@ -12,18 +12,18 @@ export function panelPathForRole(role: AuthUser["role"]): string | null {
 }
 
 export function playlistIdPath(id: string): string {
-  return `/playlists/${id}`;
+  return `/playlists/${encodeURIComponent(id)}`;
 }
 
 export function playlistPath(playlist: {
   id: string;
+  href?: string | null;
   slug?: string | null;
-  owner?: { username?: string | null } | null;
+  username?: string | null;
 }): string {
-  const username = playlist.owner?.username;
-  const slug = playlist.slug;
-  if (username && slug) {
-    return `/@${encodeURIComponent(username)}/${encodeURIComponent(slug)}`;
+  if (playlist.href) return playlist.href;
+  if (playlist.username && playlist.slug) {
+    return `/@/${encodeURIComponent(playlist.username)}/${encodeURIComponent(playlist.slug)}`;
   }
   return playlistIdPath(playlist.id);
 }
@@ -34,7 +34,7 @@ export function memberPath(userId: string): string {
 
 export function profilePath(username: string): string {
   const clean = username.replace(/^@/, "");
-  return `/@${encodeURIComponent(clean)}`;
+  return `/@/${encodeURIComponent(clean)}`;
 }
 
 export function studioCollectionEditPath(playlistId: string): string {
@@ -42,8 +42,10 @@ export function studioCollectionEditPath(playlistId: string): string {
 }
 
 export function resolveItemPath(item: HomepageItem): string {
-  if (item.targetType === "PLAYLIST") return playlistIdPath(item.id);
+  if (item.targetType === "PLAYLIST") return item.href;
   if (item.targetType === "USER") {
+    const match = item.href.match(/^\/@\/?([^/]+)/);
+    if (match?.[1]) return profilePath(decodeURIComponent(match[1]));
     const username = item.subtitle?.replace(/^@/, "") ?? item.id;
     return profilePath(username);
   }

@@ -33,6 +33,7 @@ function mapUserDetail(user: any) {
     ...mapUserSummary(user),
     publicPlaylists: (user.ownedPlaylists ?? []).map((playlist: any) => ({
       id: playlist.id,
+      href: `/@/${encodeURIComponent(user.username)}/${encodeURIComponent(playlist.slug)}`,
       ownerId: playlist.ownerId,
       title: playlist.title,
       slug: playlist.slug,
@@ -151,10 +152,16 @@ usersRouter.get("/by-username/:username/playlists/:slug", async (req, res, next)
 
     if (playlist.visibility === "PRIVATE" || playlist.status !== "PUBLISHED") {
       const auth = await getAuthContextFromRequest(req);
-      if (!auth || auth.user.id !== playlist.ownerId) {
-        return res.status(404).json({
-          error: "playlist_not_found",
-          message: `Playlist @${username}/${slug} was not found.`,
+      if (!auth) {
+        return res.status(401).json({
+          error: "unauthorized",
+          message: "You must be logged in to view this playlist.",
+        });
+      }
+      if (auth.user.id !== playlist.ownerId) {
+        return res.status(403).json({
+          error: "forbidden",
+          message: "You do not have access to this playlist.",
         });
       }
     }

@@ -1,14 +1,17 @@
 import { Heart } from "lucide-react";
+import { useEffect, useState } from "react";
 
 import { useAuthAction } from "@/hooks/useAuthAction";
 import {
   useFavoriteIds,
+  useFavoriteArtistIds,
   useFavoritePlaylistIds,
   useToggleFavorite,
+  useToggleFavoriteArtist,
   useToggleFavoritePlaylist,
 } from "@/hooks/useFavorites";
 
-type FavoriteTarget = "recording" | "playlist";
+type FavoriteTarget = "recording" | "playlist" | "artist";
 
 type FavoriteHeartButtonProps = {
   target: FavoriteTarget;
@@ -26,27 +29,50 @@ export function FavoriteHeartButton({
   const requireAuth = useAuthAction();
   const { ids: recordingIds } = useFavoriteIds();
   const { ids: playlistIds } = useFavoritePlaylistIds();
+  const { ids: artistIds } = useFavoriteArtistIds();
   const { add: addRecording, remove: removeRecording } = useToggleFavorite();
   const { add: addPlaylist, remove: removePlaylist } = useToggleFavoritePlaylist();
+  const { add: addArtist, remove: removeArtist } = useToggleFavoriteArtist();
 
-  const isFavorited =
-    target === "recording" ? recordingIds.has(id) : playlistIds.has(id);
+  const serverFavorited =
+    target === "recording"
+      ? recordingIds.has(id)
+      : target === "playlist"
+        ? playlistIds.has(id)
+        : artistIds.has(id);
   const pending =
     target === "recording"
       ? addRecording.isPending || removeRecording.isPending
-      : addPlaylist.isPending || removePlaylist.isPending;
+      : target === "playlist"
+        ? addPlaylist.isPending || removePlaylist.isPending
+        : addArtist.isPending || removeArtist.isPending;
+  const [optimisticFavorited, setOptimisticFavorited] = useState<boolean | null>(null);
+  const isFavorited = optimisticFavorited ?? serverFavorited;
+
+  useEffect(() => {
+    if (!pending && optimisticFavorited === serverFavorited) {
+      setOptimisticFavorited(null);
+    }
+  }, [optimisticFavorited, pending, serverFavorited]);
 
   function handleClick(e: React.MouseEvent) {
     e.stopPropagation();
     e.preventDefault();
     requireAuth(() => {
+      const nextFavorited = !isFavorited;
+      setOptimisticFavorited(nextFavorited);
+      const reset = () => setOptimisticFavorited(serverFavorited);
+
       if (target === "recording") {
-        if (isFavorited) removeRecording.mutate(id);
-        else addRecording.mutate(id);
+        if (isFavorited) removeRecording.mutate(id, { onError: reset });
+        else addRecording.mutate(id, { onError: reset });
       } else if (isFavorited) {
-        removePlaylist.mutate(id);
+        if (target === "playlist") removePlaylist.mutate(id, { onError: reset });
+        else removeArtist.mutate(id, { onError: reset });
+      } else if (target === "playlist") {
+        addPlaylist.mutate(id, { onError: reset });
       } else {
-        addPlaylist.mutate(id);
+        addArtist.mutate(id, { onError: reset });
       }
     });
   }
@@ -62,8 +88,8 @@ export function FavoriteHeartButton({
       aria-pressed={isFavorited}
       className={[
         isInline
-          ? "shrink-0 rounded-full p-1.5 transition"
-          : "flex h-7 w-7 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm transition",
+          ? "grid shrink-0 place-items-center rounded-full p-1.5 transition"
+          : "grid h-8 w-8 place-items-center rounded-full bg-black/60 backdrop-blur-sm transition hover:bg-black/75",
         isFavorited
           ? "text-rose-500 hover:text-rose-400"
           : isInline
@@ -71,9 +97,14 @@ export function FavoriteHeartButton({
             : "text-white/80 hover:text-white",
         isInline && !isFavorited ? "opacity-0 group-hover/card:opacity-100 focus:opacity-100" : "opacity-100",
         className,
+        !isInline ? "!absolute !bottom-2 !right-2 !left-auto !top-auto z-30" : "",
       ].join(" ")}
     >
-      <Heart size={isInline ? 15 : 14} fill={isFavorited ? "currentColor" : "none"} />
+      <Heart
+        size={isInline ? 15 : 14}
+        fill={isFavorited ? "currentColor" : "none"}
+        className="block"
+      />
     </button>
   );
 }

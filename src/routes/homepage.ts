@@ -66,7 +66,7 @@ homepageRouter.get("/", async (_req, res, next) => {
           subtitle: feature.subtitleOverride ?? feature.user.username,
           description: feature.description ?? feature.user.bio,
           imageUrl: feature.imageUrl ?? feature.user.avatarUrl ?? feature.user.heroImageUrl,
-          href: `/@${feature.user.username}`,
+          href: `/@/${encodeURIComponent(feature.user.username)}`,
         };
       } else if (feature.editorialPost) {
         item = {

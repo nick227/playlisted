@@ -51,7 +51,7 @@ export function QueuePanel() {
     <>
       <button
         type="button"
-        className="fixed inset-0 z-[60] bg-black/50"
+        className="fixed inset-0 z-[60] bg-transparent"
         onClick={() => setQueueOpen(false)}
         aria-label="Close queue"
       />

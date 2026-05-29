@@ -24,7 +24,9 @@ export interface CollectionViewProps {
   onDescriptionChange?: (description: string) => void;
   onCoverClick?: () => void;
   onAddTracks?: () => void;
-  onAddCollectionToPlaylist?: () => void;
+  onAddCollection?: () => void;
+  collectionAddPending?: boolean;
+  collectionAdded?: boolean;
   onRemoveTrack?: (recordingId: string) => void;
   onMoveTrackUp?: (recordingId: string) => void;
   onMoveTrackDown?: (recordingId: string) => void;
@@ -57,7 +59,9 @@ export function CollectionView({
   onDescriptionChange,
   onCoverClick,
   onAddTracks,
-  onAddCollectionToPlaylist,
+  onAddCollection,
+  collectionAddPending = false,
+  collectionAdded = false,
   onRemoveTrack,
   onMoveTrackUp,
   onMoveTrackDown,
@@ -258,14 +262,15 @@ export function CollectionView({
                   <Pencil size={18} />
                 </Link>
               ) : null}
-              {onAddCollectionToPlaylist ? (
+              {onAddCollection ? (
                 <button
                   type="button"
-                  onClick={onAddCollectionToPlaylist}
+                  onClick={onAddCollection}
+                  disabled={collectionAddPending || collectionAdded}
                   className="inline-flex items-center gap-2 rounded-full border border-white/20 px-5 py-2.5 text-sm font-medium text-white hover:bg-white/10"
                 >
                   <Plus size={18} />
-                  Add to playlist
+                  {collectionAdded ? "In collections" : collectionAddPending ? "Adding..." : "Add to collections"}
                 </button>
               ) : null}
             </div>

@@ -82,6 +82,7 @@ export function SearchPage() {
           {userResults.map((u) => (
             <ArtistCard
               key={u.id}
+              id={u.id}
               username={u.username}
               displayName={u.displayName}
               subtitle={`@${u.username}`}

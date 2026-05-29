@@ -36,14 +36,14 @@ export function PlaylistCard({
 
   return (
     <div className={`group/card flex flex-col gap-2 ${className ?? "w-40 shrink-0"}`}>
-      <div className="relative">
+      <div className="relative aspect-square max-h-[160px]">
         <Link to={path} className="block transition hover:opacity-90">
           <MediaCover title={title} imageUrl={coverArtUrl} onPlay={onPlay} />
         </Link>
         {showActions ? (
           <>
             <PlaylistActionMenu
-              className="absolute right-1.5 top-1.5 z-20"
+              className="absolute right-1.5 top-1 z-20"
               playlistId={id}
               title={title}
               ownerUsername={ownerUsername}
@@ -52,7 +52,6 @@ export function PlaylistCard({
             <FavoriteHeartButton
               target="playlist"
               id={id}
-              className="absolute left-1.5 top-1.5 z-20"
             />
           </>
         ) : null}

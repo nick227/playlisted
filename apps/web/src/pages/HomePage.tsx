@@ -272,6 +272,10 @@ function mergeUniqueHomepageItems(...lists: HomepageItem[][]): HomepageItem[] {
   return merged;
 }
 
+function completeRows<T>(items: T[], columns: number): T[] {
+  return items.slice(0, items.length - (items.length % columns));
+}
+
 function HomepageEditorialCard({ item }: { item: HomepageItem }) {
   if (item.targetType === "USER") {
     return (
@@ -354,13 +358,8 @@ export function HomePage() {
   );
 
   const newReleasesSection = useMemo(
-    () => newReleases.filter((i) => !editorPickGridIds.has(i.id)),
+    () => completeRows(newReleases.filter((i) => !editorPickGridIds.has(i.id)), 4),
     [newReleases, editorPickGridIds],
-  );
-
-  const customMixesSection = useMemo(
-    () => customMixes.filter((i) => !editorPickGridIds.has(i.id)),
-    [customMixes, editorPickGridIds],
   );
 
   // Featured playlists
@@ -656,14 +655,6 @@ export function HomePage() {
       {newReleasesSection.length > 0 && (
         <HomeSection title="New Releases" cols="grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
           {newReleasesSection.map((item) => (
-            <HomepageEditorialCard key={item.id} item={item} />
-          ))}
-        </HomeSection>
-      )}
-
-      {customMixesSection.length > 0 && (
-        <HomeSection title="Custom Mix" cols="grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
-          {customMixesSection.map((item) => (
             <HomepageEditorialCard key={item.id} item={item} />
           ))}
         </HomeSection>

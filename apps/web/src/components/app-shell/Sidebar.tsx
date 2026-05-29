@@ -1,6 +1,7 @@
 import { BookOpen, Heart, Home, ListMusic, Lock, Plus, Settings } from "lucide-react";
 import { NavLink } from "react-router-dom";
 
+import { useCollectionPlaylists } from "@/hooks/useCollections";
 import { usePlaylists } from "@/hooks/usePlaylists";
 import { ADMIN_PATH, panelPathForRole, playlistPath } from "@/lib/routes";
 import { useAuth } from "@/providers/AuthProvider";
@@ -38,8 +39,13 @@ function NavItem({ to, label, icon: Icon }: { to: string; label: string; icon: t
 
 export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
   const { user } = useAuth();
-  const { data } = usePlaylists(12, user?.id);
+  const { data: ownedCollections } = usePlaylists(12, user?.id);
+  const { data: savedCollections } = useCollectionPlaylists(12);
   const panelPath = user ? panelPathForRole(user.role) : null;
+  const collections = [
+    ...(ownedCollections?.data ?? []),
+    ...(savedCollections?.data ?? []),
+  ].filter((playlist, index, all) => all.findIndex((item) => item.id === playlist.id) === index);
 
   return (
     <>
@@ -116,7 +122,7 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
               Collections
             </p>
             <div className="flex flex-col gap-0.5">
-              {data?.data.map((playlist) => (
+              {collections.map((playlist) => (
                 <NavLink
                   key={playlist.id}
                   to={playlistPath({

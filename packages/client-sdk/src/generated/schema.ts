@@ -158,6 +158,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/collections/playlists": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List playlists saved to the current user's collections */
+        get: operations["listCollectionPlaylists"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/collections/playlists/{playlistId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add a playlist to the current user's collections */
+        post: operations["addCollectionPlaylist"];
+        /** Remove a playlist from the current user's collections */
+        delete: operations["removeCollectionPlaylist"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me/favorites/playlists": {
         parameters: {
             query?: never;
@@ -188,6 +223,41 @@ export interface paths {
         post: operations["addFavoritePlaylist"];
         /** Remove a playlist from favorites */
         delete: operations["removeFavoritePlaylist"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/favorites/artists": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the current user's favorited artists */
+        get: operations["listFavoriteArtists"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/favorites/artists/{artistId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add an artist to favorites */
+        post: operations["addFavoriteArtist"];
+        /** Remove an artist from favorites */
+        delete: operations["removeFavoriteArtist"];
         options?: never;
         head?: never;
         patch?: never;
@@ -389,6 +459,23 @@ export interface paths {
         };
         /** List all public published songs, optionally filtered by genre */
         get: operations["getLibrarySongs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/library/artists": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List all artists with public published songs */
+        get: operations["getLibraryArtists"];
         put?: never;
         post?: never;
         delete?: never;
@@ -638,6 +725,129 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List all tags (admin) */
+        get: operations["adminListTags"];
+        put?: never;
+        /** Create a tag (admin) */
+        post: operations["adminCreateTag"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/tags/bulk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Bulk create tags from a list, skipping duplicates (admin) */
+        post: operations["adminBulkCreateTags"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/tags/{tagId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete a tag (admin) */
+        delete: operations["adminDeleteTag"];
+        options?: never;
+        head?: never;
+        /** Update a tag (admin) */
+        patch: operations["adminUpdateTag"];
+        trace?: never;
+    };
+    "/api/v1/admin/homepage-features": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List all homepage features including inactive (admin) */
+        get: operations["adminListHomepageFeatures"];
+        put?: never;
+        /** Create a homepage feature (admin) */
+        post: operations["adminCreateHomepageFeature"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/homepage-features/{featureId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete a homepage feature (admin) */
+        delete: operations["adminDeleteHomepageFeature"];
+        options?: never;
+        head?: never;
+        /** Update a homepage feature (admin) */
+        patch: operations["adminUpdateHomepageFeature"];
+        trace?: never;
+    };
+    "/api/v1/admin/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List all users with full details including email (admin) */
+        get: operations["adminListUsers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/users/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update a user's role, status, or featured flag (admin) */
+        patch: operations["adminUpdateUser"];
         trace?: never;
     };
 }
@@ -1081,6 +1291,7 @@ export interface components {
             id: string;
             title: string;
             slug: string;
+            owner: components["schemas"]["ChartArtistRef"];
         };
         TopSongItem: {
             rank: number;
@@ -1178,6 +1389,11 @@ export interface components {
             slug: string;
             songCount: number;
         };
+        SongGenreRef: {
+            id: string;
+            name: string;
+            slug: string;
+        };
         LibraryGenresResponse: {
             data: components["schemas"]["LibraryGenre"][];
         };
@@ -1216,11 +1432,33 @@ export interface components {
             updatedAt: string;
             uploader: components["schemas"]["ChartArtistRef"];
             playlist: components["schemas"]["LibraryPlaylistRef"];
-            genres: components["schemas"]["LibraryGenre"][];
+            genres: components["schemas"]["SongGenreRef"][];
         };
         LibrarySongsResponse: {
             data: components["schemas"]["LibrarySong"][];
             meta: components["schemas"]["PaginationMeta"];
+        };
+        LibraryArtistGenre: {
+            id: string;
+            name: string;
+            slug: string;
+        };
+        LibraryArtistYearRange: {
+            earliest: number | null;
+            latest: number | null;
+        };
+        LibraryArtist: {
+            id: string;
+            username: string;
+            displayName: string;
+            /** Format: uri-reference */
+            avatarUrl?: string | null;
+            songCount: number;
+            genres: components["schemas"]["LibraryArtistGenre"][];
+            yearRange: components["schemas"]["LibraryArtistYearRange"];
+        };
+        LibraryArtistsResponse: {
+            data: components["schemas"]["LibraryArtist"][];
         };
         PersonalTrackItem: {
             id: string;
@@ -1280,6 +1518,34 @@ export interface components {
             /** Format: date-time */
             savedAt: string;
         };
+        CollectionPlaylistItem: components["schemas"]["PlaylistSummary"] & {
+            /** Format: date-time */
+            savedAt: string;
+        };
+        CollectionPlaylistsResponse: {
+            data: components["schemas"]["CollectionPlaylistItem"][];
+            meta: components["schemas"]["PaginationMeta"];
+        };
+        CollectionPlaylistSavedResponse: {
+            id: string;
+            playlistId: string;
+            /** Format: date-time */
+            savedAt: string;
+        };
+        FavoriteArtistItem: components["schemas"]["UserSummary"] & {
+            /** Format: date-time */
+            savedAt: string;
+        };
+        FavoriteArtistsResponse: {
+            data: components["schemas"]["FavoriteArtistItem"][];
+            meta: components["schemas"]["PaginationMeta"];
+        };
+        FavoriteArtistSavedResponse: {
+            id: string;
+            artistId: string;
+            /** Format: date-time */
+            savedAt: string;
+        };
         MostPlayedItem: components["schemas"]["PersonalTrackItem"] & {
             userPlayCount: number;
         };
@@ -1292,6 +1558,115 @@ export interface components {
         };
         RecentlyPlayedResponse: {
             data: components["schemas"]["RecentlyPlayedItem"][];
+        };
+        AdminTag: {
+            id: string;
+            name: string;
+            slug: string;
+            kind: components["schemas"]["TagKind"];
+            /** Format: date-time */
+            createdAt: string;
+        };
+        AdminTagListResponse: {
+            data: components["schemas"]["AdminTag"][];
+        };
+        AdminCreateTagRequest: {
+            name: string;
+            kind?: components["schemas"]["TagKind"];
+        };
+        AdminUpdateTagRequest: {
+            name?: string;
+            kind?: components["schemas"]["TagKind"];
+        };
+        AdminBulkCreateTagItem: {
+            name: string;
+            kind?: components["schemas"]["TagKind"];
+        };
+        AdminBulkCreateTagsRequest: components["schemas"]["AdminBulkCreateTagItem"][];
+        AdminBulkCreateTagsResponse: {
+            created: number;
+            skipped: number;
+            skippedNames: string[];
+        };
+        AdminHomepageFeatureRef: {
+            id: string;
+            title: string;
+            /** Format: uri-reference */
+            coverArtUrl?: string | null;
+        };
+        AdminHomepageUserRef: {
+            id: string;
+            username: string;
+            displayName: string;
+            /** Format: uri-reference */
+            avatarUrl?: string | null;
+        };
+        /** @enum {string} */
+        AdminHomepageSection: "FEATURED_PLAYLIST" | "CUSTOM_MIX" | "NEW_RELEASE" | "NEW_ARTIST" | "TRENDING" | "EDITOR_PICK" | "SITE_NEWS";
+        AdminHomepageFeature: {
+            id: string;
+            section: components["schemas"]["AdminHomepageSection"];
+            position: number;
+            titleOverride?: string | null;
+            subtitleOverride?: string | null;
+            description?: string | null;
+            /** Format: uri-reference */
+            imageUrl?: string | null;
+            isActive: boolean;
+            /** Format: date-time */
+            startsAt?: string | null;
+            /** Format: date-time */
+            endsAt?: string | null;
+            playlistId?: string | null;
+            userId?: string | null;
+            editorialPostId?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            playlist?: components["schemas"]["AdminHomepageFeatureRef"] | null;
+            user?: components["schemas"]["AdminHomepageUserRef"] | null;
+        };
+        AdminHomepageFeatureListResponse: {
+            data: components["schemas"]["AdminHomepageFeature"][];
+        };
+        AdminCreateHomepageFeatureRequest: {
+            section: components["schemas"]["AdminHomepageSection"];
+            position?: number;
+            titleOverride?: string | null;
+            subtitleOverride?: string | null;
+            description?: string | null;
+            /** Format: uri-reference */
+            imageUrl?: string | null;
+            /** @default true */
+            isActive: boolean;
+            /** Format: date-time */
+            startsAt?: string | null;
+            /** Format: date-time */
+            endsAt?: string | null;
+            playlistId?: string | null;
+            userId?: string | null;
+        };
+        AdminUpdateHomepageFeatureRequest: {
+            section?: components["schemas"]["AdminHomepageSection"];
+            position?: number;
+            titleOverride?: string | null;
+            subtitleOverride?: string | null;
+            description?: string | null;
+            /** Format: uri-reference */
+            imageUrl?: string | null;
+            isActive?: boolean;
+            /** Format: date-time */
+            startsAt?: string | null;
+            /** Format: date-time */
+            endsAt?: string | null;
+            playlistId?: string | null;
+            userId?: string | null;
+        };
+        AdminUpdateUserRequest: {
+            role?: components["schemas"]["UserRole"];
+            status?: components["schemas"]["UserStatus"];
+            isFeaturedArtist?: boolean;
         };
     };
     responses: never;
@@ -1612,6 +1987,116 @@ export interface operations {
             };
         };
     };
+    listCollectionPlaylists: {
+        parameters: {
+            query?: {
+                page?: components["parameters"]["Page"];
+                pageSize?: components["parameters"]["PageSize"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Saved collection playlists */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CollectionPlaylistsResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    addCollectionPlaylist: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                playlistId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Already owned or already saved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CollectionPlaylistSavedResponse"];
+                };
+            };
+            /** @description Saved */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CollectionPlaylistSavedResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Playlist not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    removeCollectionPlaylist: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                playlistId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Removed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     listFavoritePlaylists: {
         parameters: {
             query?: {
@@ -1690,6 +2175,116 @@ export interface operations {
             header?: never;
             path: {
                 playlistId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Removed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listFavoriteArtists: {
+        parameters: {
+            query?: {
+                page?: components["parameters"]["Page"];
+                pageSize?: components["parameters"]["PageSize"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Favorite artists */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FavoriteArtistsResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    addFavoriteArtist: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artistId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Saved */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FavoriteArtistSavedResponse"];
+                };
+            };
+            /** @description Invalid favorite request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Artist not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    removeFavoriteArtist: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artistId: string;
             };
             cookie?: never;
         };
@@ -2045,6 +2640,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LibrarySongsResponse"];
+                };
+            };
+        };
+    };
+    getLibraryArtists: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Artist list */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryArtistsResponse"];
                 };
             };
         };
@@ -2819,6 +3434,525 @@ export interface operations {
                 };
             };
             /** @description Recording not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    adminListTags: {
+        parameters: {
+            query?: {
+                kind?: components["schemas"]["TagKind"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Tag list */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminTagListResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    adminCreateTag: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminCreateTagRequest"];
+            };
+        };
+        responses: {
+            /** @description Created tag */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminTag"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    adminBulkCreateTags: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminBulkCreateTagsRequest"];
+            };
+        };
+        responses: {
+            /** @description Import result */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminBulkCreateTagsResponse"];
+                };
+            };
+            /** @description Bad request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    adminDeleteTag: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tagId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    adminUpdateTag: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tagId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminUpdateTagRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated tag */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminTag"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    adminListHomepageFeatures: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Feature list */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminHomepageFeatureListResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    adminCreateHomepageFeature: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminCreateHomepageFeatureRequest"];
+            };
+        };
+        responses: {
+            /** @description Created feature */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminHomepageFeature"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    adminDeleteHomepageFeature: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                featureId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    adminUpdateHomepageFeature: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                featureId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminUpdateHomepageFeatureRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated feature */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminHomepageFeature"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    adminListUsers: {
+        parameters: {
+            query?: {
+                page?: components["parameters"]["Page"];
+                pageSize?: components["parameters"]["PageSize"];
+                role?: components["schemas"]["UserRole"];
+                status?: components["schemas"]["UserStatus"];
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description User list */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserListResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    adminUpdateUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminUpdateUserRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated user */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserSummary"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found */
             404: {
                 headers: {
                     [name: string]: unknown;

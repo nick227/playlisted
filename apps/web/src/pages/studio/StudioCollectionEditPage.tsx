@@ -278,7 +278,7 @@ export function StudioCollectionEditPage() {
 
   if (isLoading || !playlist) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 max-w-4xl mx-auto">
         <Skeleton className="h-64 w-full max-w-md rounded-2xl" />
         <Skeleton className="h-8 w-64" />
       </div>

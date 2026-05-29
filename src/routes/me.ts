@@ -12,6 +12,21 @@ const UPLOADER_SELECT = {
   id: true, username: true, displayName: true, avatarUrl: true, role: true,
 } as const;
 
+const ARTIST_SELECT = {
+  id: true,
+  email: true,
+  username: true,
+  displayName: true,
+  bio: true,
+  avatarUrl: true,
+  heroImageUrl: true,
+  role: true,
+  status: true,
+  isFeaturedArtist: true,
+  createdAt: true,
+  updatedAt: true,
+} as const;
+
 function mapRecordingWithUploader(r: any) {
   return {
     id: r.id,
@@ -36,6 +51,15 @@ function mapRecordingWithUploader(r: any) {
     createdAt: r.createdAt.toISOString(),
     updatedAt: r.updatedAt.toISOString(),
     uploader: r.uploader,
+  };
+}
+
+function mapFavoriteArtist(follow: any) {
+  return {
+    ...follow.following,
+    createdAt: follow.following.createdAt.toISOString(),
+    updatedAt: follow.following.updatedAt.toISOString(),
+    savedAt: follow.createdAt.toISOString(),
   };
 }
 
@@ -314,6 +338,90 @@ const PLAYLIST_FAVORITE_INCLUDE = {
   tags: { include: { tag: true } },
 } as const;
 
+meRouter.get("/collections/playlists", async (req, res, next) => {
+  try {
+    const auth = await requireAuth(req, res);
+    if (!auth) return;
+
+    const page = Number(req.query.page ?? DEFAULT_PAGE);
+    const pageSize = Number(req.query.pageSize ?? DEFAULT_PAGE_SIZE);
+    const where = { userId: auth.user.id, kind: "LIBRARY" as const };
+
+    const [saves, total] = await Promise.all([
+      prisma.playlistSave.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        include: {
+          playlist: { include: PLAYLIST_FAVORITE_INCLUDE },
+        },
+      }),
+      prisma.playlistSave.count({ where }),
+    ]);
+
+    return res.json({
+      data: saves.map((s) => ({
+        ...mapPlaylistSummary(s.playlist),
+        savedAt: s.createdAt.toISOString(),
+      })),
+      meta: { page, pageSize, total },
+    });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+meRouter.post("/collections/playlists/:playlistId", async (req, res, next) => {
+  try {
+    const auth = await requireAuth(req, res);
+    if (!auth) return;
+
+    const { playlistId } = req.params;
+    const playlist = await prisma.playlist.findUnique({
+      where: { id: playlistId },
+      select: { id: true, ownerId: true },
+    });
+
+    if (!playlist) {
+      return res.status(404).json({ error: "playlist_not_found", message: "Playlist not found." });
+    }
+
+    if (playlist.ownerId === auth.user.id) {
+      return res.status(200).json({
+        id: playlist.id,
+        playlistId: playlist.id,
+        savedAt: new Date().toISOString(),
+      });
+    }
+
+    const save = await prisma.playlistSave.upsert({
+      where: { userId_playlistId_kind: { userId: auth.user.id, playlistId, kind: "LIBRARY" } },
+      create: { userId: auth.user.id, playlistId, kind: "LIBRARY" },
+      update: {},
+    });
+
+    return res.status(201).json({ id: save.id, playlistId: save.playlistId, savedAt: save.createdAt.toISOString() });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+meRouter.delete("/collections/playlists/:playlistId", async (req, res, next) => {
+  try {
+    const auth = await requireAuth(req, res);
+    if (!auth) return;
+
+    await prisma.playlistSave.deleteMany({
+      where: { userId: auth.user.id, playlistId: req.params.playlistId, kind: "LIBRARY" },
+    });
+
+    return res.status(204).send();
+  } catch (error) {
+    return next(error);
+  }
+});
+
 meRouter.get("/favorites/playlists", async (req, res, next) => {
   try {
     const auth = await requireAuth(req, res);
@@ -382,6 +490,90 @@ meRouter.delete("/favorites/playlists/:playlistId", async (req, res, next) => {
 
     await prisma.playlistSave.deleteMany({
       where: { userId: auth.user.id, playlistId: req.params.playlistId, kind: "FAVORITE" },
+    });
+
+    return res.status(204).send();
+  } catch (error) {
+    return next(error);
+  }
+});
+
+meRouter.get("/favorites/artists", async (req, res, next) => {
+  try {
+    const auth = await requireAuth(req, res);
+    if (!auth) return;
+
+    const page = Number(req.query.page ?? DEFAULT_PAGE);
+    const pageSize = Number(req.query.pageSize ?? DEFAULT_PAGE_SIZE);
+    const where = { followerId: auth.user.id };
+
+    const [follows, total] = await Promise.all([
+      prisma.userFollow.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        include: {
+          following: { select: ARTIST_SELECT },
+        },
+      }),
+      prisma.userFollow.count({ where }),
+    ]);
+
+    return res.json({
+      data: follows.map(mapFavoriteArtist),
+      meta: { page, pageSize, total },
+    });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+meRouter.post("/favorites/artists/:artistId", async (req, res, next) => {
+  try {
+    const auth = await requireAuth(req, res);
+    if (!auth) return;
+
+    const { artistId } = req.params;
+    if (artistId === auth.user.id) {
+      return res.status(400).json({
+        error: "cannot_favorite_self",
+        message: "You cannot add yourself to favorites.",
+      });
+    }
+
+    const artist = await prisma.user.findUnique({
+      where: { id: artistId },
+      select: { id: true },
+    });
+
+    if (!artist) {
+      return res.status(404).json({ error: "artist_not_found", message: "Artist not found." });
+    }
+
+    const follow = await prisma.userFollow.upsert({
+      where: { followerId_followingId: { followerId: auth.user.id, followingId: artistId } },
+      create: { followerId: auth.user.id, followingId: artistId },
+      update: {},
+    });
+
+    return res.status(201).json({
+      id: follow.id,
+      artistId: follow.followingId,
+      savedAt: follow.createdAt.toISOString(),
+    });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+meRouter.delete("/favorites/artists/:artistId", async (req, res, next) => {
+  try {
+    const auth = await requireAuth(req, res);
+    if (!auth) return;
+
+    await prisma.userFollow.deleteMany({
+      where: { followerId: auth.user.id, followingId: req.params.artistId },
     });
 
     return res.status(204).send();

@@ -22,3 +22,19 @@ export function useLibrarySongs(genreSlug?: string | null) {
     staleTime: 2 * 60_000,
   });
 }
+
+export function useLibraryArtists() {
+  return useQuery({
+    queryKey: ["library", "artists"],
+    queryFn: () => api.library.artists(),
+    staleTime: 5 * 60_000,
+  });
+}
+
+export function useLibraryPlaylists() {
+  return useQuery({
+    queryKey: ["library", "playlists"],
+    queryFn: () => api.playlists.list({ pageSize: 50 }),
+    staleTime: 2 * 60_000,
+  });
+}

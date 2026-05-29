@@ -25,7 +25,7 @@ export function mapPlaybackHistoryItem(event: {
     createdAt: Date;
     updatedAt: Date;
   };
-  playlist: { id: string; title: string } | null;
+  playlist: { id: string; title: string; owner?: { username?: string | null } | null; slug?: string | null } | null;
 }) {
   return {
     id: event.id.toString(),
@@ -54,6 +54,15 @@ export function mapPlaybackHistoryItem(event: {
       createdAt: event.recording.createdAt.toISOString(),
       updatedAt: event.recording.updatedAt.toISOString(),
     },
-    playlist: event.playlist,
+    playlist: event.playlist
+      ? {
+          id: event.playlist.id,
+          title: event.playlist.title,
+          href:
+            event.playlist.owner?.username && event.playlist.slug
+              ? `/@/${encodeURIComponent(event.playlist.owner.username)}/${encodeURIComponent(event.playlist.slug)}`
+              : `/playlists/${encodeURIComponent(event.playlist.id)}`,
+        }
+      : null,
   };
 }

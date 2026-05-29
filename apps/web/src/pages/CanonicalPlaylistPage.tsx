@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import { SmartPlaylistCard } from "@/components/cards/SmartPlaylistCard";
@@ -7,7 +7,7 @@ import type { CollectionRecording } from "@/components/collection/collectionType
 import { ContentRow } from "@/components/discovery/ContentRow";
 import { PlaylistAccessEmptyState } from "@/components/feedback/PlaylistAccessEmptyState";
 import { Skeleton } from "@/components/feedback/Skeleton";
-import { AddToPlaylistDialog } from "@/components/playlists/AddToPlaylistDialog";
+import { useAddCollectionPlaylist, useCollectionPlaylists } from "@/hooks/useCollections";
 import { usePlaylistByUsernameSlug } from "@/hooks/usePlaylistByUsernameSlug";
 import { usePlaylists } from "@/hooks/usePlaylists";
 import { playlistPath } from "@/lib/routes";
@@ -19,8 +19,9 @@ export function CanonicalPlaylistPage() {
   const { data: playlist, isLoading, isError, error } = usePlaylistByUsernameSlug(username, slug);
   const { data: related } = usePlaylists(6);
   const { setQueue, togglePlay, playbackContext, state } = useAudioPlayer();
-  const { status } = useAuth();
-  const [addOpen, setAddOpen] = useState(false);
+  const { status, user } = useAuth();
+  const savedCollections = useCollectionPlaylists(100);
+  const addCollection = useAddCollectionPlaylist();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -39,7 +40,7 @@ export function CanonicalPlaylistPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 max-w-4xl mx-auto">
         <Skeleton className="h-64 w-full max-w-md rounded-2xl" />
         <Skeleton className="h-8 w-64" />
         <Skeleton className="h-48 w-full" />
@@ -64,6 +65,8 @@ export function CanonicalPlaylistPage() {
   const playlistHasCurrent = playbackContext.playlistId === pl.id;
   const playlistIsPlaying = playlistHasCurrent && state === "playing";
   const playlistIsPaused = playlistHasCurrent && state === "paused";
+  const isInCollections =
+    user?.id === pl.ownerId || (savedCollections.data?.data.some((item) => item.id === pl.id) ?? false);
 
   function playAll(shuffle = false) {
     if (playlistHasCurrent) {
@@ -99,14 +102,11 @@ export function CanonicalPlaylistPage() {
         onPlayTrack={playRecording}
         playlistIsPlaying={playlistIsPlaying}
         playlistIsPaused={playlistIsPaused}
-        onAddCollectionToPlaylist={status === "authenticated" ? () => setAddOpen(true) : undefined}
-      />
-
-      <AddToPlaylistDialog
-        open={addOpen}
-        onClose={() => setAddOpen(false)}
-        recordingIds={pl.recordings.map((r) => r.id)}
-        title={`Add "${pl.title}" (${pl.itemCount} tracks)`}
+        onAddCollection={
+          status === "authenticated" ? () => addCollection.mutate(pl.id) : undefined
+        }
+        collectionAddPending={addCollection.isPending}
+        collectionAdded={isInCollections}
       />
 
       {related && related.data.length > 0 ? (

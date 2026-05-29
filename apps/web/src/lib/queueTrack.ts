@@ -39,7 +39,7 @@ export function chartItemPlaybackContext(item: TopSongItem): PlaybackContext {
     sourceContext: "charts",
     playlistId: item.playlist.id,
     playlistSlug: item.playlist.slug,
-    playlistOwnerUsername: item.uploader.username,
+    playlistOwnerUsername: item.playlist.owner.username,
   };
 }
 

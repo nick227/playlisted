@@ -3,7 +3,7 @@ import { Link, Outlet } from "react-router-dom";
 export function AuthLayout() {
   return (
     <div className="flex min-h-full flex-col lg:flex-row">
-      <section className="relative flex flex-1 flex-col justify-between overflow-hidden bg-[#0a0d12] px-8 py-10 lg:min-h-screen lg:px-14 lg:py-14">
+      <section className="relative flex flex-1 flex-col align-center justify-between overflow-hidden bg-[#0a0d12] px-8 py-10 lg:min-h-screen lg:px-14 lg:py-14">
         <div
           className="pointer-events-none absolute -left-32 top-0 h-96 w-96 rounded-full bg-[var(--color-brand)]/30 blur-3xl"
           aria-hidden

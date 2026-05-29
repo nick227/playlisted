@@ -3,7 +3,7 @@ import { ChevronDown, ChevronUp, Pause, Play, X } from "lucide-react";
 import { RecordingActionMenu } from "@/components/media/RecordingActionMenu";
 import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
 import { useTrackPlayback } from "@/hooks/useTrackPlayback";
-import { formatDuration } from "@/lib/format";
+import { formatDuration, formatPlayCount } from "@/lib/format";
 import { MediaCover } from "@/components/cards/MediaCover";
 import type { QueueTrack } from "@/providers/AudioPlayerProvider";
 
@@ -15,6 +15,7 @@ interface TrackRowProps {
   title: string;
   creator?: string | null;
   meta?: string | null;
+  playCount?: number | null;
   durationSeconds?: number | null;
   artworkUrl?: string | null;
   tags?: TrackTag[];
@@ -36,6 +37,7 @@ export function TrackRow({
   title,
   creator,
   meta,
+  playCount,
   durationSeconds,
   artworkUrl,
   tags,
@@ -103,6 +105,11 @@ export function TrackRow({
         </div>
       </button>
       <div className="flex items-center gap-2">
+        {playCount != null && playCount > 0 && (
+          <span className="hidden text-xs text-[var(--color-text-subtle)] sm:inline">
+            {formatPlayCount(playCount)} plays
+          </span>
+        )}
         <span className="text-xs text-[var(--color-text-muted)]">{formatDuration(durationSeconds)}</span>
         {editMode ? (
           <>

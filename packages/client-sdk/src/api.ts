@@ -3,7 +3,9 @@ import { createPlaylistedClient, type PlaylistedClientOptions, type RawPlayliste
 
 export type HealthResponse = components["schemas"]["HealthResponse"];
 export type HomepageResponse = components["schemas"]["HomepageResponse"];
+export type UserSummary = components["schemas"]["UserSummary"];
 export type UserListResponse = components["schemas"]["UserListResponse"];
+export type PlaylistSummary = components["schemas"]["PlaylistSummary"];
 export type UserDetail = components["schemas"]["UserDetail"];
 export type PlaylistListResponse = components["schemas"]["PlaylistListResponse"];
 export type PlaylistDetail = components["schemas"]["PlaylistDetail"];
@@ -40,6 +42,10 @@ export type FavoriteRecordingItem = components["schemas"]["FavoriteRecordingItem
 export type FavoriteRecordingsResponse = components["schemas"]["FavoriteRecordingsResponse"];
 export type FavoritePlaylistItem = components["schemas"]["FavoritePlaylistItem"];
 export type FavoritePlaylistsResponse = components["schemas"]["FavoritePlaylistsResponse"];
+export type CollectionPlaylistItem = components["schemas"]["CollectionPlaylistItem"];
+export type CollectionPlaylistsResponse = components["schemas"]["CollectionPlaylistsResponse"];
+export type FavoriteArtistItem = components["schemas"]["FavoriteArtistItem"];
+export type FavoriteArtistsResponse = components["schemas"]["FavoriteArtistsResponse"];
 export type MostPlayedItem = components["schemas"]["MostPlayedItem"];
 export type MostPlayedResponse = components["schemas"]["MostPlayedResponse"];
 export type RecentlyPlayedItem = components["schemas"]["RecentlyPlayedItem"];
@@ -48,6 +54,31 @@ export type LibraryGenre = components["schemas"]["LibraryGenre"];
 export type LibrarySong = components["schemas"]["LibrarySong"];
 export type LibraryGenresResponse = components["schemas"]["LibraryGenresResponse"];
 export type LibrarySongsResponse = components["schemas"]["LibrarySongsResponse"];
+
+export type AdminTag = components["schemas"]["AdminTag"];
+export type AdminTagListResponse = components["schemas"]["AdminTagListResponse"];
+export type AdminCreateTagRequest = components["schemas"]["AdminCreateTagRequest"];
+export type AdminUpdateTagRequest = components["schemas"]["AdminUpdateTagRequest"];
+export type AdminBulkCreateTagItem = components["schemas"]["AdminBulkCreateTagItem"];
+export type AdminBulkCreateTagsResponse = components["schemas"]["AdminBulkCreateTagsResponse"];
+export type AdminHomepageFeature = components["schemas"]["AdminHomepageFeature"];
+export type AdminHomepageFeatureListResponse = components["schemas"]["AdminHomepageFeatureListResponse"];
+export type AdminCreateHomepageFeatureRequest = components["schemas"]["AdminCreateHomepageFeatureRequest"];
+export type AdminUpdateHomepageFeatureRequest = components["schemas"]["AdminUpdateHomepageFeatureRequest"];
+export type AdminUpdateUserRequest = components["schemas"]["AdminUpdateUserRequest"];
+export type AdminHomepageSection = components["schemas"]["AdminHomepageSection"];
+
+export type LibraryArtistGenre = { id: string; name: string; slug: string };
+export type LibraryArtist = {
+  id: string;
+  username: string;
+  displayName: string;
+  avatarUrl: string | null;
+  songCount: number;
+  genres: LibraryArtistGenre[];
+  yearRange: { earliest: number | null; latest: number | null };
+};
+export type LibraryArtistsResponse = { data: LibraryArtist[] };
 
 export type ListUsersQuery = NonNullable<operations["listUsers"]["parameters"]["query"]>;
 export type ListPlaylistsQuery = NonNullable<operations["listPlaylists"]["parameters"]["query"]>;
@@ -60,6 +91,19 @@ export type AnalyticsRecordingsQuery = { range?: ChartRange; sortBy?: "plays" | 
 export interface PlaylistedApi {
   readonly raw: RawPlaylistedClient;
   withOptions(options: Partial<PlaylistedClientOptions>): PlaylistedApi;
+  admin: {
+    listTags(query?: { kind?: string }): Promise<AdminTagListResponse>;
+    createTag(body: AdminCreateTagRequest): Promise<AdminTag>;
+    updateTag(tagId: string, body: AdminUpdateTagRequest): Promise<AdminTag>;
+    deleteTag(tagId: string): Promise<void>;
+    bulkCreateTags(items: AdminBulkCreateTagItem[]): Promise<AdminBulkCreateTagsResponse>;
+    listHomepageFeatures(): Promise<AdminHomepageFeatureListResponse>;
+    createHomepageFeature(body: AdminCreateHomepageFeatureRequest): Promise<AdminHomepageFeature>;
+    updateHomepageFeature(featureId: string, body: AdminUpdateHomepageFeatureRequest): Promise<AdminHomepageFeature>;
+    deleteHomepageFeature(featureId: string): Promise<void>;
+    listUsers(query?: { page?: number; pageSize?: number; role?: string; status?: string; q?: string }): Promise<UserListResponse>;
+    updateUser(userId: string, body: AdminUpdateUserRequest): Promise<UserSummary>;
+  };
   auth: {
     register(body: RegisterRequest): Promise<AuthResponse>;
     login(body: LoginRequest): Promise<AuthResponse>;
@@ -92,6 +136,12 @@ export interface PlaylistedApi {
     favoritePlaylists(query?: { page?: number; pageSize?: number }): Promise<FavoritePlaylistsResponse>;
     addFavoritePlaylist(playlistId: string): Promise<{ id: string; playlistId: string; savedAt: string }>;
     removeFavoritePlaylist(playlistId: string): Promise<void>;
+    collectionPlaylists(query?: { page?: number; pageSize?: number }): Promise<CollectionPlaylistsResponse>;
+    addCollectionPlaylist(playlistId: string): Promise<{ id: string; playlistId: string; savedAt: string }>;
+    removeCollectionPlaylist(playlistId: string): Promise<void>;
+    favoriteArtists(query?: { page?: number; pageSize?: number }): Promise<FavoriteArtistsResponse>;
+    addFavoriteArtist(artistId: string): Promise<{ id: string; artistId: string; savedAt: string }>;
+    removeFavoriteArtist(artistId: string): Promise<void>;
     mostPlayed(query?: { limit?: number }): Promise<MostPlayedResponse>;
     recentlyPlayed(query?: { limit?: number }): Promise<RecentlyPlayedResponse>;
   };
@@ -122,6 +172,7 @@ export interface PlaylistedApi {
   library: {
     genres(): Promise<LibraryGenresResponse>;
     songs(query?: { genre?: string; page?: number; pageSize?: number }): Promise<LibrarySongsResponse>;
+    artists(): Promise<LibraryArtistsResponse>;
   };
 }
 
@@ -233,6 +284,62 @@ export function createPlaylistedApi(options: PlaylistedClientOptions = {}): Play
     raw,
     withOptions(nextOptions) {
       return createPlaylistedApi(mergeOptions(options, nextOptions));
+    },
+    admin: {
+      listTags(query: { kind?: string } = {}) {
+        return unwrap(
+          raw.GET("/api/v1/admin/tags", { params: { query: query as { kind?: AdminCreateTagRequest["kind"] } } }),
+          "Failed to load tags.",
+        );
+      },
+      createTag(body) {
+        return unwrap(raw.POST("/api/v1/admin/tags", { body }), "Failed to create tag.");
+      },
+      bulkCreateTags(items) {
+        return unwrap(raw.POST("/api/v1/admin/tags/bulk", { body: items }), "Failed to bulk import tags.");
+      },
+      updateTag(tagId, body) {
+        return unwrap(
+          raw.PATCH("/api/v1/admin/tags/{tagId}", { params: { path: { tagId } }, body }),
+          "Failed to update tag.",
+        );
+      },
+      deleteTag(tagId) {
+        return unwrap(
+          raw.DELETE("/api/v1/admin/tags/{tagId}", { params: { path: { tagId } } }),
+          "Failed to delete tag.",
+        ).then(() => undefined);
+      },
+      listHomepageFeatures() {
+        return unwrap(raw.GET("/api/v1/admin/homepage-features"), "Failed to load homepage features.");
+      },
+      createHomepageFeature(body) {
+        return unwrap(raw.POST("/api/v1/admin/homepage-features", { body }), "Failed to create homepage feature.");
+      },
+      updateHomepageFeature(featureId, body) {
+        return unwrap(
+          raw.PATCH("/api/v1/admin/homepage-features/{featureId}", { params: { path: { featureId } }, body }),
+          "Failed to update homepage feature.",
+        );
+      },
+      deleteHomepageFeature(featureId) {
+        return unwrap(
+          raw.DELETE("/api/v1/admin/homepage-features/{featureId}", { params: { path: { featureId } } }),
+          "Failed to delete homepage feature.",
+        ).then(() => undefined);
+      },
+      listUsers(query = {}) {
+        return unwrap(
+          raw.GET("/api/v1/admin/users", { params: { query: query as any } }),
+          "Failed to load users.",
+        );
+      },
+      updateUser(userId, body) {
+        return unwrap(
+          raw.PATCH("/api/v1/admin/users/{userId}", { params: { path: { userId } }, body }),
+          "Failed to update user.",
+        );
+      },
     },
     auth: {
       register(body) {
@@ -370,6 +477,50 @@ export function createPlaylistedApi(options: PlaylistedClientOptions = {}): Play
             params: { path: { playlistId } },
           }),
           "Failed to remove favorite playlist.",
+        ).then(() => undefined);
+      },
+      collectionPlaylists(query = {}) {
+        return unwrap(
+          raw.GET("/api/v1/me/collections/playlists", { params: { query } }),
+          "Failed to load collection playlists.",
+        );
+      },
+      addCollectionPlaylist(playlistId) {
+        return unwrap(
+          raw.POST("/api/v1/me/collections/playlists/{playlistId}", {
+            params: { path: { playlistId } },
+          }),
+          "Failed to add collection.",
+        );
+      },
+      removeCollectionPlaylist(playlistId) {
+        return unwrap(
+          raw.DELETE("/api/v1/me/collections/playlists/{playlistId}", {
+            params: { path: { playlistId } },
+          }),
+          "Failed to remove collection.",
+        ).then(() => undefined);
+      },
+      favoriteArtists(query = {}) {
+        return unwrap(
+          raw.GET("/api/v1/me/favorites/artists", { params: { query } }),
+          "Failed to load favorite artists.",
+        );
+      },
+      addFavoriteArtist(artistId) {
+        return unwrap(
+          raw.POST("/api/v1/me/favorites/artists/{artistId}", {
+            params: { path: { artistId } },
+          }),
+          "Failed to add favorite artist.",
+        );
+      },
+      removeFavoriteArtist(artistId) {
+        return unwrap(
+          raw.DELETE("/api/v1/me/favorites/artists/{artistId}", {
+            params: { path: { artistId } },
+          }),
+          "Failed to remove favorite artist.",
         ).then(() => undefined);
       },
       mostPlayed(query = {}) {
@@ -519,6 +670,15 @@ export function createPlaylistedApi(options: PlaylistedClientOptions = {}): Play
           raw.GET("/api/v1/library/songs", { params: { query } }),
           "Failed to load library songs.",
         );
+      },
+      async artists(): Promise<LibraryArtistsResponse> {
+        const base = options.baseUrl ?? "";
+        const res = await fetch(`${base}/api/v1/library/artists`);
+        if (!res.ok) {
+          const body = await res.json().catch(() => undefined);
+          throw new PlaylistedApiError("Failed to load library artists.", res.status, res, body);
+        }
+        return res.json() as Promise<LibraryArtistsResponse>;
       },
     },
   };

@@ -98,6 +98,18 @@ export type SeedSave = {
   kind: SaveKind;
 };
 
+export type SeedUserPlaybackEvent = {
+  userKey: string;
+  recordingKey: string;
+  playlistKey?: string;
+  sourceContext?: string;
+  count?: number;
+  playedSeconds?: number;
+  completed?: boolean;
+  daysAgoStart?: number;
+  daysAgoEnd?: number;
+};
+
 export type SeedEditorial = {
   key: string;
   authorKey: string;
@@ -106,6 +118,7 @@ export type SeedEditorial = {
   slug: string;
   summary?: string;
   body: string;
+  coverImageFile?: string;
   status?: PublishStatus;
   publishedAt?: string;
 };
@@ -129,6 +142,7 @@ export type SeedData = {
   collections: SeedCollection[];
   playlists: SeedPlaylist[];
   saves?: SeedSave[];
+  userPlaybackEvents?: SeedUserPlaybackEvent[];
   editorial?: SeedEditorial[];
   homepageFeatures?: SeedHomepageFeature[];
 };

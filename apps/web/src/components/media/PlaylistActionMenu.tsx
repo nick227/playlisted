@@ -1,9 +1,10 @@
-import { ListPlus, Share2 } from "lucide-react";
+import { Library, ListPlus, Share2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { MediaActionMenu } from "@/components/media/MediaActionMenu";
 import { useAppendToQueue } from "@/hooks/useAppendToQueue";
 import { useAuthAction } from "@/hooks/useAuthAction";
+import { useAddCollectionPlaylist, useCollectionPlaylists } from "@/hooks/useCollections";
 import { usePlaylist } from "@/hooks/usePlaylist";
 import { playlistShareUrl, shareContent } from "@/lib/shareContent";
 import type { QueueTrack } from "@/providers/AudioPlayerProvider";
@@ -36,7 +37,10 @@ export function PlaylistActionMenu({
   const { data: playlist } = usePlaylist(playlistId);
   const { appendTracks } = useAppendToQueue();
   const requireAuth = useAuthAction();
+  const collectionPlaylists = useCollectionPlaylists();
+  const addCollectionPlaylist = useAddCollectionPlaylist();
   const [feedback, setFeedback] = useState<string | null>(null);
+  const isSaved = collectionPlaylists.data?.data.some((item) => item.id === playlistId) ?? false;
 
   const shareUrl = useMemo(
     () => playlistShareUrl({ id: playlistId, username: ownerUsername, slug }),
@@ -50,8 +54,21 @@ export function PlaylistActionMenu({
 
   const items = [
     {
+      id: "save-playlist",
+      label: isSaved ? "Saved playlist" : "Save playlist",
+      icon: <Library size={16} />,
+      disabled: isSaved,
+      onClick: () => {
+        requireAuth(() => {
+          addCollectionPlaylist.mutate(playlistId, {
+            onSuccess: () => flash("Saved playlist"),
+          });
+        });
+      },
+    },
+    {
       id: "queue-all",
-      label: "Add all to queue",
+      label: "Add playlist to queue",
       icon: <ListPlus size={16} />,
       disabled: !playlist?.recordings.length,
       onClick: () => {

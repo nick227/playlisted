@@ -21,6 +21,7 @@ tags:
   - name: Users
   - name: Playlists
   - name: Recordings
+  - name: Admin
 paths:
   /api/v1/health:
     get:
@@ -249,6 +250,90 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /api/v1/me/collections/playlists:
+    get:
+      tags: [Me]
+      operationId: listCollectionPlaylists
+      summary: List playlists saved to the current user's collections
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Saved collection playlists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CollectionPlaylistsResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/me/collections/playlists/{playlistId}:
+    post:
+      tags: [Me]
+      operationId: addCollectionPlaylist
+      summary: Add a playlist to the current user's collections
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: playlistId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Already owned or already saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CollectionPlaylistSavedResponse'
+        '201':
+          description: Saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CollectionPlaylistSavedResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Playlist not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags: [Me]
+      operationId: removeCollectionPlaylist
+      summary: Remove a playlist from the current user's collections
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: playlistId
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Removed
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /api/v1/me/favorites/playlists:
     get:
       tags: [Me]
@@ -314,6 +399,90 @@ paths:
       parameters:
         - in: path
           name: playlistId
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Removed
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/me/favorites/artists:
+    get:
+      tags: [Me]
+      operationId: listFavoriteArtists
+      summary: List the current user's favorited artists
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Favorite artists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FavoriteArtistsResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/me/favorites/artists/{artistId}:
+    post:
+      tags: [Me]
+      operationId: addFavoriteArtist
+      summary: Add an artist to favorites
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: artistId
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FavoriteArtistSavedResponse'
+        '400':
+          description: Invalid favorite request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Artist not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags: [Me]
+      operationId: removeFavoriteArtist
+      summary: Remove an artist from favorites
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: artistId
           required: true
           schema:
             type: string
@@ -635,6 +804,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LibrarySongsResponse'
+
+  /api/v1/library/artists:
+    get:
+      tags: [Library]
+      operationId: getLibraryArtists
+      summary: List all artists with public published songs
+      responses:
+        '200':
+          description: Artist list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LibraryArtistsResponse'
 
   /api/v1/users:
     get:
@@ -1283,6 +1465,415 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /api/v1/admin/tags:
+    get:
+      tags: [Admin]
+      operationId: adminListTags
+      summary: List all tags (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: kind
+          schema:
+            $ref: '#/components/schemas/TagKind'
+      responses:
+        '200':
+          description: Tag list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminTagListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags: [Admin]
+      operationId: adminCreateTag
+      summary: Create a tag (admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminCreateTagRequest'
+      responses:
+        '201':
+          description: Created tag
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminTag'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/admin/tags/bulk:
+    post:
+      tags: [Admin]
+      operationId: adminBulkCreateTags
+      summary: Bulk create tags from a list, skipping duplicates (admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminBulkCreateTagsRequest'
+      responses:
+        '201':
+          description: Import result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminBulkCreateTagsResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/admin/tags/{tagId}:
+    patch:
+      tags: [Admin]
+      operationId: adminUpdateTag
+      summary: Update a tag (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: tagId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminUpdateTagRequest'
+      responses:
+        '200':
+          description: Updated tag
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminTag'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags: [Admin]
+      operationId: adminDeleteTag
+      summary: Delete a tag (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: tagId
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/admin/homepage-features:
+    get:
+      tags: [Admin]
+      operationId: adminListHomepageFeatures
+      summary: List all homepage features including inactive (admin)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Feature list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminHomepageFeatureListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags: [Admin]
+      operationId: adminCreateHomepageFeature
+      summary: Create a homepage feature (admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminCreateHomepageFeatureRequest'
+      responses:
+        '201':
+          description: Created feature
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminHomepageFeature'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/admin/homepage-features/{featureId}:
+    patch:
+      tags: [Admin]
+      operationId: adminUpdateHomepageFeature
+      summary: Update a homepage feature (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: featureId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminUpdateHomepageFeatureRequest'
+      responses:
+        '200':
+          description: Updated feature
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminHomepageFeature'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags: [Admin]
+      operationId: adminDeleteHomepageFeature
+      summary: Delete a homepage feature (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: featureId
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/admin/users:
+    get:
+      tags: [Admin]
+      operationId: adminListUsers
+      summary: List all users with full details including email (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+        - in: query
+          name: role
+          schema:
+            $ref: '#/components/schemas/UserRole'
+        - in: query
+          name: status
+          schema:
+            $ref: '#/components/schemas/UserStatus'
+        - in: query
+          name: q
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/admin/users/{userId}:
+    patch:
+      tags: [Admin]
+      operationId: adminUpdateUser
+      summary: Update a user's role, status, or featured flag (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminUpdateUserRequest'
+      responses:
+        '200':
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSummary'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
 components:
   securitySchemes:
     bearerAuth:
@@ -1522,7 +2113,6 @@ components:
 
     UserSummary:
       type: object
-      additionalProperties: false
       required:
         [id, email, username, displayName, role, status, isFeaturedArtist, createdAt, updatedAt]
       properties:
@@ -1845,7 +2435,6 @@ components:
 
     PlaylistSummary:
       type: object
-      additionalProperties: false
       required:
         [id, href, ownerId, title, slug, type, visibility, status, featured, isPinnedOnProfile, itemCount, totalDurationSeconds, createdAt, updatedAt, owner]
       properties:
@@ -2237,7 +2826,7 @@ components:
     ChartPlaylistRef:
       type: object
       additionalProperties: false
-      required: [id, title, slug]
+      required: [id, title, slug, owner]
       properties:
         id:
           type: string
@@ -2245,6 +2834,8 @@ components:
           type: string
         slug:
           type: string
+        owner:
+          $ref: '#/components/schemas/ChartArtistRef'
 
     TopSongItem:
       type: object
@@ -2466,6 +3057,18 @@ components:
         songCount:
           type: integer
 
+    SongGenreRef:
+      type: object
+      additionalProperties: false
+      required: [id, name, slug]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+
     LibraryGenresResponse:
       type: object
       additionalProperties: false
@@ -2548,7 +3151,7 @@ components:
         genres:
           type: array
           items:
-            $ref: '#/components/schemas/LibraryGenre'
+            $ref: '#/components/schemas/SongGenreRef'
 
     LibrarySongsResponse:
       type: object
@@ -2562,9 +3165,63 @@ components:
         meta:
           $ref: '#/components/schemas/PaginationMeta'
 
-    PersonalTrackItem:
+    LibraryArtistGenre:
       type: object
       additionalProperties: false
+      required: [id, name, slug]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+
+    LibraryArtistYearRange:
+      type: object
+      additionalProperties: false
+      required: [earliest, latest]
+      properties:
+        earliest:
+          type: [integer, 'null']
+        latest:
+          type: [integer, 'null']
+
+    LibraryArtist:
+      type: object
+      additionalProperties: false
+      required: [id, username, displayName, songCount, genres, yearRange]
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        displayName:
+          type: string
+        avatarUrl:
+          type: [string, 'null']
+          format: uri-reference
+        songCount:
+          type: integer
+        genres:
+          type: array
+          items:
+            $ref: '#/components/schemas/LibraryArtistGenre'
+        yearRange:
+          $ref: '#/components/schemas/LibraryArtistYearRange'
+
+    LibraryArtistsResponse:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/LibraryArtist'
+
+    PersonalTrackItem:
+      type: object
       required: [id, uploaderId, publishedPlaylistId, title, audioUrl, recordingType, visibility, status, explicit, playCount, createdAt, updatedAt, uploader]
       properties:
         id:
@@ -2622,7 +3279,6 @@ components:
       allOf:
         - $ref: '#/components/schemas/PersonalTrackItem'
         - type: object
-          additionalProperties: false
           required: [savedAt]
           properties:
             savedAt:
@@ -2658,7 +3314,6 @@ components:
       allOf:
         - $ref: '#/components/schemas/PlaylistSummary'
         - type: object
-          additionalProperties: false
           required: [savedAt]
           properties:
             savedAt:
@@ -2690,11 +3345,80 @@ components:
           type: string
           format: date-time
 
+    CollectionPlaylistItem:
+      allOf:
+        - $ref: '#/components/schemas/PlaylistSummary'
+        - type: object
+          required: [savedAt]
+          properties:
+            savedAt:
+              type: string
+              format: date-time
+
+    CollectionPlaylistsResponse:
+      type: object
+      additionalProperties: false
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/CollectionPlaylistItem'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    CollectionPlaylistSavedResponse:
+      type: object
+      additionalProperties: false
+      required: [id, playlistId, savedAt]
+      properties:
+        id:
+          type: string
+        playlistId:
+          type: string
+        savedAt:
+          type: string
+          format: date-time
+
+    FavoriteArtistItem:
+      allOf:
+        - $ref: '#/components/schemas/UserSummary'
+        - type: object
+          required: [savedAt]
+          properties:
+            savedAt:
+              type: string
+              format: date-time
+
+    FavoriteArtistsResponse:
+      type: object
+      additionalProperties: false
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/FavoriteArtistItem'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    FavoriteArtistSavedResponse:
+      type: object
+      additionalProperties: false
+      required: [id, artistId, savedAt]
+      properties:
+        id:
+          type: string
+        artistId:
+          type: string
+        savedAt:
+          type: string
+          format: date-time
+
     MostPlayedItem:
       allOf:
         - $ref: '#/components/schemas/PersonalTrackItem'
         - type: object
-          additionalProperties: false
           required: [userPlayCount]
           properties:
             userPlayCount:
@@ -2714,7 +3438,6 @@ components:
       allOf:
         - $ref: '#/components/schemas/PersonalTrackItem'
         - type: object
-          additionalProperties: false
           required: [lastPlayedAt]
           properties:
             lastPlayedAt:
@@ -2730,3 +3453,249 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/RecentlyPlayedItem'
+
+    AdminTag:
+      type: object
+      additionalProperties: false
+      required: [id, name, slug, kind, createdAt]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+        kind:
+          $ref: '#/components/schemas/TagKind'
+        createdAt:
+          type: string
+          format: date-time
+
+    AdminTagListResponse:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminTag'
+
+    AdminCreateTagRequest:
+      type: object
+      additionalProperties: false
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 64
+        kind:
+          $ref: '#/components/schemas/TagKind'
+
+    AdminUpdateTagRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 64
+        kind:
+          $ref: '#/components/schemas/TagKind'
+
+    AdminBulkCreateTagItem:
+      type: object
+      additionalProperties: false
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 64
+        kind:
+          $ref: '#/components/schemas/TagKind'
+
+    AdminBulkCreateTagsRequest:
+      type: array
+      maxItems: 500
+      items:
+        $ref: '#/components/schemas/AdminBulkCreateTagItem'
+
+    AdminBulkCreateTagsResponse:
+      type: object
+      additionalProperties: false
+      required: [created, skipped, skippedNames]
+      properties:
+        created:
+          type: integer
+        skipped:
+          type: integer
+        skippedNames:
+          type: array
+          items:
+            type: string
+
+    AdminHomepageFeatureRef:
+      type: object
+      additionalProperties: false
+      required: [id, title]
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        coverArtUrl:
+          type: [string, 'null']
+          format: uri-reference
+
+    AdminHomepageUserRef:
+      type: object
+      additionalProperties: false
+      required: [id, username, displayName]
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        displayName:
+          type: string
+        avatarUrl:
+          type: [string, 'null']
+          format: uri-reference
+
+    AdminHomepageSection:
+      type: string
+      enum: [FEATURED_PLAYLIST, CUSTOM_MIX, NEW_RELEASE, NEW_ARTIST, TRENDING, EDITOR_PICK, SITE_NEWS]
+
+    AdminHomepageFeature:
+      type: object
+      additionalProperties: false
+      required: [id, section, position, isActive, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+        section:
+          $ref: '#/components/schemas/AdminHomepageSection'
+        position:
+          type: integer
+        titleOverride:
+          type: [string, 'null']
+        subtitleOverride:
+          type: [string, 'null']
+        description:
+          type: [string, 'null']
+        imageUrl:
+          type: [string, 'null']
+          format: uri-reference
+        isActive:
+          type: boolean
+        startsAt:
+          type: [string, 'null']
+          format: date-time
+        endsAt:
+          type: [string, 'null']
+          format: date-time
+        playlistId:
+          type: [string, 'null']
+        userId:
+          type: [string, 'null']
+        editorialPostId:
+          type: [string, 'null']
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        playlist:
+          oneOf:
+            - $ref: '#/components/schemas/AdminHomepageFeatureRef'
+            - type: 'null'
+        user:
+          oneOf:
+            - $ref: '#/components/schemas/AdminHomepageUserRef'
+            - type: 'null'
+
+    AdminHomepageFeatureListResponse:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminHomepageFeature'
+
+    AdminCreateHomepageFeatureRequest:
+      type: object
+      additionalProperties: false
+      required: [section]
+      properties:
+        section:
+          $ref: '#/components/schemas/AdminHomepageSection'
+        position:
+          type: integer
+        titleOverride:
+          type: [string, 'null']
+        subtitleOverride:
+          type: [string, 'null']
+        description:
+          type: [string, 'null']
+        imageUrl:
+          type: [string, 'null']
+          format: uri-reference
+        isActive:
+          type: boolean
+          default: true
+        startsAt:
+          type: [string, 'null']
+          format: date-time
+        endsAt:
+          type: [string, 'null']
+          format: date-time
+        playlistId:
+          type: [string, 'null']
+        userId:
+          type: [string, 'null']
+
+    AdminUpdateHomepageFeatureRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        section:
+          $ref: '#/components/schemas/AdminHomepageSection'
+        position:
+          type: integer
+        titleOverride:
+          type: [string, 'null']
+        subtitleOverride:
+          type: [string, 'null']
+        description:
+          type: [string, 'null']
+        imageUrl:
+          type: [string, 'null']
+          format: uri-reference
+        isActive:
+          type: boolean
+        startsAt:
+          type: [string, 'null']
+          format: date-time
+        endsAt:
+          type: [string, 'null']
+          format: date-time
+        playlistId:
+          type: [string, 'null']
+        userId:
+          type: [string, 'null']
+
+    AdminUpdateUserRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        role:
+          $ref: '#/components/schemas/UserRole'
+        status:
+          $ref: '#/components/schemas/UserStatus'
+        isFeaturedArtist:
+          type: boolean

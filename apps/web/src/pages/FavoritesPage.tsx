@@ -229,6 +229,7 @@ export function FavoritesPage() {
         </div>
       </Section>
 
+{favArtistItems.length > 0 && (
       <Section
         title="Favorite artists"
         subtitle="Artists you've hearted"
@@ -252,7 +253,7 @@ export function FavoritesPage() {
             />
           ))}
         </div>
-      </Section>
+      </Section>)}
 
       <Section
         title="Favorites"

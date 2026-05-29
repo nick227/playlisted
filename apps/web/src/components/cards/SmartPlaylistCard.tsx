@@ -1,5 +1,5 @@
 import { Pause, Play } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 import { PlaylistActionMenu } from "@/components/media/PlaylistActionMenu";
@@ -17,6 +17,7 @@ export interface SmartPlaylistCardProps {
   slug?: string | null;
   meta?: string | null;
   className?: string;
+  actionSlot?: ReactNode;
 }
 
 export function SmartPlaylistCard({
@@ -28,6 +29,7 @@ export function SmartPlaylistCard({
   slug,
   meta,
   className,
+  actionSlot,
 }: SmartPlaylistCardProps) {
   // Lazy fetch — triggered on hover so the page doesn't fire N requests on mount
   const [shouldFetch, setShouldFetch] = useState(false);
@@ -223,21 +225,21 @@ export function SmartPlaylistCard({
             <p className="truncate text-xs text-white/50">{currentTrack.ownerName}</p>
           </div>
         )}
+
         </button>
 
-        <PlaylistActionMenu
-          className="absolute right-1.5 top-1.5 z-20"
-          playlistId={id}
-          title={title}
-          ownerUsername={ownerUsername}
-          slug={slug}
-        />
+        <div className="absolute right-1.5 top-1.5 z-50">
+          {actionSlot ?? (
+            <PlaylistActionMenu
+              playlistId={id}
+              title={title}
+              ownerUsername={ownerUsername}
+              slug={slug}
+            />
+          )}
+        </div>
 
-        <FavoriteHeartButton
-          target="playlist"
-          id={id}
-          className="absolute left-1.5 top-1.5 z-20"
-        />
+        <FavoriteHeartButton target="playlist" id={id} />
       </div>
 
       {/* Text — navigates to the playlist page */}

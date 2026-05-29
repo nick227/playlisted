@@ -31,7 +31,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
   const panelPath = user ? panelPathForRole(user.role) : null;
 
   return (
-    <header className="sticky top-0 z-30 flex h-[var(--spacing-topbar)] shrink-0 items-center gap-4 border-b border-[var(--color-border)] bg-[var(--color-canvas)]/95 px-4 backdrop-blur-md">
+    <header className="sticky top-0 z-40 flex h-[var(--spacing-topbar)] shrink-0 items-center gap-4 border-b border-[var(--color-border)] bg-[var(--color-canvas)]/95 px-4 backdrop-blur-md">
       <button
         type="button"
         onClick={onMenuClick}

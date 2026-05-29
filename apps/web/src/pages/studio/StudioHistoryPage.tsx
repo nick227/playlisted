@@ -27,7 +27,7 @@ export function StudioHistoryPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-3">
+      <div className="space-y-3 max-w-4xl mx-auto">
         <Skeleton className="h-10 w-48" />
         <Skeleton className="h-14 w-full" />
         <Skeleton className="h-14 w-full" />

@@ -1,3 +1,5 @@
+import { getPlaylistHref } from "./playlistHref.js";
+
 export function mapPlaylistSummary(playlist: {
   id: string;
   ownerId: string;
@@ -27,6 +29,7 @@ export function mapPlaylistSummary(playlist: {
 }) {
   return {
     id: playlist.id,
+    href: getPlaylistHref(playlist),
     ownerId: playlist.ownerId,
     title: playlist.title,
     slug: playlist.slug,
@@ -104,6 +107,7 @@ export function mapRecordingInPlaylist(recording: {
     avatarUrl: string | null;
     role: string;
   };
+  tags?: { tag: { id: string; name: string; slug: string; kind: string } }[];
 }) {
   return {
     id: recording.id,
@@ -136,6 +140,12 @@ export function mapRecordingInPlaylist(recording: {
           role: recording.uploader.role,
         }
       : undefined,
+    tags: recording.tags?.map(({ tag }) => ({
+      id: tag.id,
+      name: tag.name,
+      slug: tag.slug,
+      kind: tag.kind,
+    })),
   };
 }
 
@@ -158,6 +168,7 @@ export const playlistDetailInclude = {
           uploader: {
             select: { id: true, username: true, displayName: true, avatarUrl: true, role: true },
           },
+          tags: { include: { tag: true } },
         },
       },
     },

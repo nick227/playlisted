@@ -21,6 +21,15 @@ export function useFavoritePlaylists() {
   });
 }
 
+export function useFavoriteArtists() {
+  const { accessToken } = useAuth();
+  return useQuery({
+    queryKey: ["me", "favorites", "artists"],
+    queryFn: () => authedApi(accessToken).me.favoriteArtists({ pageSize: 100 }),
+    enabled: Boolean(accessToken),
+  });
+}
+
 export function useFavoriteIds() {
   const query = useFavoriteRecordings();
   const ids = new Set(query.data?.data.map((r) => r.id) ?? []);
@@ -30,6 +39,12 @@ export function useFavoriteIds() {
 export function useFavoritePlaylistIds() {
   const query = useFavoritePlaylists();
   const ids = new Set(query.data?.data.map((p) => p.id) ?? []);
+  return { ids, isLoading: query.isLoading };
+}
+
+export function useFavoriteArtistIds() {
+  const query = useFavoriteArtists();
+  const ids = new Set(query.data?.data.map((artist) => artist.id) ?? []);
   return { ids, isLoading: query.isLoading };
 }
 
@@ -69,6 +84,27 @@ export function useToggleFavoritePlaylist() {
 
   const remove = useMutation({
     mutationFn: (playlistId: string) => client.me.removeFavoritePlaylist(playlistId),
+    onSuccess: invalidate,
+  });
+
+  return { add, remove };
+}
+
+export function useToggleFavoriteArtist() {
+  const { accessToken } = useAuth();
+  const client = authedApi(accessToken);
+  const queryClient = useQueryClient();
+
+  const invalidate = () =>
+    queryClient.invalidateQueries({ queryKey: ["me", "favorites", "artists"] });
+
+  const add = useMutation({
+    mutationFn: (artistId: string) => client.me.addFavoriteArtist(artistId),
+    onSuccess: invalidate,
+  });
+
+  const remove = useMutation({
+    mutationFn: (artistId: string) => client.me.removeFavoriteArtist(artistId),
     onSuccess: invalidate,
   });
 

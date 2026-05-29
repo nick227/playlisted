@@ -1,13 +1,17 @@
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useParams } from "react-router-dom";
 
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AppShell } from "@/components/app-shell/AppShell";
 import { AdminPage } from "@/pages/AdminPage";
+import { AdminTagsPage } from "@/pages/admin/AdminTagsPage";
+import { AdminHomepagePage } from "@/pages/admin/AdminHomepagePage";
+import { AdminUsersPage } from "@/pages/admin/AdminUsersPage";
 import { HomePage } from "@/pages/HomePage";
+import { FavoritesPage } from "@/pages/FavoritesPage";
+import { LibraryPage } from "@/pages/LibraryPage";
 import { LoginPage } from "@/pages/LoginPage";
 import { MemberPage } from "@/pages/MemberPage";
-import { PlaceholderPage } from "@/pages/PlaceholderPage";
 import { PlaylistPage } from "@/pages/PlaylistPage";
 import { RegisterPage } from "@/pages/RegisterPage";
 import { SearchPage } from "@/pages/SearchPage";
@@ -16,8 +20,14 @@ import { StudioPage } from "@/pages/StudioPage";
 import { StudioCollectionEditPage } from "@/pages/studio/StudioCollectionEditPage";
 import { StudioCollectionsPage } from "@/pages/studio/StudioCollectionsPage";
 import { StudioProfilePage } from "@/pages/studio/StudioProfilePage";
+import { StudioAnalyticsPage } from "@/pages/studio/StudioAnalyticsPage";
 import { StudioHistoryPage } from "@/pages/studio/StudioHistoryPage";
 import { StudioUploadsPage } from "@/pages/studio/StudioUploadsPage";
+
+function LegacyProfileRedirect() {
+  const { username } = useParams<{ username?: string }>();
+  return <Navigate to={`/@/${encodeURIComponent(username ?? "")}`} replace />;
+}
 
 function MainRoutes() {
   return (
@@ -25,28 +35,15 @@ function MainRoutes() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/search" element={<SearchPage />} />
-        <Route path="/@:username/:slug" element={<CanonicalPlaylistPage />} />
+        <Route path="/@:username" element={<LegacyProfileRedirect />} />
+        <Route path="/@/:username/:slug" element={<CanonicalPlaylistPage />} />
         <Route path="/playlists/:playlistId" element={<PlaylistPage />} />
-        <Route path="/@:username" element={<MemberPage />} />
+        <Route path="/@/:username" element={<MemberPage />} />
         <Route path="/members/:userId" element={<MemberPage />} />
-        <Route
-          path="/explore"
-          element={
-            <PlaceholderPage
-              title="Explore"
-              description="Browse genres and moods — coming soon."
-            />
-          }
-        />
-        <Route
-          path="/library"
-          element={
-            <PlaceholderPage
-              title="Your library"
-              description="Saved playlists and favorites — coming soon."
-            />
-          }
-        />
+        <Route path="/explore" element={<Navigate to="/" replace />} />
+        <Route path="/trending" element={<Navigate to="/" replace />} />
+        <Route path="/library" element={<LibraryPage />} />
+        <Route path="/library/favorites" element={<FavoritesPage />} />
         <Route
           path="/studio"
           element={
@@ -80,6 +77,14 @@ function MainRoutes() {
           }
         />
         <Route
+          path="/studio/analytics"
+          element={
+            <ProtectedRoute>
+              <StudioAnalyticsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/studio/history"
           element={
             <ProtectedRoute>
@@ -102,7 +107,12 @@ function MainRoutes() {
               <AdminPage />
             </ProtectedRoute>
           }
-        />
+        >
+          <Route index element={<Navigate to="/admin/tags" replace />} />
+          <Route path="tags" element={<AdminTagsPage />} />
+          <Route path="homepage" element={<AdminHomepagePage />} />
+          <Route path="users" element={<AdminUsersPage />} />
+        </Route>
         <Route
           path="/playlists/new"
           element={<Navigate to="/studio/collections" replace />}

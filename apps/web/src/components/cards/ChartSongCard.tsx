@@ -1,5 +1,6 @@
 import { Pause, Play } from "lucide-react";
 import { Link } from "react-router-dom";
+import type { ReactNode } from "react";
 import type { TopSongItem } from "@playlisted/client-sdk";
 
 import { RecordingActionMenu } from "@/components/media/RecordingActionMenu";
@@ -12,10 +13,11 @@ import { recordingShareUrl } from "@/lib/shareContent";
 interface ChartSongCardProps {
   item: TopSongItem;
   className?: string;
+  actionSlot?: ReactNode;
   onPlay?: () => void;
 }
 
-export function ChartSongCard({ item, className, onPlay }: ChartSongCardProps) {
+export function ChartSongCard({ item, className, actionSlot, onPlay }: ChartSongCardProps) {
   const { isActive, isPlaying } = useTrackPlayback(item.recordingId);
   const rankLabel = item.rank <= 3 ? ["#1", "#2", "#3"][item.rank - 1] : `#${item.rank}`;
   const isTop3 = item.rank <= 3;
@@ -53,18 +55,21 @@ export function ChartSongCard({ item, className, onPlay }: ChartSongCardProps) {
           />
         )}
 
-        <RecordingActionMenu
-          className="absolute right-1.5 top-1.5 z-20"
-          recordingId={item.recordingId}
-          title={item.title}
-          queueTrack={topSongToQueueTrack(item)}
-          shareUrl={recordingShareUrl({
-            playlistId: item.playlist.id,
-            recordingId: item.recordingId,
-            username: item.uploader.username,
-            slug: item.playlist.slug,
-          })}
-        />
+        <div className="absolute right-1.5 top-1.5 z-20">
+          {actionSlot ?? (
+            <RecordingActionMenu
+              recordingId={item.recordingId}
+              title={item.title}
+              queueTrack={topSongToQueueTrack(item)}
+              shareUrl={recordingShareUrl({
+                playlistId: item.playlist.id,
+                recordingId: item.recordingId,
+                username: item.playlist.owner.username,
+                slug: item.playlist.slug,
+              })}
+            />
+          )}
+        </div>
 
         <FavoriteHeartButton
           target="recording"

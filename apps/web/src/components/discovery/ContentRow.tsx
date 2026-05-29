@@ -25,7 +25,7 @@ export function ContentRow({
     <section className="mb-10">
       <SectionHeader title={title} subtitle={subtitle} viewAllHref={viewAllHref} />
       {empty ?? (
-        <div className="scrollbar-thin flex gap-4 overflow-x-auto pb-2">{children}</div>
+        <div className="flex flex-wrap gap-4">{children}</div>
       )}
     </section>
   );

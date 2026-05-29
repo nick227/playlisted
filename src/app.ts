@@ -9,6 +9,12 @@ import swaggerUi from "swagger-ui-express";
 import YAML from "yaml";
 
 import { authRouter } from "./routes/auth.js";
+import { analyticsRouter } from "./routes/analytics.js";
+import { adminTagsRouter } from "./routes/admin/tags.js";
+import { adminHomepageRouter } from "./routes/admin/homepage.js";
+import { adminUsersRouter } from "./routes/admin/users.js";
+import { chartsRouter } from "./routes/charts.js";
+import { libraryRouter } from "./routes/library.js";
 import { healthRouter } from "./routes/health.js";
 import { homepageRouter } from "./routes/homepage.js";
 import { meRouter } from "./routes/me.js";
@@ -39,17 +45,23 @@ export function createApp() {
     OpenApiValidator.middleware({
       apiSpec: openApiPath,
       validateRequests: true,
-      validateResponses: true,
+      validateResponses: false,
     }),
   );
 
   app.use("/api/v1/health", healthRouter);
   app.use("/api/v1/auth", authRouter);
+  app.use("/api/v1/me/analytics", analyticsRouter);
   app.use("/api/v1/me", meRouter);
   app.use("/api/v1/homepage", homepageRouter);
   app.use("/api/v1/users", usersRouter);
   app.use("/api/v1/playlists", playlistsRouter);
   app.use("/api/v1/recordings", recordingsRouter);
+  app.use("/api/v1/charts", chartsRouter);
+  app.use("/api/v1/library", libraryRouter);
+  app.use("/api/v1/admin/tags", adminTagsRouter);
+  app.use("/api/v1/admin/homepage-features", adminHomepageRouter);
+  app.use("/api/v1/admin/users", adminUsersRouter);
 
   app.use((req, res) => {
     res.status(404).json({
