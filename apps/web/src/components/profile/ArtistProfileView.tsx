@@ -1,5 +1,5 @@
 import type { UserDetail } from "@playlisted/client-sdk";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 
 import { EmptyState } from "@/components/feedback/EmptyState";
 import { useArtistTracks } from "@/hooks/useArtistTracks";
@@ -7,14 +7,7 @@ import { useAuth } from "@/providers/AuthProvider";
 
 import { ArtistProfileCollectionPanel } from "./ArtistProfileCollectionPanel";
 import { ArtistProfileHero } from "./ArtistProfileHero";
-import { ArtistProfileMetrics } from "./ArtistProfileMetrics";
-import { ArtistProfileTimeline } from "./ArtistProfileTimeline";
-import { ArtistProfileTracks } from "./ArtistProfileTracks";
-import {
-  buildUploadMilestones,
-  computeArtistStats,
-  profileAccentHue,
-} from "./artistProfileUtils";
+import { computeArtistStreams } from "./artistProfileUtils";
 
 export type ArtistProfilePreview = Partial<Pick<UserDetail, "displayName" | "username" | "bio">>;
 
@@ -26,12 +19,9 @@ type ArtistProfileViewProps = {
 export function ArtistProfileView({ user, preview }: ArtistProfileViewProps) {
   const { user: authUser } = useAuth();
   const { tracks, isLoading: tracksLoading } = useArtistTracks(user.id);
-  const [scrollToTrackId, setScrollToTrackId] = useState<string | null>(null);
 
   const isOwner = authUser?.id === user.id;
-  const stats = useMemo(() => computeArtistStats(user, tracks), [user, tracks]);
-  const milestones = useMemo(() => buildUploadMilestones(tracks), [tracks]);
-  const accentHue = profileAccentHue(preview?.username ?? user.username);
+  const totalStreams = useMemo(() => computeArtistStreams(tracks), [tracks]);
 
   const sortedPlaylists = useMemo(() => {
     return [...user.publicPlaylists].sort((a, b) => {
@@ -42,51 +32,22 @@ export function ArtistProfileView({ user, preview }: ArtistProfileViewProps) {
     });
   }, [user.publicPlaylists]);
 
-  const hasContent = user.publicPlaylists.length > 0 || tracks.length > 0;
-
   return (
-    <div className="space-y-14 pb-20">
-      <ArtistProfileHero user={user} stats={stats} isOwner={isOwner} preview={preview} />
-      <ArtistProfileMetrics stats={stats} accentHue={accentHue} />
+    <div className="space-y-10 pb-16">
+      <ArtistProfileHero user={user} totalStreams={totalStreams} isOwner={isOwner} preview={preview} />
 
       {sortedPlaylists.length > 0 ? (
-        <section className="space-y-6">
+        <section>
+          <h2 className="mb-2 text-sm font-medium text-[var(--color-text-muted)]">Collections</h2>
           <div>
-            <h2 className="text-3xl font-black tracking-tighter text-white md:text-4xl">Collections</h2>
-            <p className="mt-2 text-sm text-[var(--color-text-muted)]">
-              Expand any release to stream tracks inline
-            </p>
-          </div>
-          <div className="space-y-5">
-            {sortedPlaylists.map((playlist, index) => (
-              <ArtistProfileCollectionPanel
-                key={playlist.id}
-                playlist={playlist}
-                owner={user}
-                defaultExpanded={playlist.isPinnedOnProfile || index === 0}
-              />
+            {sortedPlaylists.map((playlist) => (
+              <ArtistProfileCollectionPanel key={playlist.id} playlist={playlist} owner={user} />
             ))}
           </div>
         </section>
       ) : null}
 
-      {!tracksLoading && tracks.length > 0 ? (
-        <>
-          <ArtistProfileTracks
-            tracks={tracks}
-            artistName={preview?.displayName ?? user.displayName}
-            scrollToId={scrollToTrackId}
-            onScrolled={() => setScrollToTrackId(null)}
-          />
-          <ArtistProfileTimeline
-            milestones={milestones}
-            accentHue={accentHue}
-            onSelect={setScrollToTrackId}
-          />
-        </>
-      ) : null}
-
-      {!tracksLoading && !hasContent ? (
+      {!tracksLoading && sortedPlaylists.length === 0 ? (
         <EmptyState
           title="No public music yet"
           description={
