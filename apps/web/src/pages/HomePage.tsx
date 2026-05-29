@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { BarChart2, Headphones, Mic2, Pause, Play } from "lucide-react";
+import { Pause, Play } from "lucide-react";
 import type { components, LibrarySong, TopSongItem } from "@playlisted/client-sdk";
 
 import { ArtistCard } from "@/components/cards/ArtistCard";
@@ -8,6 +8,7 @@ import { ChartSongCard } from "@/components/cards/ChartSongCard";
 import { SmartPlaylistCard } from "@/components/cards/SmartPlaylistCard";
 import { HeroSpotlight } from "@/components/discovery/HeroSpotlight";
 import { RowSkeleton } from "@/components/feedback/Skeleton";
+import { Skeleton } from "@/components/feedback/Skeleton";
 import { useHomepage } from "@/hooks/useHomepage";
 import { useTopArtists, useTopPlaylists, useTopSongs } from "@/hooks/useCharts";
 import { useTrackPlayback } from "@/hooks/useTrackPlayback";
@@ -15,6 +16,7 @@ import { useLibrarySongs } from "@/hooks/useLibrary";
 import { useAuth } from "@/providers/AuthProvider";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 import { RecordingActionMenu } from "@/components/media/RecordingActionMenu";
+import { PlaylistActionMenu } from "@/components/media/PlaylistActionMenu";
 import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
 import {
   chartItemPlaybackContext,
@@ -36,7 +38,7 @@ const CHART_RANGE_LABELS: Record<"7d" | "30d" | "all", string> = {
 // ── layout helpers ────────────────────────────────────────────────────────────
 
 function usernameFromHomepageUser(item: HomepageItem): string {
-  const match = item.href.match(/^\/@\/([^/]+)/);
+  const match = item.href.match(/^\/@\/?([^/]+)/);
   if (match?.[1]) return decodeURIComponent(match[1]);
   return item.subtitle?.replace(/^@/, "") ?? item.id;
 }
@@ -203,8 +205,7 @@ function GuestBanner() {
         The charts platform for independent music.
       </h1>
       <p className="mt-4 max-w-md text-sm leading-relaxed text-white/60">
-        Real plays, real rankings. Discover what's trending this week, follow the artists
-        making it happen, and if you make music — your analytics live here.
+        Hey what is up with you.
       </p>
       <div className="mt-8 flex flex-wrap gap-3">
         <Link
@@ -222,96 +223,6 @@ function GuestBanner() {
       </div>
     </section>
   );
-}
-
-const PILLARS = [
-  {
-    icon: BarChart2,
-    title: "Weekly charts",
-    body: "See what's actually being played. Ranked by real listeners, updated every week.",
-    color: "#06b6d4",
-  },
-  {
-    icon: Headphones,
-    title: "Editorial taste",
-    body: "Curated picks from people who listen obsessively. No algorithm. No pay-to-play.",
-    color: "#8b5cf6",
-  },
-  {
-    icon: Mic2,
-    title: "Artist tools",
-    body: "Upload your music, track your plays, and own your analytics from day one.",
-    color: "#10b981",
-  },
-] as const;
-
-function FeaturePillars() {
-  return (
-    <section className="mb-10 grid gap-4 sm:grid-cols-3">
-      {PILLARS.map(({ icon: Icon, title, body, color }) => (
-        <div
-          key={title}
-          className="flex flex-col gap-3 rounded-2xl border border-white/[0.07] bg-[var(--color-surface)] p-6"
-        >
-          <div
-            className="flex h-10 w-10 items-center justify-center rounded-xl"
-            style={{ background: `${color}22` }}
-          >
-            <Icon size={20} style={{ color }} />
-          </div>
-          <p className="text-sm font-bold text-white">{title}</p>
-          <p className="text-xs leading-relaxed text-[var(--color-text-muted)]">{body}</p>
-        </div>
-      ))}
-    </section>
-  );
-}
-
-function CreatorCTA() {
-  return (
-    <section className="mb-10 flex flex-col items-start justify-between gap-4 rounded-2xl border border-[var(--color-brand)]/20 bg-[var(--color-brand)]/5 px-7 py-6 sm:flex-row sm:items-center">
-      <div>
-        <p className="text-sm font-bold text-white">Make music?</p>
-        <p className="mt-0.5 text-xs text-[var(--color-text-muted)]">
-          Get your own analytics dashboard, track plays, and reach new listeners.
-        </p>
-      </div>
-      <Link
-        to="/register"
-        className="shrink-0 rounded-full bg-[var(--color-brand)] px-5 py-2 text-sm font-semibold text-white transition hover:opacity-90"
-      >
-        Upload your music →
-      </Link>
-    </section>
-  );
-}
-
-// ── news card ─────────────────────────────────────────────────────────────────
-
-function NewsCard({
-  category,
-  title,
-  blurb,
-  href,
-}: {
-  category: string;
-  title: string;
-  blurb: string;
-  href?: string;
-}) {
-  const inner = (
-    <div className="flex h-full flex-col gap-3 rounded-2xl border border-white/[0.07] bg-[var(--color-surface)] p-5 transition hover:border-white/[0.14]">
-      <span className="w-fit rounded-full bg-white/10 px-2.5 py-0.5 text-xs font-semibold text-[var(--color-text-muted)]">
-        {category}
-      </span>
-      <p className="text-sm font-bold leading-snug text-white">{title}</p>
-      <p className="mt-auto text-xs leading-relaxed text-[var(--color-text-muted)]">{blurb}</p>
-    </div>
-  );
-  if (href && !href.startsWith("/news")) {
-    return <Link to={href} className="block h-full">{inner}</Link>;
-  }
-  return inner;
 }
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -341,19 +252,50 @@ function getGreeting() {
   return "Good evening";
 }
 
+/** Editor Picks grid: up to 8 when available, otherwise 4 (if at least 4 exist). */
+function editorPicksGridLimit(available: number): number {
+  if (available >= 8) return 8;
+  if (available >= 4) return 4;
+  return available;
+}
+
+function HomepageEditorialCard({ item }: { item: HomepageItem }) {
+  if (item.targetType === "USER") {
+    return (
+      <ArtistCard
+        id={item.id}
+        username={usernameFromHomepageUser(item)}
+        displayName={item.title}
+        avatarUrl={item.imageUrl}
+        subtitle={item.subtitle}
+        className="w-full"
+      />
+    );
+  }
+
+  return (
+    <SmartPlaylistCard
+      id={item.id}
+      title={item.title}
+      creatorName={item.subtitle}
+      coverArtUrl={item.imageUrl}
+      className="w-full"
+    />
+  );
+}
+
 // ── page ──────────────────────────────────────────────────────────────────────
 
 export function HomePage() {
   const { status, user } = useAuth();
   const isGuest = status === "guest";
-  const isCreator = user?.role === "CREATOR";
 
   const [chartsRange, setChartsRange] = useState<"7d" | "30d" | "all">("7d");
 
   const editorial = useHomepage();
   const topSongs = useTopSongs(chartsRange, 12);
   const topPlaylists = useTopPlaylists(chartsRange, 10);
-  const topArtists = useTopArtists(chartsRange, 10);
+  const topArtists = useTopArtists(chartsRange, 6);
   const discoverPool = useTopPlaylists("30d", 30);
   const allTimeFeatured = useTopPlaylists("all", 8);
   const pinnedArtists = useTopArtists("30d", 8);
@@ -368,15 +310,23 @@ export function HomePage() {
     return map;
   }, [editorial.data]);
 
-  // Hero: prefer EDITOR_PICK, fall back to first item of any section
+  // Editor picks: homepage_features where section = EDITOR_PICK (API order = position)
+  const editorPicks = sectionMap["EDITOR_PICK"] ?? [];
+
+  // Hero spotlight: first editor pick, or first item from any section
   const heroItem = useMemo(() => {
-    const ep = sectionMap["EDITOR_PICK"] ?? [];
-    if (ep.length > 0) return ep[0];
+    if (editorPicks.length > 0) return editorPicks[0];
     for (const s of editorial.data?.sections ?? []) {
       if (s.items.length > 0) return s.items[0];
     }
     return null;
-  }, [sectionMap, editorial.data]);
+  }, [editorPicks, editorial.data]);
+
+  const editorPicksGrid = useMemo(() => {
+    const heroId = heroItem?.id;
+    const pool = editorPicks.filter((i) => i.id !== heroId);
+    return pool.slice(0, editorPicksGridLimit(pool.length));
+  }, [editorPicks, heroItem]);
 
   // Featured playlists
   const editorialFeaturedPlaylists = sectionMap["FEATURED_PLAYLIST"] ?? [];
@@ -388,15 +338,8 @@ export function HomePage() {
   // Featured artists
   const editorialFeaturedArtists = sectionMap["NEW_ARTIST"] ?? [];
 
-  // Other editorial (editor picks minus hero, new releases, custom mixes)
-  const otherEditorial = useMemo(() => {
-    const heroId = heroItem?.id;
-    return [
-      ...(sectionMap["EDITOR_PICK"] ?? []).filter((i) => i.id !== heroId),
-      ...(sectionMap["NEW_RELEASE"] ?? []),
-      ...(sectionMap["CUSTOM_MIX"] ?? []),
-    ];
-  }, [sectionMap, heroItem]);
+  const newReleases = sectionMap["NEW_RELEASE"] ?? [];
+  const customMixes = sectionMap["CUSTOM_MIX"] ?? [];
 
   // For You / Discover
   const discovered = useMemo(() => {
@@ -422,9 +365,6 @@ export function HomePage() {
       .sort((a, b) => b.songs.length - a.songs.length)
       .slice(0, 4);
   }, [songsQuery.data]);
-
-  // Site news
-  const siteNewsItems = sectionMap["SITE_NEWS"] ?? [];
 
   const chartsLoading = topSongs.isLoading || topPlaylists.isLoading || topArtists.isLoading;
 
@@ -508,6 +448,8 @@ export function HomePage() {
 
       {chartsLoading ? (
         <>
+                <Skeleton className="aspect-square w-full rounded-lg" />
+                <Skeleton className="h-4 w-3/4" />
           <RowSkeleton />
           <RowSkeleton />
           <RowSkeleton />
@@ -525,6 +467,19 @@ export function HomePage() {
                   key={item.recordingId}
                   item={item}
                   className="w-full"
+                  actionSlot={
+                    <RecordingActionMenu
+                      recordingId={item.recordingId}
+                      title={item.title}
+                      queueTrack={topSongToQueueTrack(item)}
+                      shareUrl={recordingShareUrl({
+                        playlistId: item.playlist.id,
+                        recordingId: item.recordingId,
+                        username: item.playlist.owner.username,
+                        slug: item.playlist.slug,
+                      })}
+                    />
+                  }
                   onPlay={() =>
                     handleChartSongPlay(item, topSongs.data!.data, "Top Songs")
                   }
@@ -550,6 +505,14 @@ export function HomePage() {
                   slug={item.slug}
                   meta={`${item.playCount.toLocaleString()} plays`}
                   className="w-full"
+                  actionSlot={
+                    <PlaylistActionMenu
+                      playlistId={item.playlistId}
+                      title={item.title}
+                      ownerUsername={item.owner.username}
+                      slug={item.slug}
+                    />
+                  }
                 />
               ))}
             </HomeSection>
@@ -645,35 +608,32 @@ export function HomePage() {
         </HomeSection>
       )}
 
-      {/* ── OTHER EDITORIAL ──────────────────────────────────── */}
+      {/* ── EDITOR PICKS (homepage_features.section = EDITOR_PICK) ── */}
 
-      {otherEditorial.length > 0 && (
+      {editorPicksGrid.length > 0 && (
         <HomeSection
           title="Editor Picks"
           cols="grid-cols-2 sm:grid-cols-3 md:grid-cols-4"
         >
-          {otherEditorial.map((item) =>
-            item.targetType === "USER" ? (
-              <ArtistCard
-                key={item.id}
-                id={item.id}
-                username={usernameFromHomepageUser(item)}
-                displayName={item.title}
-                avatarUrl={item.imageUrl}
-                subtitle={item.subtitle}
-                className="w-full"
-              />
-            ) : (
-              <SmartPlaylistCard
-                key={item.id}
-                id={item.id}
-                title={item.title}
-                creatorName={item.subtitle}
-                coverArtUrl={item.imageUrl}
-                className="w-full"
-              />
-            ),
-          )}
+          {editorPicksGrid.map((item) => (
+            <HomepageEditorialCard key={item.id} item={item} />
+          ))}
+        </HomeSection>
+      )}
+
+      {newReleases.length > 0 && (
+        <HomeSection title="New Releases" cols="grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
+          {newReleases.map((item) => (
+            <HomepageEditorialCard key={item.id} item={item} />
+          ))}
+        </HomeSection>
+      )}
+
+      {customMixes.length > 0 && (
+        <HomeSection title="Custom Mix" cols="grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
+          {customMixes.map((item) => (
+            <HomepageEditorialCard key={item.id} item={item} />
+          ))}
         </HomeSection>
       )}
 
@@ -703,14 +663,14 @@ export function HomePage() {
       {/* ── MUSIC BY GENRE ───────────────────────────────────── */}
 
       {genreGroups.map(({ name, slug, songs }) => {
-        const limited = songs.slice(0, 12);
+        const limited = songs.slice(0, 2);
         return (
           <HomeSection
             key={slug}
             title={name}
             subtitle={`${songs.length} song${songs.length !== 1 ? "s" : ""}`}
             viewAllHref={`/library?genre=${encodeURIComponent(slug)}`}
-            cols="grid-cols-1 sm:grid-cols-2"
+            cols="w-full"
           >
             {limited.map((song) => (
               <HomeSongRow
@@ -722,40 +682,7 @@ export function HomePage() {
           </HomeSection>
         );
       })}
-
-      {/* ── SITE NEWS ────────────────────────────────────────── */}
-
-      {siteNewsItems.length > 0 && (
-        <section className="mb-10">
-          <div className="mb-4 flex items-end justify-between gap-4">
-            <div>
-              <h2 className="text-xl font-bold tracking-tight text-white">What's new</h2>
-              <p className="mt-1 text-sm text-[var(--color-text-muted)]">
-                Updates from the Playlisted team
-              </p>
-            </div>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {siteNewsItems.map((item) => (
-              <NewsCard
-                key={item.id}
-                category="News"
-                title={item.title}
-                blurb={item.description ?? item.subtitle ?? ""}
-                href={item.href}
-              />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* ── FEATURE PILLARS ──────────────────────────────────── */}
-
-      {!chartsLoading && <FeaturePillars />}
-
-      {/* ── CREATOR CTA ──────────────────────────────────────── */}
-
-      {(isGuest || (!isCreator && status === "authenticated")) && <CreatorCTA />}
+      
     </div>
   );
 }
