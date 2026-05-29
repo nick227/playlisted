@@ -130,13 +130,15 @@ ingestRecordingsRouter.post("/", async (req, res, next) => {
         where: { id: existing.id },
         data: {
           title: body.title,
-          description: body.description ?? null,
+          // Only overwrite if explicitly provided — omitting preserves the existing value
+          ...(body.description !== undefined ? { description: body.description ?? null } : {}),
+          ...(body.durationSeconds !== undefined ? { durationSeconds: body.durationSeconds ?? null } : {}),
+          // coverUploadId: null explicitly clears artwork; omitting it preserves existing
+          ...(body.coverUploadId !== undefined ? { artworkUrl } : {}),
+          ...(body.trackNumber !== undefined ? { trackNumber: body.trackNumber ?? null } : {}),
           audioUrl: audioAsset.url,
           audioMimeType: audioAsset.mimeType,
           audioBytes: BigInt(audioAsset.bytes),
-          durationSeconds: body.durationSeconds ?? null,
-          artworkUrl: artworkUrl ?? existing.artworkUrl,
-          trackNumber: body.trackNumber ?? null,
         },
         select: RECORDING_SELECT,
       });
@@ -144,46 +146,65 @@ ingestRecordingsRouter.post("/", async (req, res, next) => {
       return res.status(200).json({ created: false, recording: mapRecording(updated) });
     }
 
-    const recording = await prisma.$transaction(async (tx) => {
-      const created = await tx.recording.create({
-        data: {
-          uploaderId: auth.user.id,
-          publishedPlaylistId: playlist.id,
-          title: body.title,
-          description: body.description ?? null,
-          audioUrl: audioAsset.url,
-          audioMimeType: audioAsset.mimeType,
-          audioBytes: BigInt(audioAsset.bytes),
-          durationSeconds: body.durationSeconds ?? null,
-          artworkUrl,
-          trackNumber: body.trackNumber ?? null,
-          status: playlist.status,
-          visibility: playlist.visibility,
-          externalSource: body.externalSource,
-          externalId: body.externalId,
-        },
-        select: RECORDING_SELECT,
-      });
+    // Retry loop guards against the PlaylistItem position unique-constraint race
+    // (two concurrent ingest requests for the same playlist read the same MAX and both try +1)
+    let recording = null;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      try {
+        recording = await prisma.$transaction(async (tx) => {
+          const created = await tx.recording.create({
+            data: {
+              uploaderId: auth.user.id,
+              publishedPlaylistId: playlist.id,
+              title: body.title,
+              description: body.description ?? null,
+              audioUrl: audioAsset.url,
+              audioMimeType: audioAsset.mimeType,
+              audioBytes: BigInt(audioAsset.bytes),
+              durationSeconds: body.durationSeconds ?? null,
+              artworkUrl,
+              trackNumber: body.trackNumber ?? null,
+              status: playlist.status,
+              visibility: playlist.visibility,
+              externalSource: body.externalSource,
+              externalId: body.externalId,
+            },
+            select: RECORDING_SELECT,
+          });
 
-      const maxPos = await tx.playlistItem.aggregate({
-        where: { playlistId: playlist.id },
-        _max: { position: true },
-      });
+          const maxPos = await tx.playlistItem.aggregate({
+            where: { playlistId: playlist.id },
+            _max: { position: true },
+          });
 
-      await tx.playlistItem.create({
-        data: {
-          playlistId: playlist.id,
-          recordingId: created.id,
-          position: (maxPos._max.position ?? 0) + 1,
-          addedById: auth.user.id,
-        },
-      });
+          await tx.playlistItem.create({
+            data: {
+              playlistId: playlist.id,
+              recordingId: created.id,
+              position: (maxPos._max.position ?? 0) + 1,
+              addedById: auth.user.id,
+            },
+          });
 
-      return created;
-    });
+          return created;
+        });
+        break;
+      } catch (err) {
+        // Only retry the specific PlaylistItem playlistId+position unique constraint.
+        // Any other P2002 (e.g. recording.externalId conflict) is a hard error.
+        const e = err as { code?: string; meta?: { modelName?: string; target?: string[] } };
+        const isPositionConflict =
+          e?.code === "P2002" &&
+          e?.meta?.modelName === "PlaylistItem" &&
+          Array.isArray(e?.meta?.target) &&
+          e.meta.target.includes("position");
+        if (isPositionConflict && attempt < 4) continue;
+        throw err;
+      }
+    }
 
     await syncPlaylistStats(playlist.id);
-    return res.status(201).json({ created: true, recording: mapRecording(recording) });
+    return res.status(201).json({ created: true, recording: mapRecording(recording!) });
   } catch (error) {
     return next(error);
   }

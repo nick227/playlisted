@@ -34,6 +34,8 @@ developerKeysRouter.get("/", async (req, res, next) => {
   }
 });
 
+const MAX_KEYS_PER_USER = 10;
+
 // Create a new API key — raw key shown once, never stored
 developerKeysRouter.post("/", async (req, res, next) => {
   try {
@@ -41,6 +43,16 @@ developerKeysRouter.post("/", async (req, res, next) => {
     if (!auth) return;
 
     const { name } = req.body as { name: string };
+
+    const activeCount = await prisma.apiKey.count({
+      where: { userId: auth.user.id, revokedAt: null },
+    });
+    if (activeCount >= MAX_KEYS_PER_USER) {
+      return res.status(409).json({
+        error: "key_limit_reached",
+        message: `You can have at most ${MAX_KEYS_PER_USER} active API keys. Revoke one before creating another.`,
+      });
+    }
 
     const rawKey = generateApiKey();
     const keyHash = hashApiKey(rawKey);

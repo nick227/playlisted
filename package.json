@@ -40,7 +40,8 @@
     "ports:free": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/free-ports.ps1",
     "dev:full": "npm run ports:free && npx concurrently -k -n api,web -c blue,green \"npm run dev\" \"npm run web:dev\"",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:api": "vitest run src/__tests__/apiKeys.test.ts src/__tests__/ingestUploads.test.ts src/__tests__/ingestPlaylists.test.ts src/__tests__/ingestRecordings.test.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.8.2",

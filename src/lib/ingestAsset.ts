@@ -21,7 +21,7 @@ export async function resolveUploadAsset(
   ownerUserId: string,
   expectedKind: AssetKind,
 ): Promise<{ asset: ResolvedAsset } | { assetError: AssetError }> {
-  const asset = await prisma.uploadAsset.findFirst({
+  const asset = await prisma.uploadAsset.findUnique({
     where: { id: uploadId },
     select: { id: true, userId: true, kind: true, url: true, mimeType: true, bytes: true },
   });

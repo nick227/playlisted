@@ -13,6 +13,7 @@ vi.mock("../lib/prisma.js", () => ({
       findFirst: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
+      count: vi.fn(),
     },
   },
 }));
@@ -78,6 +79,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(prisma.session.update).mockResolvedValue({} as any);
   vi.mocked(prisma.apiKey.update).mockResolvedValue({} as any);
+  vi.mocked(prisma.apiKey.count).mockResolvedValue(0); // default: user has 0 active keys
 });
 
 // ── tests ─────────────────────────────────────────────────────────────────────
@@ -111,6 +113,20 @@ describe("POST /api/v1/developer/keys — create", () => {
     expect(createArg.data.keyHash).not.toBe(res.body.key);
     // keyHash is a 64-char SHA-256 hex string
     expect(createArg.data.keyHash).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it("returns 409 when the user already has 10 active keys", async () => {
+    mockSession();
+    vi.mocked(prisma.apiKey.count).mockResolvedValue(10);
+
+    const res = await request(app)
+      .post("/api/v1/developer/keys")
+      .set("Authorization", `Bearer ${SESSION_TOKEN}`)
+      .send({ name: "One Too Many" });
+
+    expect(res.status).toBe(409);
+    expect(res.body.error).toBe("key_limit_reached");
+    expect(vi.mocked(prisma.apiKey.create)).not.toHaveBeenCalled();
   });
 });
 

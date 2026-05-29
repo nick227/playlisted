@@ -56,8 +56,8 @@ ingestPlaylistsRouter.post("/", async (req, res, next) => {
       externalId: string;
       title: string;
       description?: string | null;
-      visibility?: string;
-      type?: string;
+      visibility?: "PUBLIC" | "UNLISTED" | "PRIVATE";
+      type?: "PLAYLIST" | "ALBUM" | "MIX" | "PODCAST_CHANNEL" | "RELEASE";
       coverUploadId?: string | null;
     };
 
@@ -74,7 +74,15 @@ ingestPlaylistsRouter.post("/", async (req, res, next) => {
       coverArtUrl = result.asset.url;
     }
 
-    const visibility = (body.visibility ?? "PRIVATE") as "PUBLIC" | "UNLISTED" | "PRIVATE";
+    const VALID_TYPES = new Set<string>(["PLAYLIST", "ALBUM", "MIX", "PODCAST_CHANNEL", "RELEASE"]);
+    const VALID_VISIBILITY = new Set<string>(["PUBLIC", "UNLISTED", "PRIVATE"]);
+
+    if (body.type !== undefined && !VALID_TYPES.has(body.type)) {
+      return res.status(400).json({ error: "invalid_type", message: `Invalid playlist type '${body.type}'.` });
+    }
+    if (body.visibility !== undefined && !VALID_VISIBILITY.has(body.visibility)) {
+      return res.status(400).json({ error: "invalid_visibility", message: `Invalid visibility '${body.visibility}'.` });
+    }
 
     // Owner-scoped lookup by externalSource + externalId
     const existing = await prisma.playlist.findFirst({
@@ -91,16 +99,20 @@ ingestPlaylistsRouter.post("/", async (req, res, next) => {
         where: { id: existing.id },
         data: {
           title: body.title,
-          description: body.description ?? null,
-          coverArtUrl: coverArtUrl ?? existing.coverArtUrl,
-          visibility,
-          ...(body.type ? { type: body.type as any } : {}),
+          // Only overwrite if explicitly provided — omitting a field preserves the existing value
+          ...(body.description !== undefined ? { description: body.description ?? null } : {}),
+          // coverUploadId: null explicitly clears the cover; omitting it preserves existing
+          ...(body.coverUploadId !== undefined ? { coverArtUrl } : {}),
+          // visibility / type: only update if explicitly provided — never silently revert to defaults
+          ...(body.visibility !== undefined ? { visibility: body.visibility } : {}),
+          ...(body.type !== undefined ? { type: body.type } : {}),
         },
         select: PLAYLIST_SELECT,
       });
       return res.status(200).json({ created: false, playlist: mapPlaylist(updated) });
     }
 
+    const visibility = body.visibility ?? "PRIVATE";
     const slug = await resolveUniquePlaylistSlug(auth.user.id, body.title);
 
     const created = await prisma.playlist.create({
@@ -111,7 +123,7 @@ ingestPlaylistsRouter.post("/", async (req, res, next) => {
         description: body.description ?? null,
         coverArtUrl,
         visibility,
-        type: (body.type as any) ?? "PLAYLIST",
+        type: body.type ?? "PLAYLIST",
         status: "DRAFT",
         externalSource: body.externalSource,
         externalId: body.externalId,
