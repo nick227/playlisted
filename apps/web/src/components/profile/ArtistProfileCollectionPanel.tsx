@@ -1,8 +1,9 @@
 import type { UserDetail } from "@playlisted/client-sdk";
-import { ChevronDown, Pause, Play } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { Pause, Play } from "lucide-react";
+import { useEffect, useRef } from "react";
 
 import type { CollectionRecording } from "@/components/collection/collectionTypes";
+import { Skeleton } from "@/components/feedback/Skeleton";
 import { TrackList } from "@/components/tracks/TrackList";
 import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
 import { useAddCollectionPlaylist, useCollectionPlaylists } from "@/hooks/useCollections";
@@ -23,17 +24,12 @@ type ArtistProfileCollectionPanelProps = {
 };
 
 export function ArtistProfileCollectionPanel({ playlist, owner }: ArtistProfileCollectionPanelProps) {
-  const [expanded, setExpanded] = useState(false);
-  const [shouldLoad, setShouldLoad] = useState(false);
   const pendingPlayRef = useRef(false);
   const { user, status } = useAuth();
   const requireAuth = useAuthAction();
   const savedCollections = useCollectionPlaylists(100);
   const addCollection = useAddCollectionPlaylist();
-  const { data: detail, isLoading } = usePlaylistByUsernameSlug(
-    shouldLoad ? owner.username : undefined,
-    shouldLoad ? playlist.slug : undefined,
-  );
+  const { data: detail, isLoading } = usePlaylistByUsernameSlug(owner.username, playlist.slug);
   const { setQueue, togglePlay, playbackContext, state } = useAudioPlayer();
 
   const isActive = playbackContext.playlistId === playlist.id;
@@ -53,25 +49,15 @@ export function ArtistProfileCollectionPanel({ playlist, owner }: ArtistProfileC
   useEffect(() => {
     if (!pendingPlayRef.current || recordings.length === 0) return;
     pendingPlayRef.current = false;
-    const tracks = recordings.map((recording) => ({
-      ...recording,
-      playlistTitle: playlist.title,
-      ownerName: owner.displayName,
-    }));
-    setQueue(tracks, 0, {
+    setQueue(queueTracks, 0, {
       playlistId: playlist.id,
       playlistOwnerUsername: owner.username,
       playlistSlug: playlist.slug,
       sourceContext: "artist-profile",
     });
-  }, [recordings, owner.displayName, owner.username, playlist.id, playlist.slug, playlist.title, setQueue]);
-
-  function ensureLoaded() {
-    if (!shouldLoad) setShouldLoad(true);
-  }
+  }, [recordings, owner.username, playlist.id, playlist.slug, queueTracks, setQueue]);
 
   function playAll() {
-    ensureLoaded();
     if (isActive) {
       togglePlay();
       return;
@@ -107,7 +93,6 @@ export function ArtistProfileCollectionPanel({ playlist, owner }: ArtistProfileC
         <button
           type="button"
           onClick={playAll}
-          onMouseEnter={ensureLoaded}
           className="group relative h-20 w-20 shrink-0 overflow-hidden rounded-md"
         >
           {playlist.coverArtUrl ? (
@@ -128,7 +113,7 @@ export function ArtistProfileCollectionPanel({ playlist, owner }: ArtistProfileC
           <h3 className="text-lg font-medium text-white">{playlist.title}</h3>
           <p className="mt-1 text-sm text-[var(--color-text-muted)]">
             {playlist.itemCount} tracks
-            {shouldLoad && !isLoading && recordings.length > 0
+            {!isLoading && recordings.length > 0
               ? ` · ${formatPlayCount(totalStreams) || "0"} streams`
               : null}
           </p>
@@ -138,10 +123,9 @@ export function ArtistProfileCollectionPanel({ playlist, owner }: ArtistProfileC
           <button
             type="button"
             onClick={playAll}
-            onMouseEnter={ensureLoaded}
             className="text-sm text-[var(--color-text-muted)] transition hover:text-white"
           >
-            {isPlaying ? "Pause" : "Play"}
+            {isPlaying ? "Pause" : "Play all"}
           </button>
           <div className="flex items-center gap-1.5 text-sm text-[var(--color-text-muted)]">
             <FavoriteHeartButton target="playlist" id={playlist.id} variant="inline" className="!opacity-100 !p-0" />
@@ -157,43 +141,33 @@ export function ArtistProfileCollectionPanel({ playlist, owner }: ArtistProfileC
               {isFollowing ? "Following" : addCollection.isPending ? "Following…" : "Follow collection"}
             </button>
           ) : null}
-          <button
-            type="button"
-            onClick={() => {
-              ensureLoaded();
-              setExpanded((open) => !open);
-            }}
-            className="inline-flex items-center gap-1 text-sm text-[var(--color-text-muted)] transition hover:text-white"
-            aria-expanded={expanded}
-          >
-            Tracks
-            <ChevronDown size={14} className={`transition ${expanded ? "rotate-180" : ""}`} />
-          </button>
         </div>
       </div>
 
-      {expanded ? (
-        <div className="mt-4 pl-0 sm:pl-24">
-          {isLoading ? (
-            <p className="text-sm text-[var(--color-text-muted)]">Loading tracks…</p>
-          ) : recordings.length === 0 ? (
-            <p className="text-sm text-[var(--color-text-muted)]">No tracks yet.</p>
-          ) : (
-            <TrackList
-              recordings={recordings}
-              ownerName={owner.displayName}
-              playlistContext={{
-                playlistId: playlist.id,
-                playlistTitle: playlist.title,
-                ownerUsername: owner.username,
-                ownerDisplayName: owner.displayName,
-                slug: playlist.slug,
-              }}
-              onPlay={playTrack}
-            />
-          )}
-        </div>
-      ) : null}
+      <div className="mt-4 pl-0 sm:pl-24">
+        {isLoading ? (
+          <div className="space-y-2">
+            {Array.from({ length: Math.min(playlist.itemCount, 4) }).map((_, index) => (
+              <Skeleton key={index} className="h-14 w-full rounded-lg" />
+            ))}
+          </div>
+        ) : recordings.length === 0 ? (
+          <p className="text-sm text-[var(--color-text-muted)]">No tracks yet.</p>
+        ) : (
+          <TrackList
+            recordings={recordings}
+            ownerName={owner.displayName}
+            playlistContext={{
+              playlistId: playlist.id,
+              playlistTitle: playlist.title,
+              ownerUsername: owner.username,
+              ownerDisplayName: owner.displayName,
+              slug: playlist.slug,
+            }}
+            onPlay={playTrack}
+          />
+        )}
+      </div>
     </article>
   );
 }
