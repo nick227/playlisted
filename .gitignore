@@ -42,3 +42,6 @@ Desktop.ini
 .idea/
 *.swp
 *.swo
+
+# Pi local agent messenger runtime logs/state
+.pi/messenger/

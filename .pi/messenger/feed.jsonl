@@ -1,7 +1,0 @@
-{"ts":"2026-05-27T11:13:41.753Z","type":"join","agent":"WildZenith"}
-{"ts":"2026-05-27T11:16:14.780Z","type":"edit","agent":"WildZenith","target":"packages/client-sdk/src/core.ts"}
-{"ts":"2026-05-27T11:16:33.980Z","type":"edit","agent":"WildZenith","target":"packages/client-sdk/src/api.ts"}
-{"ts":"2026-05-27T11:16:35.702Z","type":"edit","agent":"WildZenith","target":"packages/client-sdk/src/index.ts"}
-{"ts":"2026-05-27T11:16:43.014Z","type":"edit","agent":"WildZenith","target":"packages/client-sdk/README.md"}
-{"ts":"2026-05-27T11:16:59.458Z","type":"edit","agent":"WildZenith","target":"packages/client-sdk/src/api.ts"}
-{"ts":"2026-05-27T11:18:17.080Z","type":"leave","agent":"WildZenith"}
