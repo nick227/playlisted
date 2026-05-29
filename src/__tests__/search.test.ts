@@ -10,6 +10,8 @@ vi.mock("../lib/prisma.js", () => ({
   },
 }));
 
+const PLAYLIST_TITLE_MATCH = { title: { contains: "summer mix" } };
+
 import { prisma } from "../lib/prisma.js";
 import { createApp } from "../app.js";
 
@@ -79,6 +81,35 @@ describe("GET /api/v1/search/unified", () => {
         },
       },
     });
+  });
+
+  it("matches playlists and songs by playlist title", async () => {
+    const res = await request(app).get("/api/v1/search/unified").query({ q: "summer mix" });
+
+    expect(res.status).toBe(200);
+    expect(prisma.playlist.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          OR: expect.arrayContaining([PLAYLIST_TITLE_MATCH]),
+        }),
+      }),
+    );
+    expect(prisma.recording.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          OR: expect.arrayContaining([
+            { publishedPlaylist: expect.objectContaining({ OR: expect.arrayContaining([PLAYLIST_TITLE_MATCH]) }) },
+            {
+              playlistItems: {
+                some: {
+                  playlist: expect.objectContaining({ OR: expect.arrayContaining([PLAYLIST_TITLE_MATCH]) }),
+                },
+              },
+            },
+          ]),
+        }),
+      }),
+    );
   });
 
   it("orders genres by public song count descending", async () => {

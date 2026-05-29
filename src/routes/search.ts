@@ -6,6 +6,14 @@ import {
   PUBLIC_PUBLISHED_RECORDING,
   PUBLIC_RECORDING_TAG_COUNT_SELECT,
 } from "../lib/publicRecordingFilter.js";
+import {
+  playlistTitleOrSlugMatch,
+  publicPublishedPlaylistTitleMatch,
+  publicPublishedRecordingInPlaylistItemsMatch,
+  songInPublicPlaylistTitleMatch,
+  tagContainsMatch,
+  textContainsMatch,
+} from "../lib/searchQuery.js";
 
 const DEFAULT_PAGE_SIZE = 20;
 const MAX_PAGE_SIZE = 50;
@@ -57,11 +65,7 @@ searchRouter.get("/unified", async (req, res, next) => {
       });
     }
 
-    const textMatch = [
-      { title: { contains: q } },
-      { description: { contains: q } },
-    ];
-    const tagMatch = { tag: { OR: [{ name: { contains: q } }, { slug: { contains: q } }] } };
+    const tagMatch = tagContainsMatch(q);
 
     const [songs, playlists, artists, genres] = await Promise.all([
       prisma.recording.findMany({
@@ -69,9 +73,10 @@ searchRouter.get("/unified", async (req, res, next) => {
           visibility: "PUBLIC",
           status: "PUBLISHED",
           OR: [
-            ...textMatch,
+            ...textContainsMatch(q),
             { uploader: { OR: [{ displayName: { contains: q } }, { username: { contains: q } }] } },
-            { publishedPlaylist: { OR: [{ title: { contains: q } }, { slug: { contains: q } }] } },
+            { publishedPlaylist: publicPublishedPlaylistTitleMatch(q) },
+            songInPublicPlaylistTitleMatch(q),
             { tags: { some: tagMatch } },
           ],
         },
@@ -93,23 +98,11 @@ searchRouter.get("/unified", async (req, res, next) => {
           visibility: "PUBLIC",
           status: "PUBLISHED",
           OR: [
-            { title: { contains: q } },
-            { slug: { contains: q } },
+            ...playlistTitleOrSlugMatch(q),
             { description: { contains: q } },
             { owner: { OR: [{ displayName: { contains: q } }, { username: { contains: q } }] } },
             { tags: { some: tagMatch } },
-            {
-              items: {
-                some: {
-                  recording: {
-                    OR: [
-                      ...textMatch,
-                      { tags: { some: tagMatch } },
-                    ],
-                  },
-                },
-              },
-            },
+            publicPublishedRecordingInPlaylistItemsMatch(q),
           ],
         },
         include: {
