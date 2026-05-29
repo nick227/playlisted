@@ -1,8 +1,9 @@
 import { useMemo } from "react";
-import { Heart, Play, Pause } from "lucide-react";
+import { Play, Pause } from "lucide-react";
 import type { FavoriteRecordingItem, MostPlayedItem, RecentlyPlayedItem } from "@playlisted/client-sdk";
 
 import { SmartPlaylistCard } from "@/components/cards/SmartPlaylistCard";
+import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
 import { RecordingActionMenu } from "@/components/media/RecordingActionMenu";
 import { EmptyState } from "@/components/feedback/EmptyState";
 import { Skeleton } from "@/components/feedback/Skeleton";
@@ -16,8 +17,7 @@ import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 import { useAuth } from "@/providers/AuthProvider";
 import {
   useFavoriteRecordings,
-  useFavoriteIds,
-  useToggleFavorite,
+  useFavoritePlaylists,
   useMostPlayed,
   useRecentlyPlayed,
 } from "@/hooks/useFavorites";
@@ -46,8 +46,6 @@ interface PersonalTrackRowProps {
   badge?: string;
   badgeColor?: string;
   allTracks: AnyTrack[];
-  isFavorited: boolean;
-  onToggleFavorite: () => void;
 }
 
 function PersonalTrackRow({
@@ -55,8 +53,6 @@ function PersonalTrackRow({
   badge,
   badgeColor = "text-[var(--color-text-muted)]",
   allTracks,
-  isFavorited,
-  onToggleFavorite,
 }: PersonalTrackRowProps) {
   const { playTrack, togglePlay } = useAudioPlayer();
   const { isActive, isPlaying } = useTrackPlayback(track.id);
@@ -136,20 +132,7 @@ function PersonalTrackRow({
         })}
       />
 
-      {/* heart */}
-      <button
-        type="button"
-        onClick={onToggleFavorite}
-        className={[
-          "shrink-0 rounded-full p-1.5 transition",
-          isFavorited
-            ? "text-rose-500 hover:text-rose-400"
-            : "text-white/20 opacity-0 hover:text-white group-hover/card:opacity-100",
-        ].join(" ")}
-        aria-label={isFavorited ? "Remove from favorites" : "Add to favorites"}
-      >
-        <Heart size={15} fill={isFavorited ? "currentColor" : "none"} />
-      </button>
+      <FavoriteHeartButton target="recording" id={track.id} variant="inline" className="!opacity-100" />
     </div>
   );
 }
@@ -197,25 +180,15 @@ export function FavoritesPage() {
   const isAuthed = status === "authenticated";
 
   const favorites = useFavoriteRecordings();
-  const { ids: favIds } = useFavoriteIds();
-  const { add, remove } = useToggleFavorite();
+  const favoritePlaylists = useFavoritePlaylists();
   const mostPlayed = useMostPlayed(20);
   const recentlyPlayed = useRecentlyPlayed(20);
   const topPlaylists = useTopPlaylists("30d", 12);
 
-  // Shuffle top playlists for recommendations (stable per session)
   const recommended = useMemo(() => {
     const list = topPlaylists.data?.data ?? [];
     return [...list].sort(() => Math.random() - 0.5).slice(0, 10);
   }, [topPlaylists.data]);
-
-  function toggleFavorite(recordingId: string) {
-    if (favIds.has(recordingId)) {
-      remove.mutate(recordingId);
-    } else {
-      add.mutate(recordingId);
-    }
-  }
 
   if (!isAuthed) {
     return (
@@ -230,6 +203,7 @@ export function FavoritesPage() {
   }
 
   const favTracks = favorites.data?.data ?? [];
+  const favPlaylistItems = favoritePlaylists.data?.data ?? [];
   const mostPlayedTracks = mostPlayed.data?.data ?? [];
   const recentTracks = recentlyPlayed.data?.data ?? [];
 
@@ -237,7 +211,32 @@ export function FavoritesPage() {
     <div className="mx-auto max-w-4xl">
       <h1 className="mb-8 text-4xl font-extrabold tracking-tight text-white">Your music</h1>
 
-      {/* ── Favorites ─────────────────────────────────────── */}
+      <Section
+        title="Favorite playlists"
+        subtitle="Collections you've saved"
+        loading={favoritePlaylists.isLoading}
+        empty={
+          favPlaylistItems.length === 0
+            ? "No favorite playlists yet — heart a collection to save it here"
+            : undefined
+        }
+      >
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+          {favPlaylistItems.map((playlist) => (
+            <SmartPlaylistCard
+              key={playlist.id}
+              id={playlist.id}
+              title={playlist.title}
+              creatorName={playlist.owner.displayName}
+              coverArtUrl={playlist.coverArtUrl}
+              ownerUsername={playlist.owner.username}
+              slug={playlist.slug}
+              className="w-full"
+            />
+          ))}
+        </div>
+      </Section>
+
       <Section
         title="Favorites"
         subtitle="Songs you've hearted"
@@ -251,14 +250,11 @@ export function FavoritesPage() {
               track={track}
               badge={new Date(track.savedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
               allTracks={favTracks}
-              isFavorited={favIds.has(track.id)}
-              onToggleFavorite={() => toggleFavorite(track.id)}
             />
           ))}
         </div>
       </Section>
 
-      {/* ── Most Played ───────────────────────────────────── */}
       <Section
         title="Most played"
         subtitle="Your personal top songs"
@@ -273,14 +269,11 @@ export function FavoritesPage() {
               badge={`${formatPlayCount(track.userPlayCount)} plays`}
               badgeColor="text-emerald-400"
               allTracks={mostPlayedTracks}
-              isFavorited={favIds.has(track.id)}
-              onToggleFavorite={() => toggleFavorite(track.id)}
             />
           ))}
         </div>
       </Section>
 
-      {/* ── Recently Played ───────────────────────────────── */}
       <Section
         title="Recently played"
         subtitle="Pick up where you left off"
@@ -294,18 +287,12 @@ export function FavoritesPage() {
               track={track}
               badge={relativeTime(track.lastPlayedAt)}
               allTracks={recentTracks}
-              isFavorited={favIds.has(track.id)}
-              onToggleFavorite={() => toggleFavorite(track.id)}
             />
           ))}
         </div>
       </Section>
 
-      {/* ── Recommended ───────────────────────────────────── */}
-      <ContentRow
-        title="Recommended for you"
-        subtitle="Playlists you might like"
-      >
+      <ContentRow title="Recommended for you" subtitle="Playlists you might like">
         {topPlaylists.isLoading
           ? Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="flex w-40 shrink-0 flex-col gap-2">

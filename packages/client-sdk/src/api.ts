@@ -38,6 +38,8 @@ export type AnalyticsSummaryResponse = components["schemas"]["AnalyticsSummaryRe
 export type AnalyticsRecordingsResponse = components["schemas"]["AnalyticsRecordingsResponse"];
 export type FavoriteRecordingItem = components["schemas"]["FavoriteRecordingItem"];
 export type FavoriteRecordingsResponse = components["schemas"]["FavoriteRecordingsResponse"];
+export type FavoritePlaylistItem = components["schemas"]["FavoritePlaylistItem"];
+export type FavoritePlaylistsResponse = components["schemas"]["FavoritePlaylistsResponse"];
 export type MostPlayedItem = components["schemas"]["MostPlayedItem"];
 export type MostPlayedResponse = components["schemas"]["MostPlayedResponse"];
 export type RecentlyPlayedItem = components["schemas"]["RecentlyPlayedItem"];
@@ -87,6 +89,9 @@ export interface PlaylistedApi {
     favoriteRecordings(query?: { page?: number; pageSize?: number }): Promise<FavoriteRecordingsResponse>;
     addFavorite(recordingId: string): Promise<{ id: string; recordingId: string; savedAt: string }>;
     removeFavorite(recordingId: string): Promise<void>;
+    favoritePlaylists(query?: { page?: number; pageSize?: number }): Promise<FavoritePlaylistsResponse>;
+    addFavoritePlaylist(playlistId: string): Promise<{ id: string; playlistId: string; savedAt: string }>;
+    removeFavoritePlaylist(playlistId: string): Promise<void>;
     mostPlayed(query?: { limit?: number }): Promise<MostPlayedResponse>;
     recentlyPlayed(query?: { limit?: number }): Promise<RecentlyPlayedResponse>;
   };
@@ -343,6 +348,28 @@ export function createPlaylistedApi(options: PlaylistedClientOptions = {}): Play
             params: { path: { recordingId } },
           }),
           "Failed to remove favorite.",
+        ).then(() => undefined);
+      },
+      favoritePlaylists(query = {}) {
+        return unwrap(
+          raw.GET("/api/v1/me/favorites/playlists", { params: { query } }),
+          "Failed to load favorite playlists.",
+        );
+      },
+      addFavoritePlaylist(playlistId) {
+        return unwrap(
+          raw.POST("/api/v1/me/favorites/playlists/{playlistId}", {
+            params: { path: { playlistId } },
+          }),
+          "Failed to add favorite playlist.",
+        );
+      },
+      removeFavoritePlaylist(playlistId) {
+        return unwrap(
+          raw.DELETE("/api/v1/me/favorites/playlists/{playlistId}", {
+            params: { path: { playlistId } },
+          }),
+          "Failed to remove favorite playlist.",
         ).then(() => undefined);
       },
       mostPlayed(query = {}) {

@@ -15,6 +15,7 @@ import { useLibrarySongs } from "@/hooks/useLibrary";
 import { useAuth } from "@/providers/AuthProvider";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 import { RecordingActionMenu } from "@/components/media/RecordingActionMenu";
+import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
 import {
   chartItemPlaybackContext,
   librarySongToQueueTrack,
@@ -166,6 +167,8 @@ function HomeSongRow({
           slug: song.playlist.slug,
         })}
       />
+
+      <FavoriteHeartButton target="recording" id={song.id} variant="inline" />
     </div>
   );
 }

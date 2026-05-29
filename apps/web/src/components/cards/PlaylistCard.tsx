@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 
 import { PlaylistActionMenu } from "@/components/media/PlaylistActionMenu";
+import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
 import { playlistPath } from "@/lib/routes";
 import { MediaCover } from "./MediaCover";
 
@@ -40,13 +41,20 @@ export function PlaylistCard({
           <MediaCover title={title} imageUrl={coverArtUrl} onPlay={onPlay} />
         </Link>
         {showActions ? (
-          <PlaylistActionMenu
-            className="absolute right-1.5 top-1.5 z-20"
-            playlistId={id}
-            title={title}
-            ownerUsername={ownerUsername}
-            slug={slug}
-          />
+          <>
+            <PlaylistActionMenu
+              className="absolute right-1.5 top-1.5 z-20"
+              playlistId={id}
+              title={title}
+              ownerUsername={ownerUsername}
+              slug={slug}
+            />
+            <FavoriteHeartButton
+              target="playlist"
+              id={id}
+              className="absolute left-1.5 top-1.5 z-20"
+            />
+          </>
         ) : null}
       </div>
       <Link to={path} className="min-w-0 transition-opacity hover:opacity-80">

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { PlaylistActionMenu } from "@/components/media/PlaylistActionMenu";
+import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
 import { usePlaylist } from "@/hooks/usePlaylist";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 import { coverFallback, playlistPath } from "@/lib/routes";
@@ -230,6 +231,12 @@ export function SmartPlaylistCard({
           title={title}
           ownerUsername={ownerUsername}
           slug={slug}
+        />
+
+        <FavoriteHeartButton
+          target="playlist"
+          id={id}
+          className="absolute left-1.5 top-1.5 z-20"
         />
       </div>
 

@@ -249,6 +249,84 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /api/v1/me/favorites/playlists:
+    get:
+      tags: [Me]
+      operationId: listFavoritePlaylists
+      summary: List the current user's favorited playlists
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Favorite playlists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FavoritePlaylistsResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/me/favorites/playlists/{playlistId}:
+    post:
+      tags: [Me]
+      operationId: addFavoritePlaylist
+      summary: Add a playlist to favorites
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: playlistId
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FavoritePlaylistSavedResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Playlist not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags: [Me]
+      operationId: removeFavoritePlaylist
+      summary: Remove a playlist from favorites
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: playlistId
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Removed
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /api/v1/me/most-played:
     get:
       tags: [Me]
@@ -2571,6 +2649,42 @@ components:
         id:
           type: string
         recordingId:
+          type: string
+        savedAt:
+          type: string
+          format: date-time
+
+    FavoritePlaylistItem:
+      allOf:
+        - $ref: '#/components/schemas/PlaylistSummary'
+        - type: object
+          additionalProperties: false
+          required: [savedAt]
+          properties:
+            savedAt:
+              type: string
+              format: date-time
+
+    FavoritePlaylistsResponse:
+      type: object
+      additionalProperties: false
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/FavoritePlaylistItem'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    FavoritePlaylistSavedResponse:
+      type: object
+      additionalProperties: false
+      required: [id, playlistId, savedAt]
+      properties:
+        id:
+          type: string
+        playlistId:
           type: string
         savedAt:
           type: string

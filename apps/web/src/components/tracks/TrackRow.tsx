@@ -1,6 +1,7 @@
 import { ChevronDown, ChevronUp, Pause, Play, X } from "lucide-react";
 
 import { RecordingActionMenu } from "@/components/media/RecordingActionMenu";
+import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
 import { useTrackPlayback } from "@/hooks/useTrackPlayback";
 import { formatDuration } from "@/lib/format";
 import { MediaCover } from "@/components/cards/MediaCover";
@@ -143,12 +144,15 @@ export function TrackRow({
             </button>
           </>
         ) : showActions ? (
-          <RecordingActionMenu
-            recordingId={recordingId}
-            title={title}
-            queueTrack={queueTrack}
-            shareUrl={shareUrl}
-          />
+          <>
+            <FavoriteHeartButton target="recording" id={recordingId} variant="inline" />
+            <RecordingActionMenu
+              recordingId={recordingId}
+              title={title}
+              queueTrack={queueTrack}
+              shareUrl={shareUrl}
+            />
+          </>
         ) : null}
       </div>
     </div>

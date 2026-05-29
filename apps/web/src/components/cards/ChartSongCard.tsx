@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import type { TopSongItem } from "@playlisted/client-sdk";
 
 import { RecordingActionMenu } from "@/components/media/RecordingActionMenu";
+import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
 import { useTrackPlayback } from "@/hooks/useTrackPlayback";
 import { topSongToQueueTrack } from "@/lib/queueTrack";
 import { coverFallback, profilePath } from "@/lib/routes";
@@ -63,6 +64,12 @@ export function ChartSongCard({ item, className, onPlay }: ChartSongCardProps) {
             username: item.uploader.username,
             slug: item.playlist.slug,
           })}
+        />
+
+        <FavoriteHeartButton
+          target="recording"
+          id={item.recordingId}
+          className="absolute bottom-2 right-2 z-20"
         />
 
         {/* Rank badge — always visible */}

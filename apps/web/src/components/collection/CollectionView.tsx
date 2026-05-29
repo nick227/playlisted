@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { EmptyState } from "@/components/feedback/EmptyState";
 import { TrackList } from "@/components/tracks/TrackList";
 import { coverFallback, profilePath, studioCollectionEditPath } from "@/lib/routes";
+import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
 import { playlistShareUrl, shareContent } from "@/lib/shareContent";
 import type { PlaylistTrackContext } from "@/lib/queueTrack";
 import { useAuth } from "@/providers/AuthProvider";
@@ -249,6 +250,12 @@ export function CollectionView({
               >
                 <Share2 size={18} />
               </button>
+              <FavoriteHeartButton
+                target="playlist"
+                id={playlist.id}
+                variant="inline"
+                className="!h-10 !w-10 !rounded-full !border !border-white/20 !bg-transparent !opacity-100"
+              />
               {isOwner ? (
                 <Link
                   to={studioCollectionEditPath(playlist.id)}

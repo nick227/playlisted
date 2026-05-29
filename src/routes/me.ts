@@ -8,6 +8,37 @@ import { prisma } from "../lib/prisma.js";
 const DEFAULT_PAGE = 1;
 const DEFAULT_PAGE_SIZE = 50;
 
+const UPLOADER_SELECT = {
+  id: true, username: true, displayName: true, avatarUrl: true, role: true,
+} as const;
+
+function mapRecordingWithUploader(r: any) {
+  return {
+    id: r.id,
+    uploaderId: r.uploaderId,
+    publishedPlaylistId: r.publishedPlaylistId,
+    title: r.title,
+    description: r.description ?? null,
+    audioUrl: r.audioUrl,
+    audioMimeType: r.audioMimeType ?? null,
+    audioBytes: r.audioBytes != null ? Number(r.audioBytes) : null,
+    durationSeconds: r.durationSeconds ?? null,
+    artworkUrl: r.artworkUrl ?? null,
+    recordingType: r.recordingType,
+    visibility: r.visibility,
+    status: r.status,
+    trackNumber: r.trackNumber ?? null,
+    episodeNumber: r.episodeNumber ?? null,
+    explicit: r.explicit,
+    releaseDate: r.releaseDate?.toISOString() ?? null,
+    publishedAt: r.publishedAt?.toISOString() ?? null,
+    playCount: r.playCount,
+    createdAt: r.createdAt.toISOString(),
+    updatedAt: r.updatedAt.toISOString(),
+    uploader: r.uploader,
+  };
+}
+
 export const meRouter = Router();
 
 meRouter.get("/playlists", async (req, res, next) => {
@@ -180,7 +211,7 @@ meRouter.get("/playback-history", async (req, res, next) => {
         where,
         include: {
           recording: true,
-          playlist: { select: { id: true, title: true } },
+          playlist: { select: { id: true, title: true, slug: true, owner: { select: { username: true } } } },
         },
         orderBy: { createdAt: "desc" },
         skip: (page - 1) * pageSize,
@@ -193,6 +224,244 @@ meRouter.get("/playback-history", async (req, res, next) => {
       data: items.map(mapPlaybackHistoryItem),
       meta: { page, pageSize, total },
     });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+// ── favorites ─────────────────────────────────────────────────────────────────
+
+meRouter.get("/favorites/recordings", async (req, res, next) => {
+  try {
+    const auth = await requireAuth(req, res);
+    if (!auth) return;
+
+    const page = Number(req.query.page ?? DEFAULT_PAGE);
+    const pageSize = Number(req.query.pageSize ?? DEFAULT_PAGE_SIZE);
+    const where = { userId: auth.user.id, kind: "FAVORITE" as const };
+
+    const [saves, total] = await Promise.all([
+      prisma.recordingSave.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        include: {
+          recording: {
+            include: { uploader: { select: UPLOADER_SELECT } },
+          },
+        },
+      }),
+      prisma.recordingSave.count({ where }),
+    ]);
+
+    return res.json({
+      data: saves.map((s) => ({
+        ...mapRecordingWithUploader(s.recording),
+        savedAt: s.createdAt.toISOString(),
+      })),
+      meta: { page, pageSize, total },
+    });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+meRouter.post("/favorites/recordings/:recordingId", async (req, res, next) => {
+  try {
+    const auth = await requireAuth(req, res);
+    if (!auth) return;
+
+    const { recordingId } = req.params;
+    const recording = await prisma.recording.findUnique({
+      where: { id: recordingId },
+      select: { id: true },
+    });
+
+    if (!recording) {
+      return res.status(404).json({ error: "recording_not_found", message: "Recording not found." });
+    }
+
+    const save = await prisma.recordingSave.upsert({
+      where: { userId_recordingId_kind: { userId: auth.user.id, recordingId, kind: "FAVORITE" } },
+      create: { userId: auth.user.id, recordingId, kind: "FAVORITE" },
+      update: {},
+    });
+
+    return res.status(201).json({ id: save.id, recordingId: save.recordingId, savedAt: save.createdAt.toISOString() });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+meRouter.delete("/favorites/recordings/:recordingId", async (req, res, next) => {
+  try {
+    const auth = await requireAuth(req, res);
+    if (!auth) return;
+
+    await prisma.recordingSave.deleteMany({
+      where: { userId: auth.user.id, recordingId: req.params.recordingId, kind: "FAVORITE" },
+    });
+
+    return res.status(204).send();
+  } catch (error) {
+    return next(error);
+  }
+});
+
+const PLAYLIST_FAVORITE_INCLUDE = {
+  owner: true,
+  tags: { include: { tag: true } },
+} as const;
+
+meRouter.get("/favorites/playlists", async (req, res, next) => {
+  try {
+    const auth = await requireAuth(req, res);
+    if (!auth) return;
+
+    const page = Number(req.query.page ?? DEFAULT_PAGE);
+    const pageSize = Number(req.query.pageSize ?? DEFAULT_PAGE_SIZE);
+    const where = { userId: auth.user.id, kind: "FAVORITE" as const };
+
+    const [saves, total] = await Promise.all([
+      prisma.playlistSave.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        include: {
+          playlist: { include: PLAYLIST_FAVORITE_INCLUDE },
+        },
+      }),
+      prisma.playlistSave.count({ where }),
+    ]);
+
+    return res.json({
+      data: saves.map((s) => ({
+        ...mapPlaylistSummary(s.playlist),
+        savedAt: s.createdAt.toISOString(),
+      })),
+      meta: { page, pageSize, total },
+    });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+meRouter.post("/favorites/playlists/:playlistId", async (req, res, next) => {
+  try {
+    const auth = await requireAuth(req, res);
+    if (!auth) return;
+
+    const { playlistId } = req.params;
+    const playlist = await prisma.playlist.findUnique({
+      where: { id: playlistId },
+      select: { id: true },
+    });
+
+    if (!playlist) {
+      return res.status(404).json({ error: "playlist_not_found", message: "Playlist not found." });
+    }
+
+    const save = await prisma.playlistSave.upsert({
+      where: { userId_playlistId_kind: { userId: auth.user.id, playlistId, kind: "FAVORITE" } },
+      create: { userId: auth.user.id, playlistId, kind: "FAVORITE" },
+      update: {},
+    });
+
+    return res.status(201).json({ id: save.id, playlistId: save.playlistId, savedAt: save.createdAt.toISOString() });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+meRouter.delete("/favorites/playlists/:playlistId", async (req, res, next) => {
+  try {
+    const auth = await requireAuth(req, res);
+    if (!auth) return;
+
+    await prisma.playlistSave.deleteMany({
+      where: { userId: auth.user.id, playlistId: req.params.playlistId, kind: "FAVORITE" },
+    });
+
+    return res.status(204).send();
+  } catch (error) {
+    return next(error);
+  }
+});
+
+// ── most-played ───────────────────────────────────────────────────────────────
+
+meRouter.get("/most-played", async (req, res, next) => {
+  try {
+    const auth = await requireAuth(req, res);
+    if (!auth) return;
+
+    const limit = Math.min(50, Math.max(1, Number(req.query.limit ?? 20)));
+
+    const grouped = await prisma.playbackEvent.groupBy({
+      by: ["recordingId"],
+      where: { userId: auth.user.id },
+      _count: { id: true },
+      orderBy: { _count: { id: "desc" } },
+      take: limit,
+    });
+
+    const recordingIds = grouped.map((g) => g.recordingId);
+    const recordings = await prisma.recording.findMany({
+      where: { id: { in: recordingIds } },
+      include: { uploader: { select: UPLOADER_SELECT } },
+    });
+
+    const recMap = new Map(recordings.map((r) => [r.id, r]));
+
+    const data = grouped
+      .filter((g) => recMap.has(g.recordingId))
+      .map((g) => ({
+        ...mapRecordingWithUploader(recMap.get(g.recordingId)!),
+        userPlayCount: g._count.id,
+      }));
+
+    return res.json({ data });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+// ── recently-played ───────────────────────────────────────────────────────────
+
+meRouter.get("/recently-played", async (req, res, next) => {
+  try {
+    const auth = await requireAuth(req, res);
+    if (!auth) return;
+
+    const limit = Math.min(50, Math.max(1, Number(req.query.limit ?? 20)));
+
+    const events = await prisma.playbackEvent.findMany({
+      where: { userId: auth.user.id },
+      orderBy: { createdAt: "desc" },
+      distinct: ["recordingId"],
+      take: limit,
+      select: { recordingId: true, createdAt: true },
+    });
+
+    const recordingIds = events.map((e) => e.recordingId);
+    const recordings = await prisma.recording.findMany({
+      where: { id: { in: recordingIds } },
+      include: { uploader: { select: UPLOADER_SELECT } },
+    });
+
+    const recMap = new Map(recordings.map((r) => [r.id, r]));
+    const lastPlayedMap = new Map(events.map((e) => [e.recordingId, e.createdAt.toISOString()]));
+
+    const data = events
+      .filter((e) => recMap.has(e.recordingId))
+      .map((e) => ({
+        ...mapRecordingWithUploader(recMap.get(e.recordingId)!),
+        lastPlayedAt: lastPlayedMap.get(e.recordingId)!,
+      }));
+
+    return res.json({ data });
   } catch (error) {
     return next(error);
   }

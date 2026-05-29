@@ -158,6 +158,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/favorites/playlists": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the current user's favorited playlists */
+        get: operations["listFavoritePlaylists"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/favorites/playlists/{playlistId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add a playlist to favorites */
+        post: operations["addFavoritePlaylist"];
+        /** Remove a playlist from favorites */
+        delete: operations["removeFavoritePlaylist"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me/most-played": {
         parameters: {
             query?: never;
@@ -1231,6 +1266,20 @@ export interface components {
             /** Format: date-time */
             savedAt: string;
         };
+        FavoritePlaylistItem: components["schemas"]["PlaylistSummary"] & {
+            /** Format: date-time */
+            savedAt: string;
+        };
+        FavoritePlaylistsResponse: {
+            data: components["schemas"]["FavoritePlaylistItem"][];
+            meta: components["schemas"]["PaginationMeta"];
+        };
+        FavoritePlaylistSavedResponse: {
+            id: string;
+            playlistId: string;
+            /** Format: date-time */
+            savedAt: string;
+        };
         MostPlayedItem: components["schemas"]["PersonalTrackItem"] & {
             userPlayCount: number;
         };
@@ -1540,6 +1589,107 @@ export interface operations {
             header?: never;
             path: {
                 recordingId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Removed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listFavoritePlaylists: {
+        parameters: {
+            query?: {
+                page?: components["parameters"]["Page"];
+                pageSize?: components["parameters"]["PageSize"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Favorite playlists */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FavoritePlaylistsResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    addFavoritePlaylist: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                playlistId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Saved */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FavoritePlaylistSavedResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Playlist not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    removeFavoritePlaylist: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                playlistId: string;
             };
             cookie?: never;
         };
