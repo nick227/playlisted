@@ -1,5 +1,6 @@
 import type { components, operations } from "./generated/schema";
 import { createPlaylistedClient, type PlaylistedClientOptions, type RawPlaylistedClient } from "./core.js";
+import { normalizeSearchResponse } from "./searchNormalize.js";
 
 export type HealthResponse = components["schemas"]["HealthResponse"];
 export type HomepageResponse = components["schemas"]["HomepageResponse"];
@@ -77,6 +78,11 @@ export type AdminUpdatePlaylistRequest = components["schemas"]["AdminUpdatePlayl
 export type AdminDashboardResponse = components["schemas"]["AdminDashboardResponse"];
 export type AdminContentTagRef = components["schemas"]["AdminContentTagRef"];
 
+export type IngestUploadResponse = components["schemas"]["IngestUploadResponse"];
+export type IngestPlaylistRequest = components["schemas"]["IngestPlaylistRequest"];
+export type IngestPlaylistResponse = components["schemas"]["IngestPlaylistResponse"];
+export type IngestRecordingRequest = components["schemas"]["IngestRecordingRequest"];
+export type IngestRecordingResponse = components["schemas"]["IngestRecordingResponse"];
 export type ApiKey = components["schemas"]["ApiKey"];
 export type ApiKeyListResponse = components["schemas"]["ApiKeyListResponse"];
 export type ApiKeyCreatedResponse = components["schemas"]["ApiKeyCreatedResponse"];
@@ -200,6 +206,11 @@ export interface PlaylistedApi {
     listKeys(): Promise<ApiKeyListResponse>;
     createKey(body: CreateApiKeyRequest): Promise<ApiKeyCreatedResponse>;
     revokeKey(keyId: string): Promise<void>;
+  };
+  ingest: {
+    upload(file: File | Blob, kind: "audio" | "image"): Promise<IngestUploadResponse>;
+    upsertPlaylist(body: IngestPlaylistRequest): Promise<IngestPlaylistResponse>;
+    upsertRecording(body: IngestRecordingRequest): Promise<IngestRecordingResponse>;
   };
 }
 
@@ -424,7 +435,7 @@ export function createPlaylistedApi(options: PlaylistedClientOptions = {}): Play
         return unwrap(
           raw.GET("/api/v1/search/unified", { params: { query } }),
           "Failed to search.",
-        );
+        ).then((data) => normalizeSearchResponse(data));
       },
     },
     users: {
@@ -721,6 +732,42 @@ export function createPlaylistedApi(options: PlaylistedClientOptions = {}): Play
           raw.GET("/api/v1/me/analytics/recordings", { params: { query } }),
           "Failed to load recording analytics.",
         );
+      },
+    },
+    ingest: {
+      upsertPlaylist(body) {
+        return unwrap(
+          raw.POST("/api/v1/ingest/playlists", { body }),
+          "Failed to upsert playlist.",
+        );
+      },
+      upsertRecording(body) {
+        return unwrap(
+          raw.POST("/api/v1/ingest/recordings", { body }),
+          "Failed to upsert recording.",
+        );
+      },
+      async upload(file, kind) {
+        const base = options.baseUrl ?? "";
+        const form = new FormData();
+        form.append("file", file);
+        const res = await fetch(`${base}/api/v1/ingest/uploads?kind=${kind}`, {
+          method: "POST",
+          headers: options.headers instanceof Headers
+            ? Object.fromEntries(options.headers.entries())
+            : (options.headers as Record<string, string> | undefined) ?? {},
+          body: form,
+        });
+        if (!res.ok) {
+          const body = await res.json().catch(() => undefined);
+          throw new PlaylistedApiError(
+            (body as { message?: string })?.message ?? "Upload failed.",
+            res.status,
+            res,
+            body,
+          );
+        }
+        return res.json() as Promise<IngestUploadResponse>;
       },
     },
     developer: {

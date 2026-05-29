@@ -1,6 +1,7 @@
 import type { LibraryGenre, LibrarySong, PlaylistSummary, SearchResponse, UserSummary } from "@playlisted/client-sdk";
 
 import { formatDuration } from "@/lib/format";
+import { normalizeSearchResponse } from "@/lib/searchResults";
 import { libraryGenrePath, libraryRecordingPath } from "@/lib/libraryPaths";
 import { playlistPath, profilePath } from "@/lib/routes";
 
@@ -88,7 +89,8 @@ export function buildRecentGroups(recentSearches: string[]): SearchSuggestionGro
   ];
 }
 
-export function buildResultGroups(query: string, data: SearchResponse): SearchSuggestionGroup[] {
+export function buildResultGroups(query: string, raw: SearchResponse): SearchSuggestionGroup[] {
+  const data = normalizeSearchResponse(raw);
   const groups: SearchSuggestionGroup[] = [];
   const songs = cap(data.songs);
   const artists = cap(data.artists);

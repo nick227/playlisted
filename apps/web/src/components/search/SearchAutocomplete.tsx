@@ -14,6 +14,7 @@ import {
 import type { SearchSuggestionOption } from "@/components/search/searchAutocompleteModel";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { api } from "@/lib/api";
+import { normalizeSearchResponse } from "@/lib/searchResults";
 import { pushRecentSearch, readRecentSearches } from "@/lib/recentSearches";
 
 interface SearchAutocompleteProps {
@@ -45,6 +46,7 @@ export function SearchAutocomplete({ className = "" }: SearchAutocompleteProps) 
     queryFn: () => api.search.unified({ q: trimmedQuery, pageSize: SUGGESTION_PAGE_SIZE }),
     enabled: open && hasQuery,
     staleTime: 30_000,
+    select: normalizeSearchResponse,
   });
 
   const recentGroups = buildRecentGroups(recentSearches);

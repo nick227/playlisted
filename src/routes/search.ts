@@ -2,6 +2,10 @@ import { Router } from "express";
 
 import { mapPlaylistSummary } from "../lib/playlistMaps.js";
 import { prisma } from "../lib/prisma.js";
+import {
+  PUBLIC_PUBLISHED_RECORDING,
+  PUBLIC_RECORDING_TAG_COUNT_SELECT,
+} from "../lib/publicRecordingFilter.js";
 
 const DEFAULT_PAGE_SIZE = 20;
 const MAX_PAGE_SIZE = 50;
@@ -141,12 +145,25 @@ searchRouter.get("/unified", async (req, res, next) => {
         where: {
           kind: "GENRE",
           OR: [{ name: { contains: q } }, { slug: { contains: q } }],
+          recordingTags: {
+            some: {
+              recording: PUBLIC_PUBLISHED_RECORDING,
+            },
+          },
         },
-        include: { _count: { select: { recordingTags: true } } },
-        orderBy: [{ recordingTags: { _count: "desc" } }, { name: "asc" }],
-        take: pageSize,
+        include: { _count: { select: PUBLIC_RECORDING_TAG_COUNT_SELECT } },
       }),
     ]);
+
+    const rankedGenres = genres
+      .map((genre) => ({
+        id: genre.id,
+        name: genre.name,
+        slug: genre.slug,
+        songCount: genre._count.recordingTags,
+      }))
+      .sort((a, b) => b.songCount - a.songCount || a.name.localeCompare(b.name))
+      .slice(0, pageSize);
 
     return res.json({
       songs: songs.map((r) => ({
@@ -177,12 +194,7 @@ searchRouter.get("/unified", async (req, res, next) => {
       })),
       playlists: playlists.map(mapPlaylistSummary),
       artists: artists.map(mapUserSummary),
-      genres: genres.map((genre) => ({
-        id: genre.id,
-        name: genre.name,
-        slug: genre.slug,
-        songCount: genre._count.recordingTags,
-      })),
+      genres: rankedGenres,
     });
   } catch (error) {
     return next(error);

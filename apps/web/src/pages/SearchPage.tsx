@@ -8,6 +8,7 @@ import { RowSkeleton } from "@/components/feedback/Skeleton";
 import { LibraryTrackRow } from "@/components/library/LibraryTrackRow";
 import { api } from "@/lib/api";
 import { libraryGenrePath } from "@/lib/libraryPaths";
+import { normalizeSearchResponse } from "@/lib/searchResults";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { librarySongToQueueTrack } from "@/lib/queueTrack";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
@@ -21,13 +22,16 @@ export function SearchPage() {
 
   usePageMeta({
     title: q ? `Search: ${q}` : "Search",
-    description: q ? `Search results for "${q}" on Playlisted` : "Search songs, playlists, and artists.",
+    description: q
+      ? `Search results for "${q}" on Playlisted`
+      : "Search songs, artists, playlists, and genres.",
   });
 
   const { data: results, isLoading } = useQuery({
     queryKey: ["search", "unified", q],
     queryFn: () => api.search.unified({ q, pageSize: 20 }),
     enabled: hasQuery,
+    select: normalizeSearchResponse,
   });
 
   const songResults = results?.songs ?? [];
@@ -59,7 +63,7 @@ export function SearchPage() {
     return (
       <EmptyState
         title="Search Playlisted"
-        description="Find songs, playlists, and artists from the search bar above."
+        description="Find songs, artists, playlists, and genres from the search bar above."
       />
     );
   }
