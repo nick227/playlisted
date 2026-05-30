@@ -1134,6 +1134,7 @@ export interface components {
             avatarUrl?: string | null;
             /** Format: uri-reference */
             heroImageUrl?: string | null;
+            profileLinks?: components["schemas"]["ProfileLink"][];
         };
         AuthUser: {
             id: string;
@@ -1146,6 +1147,7 @@ export interface components {
             avatarUrl?: string | null;
             /** Format: uri-reference */
             heroImageUrl?: string | null;
+            profileLinks?: components["schemas"]["ProfileLink"][];
             role: components["schemas"]["UserRole"];
             status: components["schemas"]["UserStatus"];
             isFeaturedArtist: boolean;
@@ -1164,6 +1166,15 @@ export interface components {
         };
         MeResponse: {
             user: components["schemas"]["AuthUser"];
+        };
+        /** @enum {string} */
+        ProfileLinkPlatform: "soundcloud" | "instagram" | "distrokid" | "spotify" | "apple_music" | "youtube" | "patreon" | "custom";
+        ProfileLink: {
+            id: string;
+            platform: components["schemas"]["ProfileLinkPlatform"];
+            label: string;
+            /** Format: uri */
+            url: string;
         };
         ErrorResponse: {
             error: string;
@@ -1209,6 +1220,7 @@ export interface components {
             avatarUrl?: string | null;
             /** Format: uri-reference */
             heroImageUrl?: string | null;
+            profileLinks?: components["schemas"]["ProfileLink"][];
             role: components["schemas"]["UserRole"];
             status: components["schemas"]["UserStatus"];
             isFeaturedArtist: boolean;
@@ -1431,6 +1443,7 @@ export interface components {
             avatarUrl?: string | null;
             /** Format: uri-reference */
             heroImageUrl?: string | null;
+            profileLinks?: components["schemas"]["ProfileLink"][];
         };
         UsernameAvailabilityResponse: {
             username: string;
@@ -1745,6 +1758,7 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
             uploader: components["schemas"]["ChartArtistRef"];
+            playlist: components["schemas"]["LibraryPlaylistRef"];
         };
         FavoriteRecordingItem: components["schemas"]["PersonalTrackItem"] & {
             /** Format: date-time */

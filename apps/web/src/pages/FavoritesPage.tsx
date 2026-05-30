@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { Link } from "react-router-dom";
 import { Play, Pause } from "lucide-react";
 import type { FavoriteRecordingItem, MostPlayedItem, RecentlyPlayedItem } from "@playlisted/client-sdk";
 
@@ -9,7 +10,7 @@ import { RecordingActionMenu } from "@/components/media/RecordingActionMenu";
 import { EmptyState } from "@/components/feedback/EmptyState";
 import { Skeleton } from "@/components/feedback/Skeleton";
 import { ContentRow } from "@/components/discovery/ContentRow";
-import { coverFallback } from "@/lib/routes";
+import { coverFallback, playlistPath, profilePath } from "@/lib/routes";
 import { formatDuration, formatPlayCount } from "@/lib/format";
 import { personalTrackToQueueTrack } from "@/lib/queueTrack";
 import { recordingShareUrl } from "@/lib/shareContent";
@@ -48,6 +49,14 @@ function PersonalTrackRow({
   const { playTrack, togglePlay } = useAudioPlayer();
   const { isActive, isPlaying } = useTrackPlayback(track.id);
 
+  const songHref = `${playlistPath({ id: track.playlist.id, username: track.uploader.username, slug: track.playlist.slug })}#track-${track.id}`;
+  const artistHref = profilePath(track.uploader.username);
+  const playlistHref = playlistPath({
+    id: track.playlist.id,
+    username: track.uploader.username,
+    slug: track.playlist.slug,
+  });
+
   function handlePlay() {
     if (isActive) {
       togglePlay();
@@ -85,20 +94,25 @@ function PersonalTrackRow({
         </button>
       </div>
 
-      {/* title + artist */}
+      {/* title + artist + playlist */}
       <div className="min-w-0 flex-1">
-        <button
-          type="button"
-          onClick={handlePlay}
+        <Link
+          to={songHref}
           className={[
-            "block truncate text-left text-sm font-semibold transition hover:text-white",
+            "block truncate text-sm font-semibold transition hover:underline",
             isActive ? "text-[var(--color-brand)]" : "text-white",
           ].join(" ")}
         >
           {track.title}
-        </button>
+        </Link>
         <p className="truncate text-xs text-[var(--color-text-muted)]">
-          {track.uploader.displayName}
+          <Link to={artistHref} className="hover:underline">
+            {track.uploader.displayName}
+          </Link>
+          <span className="mx-1 text-white/20" aria-hidden>·</span>
+          <Link to={playlistHref} className="hover:underline">
+            {track.playlist.title}
+          </Link>
         </p>
       </div>
 
@@ -118,9 +132,10 @@ function PersonalTrackRow({
         title={track.title}
         queueTrack={personalTrackToQueueTrack(track)}
         shareUrl={recordingShareUrl({
-          playlistId: track.publishedPlaylistId,
+          playlistId: track.playlist.id,
           recordingId: track.id,
           username: track.uploader.username,
+          slug: track.playlist.slug,
         })}
       />
 

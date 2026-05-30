@@ -27,7 +27,31 @@ const ARTIST_SELECT = {
   updatedAt: true,
 } as const;
 
-function mapRecordingWithUploader(r: any) {
+function mapRecordingWithUploader(r: {
+  id: string;
+  uploaderId: string;
+  publishedPlaylistId: string;
+  title: string;
+  description: string | null;
+  audioUrl: string;
+  audioMimeType: string | null;
+  audioBytes: bigint | null;
+  durationSeconds: number | null;
+  artworkUrl: string | null;
+  recordingType: string;
+  visibility: string;
+  status: string;
+  trackNumber: number | null;
+  episodeNumber: number | null;
+  explicit: boolean;
+  releaseDate: Date | null;
+  publishedAt: Date | null;
+  playCount: number;
+  createdAt: Date;
+  updatedAt: Date;
+  uploader: { id: string; username: string; displayName: string; avatarUrl: string | null; role: string };
+  publishedPlaylist: { id: string; slug: string; title: string };
+}) {
   return {
     id: r.id,
     uploaderId: r.uploaderId,
@@ -51,8 +75,18 @@ function mapRecordingWithUploader(r: any) {
     createdAt: r.createdAt.toISOString(),
     updatedAt: r.updatedAt.toISOString(),
     uploader: r.uploader,
+    playlist: {
+      id: r.publishedPlaylist.id,
+      slug: r.publishedPlaylist.slug,
+      title: r.publishedPlaylist.title,
+    },
   };
 }
+
+const RECORDING_WITH_UPLOADER_INCLUDE = {
+  uploader: { select: UPLOADER_SELECT },
+  publishedPlaylist: { select: { id: true, slug: true, title: true } },
+} as const;
 
 function mapFavoriteArtist(follow: any) {
   return {
@@ -272,7 +306,7 @@ meRouter.get("/favorites/recordings", async (req, res, next) => {
         take: pageSize,
         include: {
           recording: {
-            include: { uploader: { select: UPLOADER_SELECT } },
+            include: RECORDING_WITH_UPLOADER_INCLUDE,
           },
         },
       }),
@@ -602,7 +636,7 @@ meRouter.get("/most-played", async (req, res, next) => {
     const recordingIds = grouped.map((g) => g.recordingId);
     const recordings = await prisma.recording.findMany({
       where: { id: { in: recordingIds } },
-      include: { uploader: { select: UPLOADER_SELECT } },
+      include: RECORDING_WITH_UPLOADER_INCLUDE,
     });
 
     const recMap = new Map(recordings.map((r) => [r.id, r]));
@@ -640,7 +674,7 @@ meRouter.get("/recently-played", async (req, res, next) => {
     const recordingIds = events.map((e) => e.recordingId);
     const recordings = await prisma.recording.findMany({
       where: { id: { in: recordingIds } },
-      include: { uploader: { select: UPLOADER_SELECT } },
+      include: RECORDING_WITH_UPLOADER_INCLUDE,
     });
 
     const recMap = new Map(recordings.map((r) => [r.id, r]));

@@ -2760,6 +2760,10 @@ components:
         heroImageUrl:
           type: [string, 'null']
           format: uri-reference
+        profileLinks:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProfileLink'
 
     AuthUser:
       type: object
@@ -2784,6 +2788,10 @@ components:
         heroImageUrl:
           type: [string, 'null']
           format: uri-reference
+        profileLinks:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProfileLink'
         role:
           $ref: '#/components/schemas/UserRole'
         status:
@@ -2820,6 +2828,30 @@ components:
       properties:
         user:
           $ref: '#/components/schemas/AuthUser'
+
+    ProfileLinkPlatform:
+      type: string
+      enum: [soundcloud, instagram, distrokid, spotify, apple_music, youtube, patreon, custom]
+
+    ProfileLink:
+      type: object
+      additionalProperties: false
+      required: [id, platform, label, url]
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 80
+        platform:
+          $ref: '#/components/schemas/ProfileLinkPlatform'
+        label:
+          type: string
+          minLength: 1
+          maxLength: 80
+        url:
+          type: string
+          format: uri
+          maxLength: 2048
 
     ErrorResponse:
       type: object
@@ -2916,6 +2948,10 @@ components:
         heroImageUrl:
           type: [string, 'null']
           format: uri-reference
+        profileLinks:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProfileLink'
         role:
           $ref: '#/components/schemas/UserRole'
         status:
@@ -3394,6 +3430,11 @@ components:
         heroImageUrl:
           type: [string, 'null']
           format: uri-reference
+        profileLinks:
+          type: array
+          maxItems: 12
+          items:
+            $ref: '#/components/schemas/ProfileLink'
 
     UsernameAvailabilityResponse:
       type: object
@@ -4042,7 +4083,7 @@ components:
 
     PersonalTrackItem:
       type: object
-      required: [id, uploaderId, publishedPlaylistId, title, audioUrl, recordingType, visibility, status, explicit, playCount, createdAt, updatedAt, uploader]
+      required: [id, uploaderId, publishedPlaylistId, title, audioUrl, recordingType, visibility, status, explicit, playCount, createdAt, updatedAt, uploader, playlist]
       properties:
         id:
           type: string
@@ -4094,6 +4135,8 @@ components:
           format: date-time
         uploader:
           $ref: '#/components/schemas/ChartArtistRef'
+        playlist:
+          $ref: '#/components/schemas/LibraryPlaylistRef'
 
     FavoriteRecordingItem:
       allOf:
