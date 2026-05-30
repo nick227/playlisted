@@ -18,7 +18,8 @@
   --spacing-sidebar: 17rem;
   --spacing-topbar: 4rem;
   --spacing-player: 5.5rem;
-  --spacing-player-mobile: 7.5rem;
+  --spacing-player-mobile: 8.5rem;
+  --spacing-player-safe-mobile: calc(var(--spacing-player-mobile) + env(safe-area-inset-bottom, 0px));
 }
 
 * {

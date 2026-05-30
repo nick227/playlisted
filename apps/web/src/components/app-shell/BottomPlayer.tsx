@@ -13,9 +13,16 @@ import { useRef } from "react";
 import { Link } from "react-router-dom";
 
 import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
+import { VisualizerControls } from "@/features/visualizer/components/VisualizerControls";
 import { formatDuration } from "@/lib/format";
 import { coverFallback, playlistPath } from "@/lib/routes";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
+
+const playerFooterClass =
+  "sticky bottom-0 z-50 shrink-0 relative border-t border-[var(--color-border)] bg-[var(--color-canvas-alt)] pb-[env(safe-area-inset-bottom,0px)] min-h-[var(--spacing-player-safe-mobile)] md:min-h-[var(--spacing-player)] md:pb-0";
+
+const playerBodyClass =
+  "flex h-[var(--spacing-player-mobile)] flex-col justify-center gap-2.5 px-4 md:grid md:h-[var(--spacing-player)] md:grid-cols-3 md:items-center md:gap-2 md:px-4";
 
 export function BottomPlayer() {
   const {
@@ -56,9 +63,11 @@ export function BottomPlayer() {
 
   if (!currentTrack) {
     return (
-<footer className="sticky bottom-0 z-50 flex h-[var(--spacing-player-mobile)] sm:h-[var(--spacing-player)] shrink-0 items-center justify-center border-t border-[var(--color-border)] bg-[var(--color-canvas-alt)] text-sm text-[var(--color-text-muted)]">
-  Select a track to start listening
-</footer>
+      <footer
+        className={`${playerFooterClass} flex items-center justify-center text-sm text-[var(--color-text-muted)]`}
+      >
+        Select a track to start listening
+      </footer>
     );
   }
 
@@ -83,9 +92,9 @@ export function BottomPlayer() {
       : upNextName;
 
   return (
-    <footer className="sticky bottom-0 z-50 shrink-0 border-t border-[var(--color-border)] bg-[var(--color-canvas-alt)]">
+    <footer className={playerFooterClass}>
       <div
-        className="absolute left-0 right-0 top-0 h-0.5 bg-[var(--color-surface-elevated)]"
+        className="absolute inset-x-0 top-0 h-0.5 bg-[var(--color-surface-elevated)]"
         role="progressbar"
         aria-valuenow={progress}
       >
@@ -94,7 +103,7 @@ export function BottomPlayer() {
           style={{ width: `${progress}%` }}
         />
       </div>
-      <div className="grid h-[var(--spacing-player)] grid-cols-1 items-center gap-2 px-4 md:grid-cols-3">
+      <div className={playerBodyClass}>
         <div className="group/card flex min-w-0 items-center gap-3">
           {currentTrack.artworkUrl ? (
             <img
@@ -140,7 +149,7 @@ export function BottomPlayer() {
           </div>
           <FavoriteHeartButton target="recording" id={currentTrack.id} variant="inline" />
         </div>
-        <div className="flex flex-col items-center gap-1">
+        <div className="flex flex-col items-center justify-center gap-1.5">
           <div className="flex items-center gap-4">
             <button type="button" onClick={playPrevious} className="text-[var(--color-text-muted)] hover:text-white">
               <SkipBack size={20} />
@@ -222,6 +231,10 @@ export function BottomPlayer() {
               </span>
             )}
           </button>
+
+          <div className="mx-1 h-4 w-px bg-white/10" />
+
+          <VisualizerControls />
 
           <div className="mx-1 h-4 w-px bg-white/10" />
 

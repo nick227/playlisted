@@ -96,7 +96,7 @@ export function QueuePanel() {
         onClick={() => setQueueOpen(false)}
         aria-label="Close queue"
       />
-      <aside className="fixed bottom-[var(--spacing-player)] right-0 top-[var(--spacing-topbar)] z-[70] flex w-full max-w-sm flex-col border-l border-[var(--color-border)] bg-[var(--color-canvas-alt)] shadow-xl">
+      <aside className="fixed bottom-[var(--spacing-player-safe-mobile)] right-0 top-[var(--spacing-topbar)] z-[70] flex w-full max-w-sm flex-col border-l border-[var(--color-border)] bg-[var(--color-canvas-alt)] shadow-xl md:bottom-[var(--spacing-player)]">
         <div className="flex items-center justify-between border-b border-[var(--color-border)] px-4 py-3">
           <div>
             <h2 className="font-semibold text-white">Playing</h2>
