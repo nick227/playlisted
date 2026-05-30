@@ -121,11 +121,11 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
               ))}
             </div>
           </div>
-          {panelPath ? (
-            <div>
+          <div>
               <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-[var(--color-text-subtle)]">
                 Manage
               </p>
+          {panelPath === ADMIN_PATH ? (
               <NavLink
                 to={panelPath}
                 onClick={onClose}
@@ -135,6 +135,8 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
                 <Settings size={20} />
                 {panelPath === ADMIN_PATH ? "Admin panel" : "Artist studio"}
               </NavLink>
+          ) : null}
+          {panelPath ? (
               <NavLink
                 to="/studio/"
                 onClick={onClose}
@@ -143,18 +145,8 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
                 <PanelsTopLeft size={18} />
                 My Studio
               </NavLink>
-              {panelPath === "/studio" ? (
-                <NavLink
-                  to="/studio/developer"
-                  onClick={onClose}
-                  className={({ isActive }) => navClass(isActive)}
-                >
-                  <Code2 size={18} />
-                  API Keys
-                </NavLink>
-              ) : null}
-            </div>
           ) : null}
+          </div>
           <div>
             <p className="mb-2 flex items-center gap-2 px-3 text-xs font-semibold uppercase tracking-wider text-[var(--color-text-subtle)]">
               <ListMusic size={14} />
