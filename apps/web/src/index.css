@@ -30,6 +30,8 @@ html,
 body,
 #root {
   height: 100%;
+  max-width: 100%;
+  overflow-x: clip;
 }
 
 body {
@@ -38,6 +40,7 @@ body {
   background: var(--color-canvas);
   color: var(--color-text);
   -webkit-font-smoothing: antialiased;
+  -webkit-overflow-scrolling: touch;
 }
 
 ::-webkit-scrollbar {

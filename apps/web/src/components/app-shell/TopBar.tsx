@@ -24,7 +24,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
   const panelPath = user ? panelPathForRole(user.role) : null;
 
   return (
-    <header className="sticky top-0 z-40 flex h-[var(--spacing-topbar)] shrink-0 items-center gap-4 border-b border-[var(--color-border)] bg-[var(--color-canvas)]/95 px-4 backdrop-blur-md">
+    <header className="sticky top-0 z-40 flex h-[var(--spacing-topbar)] w-full min-w-0 max-w-full shrink-0 items-center gap-4 overflow-x-clip border-b border-[var(--color-border)] bg-[var(--color-canvas)]/95 px-4 backdrop-blur-md">
       <button
         type="button"
         onClick={onMenuClick}
@@ -34,7 +34,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
         <Menu size={22} />
       </button>
       <Link to="/" className="shrink-0 text-lg font-bold tracking-tight text-white">
-        Music<span className="text-[var(--color-brand)]">Pop</span>
+        Play<span className="text-[var(--color-brand)]">Listed</span>
       </Link>
       <SearchAutocomplete className="mx-auto hidden max-w-xl flex-1 md:block" />
       <div className="relative ml-auto flex items-center gap-2">

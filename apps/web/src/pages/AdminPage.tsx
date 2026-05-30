@@ -24,7 +24,7 @@ export function AdminPage() {
         </p>
       </div>
 
-      <nav className="flex gap-1 border-b border-[var(--color-border)]">
+      <nav className="-mx-4 flex gap-1 overflow-x-auto border-b border-[var(--color-border)] px-4 md:mx-0">
         {NAV.map((item) => (
           <NavLink
             key={item.to}

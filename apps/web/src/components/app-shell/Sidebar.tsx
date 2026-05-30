@@ -96,8 +96,10 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
         />
       ) : null}
       <aside
-        className={`fixed left-0 top-0 z-50 flex h-full w-[var(--spacing-sidebar)] shrink-0 flex-col border-r border-[var(--color-border)] bg-[var(--color-canvas)] transition-transform lg:translate-x-0 ${
-          mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+        className={`fixed left-0 top-0 z-50 flex h-full w-[var(--spacing-sidebar)] max-w-[85vw] shrink-0 flex-col border-r border-[var(--color-border)] bg-[var(--color-canvas)] transition-transform lg:translate-x-0 ${
+          mobileOpen
+            ? "translate-x-0"
+            : "-translate-x-full max-lg:invisible max-lg:pointer-events-none lg:translate-x-0"
         }`}
       >
         <nav className="flex flex-1 flex-col gap-6 overflow-y-auto px-3 py-4">
