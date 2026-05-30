@@ -1,4 +1,4 @@
-import { PanelsTopLeft, BookOpen, Code2, Heart, Home, ListMusic, Lock, Plus, Settings, type LucideIcon } from "lucide-react";
+import { PanelsTopLeft, BookOpen, Heart, Home, ListMusic, Lock, Plus, Settings, type LucideIcon } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { NavLink, useNavigate } from "react-router-dom";
 
