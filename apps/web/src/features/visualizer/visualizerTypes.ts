@@ -2,8 +2,6 @@ export type VisualizerMotion = "off" | "low" | "normal" | "high";
 
 export type VisualizerDisabledReason = "user" | "reduced-motion" | "performance" | "error";
 
-export type VisualizerSurface = "default" | "soft" | "hidden" | "editor" | "immersive";
-
 export type VisualizerSettings = {
   enabled: boolean;
   paletteId: string;
@@ -49,13 +47,4 @@ export type VisualizerFrame = {
   playbackState: VisualizerPlaybackState;
   time: number;
   delta: number;
-  surface: VisualizerSurface;
-};
-
-export type VisualizerRenderer = {
-  mount: (canvas: HTMLCanvasElement) => void;
-  resize: (width: number, height: number, dpr: number) => void;
-  getContext: () => CanvasRenderingContext2D | null;
-  render: (frame: VisualizerFrame) => void;
-  destroy: () => void;
 };
