@@ -1,5 +1,4 @@
 import { DEFAULT_VISUALIZER_PALETTE_ID, VISUALIZER_PALETTES } from "./visualizerPalettes";
-import { isVisualizerMode } from "./visualizerModes";
 import type {
   VisualizerDisabledReason,
   VisualizerMotion,
@@ -13,7 +12,6 @@ const DISABLED_REASONS: VisualizerDisabledReason[] = ["user", "reduced-motion", 
 
 export const DEFAULT_VISUALIZER_SETTINGS: VisualizerSettings = {
   enabled: true,
-  mode: "ambient-bars",
   paletteId: DEFAULT_VISUALIZER_PALETTE_ID,
   intensity: 0.7,
   backgroundOpacity: 0.55,
@@ -65,7 +63,6 @@ export function sanitizeVisualizerSettings(
 
   return {
     enabled,
-    mode: isVisualizerMode(raw.mode) ? raw.mode : defaults.mode,
     paletteId: isPaletteId(raw.paletteId) ? raw.paletteId : defaults.paletteId,
     intensity: clamp(raw.intensity, defaults.intensity, 0, 1.5),
     backgroundOpacity: clamp(raw.backgroundOpacity, defaults.backgroundOpacity, 0, 1),

@@ -1,5 +1,3 @@
-export type VisualizerMode = "ambient-bars" | "radial-pulse" | "soft-blob" | "wave-ribbon";
-
 export type VisualizerMotion = "off" | "low" | "normal" | "high";
 
 export type VisualizerDisabledReason = "user" | "reduced-motion" | "performance" | "error";
@@ -8,7 +6,6 @@ export type VisualizerSurface = "default" | "soft" | "hidden" | "editor" | "imme
 
 export type VisualizerSettings = {
   enabled: boolean;
-  mode: VisualizerMode;
   paletteId: string;
   intensity: number;
   backgroundOpacity: number;

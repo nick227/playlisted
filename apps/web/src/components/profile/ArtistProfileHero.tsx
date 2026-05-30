@@ -31,7 +31,7 @@ export function ArtistProfileHero({ user, totalStreams, isOwner, preview }: Arti
           <img
             src={user.avatarUrl}
             alt=""
-            className="aspect-square w-full max-w-[180px] rounded-lg object-cover"
+            className="aspect-square w-full rounded-lg object-cover sm:max-w-[180px]"
           />
         ) : (
           <div

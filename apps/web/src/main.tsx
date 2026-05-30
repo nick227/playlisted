@@ -4,6 +4,7 @@ import { createRoot } from "react-dom/client";
 
 import { App } from "@/App";
 import { queryClient } from "@/lib/queryClient";
+import { VisualizerProvider } from "@/features/visualizer/VisualizerProvider";
 import { AudioPlayerProvider } from "@/providers/AudioPlayerProvider";
 import { AuthProvider } from "@/providers/AuthProvider";
 import "@/index.css";
@@ -13,7 +14,9 @@ createRoot(document.getElementById("root")!).render(
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <AudioPlayerProvider>
-          <App />
+          <VisualizerProvider>
+            <App />
+          </VisualizerProvider>
         </AudioPlayerProvider>
       </AuthProvider>
     </QueryClientProvider>

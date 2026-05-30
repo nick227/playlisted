@@ -36,7 +36,6 @@ describe("visualizerStore", () => {
   it("clamps invalid stored values", () => {
     const settings = sanitizeVisualizerSettings({
       enabled: false,
-      mode: "nope",
       paletteId: "missing",
       intensity: 99,
       backgroundOpacity: -10,
@@ -47,7 +46,6 @@ describe("visualizerStore", () => {
 
     expect(settings).toMatchObject({
       enabled: false,
-      mode: DEFAULT_VISUALIZER_SETTINGS.mode,
       paletteId: DEFAULT_VISUALIZER_SETTINGS.paletteId,
       intensity: 1.5,
       backgroundOpacity: 0,

@@ -15,7 +15,7 @@ export function drawBars(frame: VisualizerFrame): void {
   const barCount = Math.max(24, Math.min(84, Math.floor(width / (16 * seed.barSpacing))));
   const gap = 3 + seed.barSpacing * 3;
   const barWidth = Math.max(3, width / barCount - gap);
-  const baseline = height * 0.8;
+  const baseline = height;
   const maxHeight = height * 0.34 * settings.intensity;
 
   ctx.save();

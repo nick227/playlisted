@@ -7,6 +7,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type RefObject,
   type ReactNode,
 } from "react";
 
@@ -35,6 +36,7 @@ export type { UpNextSegment };
 type PlayerState = "idle" | "loading" | "playing" | "paused" | "error";
 
 interface AudioPlayerContextValue {
+  audioRef: RefObject<HTMLAudioElement | null>;
   currentTrack: QueueTrack | null;
   queue: QueueTrack[];
   queueIndex: number;
@@ -524,6 +526,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<AudioPlayerContextValue>(
     () => ({
+      audioRef,
       currentTrack,
       queue,
       queueIndex,
@@ -599,7 +602,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   return (
     <AudioPlayerContext.Provider value={value}>
       {children}
-      <audio ref={audioRef} preload="metadata" className="hidden" />
+      <audio ref={audioRef} preload="metadata" crossOrigin="anonymous" className="hidden" />
     </AudioPlayerContext.Provider>
   );
 }

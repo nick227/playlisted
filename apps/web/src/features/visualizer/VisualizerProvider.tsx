@@ -14,14 +14,12 @@ import {
 } from "./visualizerStore";
 import type {
   VisualizerDisabledReason,
-  VisualizerMode,
   VisualizerSettings,
 } from "./visualizerTypes";
 
 type VisualizerContextValue = {
   settings: VisualizerSettings;
   setEnabled: (enabled: boolean) => void;
-  setMode: (mode: VisualizerMode) => void;
   setPaletteId: (paletteId: string) => void;
   updateSettings: (next: Partial<VisualizerSettings>) => void;
   disableForReason: (reason: VisualizerDisabledReason) => void;
@@ -57,12 +55,10 @@ export function VisualizerProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (typeof document === "undefined") return;
     document.documentElement.dataset.visualizer = settings.enabled ? "on" : "off";
-    document.documentElement.dataset.visualizerMode = settings.mode;
     return () => {
       delete document.documentElement.dataset.visualizer;
-      delete document.documentElement.dataset.visualizerMode;
     };
-  }, [settings.enabled, settings.mode]);
+  }, [settings.enabled]);
 
   const updateSettings = useCallback((next: Partial<VisualizerSettings>) => {
     setSettings((current) => ({
@@ -78,10 +74,6 @@ export function VisualizerProvider({ children }: { children: ReactNode }) {
       enabled,
       disabledReason: enabled ? undefined : "user",
     }));
-  }, []);
-
-  const setMode = useCallback((mode: VisualizerMode) => {
-    setSettings((current) => ({ ...current, mode }));
   }, []);
 
   const setPaletteId = useCallback((paletteId: string) => {
@@ -100,12 +92,11 @@ export function VisualizerProvider({ children }: { children: ReactNode }) {
     () => ({
       settings,
       setEnabled,
-      setMode,
       setPaletteId,
       updateSettings,
       disableForReason,
     }),
-    [disableForReason, setEnabled, setMode, setPaletteId, settings, updateSettings],
+    [disableForReason, setEnabled, setPaletteId, settings, updateSettings],
   );
 
   return <VisualizerContext.Provider value={value}>{children}</VisualizerContext.Provider>;

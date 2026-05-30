@@ -1,7 +1,4 @@
 import { drawBars } from "./modes/drawBars";
-import { drawBlob } from "./modes/drawBlob";
-import { drawRadial } from "./modes/drawRadial";
-import { drawWave } from "./modes/drawWave";
 import type { VisualizerFrame, VisualizerRenderer } from "../visualizerTypes";
 
 function surfaceMultiplier(surface: VisualizerFrame["surface"]): number {
@@ -40,33 +37,16 @@ export function createCanvasVisualizerRenderer(): VisualizerRenderer {
     },
     render(frame) {
       if (!frame.ctx || frame.width <= 0 || frame.height <= 0) return;
-      const { ctx } = frame;
       const opacity = frame.settings.backgroundOpacity * surfaceMultiplier(frame.surface);
-      ctx.save();
-      ctx.globalCompositeOperation = "source-over";
-      ctx.clearRect(0, 0, frame.width, frame.height);
-      ctx.fillStyle = frame.palette.background;
-      ctx.globalAlpha = Math.min(0.9, Math.max(0, opacity));
-      ctx.fillRect(0, 0, frame.width, frame.height);
-      ctx.restore();
+      frame.ctx.save();
+      frame.ctx.globalCompositeOperation = "source-over";
+      frame.ctx.clearRect(0, 0, frame.width, frame.height);
+      frame.ctx.fillStyle = frame.palette.background;
+      frame.ctx.globalAlpha = Math.min(0.9, Math.max(0, opacity));
+      frame.ctx.fillRect(0, 0, frame.width, frame.height);
+      frame.ctx.restore();
 
-      if (frame.surface === "hidden") return;
-
-      switch (frame.settings.mode) {
-        case "radial-pulse":
-          drawRadial(frame);
-          break;
-        case "soft-blob":
-          drawBlob(frame);
-          break;
-        case "wave-ribbon":
-          drawWave(frame);
-          break;
-        case "ambient-bars":
-        default:
-          drawBars(frame);
-          break;
-      }
+      if (frame.surface !== "hidden") drawBars(frame);
     },
     destroy() {
       canvas = null;

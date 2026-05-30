@@ -2,10 +2,9 @@ import { useMemo } from "react";
 
 import { useVisualizer } from "../VisualizerProvider";
 import { VISUALIZER_PALETTES } from "../visualizerPalettes";
-import { VISUALIZER_MODES } from "../visualizerModes";
 
 export function VisualizerDevPanel() {
-  const { settings, setMode, setPaletteId, updateSettings } = useVisualizer();
+  const { settings, setPaletteId, updateSettings } = useVisualizer();
   const visible = import.meta.env.DEV && settings.showDevControls;
   const presetJson = useMemo(() => JSON.stringify(settings, null, 2), [settings]);
 
@@ -14,14 +13,6 @@ export function VisualizerDevPanel() {
   return (
     <div className="pointer-events-auto fixed right-4 top-[calc(var(--spacing-topbar)+1rem)] z-[80] w-72 rounded border border-white/10 bg-[var(--color-canvas-alt)] p-3 text-xs text-white shadow-xl">
       <div className="mb-3 font-semibold">Visualizer Dev</div>
-      <label className="mb-2 block">
-        <span className="mb-1 block text-[var(--color-text-muted)]">Mode</span>
-        <select value={settings.mode} onChange={(event) => setMode(event.target.value as typeof settings.mode)} className="w-full rounded bg-[var(--color-surface)] p-2">
-          {VISUALIZER_MODES.map((mode) => (
-            <option key={mode.id} value={mode.id}>{mode.name}</option>
-          ))}
-        </select>
-      </label>
       <label className="mb-2 block">
         <span className="mb-1 block text-[var(--color-text-muted)]">Palette</span>
         <select value={settings.paletteId} onChange={(event) => setPaletteId(event.target.value)} className="w-full rounded bg-[var(--color-surface)] p-2">
