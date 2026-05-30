@@ -15,14 +15,18 @@ function logDatabaseTarget() {
   }
 }
 
-function run(command, args) {
+function run(command, args, options = {}) {
   console.log(`Running: ${command} ${args.join(" ")}`);
   const result = spawnSync(command, args, { stdio: "inherit", shell: process.platform === "win32" });
   if (result.status !== 0) {
+    if (options.allowFailure) {
+      console.log(`Command exited with status ${result.status}; continuing.`);
+      return;
+    }
     process.exit(result.status ?? 1);
   }
 }
 
 logDatabaseTarget();
-run("npx", ["prisma", "migrate", "status"]);
+run("npx", ["prisma", "migrate", "status"], { allowFailure: true });
 run("npx", ["prisma", "migrate", "deploy"]);
