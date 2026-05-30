@@ -20,11 +20,11 @@ This project deploys as one Railway web service plus one Railway MySQL service. 
 | Setting | Value |
 | --- | --- |
 | Public domain | `playlisted.up.railway.app` |
-| Public port | `4000` |
+| Public port | `8080` |
 | Volume mount path | `/app/uploads` |
 | Build command | `npm run build:prod` |
 | Start command | `npm run start:prod` |
-| Release command | `npx prisma migrate deploy` |
+| Pre-deploy command | `npx prisma migrate deploy` |
 | Healthcheck path | `/api/v1/health` |
 
 These commands are already defined in `railway.toml`.
@@ -35,7 +35,6 @@ Set these on the Railway web service.
 
 ```env
 NODE_ENV=production
-PORT=4000
 HOST=0.0.0.0
 TRUST_PROXY=1
 
@@ -51,6 +50,8 @@ VITE_API_BASE_URL=
 UPLOADS_DIR=/app/uploads
 MEDIA_BASE_URL=/uploads
 ```
+
+Do not set `PORT` manually on Railway unless you have a specific reason. Railway injects the runtime `PORT`; the current deploy log shows the app listening on `8080`.
 
 ## Optional Environment Variables
 
@@ -140,9 +141,8 @@ and the Railway volume is attached to the web service at:
 /app/uploads
 ```
 
-If the app is unreachable through the Railway domain, confirm the domain port is `4000` and the web service has:
+If the app is unreachable through the Railway domain, confirm the domain port is `8080` and the web service has:
 
 ```env
-PORT=4000
 HOST=0.0.0.0
 ```
