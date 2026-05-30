@@ -30,7 +30,7 @@ export function AppShell({ children }: AppShellProps) {
     <div className="relative flex min-h-full w-full max-w-full overflow-x-clip bg-transparent" data-visualizer-surface={visualizerSurface}>
       <PersistentVisualizerLayer surface={visualizerSurface} />
       <Sidebar mobileOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <div className="relative z-10 flex min-h-full min-w-0 w-full max-w-full flex-1 flex-col overflow-x-clip">
+      <div className="relative z-10 flex min-h-full min-w-0 w-full max-w-full flex-1 flex-col overflow-x-clip lg:pl-[var(--spacing-sidebar)]">
         <TopBar onMenuClick={() => setSidebarOpen(true)} />
         <main
           key={location.pathname}
@@ -38,9 +38,9 @@ export function AppShell({ children }: AppShellProps) {
         >
           {children}
         </main>
-        <BottomPlayer />
-        <QueuePanel />
       </div>
+      <BottomPlayer />
+      <QueuePanel />
       <VisualizerDevPanel />
     </div>
   );

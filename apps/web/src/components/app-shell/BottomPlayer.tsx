@@ -19,7 +19,7 @@ import { coverFallback, playlistPath } from "@/lib/routes";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 
 const playerFooterClass =
-  "sticky bottom-0 z-50 w-full max-w-full shrink-0 relative overflow-x-clip border-t border-[var(--color-border)] bg-[var(--color-canvas-alt)] pb-[env(safe-area-inset-bottom,0px)] min-h-[var(--spacing-player-safe-mobile)] md:min-h-[var(--spacing-player)] md:pb-0";
+  "fixed inset-x-0 bottom-0 z-40 max-w-full overflow-x-clip border-t border-[var(--color-border)] bg-[var(--color-canvas-alt)] pb-[env(safe-area-inset-bottom,0px)] min-h-[var(--spacing-player-safe-mobile)] lg:z-[55] md:min-h-[var(--spacing-player)] md:pb-0";
 
 const playerBodyClass =
   "flex h-[var(--spacing-player-mobile)] w-full min-w-0 max-w-full flex-col justify-center gap-2.5 px-4 md:grid md:h-[var(--spacing-player)] md:grid-cols-3 md:items-center md:gap-2 md:px-4";
