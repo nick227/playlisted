@@ -324,6 +324,37 @@ function SiteNewsCard({ item }: { item: HomepageItem }) {
   );
 }
 
+function EditorialPickCard({ item }: { item: HomepageItem }) {
+  return (
+    <Link
+      to={resolveItemPath(item)}
+      className="group flex w-full flex-col gap-2 transition-opacity hover:opacity-90"
+    >
+      <div className="relative aspect-square w-full overflow-hidden rounded-lg">
+        {item.imageUrl ? (
+          <img
+            src={item.imageUrl}
+            alt=""
+            className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
+          />
+        ) : (
+          <div
+            className="h-full w-full"
+            style={{ background: coverFallback(item.title) }}
+            aria-hidden
+          />
+        )}
+      </div>
+      <div className="min-w-0">
+        <p className="truncate text-sm font-medium text-white">{item.title}</p>
+        {item.subtitle ? (
+          <p className="truncate text-xs text-[var(--color-text-muted)]">{item.subtitle}</p>
+        ) : null}
+      </div>
+    </Link>
+  );
+}
+
 function HomepageEditorialCard({ item }: { item: HomepageItem }) {
   if (item.targetType === "USER") {
     return (
@@ -336,6 +367,10 @@ function HomepageEditorialCard({ item }: { item: HomepageItem }) {
         className="w-full"
       />
     );
+  }
+
+  if (item.targetType === "EDITORIAL_POST") {
+    return <EditorialPickCard item={item} />;
   }
 
   return (
@@ -638,14 +673,7 @@ export function HomePage() {
         >
           {editorialFeaturedPlaylists.length > 0
             ? editorialFeaturedPlaylists.map((item) => (
-                <SmartPlaylistCard
-                  key={item.id}
-                  id={item.id}
-                  title={item.title}
-                  creatorName={item.subtitle}
-                  coverArtUrl={item.imageUrl}
-                  className="w-full"
-                />
+                <HomepageEditorialCard key={item.id} item={item} />
               ))
             : fallbackFeaturedPlaylists.map((item) => (
                 <SmartPlaylistCard
