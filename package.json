@@ -25,6 +25,7 @@
     "prisma:format": "prisma format",
     "prisma:validate": "prisma validate",
     "prisma:migrate": "prisma migrate dev --skip-generate",
+    "prisma:migrate:deploy": "node scripts/railway-predeploy.mjs",
     "prisma:push": "prisma db push",
     "prisma:seed": "prisma db seed",
     "prisma:seed:file": "tsx prisma/seed.ts",

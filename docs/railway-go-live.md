@@ -24,7 +24,7 @@ This project deploys as one Railway web service plus one Railway MySQL service. 
 | Volume mount path | `/app/uploads` |
 | Build command | `npm run build:prod` |
 | Start command | `npm run start:prod` |
-| Pre-deploy command | `npx prisma migrate deploy` |
+| Pre-deploy command | `npm run prisma:migrate:deploy` |
 | Healthcheck path | `/api/v1/health` |
 
 These commands are already defined in `railway.toml`.

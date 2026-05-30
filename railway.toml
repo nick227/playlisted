@@ -7,4 +7,4 @@ startCommand = "npm run start:prod"
 healthcheckPath = "/api/v1/health"
 healthcheckTimeout = 120
 restartPolicyType = "on_failure"
-preDeployCommand = ["npx prisma migrate deploy"]
+preDeployCommand = ["npm run prisma:migrate:deploy"]
