@@ -49,21 +49,9 @@ function QueueItem({
   );
 }
 
-function PipelineItem({
-  label,
-  muted,
-  onRemove,
-}: {
-  label: string;
-  muted?: boolean;
-  onRemove: () => void;
-}) {
+function PipelineItem({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
-    <div
-      className={`flex items-center justify-between gap-2 rounded-lg px-3 py-2 ${
-        muted ? "text-[var(--color-text-subtle)]" : "text-[var(--color-text-muted)]"
-      }`}
-    >
+    <div className="flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-[var(--color-text-muted)]">
       <p className="truncate text-sm">{label}</p>
       <button
         type="button"
@@ -84,6 +72,7 @@ export function QueuePanel() {
     queueIndex,
     upNextPipeline,
     segmentLabel,
+    autoplayNextLabel,
     autoplayEnabled,
     setAutoplayEnabled,
     queueOpen,
@@ -96,8 +85,7 @@ export function QueuePanel() {
 
   if (!queueOpen) return null;
 
-  const pipelineThen = upNextPipeline.filter((s) => s.source === "user");
-  const pipelineAutopilot = upNextPipeline.filter((s) => s.source === "autopilot");
+  const showThen = upNextPipeline.length > 0 || (autoplayEnabled && autoplayNextLabel);
 
   return (
     <>
@@ -148,28 +136,25 @@ export function QueuePanel() {
             ))
           )}
 
-          {(pipelineThen.length > 0 || pipelineAutopilot.length > 0) && (
+          {showThen ? (
             <div className="mt-4 border-t border-[var(--color-border)] pt-3">
               <p className="px-3 pb-2 text-xs font-medium uppercase tracking-wide text-[var(--color-text-subtle)]">
                 Then
               </p>
-              {pipelineThen.map((segment) => (
+              {upNextPipeline.map((segment) => (
                 <PipelineItem
                   key={segment.id}
                   label={segment.label}
                   onRemove={() => removeUpNextSegment(segment.id)}
                 />
               ))}
-              {pipelineAutopilot.map((segment) => (
-                <PipelineItem
-                  key={segment.id}
-                  label={segment.label}
-                  muted
-                  onRemove={() => removeUpNextSegment(segment.id)}
-                />
-              ))}
+              {autoplayEnabled && autoplayNextLabel ? (
+                <p className="truncate px-3 py-2 text-sm text-[var(--color-text-subtle)]">
+                  {autoplayNextLabel}
+                </p>
+              ) : null}
             </div>
-          )}
+          ) : null}
         </div>
 
         <div className="border-t border-[var(--color-border)] px-4 py-3">

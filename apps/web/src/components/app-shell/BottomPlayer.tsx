@@ -29,6 +29,7 @@ export function BottomPlayer() {
     seek,
     setQueueOpen,
     autoplayEnabled,
+    autoplayNextLabel,
     upNextPipeline,
     shuffle,
     toggleShuffle,
@@ -70,6 +71,13 @@ export function BottomPlayer() {
         slug: playbackContext.playlistSlug,
       })
     : null;
+
+  const upNextHint =
+    upNextPipeline.length > 0
+      ? `Up next · ${upNextPipeline.length} queued`
+      : autoplayEnabled && autoplayNextLabel
+        ? `Up next · ${autoplayNextLabel}`
+        : null;
 
   return (
     <footer className="sticky bottom-0 z-50 shrink-0 border-t border-[var(--color-border)] bg-[var(--color-canvas-alt)]">
@@ -117,10 +125,8 @@ export function BottomPlayer() {
                 {[currentTrack.ownerName, currentTrack.playlistTitle].filter(Boolean).join(" • ")}
               </p>
             )}
-            {autoplayEnabled && upNextPipeline.length > 0 ? (
-              <p className="truncate text-[10px] text-[var(--color-text-subtle)]">
-                Up next · {upNextPipeline.length} queued
-              </p>
+            {upNextHint ? (
+              <p className="truncate text-[10px] text-[var(--color-text-subtle)]">{upNextHint}</p>
             ) : null}
           </div>
         </div>

@@ -11,6 +11,7 @@ import {
 } from "react";
 
 import { hydrateUpNextSegment } from "@/lib/upNext/hydrateSegment";
+import { prefetchAutoplayLabel } from "@/lib/upNext/prefetchAutoplayLabel";
 import { readAutoplayEnabled, writeAutoplayEnabled } from "@/lib/upNext/storage";
 import type { BeginSegmentOptions, UpNextSegment } from "@/lib/upNext/types";
 import { isPlayerShortcutSuppressed } from "@/lib/playerKeyboard";
@@ -39,6 +40,7 @@ interface AudioPlayerContextValue {
   queueIndex: number;
   upNextPipeline: UpNextSegment[];
   segmentLabel: string | null;
+  autoplayNextLabel: string | null;
   autoplayEnabled: boolean;
   setAutoplayEnabled: (enabled: boolean) => void;
   state: PlayerState;
@@ -108,6 +110,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   const [queueIndex, setQueueIndex] = useState(-1);
   const [upNextPipeline, setUpNextPipeline] = useState<UpNextSegment[]>([]);
   const [segmentLabel, setSegmentLabel] = useState<string | null>(null);
+  const [autoplayNextLabel, setAutoplayNextLabel] = useState<string | null>(null);
   const [autoplayEnabled, setAutoplayEnabledState] = useState(() => readAutoplayEnabled());
   const [state, setState] = useState<PlayerState>("idle");
   const [currentTime, setCurrentTime] = useState(0);
@@ -132,17 +135,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     autoplayRef.current = enabled;
     writeAutoplayEnabled(enabled);
     setAutoplayEnabledState(enabled);
-    if (!enabled) {
-      setUpNextPipeline((prev) => prev.filter((s) => s.source !== "autopilot"));
-    }
-  }, []);
-
-  const syncAutopilotTail = useCallback((context: PlaybackContext) => {
-    if (!autoplayRef.current || !context.playlistId) return;
-    setUpNextPipeline((prev) => {
-      const userSegments = prev.filter((s) => s.source === "user");
-      return [...userSegments, autopilotTail(context)];
-    });
+    if (!enabled) setAutoplayNextLabel(null);
   }, []);
 
   const toggleShuffle = useCallback(() => {
@@ -228,14 +221,8 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       setQueueState(tracks);
       setQueueIndex(index);
       loadTrack(tracks[index]);
-
-      const shouldSeed =
-        options?.seedAutoplay !== false && autoplayRef.current && Boolean(context?.playlistId);
-      if (shouldSeed && context) {
-        syncAutopilotTail(context);
-      }
     },
-    [loadTrack, syncAutopilotTail],
+    [loadTrack],
   );
 
   const advanceProgram = useCallback(async () => {
@@ -264,7 +251,10 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
 
         beginSegment(hydrated.tracks, 0, hydrated.context, {
           seedAutoplay: true,
-          segmentLabel: segment.label,
+          segmentLabel:
+            segment.kind === "autopilot"
+              ? (hydrated.tracks[0]?.playlistTitle ?? segment.label)
+              : segment.label,
         });
         return;
       }
@@ -400,11 +390,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const appendUpNextSegment = useCallback((segment: UpNextSegment) => {
-    setUpNextPipeline((prev) => {
-      const autopilot = prev.filter((s) => s.source === "autopilot");
-      const rest = prev.filter((s) => s.source !== "autopilot");
-      return [...rest, segment, ...autopilot];
-    });
+    setUpNextPipeline((prev) => [...prev, segment]);
   }, []);
 
   const removeUpNextSegment = useCallback((segmentId: string) => {
@@ -493,6 +479,22 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   }, [playNext, currentTime, flushPlayback, logPlaybackStart, advanceProgram]);
 
   useEffect(() => {
+    if (!autoplayEnabled || !playbackContext.playlistId) {
+      setAutoplayNextLabel(null);
+      return;
+    }
+
+    let cancelled = false;
+    void prefetchAutoplayLabel(playbackContext.playlistId, playedPlaylistIdsRef.current).then((label) => {
+      if (!cancelled) setAutoplayNextLabel(label);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [autoplayEnabled, playbackContext.playlistId, segmentLabel, upNextPipeline.length]);
+
+  useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if (event.code !== "Space" && event.key !== " ") return;
       if (event.repeat || event.ctrlKey || event.metaKey || event.altKey) return;
@@ -512,6 +514,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       queueIndex,
       upNextPipeline,
       segmentLabel,
+      autoplayNextLabel,
       autoplayEnabled,
       setAutoplayEnabled,
       state,
@@ -546,6 +549,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       queueIndex,
       upNextPipeline,
       segmentLabel,
+      autoplayNextLabel,
       autoplayEnabled,
       setAutoplayEnabled,
       state,
