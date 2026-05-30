@@ -10,10 +10,8 @@ function isSpaRoute(pathname: string) {
 }
 
 export function installWebApp(app: express.Application) {
-  if (process.env.NODE_ENV !== "production" || !fs.existsSync(WEB_DIST)) {
-    if (process.env.NODE_ENV === "production" && !fs.existsSync(WEB_DIST)) {
-      console.warn("apps/web/dist missing; API-only mode (no SPA static files).");
-    }
+  if (!fs.existsSync(WEB_DIST)) {
+    console.warn("apps/web/dist missing; API-only mode (no SPA static files).");
     return;
   }
 

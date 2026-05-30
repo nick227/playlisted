@@ -24,7 +24,7 @@ import {
   librarySongToQueueTrack,
   topSongToQueueTrack,
 } from "@/lib/queueTrack";
-import { coverFallback, resolveItemPath } from "@/lib/routes";
+import { coverFallback, playlistPath, profilePath, resolveItemPath } from "@/lib/routes";
 import { formatPlayCount } from "@/lib/format";
 import { recordingShareUrl } from "@/lib/shareContent";
 
@@ -61,7 +61,13 @@ function HomeSection({
     <section className="mb-10">
       <div className="mb-4 flex items-end justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold tracking-tight text-white">{title}</h2>
+          {viewAllHref ? (
+            <Link to={viewAllHref} className="text-xl font-bold tracking-tight text-white hover:underline">
+              {title}
+            </Link>
+          ) : (
+            <h2 className="text-xl font-bold tracking-tight text-white">{title}</h2>
+          )}
           {subtitle && (
             <p className="mt-1 text-sm text-[var(--color-text-muted)]">{subtitle}</p>
           )}
@@ -91,6 +97,9 @@ function HomeSongRow({
 }) {
   const { isActive, isPlaying } = useTrackPlayback(song.id);
 
+  const songHref = `${playlistPath({ id: song.playlist.id, username: song.uploader.username, slug: song.playlist.slug })}#track-${song.id}`;
+  const artistHref = profilePath(song.uploader.username);
+
   return (
     <div
       className={[
@@ -98,71 +107,79 @@ function HomeSongRow({
         isActive ? "bg-white/[0.08]" : "hover:bg-white/[0.05]",
       ].join(" ")}
     >
+      {/* Artwork — play button */}
       <button
         type="button"
         onClick={onPlay}
         aria-label={isActive ? (isPlaying ? "Pause" : "Resume") : "Play"}
-        className="flex min-w-0 flex-1 items-center gap-3 text-left"
+        className="relative h-10 w-10 shrink-0 overflow-hidden rounded-md"
       >
-        {/* Artwork with play overlay */}
-        <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-md">
-          {song.artworkUrl ? (
-            <img src={song.artworkUrl} alt="" className="h-full w-full object-cover" />
-          ) : (
-            <div
-              className="h-full w-full"
-              style={{ background: coverFallback(song.title) }}
-              aria-hidden
-            />
-          )}
+        {song.artworkUrl ? (
+          <img src={song.artworkUrl} alt="" className="h-full w-full object-cover" />
+        ) : (
           <div
-            className={[
-              "absolute inset-0 flex items-center justify-center bg-black/60 transition-opacity",
-              isActive ? "opacity-100" : "opacity-0 group-hover/card:opacity-100",
-            ].join(" ")}
-          >
-            {isPlaying ? (
-              <Pause size={12} fill="currentColor" className="text-white" />
-            ) : (
-              <Play size={12} fill="currentColor" className="ml-px text-white" />
-            )}
-          </div>
-          {isActive && (
-            <div className="pointer-events-none absolute inset-0 rounded-md ring-1 ring-inset ring-[var(--color-brand)]" />
-          )}
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <p
-            className={[
-              "truncate text-sm font-semibold leading-snug",
-              isActive ? "text-[var(--color-brand)]" : "text-white",
-            ].join(" ")}
-          >
-            {song.title}
-          </p>
-          <p className="truncate text-xs text-[var(--color-text-muted)]">
-            {song.uploader.displayName}
-            {song.playCount > 0 ? (
-              <>
-                <span className="mx-1 text-white/20">·</span>
-                {formatPlayCount(song.playCount)} plays
-              </>
-            ) : null}
-          </p>
-        </div>
-
-        <span className="shrink-0 pr-1">
+            className="h-full w-full"
+            style={{ background: coverFallback(song.title) }}
+            aria-hidden
+          />
+        )}
+        <div
+          className={[
+            "absolute inset-0 flex items-center justify-center bg-black/60 transition-opacity",
+            isActive ? "opacity-100" : "opacity-0 group-hover/card:opacity-100",
+          ].join(" ")}
+        >
           {isPlaying ? (
-            <Pause size={15} fill="currentColor" className="text-[var(--color-brand)]" />
+            <Pause size={12} fill="currentColor" className="text-white" />
           ) : (
-            <Play
-              size={15}
-              fill="currentColor"
-              className="text-white/30 transition group-hover/card:text-white/80"
-            />
+            <Play size={12} fill="currentColor" className="ml-px text-white" />
           )}
-        </span>
+        </div>
+        {isActive && (
+          <div className="pointer-events-none absolute inset-0 rounded-md ring-1 ring-inset ring-[var(--color-brand)]" />
+        )}
+      </button>
+
+      {/* Track info — links */}
+      <div className="min-w-0 flex-1 px-2">
+        <Link
+          to={songHref}
+          className={[
+            "block truncate text-sm font-semibold leading-snug hover:underline",
+            isActive ? "text-[var(--color-brand)]" : "text-white",
+          ].join(" ")}
+        >
+          {song.title}
+        </Link>
+        <p className="truncate text-xs text-[var(--color-text-muted)]">
+          <Link to={artistHref} className="hover:underline">
+            {song.uploader.displayName}
+          </Link>
+          {song.playCount > 0 ? (
+            <>
+              <span className="mx-1 text-white/20">·</span>
+              {formatPlayCount(song.playCount)} plays
+            </>
+          ) : null}
+        </p>
+      </div>
+
+      {/* Play/pause indicator */}
+      <button
+        type="button"
+        onClick={onPlay}
+        aria-label={isPlaying ? "Pause" : "Play"}
+        className="shrink-0 pr-1"
+      >
+        {isPlaying ? (
+          <Pause size={15} fill="currentColor" className="text-[var(--color-brand)]" />
+        ) : (
+          <Play
+            size={15}
+            fill="currentColor"
+            className="text-white/30 transition group-hover/card:text-white/80"
+          />
+        )}
       </button>
 
       <RecordingActionMenu
@@ -277,6 +294,36 @@ function completeRows<T>(items: T[], columns: number): T[] {
   return items.slice(0, items.length - (items.length % columns));
 }
 
+function SiteNewsCard({ item }: { item: HomepageItem }) {
+  return (
+    <Link
+      to={item.href}
+      className="group flex gap-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 transition hover:bg-white/[0.04]"
+    >
+      {item.imageUrl && (
+        <img
+          src={item.imageUrl}
+          alt=""
+          className="h-16 w-16 shrink-0 rounded-lg object-cover"
+        />
+      )}
+      <div className="min-w-0 flex-1">
+        <p className="truncate font-semibold text-white transition group-hover:text-[var(--color-brand)]">
+          {item.title}
+        </p>
+        {item.subtitle && (
+          <p className="mt-0.5 text-xs text-[var(--color-text-muted)]">{item.subtitle}</p>
+        )}
+        {item.description && (
+          <p className="mt-1 line-clamp-2 text-sm text-[var(--color-text-muted)]">
+            {item.description}
+          </p>
+        )}
+      </div>
+    </Link>
+  );
+}
+
 function HomepageEditorialCard({ item }: { item: HomepageItem }) {
   if (item.targetType === "USER") {
     return (
@@ -345,6 +392,7 @@ export function HomePage() {
     return null;
   }, [editorPicks, editorial.data]);
 
+  const siteNews = sectionMap["SITE_NEWS"] ?? [];
   const newReleases = sectionMap["NEW_RELEASE"] ?? [];
   const customMixes = sectionMap["CUSTOM_MIX"] ?? [];
 
@@ -645,6 +693,20 @@ export function HomePage() {
                   className="w-full"
                 />
               ))}
+        </HomeSection>
+      )}
+
+      {/* ── SITE NEWS ────────────────────────────────────────────── */}
+
+      {siteNews.length > 0 && (
+        <HomeSection
+          title="Site News"
+          subtitle="Updates from the team"
+          cols="grid-cols-1 sm:grid-cols-2"
+        >
+          {siteNews.map((item) => (
+            <SiteNewsCard key={item.id} item={item} />
+          ))}
         </HomeSection>
       )}
 
