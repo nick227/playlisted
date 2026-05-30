@@ -62,6 +62,7 @@ export function createApp() {
   }
 
   app.use(
+    "/api/v1",
     OpenApiValidator.middleware({
       apiSpec: openApiPath,
       validateRequests: true,
