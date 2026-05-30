@@ -22,6 +22,8 @@ import { useAuth } from "@/providers/AuthProvider";
 export type QueueTrack = components["schemas"]["RecordingSummary"] & {
   playlistTitle?: string;
   ownerName?: string;
+  ownerUsername?: string | null;
+  playlistSlug?: string | null;
 };
 
 export type PlaybackContext = {

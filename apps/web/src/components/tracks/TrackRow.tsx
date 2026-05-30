@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { RecordingActionMenu } from "@/components/media/RecordingActionMenu";
 import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
+import { PlaybackBars } from "@/features/playback-indicators/PlaybackBars";
 import { useTrackPlayback } from "@/hooks/useTrackPlayback";
 import { formatDuration, formatPlayCount } from "@/lib/format";
 import { MediaCover } from "@/components/cards/MediaCover";
@@ -109,10 +110,11 @@ export function TrackRow({
   return (
     <div
       id={`track-${recordingId}`}
-      className={`group/card grid w-full grid-cols-[auto_1fr_auto] items-center gap-4 rounded-lg px-3 py-2 transition ${
+      className={`group/card grid w-full grid-cols-[auto_auto_1fr_auto] items-center gap-3 rounded-lg px-3 py-2 transition ${
         isActive ? "bg-white/10" : "hover:bg-[var(--color-surface-hover)]"
       }`}
     >
+      <PlaybackBars active={isActive} playing={isPlaying} />
       <button
         type="button"
         onClick={onPlay}

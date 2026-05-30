@@ -9,6 +9,7 @@ import { SmartPlaylistCard } from "@/components/cards/SmartPlaylistCard";
 import { HeroSpotlight } from "@/components/discovery/HeroSpotlight";
 import { RowSkeleton } from "@/components/feedback/Skeleton";
 import { Skeleton } from "@/components/feedback/Skeleton";
+import { PlaybackBars } from "@/features/playback-indicators/PlaybackBars";
 import { useHomepage } from "@/hooks/useHomepage";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { useTopArtists, useTopPlaylists, useTopSongs } from "@/hooks/useCharts";
@@ -107,6 +108,7 @@ function HomeSongRow({
         isActive ? "bg-white/[0.08]" : "hover:bg-white/[0.05]",
       ].join(" ")}
     >
+      <PlaybackBars active={isActive} playing={isPlaying} />
       {/* Artwork — play button */}
       <button
         type="button"

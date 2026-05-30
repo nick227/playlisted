@@ -7,6 +7,7 @@ import type { CollectionRecording } from "@/components/collection/collectionType
 import { Skeleton } from "@/components/feedback/Skeleton";
 import { TrackList } from "@/components/tracks/TrackList";
 import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
+import { PlaybackBars } from "@/features/playback-indicators/PlaybackBars";
 import { useAddCollectionPlaylist, useCollectionPlaylists } from "@/hooks/useCollections";
 import { useAuthAction } from "@/hooks/useAuthAction";
 import { usePlaylistByUsernameSlug } from "@/hooks/usePlaylistByUsernameSlug";
@@ -128,6 +129,15 @@ export function ArtistProfileCollectionPanel({ playlist, owner }: ArtistProfileC
           ) : (
             <div className="h-full w-full" style={{ background: coverFallback(playlist.title) }} />
           )}
+          <span
+            className={[
+              "playback-thumb-glow rounded-md",
+              isActive ? "is-active" : "",
+              isPlaying ? "is-playing" : "",
+            ].join(" ")}
+            aria-hidden="true"
+          />
+          <PlaybackBars variant="thumb" active={isActive} playing={isPlaying} />
           <div className="absolute inset-0 flex items-center justify-center bg-black/35 opacity-0 transition group-hover:opacity-100">
             {isPlaying ? (
               <Pause size={20} className="text-white" fill="currentColor" />

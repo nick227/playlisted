@@ -66,6 +66,8 @@ export function TrackList({
           ? {
               playlistTitle: playlistContext.playlistTitle,
               ownerName: displayOwner,
+              ownerUsername: playlistContext.ownerUsername,
+              playlistSlug: playlistContext.slug,
             }
           : undefined;
 

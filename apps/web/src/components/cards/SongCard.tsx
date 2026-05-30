@@ -2,15 +2,22 @@ import { Pause, Play } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { LibrarySong } from "@playlisted/client-sdk";
 
+import { PlaybackBars } from "@/features/playback-indicators/PlaybackBars";
+import { useTrackPlayback } from "@/hooks/useTrackPlayback";
 import { coverFallback, profilePath } from "@/lib/routes";
 
 interface SongCardProps {
   song: LibrarySong;
   isPlaying: boolean;
+  isActive?: boolean;
   onPlay: () => void;
 }
 
-export function SongCard({ song, isPlaying, onPlay }: SongCardProps) {
+export function SongCard({ song, isPlaying, isActive = isPlaying, onPlay }: SongCardProps) {
+  const playback = useTrackPlayback(song.id);
+  const active = isActive || playback.isActive;
+  const playing = active && (isPlaying || playback.isPlaying);
+
   return (
     <div className="group flex w-40 shrink-0 flex-col gap-2">
       <div
@@ -26,17 +33,26 @@ export function SongCard({ song, isPlaying, onPlay }: SongCardProps) {
             aria-hidden
           />
         )}
+        <span
+          className={[
+            "playback-thumb-glow rounded-lg",
+            active ? "is-active" : "",
+            playing ? "is-playing" : "",
+          ].join(" ")}
+          aria-hidden="true"
+        />
+        <PlaybackBars variant="thumb" active={active} playing={playing} />
         <div
           className={[
             "absolute inset-0 flex items-center justify-center bg-black/50 transition-opacity",
-            isPlaying ? "opacity-100" : "opacity-0 group-hover:opacity-100",
+            active ? "opacity-100" : "opacity-0 group-hover:opacity-100",
           ].join(" ")}
         >
-          {isPlaying
+          {playing
             ? <Pause size={28} className="text-white" fill="currentColor" />
             : <Play size={28} className="ml-1 text-white" fill="currentColor" />}
         </div>
-        {isPlaying && (
+        {active && (
           <div className="pointer-events-none absolute inset-0 rounded-lg ring-2 ring-inset ring-[var(--color-brand)]" />
         )}
       </div>
@@ -46,7 +62,7 @@ export function SongCard({ song, isPlaying, onPlay }: SongCardProps) {
           onClick={onPlay}
           className={[
             "block w-full truncate text-left text-sm font-medium transition",
-            isPlaying ? "text-[var(--color-brand)]" : "text-white hover:text-white/80",
+            active ? "text-[var(--color-brand)]" : "text-white hover:text-white/80",
           ].join(" ")}
         >
           {song.title}

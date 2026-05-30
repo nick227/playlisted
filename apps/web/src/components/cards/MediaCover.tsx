@@ -1,5 +1,6 @@
 import { Pause, Play } from "lucide-react";
 
+import { PlaybackBars } from "@/features/playback-indicators/PlaybackBars";
 import { coverFallback } from "@/lib/routes";
 
 interface MediaCoverProps {
@@ -9,6 +10,7 @@ interface MediaCoverProps {
   onPlay?: () => void;
   isPlaying?: boolean;
   isActive?: boolean;
+  showPlaybackBars?: boolean;
 }
 
 export function MediaCover({
@@ -18,6 +20,7 @@ export function MediaCover({
   onPlay,
   isPlaying = false,
   isActive = false,
+  showPlaybackBars = false,
 }: MediaCoverProps) {
   const rounded = shape === "circle" ? "rounded-full" : "rounded-lg";
   const showOverlay = Boolean(onPlay);
@@ -33,6 +36,20 @@ export function MediaCover({
           aria-hidden
         />
       )}
+      {showPlaybackBars ? (
+        <>
+          <span
+            className={[
+              "playback-thumb-glow",
+              isActive ? "is-active" : "",
+              isPlaying ? "is-playing" : "",
+              rounded,
+            ].join(" ")}
+            aria-hidden="true"
+          />
+          <PlaybackBars variant="thumb" active={isActive} playing={isPlaying} />
+        </>
+      ) : null}
       {showOverlay ? (
         <button
           type="button"

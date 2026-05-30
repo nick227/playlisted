@@ -9,7 +9,9 @@ export function librarySongToQueueTrack(song: LibrarySong, context?: string): Qu
   return {
     ...song,
     ownerName: song.uploader.displayName,
+    ownerUsername: song.uploader.username,
     playlistTitle: context ?? song.playlist.title,
+    playlistSlug: song.playlist.slug,
   };
 }
 
@@ -30,7 +32,9 @@ export function topSongToQueueTrack(item: TopSongItem, context?: string): QueueT
     createdAt: item.createdAt,
     updatedAt: item.updatedAt,
     ownerName: item.uploader.displayName,
+    ownerUsername: item.uploader.username,
     playlistTitle: context ?? item.playlist.title,
+    playlistSlug: item.playlist.slug,
   };
 }
 
@@ -45,21 +49,25 @@ export function chartItemPlaybackContext(item: TopSongItem): PlaybackContext {
 
 export function recordingSummaryToQueueTrack(
   recording: RecordingSummary,
-  context?: { playlistTitle?: string; ownerName?: string },
+  context?: { playlistTitle?: string; ownerName?: string; ownerUsername?: string; playlistSlug?: string },
 ): QueueTrack {
   return {
     ...recording,
     ownerName: context?.ownerName,
+    ownerUsername: context?.ownerUsername,
     playlistTitle: context?.playlistTitle,
+    playlistSlug: context?.playlistSlug,
   };
 }
 
 export function personalTrackToQueueTrack(
-  track: RecordingSummary & { uploader: { displayName: string } },
+  track: RecordingSummary & { uploader: { displayName: string; username?: string }; playlist?: { slug?: string } },
 ): QueueTrack {
   return {
     ...track,
     ownerName: track.uploader.displayName,
+    ownerUsername: track.uploader.username,
+    playlistSlug: track.playlist?.slug,
   };
 }
 

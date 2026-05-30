@@ -52,3 +52,121 @@ body {
   background: var(--color-surface-elevated);
   border-radius: 9999px;
 }
+
+.playback-bars {
+  --bar-active-opacity: 1;
+  --bar-inactive-opacity: 0.28;
+  --bar-height-base: 28%;
+  --bar-height-range: 56%;
+  --bar-width: 2px;
+  --bar-gap: 2px;
+  --bar-color: var(--color-brand);
+  --bar-glow: color-mix(in srgb, var(--color-brand) 70%, transparent);
+  display: inline-flex;
+  align-items: end;
+  justify-content: center;
+  gap: var(--bar-gap);
+  pointer-events: none;
+  opacity: var(--bar-inactive-opacity);
+  transition: opacity 160ms ease, filter 160ms ease;
+}
+
+.playback-bars.is-inactive {
+  filter: saturate(0.6);
+}
+
+.playback-bars.is-active {
+  opacity: var(--bar-active-opacity);
+}
+
+.playback-bars__bar {
+  display: block;
+  width: var(--bar-width);
+  height: var(--bar-rest-height, var(--bar-height-base));
+  min-height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(to top, var(--bar-color), color-mix(in srgb, white 22%, var(--bar-color)));
+  box-shadow: 0 0 10px var(--bar-glow);
+  transform-origin: bottom;
+}
+
+.playback-bars.is-playing .playback-bars__bar {
+  animation: playback-bars-pulse 760ms ease-in-out infinite;
+  animation-delay: calc(var(--bar-index) * -120ms);
+}
+
+.playback-bars.is-paused .playback-bars__bar {
+  animation: none;
+}
+
+.playback-bars--row {
+  width: 16px;
+  height: 20px;
+  flex: 0 0 16px;
+}
+
+.playback-bars--thumb {
+  --bar-width: 3px;
+  --bar-gap: 3px;
+  --bar-active-opacity: 0.88;
+  --bar-inactive-opacity: 0.34;
+  position: absolute;
+  left: 9px;
+  right: auto;
+  bottom: 9px;
+  z-index: 28;
+  width: 30px;
+  height: 24px;
+  padding: 3px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.38);
+  backdrop-filter: blur(8px);
+}
+
+.playback-thumb-glow {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  pointer-events: none;
+  opacity: 0;
+  background:
+    radial-gradient(circle at 78% 78%, color-mix(in srgb, var(--color-brand) 42%, transparent), transparent 34%),
+    linear-gradient(to top, rgba(124, 77, 255, 0.24), transparent 46%);
+  mix-blend-mode: screen;
+  transition: opacity 180ms ease;
+}
+
+.playback-thumb-glow.is-active {
+  opacity: 0.72;
+}
+
+.playback-thumb-glow.is-playing {
+  animation: playback-thumb-breathe 1200ms ease-in-out infinite;
+}
+
+@keyframes playback-bars-pulse {
+  0%,
+  100% {
+    height: var(--bar-rest-height, var(--bar-height-base));
+  }
+  45% {
+    height: var(--bar-peak-height, calc(var(--bar-height-base) + var(--bar-height-range)));
+  }
+}
+
+@keyframes playback-thumb-breathe {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 0.82;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .playback-bars.is-playing .playback-bars__bar,
+  .playback-thumb-glow.is-playing {
+    animation: none;
+  }
+}

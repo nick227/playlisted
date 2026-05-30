@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 
 import { PlaylistActionMenu } from "@/components/media/PlaylistActionMenu";
 import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
+import { PlaybackBars } from "@/features/playback-indicators/PlaybackBars";
 import { usePlaylist } from "@/hooks/usePlaylist";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 import { coverFallback, playlistPath } from "@/lib/routes";
@@ -201,6 +202,15 @@ export function SmartPlaylistCard({
             aria-hidden
           />
         )}
+        <span
+          className={[
+            "playback-thumb-glow rounded-lg",
+            isActive ? "is-active" : "",
+            isPlaying ? "is-playing" : "",
+          ].join(" ")}
+          aria-hidden="true"
+        />
+        <PlaybackBars variant="thumb" active={isActive} playing={isPlaying} />
 
         {/* Play / pause overlay */}
         <div

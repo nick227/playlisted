@@ -5,6 +5,7 @@ import type { TopSongItem } from "@playlisted/client-sdk";
 
 import { RecordingActionMenu } from "@/components/media/RecordingActionMenu";
 import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
+import { PlaybackBars } from "@/features/playback-indicators/PlaybackBars";
 import { useTrackPlayback } from "@/hooks/useTrackPlayback";
 import { topSongToQueueTrack } from "@/lib/queueTrack";
 import { coverFallback, profilePath } from "@/lib/routes";
@@ -54,6 +55,15 @@ export function ChartSongCard({ item, className, actionSlot, onPlay }: ChartSong
             aria-hidden
           />
         )}
+        <span
+          className={[
+            "playback-thumb-glow rounded-lg",
+            isActive ? "is-active" : "",
+            isPlaying ? "is-playing" : "",
+          ].join(" ")}
+          aria-hidden="true"
+        />
+        <PlaybackBars variant="thumb" active={isActive} playing={isPlaying} />
 
         <div className="absolute right-1.5 top-1.5 z-20">
           {actionSlot ?? (
@@ -96,7 +106,7 @@ export function ChartSongCard({ item, className, actionSlot, onPlay }: ChartSong
         />
         <div
           className={[
-            "absolute bottom-2 left-2 right-2 transition-opacity",
+            "absolute bottom-2 left-2 right-2 pl-10 transition-opacity",
             onPlay && !isActive ? "group-hover:opacity-0" : "",
           ].join(" ")}
         >

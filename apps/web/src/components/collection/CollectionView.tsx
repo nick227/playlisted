@@ -1,5 +1,5 @@
 import type { PlaylistDetail } from "@playlisted/client-sdk";
-import { Pause, Pencil, Play, Plus, Share2, Shuffle, Upload } from "lucide-react";
+import { Library, Pause, Pencil, Play, Plus, Share2, Shuffle, Upload } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import { EmptyState } from "@/components/feedback/EmptyState";
@@ -225,7 +225,7 @@ export function CollectionView({
             </p>
           ) : null}
           {!isEdit && onPlayAll ? (
-            <div className="mt-6 flex flex-wrap gap-3">
+            <div className="mt-6 flex flex-nowrap gap-3 collection-controls">
               <button
                 type="button"
                 onClick={() => onPlayAll(false)}
@@ -275,10 +275,27 @@ export function CollectionView({
                   type="button"
                   onClick={onAddCollection}
                   disabled={collectionAddPending || collectionAdded}
-                  className="inline-flex items-center gap-2 rounded-full border border-white/20 px-5 py-2.5 text-sm font-medium text-white hover:bg-white/10"
+                  aria-label={
+                    collectionAdded
+                      ? "In collections"
+                      : collectionAddPending
+                        ? "Adding to collections"
+                        : "Add to collections"
+                  }
+                  aria-pressed={collectionAdded}
+                  title={
+                    collectionAdded
+                      ? "In collections"
+                      : collectionAddPending
+                        ? "Adding…"
+                        : "Add to collections"
+                  }
+                  className={[
+                    "inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/20 text-white transition hover:bg-white/10",
+                    collectionAdded ? "bg-white/10" : "",
+                  ].join(" ")}
                 >
-                  <Plus size={18} />
-                  {collectionAdded ? "In collections" : collectionAddPending ? "Adding..." : "Add to collections"}
+                  {collectionAdded ? <Library size={18} /> : <Plus size={18} />}
                 </button>
               ) : null}
             </div>

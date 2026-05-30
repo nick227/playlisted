@@ -10,6 +10,7 @@ import { RecordingActionMenu } from "@/components/media/RecordingActionMenu";
 import { EmptyState } from "@/components/feedback/EmptyState";
 import { Skeleton } from "@/components/feedback/Skeleton";
 import { ContentRow } from "@/components/discovery/ContentRow";
+import { PlaybackBars } from "@/features/playback-indicators/PlaybackBars";
 import { coverFallback, playlistPath, profilePath } from "@/lib/routes";
 import { formatDuration, formatPlayCount } from "@/lib/format";
 import { personalTrackToQueueTrack } from "@/lib/queueTrack";
@@ -75,6 +76,7 @@ function PersonalTrackRow({
         isActive ? "bg-white/[0.08]" : "hover:bg-white/[0.04]",
       ].join(" ")}
     >
+      <PlaybackBars active={isActive} playing={isPlaying} />
       {/* artwork + play */}
       <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-md">
         {track.artworkUrl ? (

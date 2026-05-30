@@ -4,6 +4,7 @@ import type { LibrarySong } from "@playlisted/client-sdk";
 
 import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
 import { RecordingActionMenu } from "@/components/media/RecordingActionMenu";
+import { PlaybackBars } from "@/features/playback-indicators/PlaybackBars";
 import { useTrackPlayback } from "@/hooks/useTrackPlayback";
 import { formatDuration, formatPlayCount } from "@/lib/format";
 import { coverFallback } from "@/lib/routes";
@@ -38,6 +39,7 @@ export function LibraryTrackRow({ song, onPlay, queueTrack }: LibraryTrackRowPro
         isActive ? "bg-white/10" : "hover:bg-[var(--color-surface-hover)]",
       ].join(" ")}
     >
+      <PlaybackBars active={isActive} playing={isPlaying} />
       <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-md">
         {song.artworkUrl ? (
           <img src={song.artworkUrl} alt="" className="h-full w-full object-cover" />

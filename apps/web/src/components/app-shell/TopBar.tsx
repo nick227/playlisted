@@ -33,7 +33,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
       >
         <Menu size={22} />
       </button>
-      <Link to="/" className="shrink-0 text-lg font-bold tracking-tight text-white">
+      <Link to="/" className="shrink-0 text-lg font-bold tracking-tight text-white flex sm:hidden">
         Play<span className="text-[var(--color-brand)]">Listed</span>
       </Link>
       <SearchAutocomplete className="mx-auto hidden max-w-xl flex-1 md:block" />

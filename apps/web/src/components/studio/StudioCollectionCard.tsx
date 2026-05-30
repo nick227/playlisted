@@ -96,6 +96,7 @@ export function StudioCollectionCard({
             onPlay={canPlay ? handlePlay : undefined}
             isPlaying={isPlaying}
             isActive={isActive}
+            showPlaybackBars={canPlay}
           />
         </div>
 

@@ -13,17 +13,15 @@ import { useRef } from "react";
 import { Link } from "react-router-dom";
 
 import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
-import { PlayerBarVisualizerBackground } from "@/features/visualizer/components/PlayerBarVisualizerBackground";
-import { VisualizerControls } from "@/features/visualizer/components/VisualizerControls";
 import { formatDuration } from "@/lib/format";
 import { coverFallback, playlistPath } from "@/lib/routes";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 
 const playerFooterClass =
-  "fixed inset-x-0 bottom-0 z-40 max-w-full overflow-hidden border-t border-[var(--color-border)] bg-[var(--color-canvas-alt)] pb-[env(safe-area-inset-bottom,0px)] min-h-[var(--spacing-player-safe-mobile)] lg:z-[55] md:min-h-[var(--spacing-player)] md:pb-0";
+  "fixed inset-x-0 bottom-0 z-40 max-w-full overflow-x-clip border-t border-[var(--color-border)] bg-[var(--color-canvas-alt)] pb-[env(safe-area-inset-bottom,0px)] min-h-[var(--spacing-player-safe-mobile)] lg:z-[55] md:min-h-[var(--spacing-player)] md:pb-0";
 
 const playerBodyClass =
-  "relative z-10 flex h-[var(--spacing-player-mobile)] w-full min-w-0 max-w-full flex-col justify-center gap-2.5 px-4 md:grid md:h-[var(--spacing-player)] md:grid-cols-3 md:items-center md:gap-2 md:px-4";
+  "flex h-[var(--spacing-player-mobile)] w-full min-w-0 max-w-full flex-col justify-center gap-2.5 px-4 md:grid md:h-[var(--spacing-player)] md:grid-cols-3 md:items-center md:gap-2 md:px-4";
 
 export function BottomPlayer() {
   const {
@@ -50,7 +48,6 @@ export function BottomPlayer() {
   } = useAudioPlayer();
 
   const prevVolumeRef = useRef(1);
-  const footerRef = useRef<HTMLElement | null>(null);
 
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
@@ -94,10 +91,9 @@ export function BottomPlayer() {
       : upNextName;
 
   return (
-    <footer ref={footerRef} className={`${playerFooterClass} relative`}>
-      <PlayerBarVisualizerBackground containerRef={footerRef} />
+    <footer className={playerFooterClass}>
       <div
-        className="absolute inset-x-0 top-0 z-20 h-0.5 bg-[var(--color-surface-elevated)]"
+        className="absolute inset-x-0 top-0 h-0.5 bg-[var(--color-surface-elevated)]"
         role="progressbar"
         aria-valuenow={progress}
       >
@@ -234,12 +230,6 @@ export function BottomPlayer() {
               </span>
             )}
           </button>
-
-          <div className="mx-1 h-4 w-px bg-white/10" />
-
-          <VisualizerControls />
-
-          <div className="mx-1 h-4 w-px bg-white/10" />
 
           {/* Queue */}
           <button
