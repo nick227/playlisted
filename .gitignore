@@ -20,6 +20,9 @@ apps/web/dist/
 
 # User-generated & seed media (copied into uploads at seed/runtime)
 uploads/
+!apps/web/src/components/uploads/
+apps/web/src/components/uploads/*
+!apps/web/src/components/uploads/TrackUploadQueue.tsx
 temp/
 
 # Test & coverage
