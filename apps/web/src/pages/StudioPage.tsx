@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowUpRight, BarChart3, Clock3, Code2, ImagePlus, Plus } from "lucide-react";
+import { ArrowUpRight, BarChart3, Clock3, Code2, ImagePlus, Link2, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import { AuthField } from "@/components/auth/AuthField";
@@ -19,6 +19,12 @@ import { usePageMeta } from "@/hooks/usePageMeta";
 const typeOptions = [{ value: "PLAYLIST" as const, label: "Collection" }];
 
 const studioLinks = [
+  {
+    to: "/studio/links",
+    title: "Links",
+    desc: "Manage social and music links.",
+    icon: Link2,
+  },
   {
     to: "/studio/analytics",
     title: "Analytics",
@@ -215,26 +221,6 @@ export function StudioPage() {
             View public profile <ArrowUpRight size={14} />
           </Link>
         </div>
-        <div className="grid w-full gap-3 sm:w-auto sm:grid-cols-3">
-          {studioLinks.map((item) => {
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.to}
-                to={item.to}
-                className="flex items-center gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 transition hover:border-[var(--color-brand)]/50"
-              >
-                <span className="grid h-9 w-9 place-items-center rounded-lg bg-white/5 text-[var(--color-brand)]">
-                  <Icon size={18} />
-                </span>
-                <span className="min-w-0">
-                  <span className="block text-sm font-bold text-white">{item.title}</span>
-                  <span className="block truncate text-xs text-[var(--color-text-muted)]">{item.desc}</span>
-                </span>
-              </Link>
-            );
-          })}
-        </div>
       </header>
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -259,6 +245,27 @@ export function StudioPage() {
           loading={analytics.isLoading}
         />
       </section>
+      
+        <div className="grid w-full gap-3 sm:w-auto sm:grid-cols-4">
+          {studioLinks.map((item) => {
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                className="flex items-center gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 transition hover:border-[var(--color-brand)]/50"
+              >
+                <span className="grid h-9 w-9 place-items-center rounded-lg bg-white/5 text-[var(--color-brand)]">
+                  <Icon size={18} />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-sm font-bold text-white">{item.title}</span>
+                  <span className="block truncate text-xs text-[var(--color-text-muted)]">{item.desc}</span>
+                </span>
+              </Link>
+            );
+          })}
+        </div>
 
       <section className="grid gap-6 lg:grid-cols-[minmax(280px,380px)_1fr]">
         <form
@@ -273,8 +280,7 @@ export function StudioPage() {
               Profile settings
             </p>
             <p className="mt-2 text-sm text-[var(--color-text-muted)]">
-              Live URL:{" "}
-              <Link to={profilePath(username)} className="font-semibold text-[var(--color-brand)] hover:underline">
+              <Link to={profilePath(username)} target="_blank" className="font-semibold text-[var(--color-brand)] hover:underline">
                 {window.location.origin}
                 {profilePath(username)}
               </Link>
@@ -349,10 +355,7 @@ export function StudioPage() {
               <p className="text-xs font-semibold tracking-[0.18em] text-[var(--color-text-subtle)] uppercase">
                 Collections
               </p>
-              <h2 className="mt-2 text-2xl font-extrabold tracking-tight text-white">Your library surface</h2>
-              <p className="mt-2 max-w-2xl text-sm text-[var(--color-text-muted)]">
-                Collections you create and playlists you save from other artists, with cover art, status, and stats.
-              </p>
+              <h2 className="mt-2 text-2xl font-extrabold tracking-tight text-white">Your library</h2>
             </div>
             {typeOptions.map((opt) => (
               <button
@@ -376,8 +379,8 @@ export function StudioPage() {
           ) : allItems.length > 0 ? (
             <>
               <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <SummaryStat label="Yours" value={String(ownedItems.length)} />
-                <SummaryStat label="Saved" value={String(followedItems.length)} />
+                <SummaryStat label="Uploaded" value={String(ownedItems.length)} />
+                <SummaryStat label="Following" value={String(followedItems.length)} />
                 <SummaryStat label="Tracks" value={String(totalTracks)} />
                 <SummaryStat label="Runtime" value={formatPlaylistDuration(totalDuration)} />
               </div>

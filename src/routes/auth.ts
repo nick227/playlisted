@@ -10,6 +10,7 @@ import {
   verifyPassword,
 } from "../lib/auth.js";
 import { prisma } from "../lib/prisma.js";
+import { normalizeProfileLinks } from "../lib/profileLinks.js";
 import { slugify } from "../utils/slug.js";
 
 export const authRouter = Router();
@@ -23,6 +24,7 @@ function mapAuthUser(user: any) {
     bio: user.bio,
     avatarUrl: user.avatarUrl,
     heroImageUrl: user.heroImageUrl,
+    profileLinks: normalizeProfileLinks(user.profileLinks),
     role: user.role,
     status: user.status,
     isFeaturedArtist: user.isFeaturedArtist,

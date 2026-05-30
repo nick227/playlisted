@@ -8,6 +8,7 @@ export type UserSummary = components["schemas"]["UserSummary"];
 export type UserListResponse = components["schemas"]["UserListResponse"];
 export type PlaylistSummary = components["schemas"]["PlaylistSummary"];
 export type UserDetail = components["schemas"]["UserDetail"];
+export type ProfileLink = components["schemas"]["ProfileLink"];
 export type PlaylistListResponse = components["schemas"]["PlaylistListResponse"];
 export type PlaylistDetail = components["schemas"]["PlaylistDetail"];
 export type RecordingListResponse = components["schemas"]["RecordingListResponse"];

@@ -72,7 +72,6 @@ export function StudioProfilePage() {
             Edit how you appear publicly. Preview streams, collections, and metrics exactly as listeners see them.
           </p>
           <p className="mt-2 text-sm text-[var(--color-text-muted)]">
-            Live URL:{" "}
             <Link to={profilePath(username)} className="font-semibold text-[var(--color-brand)] hover:underline">
               {window.location.origin}
               {profilePath(username)}

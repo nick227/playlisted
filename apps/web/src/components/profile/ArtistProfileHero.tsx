@@ -1,22 +1,24 @@
 import type { UserDetail } from "@playlisted/client-sdk";
-import { Share2 } from "lucide-react";
+import { ExternalLink, Share2 } from "lucide-react";
 
 import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
 import { formatPlayCount } from "@/lib/format";
 import { coverFallback } from "@/lib/routes";
 import { shareContent } from "@/lib/shareContent";
+import { getProfileLinkPlatform } from "./profileLinks";
 
 type ArtistProfileHeroProps = {
   user: UserDetail;
   totalStreams: number;
   isOwner: boolean;
-  preview?: Partial<Pick<UserDetail, "displayName" | "username" | "bio">>;
+  preview?: Partial<Pick<UserDetail, "displayName" | "username" | "bio" | "profileLinks">>;
 };
 
 export function ArtistProfileHero({ user, totalStreams, isOwner, preview }: ArtistProfileHeroProps) {
   const displayName = preview?.displayName ?? user.displayName;
   const username = preview?.username ?? user.username;
   const bio = preview?.bio ?? user.bio;
+  const profileLinks = preview?.profileLinks ?? user.profileLinks ?? [];
 
   async function handleShare() {
     await shareContent(`${window.location.origin}/@/${encodeURIComponent(username)}`, displayName);
@@ -76,6 +78,29 @@ export function ArtistProfileHero({ user, totalStreams, isOwner, preview }: Arti
               </>
             ) : null}
           </div>
+
+          {profileLinks.length > 0 ? (
+            <nav aria-label={`${displayName} links`} className="flex flex-wrap gap-2">
+              {profileLinks.map((link) => {
+                const platform = getProfileLinkPlatform(link.platform);
+                const Icon = platform.icon;
+                return (
+                  <a
+                    key={link.id}
+                    href={link.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex h-9 items-center gap-2 rounded-full border border-white/10 px-3 text-xs font-semibold text-[var(--color-text-muted)] transition hover:border-white/25 hover:text-white"
+                    title={link.label}
+                  >
+                    <Icon size={14} />
+                    <span>{link.label}</span>
+                    <ExternalLink size={12} className="opacity-50" />
+                  </a>
+                );
+              })}
+            </nav>
+          ) : null}
         </div>
       </div>
 

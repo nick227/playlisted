@@ -3,6 +3,7 @@ import { Router } from "express";
 
 import { getAuthContextFromRequest } from "../lib/auth.js";
 import { prisma } from "../lib/prisma.js";
+import { assertProfileLinks, normalizeProfileLinks } from "../lib/profileLinks.js";
 import { requireAdmin } from "../lib/requireAdmin.js";
 import { requireAuth } from "../lib/requireAuth.js";
 import { slugify } from "../utils/slug.js";
@@ -21,6 +22,7 @@ function mapUserSummary(user: any) {
     bio: user.bio,
     avatarUrl: user.avatarUrl,
     heroImageUrl: user.heroImageUrl,
+    profileLinks: normalizeProfileLinks(user.profileLinks),
     role: user.role,
     status: user.status,
     isFeaturedArtist: user.isFeaturedArtist,
@@ -223,6 +225,7 @@ usersRouter.patch("/me", async (req, res, next) => {
       bio?: string | null;
       avatarUrl?: string | null;
       heroImageUrl?: string | null;
+      profileLinks?: unknown;
     };
 
     let username = auth.user.username;
@@ -248,6 +251,18 @@ usersRouter.patch("/me", async (req, res, next) => {
       }
     }
 
+    let profileLinks;
+    if (body.profileLinks !== undefined) {
+      try {
+        profileLinks = assertProfileLinks(body.profileLinks);
+      } catch (error) {
+        return res.status(400).json({
+          error: "invalid_profile_links",
+          message: error instanceof Error ? error.message : "Profile links are invalid.",
+        });
+      }
+    }
+
     const updated = await prisma.user.update({
       where: { id: auth.user.id },
       data: {
@@ -256,6 +271,7 @@ usersRouter.patch("/me", async (req, res, next) => {
         ...(body.bio !== undefined ? { bio: body.bio } : {}),
         ...(body.avatarUrl !== undefined ? { avatarUrl: body.avatarUrl } : {}),
         ...(body.heroImageUrl !== undefined ? { heroImageUrl: body.heroImageUrl } : {}),
+        ...(body.profileLinks !== undefined ? { profileLinks } : {}),
       },
       include: {
         ownedPlaylists: {

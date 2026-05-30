@@ -9,7 +9,7 @@ import { ArtistProfileCollectionPanel } from "./ArtistProfileCollectionPanel";
 import { ArtistProfileHero } from "./ArtistProfileHero";
 import { computeArtistStreams } from "./artistProfileUtils";
 
-export type ArtistProfilePreview = Partial<Pick<UserDetail, "displayName" | "username" | "bio">>;
+export type ArtistProfilePreview = Partial<Pick<UserDetail, "displayName" | "username" | "bio" | "profileLinks">>;
 
 type ArtistProfileViewProps = {
   user: UserDetail;

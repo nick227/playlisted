@@ -24,6 +24,7 @@ import { StudioPage } from "@/pages/StudioPage";
 import { StudioCollectionEditPage } from "@/pages/studio/StudioCollectionEditPage";
 import { StudioCollectionsPage } from "@/pages/studio/StudioCollectionsPage";
 import { StudioProfilePage } from "@/pages/studio/StudioProfilePage";
+import { StudioLinksPage } from "@/pages/studio/StudioLinksPage";
 import { StudioAnalyticsPage } from "@/pages/studio/StudioAnalyticsPage";
 import { StudioHistoryPage } from "@/pages/studio/StudioHistoryPage";
 import { StudioDeveloperPage } from "@/pages/studio/StudioDeveloperPage";
@@ -93,6 +94,14 @@ function MainRoutes() {
           element={
             <ProtectedRoute roles={["CREATOR", "ADMIN", "LISTENER"]}>
               <StudioProfilePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/studio/links"
+          element={
+            <ProtectedRoute roles={["CREATOR", "ADMIN", "LISTENER"]}>
+              <StudioLinksPage />
             </ProtectedRoute>
           }
         />

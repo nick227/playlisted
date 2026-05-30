@@ -85,6 +85,7 @@ model User {
   bio              String?    @db.Text
   avatarUrl        String?    @db.VarChar(2048)
   heroImageUrl     String?    @db.VarChar(2048)
+  profileLinks     Json?
   role             UserRole   @default(LISTENER)
   status           UserStatus @default(ACTIVE)
   isFeaturedArtist Boolean    @default(false)
