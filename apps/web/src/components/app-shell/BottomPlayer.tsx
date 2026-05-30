@@ -12,6 +12,7 @@ import {
 import { useRef } from "react";
 import { Link } from "react-router-dom";
 
+import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
 import { formatDuration } from "@/lib/format";
 import { coverFallback, playlistPath } from "@/lib/routes";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
@@ -29,8 +30,9 @@ export function BottomPlayer() {
     seek,
     setQueueOpen,
     autoplayEnabled,
-    autoplayNextLabel,
+    autoplayNextSegment,
     upNextPipeline,
+    skipToUpNext,
     shuffle,
     toggleShuffle,
     repeatMode,
@@ -72,12 +74,13 @@ export function BottomPlayer() {
       })
     : null;
 
-  const upNextHint =
-    upNextPipeline.length > 0
-      ? `Up next · ${upNextPipeline.length} queued`
-      : autoplayEnabled && autoplayNextLabel
-        ? `Up next · ${autoplayNextLabel}`
-        : null;
+  const firstUpNext = upNextPipeline[0];
+  const upNextName = firstUpNext?.label ?? autoplayNextSegment?.label;
+  const canSkipToUpNext = upNextPipeline.length > 0 || autoplayEnabled;
+  const upNextText =
+    upNextPipeline.length > 1
+      ? `${upNextPipeline.length} queued`
+      : upNextName;
 
   return (
     <footer className="sticky bottom-0 z-50 shrink-0 border-t border-[var(--color-border)] bg-[var(--color-canvas-alt)]">
@@ -92,7 +95,7 @@ export function BottomPlayer() {
         />
       </div>
       <div className="grid h-[var(--spacing-player)] grid-cols-1 items-center gap-2 px-4 md:grid-cols-3">
-        <div className="flex min-w-0 items-center gap-3">
+        <div className="group/card flex min-w-0 items-center gap-3">
           {currentTrack.artworkUrl ? (
             <img
               src={currentTrack.artworkUrl}
@@ -125,10 +128,17 @@ export function BottomPlayer() {
                 {[currentTrack.ownerName, currentTrack.playlistTitle].filter(Boolean).join(" • ")}
               </p>
             )}
-            {upNextHint ? (
-              <p className="truncate text-[10px] text-[var(--color-text-subtle)]">{upNextHint}</p>
+            {canSkipToUpNext && upNextText ? (
+              <button
+                type="button"
+                onClick={skipToUpNext}
+                className="block max-w-full truncate text-left text-[10px] text-[var(--color-text-subtle)] hover:text-white hover:underline"
+              >
+                Up next · {upNextText}
+              </button>
             ) : null}
           </div>
+          <FavoriteHeartButton target="recording" id={currentTrack.id} variant="inline" />
         </div>
         <div className="flex flex-col items-center gap-1">
           <div className="flex items-center gap-4">

@@ -11,7 +11,7 @@ import {
 } from "react";
 
 import { hydrateUpNextSegment } from "@/lib/upNext/hydrateSegment";
-import { prefetchAutoplayLabel } from "@/lib/upNext/prefetchAutoplayLabel";
+import { prefetchAutoplayNext, type PrefetchedPlaylistNext } from "@/lib/upNext/prefetchAutoplayNext";
 import { readAutoplayEnabled, writeAutoplayEnabled } from "@/lib/upNext/storage";
 import type { BeginSegmentOptions, UpNextSegment } from "@/lib/upNext/types";
 import { isPlayerShortcutSuppressed } from "@/lib/playerKeyboard";
@@ -40,7 +40,7 @@ interface AudioPlayerContextValue {
   queueIndex: number;
   upNextPipeline: UpNextSegment[];
   segmentLabel: string | null;
-  autoplayNextLabel: string | null;
+  autoplayNextSegment: PrefetchedPlaylistNext | null;
   autoplayEnabled: boolean;
   setAutoplayEnabled: (enabled: boolean) => void;
   state: PlayerState;
@@ -71,6 +71,7 @@ interface AudioPlayerContextValue {
   togglePlay: () => void;
   playNext: () => void;
   playPrevious: () => void;
+  skipToUpNext: () => void;
   seek: (time: number) => void;
   appendToQueue: (track: QueueTrack) => void;
   appendUpNextSegment: (segment: UpNextSegment) => void;
@@ -110,7 +111,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   const [queueIndex, setQueueIndex] = useState(-1);
   const [upNextPipeline, setUpNextPipeline] = useState<UpNextSegment[]>([]);
   const [segmentLabel, setSegmentLabel] = useState<string | null>(null);
-  const [autoplayNextLabel, setAutoplayNextLabel] = useState<string | null>(null);
+  const [autoplayNextSegment, setAutoplayNextSegment] = useState<PrefetchedPlaylistNext | null>(null);
   const [autoplayEnabled, setAutoplayEnabledState] = useState(() => readAutoplayEnabled());
   const [state, setState] = useState<PlayerState>("idle");
   const [currentTime, setCurrentTime] = useState(0);
@@ -135,7 +136,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     autoplayRef.current = enabled;
     writeAutoplayEnabled(enabled);
     setAutoplayEnabledState(enabled);
-    if (!enabled) setAutoplayNextLabel(null);
+    if (!enabled) setAutoplayNextSegment(null);
   }, []);
 
   const toggleShuffle = useCallback(() => {
@@ -363,6 +364,20 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     void advanceProgram();
   }, [loadTrack, advanceProgram]);
 
+  const skipToUpNext = useCallback(() => {
+    if (upNextPipelineRef.current.length === 0 && !autoplayRef.current) return;
+    if (advancingRef.current) return;
+
+    const idx = queueIndexRef.current;
+    const track = idx >= 0 ? queueRef.current[idx] : null;
+    if (track) {
+      flushPlayback(track, audioRef.current?.currentTime ?? currentTime, false);
+      loggedTrackRef.current = null;
+    }
+
+    void advanceProgram();
+  }, [currentTime, flushPlayback, advanceProgram]);
+
   const playPrevious = useCallback(() => {
     const audio = audioRef.current;
     if (audio && audio.currentTime > 3) {
@@ -480,13 +495,13 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!autoplayEnabled || !playbackContext.playlistId) {
-      setAutoplayNextLabel(null);
+      setAutoplayNextSegment(null);
       return;
     }
 
     let cancelled = false;
-    void prefetchAutoplayLabel(playbackContext.playlistId, playedPlaylistIdsRef.current).then((label) => {
-      if (!cancelled) setAutoplayNextLabel(label);
+    void prefetchAutoplayNext(playbackContext.playlistId, playedPlaylistIdsRef.current).then((segment) => {
+      if (!cancelled) setAutoplayNextSegment(segment);
     });
 
     return () => {
@@ -514,7 +529,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       queueIndex,
       upNextPipeline,
       segmentLabel,
-      autoplayNextLabel,
+      autoplayNextSegment,
       autoplayEnabled,
       setAutoplayEnabled,
       state,
@@ -535,6 +550,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       togglePlay,
       playNext,
       playPrevious,
+      skipToUpNext,
       seek,
       appendToQueue,
       appendUpNextSegment,
@@ -549,7 +565,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       queueIndex,
       upNextPipeline,
       segmentLabel,
-      autoplayNextLabel,
+      autoplayNextSegment,
       autoplayEnabled,
       setAutoplayEnabled,
       state,
@@ -569,6 +585,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       togglePlay,
       playNext,
       playPrevious,
+      skipToUpNext,
       seek,
       appendToQueue,
       appendUpNextSegment,

@@ -72,20 +72,21 @@ export function QueuePanel() {
     queueIndex,
     upNextPipeline,
     segmentLabel,
-    autoplayNextLabel,
+    autoplayNextSegment,
     autoplayEnabled,
     setAutoplayEnabled,
     queueOpen,
     setQueueOpen,
     playTrack,
     togglePlay,
+    skipToUpNext,
     removeFromQueue,
     removeUpNextSegment,
   } = useAudioPlayer();
 
   if (!queueOpen) return null;
 
-  const showThen = upNextPipeline.length > 0 || (autoplayEnabled && autoplayNextLabel);
+  const showThen = upNextPipeline.length > 0 || (autoplayEnabled && autoplayNextSegment);
 
   return (
     <>
@@ -98,7 +99,7 @@ export function QueuePanel() {
       <aside className="fixed bottom-[var(--spacing-player)] right-0 top-[var(--spacing-topbar)] z-[70] flex w-full max-w-sm flex-col border-l border-[var(--color-border)] bg-[var(--color-canvas-alt)] shadow-xl">
         <div className="flex items-center justify-between border-b border-[var(--color-border)] px-4 py-3">
           <div>
-            <h2 className="font-semibold text-white">Up next</h2>
+            <h2 className="font-semibold text-white">Playing</h2>
             {segmentLabel ? (
               <p className="truncate text-xs text-[var(--color-text-muted)]">Now · {segmentLabel}</p>
             ) : null}
@@ -139,7 +140,7 @@ export function QueuePanel() {
           {showThen ? (
             <div className="mt-4 border-t border-[var(--color-border)] pt-3">
               <p className="px-3 pb-2 text-xs font-medium uppercase tracking-wide text-[var(--color-text-subtle)]">
-                Then
+                Up next
               </p>
               {upNextPipeline.map((segment) => (
                 <PipelineItem
@@ -148,10 +149,14 @@ export function QueuePanel() {
                   onRemove={() => removeUpNextSegment(segment.id)}
                 />
               ))}
-              {autoplayEnabled && autoplayNextLabel ? (
-                <p className="truncate px-3 py-2 text-sm text-[var(--color-text-subtle)]">
-                  {autoplayNextLabel}
-                </p>
+              {autoplayEnabled && autoplayNextSegment ? (
+                <button
+                  type="button"
+                  onClick={skipToUpNext}
+                  className="block w-full truncate px-3 py-2 text-left text-sm text-[var(--color-text-subtle)] hover:text-white hover:underline"
+                >
+                  {autoplayNextSegment.label}
+                </button>
               ) : null}
             </div>
           ) : null}

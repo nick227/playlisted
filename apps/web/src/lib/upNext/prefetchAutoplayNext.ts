@@ -1,6 +1,8 @@
 import { resolveAutopilotSegment } from "./resolveAutopilot";
 import type { UpNextSegment } from "./types";
 
+export type PrefetchedPlaylistNext = Extract<UpNextSegment, { kind: "playlist" }>;
+
 function autopilotProbe(seedPlaylistId: string | undefined): Extract<UpNextSegment, { kind: "autopilot" }> {
   return {
     id: "",
@@ -12,11 +14,11 @@ function autopilotProbe(seedPlaylistId: string | undefined): Extract<UpNextSegme
   };
 }
 
-export async function prefetchAutoplayLabel(
+export async function prefetchAutoplayNext(
   seedPlaylistId: string | undefined,
   playedIds: Set<string>,
-): Promise<string | null> {
+): Promise<PrefetchedPlaylistNext | null> {
   const resolved = await resolveAutopilotSegment(autopilotProbe(seedPlaylistId), playedIds);
-  if (!resolved || resolved.kind === "autopilot") return null;
-  return resolved.label;
+  if (!resolved || resolved.kind !== "playlist") return null;
+  return resolved;
 }
