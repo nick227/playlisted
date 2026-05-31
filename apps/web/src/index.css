@@ -186,8 +186,9 @@ body {
     bottom var(--duration-player-enter) var(--ease-player-enter);
 }
 
-.bottom-player {
-  animation: bottom-player-enter var(--duration-player-enter) var(--ease-player-enter) both;
+.bottom-player__surface {
+  position: relative;
+  animation: bottom-player-fade-in var(--duration-player-enter) var(--ease-player-enter) both;
 }
 
 .bottom-player__section {
@@ -208,27 +209,125 @@ body {
   animation-delay: var(--delay-player-section-actions);
 }
 
-@keyframes bottom-player-enter {
+@keyframes bottom-player-fade-in {
   from {
     opacity: 0;
-    transform: translateY(calc(100% - 0.25rem));
   }
 
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
 @keyframes bottom-player-section-enter {
   from {
     opacity: 0;
-    transform: translateY(6px);
   }
 
   to {
     opacity: 1;
-    transform: translateY(0);
+  }
+}
+
+.greeting-sun-core {
+  background: radial-gradient(
+    circle,
+    hsl(48 98% 82%) 0%,
+    hsl(40 95% 62%) 42%,
+    hsl(32 88% 50% / 0.35) 68%,
+    transparent 72%
+  );
+  box-shadow:
+    0 0 48px 14px hsl(42 95% 62% / 0.42),
+    0 0 90px 28px hsl(38 90% 55% / 0.18);
+}
+
+.greeting-sun {
+  animation: greeting-sun-breathe 8s ease-in-out infinite;
+}
+
+.greeting-sun-rays {
+  animation: greeting-rays-rotate 90s linear infinite;
+}
+
+.greeting-moon-body {
+  background: radial-gradient(
+    circle at 38% 38%,
+    hsl(220 25% 92%) 0%,
+    hsl(215 22% 78%) 55%,
+    hsl(220 30% 62% / 0.4) 72%,
+    transparent 74%
+  );
+  box-shadow:
+    0 0 36px 10px hsl(215 40% 85% / 0.28),
+    inset -8px -4px 0 hsl(240 35% 12% / 0.55);
+}
+
+.greeting-moon-body::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: radial-gradient(circle at 68% 36%, hsl(240 40% 10% / 0.92) 0%, transparent 46%);
+}
+
+.greeting-moon {
+  animation: greeting-moon-pulse 6s ease-in-out infinite;
+}
+
+.greeting-star {
+  animation: greeting-star-twinkle 4.2s ease-in-out infinite;
+}
+
+@keyframes greeting-sun-breathe {
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+
+  50% {
+    filter: brightness(1.08);
+  }
+}
+
+@keyframes greeting-rays-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes greeting-moon-pulse {
+  0%,
+  100% {
+    filter: brightness(0.95);
+  }
+
+  50% {
+    filter: brightness(1.08);
+  }
+}
+
+@keyframes greeting-star-twinkle {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+
+  50% {
+    opacity: 0.95;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .greeting-sun,
+  .greeting-sun-rays,
+  .greeting-moon,
+  .greeting-star {
+    animation: none;
   }
 }
 
@@ -241,10 +340,9 @@ body {
     transition: none;
   }
 
-  .bottom-player,
+  .bottom-player__surface,
   .bottom-player__section {
     animation: none;
     opacity: 1;
-    transform: none;
   }
 }

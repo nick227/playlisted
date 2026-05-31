@@ -10,6 +10,7 @@ import {
   VolumeX,
 } from "lucide-react";
 import { useRef } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 
 import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
@@ -18,10 +19,10 @@ import { coverFallback, playlistPath } from "@/lib/routes";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 
 const playerFooterClass =
-  "bottom-player fixed inset-x-0 bottom-0 z-40 max-w-full overflow-x-clip border-t border-[var(--color-border)] bg-[var(--color-canvas-alt)] pb-[env(safe-area-inset-bottom,0px)] min-h-[var(--spacing-player-safe-mobile)] lg:z-[55] md:min-h-[var(--spacing-player)] md:pb-0";
+  "fixed inset-x-0 bottom-0 z-[55] w-full border-t border-[var(--color-border)] bg-[var(--color-canvas-alt)] pb-[env(safe-area-inset-bottom,0px)] md:pb-0";
 
 const playerBodyClass =
-  "flex h-[var(--spacing-player-mobile)] w-full min-w-0 max-w-full flex-col justify-center gap-2.5 px-4 md:grid md:h-[var(--spacing-player)] md:grid-cols-3 md:items-center md:gap-2 md:px-4";
+  "relative flex h-[var(--spacing-player-mobile)] w-full min-w-0 max-w-full flex-col justify-center gap-2.5 px-4 md:grid md:h-[var(--spacing-player)] md:grid-cols-3 md:items-center md:gap-2 md:px-4";
 
 export function BottomPlayer() {
   const {
@@ -85,158 +86,157 @@ export function BottomPlayer() {
       ? `${upNextPipeline.length} queued`
       : upNextName;
 
-  return (
+  return createPortal(
     <footer className={playerFooterClass}>
-      <div
-        className="absolute inset-x-0 top-0 h-0.5 bg-[var(--color-surface-elevated)]"
-        role="progressbar"
-        aria-valuenow={progress}
-      >
+      <div className="bottom-player__surface">
         <div
-          className="h-full bg-[var(--color-brand)] transition-[width]"
-          style={{ width: `${progress}%` }}
-        />
-      </div>
-      <div className={playerBodyClass}>
-        <div className="bottom-player__section bottom-player__section--track group/card flex min-w-0 items-center gap-3">
-          {currentTrack.artworkUrl ? (
-            <img
-              src={currentTrack.artworkUrl}
-              alt=""
-              className="h-12 w-12 shrink-0 rounded object-cover"
-            />
-          ) : (
-            <div className="h-12 w-12 shrink-0 rounded" style={artStyle} />
-          )}
-          <div className="min-w-0">
-            {playbackContext.playlistId ? (
-              <Link
-                to={`${playlistHref ?? ""}#track-${currentTrack.id}`}
-                className="block truncate text-sm font-medium text-white hover:underline"
-              >
-                {currentTrack.title}
-              </Link>
+          className="absolute inset-x-0 top-0 h-0.5 bg-[var(--color-surface-elevated)]"
+          role="progressbar"
+          aria-valuenow={progress}
+        >
+          <div
+            className="h-full bg-[var(--color-brand)] transition-[width]"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+        <div className={playerBodyClass}>
+          <div className="bottom-player__section bottom-player__section--track group/card flex min-w-0 items-center gap-3">
+            {currentTrack.artworkUrl ? (
+              <img
+                src={currentTrack.artworkUrl}
+                alt=""
+                className="h-12 w-12 shrink-0 rounded object-cover"
+              />
             ) : (
-              <p className="truncate text-sm font-medium text-white">{currentTrack.title}</p>
+              <div className="h-12 w-12 shrink-0 rounded" style={artStyle} />
             )}
-            {playlistHref ? (
-              <Link
-                to={playlistHref}
-                className="block truncate text-xs text-[var(--color-text-muted)] hover:underline"
-              >
-                {[currentTrack.ownerName, currentTrack.playlistTitle].filter(Boolean).join(" • ")}
-              </Link>
-            ) : (
-              <p className="truncate text-xs text-[var(--color-text-muted)]">
-                {[currentTrack.ownerName, currentTrack.playlistTitle].filter(Boolean).join(" • ")}
-              </p>
-            )}
-            {canSkipToUpNext && upNextText ? (
+            <div className="min-w-0">
+              {playbackContext.playlistId ? (
+                <Link
+                  to={`${playlistHref ?? ""}#track-${currentTrack.id}`}
+                  className="block truncate text-sm font-medium text-white hover:underline"
+                >
+                  {currentTrack.title}
+                </Link>
+              ) : (
+                <p className="truncate text-sm font-medium text-white">{currentTrack.title}</p>
+              )}
+              {playlistHref ? (
+                <Link
+                  to={playlistHref}
+                  className="block truncate text-xs text-[var(--color-text-muted)] hover:underline"
+                >
+                  {[currentTrack.ownerName, currentTrack.playlistTitle].filter(Boolean).join(" • ")}
+                </Link>
+              ) : (
+                <p className="truncate text-xs text-[var(--color-text-muted)]">
+                  {[currentTrack.ownerName, currentTrack.playlistTitle].filter(Boolean).join(" • ")}
+                </p>
+              )}
+              {canSkipToUpNext && upNextText ? (
+                <button
+                  type="button"
+                  onClick={skipToUpNext}
+                  className="block max-w-full truncate text-left text-[10px] text-[var(--color-text-subtle)] hover:text-white hover:underline"
+                >
+                  Up next · {upNextText}
+                </button>
+              ) : null}
+            </div>
+            <FavoriteHeartButton className="text-8xl" target="recording" id={currentTrack.id} variant="inline" />
+          </div>
+          <div className="bottom-player__section bottom-player__section--controls flex flex-col items-center justify-center gap-1.5">
+            <div className="flex items-center gap-4">
+              <button type="button" onClick={playPrevious} className="text-[var(--color-text-muted)] hover:text-white">
+                <SkipBack size={20} />
+              </button>
               <button
                 type="button"
-                onClick={skipToUpNext}
-                className="block max-w-full truncate text-left text-[10px] text-[var(--color-text-subtle)] hover:text-white hover:underline"
+                onClick={togglePlay}
+                aria-label={isPlaying ? "Pause" : "Play"}
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-black"
               >
-                Up next · {upNextText}
+                {isPlaying ? (
+                  <Pause size={20} fill="currentColor" />
+                ) : (
+                  <Play size={20} fill="currentColor" className="ml-0.5" />
+                )}
               </button>
-            ) : null}
+              <button type="button" onClick={playNext} className="text-[var(--color-text-muted)] hover:text-white">
+                <SkipForward size={20} />
+              </button>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-[var(--color-text-subtle)]">
+              <span>{formatDuration(currentTime)}</span>
+              <input
+                type="range"
+                min={0}
+                max={duration || 100}
+                value={currentTime}
+                onChange={(e) => seek(Number(e.target.value))}
+                className="hidden w-48 md:block accent-[var(--color-brand)]"
+              />
+              <span>{formatDuration(duration)}</span>
+            </div>
           </div>
-          <FavoriteHeartButton target="recording" id={currentTrack.id} variant="inline" />
-        </div>
-        <div className="bottom-player__section bottom-player__section--controls flex flex-col items-center justify-center gap-1.5">
-          <div className="flex items-center gap-4">
-            <button type="button" onClick={playPrevious} className="text-[var(--color-text-muted)] hover:text-white">
-              <SkipBack size={20} />
-            </button>
+          <div className="bottom-player__section bottom-player__section--actions hidden items-center justify-end gap-2 md:flex">
             <button
               type="button"
-              onClick={togglePlay}
-              aria-label={isPlaying ? "Pause" : "Play"}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-black"
+              onClick={handleVolumeMute}
+              className="shrink-0 text-[var(--color-text-muted)] transition hover:text-white"
+              aria-label={volume === 0 ? "Unmute" : "Mute"}
             >
-              {isPlaying ? (
-                <Pause size={20} fill="currentColor" />
-              ) : (
-                <Play size={20} fill="currentColor" className="ml-0.5" />
-              )}
+              {volume === 0 ? <VolumeX size={18} /> : <Volume2 size={18} />}
             </button>
-            <button type="button" onClick={playNext} className="text-[var(--color-text-muted)] hover:text-white">
-              <SkipForward size={20} />
-            </button>
-          </div>
-          <div className="flex items-center gap-2 text-xs text-[var(--color-text-subtle)]">
-            <span>{formatDuration(currentTime)}</span>
             <input
               type="range"
               min={0}
-              max={duration || 100}
-              value={currentTime}
-              onChange={(e) => seek(Number(e.target.value))}
-              className="hidden w-48 md:block accent-[var(--color-brand)]"
+              max={1}
+              step={0.02}
+              value={volume}
+              onChange={(e) => setVolume(Number(e.target.value))}
+              className="w-20 accent-[var(--color-brand)]"
+              aria-label="Volume"
             />
-            <span>{formatDuration(duration)}</span>
+
+            <div className="mx-1 h-4 w-px bg-white/10" />
+
+            <button
+              type="button"
+              onClick={toggleShuffle}
+              aria-pressed={shuffle}
+              aria-label="Shuffle"
+              className={`transition ${shuffle ? "text-[var(--color-brand)]" : "text-[var(--color-text-muted)] hover:text-white"}`}
+            >
+              <Shuffle size={18} />
+            </button>
+
+            <button
+              type="button"
+              onClick={cycleRepeat}
+              aria-label="Repeat"
+              className={`relative transition ${repeatMode !== "off" ? "text-[var(--color-brand)]" : "text-[var(--color-text-muted)] hover:text-white"}`}
+            >
+              <Repeat size={18} />
+              {repeatMode === "one" && (
+                <span className="absolute -right-1 -top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[var(--color-brand)] text-[8px] font-bold leading-none text-white">
+                  1
+                </span>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setQueueOpen(true)}
+              className="text-[var(--color-text-muted)] transition hover:text-white"
+              aria-label="Open queue"
+            >
+              <ListMusic size={20} />
+            </button>
           </div>
         </div>
-        <div className="bottom-player__section bottom-player__section--actions hidden items-center justify-end gap-2 md:flex">
-          {/* Volume */}
-          <button
-            type="button"
-            onClick={handleVolumeMute}
-            className="shrink-0 text-[var(--color-text-muted)] transition hover:text-white"
-            aria-label={volume === 0 ? "Unmute" : "Mute"}
-          >
-            {volume === 0 ? <VolumeX size={18} /> : <Volume2 size={18} />}
-          </button>
-          <input
-            type="range"
-            min={0}
-            max={1}
-            step={0.02}
-            value={volume}
-            onChange={(e) => setVolume(Number(e.target.value))}
-            className="w-20 accent-[var(--color-brand)]"
-            aria-label="Volume"
-          />
-
-          <div className="mx-1 h-4 w-px bg-white/10" />
-
-          {/* Shuffle */}
-          <button
-            type="button"
-            onClick={toggleShuffle}
-            aria-pressed={shuffle}
-            aria-label="Shuffle"
-            className={`transition ${shuffle ? "text-[var(--color-brand)]" : "text-[var(--color-text-muted)] hover:text-white"}`}
-          >
-            <Shuffle size={18} />
-          </button>
-
-          {/* Repeat */}
-          <button
-            type="button"
-            onClick={cycleRepeat}
-            aria-label="Repeat"
-            className={`relative transition ${repeatMode !== "off" ? "text-[var(--color-brand)]" : "text-[var(--color-text-muted)] hover:text-white"}`}
-          >
-            <Repeat size={18} />
-            {repeatMode === "one" && (
-              <span className="absolute -right-1 -top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[var(--color-brand)] text-[8px] font-bold leading-none text-white">
-                1
-              </span>
-            )}
-          </button>
-
-          {/* Queue */}
-          <button
-            type="button"
-            onClick={() => setQueueOpen(true)}
-            className="text-[var(--color-text-muted)] transition hover:text-white"
-            aria-label="Open queue"
-          >
-            <ListMusic size={20} />
-          </button>
-        </div>
       </div>
-    </footer>
+    </footer>,
+    document.body,
   );
 }

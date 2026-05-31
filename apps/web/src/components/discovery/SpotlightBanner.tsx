@@ -1,4 +1,5 @@
 import { Pause, Play } from "lucide-react";
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
 
 import { SmartPlaylistCard } from "@/components/cards/SmartPlaylistCard";
@@ -22,21 +23,19 @@ function toQueueTrack(r: RecordingInPlaylist, pl: PlaylistDetail): QueueTrack {
   };
 }
 
-// Context-aware: only active when this recording is playing in this specific playlist.
+// Active when this recording is current in this playlist (QueueTrack.id === recording.id).
 function CompactSongRow({
   recording,
-  playlistId,
   playlist,
   onPlay,
 }: {
   recording: RecordingInPlaylist;
-  playlistId: string;
   playlist: PlaylistDetail;
   onPlay: () => void;
 }) {
   const { currentTrack, isPlaying: playerIsPlaying, playbackContext } = useAudioPlayer();
   const isActive =
-    currentTrack?.id === recording.id && playbackContext.playlistId === playlistId;
+    currentTrack?.id === recording.id && playbackContext.playlistId === playlist.id;
   const isPlaying = isActive && playerIsPlaying;
 
   const songHref = `${playlistPath({
@@ -98,24 +97,35 @@ function CompactSongRow({
 
 function PlaylistSpotlight({ item }: { item: HomepageItem }) {
   const { data: playlist } = usePlaylist(item.id);
-  const { setQueue, currentTrack, togglePlay, playbackContext, state } = useAudioPlayer();
+  const { setQueue, currentTrack, togglePlay, playbackContext, isPlaying: playerIsPlaying } =
+    useAudioPlayer();
 
-  if (!playlist) return null;
+  const queueTracks = useMemo(
+    () => (playlist ? playlist.recordings.map((r) => toQueueTrack(r, playlist)) : []),
+    [playlist],
+  );
+
+  const context = useMemo(
+    () =>
+      playlist
+        ? {
+            playlistId: playlist.id,
+            playlistOwnerUsername: playlist.owner.username,
+            playlistSlug: playlist.slug,
+            sourceContext: "spotlight",
+          }
+        : null,
+    [playlist],
+  );
+
+  if (!playlist || !context) return null;
 
   const pl = playlist;
   const recordings = pl.recordings.slice(0, 8);
   const hasRecordings = recordings.length > 0;
-  const queueTracks: QueueTrack[] = pl.recordings.map((r) => toQueueTrack(r, pl));
-
-  const context = {
-    playlistId: pl.id,
-    playlistOwnerUsername: pl.owner.username,
-    playlistSlug: pl.slug,
-    sourceContext: "spotlight",
-  };
 
   const playlistHasCurrent = playbackContext.playlistId === pl.id;
-  const isPlaying = playlistHasCurrent && state === "playing";
+  const isPlaying = playlistHasCurrent && playerIsPlaying;
 
   function handlePlayAll() {
     if (playlistHasCurrent) { togglePlay(); return; }
@@ -135,7 +145,7 @@ function PlaylistSpotlight({ item }: { item: HomepageItem }) {
       <div className="grid md:grid-cols-2">
 
         {/* Left — cover image, capped so it doesn't over-stretch on tall right columns */}
-        <div className="h-52 mx-auto md:h-auto md:max-h-[480px]">
+        <div className="h-52 w-full overflow-hidden md:h-auto md:max-h-[480px]">
           {pl.coverArtUrl ? (
             <img src={pl.coverArtUrl} alt="" className="h-full w-full object-cover object-top" />
           ) : (
@@ -196,7 +206,6 @@ function PlaylistSpotlight({ item }: { item: HomepageItem }) {
                 <CompactSongRow
                   key={r.id}
                   recording={r}
-                  playlistId={pl.id}
                   playlist={pl}
                   onPlay={() => handleTrackPlay(r, idx)}
                 />
