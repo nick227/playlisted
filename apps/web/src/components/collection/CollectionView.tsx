@@ -163,6 +163,8 @@ export function CollectionView({
           {isEdit ? (
             <input
               value={playlist.title}
+              maxLength={300}
+              placeholder="Enter a title for this collection…"
               onChange={(e) => onTitleChange?.(e.target.value)}
               className="mt-2 w-full border-0 bg-transparent text-3xl font-bold tracking-tight text-white outline-none focus:ring-0 md:text-5xl"
             />
@@ -181,6 +183,7 @@ export function CollectionView({
                 value={playlist.description ?? ""}
                 onChange={(e) => onDescriptionChange?.(e.target.value)}
                 rows={3}
+                maxLength={300}
                 placeholder="Describe this collection…"
                 className="mt-4 w-full max-w-2xl resize-none rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-sm text-white placeholder:text-[var(--color-text-subtle)] outline-none focus:border-[var(--color-brand)]"
               />
@@ -244,7 +247,6 @@ export function CollectionView({
                 className="inline-flex items-center gap-2 rounded-full border border-white/20 px-5 py-2.5 text-sm font-medium text-white hover:bg-white/10"
               >
                 <Shuffle size={18} />
-                Shuffle
               </button>
               <button
                 type="button"
