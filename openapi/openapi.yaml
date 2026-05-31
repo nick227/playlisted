@@ -2908,7 +2908,7 @@ components:
       properties:
         section:
           type: string
-          enum: [SPOTLIGHT, FEATURED_PLAYLIST, CUSTOM_MIX, NEW_RELEASE, NEW_ARTIST, TRENDING, EDITOR_PICK, SITE_NEWS]
+          enum: [SPOTLIGHT, FEATURED_ARTIST, FEATURED_PLAYLIST, CUSTOM_MIX, NEW_RELEASE, NEW_ARTIST, TRENDING, EDITOR_PICK, SITE_NEWS]
         title:
           type: string
         items:
@@ -4427,9 +4427,51 @@ components:
           type: [string, 'null']
           format: uri-reference
 
+    AdminHomepageEditorialAuthorRef:
+      type: object
+      additionalProperties: false
+      required: [id, username, displayName]
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        displayName:
+          type: string
+
+    AdminHomepageEditorialPostRef:
+      type: object
+      additionalProperties: false
+      required: [id, kind, title, slug, body, status, author]
+      properties:
+        id:
+          type: string
+        kind:
+          type: string
+          enum: [NEWS, REVIEW, FEATURE, SPOTLIGHT]
+        title:
+          type: string
+        slug:
+          type: string
+        summary:
+          type: [string, 'null']
+        body:
+          type: string
+        coverImageUrl:
+          type: [string, 'null']
+          format: uri-reference
+        status:
+          type: string
+          enum: [DRAFT, PUBLISHED, ARCHIVED]
+        publishedAt:
+          type: [string, 'null']
+          format: date-time
+        author:
+          $ref: '#/components/schemas/AdminHomepageEditorialAuthorRef'
+
     AdminHomepageSection:
       type: string
-      enum: [SPOTLIGHT, FEATURED_PLAYLIST, CUSTOM_MIX, NEW_RELEASE, NEW_ARTIST, TRENDING, EDITOR_PICK, SITE_NEWS]
+      enum: [SPOTLIGHT, FEATURED_ARTIST, FEATURED_PLAYLIST, CUSTOM_MIX, NEW_RELEASE, NEW_ARTIST, TRENDING, EDITOR_PICK, SITE_NEWS]
 
     AdminHomepageFeature:
       type: object
@@ -4479,6 +4521,10 @@ components:
           oneOf:
             - $ref: '#/components/schemas/AdminHomepageUserRef'
             - type: 'null'
+        editorialPost:
+          oneOf:
+            - $ref: '#/components/schemas/AdminHomepageEditorialPostRef'
+            - type: 'null'
 
     AdminHomepageFeatureListResponse:
       type: object
@@ -4521,6 +4567,10 @@ components:
           type: [string, 'null']
         userId:
           type: [string, 'null']
+        editorialPostId:
+          type: [string, 'null']
+        editorialPost:
+          $ref: '#/components/schemas/AdminHomepageEditorialPostInput'
 
     AdminUpdateHomepageFeatureRequest:
       type: object
@@ -4551,6 +4601,37 @@ components:
           type: [string, 'null']
         userId:
           type: [string, 'null']
+        editorialPostId:
+          type: [string, 'null']
+        editorialPost:
+          $ref: '#/components/schemas/AdminHomepageEditorialPostInput'
+
+    AdminHomepageEditorialPostInput:
+      type: object
+      additionalProperties: false
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 191
+        slug:
+          type: [string, 'null']
+          maxLength: 191
+        summary:
+          type: [string, 'null']
+          maxLength: 512
+        body:
+          type: string
+          minLength: 1
+        coverImageUrl:
+          type: [string, 'null']
+          format: uri-reference
+        status:
+          type: string
+          enum: [DRAFT, PUBLISHED, ARCHIVED]
+        publishedAt:
+          type: [string, 'null']
+          format: date-time
 
     AdminUpdateUserRequest:
       type: object

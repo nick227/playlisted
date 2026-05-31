@@ -1202,7 +1202,7 @@ export interface components {
         };
         HomepageSection: {
             /** @enum {string} */
-            section: "SPOTLIGHT" | "FEATURED_PLAYLIST" | "CUSTOM_MIX" | "NEW_RELEASE" | "NEW_ARTIST" | "TRENDING" | "EDITOR_PICK" | "SITE_NEWS";
+            section: "SPOTLIGHT" | "FEATURED_ARTIST" | "FEATURED_PLAYLIST" | "CUSTOM_MIX" | "NEW_RELEASE" | "NEW_ARTIST" | "TRENDING" | "EDITOR_PICK" | "SITE_NEWS";
             title: string;
             items: components["schemas"]["HomepageItem"][];
         };
@@ -1871,8 +1871,29 @@ export interface components {
             /** Format: uri-reference */
             avatarUrl?: string | null;
         };
+        AdminHomepageEditorialAuthorRef: {
+            id: string;
+            username: string;
+            displayName: string;
+        };
+        AdminHomepageEditorialPostRef: {
+            id: string;
+            /** @enum {string} */
+            kind: "NEWS" | "REVIEW" | "FEATURE" | "SPOTLIGHT";
+            title: string;
+            slug: string;
+            summary?: string | null;
+            body: string;
+            /** Format: uri-reference */
+            coverImageUrl?: string | null;
+            /** @enum {string} */
+            status: "DRAFT" | "PUBLISHED" | "ARCHIVED";
+            /** Format: date-time */
+            publishedAt?: string | null;
+            author: components["schemas"]["AdminHomepageEditorialAuthorRef"];
+        };
         /** @enum {string} */
-        AdminHomepageSection: "SPOTLIGHT" | "FEATURED_PLAYLIST" | "CUSTOM_MIX" | "NEW_RELEASE" | "NEW_ARTIST" | "TRENDING" | "EDITOR_PICK" | "SITE_NEWS";
+        AdminHomepageSection: "SPOTLIGHT" | "FEATURED_ARTIST" | "FEATURED_PLAYLIST" | "CUSTOM_MIX" | "NEW_RELEASE" | "NEW_ARTIST" | "TRENDING" | "EDITOR_PICK" | "SITE_NEWS";
         AdminHomepageFeature: {
             id: string;
             section: components["schemas"]["AdminHomepageSection"];
@@ -1896,6 +1917,7 @@ export interface components {
             updatedAt: string;
             playlist?: components["schemas"]["AdminHomepageFeatureRef"] | null;
             user?: components["schemas"]["AdminHomepageUserRef"] | null;
+            editorialPost?: components["schemas"]["AdminHomepageEditorialPostRef"] | null;
         };
         AdminHomepageFeatureListResponse: {
             data: components["schemas"]["AdminHomepageFeature"][];
@@ -1916,6 +1938,8 @@ export interface components {
             endsAt?: string | null;
             playlistId?: string | null;
             userId?: string | null;
+            editorialPostId?: string | null;
+            editorialPost?: components["schemas"]["AdminHomepageEditorialPostInput"];
         };
         AdminUpdateHomepageFeatureRequest: {
             section?: components["schemas"]["AdminHomepageSection"];
@@ -1932,6 +1956,20 @@ export interface components {
             endsAt?: string | null;
             playlistId?: string | null;
             userId?: string | null;
+            editorialPostId?: string | null;
+            editorialPost?: components["schemas"]["AdminHomepageEditorialPostInput"];
+        };
+        AdminHomepageEditorialPostInput: {
+            title?: string;
+            slug?: string | null;
+            summary?: string | null;
+            body?: string;
+            /** Format: uri-reference */
+            coverImageUrl?: string | null;
+            /** @enum {string} */
+            status?: "DRAFT" | "PUBLISHED" | "ARCHIVED";
+            /** Format: date-time */
+            publishedAt?: string | null;
         };
         AdminUpdateUserRequest: {
             role?: components["schemas"]["UserRole"];

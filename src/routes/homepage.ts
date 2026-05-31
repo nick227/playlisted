@@ -6,6 +6,7 @@ export const homepageRouter = Router();
 
 const SECTION_TITLES: Record<string, string> = {
   SPOTLIGHT: "Spotlight",
+  FEATURED_ARTIST: "Featured Artist",
   FEATURED_PLAYLIST: "Featured Playlists",
   CUSTOM_MIX: "Custom Mix",
   NEW_RELEASE: "New Releases",
@@ -62,7 +63,7 @@ homepageRouter.get("/", async (_req, res, next) => {
       } else if (feature.user) {
         const userImage =
           feature.imageUrl ??
-          (feature.section === "SPOTLIGHT"
+          (feature.section === "SPOTLIGHT" || feature.section === "FEATURED_ARTIST"
             ? (feature.user.heroImageUrl ?? feature.user.avatarUrl)
             : (feature.user.avatarUrl ?? feature.user.heroImageUrl));
         item = {
@@ -74,7 +75,7 @@ homepageRouter.get("/", async (_req, res, next) => {
           imageUrl: userImage,
           href: `/@/${encodeURIComponent(feature.user.username)}`,
         };
-      } else if (feature.editorialPost) {
+      } else if (feature.editorialPost?.status === "PUBLISHED") {
         item = {
           id: feature.editorialPost.id,
           targetType: "EDITORIAL_POST",

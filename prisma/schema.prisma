@@ -68,6 +68,7 @@ enum EditorialKind {
 
 enum HomepageSection {
   SPOTLIGHT
+  FEATURED_ARTIST
   FEATURED_PLAYLIST
   CUSTOM_MIX
   NEW_RELEASE

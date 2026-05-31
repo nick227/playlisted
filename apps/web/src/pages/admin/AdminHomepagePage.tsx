@@ -1,13 +1,19 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import type { AdminHomepageFeature, AdminCreateHomepageFeatureRequest, PlaylistSummary, UserSummary } from "@playlisted/client-sdk";
+import type {
+  AdminCreateHomepageFeatureRequest,
+  AdminHomepageFeature,
+  PlaylistSummary,
+  UserSummary,
+} from "@playlisted/client-sdk";
 import { authedApi } from "@/lib/authedApi";
 import { useAuth } from "@/providers/AuthProvider";
 import { usePageMeta } from "@/hooks/usePageMeta";
 
-type Section = "SPOTLIGHT" | "FEATURED_PLAYLIST" | "CUSTOM_MIX" | "NEW_RELEASE" | "NEW_ARTIST" | "TRENDING" | "EDITOR_PICK" | "SITE_NEWS";
+type Section = "SPOTLIGHT" | "FEATURED_ARTIST" | "FEATURED_PLAYLIST" | "CUSTOM_MIX" | "NEW_RELEASE" | "NEW_ARTIST" | "TRENDING" | "EDITOR_PICK" | "SITE_NEWS";
 
 const SECTION_LABELS: Record<Section, string> = {
   SPOTLIGHT: "Spotlight",
+  FEATURED_ARTIST: "Featured Artist (Greetings)",
   FEATURED_PLAYLIST: "Featured Playlists",
   CUSTOM_MIX: "Custom Mix",
   NEW_RELEASE: "New Releases",
@@ -17,57 +23,140 @@ const SECTION_LABELS: Record<Section, string> = {
   SITE_NEWS: "Site News",
 };
 
-const ALL_SECTIONS: Section[] = ["SPOTLIGHT", "FEATURED_PLAYLIST", "CUSTOM_MIX", "NEW_RELEASE", "NEW_ARTIST", "TRENDING", "EDITOR_PICK", "SITE_NEWS"];
+const ALL_SECTIONS: Section[] = ["SPOTLIGHT", "FEATURED_ARTIST", "FEATURED_PLAYLIST", "CUSTOM_MIX", "NEW_RELEASE", "NEW_ARTIST", "TRENDING", "EDITOR_PICK", "SITE_NEWS"];
 
-type TargetType = "PLAYLIST" | "USER" | "NONE";
+type TargetType = "PLAYLIST" | "USER" | "EDITORIAL_POST" | "NONE";
+
+type EditorialStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
+
+type AdminHomepageEditorialPost = {
+  id: string;
+  kind: "NEWS" | "REVIEW" | "FEATURE" | "SPOTLIGHT";
+  title: string;
+  slug: string;
+  summary?: string | null;
+  body: string;
+  coverImageUrl?: string | null;
+  status: EditorialStatus;
+  publishedAt?: string | null;
+  author: { id: string; username: string; displayName: string };
+};
+
+type AdminHomepageEditorialPostInput = {
+  title?: string;
+  slug?: string | null;
+  summary?: string | null;
+  body?: string;
+  coverImageUrl?: string | null;
+  status?: EditorialStatus;
+  publishedAt?: string | null;
+};
+
+type AdminHomepageFeatureWithEditorialRequest = {
+  editorialPostId?: string | null;
+  editorialPost?: AdminHomepageEditorialPostInput;
+};
+
+type HomepageFeatureWithEditorial = AdminHomepageFeature & {
+  editorialPost?: AdminHomepageEditorialPost | null;
+};
 
 interface FeatureFormState {
   section: Section;
   targetType: TargetType;
   playlistId: string;
   userId: string;
+  editorialPostId: string;
   titleOverride: string;
   subtitleOverride: string;
   imageUrl: string;
   isActive: boolean;
+  newsTitle: string;
+  newsSummary: string;
+  newsBody: string;
+  newsCoverImageUrl: string;
+  newsStatus: EditorialStatus;
 }
 
 const emptyForm = (section: Section = "FEATURED_PLAYLIST"): FeatureFormState => ({
   section,
-  targetType: "PLAYLIST",
+  targetType:
+    section === "SITE_NEWS"
+      ? "EDITORIAL_POST"
+      : section === "FEATURED_ARTIST"
+        ? "USER"
+        : "PLAYLIST",
   playlistId: "",
   userId: "",
+  editorialPostId: "",
   titleOverride: "",
   subtitleOverride: "",
   imageUrl: "",
   isActive: true,
+  newsTitle: "",
+  newsSummary: "",
+  newsBody: "",
+  newsCoverImageUrl: "",
+  newsStatus: "PUBLISHED",
 });
+
+function formFromFeature(feature: HomepageFeatureWithEditorial): FeatureFormState {
+  const targetType: TargetType = feature.playlistId
+    ? "PLAYLIST"
+    : feature.userId
+      ? "USER"
+      : feature.editorialPostId
+        ? "EDITORIAL_POST"
+        : "NONE";
+
+  return {
+    section: feature.section as Section,
+    targetType,
+    playlistId: feature.playlistId ?? "",
+    userId: feature.userId ?? "",
+    editorialPostId: feature.editorialPostId ?? "",
+    titleOverride: feature.titleOverride ?? "",
+    subtitleOverride: feature.subtitleOverride ?? "",
+    imageUrl: feature.imageUrl ?? "",
+    isActive: feature.isActive,
+    newsTitle: feature.editorialPost?.title ?? "",
+    newsSummary: feature.editorialPost?.summary ?? "",
+    newsBody: feature.editorialPost?.body ?? "",
+    newsCoverImageUrl: feature.editorialPost?.coverImageUrl ?? feature.imageUrl ?? "",
+    newsStatus: feature.editorialPost?.status ?? "PUBLISHED",
+  };
+}
 
 function FeatureCard({
   feature,
   onToggle,
   onDelete,
+  onEdit,
   onMoveUp,
   onMoveDown,
   isFirst,
   isLast,
   saving,
 }: {
-  feature: AdminHomepageFeature;
+  feature: HomepageFeatureWithEditorial;
   onToggle: () => void;
   onDelete: () => void;
+  onEdit: () => void;
   onMoveUp: () => void;
   onMoveDown: () => void;
   isFirst: boolean;
   isLast: boolean;
   saving: boolean;
 }) {
-  const label = feature.playlist?.title ?? feature.user?.displayName ?? feature.titleOverride ?? "Untitled";
+  const editorialPost = feature.editorialPost;
+  const label = feature.playlist?.title ?? feature.user?.displayName ?? editorialPost?.title ?? feature.titleOverride ?? "Untitled";
   const sub = feature.playlist
     ? `Playlist · ID: ${feature.playlistId}`
     : feature.user
       ? `User · @${feature.user.username}`
-      : "No target linked";
+      : editorialPost
+        ? `Site news · /news/${editorialPost.slug}`
+        : "No target linked";
 
   return (
     <div className={`flex items-start gap-3 rounded-xl border p-4 transition ${
@@ -90,9 +179,9 @@ function FeatureCard({
         </button>
       </div>
 
-      {(feature.playlist?.coverArtUrl ?? feature.user?.avatarUrl ?? feature.imageUrl) ? (
+      {(feature.playlist?.coverArtUrl ?? feature.user?.avatarUrl ?? feature.imageUrl ?? editorialPost?.coverImageUrl) ? (
         <img
-          src={feature.playlist?.coverArtUrl ?? feature.user?.avatarUrl ?? feature.imageUrl ?? ""}
+          src={feature.playlist?.coverArtUrl ?? feature.user?.avatarUrl ?? feature.imageUrl ?? editorialPost?.coverImageUrl ?? ""}
           alt=""
           className="h-14 w-14 flex-shrink-0 rounded-lg object-cover"
         />
@@ -105,6 +194,9 @@ function FeatureCard({
         <p className="text-xs text-[var(--color-text-muted)]">{sub}</p>
         {feature.titleOverride && (
           <p className="mt-0.5 text-xs text-amber-400/80">Override: "{feature.titleOverride}"</p>
+        )}
+        {editorialPost?.summary && (
+          <p className="mt-0.5 line-clamp-1 text-xs text-[var(--color-text-muted)]">{editorialPost.summary}</p>
         )}
         <p className="mt-1 text-xs text-[var(--color-text-muted)]">
           Position {feature.position} ·{" "}
@@ -125,6 +217,13 @@ function FeatureCard({
           {feature.isActive ? "Active" : "Inactive"}
         </button>
         <button
+          onClick={onEdit}
+          disabled={saving}
+          className="text-xs text-amber-300 hover:text-amber-200 disabled:opacity-40"
+        >
+          Edit
+        </button>
+        <button
           onClick={onDelete}
           disabled={saving}
           className="text-xs text-red-400 hover:text-red-300 disabled:opacity-40"
@@ -139,7 +238,7 @@ function FeatureCard({
 export function AdminHomepagePage() {
   const { accessToken } = useAuth();
   const api = useMemo(() => authedApi(accessToken), [accessToken]);
-  const [features, setFeatures] = useState<AdminHomepageFeature[]>([]);
+  const [features, setFeatures] = useState<HomepageFeatureWithEditorial[]>([]);
 
   usePageMeta({ title: "Homepage — Admin" });
   const [loading, setLoading] = useState(true);
@@ -147,6 +246,7 @@ export function AdminHomepagePage() {
   const [activeSection, setActiveSection] = useState<Section>("FEATURED_PLAYLIST");
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState<FeatureFormState>(emptyForm());
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -160,7 +260,7 @@ export function AdminHomepagePage() {
     setError(null);
     try {
       const res = await api.admin.listHomepageFeatures();
-      setFeatures(res.data);
+      setFeatures(res.data as HomepageFeatureWithEditorial[]);
     } catch (e: any) {
       setError(e.message ?? "Failed to load homepage features.");
     } finally {
@@ -179,11 +279,11 @@ export function AdminHomepagePage() {
     .filter((f) => f.section === activeSection)
     .sort((a, b) => a.position - b.position);
 
-  const handleToggle = async (feature: AdminHomepageFeature) => {
+  const handleToggle = async (feature: HomepageFeatureWithEditorial) => {
     setSaving(feature.id);
     try {
       const updated = await api.admin.updateHomepageFeature(feature.id, { isActive: !feature.isActive });
-      setFeatures((prev) => prev.map((f) => f.id === feature.id ? updated : f));
+      setFeatures((prev) => prev.map((f) => f.id === feature.id ? updated as HomepageFeatureWithEditorial : f));
     } catch (e: any) {
       setError(e.message ?? "Failed to update feature.");
     } finally {
@@ -191,8 +291,9 @@ export function AdminHomepagePage() {
     }
   };
 
-  const handleDelete = async (feature: AdminHomepageFeature) => {
-    const label = feature.playlist?.title ?? feature.user?.displayName ?? "this feature";
+  const handleDelete = async (feature: HomepageFeatureWithEditorial) => {
+    const editorialPost = feature.editorialPost;
+    const label = feature.playlist?.title ?? feature.user?.displayName ?? editorialPost?.title ?? "this feature";
     if (!confirm(`Remove "${label}" from the homepage?`)) return;
     setSaving(feature.id);
     try {
@@ -205,7 +306,7 @@ export function AdminHomepagePage() {
     }
   };
 
-  const handleMove = async (feature: AdminHomepageFeature, direction: "up" | "down") => {
+  const handleMove = async (feature: HomepageFeatureWithEditorial, direction: "up" | "down") => {
     const sorted = sectionFeatures;
     const idx = sorted.findIndex((f) => f.id === feature.id);
     const swapWith = direction === "up" ? sorted[idx - 1] : sorted[idx + 1];
@@ -215,7 +316,7 @@ export function AdminHomepagePage() {
     try {
       const updated = await api.admin.updateHomepageFeature(feature.id, { position: swapWith.position });
       setFeatures((prev) => prev.map((f) => {
-        if (f.id === updated.id) return updated;
+        if (f.id === updated.id) return updated as HomepageFeatureWithEditorial;
         if (f.id === swapWith.id) return { ...f, position: feature.position };
         return f;
       }));
@@ -236,20 +337,34 @@ export function AdminHomepagePage() {
       setError("Please select a user.");
       return;
     }
+    if (form.targetType === "EDITORIAL_POST" && (!form.newsTitle.trim() || !form.newsBody.trim())) {
+      setError("Please enter a title and body for the site news post.");
+      return;
+    }
     setCreating(true);
     setError(null);
     try {
-      const body: AdminCreateHomepageFeatureRequest = {
+      const body: AdminCreateHomepageFeatureRequest & AdminHomepageFeatureWithEditorialRequest = {
         section: form.section,
         isActive: form.isActive,
         playlistId: form.targetType === "PLAYLIST" ? form.playlistId : null,
         userId: form.targetType === "USER" ? form.userId : null,
+        editorialPostId: null,
         titleOverride: form.titleOverride.trim() || null,
         subtitleOverride: form.subtitleOverride.trim() || null,
         imageUrl: form.imageUrl.trim() || null,
       };
+      if (form.targetType === "EDITORIAL_POST") {
+        body.editorialPost = {
+          title: form.newsTitle.trim(),
+          summary: form.newsSummary.trim() || null,
+          body: form.newsBody.trim(),
+          coverImageUrl: form.newsCoverImageUrl.trim() || form.imageUrl.trim() || null,
+          status: form.newsStatus,
+        };
+      }
       const created = await api.admin.createHomepageFeature(body);
-      setFeatures((prev) => [...prev, created]);
+      setFeatures((prev) => [...prev, created as HomepageFeatureWithEditorial]);
       setActiveSection(form.section);
       setShowAdd(false);
       setForm(emptyForm(form.section));
@@ -259,6 +374,69 @@ export function AdminHomepagePage() {
     } finally {
       setCreating(false);
     }
+  };
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingId) return;
+    if (form.targetType === "PLAYLIST" && !form.playlistId) {
+      setError("Please select a playlist.");
+      return;
+    }
+    if (form.targetType === "USER" && !form.userId) {
+      setError("Please select a user.");
+      return;
+    }
+    if (form.targetType === "EDITORIAL_POST" && (!form.newsTitle.trim() || !form.newsBody.trim())) {
+      setError("Please enter a title and body for the site news post.");
+      return;
+    }
+
+    setSaving(editingId);
+    setError(null);
+    try {
+      const body: Partial<AdminCreateHomepageFeatureRequest> & AdminHomepageFeatureWithEditorialRequest = {
+        section: form.section,
+        isActive: form.isActive,
+        playlistId: form.targetType === "PLAYLIST" ? form.playlistId : null,
+        userId: form.targetType === "USER" ? form.userId : null,
+        editorialPostId: form.targetType === "EDITORIAL_POST" ? form.editorialPostId || null : null,
+        titleOverride: form.titleOverride.trim() || null,
+        subtitleOverride: form.subtitleOverride.trim() || null,
+        imageUrl: form.imageUrl.trim() || null,
+      };
+
+      if (form.targetType === "EDITORIAL_POST") {
+        body.editorialPost = {
+          title: form.newsTitle.trim(),
+          summary: form.newsSummary.trim() || null,
+          body: form.newsBody.trim(),
+          coverImageUrl: form.newsCoverImageUrl.trim() || form.imageUrl.trim() || null,
+          status: form.newsStatus,
+        };
+      }
+
+      const updated = await api.admin.updateHomepageFeature(editingId, body);
+      setFeatures((prev) => prev.map((f) => f.id === editingId ? updated as HomepageFeatureWithEditorial : f));
+      setActiveSection(form.section);
+      setShowAdd(false);
+      setEditingId(null);
+      setForm(emptyForm(form.section));
+      setTargetSearch("");
+    } catch (e: any) {
+      setError(e.message ?? "Failed to update feature.");
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  const startEdit = (feature: HomepageFeatureWithEditorial) => {
+    setForm(formFromFeature(feature));
+    setActiveSection(feature.section as Section);
+    setEditingId(feature.id);
+    setShowAdd(true);
+    setTargetSearch(feature.playlist?.title ?? feature.user?.displayName ?? feature.editorialPost?.title ?? "");
+    setTimeout(() => searchRef.current?.focus(), 50);
   };
 
   const sectionCounts = Object.fromEntries(
@@ -279,10 +457,12 @@ export function AdminHomepagePage() {
           onClick={() => {
             if (showAdd) {
               setShowAdd(false);
+              setEditingId(null);
               setForm(emptyForm(activeSection));
               setTargetSearch("");
             } else {
               setForm(emptyForm(activeSection));
+              setEditingId(null);
               setShowAdd(true);
               setTimeout(() => searchRef.current?.focus(), 50);
             }
@@ -301,15 +481,27 @@ export function AdminHomepagePage() {
       )}
 
       {showAdd && (
-        <form onSubmit={handleCreate} className="space-y-4 rounded-xl border border-amber-400/30 bg-[var(--color-surface)] p-4">
-          <p className="text-sm font-semibold text-white">Add homepage feature</p>
+        <form onSubmit={editingId ? handleUpdate : handleCreate} className="space-y-4 rounded-xl border border-amber-400/30 bg-[var(--color-surface)] p-4">
+          <p className="text-sm font-semibold text-white">{editingId ? "Edit homepage feature" : "Add homepage feature"}</p>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs text-[var(--color-text-muted)] mb-1">Section</label>
               <select
                 value={form.section}
-                onChange={(e) => setForm((f) => ({ ...f, section: e.target.value as Section }))}
+                onChange={(e) => {
+                  const section = e.target.value as Section;
+                  setForm((f) => ({
+                    ...f,
+                    section,
+                    targetType:
+                      section === "SITE_NEWS" && f.targetType === "PLAYLIST"
+                        ? "EDITORIAL_POST"
+                        : section === "FEATURED_ARTIST" && f.targetType !== "USER"
+                          ? "USER"
+                          : f.targetType,
+                  }));
+                }}
                 className="w-full rounded-lg border border-[var(--color-border)] focus:outline-none"
               >
                 {ALL_SECTIONS.map((s) => <option key={s} value={s}>{SECTION_LABELS[s]}</option>)}
@@ -317,15 +509,22 @@ export function AdminHomepagePage() {
             </div>
             <div>
               <label className="block text-xs text-[var(--color-text-muted)] mb-1">Target type</label>
-              <select
-                value={form.targetType}
-                onChange={(e) => setForm((f) => ({ ...f, targetType: e.target.value as TargetType, playlistId: "", userId: "" }))}
-                className="w-full rounded-lg border border-[var(--color-border)] focus:outline-none"
-              >
-                <option value="PLAYLIST">Playlist</option>
-                <option value="USER">Artist / User</option>
-                <option value="NONE">No target (title only)</option>
-              </select>
+              {form.section === "FEATURED_ARTIST" ? (
+                <p className="rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm text-white">
+                  Artist / User
+                </p>
+              ) : (
+                <select
+                  value={form.targetType}
+                  onChange={(e) => setForm((f) => ({ ...f, targetType: e.target.value as TargetType, playlistId: "", userId: "", editorialPostId: "" }))}
+                  className="w-full rounded-lg border border-[var(--color-border)] focus:outline-none"
+                >
+                  <option value="PLAYLIST">Playlist</option>
+                  <option value="USER">Artist / User</option>
+                  <option value="EDITORIAL_POST">Site news post</option>
+                  <option value="NONE">No target (title only)</option>
+                </select>
+              )}
             </div>
           </div>
 
@@ -395,6 +594,63 @@ export function AdminHomepagePage() {
             </div>
           )}
 
+          {form.targetType === "EDITORIAL_POST" && (
+            <div className="space-y-3 rounded-lg border border-[var(--color-border)] bg-black/20 p-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-[var(--color-text-muted)] mb-1">News title</label>
+                  <input
+                    ref={searchRef}
+                    value={form.newsTitle}
+                    onChange={(e) => setForm((f) => ({ ...f, newsTitle: e.target.value }))}
+                    placeholder="Platform update, launch note, announcement…"
+                    className="w-full rounded-lg border border-[var(--color-border)] placeholder-zinc-600 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-[var(--color-text-muted)] mb-1">Status</label>
+                  <select
+                    value={form.newsStatus}
+                    onChange={(e) => setForm((f) => ({ ...f, newsStatus: e.target.value as EditorialStatus }))}
+                    className="w-full rounded-lg border border-[var(--color-border)] focus:outline-none"
+                  >
+                    <option value="PUBLISHED">Published</option>
+                    <option value="DRAFT">Draft</option>
+                    <option value="ARCHIVED">Archived</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs text-[var(--color-text-muted)] mb-1">Summary</label>
+                <input
+                  value={form.newsSummary}
+                  onChange={(e) => setForm((f) => ({ ...f, newsSummary: e.target.value }))}
+                  placeholder="Short homepage summary"
+                  className="w-full rounded-lg border border-[var(--color-border)] placeholder-zinc-600 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-[var(--color-text-muted)] mb-1">News image URL</label>
+                <input
+                  value={form.newsCoverImageUrl}
+                  onChange={(e) => setForm((f) => ({ ...f, newsCoverImageUrl: e.target.value }))}
+                  placeholder="https://…"
+                  className="w-full rounded-lg border border-[var(--color-border)] placeholder-zinc-600 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-[var(--color-text-muted)] mb-1">Body</label>
+                <textarea
+                  value={form.newsBody}
+                  onChange={(e) => setForm((f) => ({ ...f, newsBody: e.target.value }))}
+                  rows={6}
+                  placeholder="Write the site news post…"
+                  className="w-full resize-y rounded-lg border border-[var(--color-border)] placeholder-zinc-600 focus:outline-none"
+                />
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs text-[var(--color-text-muted)] mb-1">Title override</label>
@@ -437,17 +693,17 @@ export function AdminHomepagePage() {
             <div className="flex gap-3">
               <button
                 type="button"
-                onClick={() => { setShowAdd(false); setForm(emptyForm(activeSection)); setTargetSearch(""); }}
+                onClick={() => { setShowAdd(false); setEditingId(null); setForm(emptyForm(activeSection)); setTargetSearch(""); }}
                 className="text-sm text-[var(--color-text-muted)] hover:text-white"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                disabled={creating}
+                disabled={creating || Boolean(saving)}
                 className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-black hover:bg-amber-400 disabled:opacity-40"
               >
-                {creating ? "Adding…" : "Add feature"}
+                {creating ? "Adding…" : editingId ? "Save changes" : "Add feature"}
               </button>
             </div>
           </div>
@@ -488,6 +744,17 @@ export function AdminHomepagePage() {
         </div>
       )}
 
+      {activeSection === "FEATURED_ARTIST" && (
+        <div className="rounded-xl border border-amber-400/25 bg-amber-400/[0.06] px-5 py-4">
+          <p className="text-sm font-semibold text-amber-400">Featured Artist — Greetings Banner</p>
+          <p className="mt-1 text-xs leading-relaxed text-[var(--color-text-muted)]">
+            Shown in the <strong className="text-white">greetings banner</strong> beside the time-of-day welcome message.
+            Only the <strong className="text-white">top-positioned active user</strong> is used. Target an artist/user — not a playlist.
+            If empty, the banner falls back to a daily-rotated chart artist.
+          </p>
+        </div>
+      )}
+
       {loading ? (
         <p className="text-sm text-[var(--color-text-muted)]">Loading…</p>
       ) : sectionFeatures.length === 0 ? (
@@ -495,6 +762,10 @@ export function AdminHomepagePage() {
           {activeSection === "SPOTLIGHT" ? (
             <>
               No spotlight set. Click <strong className="text-white">+ Add feature</strong> to choose a playlist or artist to honor.
+            </>
+          ) : activeSection === "FEATURED_ARTIST" ? (
+            <>
+              No featured artist set. Click <strong className="text-white">+ Add feature</strong> to pick the artist shown in the greetings banner.
             </>
           ) : (
             <>
@@ -514,6 +785,7 @@ export function AdminHomepagePage() {
               isLast={idx === sectionFeatures.length - 1}
               onToggle={() => handleToggle(feature)}
               onDelete={() => handleDelete(feature)}
+              onEdit={() => startEdit(feature)}
               onMoveUp={() => handleMove(feature, "up")}
               onMoveDown={() => handleMove(feature, "down")}
             />

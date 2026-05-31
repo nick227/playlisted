@@ -12,6 +12,10 @@ import type {
 import { ArtistCard } from "@/components/cards/ArtistCard";
 import { ChartSongCard } from "@/components/cards/ChartSongCard";
 import { SmartPlaylistCard } from "@/components/cards/SmartPlaylistCard";
+import {
+  GreetingsBanner,
+  pickGreetingsFeaturedArtist,
+} from "@/components/discovery/GreetingsBanner";
 import { HeroSpotlight } from "@/components/discovery/HeroSpotlight";
 import { SpotlightBanner } from "@/components/discovery/SpotlightBanner";
 import { RowSkeleton } from "@/components/feedback/Skeleton";
@@ -253,161 +257,6 @@ function HomeSongRow({
   );
 }
 
-// ── greetings banner ──────────────────────────────────────────────────────────
-
-type BannerFeaturedArtist = {
-  id: string;
-  username: string;
-  displayName: string;
-  avatarUrl?: string | null;
-  heroImageUrl?: string | null;
-  subtitle?: string | null;
-};
-
-function toBannerArtistFromHomepage(item: HomepageItem): BannerFeaturedArtist {
-  return {
-    id: item.id,
-    username: usernameFromHomepageUser(item),
-    displayName: item.title,
-    avatarUrl: item.imageUrl,
-    heroImageUrl: item.imageUrl,
-    subtitle: item.subtitle ?? item.description ?? null,
-  };
-}
-
-function toBannerArtistFromChart(item: TopArtistItem): BannerFeaturedArtist {
-  return {
-    id: item.userId,
-    username: item.username,
-    displayName: item.displayName,
-    avatarUrl: item.avatarUrl,
-    heroImageUrl: item.heroImageUrl ?? item.avatarUrl,
-    subtitle: `${item.playCount.toLocaleString()} plays`,
-  };
-}
-
-function pickGreetingsFeaturedArtist(
-  editorialArtists: HomepageItem[],
-  chartArtists: TopArtistItem[],
-): BannerFeaturedArtist | null {
-  if (editorialArtists[0]) return toBannerArtistFromHomepage(editorialArtists[0]);
-  const picked = stableShuffleByDay(chartArtists)[0];
-  return picked ? toBannerArtistFromChart(picked) : null;
-}
-
-function GreetingsBanner({
-  firstName,
-  isGuest,
-  featuredArtist,
-  artistLoading,
-}: {
-  firstName?: string;
-  isGuest: boolean;
-  featuredArtist: BannerFeaturedArtist | null;
-  artistLoading?: boolean;
-}) {
-  const greeting = getGreeting();
-  const headline = !isGuest && firstName ? `${greeting}, ${firstName}` : greeting;
-  const showArtistPanel = Boolean(featuredArtist || artistLoading);
-  const heroBg = featuredArtist?.heroImageUrl ?? featuredArtist?.avatarUrl;
-
-  return (
-    <div className={`mb-10 grid gap-4 ${showArtistPanel ? "lg:grid-cols-2" : ""}`}>
-      <section
-        className="relative min-h-[420px] overflow-hidden rounded-2xl px-8 py-12 md:px-14"
-        style={{
-          background:
-            "linear-gradient(135deg, hsl(260 60% 14%) 0%, hsl(240 50% 10%) 60%, hsl(220 40% 8%) 100%)",
-        }}
-      >
-        <div
-          className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full opacity-20 blur-3xl"
-          style={{ background: "hsl(265 80% 55%)" }}
-          aria-hidden
-        />
-        <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-[var(--color-brand)]">
-          Playlisted
-        </p>
-        <h1 className="max-w-lg text-3xl font-extrabold leading-tight tracking-tight text-white md:text-4xl">
-          {headline}
-        </h1>
-        <p className="mt-4 max-w-md text-sm leading-relaxed text-white/60">
-          {isGuest
-            ? "Discover independent artists, playlists, and charts curated for the community."
-            : "Pick up where you left off — browse charts, your library, or upload new tracks."}
-        </p>
-        <div className="mt-8 flex flex-wrap gap-3">
-          <Link
-            to="/library"
-            className="inline-flex items-center rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-black transition hover:bg-white/90"
-          >
-            Browse music
-          </Link>
-          {isGuest ? (
-            <Link
-              to="/register"
-              className="inline-flex items-center rounded-full border border-white/20 px-6 py-2.5 text-sm font-medium text-white transition hover:bg-white/10"
-            >
-              Join free
-            </Link>
-          ) : (
-            <Link
-              to="/studio/collections"
-              className="inline-flex items-center rounded-full border border-white/20 px-6 py-2.5 text-sm font-medium text-white transition hover:bg-white/10"
-            >
-              Upload
-            </Link>
-          )}
-        </div>
-      </section>
-
-      {showArtistPanel ? (
-        <section className="relative min-h-[420px] overflow-hidden rounded-2xl">
-          {artistLoading && !featuredArtist ? (
-            <Skeleton className="absolute inset-0 h-full w-full rounded-2xl" />
-          ) : featuredArtist ? (
-            <>
-              {heroBg ? (
-                <img
-                  src={heroBg}
-                  alt=""
-                  className="absolute inset-0 h-full w-full object-cover"
-                />
-              ) : (
-                <div
-                  className="absolute inset-0"
-                  style={{ background: coverFallback(featuredArtist.displayName) }}
-                  aria-hidden
-                />
-              )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/55 to-black/25" />
-              <div className="relative z-10 flex min-h-[420px] flex-col justify-end px-8 py-12 md:px-14">
-                <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-[var(--color-brand)]">
-                  Featured artist
-                </p>
-                <ArtistCard
-                  id={featuredArtist.id}
-                  username={featuredArtist.username}
-                  displayName={featuredArtist.displayName}
-                  avatarUrl={featuredArtist.avatarUrl}
-                  subtitle={featuredArtist.subtitle}
-                  className="w-full max-w-xs"
-                />
-                <Link
-                  to={profilePath(featuredArtist.username)}
-                  className="mt-5 inline-flex text-sm font-medium text-white/80 transition hover:text-white"
-                >
-                  View profile →
-                </Link>
-              </div>
-            </>
-          ) : null}
-        </section>
-      ) : null}
-    </div>
-  );
-}
-
 // ── helpers ───────────────────────────────────────────────────────────────────
 
 function stableShuffleByDay<T>(arr: T[]): T[] {
@@ -426,13 +275,6 @@ function stableShuffleForUser<T>(arr: T[], userId: string): T[] {
     .map((item, i) => ({ item, sort: Math.sin(seed + i * 127) }))
     .sort((a, b) => a.sort - b.sort)
     .map(({ item }) => item);
-}
-
-function getGreeting() {
-  const h = new Date().getHours();
-  if (h < 12) return "Good morning";
-  if (h < 18) return "Good afternoon";
-  return "Good evening";
 }
 
 function mergeUniqueHomepageItems(...lists: HomepageItem[][]): HomepageItem[] {
@@ -454,10 +296,7 @@ function completeRows<T>(items: T[], columns: number): T[] {
 
 function SiteNewsCard({ item }: { item: HomepageItem }) {
   return (
-    <Link
-      to={item.href}
-      className="group flex gap-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 transition hover:bg-white/[0.04]"
-    >
+    <div className="group flex gap-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 transition hover:bg-white/[0.04] ">
       {item.imageUrl && (
         <img
           src={item.imageUrl}
@@ -478,7 +317,7 @@ function SiteNewsCard({ item }: { item: HomepageItem }) {
           </p>
         )}
       </div>
-    </Link>
+    </div>
   );
 }
 
@@ -630,33 +469,37 @@ export function HomePage() {
 
   // Featured playlists — same 4/8 cap as editor picks grid
   const editorialFeaturedPlaylists = sectionMap["FEATURED_PLAYLIST"] ?? [];
-  const featuredPlaylistsSection = useMemo(() => {
+  const featuredPlaylistsSection = useMemo((): {
+    editorial: HomepageItem[];
+    fallback: TopPlaylistItem[];
+  } => {
     if (editorialFeaturedPlaylists.length > 0) {
       const limit = homeGridItemLimit(editorialFeaturedPlaylists.length, isMdUp);
       return {
         editorial: editorialFeaturedPlaylists.slice(0, limit),
-        fallback: [] as TopPlaylistItem[],
+        fallback: [],
       };
     }
-    const pool = stableShuffleByDay(allTimeFeatured.data?.data ?? []);
+    const pool = stableShuffleByDay<TopPlaylistItem>(allTimeFeatured.data?.data ?? []);
     const limit = homeGridItemLimit(pool.length, isMdUp);
-    return { editorial: [] as HomepageItem[], fallback: pool.slice(0, limit) };
+    return { editorial: [], fallback: pool.slice(0, limit) };
   }, [editorialFeaturedPlaylists, allTimeFeatured.data, isMdUp]);
 
-  // Featured artists
+  // Featured artists grid (NEW_ARTIST) vs greetings banner slot (FEATURED_ARTIST)
   const editorialFeaturedArtists = sectionMap["NEW_ARTIST"] ?? [];
+  const greetingsCuratedArtist = sectionMap["FEATURED_ARTIST"]?.[0] ?? null;
 
   const greetingsFeaturedArtist = useMemo(
     () =>
       pickGreetingsFeaturedArtist(
-        editorialFeaturedArtists,
+        greetingsCuratedArtist,
         pinnedArtists.data?.data ?? topArtists.data?.data ?? [],
       ),
-    [editorialFeaturedArtists, pinnedArtists.data, topArtists.data],
+    [greetingsCuratedArtist, pinnedArtists.data, topArtists.data],
   );
 
   const greetingsArtistLoading =
-    editorialFeaturedArtists.length === 0 &&
+    !greetingsCuratedArtist &&
     pinnedArtists.isLoading &&
     !greetingsFeaturedArtist;
 
@@ -855,6 +698,20 @@ export function HomePage() {
             </HomeSection>
           )}
 
+          {/* ── SITE NEWS ────────────────────────────────────────────── */}
+    
+          {siteNews.length > 0 && (
+            <HomeSection
+              title="Site News"
+              subtitle="Updates from the team"
+              cols={HOME_SECTION_COLS.siteNews}
+            >
+              {siteNews.map((item) => (
+                <SiteNewsCard key={item.id} item={item} />
+              ))}
+            </HomeSection>
+          )}
+
           {(topArtists.data?.data.length ?? 0) > 0 && (
             <HomeSection
               title="Top Artists"
@@ -936,20 +793,6 @@ export function HomePage() {
                   className="w-full"
                 />
               ))}
-        </HomeSection>
-      )}
-
-      {/* ── SITE NEWS ────────────────────────────────────────────── */}
-
-      {siteNews.length > 0 && (
-        <HomeSection
-          title="Site News"
-          subtitle="Updates from the team"
-          cols={HOME_SECTION_COLS.siteNews}
-        >
-          {siteNews.map((item) => (
-            <SiteNewsCard key={item.id} item={item} />
-          ))}
         </HomeSection>
       )}
 
