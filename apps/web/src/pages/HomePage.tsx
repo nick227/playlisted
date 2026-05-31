@@ -1,9 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Pause, Play } from "lucide-react";
 import type {
   components,
-  LibrarySong,
   TopArtistItem,
   TopPlaylistItem,
   TopSongItem,
@@ -16,30 +14,23 @@ import {
   GreetingsBanner,
   pickGreetingsFeaturedArtist,
 } from "@/components/discovery/GreetingsBanner";
-import { HeroSpotlight } from "@/components/discovery/HeroSpotlight";
 import { SpotlightBanner } from "@/components/discovery/SpotlightBanner";
 import { RowSkeleton } from "@/components/feedback/Skeleton";
 import { Skeleton } from "@/components/feedback/Skeleton";
-import { PlaybackBars } from "@/features/playback-indicators/PlaybackBars";
 import { useHomepage } from "@/hooks/useHomepage";
 import { useIsMdUp } from "@/hooks/useIsMdUp";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { useTopArtists, useTopPlaylists, useTopSongs } from "@/hooks/useCharts";
-import { useTrackPlayback } from "@/hooks/useTrackPlayback";
-import { useLibrarySongs } from "@/hooks/useLibrary";
 import { useAuth } from "@/providers/AuthProvider";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 import { RecordingActionMenu } from "@/components/media/RecordingActionMenu";
 import { PlaylistActionMenu } from "@/components/media/PlaylistActionMenu";
-import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
 import {
   chartItemPlaybackContext,
-  librarySongToQueueTrack,
   topSongToQueueTrack,
 } from "@/lib/queueTrack";
-import { homeChartSongOrigin, homeGenreSongOrigin } from "@/lib/playbackOrigin";
+import { homeChartSongOrigin } from "@/lib/playbackOrigin";
 import { coverFallback, playlistPath, profilePath, resolveItemPath } from "@/lib/routes";
-import { formatPlayCount } from "@/lib/format";
 import { recordingShareUrl } from "@/lib/shareContent";
 
 type HomepageItem = components["schemas"]["HomepageItem"];
@@ -143,125 +134,7 @@ function HomeSection({
   );
 }
 
-// ── inline song row (genre sections) ─────────────────────────────────────────
-
 const CHART_SECTION_KEY = "top-songs";
-
-function HomeSongRow({
-  song,
-  genreSlug,
-  onPlay,
-}: {
-  song: LibrarySong;
-  genreSlug: string;
-  onPlay: () => void;
-}) {
-  const playbackOrigin = homeGenreSongOrigin(genreSlug, song.id);
-  const { isActive, isPlaying } = useTrackPlayback(song.id, playbackOrigin);
-
-  const songHref = `${playlistPath({ id: song.playlist.id, username: song.uploader.username, slug: song.playlist.slug })}#track-${song.id}`;
-  const artistHref = profilePath(song.uploader.username);
-
-  return (
-    <div
-      className={[
-        "group/card flex w-full items-center gap-1 rounded-lg px-2 py-2 transition",
-        isActive ? "bg-white/[0.08]" : "hover:bg-white/[0.05]",
-      ].join(" ")}
-    >
-      <PlaybackBars active={isActive} playing={isPlaying} />
-      {/* Artwork — play button */}
-      <button
-        type="button"
-        onClick={onPlay}
-        aria-label={isActive ? (isPlaying ? "Pause" : "Resume") : "Play"}
-        className="relative h-10 w-10 shrink-0 overflow-hidden rounded-md"
-      >
-        {song.artworkUrl ? (
-          <img src={song.artworkUrl} alt="" className="h-full w-full object-cover" />
-        ) : (
-          <div
-            className="h-full w-full"
-            style={{ background: coverFallback(song.title) }}
-            aria-hidden
-          />
-        )}
-        <div
-          className={[
-            "absolute inset-0 flex items-center justify-center bg-black/60 transition-opacity",
-            isActive ? "opacity-100" : "opacity-0 group-hover/card:opacity-100",
-          ].join(" ")}
-        >
-          {isPlaying ? (
-            <Pause size={12} fill="currentColor" className="text-white" />
-          ) : (
-            <Play size={12} fill="currentColor" className="ml-px text-white" />
-          )}
-        </div>
-        {isActive && (
-          <div className="pointer-events-none absolute inset-0 rounded-md ring-1 ring-inset ring-[var(--color-brand)]" />
-        )}
-      </button>
-
-      {/* Track info — links */}
-      <div className="min-w-0 flex-1 px-2">
-        <Link
-          to={songHref}
-          className={[
-            "block truncate text-sm font-semibold leading-snug hover:underline",
-            isActive ? "text-[var(--color-brand)]" : "text-white",
-          ].join(" ")}
-        >
-          {song.title}
-        </Link>
-        <p className="truncate text-xs text-[var(--color-text-muted)]">
-          <Link to={artistHref} className="hover:underline">
-            {song.uploader.displayName}
-          </Link>
-          {song.playCount > 0 ? (
-            <>
-              <span className="mx-1 text-white/20">·</span>
-              {formatPlayCount(song.playCount)} plays
-            </>
-          ) : null}
-        </p>
-      </div>
-
-      {/* Play/pause indicator */}
-      <button
-        type="button"
-        onClick={onPlay}
-        aria-label={isPlaying ? "Pause" : "Play"}
-        className="shrink-0 pr-1"
-      >
-        {isPlaying ? (
-          <Pause size={15} fill="currentColor" className="text-[var(--color-brand)]" />
-        ) : (
-          <Play
-            size={15}
-            fill="currentColor"
-            className="text-white/30 transition group-hover/card:text-white/80"
-          />
-        )}
-      </button>
-
-      <RecordingActionMenu
-        className="shrink-0"
-        recordingId={song.id}
-        title={song.title}
-        queueTrack={librarySongToQueueTrack(song)}
-        shareUrl={recordingShareUrl({
-          playlistId: song.playlist.id,
-          recordingId: song.id,
-          username: song.uploader.username,
-          slug: song.playlist.slug,
-        })}
-      />
-
-      <FavoriteHeartButton target="recording" id={song.id} variant="inline" />
-    </div>
-  );
-}
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -419,7 +292,6 @@ export function HomePage() {
   const discoverPool = useTopPlaylists("30d", HOME_LIMITS.discoverPoolFetch);
   const allTimeFeatured = useTopPlaylists("all", HOME_LIMITS.featuredPlaylistsFetch);
   const pinnedArtists = useTopArtists("30d", HOME_LIMITS.pinnedArtistsFetch);
-  const songsQuery = useLibrarySongs();
 
   const { playTrack, currentTrack, activeOriginKey, togglePlay } = useAudioPlayer();
 
@@ -516,48 +388,9 @@ export function HomePage() {
     return stableShuffleByDay(pool).slice(0, discoverLimit);
   }, [discoverPool.data, isGuest, user, discoverLimit]);
 
-  // Genre groups from library songs
-  const genreGroups = useMemo(() => {
-    const allSongs = songsQuery.data?.data ?? [];
-    const map = new Map<string, { name: string; slug: string; songs: LibrarySong[] }>();
-    for (const song of allSongs) {
-      for (const genre of song.genres) {
-        if (!map.has(genre.slug)) {
-          map.set(genre.slug, { name: genre.name, slug: genre.slug, songs: [] });
-        }
-        map.get(genre.slug)!.songs.push(song);
-      }
-    }
-    return Array.from(map.values())
-      .filter((g) => g.songs.length >= HOME_LIMITS.genreMinSongs)
-      .sort((a, b) => b.songs.length - a.songs.length)
-      .slice(0, HOME_LIMITS.genreGroupsMax);
-  }, [songsQuery.data]);
-
   const chartsLoading = topSongs.isLoading || topPlaylists.isLoading || topArtists.isLoading;
 
   const firstName = user?.displayName?.split(" ")[0];
-
-  function handleSongPlay(
-    song: LibrarySong,
-    queue: LibrarySong[],
-    context: string,
-    genreSlug: string,
-  ) {
-    const origin = homeGenreSongOrigin(genreSlug, song.id);
-    if (currentTrack?.id === song.id && activeOriginKey === origin) {
-      togglePlay();
-      return;
-    }
-    const idx = queue.findIndex((s) => s.id === song.id);
-    if (idx < 0) return;
-    playTrack(
-      librarySongToQueueTrack(song, context),
-      queue.map((s) => librarySongToQueueTrack(s, context)),
-      { sourceContext: "genre" },
-      { segmentLabel: context, playbackOrigin: origin },
-    );
-  }
 
   function handleChartSongPlay(item: TopSongItem, siblings: TopSongItem[], sectionName: string) {
     const origin = homeChartSongOrigin(CHART_SECTION_KEY, item.recordingId);

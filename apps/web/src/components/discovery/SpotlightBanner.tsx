@@ -115,7 +115,7 @@ function PlaylistSpotlight({ item }: { item: HomepageItem }) {
             playlistSlug: playlist.slug,
             sourceContext: "spotlight",
           }
-        : null,
+        : undefined,
     [playlist],
   );
 
