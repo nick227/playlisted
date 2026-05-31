@@ -4,6 +4,11 @@ import { normalizeSearchResponse } from "./searchNormalize.js";
 
 export type HealthResponse = components["schemas"]["HealthResponse"];
 export type HomepageResponse = components["schemas"]["HomepageResponse"];
+export type RadioStationResponse = components["schemas"]["RadioStationResponse"];
+export type RadioHeartbeatRequest = components["schemas"]["RadioHeartbeatRequest"];
+export type RadioHeartbeatResponse = components["schemas"]["RadioHeartbeatResponse"];
+export type RadioChatMessage = components["schemas"]["RadioChatMessage"];
+export type CreateRadioChatMessageRequest = components["schemas"]["CreateRadioChatMessageRequest"];
 export type UserSummary = components["schemas"]["UserSummary"];
 export type UserListResponse = components["schemas"]["UserListResponse"];
 export type PlaylistSummary = components["schemas"]["PlaylistSummary"];
@@ -153,6 +158,12 @@ export interface PlaylistedApi {
   };
   homepage: {
     get(): Promise<HomepageResponse>;
+  };
+  radio: {
+    get(): Promise<RadioStationResponse>;
+    heartbeat(body?: RadioHeartbeatRequest): Promise<RadioHeartbeatResponse>;
+    sendChatMessage(body: CreateRadioChatMessageRequest): Promise<RadioChatMessage>;
+    adminGet(): Promise<RadioStationResponse>;
   };
   users: {
     list(query?: ListUsersQuery): Promise<UserListResponse>;
@@ -460,6 +471,20 @@ export function createPlaylistedApi(options: PlaylistedClientOptions = {}): Play
     homepage: {
       get() {
         return unwrap(raw.GET("/api/v1/homepage"), "Failed to load homepage.");
+      },
+    },
+    radio: {
+      get() {
+        return unwrap(raw.GET("/api/v1/radio"), "Failed to load radio.");
+      },
+      heartbeat(body = {}) {
+        return unwrap(raw.POST("/api/v1/radio/listeners/heartbeat", { body }), "Failed to update radio listener.");
+      },
+      sendChatMessage(body) {
+        return unwrap(raw.POST("/api/v1/radio/chat", { body }), "Failed to send chat message.");
+      },
+      adminGet() {
+        return unwrap(raw.GET("/api/v1/radio/admin"), "Failed to load radio tools.");
       },
     },
     search: {

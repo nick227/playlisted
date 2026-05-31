@@ -18,6 +18,7 @@ tags:
   - name: Analytics
   - name: Charts
   - name: Library
+  - name: Radio
   - name: Tags
   - name: Search
   - name: Users
@@ -39,6 +40,90 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HealthResponse'
+
+  /api/v1/radio:
+    get:
+      tags: [Radio]
+      operationId: getRadioStation
+      summary: Get public radio now-playing state
+      responses:
+        '200':
+          description: Radio station state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RadioStationResponse'
+
+  /api/v1/radio/listeners/heartbeat:
+    post:
+      tags: [Radio]
+      operationId: heartbeatRadioListener
+      summary: Mark an anonymous radio listener as active
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RadioHeartbeatRequest'
+      responses:
+        '200':
+          description: Listener presence state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RadioHeartbeatResponse'
+
+  /api/v1/radio/chat:
+    post:
+      tags: [Radio]
+      operationId: createRadioChatMessage
+      summary: Send an anonymous radio chat message
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRadioChatMessageRequest'
+      responses:
+        '201':
+          description: Chat message accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RadioChatMessage'
+        '400':
+          description: Invalid chat message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/radio/admin:
+    get:
+      tags: [Radio]
+      operationId: getRadioAdminStation
+      summary: Get radio state for admin tools
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Radio station state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RadioStationResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/v1/auth/register:
     post:
@@ -2719,6 +2804,163 @@ components:
     TagKind:
       type: string
       enum: [GENRE, MOOD, CATEGORY, SCENE]
+
+    RadioOwnerSummary:
+      type: object
+      additionalProperties: false
+      required: [id, username, displayName]
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        displayName:
+          type: string
+        avatarUrl:
+          type: [string, 'null']
+          format: uri-reference
+
+    RadioRecordingPlaylist:
+      type: object
+      additionalProperties: false
+      required: [id, title, slug]
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        slug:
+          type: string
+
+    RadioRecording:
+      type: object
+      additionalProperties: false
+      required: [id, title, audioUrl, explicit, uploader, playlist]
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: [string, 'null']
+        audioUrl:
+          type: string
+          format: uri-reference
+        audioMimeType:
+          type: [string, 'null']
+        durationSeconds:
+          type: [integer, 'null']
+        artworkUrl:
+          type: [string, 'null']
+          format: uri-reference
+        explicit:
+          type: boolean
+        uploader:
+          $ref: '#/components/schemas/RadioOwnerSummary'
+        playlist:
+          $ref: '#/components/schemas/RadioRecordingPlaylist'
+
+    RadioNowPlaying:
+      allOf:
+        - $ref: '#/components/schemas/RadioRecording'
+        - type: object
+          additionalProperties: false
+          required: [startedAt, elapsedSeconds]
+          properties:
+            startedAt:
+              type: string
+              format: date-time
+            elapsedSeconds:
+              type: integer
+
+    RadioChatMessage:
+      type: object
+      additionalProperties: false
+      required: [id, listenerId, displayName, message, createdAt]
+      properties:
+        id:
+          type: string
+        listenerId:
+          type: string
+        displayName:
+          type: string
+        message:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    RadioStationResponse:
+      type: object
+      additionalProperties: false
+      required: [id, slug, name, status, listenerCount, chatMessages, sourcePlaylist, nowPlaying, upNext, updatedAt]
+      properties:
+        id:
+          type: string
+        slug:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+          enum: [OFFLINE, LIVE]
+        listenerCount:
+          type: integer
+        chatMessages:
+          type: array
+          items:
+            $ref: '#/components/schemas/RadioChatMessage'
+        sourcePlaylist:
+          type: 'null'
+        nowPlaying:
+          oneOf:
+            - $ref: '#/components/schemas/RadioNowPlaying'
+            - type: 'null'
+        upNext:
+          type: array
+          items:
+            $ref: '#/components/schemas/RadioRecording'
+        updatedAt:
+          type: string
+          format: date-time
+
+    RadioHeartbeatRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        listenerId:
+          type: string
+        station:
+          type: string
+
+    RadioHeartbeatResponse:
+      type: object
+      additionalProperties: false
+      required: [listenerId, station, listenerCount]
+      properties:
+        listenerId:
+          type: string
+        station:
+          type: string
+        listenerCount:
+          type: integer
+
+    CreateRadioChatMessageRequest:
+      type: object
+      additionalProperties: false
+      required: [message]
+      properties:
+        listenerId:
+          type: string
+        displayName:
+          type: string
+          maxLength: 40
+        message:
+          type: string
+          minLength: 1
+          maxLength: 300
+        station:
+          type: string
 
     HealthResponse:
       type: object

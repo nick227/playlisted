@@ -11,6 +11,7 @@ import { AdminSongsPage } from "@/pages/admin/AdminSongsPage";
 import { AdminTagsPage } from "@/pages/admin/AdminTagsPage";
 import { AdminUsersPage } from "@/pages/admin/AdminUsersPage";
 import { AdminApiKeysPage } from "@/pages/admin/AdminApiKeysPage";
+import { AdminRadioPage } from "@/pages/admin/AdminRadioPage";
 import { HomePage } from "@/pages/HomePage";
 import { FavoritesPage } from "@/pages/FavoritesPage";
 import { LibraryPage } from "@/pages/LibraryPage";
@@ -28,6 +29,7 @@ import { StudioLinksPage } from "@/pages/studio/StudioLinksPage";
 import { StudioAnalyticsPage } from "@/pages/studio/StudioAnalyticsPage";
 import { StudioHistoryPage } from "@/pages/studio/StudioHistoryPage";
 import { StudioDeveloperPage } from "@/pages/studio/StudioDeveloperPage";
+import { RadioPage } from "@/pages/RadioPage";
 
 function LegacyProfileRedirect() {
   const { username } = useParams<{ username?: string }>();
@@ -40,6 +42,7 @@ function MainRoutes() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/search" element={<SearchPage />} />
+        <Route path="/radio" element={<RadioPage />} />
         <Route path="/@:username" element={<LegacyProfileRedirect />} />
         <Route path="/@/:username/:slug" element={<CanonicalPlaylistPage />} />
         <Route path="/playlists/:playlistId" element={<PlaylistPage />} />
@@ -128,6 +131,14 @@ function MainRoutes() {
           <Route path="homepage" element={<AdminHomepagePage />} />
           <Route path="tags" element={<AdminTagsPage />} />
           <Route path="api-keys" element={<AdminApiKeysPage />} />
+          <Route
+            path="radio"
+            element={
+              <ProtectedRoute roles={["ADMIN"]}>
+                <AdminRadioPage />
+              </ProtectedRoute>
+            }
+          />
         </Route>
         <Route
           path="/playlists/new"

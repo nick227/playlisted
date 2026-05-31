@@ -28,6 +28,7 @@ import { healthRouter } from "./routes/health.js";
 import { homepageRouter } from "./routes/homepage.js";
 import { meRouter } from "./routes/me.js";
 import { playlistsRouter } from "./routes/playlists.js";
+import { radioRouter } from "./routes/radio.js";
 import { recordingsRouter } from "./routes/recordings.js";
 import { searchRouter } from "./routes/search.js";
 import { tagsRouter } from "./routes/tags.js";
@@ -78,6 +79,7 @@ export function createApp() {
   app.use("/api/v1/homepage", homepageRouter);
   app.use("/api/v1/users", usersRouter);
   app.use("/api/v1/playlists", playlistsRouter);
+  app.use("/api/v1/radio", radioRouter);
   app.use("/api/v1/recordings", recordingsRouter);
   app.use("/api/v1/search", searchRouter);
   app.use("/api/v1/charts", chartsRouter);

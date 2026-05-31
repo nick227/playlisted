@@ -100,7 +100,7 @@ export function GreetingsBanner({
           >
             {isGuest
               ? "Discover independent artists, playlists, and charts curated for the community."
-              : "Pick up where you left off — browse charts, your library, or upload new tracks."}
+              : "Browse charts or upload new tracks."}
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link

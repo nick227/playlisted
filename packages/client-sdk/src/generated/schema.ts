@@ -21,6 +21,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/radio": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get public radio now-playing state */
+        get: operations["getRadioStation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/radio/listeners/heartbeat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark an anonymous radio listener as active */
+        post: operations["heartbeatRadioListener"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/radio/chat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send an anonymous radio chat message */
+        post: operations["createRadioChatMessage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/radio/admin": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get radio state for admin tools */
+        get: operations["getRadioAdminStation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/register": {
         parameters: {
             query?: never;
@@ -1129,6 +1197,74 @@ export interface components {
         PublishStatus: "DRAFT" | "PUBLISHED" | "ARCHIVED";
         /** @enum {string} */
         TagKind: "GENRE" | "MOOD" | "CATEGORY" | "SCENE";
+        RadioOwnerSummary: {
+            id: string;
+            username: string;
+            displayName: string;
+            /** Format: uri-reference */
+            avatarUrl?: string | null;
+        };
+        RadioRecordingPlaylist: {
+            id: string;
+            title: string;
+            slug: string;
+        };
+        RadioRecording: {
+            id: string;
+            title: string;
+            description?: string | null;
+            /** Format: uri-reference */
+            audioUrl: string;
+            audioMimeType?: string | null;
+            durationSeconds?: number | null;
+            /** Format: uri-reference */
+            artworkUrl?: string | null;
+            explicit: boolean;
+            uploader: components["schemas"]["RadioOwnerSummary"];
+            playlist: components["schemas"]["RadioRecordingPlaylist"];
+        };
+        RadioNowPlaying: components["schemas"]["RadioRecording"] & {
+            /** Format: date-time */
+            startedAt: string;
+            elapsedSeconds: number;
+        };
+        RadioChatMessage: {
+            id: string;
+            listenerId: string;
+            displayName: string;
+            message: string;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        RadioStationResponse: {
+            id: string;
+            slug: string;
+            name: string;
+            /** @enum {string} */
+            status: "OFFLINE" | "LIVE";
+            listenerCount: number;
+            chatMessages: components["schemas"]["RadioChatMessage"][];
+            sourcePlaylist: null;
+            nowPlaying: components["schemas"]["RadioNowPlaying"] | null;
+            upNext: components["schemas"]["RadioRecording"][];
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        RadioHeartbeatRequest: {
+            listenerId?: string;
+            station?: string;
+        };
+        RadioHeartbeatResponse: {
+            listenerId: string;
+            station: string;
+            listenerCount: number;
+        };
+        CreateRadioChatMessageRequest: {
+            listenerId?: string;
+            displayName?: string;
+            message: string;
+            station?: string;
+        };
         HealthResponse: {
             /** @constant */
             ok: true;
@@ -2323,6 +2459,121 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HealthResponse"];
+                };
+            };
+        };
+    };
+    getRadioStation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Radio station state */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RadioStationResponse"];
+                };
+            };
+        };
+    };
+    heartbeatRadioListener: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["RadioHeartbeatRequest"];
+            };
+        };
+        responses: {
+            /** @description Listener presence state */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RadioHeartbeatResponse"];
+                };
+            };
+        };
+    };
+    createRadioChatMessage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateRadioChatMessageRequest"];
+            };
+        };
+        responses: {
+            /** @description Chat message accepted */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RadioChatMessage"];
+                };
+            };
+            /** @description Invalid chat message */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getRadioAdminStation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Radio station state */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RadioStationResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };

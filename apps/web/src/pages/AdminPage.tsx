@@ -9,6 +9,7 @@ const NAV = [
   { to: "/admin/homepage", label: "Homepage" },
   { to: "/admin/tags", label: "Tags" },
   { to: "/admin/api-keys", label: "API Keys" },
+  { to: "/admin/radio", label: "Radio", roles: ["ADMIN"] },
 ];
 
 export function AdminPage() {
@@ -25,7 +26,7 @@ export function AdminPage() {
       </div>
 
       <nav className="-mx-4 flex gap-1 overflow-x-auto border-b border-[var(--color-border)] px-4 md:mx-0">
-        {NAV.map((item) => (
+        {NAV.filter((item) => item.roles?.includes(user?.role ?? "") ?? true).map((item) => (
           <NavLink
             key={item.to}
             to={item.to}

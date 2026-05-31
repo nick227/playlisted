@@ -1,4 +1,4 @@
-import { PanelsTopLeft, BookOpen, Heart, Home, ListMusic, Lock, Plus, Settings, type LucideIcon } from "lucide-react";
+import { PanelsTopLeft, BookOpen, Heart, Home, ListMusic, Lock, Plus, Radio, Settings, type LucideIcon } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { NavLink, useNavigate } from "react-router-dom";
 
@@ -15,6 +15,7 @@ interface SidebarProps {
 
 const discoverLinks = [
   { to: "/", label: "Home", icon: Home },
+  { to: "/radio", label: "Radio", icon: Radio },
 ];
 
 const libraryLinks = [

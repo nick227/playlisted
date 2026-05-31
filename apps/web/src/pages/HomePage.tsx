@@ -30,7 +30,7 @@ import {
   topSongToQueueTrack,
 } from "@/lib/queueTrack";
 import { homeChartSongOrigin } from "@/lib/playbackOrigin";
-import { coverFallback, playlistPath, profilePath, resolveItemPath } from "@/lib/routes";
+import { coverFallback, resolveItemPath } from "@/lib/routes";
 import { recordingShareUrl } from "@/lib/shareContent";
 
 type HomepageItem = components["schemas"]["HomepageItem"];

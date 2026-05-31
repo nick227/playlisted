@@ -315,7 +315,7 @@ export function FavoritesPage() {
 
       <Section
         title="Recently played"
-        subtitle="Pick up where you left off"
+        subtitle="Yo."
         loading={recentlyPlayed.isLoading}
         empty={recentTracks.length === 0 ? "Your listening history will appear here" : undefined}
       >
