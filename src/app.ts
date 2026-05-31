@@ -30,6 +30,7 @@ import { meRouter } from "./routes/me.js";
 import { playlistsRouter } from "./routes/playlists.js";
 import { recordingsRouter } from "./routes/recordings.js";
 import { searchRouter } from "./routes/search.js";
+import { tagsRouter } from "./routes/tags.js";
 import { uploadsRouter } from "./routes/uploads.js";
 import { ingestUploadsRouter } from "./routes/ingest/uploads.js";
 import { ingestPlaylistsRouter } from "./routes/ingest/playlists.js";
@@ -81,6 +82,7 @@ export function createApp() {
   app.use("/api/v1/search", searchRouter);
   app.use("/api/v1/charts", chartsRouter);
   app.use("/api/v1/library", libraryRouter);
+  app.use("/api/v1/tags", tagsRouter);
   app.use("/api/v1/admin/dashboard", adminDashboardRouter);
   app.use("/api/v1/admin/songs", adminSongsRouter);
   app.use("/api/v1/admin/playlists", adminPlaylistsRouter);

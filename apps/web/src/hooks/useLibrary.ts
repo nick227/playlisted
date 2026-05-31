@@ -10,6 +10,14 @@ export function useLibraryGenres() {
   });
 }
 
+export function useAuthoringGenres() {
+  return useQuery({
+    queryKey: ["tags", "genres"],
+    queryFn: () => api.tags.genres(),
+    staleTime: 5 * 60_000,
+  });
+}
+
 export function useLibrarySongs(genreSlug?: string | null, enabled = true) {
   const genre = genreSlug?.trim() || undefined;
   return useQuery({

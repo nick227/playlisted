@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 
-import { useLibraryGenres } from "@/hooks/useLibrary";
+import { useAuthoringGenres } from "@/hooks/useLibrary";
 
 import type { PlaylistDetailWithTags, RecordingWithTags } from "./types";
 
@@ -17,7 +17,7 @@ export function useStudioCollectionGenres({
   setDraft: (playlist: PlaylistDetailWithTags) => void;
 }) {
   const queryClient = useQueryClient();
-  const genresQuery = useLibraryGenres();
+  const genresQuery = useAuthoringGenres();
   const [selectedGenreId, setSelectedGenreId] = useState<string | null>(null);
 
   const availableGenres = useMemo(() => {

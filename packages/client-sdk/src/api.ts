@@ -213,6 +213,9 @@ export interface PlaylistedApi {
     songs(query?: { genre?: string; page?: number; pageSize?: number }): Promise<LibrarySongsResponse>;
     artists(): Promise<LibraryArtistsResponse>;
   };
+  tags: {
+    genres(): Promise<LibraryGenresResponse>;
+  };
   search: {
     unified(query: { q: string; pageSize?: number }): Promise<SearchResponse>;
   };
@@ -838,6 +841,11 @@ export function createPlaylistedApi(options: PlaylistedClientOptions = {}): Play
           raw.DELETE("/api/v1/developer/keys/{keyId}", { params: { path: { keyId } } }),
           "Failed to revoke API key.",
         ).then(() => undefined);
+      },
+    },
+    tags: {
+      genres() {
+        return unwrap(raw.GET("/api/v1/tags/genres"), "Failed to load genre tags.");
       },
     },
     library: {

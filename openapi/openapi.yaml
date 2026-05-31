@@ -18,6 +18,7 @@ tags:
   - name: Analytics
   - name: Charts
   - name: Library
+  - name: Tags
   - name: Search
   - name: Users
   - name: Playlists
@@ -772,7 +773,20 @@ paths:
     get:
       tags: [Library]
       operationId: getLibraryGenres
-      summary: List all genre tags with song counts
+      summary: List genre tags that have public published songs (library browse)
+      responses:
+        '200':
+          description: Genre list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LibraryGenresResponse'
+
+  /api/v1/tags/genres:
+    get:
+      tags: [Tags]
+      operationId: getTagGenres
+      summary: List all genre tags for authoring
       responses:
         '200':
           description: Genre list

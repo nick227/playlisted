@@ -440,8 +440,25 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List all genre tags with song counts */
+        /** List genre tags that have public published songs (library browse) */
         get: operations["getLibraryGenres"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tags/genres": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List all genre tags for authoring */
+        get: operations["getTagGenres"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3210,6 +3227,26 @@ export interface operations {
         };
     };
     getLibraryGenres: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Genre list */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryGenresResponse"];
+                };
+            };
+        };
+    };
+    getTagGenres: {
         parameters: {
             query?: never;
             header?: never;
