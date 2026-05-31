@@ -107,6 +107,7 @@ export function QueuePanel() {
     queue,
     currentTrack,
     isPlaying,
+    playerBarVisible,
     queueIndex,
     upNextPipeline,
     segmentLabel,
@@ -126,7 +127,13 @@ export function QueuePanel() {
   const showThen = upNextPipeline.length > 0 || (autoplayEnabled && autoplayNextSegment);
 
   return (
-    <aside className="fixed bottom-[var(--spacing-player-safe-mobile)] right-0 top-[var(--spacing-topbar)] z-[70] flex w-full max-w-sm flex-col border-l border-[var(--color-border)] bg-[var(--color-canvas-alt)] shadow-xl md:bottom-[var(--spacing-player)]">
+    <aside
+      className={`player-shell-transition fixed right-0 top-[var(--spacing-topbar)] z-[70] flex w-full max-w-sm flex-col border-l border-[var(--color-border)] bg-[var(--color-canvas-alt)] shadow-xl ${
+        playerBarVisible
+          ? "bottom-[var(--spacing-player-safe-mobile)] md:bottom-[var(--spacing-player)]"
+          : "bottom-0"
+      }`}
+    >
       <div className="flex items-center justify-between border-b border-[var(--color-border)] px-4 py-3">
         <div>
           <h2 className="font-semibold text-white">Playing</h2>

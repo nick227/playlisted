@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { Plus } from "lucide-react";
 import type { AdminApiKey, AdminApiKeyStats } from "@playlisted/client-sdk";
 import { authedApi } from "@/lib/authedApi";
+import { NewKeyReveal } from "@/components/developer/NewKeyReveal";
 import { useAuth } from "@/providers/AuthProvider";
 import { usePageMeta } from "@/hooks/usePageMeta";
 
@@ -85,6 +87,9 @@ export function AdminApiKeysPage() {
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [revoking, setRevoking] = useState<string | null>(null);
+  const [newKeyName, setNewKeyName] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [revealedKey, setRevealedKey] = useState<string | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const PAGE_SIZE = 50;
 
@@ -134,6 +139,25 @@ export function AdminApiKeysPage() {
     }
   };
 
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const name = newKeyName.trim();
+    if (!name) return;
+
+    setCreating(true);
+    setError(null);
+    try {
+      const created = await api.developer.createKey({ name });
+      setRevealedKey(created.key);
+      setNewKeyName("");
+      await load();
+    } catch (e: any) {
+      setError(e.message ?? "Failed to create API key.");
+    } finally {
+      setCreating(false);
+    }
+  };
+
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
   return (
@@ -148,6 +172,38 @@ export function AdminApiKeysPage() {
           <StatCard label="Revoked keys" value={stats.totalRevoked} />
         </div>
       )}
+
+      <div className="mb-6 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
+        <p className="mb-1 text-sm font-semibold text-white">Create a new key</p>
+        <p className="mb-3 text-xs text-[var(--color-text-muted)]">
+          Creates a key for your signed-in account. Users can also create keys from Studio → Developer.
+        </p>
+        <form onSubmit={handleCreate} className="flex gap-3">
+          <input
+            type="text"
+            value={newKeyName}
+            onChange={(e) => setNewKeyName(e.target.value)}
+            placeholder="Key name, e.g. Admin Script"
+            maxLength={100}
+            required
+            className="flex-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-canvas)] px-3 py-2 text-sm text-white placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-1 focus:ring-amber-400"
+          />
+          <button
+            type="submit"
+            disabled={creating || !newKeyName.trim()}
+            className="inline-flex items-center gap-2 rounded-lg bg-amber-400 px-4 py-2 text-sm font-semibold text-black transition hover:opacity-90 disabled:opacity-50"
+          >
+            <Plus size={15} />
+            {creating ? "Creating…" : "Create"}
+          </button>
+        </form>
+      </div>
+
+      {revealedKey ? (
+        <div className="mb-6">
+          <NewKeyReveal rawKey={revealedKey} onDismiss={() => setRevealedKey(null)} />
+        </div>
+      ) : null}
 
       {/* Filters */}
       <div className="mb-4 flex flex-wrap items-center gap-3">

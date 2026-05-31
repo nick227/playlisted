@@ -8,7 +8,7 @@ import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
 import { PlaybackBars } from "@/features/playback-indicators/PlaybackBars";
 import { useTrackPlayback } from "@/hooks/useTrackPlayback";
 import { topSongToQueueTrack } from "@/lib/queueTrack";
-import { coverFallback, profilePath } from "@/lib/routes";
+import { coverFallback, playlistPath, profilePath } from "@/lib/routes";
 import { recordingShareUrl } from "@/lib/shareContent";
 
 interface ChartSongCardProps {
@@ -139,14 +139,16 @@ export function ChartSongCard({ item, className, actionSlot, onPlay }: ChartSong
 
       {/* Info */}
       <div className="min-w-0">
-        <p
+        <Link
+          to={`${playlistPath({ id: item.publishedPlaylistId, username: item.playlist.owner.username, slug: item.playlist.slug })}#track-${item.recordingId}`}
+          onClick={(e) => e.stopPropagation()}
           className={[
-            "truncate text-sm font-semibold",
+            "block truncate text-sm font-semibold hover:underline",
             isActive ? "text-[var(--color-brand)]" : "text-white",
           ].join(" ")}
         >
           {item.title}
-        </p>
+        </Link>
         <Link
           to={profilePath(item.uploader.username)}
           onClick={(e) => e.stopPropagation()}

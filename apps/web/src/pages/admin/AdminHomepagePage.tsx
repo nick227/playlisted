@@ -4,9 +4,10 @@ import { authedApi } from "@/lib/authedApi";
 import { useAuth } from "@/providers/AuthProvider";
 import { usePageMeta } from "@/hooks/usePageMeta";
 
-type Section = "FEATURED_PLAYLIST" | "CUSTOM_MIX" | "NEW_RELEASE" | "NEW_ARTIST" | "TRENDING" | "EDITOR_PICK" | "SITE_NEWS";
+type Section = "SPOTLIGHT" | "FEATURED_PLAYLIST" | "CUSTOM_MIX" | "NEW_RELEASE" | "NEW_ARTIST" | "TRENDING" | "EDITOR_PICK" | "SITE_NEWS";
 
 const SECTION_LABELS: Record<Section, string> = {
+  SPOTLIGHT: "Spotlight",
   FEATURED_PLAYLIST: "Featured Playlists",
   CUSTOM_MIX: "Custom Mix",
   NEW_RELEASE: "New Releases",
@@ -16,7 +17,7 @@ const SECTION_LABELS: Record<Section, string> = {
   SITE_NEWS: "Site News",
 };
 
-const ALL_SECTIONS: Section[] = ["FEATURED_PLAYLIST", "CUSTOM_MIX", "NEW_RELEASE", "NEW_ARTIST", "TRENDING", "EDITOR_PICK", "SITE_NEWS"];
+const ALL_SECTIONS: Section[] = ["SPOTLIGHT", "FEATURED_PLAYLIST", "CUSTOM_MIX", "NEW_RELEASE", "NEW_ARTIST", "TRENDING", "EDITOR_PICK", "SITE_NEWS"];
 
 type TargetType = "PLAYLIST" | "USER" | "NONE";
 
@@ -454,27 +455,53 @@ export function AdminHomepagePage() {
       )}
 
       <div className="flex flex-wrap gap-2">
-        {ALL_SECTIONS.map((s) => (
-          <button
-            key={s}
-            onClick={() => setActiveSection(s)}
-            className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
-              activeSection === s
-                ? "bg-amber-500 text-black"
-                : "border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-white"
-            }`}
-          >
-            {SECTION_LABELS[s]} {sectionCounts[s] > 0 ? `(${sectionCounts[s]})` : ""}
-          </button>
-        ))}
+        {ALL_SECTIONS.map((s) => {
+          const isSpotlight = s === "SPOTLIGHT";
+          const isActive = activeSection === s;
+          return (
+            <button
+              key={s}
+              onClick={() => setActiveSection(s)}
+              className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
+                isActive
+                  ? isSpotlight
+                    ? "bg-amber-400 text-black"
+                    : "bg-amber-500 text-black"
+                  : isSpotlight
+                    ? "border border-amber-400/40 text-amber-400 hover:border-amber-400 hover:bg-amber-400/10"
+                    : "border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-white"
+              }`}
+            >
+              {isSpotlight ? "★ " : ""}{SECTION_LABELS[s]} {sectionCounts[s] > 0 ? `(${sectionCounts[s]})` : ""}
+            </button>
+          );
+        })}
       </div>
+
+      {activeSection === "SPOTLIGHT" && (
+        <div className="rounded-xl border border-amber-400/25 bg-amber-400/[0.06] px-5 py-4">
+          <p className="text-sm font-semibold text-amber-400">★ Spotlight — Most Visible Placement</p>
+          <p className="mt-1 text-xs leading-relaxed text-[var(--color-text-muted)]">
+            The Spotlight is the very first thing every visitor sees on the homepage — a full-width cinematic banner.
+            Only the <strong className="text-white">top-positioned active item</strong> is shown. Choose a playlist or artist to honor.
+          </p>
+        </div>
+      )}
 
       {loading ? (
         <p className="text-sm text-[var(--color-text-muted)]">Loading…</p>
       ) : sectionFeatures.length === 0 ? (
         <div className="rounded-xl border border-dashed border-[var(--color-border)] px-6 py-10 text-center text-sm text-[var(--color-text-muted)]">
-          No features in <strong className="text-white">{SECTION_LABELS[activeSection]}</strong> yet.
-          Click "+ Add feature" to pin something here.
+          {activeSection === "SPOTLIGHT" ? (
+            <>
+              No spotlight set. Click <strong className="text-white">+ Add feature</strong> to choose a playlist or artist to honor.
+            </>
+          ) : (
+            <>
+              No features in <strong className="text-white">{SECTION_LABELS[activeSection]}</strong> yet.
+              Click "+ Add feature" to pin something here.
+            </>
+          )}
         </div>
       ) : (
         <div className="space-y-3">

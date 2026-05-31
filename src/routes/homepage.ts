@@ -5,6 +5,7 @@ import { prisma } from "../lib/prisma.js";
 export const homepageRouter = Router();
 
 const SECTION_TITLES: Record<string, string> = {
+  SPOTLIGHT: "Spotlight",
   FEATURED_PLAYLIST: "Featured Playlists",
   CUSTOM_MIX: "Custom Mix",
   NEW_RELEASE: "New Releases",
@@ -59,13 +60,18 @@ homepageRouter.get("/", async (_req, res, next) => {
           href: `/playlists/${feature.playlist.id}`,
         };
       } else if (feature.user) {
+        const userImage =
+          feature.imageUrl ??
+          (feature.section === "SPOTLIGHT"
+            ? (feature.user.heroImageUrl ?? feature.user.avatarUrl)
+            : (feature.user.avatarUrl ?? feature.user.heroImageUrl));
         item = {
           id: feature.user.id,
           targetType: "USER",
           title: feature.titleOverride ?? feature.user.displayName,
           subtitle: feature.subtitleOverride ?? feature.user.username,
           description: feature.description ?? feature.user.bio,
-          imageUrl: feature.imageUrl ?? feature.user.avatarUrl ?? feature.user.heroImageUrl,
+          imageUrl: userImage,
           href: `/@/${encodeURIComponent(feature.user.username)}`,
         };
       } else if (feature.editorialPost) {

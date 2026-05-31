@@ -48,6 +48,7 @@ interface AudioPlayerContextValue {
   autoplayEnabled: boolean;
   setAutoplayEnabled: (enabled: boolean) => void;
   state: PlayerState;
+  playerBarVisible: boolean;
   isPlaying: boolean;
   currentTime: number;
   duration: number;
@@ -129,6 +130,9 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   upNextPipelineRef.current = upNextPipeline;
 
   const currentTrack = queueIndex >= 0 ? queue[queueIndex] ?? null : null;
+  const playerBarVisible =
+    currentTrack !== null &&
+    (state === "playing" || state === "paused" || state === "loading" || state === "error");
   const isPlaying = currentTrack !== null && (state === "playing" || state === "loading");
 
   const queueRef = useRef(queue);
@@ -538,6 +542,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       autoplayEnabled,
       setAutoplayEnabled,
       state,
+      playerBarVisible,
       isPlaying,
       currentTime,
       duration,
@@ -574,6 +579,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       autoplayEnabled,
       setAutoplayEnabled,
       state,
+      playerBarVisible,
       isPlaying,
       currentTime,
       duration,

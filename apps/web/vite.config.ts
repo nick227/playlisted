@@ -11,7 +11,8 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5173,
+    // 5173 is often taken by desktop-playlisted-app; use a dedicated port for this web app.
+    port: 5174,
     proxy: {
       "/api": {
         target: "http://127.0.0.1:4000",

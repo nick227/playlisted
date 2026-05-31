@@ -1,34 +1,17 @@
 import { useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
-import { SmartPlaylistCard } from "@/components/cards/SmartPlaylistCard";
-import { CollectionView } from "@/components/collection/CollectionView";
-import type { CollectionRecording } from "@/components/collection/collectionTypes";
-import { ContentRow } from "@/components/discovery/ContentRow";
 import { PlaylistAccessEmptyState } from "@/components/feedback/PlaylistAccessEmptyState";
-import { Skeleton } from "@/components/feedback/Skeleton";
-import { useAddCollectionPlaylist, useCollectionPlaylists } from "@/hooks/useCollections";
+import { PlaylistDetailView, PlaylistPageSkeleton } from "@/components/playlists/PlaylistDetailView";
 import { usePlaylist } from "@/hooks/usePlaylist";
-import { usePageMeta } from "@/hooks/usePageMeta";
-import { usePlaylists } from "@/hooks/usePlaylists";
+import { usePlaylistPageMeta } from "@/hooks/usePlaylistPageMeta";
 import { playlistPath } from "@/lib/routes";
-import { useAudioPlayer, type QueueTrack } from "@/providers/AudioPlayerProvider";
-import { useAuth } from "@/providers/AuthProvider";
 
 export function PlaylistPage() {
   const { playlistId } = useParams<{ playlistId: string }>();
   const { data: playlist, isLoading, isError, error } = usePlaylist(playlistId);
 
-  usePageMeta({
-    title: playlist ? `${playlist.title} by ${playlist.owner.displayName}` : "Playlist",
-    description: playlist?.description ?? undefined,
-    image: playlist?.coverArtUrl,
-  });
-  const { data: related } = usePlaylists(6);
-  const { setQueue, currentTrack, togglePlay, playbackContext, state } = useAudioPlayer();
-  const { status, user } = useAuth();
-  const savedCollections = useCollectionPlaylists(100);
-  const addCollection = useAddCollectionPlaylist();
+  usePlaylistPageMeta(playlist);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -45,113 +28,12 @@ export function PlaylistPage() {
   }, [navigate, playlist?.id, playlist?.href, playlist?.owner?.username, playlist?.slug]);
 
   if (isLoading) {
-    return (
-      <div className="space-y-6 max-w-4xl mx-auto">
-        <Skeleton className="h-64 w-full max-w-md rounded-2xl" />
-        <Skeleton className="h-8 w-64" />
-        <Skeleton className="h-48 w-full" />
-      </div>
-    );
+    return <PlaylistPageSkeleton />;
   }
 
   if (isError || !playlist) {
     return <PlaylistAccessEmptyState error={error} />;
   }
 
-  const pl = playlist;
-
-  const recordings = pl.recordings as CollectionRecording[];
-
-  const queueTracks: QueueTrack[] = recordings.map((r) => ({
-    ...r,
-    playlistTitle: pl.title,
-    ownerName: pl.owner.displayName,
-  }));
-
-  const currentPlaylistId = pl.id;
-  const playlistHasCurrent = playbackContext.playlistId === currentPlaylistId;
-  const playlistIsPlaying = playlistHasCurrent && state === "playing";
-  const playlistIsPaused = playlistHasCurrent && state === "paused";
-  const isInCollections =
-    user?.id === pl.ownerId || (savedCollections.data?.data.some((item) => item.id === pl.id) ?? false);
-
-  function playAll(shuffle = false) {
-    if (playlistHasCurrent) {
-      togglePlay();
-      return;
-    }
-    const tracks = shuffle ? [...queueTracks].sort(() => Math.random() - 0.5) : queueTracks;
-    if (tracks.length > 0) {
-      setQueue(
-        tracks,
-        0,
-        {
-          playlistId: currentPlaylistId,
-          playlistOwnerUsername: pl.owner.username,
-          playlistSlug: pl.slug,
-          sourceContext: "playlist",
-        },
-        { segmentLabel: pl.title },
-      );
-    }
-  }
-
-  function playRecording(recording: CollectionRecording, index: number) {
-    if (currentTrack?.id === recording.id) {
-      togglePlay();
-      return;
-    }
-
-    setQueue(
-      queueTracks,
-      index,
-      {
-        playlistId: currentPlaylistId,
-        playlistOwnerUsername: pl.owner.username,
-        playlistSlug: pl.slug,
-        sourceContext: "playlist",
-      },
-      { segmentLabel: pl.title },
-    );
-  }
-
-  return (
-    <>
-      <CollectionView
-        playlist={pl}
-        mode="view"
-        onPlayAll={playAll}
-        onPlayTrack={playRecording}
-        playlistIsPlaying={playlistIsPlaying}
-        playlistIsPaused={playlistIsPaused}
-        onAddCollection={
-          status === "authenticated" ? () => addCollection.mutate(pl.id) : undefined
-        }
-        collectionAddPending={addCollection.isPending}
-        collectionAdded={isInCollections}
-      />
-
-      {related && related.data.length > 0 ? (
-        <div className="mx-auto mt-14 max-w-4xl">
-          <ContentRow title="More playlists">
-            {related.data
-              .filter((p) => p.id !== pl.id)
-              .slice(0, 6)
-              .map((p) => (
-                <SmartPlaylistCard
-                  key={p.id}
-                  id={p.id}
-                  title={p.title}
-                  creatorName={p.owner.displayName}
-                  coverArtUrl={p.coverArtUrl}
-                  ownerUsername={p.owner.username}
-                  slug={p.slug}
-                  className="w-40 shrink-0"
-                />
-              ))}
-          </ContentRow>
-        </div>
-      ) : null}
-    </>
-  );
+  return <PlaylistDetailView playlist={playlist} relatedPlaylistLimit={6} />;
 }

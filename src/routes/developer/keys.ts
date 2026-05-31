@@ -42,7 +42,13 @@ developerKeysRouter.post("/", async (req, res, next) => {
     const auth = await requireAuth(req, res);
     if (!auth) return;
 
-    const { name } = req.body as { name: string };
+    const name = typeof req.body?.name === "string" ? req.body.name.trim() : "";
+    if (!name) {
+      return res.status(400).json({
+        error: "invalid_name",
+        message: "Key name is required.",
+      });
+    }
 
     const activeCount = await prisma.apiKey.count({
       where: { userId: auth.user.id, revokedAt: null },

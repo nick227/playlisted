@@ -1,16 +1,24 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Pause, Play } from "lucide-react";
-import type { components, LibrarySong, TopSongItem } from "@playlisted/client-sdk";
+import type {
+  components,
+  LibrarySong,
+  TopArtistItem,
+  TopPlaylistItem,
+  TopSongItem,
+} from "@playlisted/client-sdk";
 
 import { ArtistCard } from "@/components/cards/ArtistCard";
 import { ChartSongCard } from "@/components/cards/ChartSongCard";
 import { SmartPlaylistCard } from "@/components/cards/SmartPlaylistCard";
 import { HeroSpotlight } from "@/components/discovery/HeroSpotlight";
+import { SpotlightBanner } from "@/components/discovery/SpotlightBanner";
 import { RowSkeleton } from "@/components/feedback/Skeleton";
 import { Skeleton } from "@/components/feedback/Skeleton";
 import { PlaybackBars } from "@/features/playback-indicators/PlaybackBars";
 import { useHomepage } from "@/hooks/useHomepage";
+import { useIsMdUp } from "@/hooks/useIsMdUp";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { useTopArtists, useTopPlaylists, useTopSongs } from "@/hooks/useCharts";
 import { useTrackPlayback } from "@/hooks/useTrackPlayback";
@@ -36,6 +44,49 @@ const CHART_RANGE_LABELS: Record<"7d" | "30d" | "all", string> = {
   "30d": "last 30 days",
   all: "all time",
 };
+
+/** Item counts and fetch sizes for home sections (mobile vs md+). */
+const HOME_LIMITS = {
+  gridMobile: 4,
+  gridDesktop: 8,
+  chartsTopSongs: 6,
+  chartsTopPlaylistsMobile: 4,
+  chartsTopPlaylistsDesktop: 5,
+  chartsTopArtists: 6,
+  discoverMobile: 4,
+  discoverDesktop: 10,
+  discoverPoolFetch: 30,
+  featuredPlaylistsFetch: 8,
+  pinnedArtistsFetch: 8,
+  genreGroupsMax: 4,
+  genreMinSongs: 3,
+  newReleasesColumns: 4,
+} as const;
+
+const HOME_SECTION_COLS = {
+  discover: "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5",
+  chartsTopSongs: "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6",
+  chartsTopPlaylists: "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5",
+  chartsTopArtists: "grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6",
+  featuredPlaylists: "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4",
+  featuredArtists: "grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6",
+  editorPicks: "grid-cols-2 sm:grid-cols-3 md:grid-cols-4",
+  newReleases: "grid-cols-2 sm:grid-cols-3 md:grid-cols-4",
+  siteNews: "grid-cols-1 sm:grid-cols-2",
+} as const;
+
+function viewportLimit(mobile: number, desktop: number, isMdUp: boolean): number {
+  return isMdUp ? desktop : mobile;
+}
+
+/** Editorial / featured grids: 4 on mobile, up to 8 on md+ when enough items exist. */
+function homeGridItemLimit(available: number, isMdUp: boolean): number {
+  const max = viewportLimit(HOME_LIMITS.gridMobile, HOME_LIMITS.gridDesktop, isMdUp);
+  const n = Math.min(available, max);
+  if (isMdUp && n >= HOME_LIMITS.gridDesktop) return HOME_LIMITS.gridDesktop;
+  if (n >= HOME_LIMITS.gridMobile) return HOME_LIMITS.gridMobile;
+  return n;
+}
 
 // ── layout helpers ────────────────────────────────────────────────────────────
 
@@ -202,46 +253,158 @@ function HomeSongRow({
   );
 }
 
-// ── static content ────────────────────────────────────────────────────────────
+// ── greetings banner ──────────────────────────────────────────────────────────
 
-function GuestBanner() {
+type BannerFeaturedArtist = {
+  id: string;
+  username: string;
+  displayName: string;
+  avatarUrl?: string | null;
+  heroImageUrl?: string | null;
+  subtitle?: string | null;
+};
+
+function toBannerArtistFromHomepage(item: HomepageItem): BannerFeaturedArtist {
+  return {
+    id: item.id,
+    username: usernameFromHomepageUser(item),
+    displayName: item.title,
+    avatarUrl: item.imageUrl,
+    heroImageUrl: item.imageUrl,
+    subtitle: item.subtitle ?? item.description ?? null,
+  };
+}
+
+function toBannerArtistFromChart(item: TopArtistItem): BannerFeaturedArtist {
+  return {
+    id: item.userId,
+    username: item.username,
+    displayName: item.displayName,
+    avatarUrl: item.avatarUrl,
+    heroImageUrl: item.heroImageUrl ?? item.avatarUrl,
+    subtitle: `${item.playCount.toLocaleString()} plays`,
+  };
+}
+
+function pickGreetingsFeaturedArtist(
+  editorialArtists: HomepageItem[],
+  chartArtists: TopArtistItem[],
+): BannerFeaturedArtist | null {
+  if (editorialArtists[0]) return toBannerArtistFromHomepage(editorialArtists[0]);
+  const picked = stableShuffleByDay(chartArtists)[0];
+  return picked ? toBannerArtistFromChart(picked) : null;
+}
+
+function GreetingsBanner({
+  firstName,
+  isGuest,
+  featuredArtist,
+  artistLoading,
+}: {
+  firstName?: string;
+  isGuest: boolean;
+  featuredArtist: BannerFeaturedArtist | null;
+  artistLoading?: boolean;
+}) {
+  const greeting = getGreeting();
+  const headline = !isGuest && firstName ? `${greeting}, ${firstName}` : greeting;
+  const showArtistPanel = Boolean(featuredArtist || artistLoading);
+  const heroBg = featuredArtist?.heroImageUrl ?? featuredArtist?.avatarUrl;
+
   return (
-    <section
-      className="relative mb-10 overflow-hidden rounded-2xl px-8 py-12 md:px-14"
-      style={{
-        background:
-          "linear-gradient(135deg, hsl(260 60% 14%) 0%, hsl(240 50% 10%) 60%, hsl(220 40% 8%) 100%)",
-      }}
-    >
-      <div
-        className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full opacity-20 blur-3xl"
-        style={{ background: "hsl(265 80% 55%)" }}
-        aria-hidden
-      />
-      <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-[var(--color-brand)]">
-        Playlisted
-      </p>
-      <h1 className="max-w-lg text-3xl font-extrabold leading-tight tracking-tight text-white md:text-4xl">
-        The charts platform for independent music.
-      </h1>
-      <p className="mt-4 max-w-md text-sm leading-relaxed text-white/60">
-        Hey what is up with you.
-      </p>
-      <div className="mt-8 flex flex-wrap gap-3">
-        <Link
-          to="/library"
-          className="inline-flex items-center rounded-full bg-[var(--color-brand)] px-6 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
-        >
-          Start listening
-        </Link>
-        <Link
-          to="/register"
-          className="inline-flex items-center rounded-full border border-white/20 px-6 py-2.5 text-sm font-medium text-white transition hover:bg-white/10"
-        >
-          Join free
-        </Link>
-      </div>
-    </section>
+    <div className={`mb-10 grid gap-4 ${showArtistPanel ? "lg:grid-cols-2" : ""}`}>
+      <section
+        className="relative min-h-[420px] overflow-hidden rounded-2xl px-8 py-12 md:px-14"
+        style={{
+          background:
+            "linear-gradient(135deg, hsl(260 60% 14%) 0%, hsl(240 50% 10%) 60%, hsl(220 40% 8%) 100%)",
+        }}
+      >
+        <div
+          className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full opacity-20 blur-3xl"
+          style={{ background: "hsl(265 80% 55%)" }}
+          aria-hidden
+        />
+        <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-[var(--color-brand)]">
+          Playlisted
+        </p>
+        <h1 className="max-w-lg text-3xl font-extrabold leading-tight tracking-tight text-white md:text-4xl">
+          {headline}
+        </h1>
+        <p className="mt-4 max-w-md text-sm leading-relaxed text-white/60">
+          {isGuest
+            ? "Discover independent artists, playlists, and charts curated for the community."
+            : "Pick up where you left off — browse charts, your library, or upload new tracks."}
+        </p>
+        <div className="mt-8 flex flex-wrap gap-3">
+          <Link
+            to="/library"
+            className="inline-flex items-center rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-black transition hover:bg-white/90"
+          >
+            Browse music
+          </Link>
+          {isGuest ? (
+            <Link
+              to="/register"
+              className="inline-flex items-center rounded-full border border-white/20 px-6 py-2.5 text-sm font-medium text-white transition hover:bg-white/10"
+            >
+              Join free
+            </Link>
+          ) : (
+            <Link
+              to="/studio/collections"
+              className="inline-flex items-center rounded-full border border-white/20 px-6 py-2.5 text-sm font-medium text-white transition hover:bg-white/10"
+            >
+              Upload
+            </Link>
+          )}
+        </div>
+      </section>
+
+      {showArtistPanel ? (
+        <section className="relative min-h-[420px] overflow-hidden rounded-2xl">
+          {artistLoading && !featuredArtist ? (
+            <Skeleton className="absolute inset-0 h-full w-full rounded-2xl" />
+          ) : featuredArtist ? (
+            <>
+              {heroBg ? (
+                <img
+                  src={heroBg}
+                  alt=""
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+              ) : (
+                <div
+                  className="absolute inset-0"
+                  style={{ background: coverFallback(featuredArtist.displayName) }}
+                  aria-hidden
+                />
+              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/55 to-black/25" />
+              <div className="relative z-10 flex min-h-[420px] flex-col justify-end px-8 py-12 md:px-14">
+                <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-[var(--color-brand)]">
+                  Featured artist
+                </p>
+                <ArtistCard
+                  id={featuredArtist.id}
+                  username={featuredArtist.username}
+                  displayName={featuredArtist.displayName}
+                  avatarUrl={featuredArtist.avatarUrl}
+                  subtitle={featuredArtist.subtitle}
+                  className="w-full max-w-xs"
+                />
+                <Link
+                  to={profilePath(featuredArtist.username)}
+                  className="mt-5 inline-flex text-sm font-medium text-white/80 transition hover:text-white"
+                >
+                  View profile →
+                </Link>
+              </div>
+            </>
+          ) : null}
+        </section>
+      ) : null}
+    </div>
   );
 }
 
@@ -270,13 +433,6 @@ function getGreeting() {
   if (h < 12) return "Good morning";
   if (h < 18) return "Good afternoon";
   return "Good evening";
-}
-
-/** Editor Picks grid: up to 8 when available, otherwise 4 (if at least 4 exist). */
-function editorPicksGridLimit(available: number): number {
-  if (available >= 8) return 8;
-  if (available >= 4) return 4;
-  return available;
 }
 
 function mergeUniqueHomepageItems(...lists: HomepageItem[][]): HomepageItem[] {
@@ -391,6 +547,7 @@ function HomepageEditorialCard({ item }: { item: HomepageItem }) {
 export function HomePage() {
   const { status, user } = useAuth();
   const isGuest = status === "guest";
+  const isMdUp = useIsMdUp();
 
   usePageMeta({
     title: "Home",
@@ -399,13 +556,24 @@ export function HomePage() {
 
   const [chartsRange, setChartsRange] = useState<"7d" | "30d" | "all">("7d");
 
+  const topPlaylistsLimit = viewportLimit(
+    HOME_LIMITS.chartsTopPlaylistsMobile,
+    HOME_LIMITS.chartsTopPlaylistsDesktop,
+    isMdUp,
+  );
+  const discoverLimit = viewportLimit(
+    HOME_LIMITS.discoverMobile,
+    HOME_LIMITS.discoverDesktop,
+    isMdUp,
+  );
+
   const editorial = useHomepage();
-  const topSongs = useTopSongs(chartsRange, 12);
-  const topPlaylists = useTopPlaylists(chartsRange, 10);
-  const topArtists = useTopArtists(chartsRange, 6);
-  const discoverPool = useTopPlaylists("30d", 30);
-  const allTimeFeatured = useTopPlaylists("all", 8);
-  const pinnedArtists = useTopArtists("30d", 8);
+  const topSongs = useTopSongs(chartsRange, HOME_LIMITS.chartsTopSongs);
+  const topPlaylists = useTopPlaylists(chartsRange, topPlaylistsLimit);
+  const topArtists = useTopArtists(chartsRange, HOME_LIMITS.chartsTopArtists);
+  const discoverPool = useTopPlaylists("30d", HOME_LIMITS.discoverPoolFetch);
+  const allTimeFeatured = useTopPlaylists("all", HOME_LIMITS.featuredPlaylistsFetch);
+  const pinnedArtists = useTopArtists("30d", HOME_LIMITS.pinnedArtistsFetch);
   const songsQuery = useLibrarySongs();
 
   const { playTrack, currentTrack, togglePlay } = useAudioPlayer();
@@ -416,6 +584,9 @@ export function HomePage() {
     for (const s of editorial.data?.sections ?? []) map[s.section] = s.items;
     return map;
   }, [editorial.data]);
+
+  // Spotlight: first active item in SPOTLIGHT section
+  const spotlightItem = sectionMap["SPOTLIGHT"]?.[0] ?? null;
 
   // Editor picks: homepage_features where section = EDITOR_PICK (API order = position)
   const editorPicks = sectionMap["EDITOR_PICK"] ?? [];
@@ -440,8 +611,8 @@ export function HomePage() {
       newReleases,
       customMixes,
     );
-    return pool.slice(0, editorPicksGridLimit(pool.length));
-  }, [editorPicks, heroItem, newReleases, customMixes]);
+    return pool.slice(0, homeGridItemLimit(pool.length, isMdUp));
+  }, [editorPicks, heroItem, newReleases, customMixes, isMdUp]);
 
   const editorPickGridIds = useMemo(
     () => new Set(editorPicksGrid.map((i) => i.id)),
@@ -449,26 +620,52 @@ export function HomePage() {
   );
 
   const newReleasesSection = useMemo(
-    () => completeRows(newReleases.filter((i) => !editorPickGridIds.has(i.id)), 4),
+    () =>
+      completeRows(
+        newReleases.filter((i) => !editorPickGridIds.has(i.id)),
+        HOME_LIMITS.newReleasesColumns,
+      ),
     [newReleases, editorPickGridIds],
   );
 
-  // Featured playlists
+  // Featured playlists — same 4/8 cap as editor picks grid
   const editorialFeaturedPlaylists = sectionMap["FEATURED_PLAYLIST"] ?? [];
-  const fallbackFeaturedPlaylists = useMemo(
-    () => stableShuffleByDay(allTimeFeatured.data?.data ?? []).slice(0, 8),
-    [allTimeFeatured.data],
-  );
+  const featuredPlaylistsSection = useMemo(() => {
+    if (editorialFeaturedPlaylists.length > 0) {
+      const limit = homeGridItemLimit(editorialFeaturedPlaylists.length, isMdUp);
+      return {
+        editorial: editorialFeaturedPlaylists.slice(0, limit),
+        fallback: [] as TopPlaylistItem[],
+      };
+    }
+    const pool = stableShuffleByDay(allTimeFeatured.data?.data ?? []);
+    const limit = homeGridItemLimit(pool.length, isMdUp);
+    return { editorial: [] as HomepageItem[], fallback: pool.slice(0, limit) };
+  }, [editorialFeaturedPlaylists, allTimeFeatured.data, isMdUp]);
 
   // Featured artists
   const editorialFeaturedArtists = sectionMap["NEW_ARTIST"] ?? [];
 
+  const greetingsFeaturedArtist = useMemo(
+    () =>
+      pickGreetingsFeaturedArtist(
+        editorialFeaturedArtists,
+        pinnedArtists.data?.data ?? topArtists.data?.data ?? [],
+      ),
+    [editorialFeaturedArtists, pinnedArtists.data, topArtists.data],
+  );
+
+  const greetingsArtistLoading =
+    editorialFeaturedArtists.length === 0 &&
+    pinnedArtists.isLoading &&
+    !greetingsFeaturedArtist;
+
   // For You / Discover
-  const discovered = useMemo(() => {
-    const pool = discoverPool.data?.data ?? [];
-    if (!isGuest && user) return stableShuffleForUser(pool, user.id).slice(0, 10);
-    return stableShuffleByDay(pool).slice(0, 10);
-  }, [discoverPool.data, isGuest, user]);
+  const discovered = useMemo((): TopPlaylistItem[] => {
+    const pool: TopPlaylistItem[] = discoverPool.data?.data ?? [];
+    if (!isGuest && user) return stableShuffleForUser(pool, user.id).slice(0, discoverLimit);
+    return stableShuffleByDay(pool).slice(0, discoverLimit);
+  }, [discoverPool.data, isGuest, user, discoverLimit]);
 
   // Genre groups from library songs
   const genreGroups = useMemo(() => {
@@ -483,9 +680,9 @@ export function HomePage() {
       }
     }
     return Array.from(map.values())
-      .filter((g) => g.songs.length >= 3)
+      .filter((g) => g.songs.length >= HOME_LIMITS.genreMinSongs)
       .sort((a, b) => b.songs.length - a.songs.length)
-      .slice(0, 4);
+      .slice(0, HOME_LIMITS.genreGroupsMax);
   }, [songsQuery.data]);
 
   const chartsLoading = topSongs.isLoading || topPlaylists.isLoading || topArtists.isLoading;
@@ -524,23 +721,38 @@ export function HomePage() {
     <div className="mx-auto max-w-[var(--size-container-max,90rem)]">
 
       {/* Greeting / banner */}
-      {isGuest ? (
-        <GuestBanner />
-      ) : (
-        <p className="mb-6 text-2xl font-bold md:text-3xl">
-          {getGreeting()}{firstName ? `, ${firstName}` : ""}
-        </p>
+      <GreetingsBanner
+        firstName={firstName}
+        isGuest={isGuest}
+        featuredArtist={greetingsFeaturedArtist}
+        artistLoading={greetingsArtistLoading}
+      />
+
+      {/* ── FOR YOU / DISCOVER ───────────────────────────────── */}
+
+      {discovered.length > 0 && (
+        <HomeSection
+          title={!isGuest ? "Picked for you" : "Discover Something New"}
+          subtitle={!isGuest ? "Updated daily based on your taste" : "Fresh picks — updated daily"}
+          cols={HOME_SECTION_COLS.discover}
+        >
+          {discovered.map((item) => (
+            <SmartPlaylistCard
+              key={item.playlistId}
+              id={item.playlistId}
+              title={item.title}
+              creatorName={item.owner.displayName}
+              coverArtUrl={item.coverArtUrl}
+              ownerUsername={item.owner.username}
+              slug={item.slug}
+              className="w-full"
+            />
+          ))}
+        </HomeSection>
       )}
 
-      {/* Hero */}
-      {heroItem ? (
-        <HeroSpotlight
-          title={heroItem.title}
-          summary={heroItem.description ?? heroItem.subtitle}
-          imageUrl={heroItem.imageUrl}
-          href={resolveItemPath(heroItem)}
-        />
-      ) : null}
+      {/* Spotlight — admin-curated full-width hero, shown before everything */}
+      {spotlightItem && <SpotlightBanner item={spotlightItem} />}
 
       {/* ── CHARTS ───────────────────────────────────────────── */}
 
@@ -585,9 +797,9 @@ export function HomePage() {
             <HomeSection
               title="Top Songs"
               subtitle={`Most-played — ${CHART_RANGE_LABELS[chartsRange]}`}
-              cols="grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6"
+              cols={HOME_SECTION_COLS.chartsTopSongs}
             >
-              {topSongs.data!.data.map((item) => (
+              {topSongs.data!.data.map((item: TopSongItem) => (
                 <ChartSongCard
                   key={item.recordingId}
                   item={item}
@@ -617,9 +829,9 @@ export function HomePage() {
             <HomeSection
               title="Top Playlists"
               subtitle={`Most-played collections — ${CHART_RANGE_LABELS[chartsRange]}`}
-              cols="grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
+              cols={HOME_SECTION_COLS.chartsTopPlaylists}
             >
-              {topPlaylists.data!.data.map((item) => (
+              {topPlaylists.data!.data.map((item: TopPlaylistItem) => (
                 <SmartPlaylistCard
                   key={item.playlistId}
                   id={item.playlistId}
@@ -647,9 +859,9 @@ export function HomePage() {
             <HomeSection
               title="Top Artists"
               subtitle={`Creators driving the most plays — ${CHART_RANGE_LABELS[chartsRange]}`}
-              cols="grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6"
+              cols={HOME_SECTION_COLS.chartsTopArtists}
             >
-              {topArtists.data!.data.map((item) => (
+              {topArtists.data!.data.map((item: TopArtistItem) => (
                 <ArtistCard
                   key={item.userId}
                   id={item.userId}
@@ -667,17 +879,18 @@ export function HomePage() {
 
       {/* ── FEATURED PLAYLISTS ───────────────────────────────── */}
 
-      {(editorialFeaturedPlaylists.length > 0 || fallbackFeaturedPlaylists.length > 0) && (
+      {(featuredPlaylistsSection.editorial.length > 0 ||
+        featuredPlaylistsSection.fallback.length > 0) && (
         <HomeSection
           title="Featured Playlists"
           subtitle="Handpicked by the team"
-          cols="grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
+          cols={HOME_SECTION_COLS.featuredPlaylists}
         >
-          {editorialFeaturedPlaylists.length > 0
-            ? editorialFeaturedPlaylists.map((item) => (
+          {featuredPlaylistsSection.editorial.length > 0
+            ? featuredPlaylistsSection.editorial.map((item) => (
                 <HomepageEditorialCard key={item.id} item={item} />
               ))
-            : fallbackFeaturedPlaylists.map((item) => (
+            : featuredPlaylistsSection.fallback.map((item) => (
                 <SmartPlaylistCard
                   key={item.playlistId}
                   id={item.playlistId}
@@ -698,7 +911,7 @@ export function HomePage() {
         <HomeSection
           title="Featured Artists"
           subtitle="Artists to know right now"
-          cols="grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6"
+          cols={HOME_SECTION_COLS.featuredArtists}
         >
           {editorialFeaturedArtists.length > 0
             ? editorialFeaturedArtists.map((item) => (
@@ -712,7 +925,7 @@ export function HomePage() {
                   className="w-full"
                 />
               ))
-            : (pinnedArtists.data?.data ?? []).map((item) => (
+            : (pinnedArtists.data?.data ?? []).map((item: TopArtistItem) => (
                 <ArtistCard
                   key={item.userId}
                   id={item.userId}
@@ -732,7 +945,7 @@ export function HomePage() {
         <HomeSection
           title="Site News"
           subtitle="Updates from the team"
-          cols="grid-cols-1 sm:grid-cols-2"
+          cols={HOME_SECTION_COLS.siteNews}
         >
           {siteNews.map((item) => (
             <SiteNewsCard key={item.id} item={item} />
@@ -745,7 +958,7 @@ export function HomePage() {
       {editorPicksGrid.length > 0 && (
         <HomeSection
           title="Editor Picks"
-          cols="grid-cols-2 sm:grid-cols-3 md:grid-cols-4"
+          cols={HOME_SECTION_COLS.editorPicks}
         >
           {editorPicksGrid.map((item) => (
             <HomepageEditorialCard key={item.id} item={item} />
@@ -754,58 +967,12 @@ export function HomePage() {
       )}
 
       {newReleasesSection.length > 0 && (
-        <HomeSection title="New Releases" cols="grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
+        <HomeSection title="New Releases" cols={HOME_SECTION_COLS.newReleases}>
           {newReleasesSection.map((item) => (
             <HomepageEditorialCard key={item.id} item={item} />
           ))}
         </HomeSection>
       )}
-
-      {/* ── FOR YOU / DISCOVER ───────────────────────────────── */}
-
-      {discovered.length > 0 && (
-        <HomeSection
-          title={!isGuest ? "Picked for you" : "Discover Something New"}
-          subtitle={!isGuest ? "Updated daily based on your taste" : "Fresh picks — updated daily"}
-          cols="grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
-        >
-          {discovered.map((item) => (
-            <SmartPlaylistCard
-              key={item.playlistId}
-              id={item.playlistId}
-              title={item.title}
-              creatorName={item.owner.displayName}
-              coverArtUrl={item.coverArtUrl}
-              ownerUsername={item.owner.username}
-              slug={item.slug}
-              className="w-full"
-            />
-          ))}
-        </HomeSection>
-      )}
-
-      {/* ── MUSIC BY GENRE ───────────────────────────────────── */}
-
-      {genreGroups.map(({ name, slug, songs }) => {
-        const limited = songs.slice(0, 2);
-        return (
-          <HomeSection
-            key={slug}
-            title={name}
-            subtitle={`${songs.length} song${songs.length !== 1 ? "s" : ""}`}
-            viewAllHref={`/library?genre=${encodeURIComponent(slug)}`}
-            cols="w-full"
-          >
-            {limited.map((song) => (
-              <HomeSongRow
-                key={song.id}
-                song={song}
-                onPlay={() => handleSongPlay(song, limited, name)}
-              />
-            ))}
-          </HomeSection>
-        );
-      })}
       
     </div>
   );

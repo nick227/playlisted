@@ -128,6 +128,19 @@ describe("POST /api/v1/developer/keys — create", () => {
     expect(res.body.error).toBe("key_limit_reached");
     expect(vi.mocked(prisma.apiKey.create)).not.toHaveBeenCalled();
   });
+
+  it("returns 400 when name is blank", async () => {
+    mockSession();
+
+    const res = await request(app)
+      .post("/api/v1/developer/keys")
+      .set("Authorization", `Bearer ${SESSION_TOKEN}`)
+      .send({ name: "   " });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe("invalid_name");
+    expect(vi.mocked(prisma.apiKey.create)).not.toHaveBeenCalled();
+  });
 });
 
 describe("GET /api/v1/developer/keys — list", () => {

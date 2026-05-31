@@ -2908,7 +2908,7 @@ components:
       properties:
         section:
           type: string
-          enum: [FEATURED_PLAYLIST, CUSTOM_MIX, NEW_RELEASE, NEW_ARTIST, TRENDING, EDITOR_PICK, SITE_NEWS]
+          enum: [SPOTLIGHT, FEATURED_PLAYLIST, CUSTOM_MIX, NEW_RELEASE, NEW_ARTIST, TRENDING, EDITOR_PICK, SITE_NEWS]
         title:
           type: string
         items:
@@ -4429,7 +4429,7 @@ components:
 
     AdminHomepageSection:
       type: string
-      enum: [FEATURED_PLAYLIST, CUSTOM_MIX, NEW_RELEASE, NEW_ARTIST, TRENDING, EDITOR_PICK, SITE_NEWS]
+      enum: [SPOTLIGHT, FEATURED_PLAYLIST, CUSTOM_MIX, NEW_RELEASE, NEW_ARTIST, TRENDING, EDITOR_PICK, SITE_NEWS]
 
     AdminHomepageFeature:
       type: object

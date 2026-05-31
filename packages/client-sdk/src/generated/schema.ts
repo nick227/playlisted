@@ -1202,7 +1202,7 @@ export interface components {
         };
         HomepageSection: {
             /** @enum {string} */
-            section: "FEATURED_PLAYLIST" | "CUSTOM_MIX" | "NEW_RELEASE" | "NEW_ARTIST" | "TRENDING" | "EDITOR_PICK" | "SITE_NEWS";
+            section: "SPOTLIGHT" | "FEATURED_PLAYLIST" | "CUSTOM_MIX" | "NEW_RELEASE" | "NEW_ARTIST" | "TRENDING" | "EDITOR_PICK" | "SITE_NEWS";
             title: string;
             items: components["schemas"]["HomepageItem"][];
         };
@@ -1872,7 +1872,7 @@ export interface components {
             avatarUrl?: string | null;
         };
         /** @enum {string} */
-        AdminHomepageSection: "FEATURED_PLAYLIST" | "CUSTOM_MIX" | "NEW_RELEASE" | "NEW_ARTIST" | "TRENDING" | "EDITOR_PICK" | "SITE_NEWS";
+        AdminHomepageSection: "SPOTLIGHT" | "FEATURED_PLAYLIST" | "CUSTOM_MIX" | "NEW_RELEASE" | "NEW_ARTIST" | "TRENDING" | "EDITOR_PICK" | "SITE_NEWS";
         AdminHomepageFeature: {
             id: string;
             section: components["schemas"]["AdminHomepageSection"];
