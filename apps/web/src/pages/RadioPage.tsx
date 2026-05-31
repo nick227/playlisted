@@ -5,6 +5,7 @@ import { MessageCircle, Pause, Play, Send, Users, X } from "lucide-react";
 
 import { PlaybackBars } from "@/features/playback-indicators/PlaybackBars";
 import { api } from "@/lib/api";
+import { authedApi } from "@/lib/authedApi";
 import { coverFallback } from "@/lib/routes";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { useAuth } from "@/providers/AuthProvider";
@@ -35,7 +36,7 @@ function timeAgo(isoString: string) {
 }
 
 export function RadioPage() {
-  const { user } = useAuth();
+  const { user, accessToken } = useAuth();
   const { playerBarVisible } = useAudioPlayer();
   const listenerIdRef = useRef<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -61,6 +62,8 @@ export function RadioPage() {
     ? (user.displayName || user.username)
     : getAnonName(listenerId);
 
+  const radioClient = useMemo(() => authedApi(accessToken), [accessToken]);
+
   const radioQuery = useQuery({
     queryKey: ["radio", "public"],
     queryFn: () => api.radio.get(),
@@ -71,6 +74,7 @@ export function RadioPage() {
   const nowPlaying = station?.nowPlaying;
   const chatMessages = station?.chatMessages ?? [];
   const isLive = station?.status === "LIVE" && Boolean(nowPlaying);
+  const statusLabel = radioQuery.isError ? "Unavailable" : isLive ? "Live" : "Offline";
   const unreadCount = Math.max(0, chatMessages.length - seenCount);
 
   const description =
@@ -115,9 +119,9 @@ export function RadioPage() {
 
   const chatMutation = useMutation({
     mutationFn: ({ message, stationSlug }: { message: string; stationSlug: string }) =>
-      api.radio.sendChatMessage({
+      radioClient.radio.sendChatMessage({
         listenerId,
-        displayName,
+        ...(user ? {} : { displayName }),
         message,
         station: stationSlug,
       }),
@@ -182,6 +186,10 @@ export function RadioPage() {
   const panelBottomClass = playerBarVisible
     ? "bottom-[var(--spacing-player-safe-mobile)] md:bottom-[var(--spacing-player)]"
     : "bottom-0";
+
+  const floatBottomClass = playerBarVisible
+    ? "bottom-[calc(var(--spacing-player-safe-mobile)+1.5rem)] md:bottom-[calc(var(--spacing-player)+1.5rem)]"
+    : "bottom-6";
 
   const chatPanel = chatOpen
     ? createPortal(
@@ -299,6 +307,9 @@ export function RadioPage() {
             <p className="mt-1.5 text-[10px] text-[var(--color-text-subtle)]">
               Enter to send · Shift+Enter for new line
             </p>
+            {chatMutation.isError ? (
+              <p className="mt-2 text-xs text-red-400">Message didn&apos;t send. Try again.</p>
+            ) : null}
           </div>
         </aside>,
         document.body,
@@ -308,6 +319,19 @@ export function RadioPage() {
   return (
     <>
       <div className="mx-auto flex min-h-[calc(100vh-var(--spacing-topbar)-6rem)] max-w-2xl flex-col items-center justify-center text-center">
+        {radioQuery.isError ? (
+          <div className="mb-6 w-full max-w-md rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+            Couldn&apos;t load radio.{" "}
+            <button
+              type="button"
+              onClick={() => void radioQuery.refetch()}
+              className="font-semibold underline underline-offset-2 hover:text-white"
+            >
+              Retry
+            </button>
+          </div>
+        ) : null}
+
         {/* Artwork */}
         <div
           className="aspect-square w-full max-w-[min(68vw,360px)] rounded-xl bg-white/5 bg-cover bg-center shadow-2xl shadow-black/30"
@@ -318,7 +342,7 @@ export function RadioPage() {
         <div className="mt-8 flex items-center justify-center gap-3">
           <PlaybackBars active={isLive} playing={playing} variant="thumb" barCount={7} />
           <span className="text-xs font-semibold uppercase tracking-wider text-[var(--color-brand)]">
-            {isLive ? "Live" : "Offline"}
+            {statusLabel}
           </span>
           {isLive && station?.listenerCount != null ? (
             <span className="flex items-center gap-1 text-xs text-[var(--color-text-subtle)]">
@@ -371,7 +395,7 @@ export function RadioPage() {
         <button
           type="button"
           onClick={() => { setChatOpen(true); setSeenCount(chatMessages.length); }}
-          className="fixed bottom-6 right-6 z-[52] flex h-11 items-center gap-2 rounded-full border border-white/[0.08] bg-[var(--color-surface-elevated)] pl-3 pr-4 text-white shadow-lg shadow-black/40 transition hover:border-[var(--color-brand)]/40 hover:bg-[var(--color-surface)]"
+          className={`fixed right-6 z-[56] flex h-11 items-center gap-2 rounded-full border border-white/[0.08] bg-[var(--color-surface-elevated)] pl-3 pr-4 text-white shadow-lg shadow-black/40 transition hover:border-[var(--color-brand)]/40 hover:bg-[var(--color-surface)] ${floatBottomClass}`}
           aria-label="Open radio chat"
         >
           <MessageCircle size={17} className="text-[var(--color-brand)]" />

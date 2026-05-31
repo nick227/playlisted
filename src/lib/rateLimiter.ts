@@ -18,3 +18,19 @@ export const ingestUploadLimiter = rateLimit({
   legacyHeaders: false,
   message: RATE_LIMIT_MESSAGE,
 });
+
+export const radioChatLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: RATE_LIMIT_MESSAGE,
+});
+
+export const radioHeartbeatLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: RATE_LIMIT_MESSAGE,
+});

@@ -2,6 +2,7 @@ import { Router, type Request, type Response } from "express";
 
 import { getAuthContextFromRequest } from "../lib/auth.js";
 import { prisma } from "../lib/prisma.js";
+import { radioChatLimiter, radioHeartbeatLimiter } from "../lib/rateLimiter.js";
 
 const DEFAULT_STATION_SLUG = "main";
 const LISTENER_TTL_MS = 60_000;
@@ -84,6 +85,31 @@ function addChatMessage(stationSlug: string, message: ChatMessage) {
 
 function cleanChatText(value: unknown, maxLength: number) {
   return typeof value === "string" ? value.replace(/\s+/g, " ").trim().slice(0, maxLength) : "";
+}
+
+function normalizeStationSlug(_value: unknown) {
+  return DEFAULT_STATION_SLUG;
+}
+
+async function resolveChatDisplayName(
+  req: Request,
+  bodyDisplayName: unknown,
+  listenerId: string,
+) {
+  const auth = await getAuthContextFromRequest(req);
+  if (auth) {
+    return (
+      cleanChatText(auth.user.displayName, 40) ||
+      cleanChatText(auth.user.username, 40) ||
+      "Listener"
+    );
+  }
+
+  const guestName = cleanChatText(bodyDisplayName, 40);
+  if (guestName) return guestName;
+
+  const id = cleanChatText(listenerId, 120);
+  return id ? `anon-${id.slice(0, 4)}` : "Listener";
 }
 
 async function getRadioRecordings() {
@@ -198,10 +224,10 @@ radioRouter.get("/", async (_req, res, next) => {
   }
 });
 
-radioRouter.post("/listeners/heartbeat", async (req, res, next) => {
+radioRouter.post("/listeners/heartbeat", radioHeartbeatLimiter, async (req, res, next) => {
   try {
     const body = (req.body ?? {}) as { listenerId?: string; station?: string };
-    const stationSlug = body.station?.trim() || DEFAULT_STATION_SLUG;
+    const stationSlug = normalizeStationSlug(body.station);
     const listenerId = body.listenerId?.trim() || crypto.randomUUID();
     const listenerCount = touchListener(stationSlug, listenerId);
 
@@ -215,7 +241,7 @@ radioRouter.post("/listeners/heartbeat", async (req, res, next) => {
   }
 });
 
-radioRouter.post("/chat", async (req, res, next) => {
+radioRouter.post("/chat", radioChatLimiter, async (req, res, next) => {
   try {
     const body = (req.body ?? {}) as {
       listenerId?: string;
@@ -223,9 +249,9 @@ radioRouter.post("/chat", async (req, res, next) => {
       message?: string;
       station?: string;
     };
-    const stationSlug = body.station?.trim() || DEFAULT_STATION_SLUG;
+    const stationSlug = normalizeStationSlug(body.station);
     const listenerId = cleanChatText(body.listenerId, 120) || crypto.randomUUID();
-    const displayName = cleanChatText(body.displayName, 40) || "Listener";
+    const displayName = await resolveChatDisplayName(req, body.displayName, listenerId);
     const message = cleanChatText(body.message, MAX_CHAT_MESSAGE_LENGTH);
 
     if (!message) {

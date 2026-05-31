@@ -19,9 +19,39 @@ import { createApp } from "../app.js";
 
 const app = createApp();
 
+const MOCK_USER = {
+  id: "user-1",
+  email: "test@example.com",
+  username: "testuser",
+  displayName: "Test User",
+  role: "CREATOR" as const,
+  status: "ACTIVE" as const,
+  isFeaturedArtist: false,
+  bio: null,
+  avatarUrl: null,
+  heroImageUrl: null,
+  passwordHash: null,
+  createdAt: new Date("2024-01-01"),
+  updatedAt: new Date("2024-01-01"),
+};
+
+const MOCK_SESSION = {
+  id: "session-1",
+  userId: MOCK_USER.id,
+  tokenHash: "irrelevant-hash",
+  expiresAt: new Date(Date.now() + 86_400_000),
+  lastUsedAt: null,
+  revokedAt: null,
+  createdAt: new Date("2024-01-01"),
+  updatedAt: new Date("2024-01-01"),
+  user: MOCK_USER,
+};
+
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(prisma.recording.findMany).mockResolvedValue([]);
+  vi.mocked(prisma.session.findFirst).mockResolvedValue(null);
+  vi.mocked(prisma.session.update).mockResolvedValue({} as never);
 });
 
 describe("radio public API", () => {
@@ -78,5 +108,25 @@ describe("radio public API", () => {
         }),
       ]),
     );
+  });
+
+  it("uses the authenticated member display name instead of a spoofed client value", async () => {
+    vi.mocked(prisma.session.findFirst).mockResolvedValue(MOCK_SESSION as never);
+
+    const sent = await request(app)
+      .post("/api/v1/radio/chat")
+      .set("Authorization", "Bearer session-token")
+      .send({
+        listenerId: "listener-chat-2",
+        displayName: "Fake Admin",
+        message: "signed in chat",
+      });
+
+    expect(sent.status).toBe(201);
+    expect(sent.body).toMatchObject({
+      listenerId: "listener-chat-2",
+      displayName: "Test User",
+      message: "signed in chat",
+    });
   });
 });
