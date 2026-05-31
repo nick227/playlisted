@@ -37,6 +37,7 @@ import {
   librarySongToQueueTrack,
   topSongToQueueTrack,
 } from "@/lib/queueTrack";
+import { homeChartSongOrigin, homeGenreSongOrigin } from "@/lib/playbackOrigin";
 import { coverFallback, playlistPath, profilePath, resolveItemPath } from "@/lib/routes";
 import { formatPlayCount } from "@/lib/format";
 import { recordingShareUrl } from "@/lib/shareContent";
@@ -144,14 +145,19 @@ function HomeSection({
 
 // ── inline song row (genre sections) ─────────────────────────────────────────
 
+const CHART_SECTION_KEY = "top-songs";
+
 function HomeSongRow({
   song,
+  genreSlug,
   onPlay,
 }: {
   song: LibrarySong;
+  genreSlug: string;
   onPlay: () => void;
 }) {
-  const { isActive, isPlaying } = useTrackPlayback(song.id);
+  const playbackOrigin = homeGenreSongOrigin(genreSlug, song.id);
+  const { isActive, isPlaying } = useTrackPlayback(song.id, playbackOrigin);
 
   const songHref = `${playlistPath({ id: song.playlist.id, username: song.uploader.username, slug: song.playlist.slug })}#track-${song.id}`;
   const artistHref = profilePath(song.uploader.username);
@@ -415,7 +421,7 @@ export function HomePage() {
   const pinnedArtists = useTopArtists("30d", HOME_LIMITS.pinnedArtistsFetch);
   const songsQuery = useLibrarySongs();
 
-  const { playTrack, currentTrack, togglePlay } = useAudioPlayer();
+  const { playTrack, currentTrack, activeOriginKey, togglePlay } = useAudioPlayer();
 
   // Parse editorial sections into a keyed map
   const sectionMap = useMemo(() => {
@@ -532,8 +538,14 @@ export function HomePage() {
 
   const firstName = user?.displayName?.split(" ")[0];
 
-  function handleSongPlay(song: LibrarySong, queue: LibrarySong[], context: string) {
-    if (currentTrack?.id === song.id) {
+  function handleSongPlay(
+    song: LibrarySong,
+    queue: LibrarySong[],
+    context: string,
+    genreSlug: string,
+  ) {
+    const origin = homeGenreSongOrigin(genreSlug, song.id);
+    if (currentTrack?.id === song.id && activeOriginKey === origin) {
       togglePlay();
       return;
     }
@@ -543,12 +555,13 @@ export function HomePage() {
       librarySongToQueueTrack(song, context),
       queue.map((s) => librarySongToQueueTrack(s, context)),
       { sourceContext: "genre" },
-      { segmentLabel: context },
+      { segmentLabel: context, playbackOrigin: origin },
     );
   }
 
   function handleChartSongPlay(item: TopSongItem, siblings: TopSongItem[], sectionName: string) {
-    if (currentTrack?.id === item.recordingId) {
+    const origin = homeChartSongOrigin(CHART_SECTION_KEY, item.recordingId);
+    if (currentTrack?.id === item.recordingId && activeOriginKey === origin) {
       togglePlay();
       return;
     }
@@ -557,6 +570,7 @@ export function HomePage() {
     const tracks = siblings.map((s) => topSongToQueueTrack(s, sectionName));
     playTrack(topSongToQueueTrack(item, sectionName), tracks, chartItemPlaybackContext(item), {
       segmentLabel: sectionName,
+      playbackOrigin: origin,
     });
   }
 
@@ -647,6 +661,7 @@ export function HomePage() {
                   key={item.recordingId}
                   item={item}
                   className="w-full"
+                  playbackOrigin={homeChartSongOrigin(CHART_SECTION_KEY, item.recordingId)}
                   actionSlot={
                     <RecordingActionMenu
                       recordingId={item.recordingId}

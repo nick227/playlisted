@@ -15,11 +15,12 @@ interface ChartSongCardProps {
   item: TopSongItem;
   className?: string;
   actionSlot?: ReactNode;
+  playbackOrigin?: string;
   onPlay?: () => void;
 }
 
-export function ChartSongCard({ item, className, actionSlot, onPlay }: ChartSongCardProps) {
-  const { isActive, isPlaying } = useTrackPlayback(item.recordingId);
+export function ChartSongCard({ item, className, actionSlot, playbackOrigin, onPlay }: ChartSongCardProps) {
+  const { isActive, isPlaying } = useTrackPlayback(item.recordingId, playbackOrigin);
   const rankLabel = item.rank <= 3 ? ["#1", "#2", "#3"][item.rank - 1] : `#${item.rank}`;
   const isTop3 = item.rank <= 3;
 

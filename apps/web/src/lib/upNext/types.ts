@@ -44,4 +44,6 @@ export type UpNextSegment =
 export type BeginSegmentOptions = {
   seedAutoplay?: boolean;
   segmentLabel?: string;
+  /** UI element that initiated playback — only that element should show the playing indicator. */
+  playbackOrigin?: string;
 };

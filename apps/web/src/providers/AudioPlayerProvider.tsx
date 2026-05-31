@@ -12,6 +12,7 @@ import {
 } from "react";
 
 import { hydrateUpNextSegment } from "@/lib/upNext/hydrateSegment";
+import { shiftPlaybackOriginTrack } from "@/lib/playbackOrigin";
 import { prefetchAutoplayNext, type PrefetchedPlaylistNext } from "@/lib/upNext/prefetchAutoplayNext";
 import { readAutoplayEnabled, writeAutoplayEnabled } from "@/lib/upNext/storage";
 import type { BeginSegmentOptions, UpNextSegment } from "@/lib/upNext/types";
@@ -53,6 +54,8 @@ interface AudioPlayerContextValue {
   currentTime: number;
   duration: number;
   playbackContext: PlaybackContext;
+  /** UI element key for the surface that started the current segment (null = any track-id match). */
+  activeOriginKey: string | null;
   queueOpen: boolean;
   setQueueOpen: (open: boolean) => void;
   shuffle: boolean;
@@ -122,6 +125,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [playbackContext, setPlaybackContext] = useState<PlaybackContext>({ sourceContext: "player" });
+  const [activeOriginKey, setActiveOriginKey] = useState<string | null>(null);
   const [queueOpen, setQueueOpen] = useState(false);
   const [shuffle, setShuffleState] = useState(false);
   const [repeatMode, setRepeatModeState] = useState<"off" | "one" | "all">("off");
@@ -227,6 +231,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
 
       segmentEndIndexRef.current = tracks.length - 1;
       setSegmentLabel(options?.segmentLabel ?? tracks[index]?.playlistTitle ?? null);
+      setActiveOriginKey(options?.playbackOrigin ?? null);
       setQueueState(tracks);
       setQueueIndex(index);
       loadTrack(tracks[index]);
@@ -352,6 +357,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
         next = Math.floor(Math.random() * (end + 1));
       } while (next === idx && end > 0);
       setQueueIndex(next);
+      setActiveOriginKey((prev) => shiftPlaybackOriginTrack(prev, q[next].id));
       loadTrack(q[next]);
       return;
     }
@@ -359,12 +365,14 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     if (idx < end) {
       const next = idx + 1;
       setQueueIndex(next);
+      setActiveOriginKey((prev) => shiftPlaybackOriginTrack(prev, q[next].id));
       loadTrack(q[next]);
       return;
     }
 
     if (repeatRef.current === "all" && q.length > 0) {
       setQueueIndex(0);
+      setActiveOriginKey((prev) => shiftPlaybackOriginTrack(prev, q[0].id));
       loadTrack(q[0]);
       return;
     }
@@ -395,6 +403,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     if (queueIndex > 0) {
       const prev = queueIndex - 1;
       setQueueIndex(prev);
+      setActiveOriginKey((origin) => shiftPlaybackOriginTrack(origin, queue[prev].id));
       loadTrack(queue[prev]);
     }
   }, [queue, queueIndex, loadTrack]);
@@ -547,6 +556,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       currentTime,
       duration,
       playbackContext,
+      activeOriginKey,
       queueOpen,
       setQueueOpen,
       shuffle,
@@ -584,6 +594,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       currentTime,
       duration,
       playbackContext,
+      activeOriginKey,
       queueOpen,
       shuffle,
       toggleShuffle,

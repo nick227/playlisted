@@ -4,9 +4,11 @@ import { Link } from "react-router-dom";
 
 import { SmartPlaylistCard } from "@/components/cards/SmartPlaylistCard";
 import { PlaybackBars } from "@/features/playback-indicators/PlaybackBars";
+import { useTrackPlayback } from "@/hooks/useTrackPlayback";
 import { usePlaylist } from "@/hooks/usePlaylist";
 import { useUser } from "@/hooks/useUser";
 import { coverFallback, playlistPath, profilePath } from "@/lib/routes";
+import { homeSpotlightTrackOrigin } from "@/lib/playbackOrigin";
 import { useAudioPlayer, type QueueTrack } from "@/providers/AudioPlayerProvider";
 import type { components, PlaylistDetail } from "@playlisted/client-sdk";
 
@@ -23,20 +25,19 @@ function toQueueTrack(r: RecordingInPlaylist, pl: PlaylistDetail): QueueTrack {
   };
 }
 
-// Active when this recording is current in this playlist (QueueTrack.id === recording.id).
+// Active only when this row started playback (same recording can appear elsewhere on the homepage).
 function CompactSongRow({
   recording,
   playlist,
+  playbackOrigin,
   onPlay,
 }: {
   recording: RecordingInPlaylist;
   playlist: PlaylistDetail;
+  playbackOrigin: string;
   onPlay: () => void;
 }) {
-  const { currentTrack, isPlaying: playerIsPlaying, playbackContext } = useAudioPlayer();
-  const isActive =
-    currentTrack?.id === recording.id && playbackContext.playlistId === playlist.id;
-  const isPlaying = isActive && playerIsPlaying;
+  const { isActive, isPlaying } = useTrackPlayback(recording.id, playbackOrigin);
 
   const songHref = `${playlistPath({
     id: playlist.id,
@@ -97,7 +98,7 @@ function CompactSongRow({
 
 function PlaylistSpotlight({ item }: { item: HomepageItem }) {
   const { data: playlist } = usePlaylist(item.id);
-  const { setQueue, currentTrack, togglePlay, playbackContext, isPlaying: playerIsPlaying } =
+  const { setQueue, currentTrack, togglePlay, playbackContext, activeOriginKey, isPlaying: playerIsPlaying } =
     useAudioPlayer();
 
   const queueTracks = useMemo(
@@ -129,12 +130,22 @@ function PlaylistSpotlight({ item }: { item: HomepageItem }) {
 
   function handlePlayAll() {
     if (playlistHasCurrent) { togglePlay(); return; }
-    if (queueTracks.length > 0) setQueue(queueTracks, 0, context, { segmentLabel: pl.title });
+    const first = recordings[0];
+    if (queueTracks.length > 0 && first) {
+      setQueue(queueTracks, 0, context, {
+        segmentLabel: pl.title,
+        playbackOrigin: homeSpotlightTrackOrigin(pl.id, first.id),
+      });
+    }
   }
 
   function handleTrackPlay(recording: RecordingInPlaylist, idx: number) {
-    if (currentTrack?.id === recording.id && playlistHasCurrent) { togglePlay(); return; }
-    setQueue(queueTracks, idx, context, { segmentLabel: pl.title });
+    const origin = homeSpotlightTrackOrigin(pl.id, recording.id);
+    if (currentTrack?.id === recording.id && activeOriginKey === origin) {
+      togglePlay();
+      return;
+    }
+    setQueue(queueTracks, idx, context, { segmentLabel: pl.title, playbackOrigin: origin });
   }
 
   const href = playlistPath({ id: pl.id, href: pl.href, username: pl.owner.username, slug: pl.slug });
@@ -207,6 +218,7 @@ function PlaylistSpotlight({ item }: { item: HomepageItem }) {
                   key={r.id}
                   recording={r}
                   playlist={pl}
+                  playbackOrigin={homeSpotlightTrackOrigin(pl.id, r.id)}
                   onPlay={() => handleTrackPlay(r, idx)}
                 />
               ))}
