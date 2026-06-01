@@ -1,6 +1,8 @@
 import type { SceneFrame, StageRect } from '../../sceneKit'
 import { registerVenue } from '../../sceneKit'
+import type { PrimitiveOptions } from './scenePrimitives'
 import type { LiminalRenderer } from './renderer'
+import { speakerLevel, speakerOpts } from './speakerReact'
 import { hash01 } from './types'
 
 type VenueFn = (r: LiminalRenderer, stage: StageRect, frame: SceneFrame) => void
@@ -44,6 +46,27 @@ function pick<T>(arr: T[], seed: number, salt: number): T {
   return arr[Math.floor(hash01(seed, salt) * arr.length)]
 }
 
+function pushSpeakerStack(
+  r: LiminalRenderer,
+  stage: StageRect,
+  frame: SceneFrame,
+  nx: number,
+  scale: number,
+  extra: PrimitiveOptions = {},
+) {
+  const floorY = stage.bottom
+  const spk = speakerLevel(frame)
+  const w = 56 * scale
+  const h = 100 * scale
+  const x = stage.left + stage.width * nx - w * 0.5
+  const y = floorY - (110 + hash01(frame.seed, 21 + nx * 10) * 20) * scale
+  r.pushSpeaker(0.2, x, y, w, h, spk, {
+    ...speakerOpts(frame),
+    faceOnCone: frame.highs > 0.5 && spk > 0.35,
+    ...extra,
+  })
+}
+
 // ── Band stage ────────────────────────────────────────────────────────────────
 
 function composeBand(r: LiminalRenderer, stage: StageRect, frame: SceneFrame) {
@@ -59,16 +82,9 @@ function composeBand(r: LiminalRenderer, stage: StageRect, frame: SceneFrame) {
   r.pushStageLight(0.1, stage.centerX, stage.top + stage.height * 0.08,
     stage.width * 0.45, a + highs * 0.5, { lightTint: keyTint })
 
-  // Speaker stacks — x position jittered ±4% per room
-  const speakerJit = (hash01(seed, 20) - 0.5) * stage.width * 0.08
-  r.pushSpeaker(0.2,
-    stage.left + 12 * scale + speakerJit,
-    floorY - (110 + hash01(seed, 21) * 20) * scale,
-    56 * scale, 100 * scale, a, { faceOnCone: highs > 0.55 })
-  r.pushSpeaker(0.2,
-    stage.left + stage.width - 68 * scale - speakerJit,
-    floorY - (110 + hash01(seed, 22) * 20) * scale,
-    56 * scale, 100 * scale, a, { mirror: true, faceOnCone: highs > 0.6 })
+  const speakerJit = (hash01(seed, 20) - 0.5) * 0.08
+  pushSpeakerStack(r, stage, frame, 0.1 + speakerJit, scale)
+  pushSpeakerStack(r, stage, frame, 0.9 - speakerJit, scale, { mirror: true })
 
   // Drum kit — center, slight depth variation
   r.pushDrumKit(0.35,
@@ -101,6 +117,12 @@ function composeBar(r: LiminalRenderer, stage: StageRect, frame: SceneFrame) {
   // Underbar light — color varies per room
   r.pushStageLight(0.18, counterX + counterW * 0.5, counterY + counterH,
     counterW * 0.65, 0.3 + frame.mids * 0.2, { lightTint: barTint })
+
+  const spk = speakerLevel(frame)
+  const monW = 22 * scale
+  const monH = 38 * scale
+  r.pushSpeaker(0.22, counterX + 8, counterY - monH + 4, monW, monH, spk, speakerOpts(frame))
+  r.pushSpeaker(0.22, counterX + counterW - monW - 8, counterY - monH + 4, monW, monH, spk, speakerOpts(frame))
 
   r.pushBarCounter(0.2, counterX, counterY, counterW, counterH)
 
@@ -150,6 +172,10 @@ function composeDanceVenue(r: LiminalRenderer, stage: StageRect, frame: SceneFra
     stage.top + stage.height * (0.15 + hash01(seed, 56) * 0.15),
     stage.width * (0.25 + hash01(seed, 57) * 0.1),
     frame.highs * 0.5, { lightTint: rightWash })
+
+  const scale = stage.width / 500
+  pushSpeakerStack(r, stage, frame, 0.08, scale * 0.95)
+  pushSpeakerStack(r, stage, frame, 0.92, scale * 0.95, { mirror: true })
 }
 
 // ── Conversation ──────────────────────────────────────────────────────────────

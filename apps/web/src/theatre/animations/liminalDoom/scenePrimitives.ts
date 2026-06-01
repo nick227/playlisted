@@ -13,6 +13,11 @@ export type PrimitiveOptions = {
   eyeTrackY?: number
   /** RGB triple for stage-light glow color — overrides default amber. */
   lightTint?: [number, number, number]
+  /** Extra speaker react channels (see drawSpeaker). */
+  mids?: number
+  beat?: number
+  highs?: number
+  time?: number
 }
 
 type Ctx = CanvasRenderingContext2D
@@ -29,51 +34,84 @@ export function drawSpeaker(
   ctx: Ctx, x: number, y: number, w: number, h: number, bassLevel: number,
   options: PrimitiveOptions = {},
 ) {
-  const push = bassLevel * 10
+  const drive = clamp(bassLevel, 0, 1)
+  const mids = options.mids ?? 0
+  const beat = options.beat ?? 0
+  const highs = options.highs ?? 0
+  const time = options.time ?? 0
+
+  const push = drive * 16 + beat * 14
   const bw = w + push
-  const bh = h + push * 0.4
-  const bx = x - push * 0.5
-  const by = y - push * 0.3
+  const bh = h + push * 0.45
+  const shake = beat > 0.4 ? Math.sin(time * 0.045 + x * 0.02) * beat * 4 : 0
+  const bx = x - push * 0.5 + shake
+  const by = y - push * 0.32
   applyAlpha(ctx, options.alpha)
 
-  // Cabinet body
+  const cabH = bh * 0.72
   ctx.fillStyle = options.tint ?? palette.speaker
-  ctx.fillRect(bx, by, bw, bh * 0.72)
+  ctx.fillRect(bx, by, bw, cabH)
 
-  // Cabinet edge highlight (makes shape readable against lit back wall)
+  if (beat > 0.45) {
+    ctx.fillStyle = `rgba(196,138,58,${(beat - 0.45) * 0.45})`
+    ctx.fillRect(bx, by, bw, cabH)
+  }
+
   ctx.strokeStyle = palette.figureEdge
   ctx.lineWidth = 2
-  ctx.strokeRect(bx, by, bw, bh * 0.72)
+  ctx.strokeRect(bx, by, bw, cabH)
 
-  // Speaker ring — visible concentric circle
-  const coneR = Math.min(bw, bh) * 0.24
   const cx = bx + bw * 0.5
-  const cy = by + bh * 0.38
+  const cy = by + cabH * 0.52
+  const conePulse = 1 + drive * 0.2 + beat * 0.38 + Math.sin(time / 85 + x * 0.01) * mids * 0.1
+  const coneR = Math.min(bw, bh) * 0.24 * conePulse
+
   ctx.fillStyle = palette.speakerRing
   ctx.beginPath()
   ctx.arc(cx, cy, coneR, 0, Math.PI * 2)
   ctx.fill()
 
-  // Speaker cone — lighter center
+  const coneIn = coneR * (0.55 + drive * 0.12 + beat * 0.08)
   ctx.fillStyle = palette.speakerCone
   ctx.beginPath()
-  ctx.arc(cx, cy, coneR * 0.6, 0, Math.PI * 2)
+  ctx.arc(cx, cy, coneIn, 0, Math.PI * 2)
   ctx.fill()
 
-  // Bass pulse: amber glow ring on beat
-  if (bassLevel > 0.4) {
-    ctx.save()
-    ctx.globalCompositeOperation = 'screen'
-    ctx.strokeStyle = `rgba(200,140,60,${(bassLevel - 0.4) * 0.9})`
-    ctx.lineWidth = 3
+  if (highs > 0.35) {
+    ctx.fillStyle = `rgba(240,230,255,${highs * 0.55})`
     ctx.beginPath()
-    ctx.arc(cx, cy, coneR * (1 + bassLevel * 0.2), 0, Math.PI * 2)
-    ctx.stroke()
-    ctx.restore()
+    ctx.arc(cx + coneR * 0.22, cy - coneR * 0.18, 1.5 + highs * 3.5, 0, Math.PI * 2)
+    ctx.fill()
   }
 
+  ctx.save()
+  ctx.globalCompositeOperation = 'screen'
+  const glow = drive * 0.85 + beat * 0.65
+  if (glow > 0.2) {
+    ctx.strokeStyle = `rgba(200,140,60,${glow * 0.95})`
+    ctx.lineWidth = 2 + beat * 4
+    ctx.beginPath()
+    ctx.arc(cx, cy, coneR * (1.05 + drive * 0.25), 0, Math.PI * 2)
+    ctx.stroke()
+  }
+  if (mids > 0.22) {
+    ctx.strokeStyle = `rgba(120,170,220,${mids * 0.7})`
+    ctx.lineWidth = 1 + mids * 2.5
+    ctx.beginPath()
+    ctx.arc(cx, cy, coneR * (1.2 + Math.sin(time / 55) * mids * 0.15), 0, Math.PI * 2)
+    ctx.stroke()
+  }
+  if (beat > 0.55) {
+    ctx.strokeStyle = `rgba(255,220,180,${(beat - 0.55) * 1.4})`
+    ctx.lineWidth = 4 + beat * 5
+    ctx.beginPath()
+    ctx.arc(cx, cy, coneR * (1.35 + beat * 0.25), 0, Math.PI * 2)
+    ctx.stroke()
+  }
+  ctx.restore()
+
   if (options.faceOnCone) {
-    drawFaceMask(ctx, cx, cy, coneR * 1.5, bassLevel * 0.5, options.eyeTrackX ?? 0, options.eyeTrackY ?? 0, options)
+    drawFaceMask(ctx, cx, cy, coneR * 1.5, drive * 0.55 + beat * 0.25, options.eyeTrackX ?? 0, options.eyeTrackY ?? 0, options)
   }
   resetAlpha(ctx, options.alpha)
 }
