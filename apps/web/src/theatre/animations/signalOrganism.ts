@@ -7,6 +7,7 @@ import {
   drawTendrils, triggerDivision, strongestCell, cellCenter,
 } from './signalOrganism/cells'
 import { drawRings, drawEchoRings, pushEchoRing } from './signalOrganism/rings'
+import { FlyingRingField } from './signalOrganism/flyingRings'
 import type { EchoRing } from './signalOrganism/types'
 import { clamp } from './signalOrganism/types'
 
@@ -15,6 +16,7 @@ export function signalOrganismFactory(): IAnimation {
     private machine = new OrganismStateMachine()
     private cells = buildCells(800, 600)
     private echoes: EchoRing[] = []
+    private flyingRings = new FlyingRingField()
     private lastGlowKey = ''
     private glowGrad: CanvasGradient | null = null
     private lastW = 0
@@ -73,8 +75,17 @@ export function signalOrganismFactory(): IAnimation {
 
       const cx = w * 0.5
       const cy = h * 0.46
+
+      if (!reducedMotion) {
+        this.flyingRings.reactToAudio(now, triggers, cx, cy, w, h, energy, hyper)
+      }
       const minSide = Math.min(w, h)
       const time = now / 1000
+      const pScale = this.particleScale(context)
+
+      if (!reducedMotion) {
+        this.flyingRings.update(dt, now, cx, cy, w, h, energy, phaseMix, bass, reducedMotion, pScale)
+      }
 
       drawVeins(this.ctx, this.cells, this.machine.veinPulse, mids, phaseMix)
       drawCells(this.ctx, this.cells, mids, bass, phaseMix)
@@ -99,6 +110,12 @@ export function signalOrganismFactory(): IAnimation {
       }
 
       drawTendrils(this.ctx, this.cells, cx, cy, synapse, mids, phaseMix)
+
+      if (!reducedMotion && pScale > 0) {
+        this.ctx.globalCompositeOperation = 'lighter'
+        this.flyingRings.draw(this.ctx, now, this.allowsHeavyParticles(context))
+        this.ctx.globalCompositeOperation = 'source-over'
+      }
 
       this.ctx.globalCompositeOperation = 'lighter'
       drawRings(
@@ -138,7 +155,6 @@ export function signalOrganismFactory(): IAnimation {
       this.ctx.fill()
 
       if (this.allowsHeavyParticles(context)) {
-        const pScale = this.particleScale(context)
         const count = Math.floor((20 + phaseMix * 18) * pScale)
         if (count > 0) {
           const phaseA = now / 2200
