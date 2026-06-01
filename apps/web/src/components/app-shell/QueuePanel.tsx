@@ -107,7 +107,7 @@ export function QueuePanel() {
     queue,
     currentTrack,
     isPlaying,
-    playerBarVisible,
+    playerShellActive,
     queueIndex,
     upNextPipeline,
     segmentLabel,
@@ -129,7 +129,7 @@ export function QueuePanel() {
   return (
     <aside
       className={`player-shell-transition fixed right-0 top-[var(--spacing-topbar)] z-[70] flex w-full max-w-sm flex-col border-l border-[var(--color-border)] bg-[var(--color-canvas-alt)] shadow-xl ${
-        playerBarVisible
+        playerShellActive
           ? "bottom-[var(--spacing-player-safe-mobile)] md:bottom-[var(--spacing-player)]"
           : "bottom-0"
       }`}

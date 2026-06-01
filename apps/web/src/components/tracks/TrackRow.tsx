@@ -252,7 +252,7 @@ export function TrackRow({
                       : "Uses playlist genre"
                 }
                 aria-label="Track genre"
-                className="max-w-[6.5rem] truncate rounded border border-white/10 bg-black/30 px-1.5 py-0.5 text-xs text-white outline-none focus:border-[var(--color-brand)] disabled:opacity-50"
+                className="max-w-[6.5rem] truncate rounded border border-white/10 bg-black px-1.5 py-0.5 text-xs text-white outline-none focus:border-[var(--color-brand)] disabled:opacity-50"
               >
                 <option value="">Default</option>
                 {genreOptions.map((genre) => (

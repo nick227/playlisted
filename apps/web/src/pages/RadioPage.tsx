@@ -10,6 +10,7 @@ import { coverFallback } from "@/lib/routes";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { useAuth } from "@/providers/AuthProvider";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
+import theatreController from "@/theatre/TheatreController";
 
 const LISTENER_ID_KEY = "playlisted.radio.listenerId";
 const MAX_MSG_LENGTH = 300;
@@ -37,7 +38,7 @@ function timeAgo(isoString: string) {
 
 export function RadioPage() {
   const { user, accessToken } = useAuth();
-  const { playerBarVisible } = useAudioPlayer();
+  const { releasePlayback } = useAudioPlayer();
   const listenerIdRef = useRef<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const chatBottomRef = useRef<HTMLDivElement | null>(null);
@@ -90,6 +91,40 @@ export function RadioPage() {
     nowPlaying?.durationSeconds
       ? Math.min(100, ((nowPlaying.elapsedSeconds ?? 0) / nowPlaying.durationSeconds) * 100)
       : null;
+
+  const radioArtworkUrl = nowPlaying?.artworkUrl ?? null;
+
+  useEffect(() => {
+    releasePlayback();
+    if (theatreController.state.active) void theatreController.exit();
+  }, [releasePlayback]);
+
+  useEffect(() => {
+    return () => theatreController.registerPlaybackSource(null);
+  }, []);
+
+  useEffect(() => {
+    if (!playing) return;
+    theatreController.setArtwork(radioArtworkUrl);
+  }, [playing, radioArtworkUrl]);
+
+  function bindTheatreToRadio(el: HTMLAudioElement) {
+    theatreController.registerPlaybackSource(el, { artworkUrl: radioArtworkUrl });
+  }
+
+  function unbindTheatreFromRadio() {
+    theatreController.registerPlaybackSource(null);
+  }
+
+  function handleRadioPlay(el: HTMLAudioElement) {
+    setPlaying(true);
+    bindTheatreToRadio(el);
+  }
+
+  function handleRadioPause() {
+    setPlaying(false);
+    unbindTheatreFromRadio();
+  }
 
   // Mark messages as seen while chat is open
   useEffect(() => {
@@ -182,22 +217,10 @@ export function RadioPage() {
   const charsLeft = MAX_MSG_LENGTH - chatMessage.length;
   const showCharCount = chatMessage.length > MAX_MSG_LENGTH * 0.75;
 
-  // Bottom offset accounts for the global player bar if it's visible
-  const panelBottomClass = playerBarVisible
-    ? "bottom-[var(--spacing-player-safe-mobile)] md:bottom-[var(--spacing-player)]"
-    : "bottom-0";
-
-  const floatBottomClass = playerBarVisible
-    ? "bottom-[calc(var(--spacing-player-safe-mobile)+1.5rem)] md:bottom-[calc(var(--spacing-player)+1.5rem)]"
-    : "bottom-6";
-
   const chatPanel = chatOpen
     ? createPortal(
         <aside
-          className={`fixed right-0 z-[52] flex flex-col border-l border-[var(--color-border)] bg-[var(--color-canvas-alt)] shadow-2xl shadow-black/60
-            ${panelBottomClass}
-            top-[var(--spacing-topbar)]
-            w-full sm:w-[360px]`}
+          className="fixed bottom-0 right-0 top-[var(--spacing-topbar)] z-[52] flex w-full flex-col border-l border-[var(--color-border)] bg-[var(--color-canvas-alt)] shadow-2xl shadow-black/60 sm:w-[360px]"
         >
           {/* Header */}
           <div className="flex shrink-0 items-center justify-between border-b border-white/[0.06] bg-[var(--color-surface)] px-4 py-3">
@@ -395,7 +418,7 @@ export function RadioPage() {
         <button
           type="button"
           onClick={() => { setChatOpen(true); setSeenCount(chatMessages.length); }}
-          className={`fixed right-6 z-[56] flex h-11 items-center gap-2 rounded-full border border-white/[0.08] bg-[var(--color-surface-elevated)] pl-3 pr-4 text-white shadow-lg shadow-black/40 transition hover:border-[var(--color-brand)]/40 hover:bg-[var(--color-surface)] ${floatBottomClass}`}
+          className="fixed bottom-6 right-6 z-[56] flex h-11 items-center gap-2 rounded-full border border-white/[0.08] bg-[var(--color-surface-elevated)] pl-3 pr-4 text-white shadow-lg shadow-black/40 transition hover:border-[var(--color-brand)]/40 hover:bg-[var(--color-surface)]"
           aria-label="Open radio chat"
         >
           <MessageCircle size={17} className="text-[var(--color-brand)]" />
@@ -410,7 +433,14 @@ export function RadioPage() {
 
       {chatPanel}
 
-      <audio ref={audioRef} onEnded={() => radioQuery.refetch()} onPause={() => setPlaying(false)} />
+      <audio
+        ref={audioRef}
+        data-radio-player
+        crossOrigin="anonymous"
+        onPlay={(e) => handleRadioPlay(e.currentTarget)}
+        onEnded={() => radioQuery.refetch()}
+        onPause={handleRadioPause}
+      />
     </>
   );
 }

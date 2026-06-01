@@ -27,7 +27,8 @@ const playerBodyClass =
 export function BottomPlayer() {
   const {
     currentTrack,
-    playerBarVisible,
+    playerDismissSnapshot,
+    playerBarExiting,
     isPlaying,
     currentTime,
     duration,
@@ -51,7 +52,14 @@ export function BottomPlayer() {
 
   const prevVolumeRef = useRef(1);
 
-  const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
+  const dismiss = playerDismissSnapshot;
+  const displayTrack = currentTrack ?? dismiss?.track ?? null;
+  const shellPlaybackContext =
+    dismiss && !currentTrack ? dismiss.playbackContext : playbackContext;
+  const shellCurrentTime = dismiss && !currentTrack ? dismiss.currentTime : currentTime;
+  const shellDuration = dismiss && !currentTrack ? dismiss.duration : duration;
+  const shellIsPlaying = dismiss && !currentTrack ? false : isPlaying;
+  const progress = shellDuration > 0 ? (shellCurrentTime / shellDuration) * 100 : 0;
 
   function handleVolumeMute() {
     if (volume > 0) {
@@ -62,19 +70,19 @@ export function BottomPlayer() {
     }
   }
 
-  if (!playerBarVisible || !currentTrack) {
+  if (!displayTrack) {
     return null;
   }
 
-  const artStyle = currentTrack.artworkUrl
+  const artStyle = displayTrack.artworkUrl
     ? undefined
-    : { background: coverFallback(currentTrack.title) };
+    : { background: coverFallback(displayTrack.title) };
 
-  const playlistHref = playbackContext.playlistId
+  const playlistHref = shellPlaybackContext.playlistId
     ? playlistPath({
-        id: playbackContext.playlistId,
-        username: playbackContext.playlistOwnerUsername,
-        slug: playbackContext.playlistSlug,
+        id: shellPlaybackContext.playlistId,
+        username: shellPlaybackContext.playlistOwnerUsername,
+        slug: shellPlaybackContext.playlistSlug,
       })
     : null;
 
@@ -87,8 +95,13 @@ export function BottomPlayer() {
       : upNextName;
 
   return createPortal(
-    <footer className={playerFooterClass}>
-      <div className="bottom-player__surface">
+    <footer
+      className={`${playerFooterClass}${playerBarExiting ? " bottom-player--exit pointer-events-none" : ""}`}
+      aria-hidden={playerBarExiting}
+    >
+      <div
+        className={`bottom-player__surface${playerBarExiting ? " bottom-player__surface--exit" : ""}`}
+      >
         <div
           className="absolute inset-x-0 top-0 h-0.5 bg-[var(--color-surface-elevated)]"
           role="progressbar"
@@ -101,9 +114,9 @@ export function BottomPlayer() {
         </div>
         <div className={playerBodyClass}>
           <div className="bottom-player__section bottom-player__section--track group/card flex min-w-0 items-center gap-3">
-            {currentTrack.artworkUrl ? (
+            {displayTrack.artworkUrl ? (
               <img
-                src={currentTrack.artworkUrl}
+                src={displayTrack.artworkUrl}
                 alt=""
                 className="h-12 w-12 shrink-0 rounded object-cover"
               />
@@ -111,29 +124,29 @@ export function BottomPlayer() {
               <div className="h-12 w-12 shrink-0 rounded" style={artStyle} />
             )}
             <div className="min-w-0">
-              {playbackContext.playlistId ? (
+              {shellPlaybackContext.playlistId ? (
                 <Link
-                  to={`${playlistHref ?? ""}#track-${currentTrack.id}`}
+                  to={`${playlistHref ?? ""}#track-${displayTrack.id}`}
                   className="block truncate text-sm font-medium text-white hover:underline"
                 >
-                  {currentTrack.title}
+                  {displayTrack.title}
                 </Link>
               ) : (
-                <p className="truncate text-sm font-medium text-white">{currentTrack.title}</p>
+                <p className="truncate text-sm font-medium text-white">{displayTrack.title}</p>
               )}
               {playlistHref ? (
                 <Link
                   to={playlistHref}
                   className="block truncate text-xs text-[var(--color-text-muted)] hover:underline"
                 >
-                  {[currentTrack.ownerName, currentTrack.playlistTitle].filter(Boolean).join(" • ")}
+                  {[displayTrack.ownerName, displayTrack.playlistTitle].filter(Boolean).join(" • ")}
                 </Link>
               ) : (
                 <p className="truncate text-xs text-[var(--color-text-muted)]">
-                  {[currentTrack.ownerName, currentTrack.playlistTitle].filter(Boolean).join(" • ")}
+                  {[displayTrack.ownerName, displayTrack.playlistTitle].filter(Boolean).join(" • ")}
                 </p>
               )}
-              {canSkipToUpNext && upNextText ? (
+              {canSkipToUpNext && upNextText && !playerBarExiting ? (
                 <button
                   type="button"
                   onClick={skipToUpNext}
@@ -143,7 +156,7 @@ export function BottomPlayer() {
                 </button>
               ) : null}
             </div>
-            <FavoriteHeartButton className="text-8xl" target="recording" id={currentTrack.id} variant="inline" />
+            <FavoriteHeartButton className="text-8xl" target="recording" id={displayTrack.id} variant="inline" />
           </div>
           <div className="bottom-player__section bottom-player__section--controls flex flex-col items-center justify-center gap-1.5">
             <div className="flex items-center gap-4">
@@ -153,10 +166,11 @@ export function BottomPlayer() {
               <button
                 type="button"
                 onClick={togglePlay}
-                aria-label={isPlaying ? "Pause" : "Play"}
+                aria-label={shellIsPlaying ? "Pause" : "Play"}
                 className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-black"
+                disabled={playerBarExiting}
               >
-                {isPlaying ? (
+                {shellIsPlaying ? (
                   <Pause size={20} fill="currentColor" />
                 ) : (
                   <Play size={20} fill="currentColor" className="ml-0.5" />
@@ -167,16 +181,17 @@ export function BottomPlayer() {
               </button>
             </div>
             <div className="flex items-center gap-2 text-xs text-[var(--color-text-subtle)]">
-              <span>{formatDuration(currentTime)}</span>
+              <span>{formatDuration(shellCurrentTime)}</span>
               <input
                 type="range"
                 min={0}
-                max={duration || 100}
-                value={currentTime}
+                max={shellDuration || 100}
+                value={shellCurrentTime}
                 onChange={(e) => seek(Number(e.target.value))}
                 className="hidden w-48 md:block accent-[var(--color-brand)]"
+                disabled={playerBarExiting}
               />
-              <span>{formatDuration(duration)}</span>
+              <span>{formatDuration(shellDuration)}</span>
             </div>
           </div>
           <div className="bottom-player__section bottom-player__section--actions hidden items-center justify-end gap-2 md:flex">

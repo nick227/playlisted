@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from "react";
 
+import theatreController from "@/theatre/TheatreController";
 import { hydrateUpNextSegment } from "@/lib/upNext/hydrateSegment";
 import { shiftPlaybackOriginTrack } from "@/lib/playbackOrigin";
 import { prefetchAutoplayNext, type PrefetchedPlaylistNext } from "@/lib/upNext/prefetchAutoplayNext";
@@ -38,6 +39,15 @@ export type { UpNextSegment };
 
 type PlayerState = "idle" | "loading" | "playing" | "paused" | "error";
 
+const PLAYER_DISMISS_MS = 320;
+
+type PlayerDismissSnapshot = {
+  track: QueueTrack;
+  playbackContext: PlaybackContext;
+  currentTime: number;
+  duration: number;
+};
+
 interface AudioPlayerContextValue {
   audioRef: RefObject<HTMLAudioElement | null>;
   currentTrack: QueueTrack | null;
@@ -50,6 +60,10 @@ interface AudioPlayerContextValue {
   setAutoplayEnabled: (enabled: boolean) => void;
   state: PlayerState;
   playerBarVisible: boolean;
+  /** True while the bar is visible or playing its exit animation (e.g. entering radio). */
+  playerShellActive: boolean;
+  playerBarExiting: boolean;
+  playerDismissSnapshot: PlayerDismissSnapshot | null;
   isPlaying: boolean;
   currentTime: number;
   duration: number;
@@ -87,6 +101,8 @@ interface AudioPlayerContextValue {
   removeFromQueue: (trackId: string) => void;
   updateQueuePlaylistTitle: (playlistId: string, title: string) => void;
   updateQueuePlaylistSlug: (playlistId: string, slug: string) => void;
+  /** Pause, dismiss the bar (with fade), and clear the active track; queue is kept. */
+  releasePlayback: () => void;
 }
 
 const AudioPlayerContext = createContext<AudioPlayerContextValue | null>(null);
@@ -105,6 +121,10 @@ function autopilotTail(context: PlaybackContext): UpNextSegment {
 export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   const { accessToken } = useAuth();
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const bindAudioElement = useCallback((audio: HTMLAudioElement | null) => {
+    audioRef.current = audio;
+    theatreController.registerPlaybackSource(audio);
+  }, []);
   const playbackContextRef = useRef<PlaybackContext>({ sourceContext: "player" });
   const loggedTrackRef = useRef<string | null>(null);
   const shuffleRef = useRef(false);
@@ -114,6 +134,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   const playedPlaylistIdsRef = useRef(new Set<string>());
   const upNextPipelineRef = useRef<UpNextSegment[]>([]);
   const advancingRef = useRef(false);
+  const dismissTimerRef = useRef<number | null>(null);
 
   const [queue, setQueueState] = useState<QueueTrack[]>([]);
   const [queueIndex, setQueueIndex] = useState(-1);
@@ -130,6 +151,8 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   const [shuffle, setShuffleState] = useState(false);
   const [repeatMode, setRepeatModeState] = useState<"off" | "one" | "all">("off");
   const [volume, setVolumeState] = useState(1);
+  const [playerDismissSnapshot, setPlayerDismissSnapshot] = useState<PlayerDismissSnapshot | null>(null);
+  const [playerBarExiting, setPlayerBarExiting] = useState(false);
 
   upNextPipelineRef.current = upNextPipeline;
 
@@ -137,6 +160,12 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   const playerBarVisible =
     currentTrack !== null &&
     (state === "playing" || state === "paused" || state === "loading" || state === "error");
+
+  useEffect(() => {
+    if (!currentTrack?.artworkUrl) return;
+    theatreController.setArtwork(currentTrack.artworkUrl);
+  }, [currentTrack?.artworkUrl]);
+  const playerShellActive = playerBarVisible || playerDismissSnapshot !== null;
   const isPlaying = currentTrack !== null && (state === "playing" || state === "loading");
 
   const queueRef = useRef(queue);
@@ -429,6 +458,59 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     setUpNextPipeline((prev) => prev.filter((s) => s.id !== segmentId));
   }, []);
 
+  const releasePlayback = useCallback(() => {
+    if (dismissTimerRef.current !== null) {
+      window.clearTimeout(dismissTimerRef.current);
+      dismissTimerRef.current = null;
+    }
+
+    const idx = queueIndexRef.current;
+    const track = idx >= 0 ? queueRef.current[idx] : null;
+    const audio = audioRef.current;
+    if (track) {
+      flushPlayback(track, audio?.currentTime ?? currentTime, false);
+      loggedTrackRef.current = null;
+    }
+    audio?.pause();
+
+    const wasBarUp =
+      track !== null &&
+      (state === "playing" || state === "paused" || state === "loading" || state === "error");
+
+    if (wasBarUp && track) {
+      setPlayerDismissSnapshot({
+        track,
+        playbackContext: { ...playbackContextRef.current },
+        currentTime: audio?.currentTime ?? currentTime,
+        duration: audio?.duration || duration,
+      });
+      setPlayerBarExiting(true);
+      setQueueIndex(-1);
+      setState("idle");
+      setQueueOpen(false);
+      dismissTimerRef.current = window.setTimeout(() => {
+        setPlayerDismissSnapshot(null);
+        setPlayerBarExiting(false);
+        dismissTimerRef.current = null;
+      }, PLAYER_DISMISS_MS);
+      return;
+    }
+
+    setPlayerDismissSnapshot(null);
+    setPlayerBarExiting(false);
+    setQueueIndex(-1);
+    setState("idle");
+    setQueueOpen(false);
+  }, [currentTime, duration, flushPlayback, state]);
+
+  useEffect(() => {
+    return () => {
+      if (dismissTimerRef.current !== null) {
+        window.clearTimeout(dismissTimerRef.current);
+      }
+    };
+  }, []);
+
   const removeFromQueue = useCallback(
     (trackId: string) => {
       setQueueState((prev) => {
@@ -552,6 +634,9 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       setAutoplayEnabled,
       state,
       playerBarVisible,
+      playerShellActive,
+      playerBarExiting,
+      playerDismissSnapshot,
       isPlaying,
       currentTime,
       duration,
@@ -578,6 +663,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       removeFromQueue,
       updateQueuePlaylistTitle,
       updateQueuePlaylistSlug,
+      releasePlayback,
     }),
     [
       currentTrack,
@@ -590,6 +676,9 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       setAutoplayEnabled,
       state,
       playerBarVisible,
+      playerShellActive,
+      playerBarExiting,
+      playerDismissSnapshot,
       isPlaying,
       currentTime,
       duration,
@@ -615,13 +704,20 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       removeFromQueue,
       updateQueuePlaylistTitle,
       updateQueuePlaylistSlug,
+      releasePlayback,
     ],
   );
 
   return (
     <AudioPlayerContext.Provider value={value}>
       {children}
-      <audio ref={audioRef} preload="metadata" crossOrigin="anonymous" className="hidden" />
+      <audio
+        ref={bindAudioElement}
+        data-site-player
+        preload="metadata"
+        crossOrigin="anonymous"
+        className="hidden"
+      />
     </AudioPlayerContext.Provider>
   );
 }

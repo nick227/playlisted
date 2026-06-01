@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
+import {
+  ANALYSER_FFT_SIZE,
+  getOrCreateAudioAnalyserConnection,
+  type AudioAnalyserConnection,
+} from "./audioAnalyser";
 
-type AudioAnalyserConnection = {
-  context: AudioContext;
-  source: MediaElementAudioSourceNode;
-  analyser: AnalyserNode;
-  frequencyData: Uint8Array;
-  timeData: Uint8Array;
-};
+export { ANALYSER_FFT_SIZE } from "./audioAnalyser";
 
 type AudioAnalyserState = {
   analyser: AnalyserNode | null;
@@ -17,45 +16,8 @@ type AudioAnalyserState = {
   resume: () => Promise<void>;
 };
 
-export const ANALYSER_FFT_SIZE = 1024;
-
-const analyserConnections = new WeakMap<HTMLMediaElement, AudioAnalyserConnection>();
-
 const emptyFrequencyData = new Uint8Array(ANALYSER_FFT_SIZE / 2);
 const emptyTimeData = new Uint8Array(ANALYSER_FFT_SIZE);
-
-function getAudioContextConstructor(): typeof AudioContext | null {
-  if (typeof window === "undefined") return null;
-  return window.AudioContext ?? null;
-}
-
-function createConnection(audio: HTMLAudioElement): AudioAnalyserConnection {
-  const existing = analyserConnections.get(audio);
-  if (existing) return existing;
-
-  const AudioContextConstructor = getAudioContextConstructor();
-  if (!AudioContextConstructor) {
-    throw new Error("Web Audio API is unavailable.");
-  }
-
-  const context = new AudioContextConstructor();
-  const source = context.createMediaElementSource(audio);
-  const analyser = context.createAnalyser();
-  analyser.fftSize = ANALYSER_FFT_SIZE;
-  analyser.smoothingTimeConstant = 0.84;
-  source.connect(analyser);
-  analyser.connect(context.destination);
-
-  const connection = {
-    context,
-    source,
-    analyser,
-    frequencyData: new Uint8Array(analyser.frequencyBinCount),
-    timeData: new Uint8Array(analyser.fftSize),
-  };
-  analyserConnections.set(audio, connection);
-  return connection;
-}
 
 export function useAudioAnalyser(audioRef: RefObject<HTMLAudioElement | null>): AudioAnalyserState {
   const connectionRef = useRef<AudioAnalyserConnection | null>(null);
@@ -66,7 +28,7 @@ export function useAudioAnalyser(audioRef: RefObject<HTMLAudioElement | null>): 
     const audio = audioRef.current;
     if (!audio || connectionRef.current) return connectionRef.current;
     try {
-      const connection = createConnection(audio);
+      const connection = getOrCreateAudioAnalyserConnection(audio);
       connectionRef.current = connection;
       setConnected(true);
       setError(null);

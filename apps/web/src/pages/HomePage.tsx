@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import type {
   components,
@@ -272,7 +272,7 @@ export function HomePage() {
     description: "Music charts and curated playlists for independent artists.",
   });
 
-  const [chartsRange, setChartsRange] = useState<"7d" | "30d" | "all">("7d");
+  const chartsRange: "7d" | "30d" | "all" = "7d";
 
   const topPlaylistsLimit = viewportLimit(
     HOME_LIMITS.chartsTopPlaylistsMobile,
@@ -445,33 +445,6 @@ export function HomePage() {
       {spotlightItem && <SpotlightBanner item={spotlightItem} />}
 
       {/* ── CHARTS ───────────────────────────────────────────── */}
-
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-xl font-bold tracking-tight text-white">Charts</h2>
-        <div className="flex rounded-full border border-white/[0.12] bg-[var(--color-surface)] p-1">
-          {(
-            [
-              ["7d", "This week"],
-              ["30d", "This month"],
-              ["all", "All time"],
-            ] as const
-          ).map(([range, label]) => (
-            <button
-              key={range}
-              type="button"
-              onClick={() => setChartsRange(range)}
-              className={[
-                "rounded-full px-4 py-1.5 text-sm font-medium transition",
-                chartsRange === range
-                  ? "bg-white text-black"
-                  : "text-[var(--color-text-muted)] hover:text-white",
-              ].join(" ")}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
 
       {chartsLoading ? (
         <>
