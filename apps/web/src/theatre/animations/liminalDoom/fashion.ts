@@ -4,7 +4,7 @@ import type { BodyGender, BodyStyle } from './bodies'
 
 export type { BodyGender, BodyStyle }
 
-export type HairStyle = 'buzz' | 'crop' | 'bob' | 'long' | 'spiky' | 'mohawk' | 'bun'
+export type HairStyle = 'buzz' | 'crop' | 'bob' | 'long' | 'spiky' | 'bun'
 export type ShoeStyle = 'sneaker' | 'boot' | 'heel' | 'loafer'
 
 export type FashionSet = {
@@ -28,7 +28,7 @@ export type FashionSet = {
   hasBelt: boolean
 }
 
-const HAIR_STYLES: HairStyle[] = ['crop', 'bob', 'long', 'spiky', 'buzz', 'mohawk', 'bun']
+const HAIR_STYLES: HairStyle[] = ['crop', 'bob', 'long', 'spiky', 'buzz', 'bun']
 
 export function resolveHairStyle(seed: number, gender: BodyGender): HairStyle {
   const i = Math.floor(hash01(seed, 41) * HAIR_STYLES.length)
@@ -48,13 +48,29 @@ export function resolveShoeStyle(style: BodyStyle, gender: BodyGender, seed: num
 export function resolveFashion(style: BodyStyle, gender: BodyGender, seed: number): FashionSet {
   const female = gender === 'female'
   const base = basePalette(style, female)
+  const tone = pickSkinTone(seed)
   return {
     ...base,
+    skin: tone.skin,
+    skinShadow: tone.shadow,
     hairStyle: resolveHairStyle(seed, gender),
     shoeStyle: resolveShoeStyle(style, gender, seed),
     hasJacket: style === 'street' || style === 'formal' || style === 'punk',
     hasCollar: style === 'classic' || style === 'formal',
     hasBelt: style !== 'neon' && hash01(seed, 45) > 0.35,
+  }
+}
+
+function pickSkinTone(seed: number) {
+  // Not skin-tone realism: full-spectrum ink/gel colors.
+  const hue = (hash01(seed, 91) * 360) % 360
+  const sat = 55 + hash01(seed, 92) * 35
+  const lit = 40 + hash01(seed, 93) * 25
+  const shHue = (hue + 210 + hash01(seed, 94) * 60) % 360
+  const shLit = Math.max(10, lit - (18 + hash01(seed, 95) * 18))
+  return {
+    skin: `hsl(${hue.toFixed(1)} ${sat.toFixed(1)}% ${lit.toFixed(1)}%)`,
+    shadow: `hsl(${shHue.toFixed(1)} ${(sat * 0.65).toFixed(1)}% ${shLit.toFixed(1)}%)`,
   }
 }
 

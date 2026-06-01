@@ -251,7 +251,6 @@ function drawHair(
       ctx.fillRect(cx + r * 0.15, headY - r * 0.2, r * 0.35, r * 1.8)
       break
     case 'spiky':
-    case 'mohawk':
       for (let i = 0; i < 7; i++) {
         const a = -0.8 + (i / 6) * 1.6
         const len = r * (0.5 + hash01(seed, i) * 0.5)

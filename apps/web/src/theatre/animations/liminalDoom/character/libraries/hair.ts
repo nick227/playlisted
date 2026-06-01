@@ -12,7 +12,6 @@ export const HAIR_PRESETS: Record<string, HairPresetDef> = {
   'hair.bob':     { id: 'hair.bob',     label: 'Bob',     hairStyle: 'bob' },
   'hair.long':    { id: 'hair.long',    label: 'Long',    hairStyle: 'long' },
   'hair.spiky':   { id: 'hair.spiky',   label: 'Spiky',   hairStyle: 'spiky' },
-  'hair.mohawk':  { id: 'hair.mohawk',  label: 'Mohawk',  hairStyle: 'mohawk' },
   'hair.bun':     { id: 'hair.bun',     label: 'Bun',     hairStyle: 'bun' },
   'hair.wavy':    { id: 'hair.wavy',    label: 'Wavy',    hairStyle: 'long' },
   'hair.slick':   { id: 'hair.slick',   label: 'Slick',   hairStyle: 'crop' },

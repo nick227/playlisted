@@ -130,13 +130,11 @@ export function drawStudioHair(
       sideLock(ctx, c, -1, 0.35)
       sideLock(ctx, c, 1, 0.35)
       break
-    case 'spiky':
-    case 'mohawk': {
-      const n = style === 'mohawk' ? 7 : 11
-      const span = style === 'mohawk' ? 0.45 : 1
+    case 'spiky': {
+      const n = 11
       for (let i = 0; i < n; i++) {
         const t = n <= 1 ? 0.5 : i / (n - 1)
-        const tipX = c.cx - c.w * span + t * c.w * span * 2
+        const tipX = c.cx - c.w + t * c.w * 2
         const len = c.h0 * (0.55 + h(seed, 270 + i) * 0.95)
         fillClump(
           ctx,

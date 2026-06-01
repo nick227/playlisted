@@ -67,7 +67,7 @@ export function resolveRecipe(
 }
 
 const FEMALE_HAIR_IDS = ['hair.bob', 'hair.long', 'hair.bun', 'hair.crop', 'hair.wavy']
-const MALE_HAIR_IDS = ['hair.crop', 'hair.buzz', 'hair.spiky', 'hair.mohawk', 'hair.slick']
+const MALE_HAIR_IDS = ['hair.crop', 'hair.buzz', 'hair.spiky', 'hair.long', 'hair.slick', 'hair.wavy']
 
 /** ~35% rubber-hose faces in ambient crowd; explicit recipe.faceId overrides. */
 function pickFaceId(seed: number): string {
