@@ -7,6 +7,8 @@ import bioMachineFactory from '../animations/bioMachine'
 import weatherSpeakerFactory from '../animations/weatherSpeaker'
 import monsterWaveFactory from '../animations/monsterWave'
 import stopMotionFlowerStormFactory from '../animations/stopMotionFlowerStorm'
+import cuteMonstroFactory from '../animations/cuteMonstro'
+import signalOrganismFactory from '../animations/signalOrganism'
 
 // ─── Animation registry ──────────────────────────────────────────────────────
 
@@ -16,6 +18,8 @@ registry.register({ id: 'bioMachine',            label: 'Bio Machine',          
 registry.register({ id: 'weatherSpeaker',        label: 'Weather Speaker',        factory: weatherSpeakerFactory,        visualType: 'canvas', mood: 'dynamic', role: 'background',  weight: 2 })
 registry.register({ id: 'monsterWave',           label: 'Monster Wave',           factory: monsterWaveFactory,           visualType: 'canvas', mood: 'chaos',   role: 'foreground',  weight: 1 })
 registry.register({ id: 'stopMotionFlowerStorm', label: 'Stop-Motion Flower Storm', factory: stopMotionFlowerStormFactory, visualType: 'canvas', mood: 'dynamic', role: 'subject',   weight: 2 })
+registry.register({ id: 'cuteMonstro',          label: 'Cute Monstro',           factory: cuteMonstroFactory,           visualType: 'canvas', mood: 'dynamic', role: 'subject',   weight: 2 })
+registry.register({ id: 'signalOrganismScene',  label: 'Signal Organism',        factory: signalOrganismFactory,        visualType: 'canvas', mood: 'dynamic', role: 'subject',   weight: 2 })
 
 // ─── Scene presets ────────────────────────────────────────────────────────────
 
@@ -28,23 +32,20 @@ registerPreset({
   ],
 })
 
-// Artwork-first: weather atmosphere behind a centred speaker pulse
+
+// Unified organism: cells, veins, tendrils, core, rings, gear — phase-driven
 registerPreset({
-  id: 'safeArtwork', label: 'Safe Artwork', category: 'production', weight: 3,
+  id: 'signalOrganism', label: 'Signal Organism', category: 'production', weight: 3,
   reducedMotionPreset: 'quietPulse',
   layers: [
-    { animationId: 'weatherSpeaker', role: 'background',
-      options: { opacity: 0.55, zIndex: 100, blendMode: 'normal', intensity: 0.5, sensitivity: 0.7 } },
-    { animationId: 'speaker', role: 'subject',
-      options: { opacity: 0.92, zIndex: 101, blendMode: 'normal', intensity: 0.9, sensitivity: 1.0 } },
-    { animationId: 'spinAmp', role: 'foreground',
-      options: { opacity: 0.70, zIndex: 102, blendMode: 'screen', intensity: 0.8, sensitivity: 0.9 } },
+    { animationId: 'signalOrganismScene', role: 'subject',
+      options: { opacity: 0.98, zIndex: 101, blendMode: 'normal', intensity: 1.0, sensitivity: 1.0 } },
   ],
 })
 
-// Bio + signal: cellular field behind a speaker, spinning rings on top
+// Legacy 3-layer stack (lab)
 registerPreset({
-  id: 'signalOrganism', label: 'Signal Organism', category: 'production', weight: 2,
+  id: 'signalOrganismClassic', label: 'Signal Organism (Classic)', category: 'lab', weight: 1,
   reducedMotionPreset: 'quietPulse',
   layers: [
     { animationId: 'bioMachine', role: 'background',
@@ -80,17 +81,13 @@ registerPreset({
   ],
 })
 
-// Layered waves + speaker pulse
+// Cute monster character with music-reactive lighting and comets
 registerPreset({
-  id: 'monsterWaveStack', label: 'Monster Wave Stack', category: 'lab', weight: 1,
+  id: 'monsterWaveStack', label: 'Cute Monstro', category: 'production', weight: 2,
   reducedMotionPreset: 'quietPulse',
   layers: [
-    { animationId: 'monsterWave', role: 'background',
-      options: { opacity: 0.60, zIndex: 100, blendMode: 'normal', intensity: 0.7, sensitivity: 0.8 } },
-    { animationId: 'speaker', role: 'subject',
-      options: { opacity: 0.90, zIndex: 101, blendMode: 'normal', intensity: 1.0, sensitivity: 1.0 } },
-    { animationId: 'spinAmp', role: 'foreground',
-      options: { opacity: 0.75, zIndex: 102, blendMode: 'screen', intensity: 0.8, sensitivity: 0.9 } },
+    { animationId: 'cuteMonstro', role: 'subject',
+      options: { opacity: 1.0, zIndex: 101, blendMode: 'normal', intensity: 1.0, sensitivity: 1.0 } },
   ],
 })
 
