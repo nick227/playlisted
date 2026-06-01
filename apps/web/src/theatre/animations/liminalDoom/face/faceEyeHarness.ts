@@ -1,80 +1,57 @@
 import type { EyesPresetDef } from '../character/libraries/eyes'
 import { blinkOpen, saccadeJitter } from '../character/faceLive'
+import { pathSocketDome } from './faceShapes'
 import type { CacheCtx, FaceColors } from './faceUtil'
-import { faceColors, strokeInk } from './faceUtil'
+import { faceColors, strokeRim } from './faceUtil'
 
-type EyeShape = 'almond' | 'round' | 'hooded'
+type EyeStyle = 'dome' | 'round'
 
-function shapeFromPreset(eyes: EyesPresetDef): EyeShape {
-  if (eyes.id.includes('heavy') || eyes.id.includes('lazy')) return 'hooded'
+function styleFromPreset(eyes: EyesPresetDef): EyeStyle {
   if (eyes.id.includes('wide') || eyes.id.includes('bright')) return 'round'
-  return 'almond'
+  return 'dome'
 }
 
-function pathEyeOpening(
+function paintIris(
   ctx: CacheCtx,
-  cx: number,
-  cy: number,
-  ew: number,
-  eh: number,
+  col: FaceColors,
+  px: number,
+  py: number,
+  pr: number,
   tilt: number,
-  shape: EyeShape,
 ) {
-  const inner = -ew
-  const outer = ew
-  const top = -eh
-  const bot = eh * 0.72
+  const g = ctx.createRadialGradient(px - pr * 0.3, py - pr * 0.35, 0, px, py, pr * 1.2)
+  g.addColorStop(0, col.irisHi)
+  g.addColorStop(0.55, col.iris)
+  g.addColorStop(1, col.irisRing)
+  ctx.fillStyle = g
+  ctx.beginPath()
+  ctx.ellipse(px, py, pr * 1.08, pr * 1.02, tilt, 0, Math.PI * 2)
+  ctx.fill()
 
-  ctx.save()
-  ctx.translate(cx, cy)
-  ctx.rotate(tilt)
+  ctx.fillStyle = col.pupil
+  ctx.beginPath()
+  ctx.arc(px, py, pr * 0.55, 0, Math.PI * 2)
+  ctx.fill()
 
-  if (shape === 'round') {
-    ctx.ellipse(0, 0, ew, eh, 0, 0, Math.PI * 2)
-    ctx.restore()
-    return
-  }
-
-  const hood = shape === 'hooded' ? 1.18 : 1
-  ctx.moveTo(inner, eh * 0.05)
-  ctx.bezierCurveTo(inner * 0.35, top * hood, 0, top * 0.92, outer * 0.35, top * hood)
-  ctx.bezierCurveTo(outer * 0.95, top * 0.35, outer, eh * 0.08, outer * 0.88, bot * 0.55)
-  ctx.bezierCurveTo(outer * 0.35, bot, 0, bot * 0.95, inner * 0.35, bot)
-  ctx.bezierCurveTo(inner * 0.95, bot * 0.55, inner, eh * 0.08, inner, eh * 0.05)
-  ctx.closePath()
-  ctx.restore()
-}
-
-function pathUpperLid(
-  ctx: CacheCtx,
-  cx: number,
-  cy: number,
-  ew: number,
-  eh: number,
-  tilt: number,
-  open: number,
-) {
-  const drop = (1 - open) * eh * 1.1 + eh * 0.08
-  ctx.save()
-  ctx.translate(cx, cy)
-  ctx.rotate(tilt)
-  ctx.moveTo(-ew * 1.02, eh * 0.1)
-  ctx.bezierCurveTo(-ew * 0.4, -eh * 0.95 - drop, 0, -eh * 0.88 - drop, ew * 0.4, -eh * 0.95 - drop)
-  ctx.bezierCurveTo(ew * 1.02, -eh * 0.5 - drop * 0.35, ew * 1.02, eh * 0.15, -ew * 1.02, eh * 0.1)
-  ctx.closePath()
-  ctx.restore()
+  ctx.fillStyle = 'rgba(255,255,255,0.95)'
+  ctx.beginPath()
+  ctx.arc(px - pr * 0.4, py - pr * 0.38, pr * 0.3, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.fillStyle = 'rgba(255,255,255,0.5)'
+  ctx.beginPath()
+  ctx.arc(px + pr * 0.28, py + pr * 0.22, pr * 0.13, 0, Math.PI * 2)
+  ctx.fill()
 }
 
 function drawOneEye(
   ctx: CacheCtx,
   col: FaceColors,
-  skinFill: string,
   cx: number,
   cy: number,
   ew: number,
   eh: number,
   tilt: number,
-  shape: EyeShape,
+  style: EyeStyle,
   blink: number,
   gazeX: number,
   gazeY: number,
@@ -82,80 +59,74 @@ function drawOneEye(
   s: number,
 ) {
   if (blink < 0.18) {
-    ctx.fillStyle = col.line
+    ctx.fillStyle = col.brow
     ctx.beginPath()
-    ctx.ellipse(cx, cy, ew, Math.max(1, s * 0.012), tilt, 0, Math.PI * 2)
+    ctx.ellipse(cx, cy, ew, Math.max(1.2, s * 0.014), tilt, 0, Math.PI * 2)
     ctx.fill()
     return
   }
 
-  const open = blink
-
-  ctx.fillStyle = col.shadow
-  ctx.beginPath()
-  ctx.ellipse(cx, cy + eh * 0.15, ew * 1.08, eh * 1.05, tilt, 0, Math.PI * 2)
-  ctx.fill()
+  const rim = 1.14
+  ctx.fillStyle = col.fill
+  if (style === 'round') {
+    ctx.beginPath()
+    ctx.ellipse(cx, cy, ew * rim, eh * rim, tilt, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.fillStyle = col.socket
+    ctx.beginPath()
+    ctx.ellipse(cx, cy, ew, eh, tilt, 0, Math.PI * 2)
+    ctx.fill()
+  } else {
+    ctx.beginPath()
+    pathSocketDome(ctx, cx, cy, ew * rim, eh * rim)
+    ctx.fill()
+    ctx.fillStyle = col.socket
+    ctx.beginPath()
+    pathSocketDome(ctx, cx, cy, ew, eh)
+    ctx.fill()
+  }
 
   ctx.fillStyle = col.sclera
-  ctx.beginPath()
-  pathEyeOpening(ctx, cx, cy, ew, eh, tilt, shape)
-  ctx.fill()
-
-  strokeInk(ctx, col, Math.max(0.6, s * 0.01), () => {
+  if (style === 'round') {
     ctx.beginPath()
-    pathEyeOpening(ctx, cx, cy, ew, eh, tilt, shape)
-    ctx.stroke()
-  })
+    ctx.ellipse(cx, cy, ew * 0.88, eh * 0.88, tilt, 0, Math.PI * 2)
+    ctx.fill()
+  } else {
+    ctx.beginPath()
+    pathSocketDome(ctx, cx, cy, ew * 0.9, eh * 0.92)
+    ctx.fill()
+  }
 
   const px = cx + gazeX
   const py = cy + gazeY
-  const irisR = pr * 1.15
-
-  ctx.fillStyle = col.irisRing
-  ctx.beginPath()
-  ctx.ellipse(px, py, irisR * 1.08, irisR * 1.02, tilt, 0, Math.PI * 2)
-  ctx.fill()
-
-  ctx.fillStyle = col.iris
-  ctx.beginPath()
-  ctx.ellipse(px, py, irisR, irisR * 0.96, tilt, 0, Math.PI * 2)
-  ctx.fill()
-
-  ctx.fillStyle = col.pupil
-  ctx.beginPath()
-  ctx.arc(px, py, pr * 0.62, 0, Math.PI * 2)
-  ctx.fill()
-
-  ctx.fillStyle = 'rgba(255,255,255,0.92)'
-  ctx.beginPath()
-  ctx.arc(px - pr * 0.42, py - pr * 0.4, pr * 0.28, 0, Math.PI * 2)
-  ctx.fill()
-  ctx.fillStyle = 'rgba(255,255,255,0.45)'
-  ctx.beginPath()
-  ctx.arc(px + pr * 0.25, py + pr * 0.2, pr * 0.12, 0, Math.PI * 2)
-  ctx.fill()
-
-  if (open < 0.98) {
-    ctx.fillStyle = skinFill
-    ctx.beginPath()
-    pathUpperLid(ctx, cx, cy, ew, eh, tilt, open)
-    ctx.fill()
-    strokeInk(ctx, col, Math.max(0.7, s * 0.012), () => {
-      ctx.beginPath()
-      pathUpperLid(ctx, cx, cy, ew, eh, tilt, open)
-      ctx.stroke()
-    })
-  }
+  paintIris(ctx, col, px, py, pr, tilt)
 
   ctx.fillStyle = col.shadow
   ctx.beginPath()
-  ctx.ellipse(cx, cy + eh * 0.78, ew * 0.92, eh * 0.18, tilt, 0, Math.PI * 2)
+  ctx.ellipse(cx, cy + eh * 0.92, ew * 1.05, eh * 0.32, tilt, 0, Math.PI * 2)
   ctx.fill()
 
-  strokeInk(ctx, col, Math.max(0.85, s * 0.014), () => {
+  const lidDrop = (1 - blink) * eh * 0.65
+  if (lidDrop > 0.5) {
+    ctx.fillStyle = col.fill
+    if (style === 'round') {
+      ctx.beginPath()
+      ctx.ellipse(cx, cy - eh * 0.35, ew * 1.05, lidDrop, tilt, 0, Math.PI * 2)
+      ctx.fill()
+    } else {
+      ctx.beginPath()
+      pathSocketDome(ctx, cx, cy - eh * 0.08, ew * 1.02, eh * 0.5 + lidDrop * 0.5)
+      ctx.fill()
+    }
+  }
+
+  strokeRim(ctx, col, Math.max(0.65, s * 0.011), () => {
     ctx.beginPath()
-    ctx.moveTo(cx - ew * 0.95, cy - eh * 0.05)
-    ctx.quadraticCurveTo(cx, cy - eh * 1.05, cx + ew * 0.95, cy - eh * 0.05)
+    if (style === 'round') {
+      ctx.ellipse(cx, cy, ew * rim, eh * rim, tilt, 0, Math.PI * 2)
+    } else {
+      pathSocketDome(ctx, cx, cy, ew * rim, eh * rim)
+    }
     ctx.stroke()
   })
 }
@@ -179,19 +150,20 @@ export function drawEyeHarness(
   const sac = saccadeJitter(timeMs, seed)
   const tx = trackX + sac.x
   const ty = trackY + sac.y
-  const shape = shapeFromPreset(eyes)
-  const spread = s * 0.27 * eyes.spreadMul
-  const rise = s * 0.11
-  const tilt = eyes.lidTilt * 0.35
-  const ew = s * 0.145 * eyes.sizeMul
-  const eh = s * 0.095 * eyes.sizeMul
-  const pr = s * 0.046 * eyes.pupilMul
+  const style = styleFromPreset(eyes)
+  const spread = s * 0.26 * eyes.spreadMul
+  const rise = s * 0.1
+  const tilt = eyes.lidTilt * 0.25
+  const ew = s * 0.14 * eyes.sizeMul
+  const eh = s * 0.1 * eyes.sizeMul
+  const pr = s * 0.044 * eyes.pupilMul
 
   for (const side of [-1, 1] as const) {
-    const ex = cx + side * spread + tx * s * 0.07
+    const ex = cx + side * spread + tx * s * 0.06
     const ey = cy - rise + ty * s * 0.05
-    const gx = tx * pr * 2
-    const gy = ty * pr * 1.6
-    drawOneEye(ctx, col, col.fill, ex, ey, ew, eh * blink, tilt * side, shape, blink, gx, gy, pr, s)
+    drawOneEye(
+      ctx, col, ex, ey, ew, eh * blink, tilt * side, style, blink,
+      tx * pr * 1.9, ty * pr * 1.5, pr, s,
+    )
   }
 }

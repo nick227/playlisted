@@ -1,60 +1,15 @@
 import type { MouthPresetDef } from '../character/libraries/mouth'
-import type { CacheCtx, FaceColors } from './faceUtil'
-import { faceColors, faceHash as h, strokeInk } from './faceUtil'
+import { drawChicletTeeth, pathMouthBean, pathSmileSlot } from './faceShapes'
+import type { CacheCtx } from './faceUtil'
+import { faceColors, faceHash as h, strokeRim } from './faceUtil'
 
 type LipPose = 'neutral' | 'smile' | 'pursed' | 'open'
 
 function poseFromPreset(mouth: MouthPresetDef, talk: number): LipPose {
-  if (talk > 0.55) return 'open'
+  if (talk > 0.5) return 'open'
   if (mouth.id.includes('pursed')) return 'pursed'
   if (mouth.id.includes('wide')) return 'smile'
   return 'neutral'
-}
-
-function pathUpperLip(
-  ctx: CacheCtx,
-  mx: number,
-  my: number,
-  mw: number,
-  mh: number,
-  arch: number,
-) {
-  const cupid = mh * 0.35
-  ctx.moveTo(mx - mw, my)
-  ctx.bezierCurveTo(mx - mw * 0.55, my - cupid - arch, mx - mw * 0.12, my - cupid * 0.5, mx, my - cupid * 0.35)
-  ctx.bezierCurveTo(mx + mw * 0.12, my - cupid * 0.5, mx + mw * 0.55, my - cupid - arch, mx + mw, my)
-}
-
-function pathLowerLip(
-  ctx: CacheCtx,
-  mx: number,
-  my: number,
-  mw: number,
-  mh: number,
-  smile: number,
-) {
-  ctx.moveTo(mx - mw * 0.98, my)
-  ctx.bezierCurveTo(mx - mw * 0.45, my + mh * (0.95 + smile), mx, my + mh * (1.15 + smile * 0.3), mx + mw * 0.45, my + mh * (0.95 + smile))
-  ctx.bezierCurveTo(mx + mw * 0.98, my + mh * 0.15, mx + mw * 0.98, my, mx - mw * 0.98, my)
-}
-
-function drawTeeth(ctx: CacheCtx, col: FaceColors, mx: number, my: number, mw: number, mh: number, s: number) {
-  const th = Math.min(mh * 0.55, s * 0.05)
-  const tw = mw * 1.05
-  const ty = my + mh * 0.08
-  ctx.fillStyle = col.tooth
-  ctx.beginPath()
-  ctx.roundRect(mx - tw * 0.5, ty, tw, th, 1.5)
-  ctx.fill()
-  ctx.strokeStyle = col.line
-  ctx.lineWidth = Math.max(0.4, s * 0.006)
-  for (let i = 1; i < 5; i++) {
-    const tx = mx - tw * 0.5 + (tw / 5) * i
-    ctx.beginPath()
-    ctx.moveTo(tx, ty)
-    ctx.lineTo(tx, ty + th)
-    ctx.stroke()
-  }
 }
 
 export function drawMouthHarness(
@@ -69,45 +24,64 @@ export function drawMouthHarness(
 ) {
   const s = scale
   const col = faceColors(seed, talkLevel, distort)
-  const mw = s * 0.2 * mouth.widthMul
-  const baseH = s * 0.035 * mouth.heightMul
-  const mh = baseH + talkLevel * s * 0.14 * mouth.heightMul
-  const mx = cx + (h(seed, 13) - 0.5) * s * 0.04
-  const my = cy + s * (0.23 + mouth.yBias)
-  const smile = (h(seed, 15) - 0.5) * 0.25 + talkLevel * 0.12
+  const mw = s * 0.19 * mouth.widthMul
+  const baseH = s * 0.032 * mouth.heightMul
+  const mh = baseH + talkLevel * s * 0.13 * mouth.heightMul
+  const mx = cx + (h(seed, 13) - 0.5) * s * 0.03
+  const my = cy + s * (0.22 + mouth.yBias)
+  const smile = (h(seed, 15) - 0.5) * 0.2 + talkLevel * 0.1
   const pose = poseFromPreset(mouth, talkLevel)
-  const arch = pose === 'smile' ? mh * 0.35 : pose === 'pursed' ? mh * 0.55 : mh * 0.2
+  const open = pose === 'open' && talkLevel > 0.3
 
-  if (pose === 'open' && talkLevel > 0.35) {
-    ctx.fillStyle = col.mouthInner
+  const lipPad = s * 0.018
+  ctx.fillStyle = col.fill
+  if (open) {
     ctx.beginPath()
-    pathUpperLip(ctx, mx, my, mw * 0.92, mh, arch * 0.5)
-    pathLowerLip(ctx, mx, my + mh * 0.12, mw * 0.88, mh * 1.1, smile)
+    pathMouthBean(ctx, mx, my, mw + lipPad, mh + lipPad, smile)
     ctx.fill()
-    drawTeeth(ctx, col, mx, my, mw, mh, s)
-    ctx.fillStyle = `hsla(${h(seed, 209) * 360} 55% 45% 0.35)`
+  } else {
     ctx.beginPath()
-    ctx.ellipse(mx, my + mh * 0.55, mw * 0.38, mh * 0.42, 0, 0, Math.PI * 2)
+    pathSmileSlot(ctx, mx, my + mh * 0.15, mw * (pose === 'pursed' ? 0.72 : 0.92), mh * 0.55, smile)
     ctx.fill()
   }
 
-  ctx.fillStyle = col.lip
-  ctx.beginPath()
-  pathUpperLip(ctx, mx, my, mw, mh, arch)
-  pathLowerLip(ctx, mx, my + (pose === 'pursed' ? mh * 0.08 : mh * 0.04), mw * (pose === 'pursed' ? 0.75 : 0.95), mh, smile)
-  ctx.fill()
-
-  ctx.fillStyle = col.lipHi
-  ctx.beginPath()
-  ctx.ellipse(mx, my + mh * (pose === 'pursed' ? 0.35 : 0.5), mw * 0.42, mh * 0.35, 0, 0, Math.PI * 2)
-  ctx.fill()
-
-  strokeInk(ctx, col, Math.max(0.75, s * 0.011), () => {
+  if (open) {
+    ctx.fillStyle = col.mouthInner
     ctx.beginPath()
-    pathUpperLip(ctx, mx, my, mw, mh, arch)
-    ctx.stroke()
+    pathMouthBean(ctx, mx, my + mh * 0.06, mw * 0.92, mh * 0.95, smile)
+    ctx.fill()
+
+    const toothY = my + mh * 0.1
+    const toothCount = mouth.id.includes('wide') ? 5 : 4
+    drawChicletTeeth(ctx, mx, toothY, mw * 0.88, mh * 0.5, col.tooth, col.shadow, toothCount)
+
+    ctx.fillStyle = col.tongue
     ctx.beginPath()
-    pathLowerLip(ctx, mx, my + mh * 0.04, mw * 0.95, mh, smile)
+    ctx.ellipse(mx, my + mh * 0.62, mw * 0.38, mh * 0.38, 0, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.fillStyle = col.lipHi
+    ctx.beginPath()
+    ctx.ellipse(mx, my + mh * 0.58, mw * 0.12, mh * 0.22, 0, 0, Math.PI * 2)
+    ctx.fill()
+  } else {
+    ctx.fillStyle = col.shadow
+    ctx.beginPath()
+    pathSmileSlot(ctx, mx, my + mh * 0.18, mw * 0.85, mh * 0.35, smile)
+    ctx.fill()
+    ctx.fillStyle = col.lip
+    ctx.beginPath()
+    pathSmileSlot(ctx, mx, my + mh * 0.14, mw * 0.8, mh * 0.28, smile)
+    ctx.fill()
+    ctx.fillStyle = col.lipHi
+    ctx.beginPath()
+    ctx.ellipse(mx, my + mh * 0.28, mw * 0.35, mh * 0.12, 0, 0, Math.PI * 2)
+    ctx.fill()
+  }
+
+  strokeRim(ctx, col, Math.max(0.55, s * 0.009), () => {
+    ctx.beginPath()
+    if (open) pathMouthBean(ctx, mx, my, mw + lipPad * 0.5, mh + lipPad * 0.5, smile)
+    else pathSmileSlot(ctx, mx, my + mh * 0.14, mw * 0.85, mh * 0.4, smile)
     ctx.stroke()
   })
 }
