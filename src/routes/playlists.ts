@@ -7,6 +7,10 @@ import {
   playlistDetailInclude,
 } from "../lib/playlistMaps.js";
 import { filterPlaylistItemsForViewer } from "../lib/publicRecordingFilter.js";
+import {
+  canViewerAccessPlaylist,
+  PUBLIC_PUBLISHED_PLAYLIST,
+} from "../lib/publicPlaylistFilter.js";
 import { prisma } from "../lib/prisma.js";
 import { getAuthContextFromRequest } from "../lib/auth.js";
 import { requireAuth } from "../lib/requireAuth.js";
@@ -49,11 +53,15 @@ playlistsRouter.get("/", async (req, res, next) => {
     const ownerId = typeof req.query.ownerId === "string" ? req.query.ownerId : undefined;
     const visibility = typeof req.query.visibility === "string" ? req.query.visibility : undefined;
     const status = typeof req.query.status === "string" ? req.query.status : undefined;
+    const auth = await getAuthContextFromRequest(req);
+    const isStaff = auth?.user.role === "ADMIN" || auth?.user.role === "EDITOR";
+    const isOwnerBrowse = Boolean(ownerId && auth?.user.id === ownerId);
 
     const where = {
       ...(ownerId ? { ownerId } : {}),
       ...(visibility ? { visibility: visibility as Visibility } : {}),
       ...(status ? { status: status as PublishStatus } : {}),
+      ...(!visibility && !status && !isStaff && !isOwnerBrowse ? PUBLIC_PUBLISHED_PLAYLIST : {}),
     };
 
     const [items, total] = await Promise.all([
@@ -92,19 +100,15 @@ playlistsRouter.get("/:playlistId", async (req, res, next) => {
 
     const auth = await getAuthContextFromRequest(req);
 
-    if (playlist.visibility === "PRIVATE" || playlist.status !== "PUBLISHED") {
-      if (!auth) {
-        return res.status(403).json({
-          error: "forbidden",
-          message: "You do not have access to this playlist.",
-        });
-      }
-      if (auth.user.id !== playlist.ownerId && auth.user.role !== "ADMIN" && auth.user.role !== "EDITOR") {
-        return res.status(403).json({
-          error: "forbidden",
-          message: "You do not have access to this playlist.",
-        });
-      }
+    if (!canViewerAccessPlaylist(
+      playlist,
+      { userId: auth?.user.id, role: auth?.user.role },
+      playlist.ownerId,
+    )) {
+      return res.status(404).json({
+        error: "playlist_not_found",
+        message: `Playlist ${req.params.playlistId} was not found.`,
+      });
     }
 
     const visibleItems = filterPlaylistItemsForViewer(

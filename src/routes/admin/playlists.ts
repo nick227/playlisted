@@ -4,6 +4,9 @@ import { Router } from "express";
 import { prisma } from "../../lib/prisma.js";
 import { requireAdmin } from "../../lib/requireAdmin.js";
 
+const VALID_VISIBILITY = new Set<string>(["PUBLIC", "UNLISTED", "PRIVATE"]);
+const VALID_STATUS = new Set<string>(["DRAFT", "PUBLISHED", "ARCHIVED"]);
+
 export const adminPlaylistsRouter = Router();
 
 const DEFAULT_PAGE = 1;
@@ -110,9 +113,32 @@ adminPlaylistsRouter.patch("/:playlistId", async (req, res, next) => {
     };
 
     const data: Record<string, unknown> = {};
-    if (body.status !== undefined) data.status = body.status as PublishStatus;
-    if (body.visibility !== undefined) data.visibility = body.visibility as Visibility;
+    if (body.status !== undefined) {
+      if (!VALID_STATUS.has(body.status)) {
+        return res.status(400).json({
+          error: "invalid_status",
+          message: `Invalid status '${body.status}'.`,
+        });
+      }
+      data.status = body.status as PublishStatus;
+    }
+    if (body.visibility !== undefined) {
+      if (!VALID_VISIBILITY.has(body.visibility)) {
+        return res.status(400).json({
+          error: "invalid_visibility",
+          message: `Invalid visibility '${body.visibility}'.`,
+        });
+      }
+      data.visibility = body.visibility as Visibility;
+    }
     if (body.featured !== undefined) data.featured = body.featured;
+
+    if (Object.keys(data).length === 0) {
+      return res.status(400).json({
+        error: "invalid_body",
+        message: "At least one of status, visibility, or featured must be provided.",
+      });
+    }
 
     const playlist = await prisma.playlist.update({
       where: { id: req.params.playlistId },

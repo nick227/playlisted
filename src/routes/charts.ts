@@ -2,6 +2,8 @@ import { Prisma } from "@prisma/client";
 import { Router } from "express";
 
 import { rangeToDate, type ChartRange } from "../lib/chartRange.js";
+import { BROWSABLE_RECORDING } from "../lib/publicRecordingFilter.js";
+import { PUBLIC_PUBLISHED_PLAYLIST } from "../lib/publicPlaylistFilter.js";
 import { prisma } from "../lib/prisma.js";
 
 export const chartsRouter = Router();
@@ -62,7 +64,7 @@ chartsRouter.get("/top-songs", async (req, res, next) => {
 
     if (range === "all") {
       const recordings = await prisma.recording.findMany({
-        where: { visibility: "PUBLIC", status: "PUBLISHED" },
+        where: BROWSABLE_RECORDING,
         orderBy: { playCount: "desc" },
         take: limit,
         include: {
@@ -93,7 +95,7 @@ chartsRouter.get("/top-songs", async (req, res, next) => {
 
     const recordingIds = grouped.map((g) => g.recordingId);
     const recordings = await prisma.recording.findMany({
-      where: { id: { in: recordingIds }, visibility: "PUBLIC", status: "PUBLISHED" },
+      where: { id: { in: recordingIds }, ...BROWSABLE_RECORDING },
       include: {
         uploader: { select: { id: true, username: true, displayName: true, avatarUrl: true, role: true } },
         publishedPlaylist: {
@@ -140,7 +142,7 @@ chartsRouter.get("/top-playlists", async (req, res, next) => {
 
     const playlistIds = grouped.map((g) => g.playlistId!);
     const playlists = await prisma.playlist.findMany({
-      where: { id: { in: playlistIds }, visibility: "PUBLIC", status: "PUBLISHED" },
+      where: { id: { in: playlistIds }, ...PUBLIC_PUBLISHED_PLAYLIST },
       include: {
         owner: { select: { id: true, username: true, displayName: true, avatarUrl: true, role: true } },
       },

@@ -3,6 +3,7 @@ import { Router } from "express";
 import { mapPlaylistSummary } from "../lib/playlistMaps.js";
 import { prisma } from "../lib/prisma.js";
 import {
+  BROWSABLE_RECORDING,
   PUBLIC_PUBLISHED_RECORDING,
   PUBLIC_RECORDING_TAG_COUNT_SELECT,
 } from "../lib/publicRecordingFilter.js";
@@ -69,14 +70,17 @@ searchRouter.get("/unified", async (req, res, next) => {
     const [songs, playlists, artists, genres] = await Promise.all([
       prisma.recording.findMany({
         where: {
-          visibility: "PUBLIC",
-          status: "PUBLISHED",
-          OR: [
-            ...textContainsMatch(q),
-            { uploader: { OR: [{ displayName: { contains: q } }, { username: { contains: q } }] } },
-            songPublishedPlaylistTitleMatch(q),
-            songInPublicPlaylistTitleMatch(q),
-            { tags: { some: tagMatch } },
+          AND: [
+            BROWSABLE_RECORDING,
+            {
+              OR: [
+                ...textContainsMatch(q),
+                { uploader: { OR: [{ displayName: { contains: q } }, { username: { contains: q } }] } },
+                songPublishedPlaylistTitleMatch(q),
+                songInPublicPlaylistTitleMatch(q),
+                { tags: { some: tagMatch } },
+              ],
+            },
           ],
         },
         include: {

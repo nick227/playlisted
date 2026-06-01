@@ -1,8 +1,16 @@
+import { PUBLIC_PUBLISHED_PLAYLIST } from "./publicPlaylistFilter.js";
+
 /** Recordings visible in public library and search surfaces. */
 export const PUBLIC_PUBLISHED_RECORDING = {
   visibility: "PUBLIC" as const,
   status: "PUBLISHED" as const,
 };
+
+/** Browsable songs must also belong to a public published canonical playlist. */
+export const BROWSABLE_RECORDING = {
+  ...PUBLIC_PUBLISHED_RECORDING,
+  publishedPlaylist: PUBLIC_PUBLISHED_PLAYLIST,
+} as const;
 
 export type RecordingVisibilityFields = {
   visibility: string;

@@ -2,6 +2,7 @@ import { Router } from "express";
 
 import { prisma } from "../lib/prisma.js";
 import {
+  BROWSABLE_RECORDING,
   PUBLIC_PUBLISHED_RECORDING,
   PUBLIC_RECORDING_TAG_COUNT_SELECT,
 } from "../lib/publicRecordingFilter.js";
@@ -43,8 +44,7 @@ libraryRouter.get("/songs", async (req, res, next) => {
     const genreSlug = typeof req.query.genre === "string" ? req.query.genre : undefined;
 
     const where = {
-      visibility: "PUBLIC" as const,
-      status: "PUBLISHED" as const,
+      ...BROWSABLE_RECORDING,
       ...(genreSlug
         ? { tags: { some: { tag: { slug: genreSlug, kind: "GENRE" as const } } } }
         : {}),
@@ -107,7 +107,7 @@ libraryRouter.get("/songs", async (req, res, next) => {
 libraryRouter.get("/artists", async (_req, res, next) => {
   try {
     const recordings = await prisma.recording.findMany({
-      where: { visibility: "PUBLIC", status: "PUBLISHED" },
+      where: BROWSABLE_RECORDING,
       select: {
         uploaderId: true,
         releaseDate: true,

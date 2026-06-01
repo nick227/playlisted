@@ -1,5 +1,6 @@
 import { Router } from "express";
 
+import { isPlaylistBrowsable } from "../lib/publicPlaylistFilter.js";
 import { prisma } from "../lib/prisma.js";
 
 export const homepageRouter = Router();
@@ -50,7 +51,7 @@ homepageRouter.get("/", async (_req, res, next) => {
 
       let item: any = null;
 
-      if (feature.playlist) {
+      if (feature.playlist && isPlaylistBrowsable(feature.playlist)) {
         item = {
           id: feature.playlist.id,
           targetType: "PLAYLIST",

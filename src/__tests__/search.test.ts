@@ -16,6 +16,10 @@ import { createApp } from "../app.js";
 const app = createApp();
 
 const PUBLIC_RECORDING = { visibility: "PUBLIC", status: "PUBLISHED" };
+const BROWSABLE_RECORDING = {
+  ...PUBLIC_RECORDING,
+  publishedPlaylist: { visibility: "PUBLIC", status: "PUBLISHED" },
+};
 const SEARCHABLE_PLAYLIST = {
   OR: [
     { visibility: "PUBLIC", status: { in: ["PUBLISHED", "DRAFT"] } },
@@ -92,18 +96,23 @@ describe("GET /api/v1/search/unified", () => {
     expect(res.status).toBe(200);
     expect(prisma.recording.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: expect.objectContaining({
-          OR: expect.arrayContaining([
+        where: {
+          AND: [
+            BROWSABLE_RECORDING,
             {
-              publishedPlaylist: {
-                AND: [
-                  SEARCHABLE_PLAYLIST,
-                  { OR: expect.arrayContaining([{ title: { contains: "summer mix" } }]) },
-                ],
-              },
+              OR: expect.arrayContaining([
+                {
+                  publishedPlaylist: {
+                    AND: [
+                      SEARCHABLE_PLAYLIST,
+                      { OR: expect.arrayContaining([{ title: { contains: "summer mix" } }]) },
+                    ],
+                  },
+                },
+              ]),
             },
-          ]),
-        }),
+          ],
+        },
       }),
     );
   });

@@ -3,6 +3,10 @@ import { Router } from "express";
 
 import { getAuthContextFromRequest } from "../lib/auth.js";
 import { filterPlaylistItemsForViewer } from "../lib/publicRecordingFilter.js";
+import {
+  canViewerAccessPlaylist,
+  PUBLIC_PUBLISHED_PLAYLIST,
+} from "../lib/publicPlaylistFilter.js";
 import { prisma } from "../lib/prisma.js";
 import { assertProfileLinks, normalizeProfileLinks } from "../lib/profileLinks.js";
 import { requireAdmin } from "../lib/requireAdmin.js";
@@ -156,19 +160,15 @@ usersRouter.get("/by-username/:username/playlists/:slug", async (req, res, next)
 
     const auth = await getAuthContextFromRequest(req);
 
-    if (playlist.visibility === "PRIVATE" || playlist.status !== "PUBLISHED") {
-      if (!auth) {
-        return res.status(401).json({
-          error: "unauthorized",
-          message: "You must be logged in to view this playlist.",
-        });
-      }
-      if (auth.user.id !== playlist.ownerId && auth.user.role !== "ADMIN" && auth.user.role !== "EDITOR") {
-        return res.status(403).json({
-          error: "forbidden",
-          message: "You do not have access to this playlist.",
-        });
-      }
+    if (!canViewerAccessPlaylist(
+      playlist,
+      { userId: auth?.user.id, role: auth?.user.role },
+      playlist.ownerId,
+    )) {
+      return res.status(404).json({
+        error: "playlist_not_found",
+        message: `Playlist @${username}/${slug} was not found.`,
+      });
     }
 
     const visibleItems = filterPlaylistItemsForViewer(
@@ -191,7 +191,7 @@ usersRouter.get("/by-username/:username", async (req, res, next) => {
       where: { username },
       include: {
         ownedPlaylists: {
-          where: { visibility: "PUBLIC", status: "PUBLISHED" },
+          where: PUBLIC_PUBLISHED_PLAYLIST,
           orderBy: [{ isPinnedOnProfile: "desc" }, { publishedAt: "desc" }, { createdAt: "desc" }],
         },
       },
@@ -283,7 +283,7 @@ usersRouter.patch("/me", async (req, res, next) => {
       },
       include: {
         ownedPlaylists: {
-          where: { visibility: "PUBLIC", status: "PUBLISHED" },
+          where: PUBLIC_PUBLISHED_PLAYLIST,
           orderBy: [{ isPinnedOnProfile: "desc" }, { publishedAt: "desc" }, { createdAt: "desc" }],
         },
       },
@@ -308,7 +308,7 @@ usersRouter.get("/:userId", async (req, res, next) => {
       where: { id: req.params.userId },
       include: {
         ownedPlaylists: {
-          where: { visibility: "PUBLIC" },
+          where: PUBLIC_PUBLISHED_PLAYLIST,
           orderBy: [{ isPinnedOnProfile: "desc" }, { publishedAt: "desc" }, { createdAt: "desc" }],
         },
       },
@@ -376,7 +376,7 @@ usersRouter.post("/", async (req, res, next) => {
       },
       include: {
         ownedPlaylists: {
-          where: { visibility: "PUBLIC" },
+          where: PUBLIC_PUBLISHED_PLAYLIST,
           orderBy: [{ isPinnedOnProfile: "desc" }, { publishedAt: "desc" }, { createdAt: "desc" }],
         },
       },
