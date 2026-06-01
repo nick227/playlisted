@@ -4,14 +4,14 @@ import { buildBandMembers, buildBarPatrons, buildDancers, buildHallwayWatchers }
 
 const BARTENDER: CastMemberDef = {
   id: 'bartender',
-  placement: { nx: 0.57, ny: 0.76, scale: 0.46, z: 0.42 },
+  placement: { nx: 0.57, ny: 0.76, scale: 0.52, z: 0.42 },
+  activity: 'bartend',
   role: 'ambient',
   faceLayer: 'studio',
-  activity: 'bartend',
   gender: 'female',
   style: 'classic',
-  bodyScale: 0.46,
-  faceScale: 0.32,
+  bodyScale: 0.52,
+  faceScale: 0.34,
   showFace: true,
   speaks: true,
   phraseBank: 'bar',

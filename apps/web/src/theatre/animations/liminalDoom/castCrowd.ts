@@ -10,7 +10,7 @@ export function patron(
   seed: number,
   opts: Partial<CastMemberDef> = {},
 ): CastMemberDef {
-  const scale = opts.placement?.scale ?? 0.34 + hash01(seed, 2) * 0.14
+  const scale = opts.placement?.scale ?? 0.38 + hash01(seed, 2) * 0.16
   const placement = opts.placement ?? { nx, ny, scale, z: 0.28 + ny * 0.25 }
   return {
     ...opts,
@@ -45,9 +45,10 @@ export function buildBandMembers(seed: number): CastMemberDef[] {
 }
 
 export function buildDancers(seed: number, count: number): CastMemberDef[] {
+  const n = Math.min(count, 12)
   const out: CastMemberDef[] = []
   const acts: CastActivity[] = ['dance', 'dance', 'dance', 'hangOut', 'wander', 'look']
-  for (let i = 0; i < count; i++) {
+  for (let i = 0; i < n; i++) {
     const s = seed + i * 13
     out.push(patron(`dancer-${i}`,
       0.1 + hash01(s, 1) * 0.8,

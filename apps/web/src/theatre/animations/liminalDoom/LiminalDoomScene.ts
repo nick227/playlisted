@@ -150,8 +150,9 @@ export function liminalDoomFactory(): IAnimation {
       }
 
       // Renderer pass
+      const sceneSeed = this.seed + this.sceneIndex * 17
       this.renderer.clear()
-      queueRoomShell(this.renderer, w, h, sceneType)
+      queueRoomShell(this.renderer, w, h, sceneType, sceneSeed)
       queueWallDecals(this.renderer, this.decals, bounds.left, bounds.top, audio.highs, 0.07)
       if (pf.phase === 'passage') {
         queueCorridorDecals(this.renderer, this.decals, w * 0.08, h * 0.35, audio.mids)
@@ -159,7 +160,6 @@ export function liminalDoomFactory(): IAnimation {
       const extraCast = (pf.phase === 'threshold' || pf.phase === 'passage')
         ? resolveCastIds(['liminal.doorWhisper'])
         : []
-      const sceneSeed = this.seed + this.sceneIndex * 17
       this.syncCast(sceneType, extraCast, sceneSeed)
       composeScene(this.renderer, sceneType, {
         bounds,

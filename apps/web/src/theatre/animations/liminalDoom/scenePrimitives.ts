@@ -11,6 +11,8 @@ export type PrimitiveOptions = {
   faceOnCone?: boolean
   eyeTrackX?: number
   eyeTrackY?: number
+  /** RGB triple for stage-light glow color — overrides default amber. */
+  lightTint?: [number, number, number]
 }
 
 type Ctx = CanvasRenderingContext2D
@@ -27,27 +29,52 @@ export function drawSpeaker(
   ctx: Ctx, x: number, y: number, w: number, h: number, bassLevel: number,
   options: PrimitiveOptions = {},
 ) {
-  const push = bassLevel * 8
+  const push = bassLevel * 10
   const bw = w + push
   const bh = h + push * 0.4
   const bx = x - push * 0.5
   const by = y - push * 0.3
   applyAlpha(ctx, options.alpha)
+
+  // Cabinet body
   ctx.fillStyle = options.tint ?? palette.speaker
   ctx.fillRect(bx, by, bw, bh * 0.72)
-  ctx.fillStyle = palette.speakerCone
-  const coneR = Math.min(bw, bh) * 0.22
+
+  // Cabinet edge highlight (makes shape readable against lit back wall)
+  ctx.strokeStyle = palette.figureEdge
+  ctx.lineWidth = 2
+  ctx.strokeRect(bx, by, bw, bh * 0.72)
+
+  // Speaker ring — visible concentric circle
+  const coneR = Math.min(bw, bh) * 0.24
   const cx = bx + bw * 0.5
   const cy = by + bh * 0.38
+  ctx.fillStyle = palette.speakerRing
   ctx.beginPath()
   ctx.arc(cx, cy, coneR, 0, Math.PI * 2)
   ctx.fill()
-  if (options.faceOnCone) {
-    drawFaceMask(ctx, cx, cy, coneR * 1.6, 0, options.eyeTrackX ?? 0, options.eyeTrackY ?? 0, options)
+
+  // Speaker cone — lighter center
+  ctx.fillStyle = palette.speakerCone
+  ctx.beginPath()
+  ctx.arc(cx, cy, coneR * 0.6, 0, Math.PI * 2)
+  ctx.fill()
+
+  // Bass pulse: amber glow ring on beat
+  if (bassLevel > 0.4) {
+    ctx.save()
+    ctx.globalCompositeOperation = 'screen'
+    ctx.strokeStyle = `rgba(200,140,60,${(bassLevel - 0.4) * 0.9})`
+    ctx.lineWidth = 3
+    ctx.beginPath()
+    ctx.arc(cx, cy, coneR * (1 + bassLevel * 0.2), 0, Math.PI * 2)
+    ctx.stroke()
+    ctx.restore()
   }
-  ctx.strokeStyle = palette.figureEdge
-  ctx.lineWidth = 1
-  ctx.strokeRect(bx, by, bw, bh * 0.72)
+
+  if (options.faceOnCone) {
+    drawFaceMask(ctx, cx, cy, coneR * 1.5, bassLevel * 0.5, options.eyeTrackX ?? 0, options.eyeTrackY ?? 0, options)
+  }
   resetAlpha(ctx, options.alpha)
 }
 
@@ -56,17 +83,36 @@ export function drawDrumKit(
   options: PrimitiveOptions = {},
 ) {
   applyAlpha(ctx, options.alpha)
-  const kick = 28 * scale + beatLevel * 6
+  const kick = 28 * scale + beatLevel * 8
   ctx.fillStyle = palette.figure
+  // Kick drum
   ctx.beginPath()
   ctx.ellipse(x, y + 8 * scale, kick, kick * 0.55, 0, 0, Math.PI * 2)
   ctx.fill()
+  ctx.strokeStyle = palette.figureEdge
+  ctx.lineWidth = 1.5
+  ctx.stroke()
+  // Tom stand bars
   ctx.fillRect(x - 40 * scale, y - 30 * scale, 14 * scale, 36 * scale)
   ctx.fillRect(x + 26 * scale, y - 26 * scale, 12 * scale, 32 * scale)
+  // Tom drums
+  ctx.fillStyle = palette.figureEdge
   ctx.beginPath()
   ctx.arc(x - 34 * scale, y - 32 * scale, 16 * scale, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.beginPath()
   ctx.arc(x + 32 * scale, y - 28 * scale, 14 * scale, 0, Math.PI * 2)
   ctx.fill()
+  // Beat flash on toms
+  if (beatLevel > 0.6) {
+    ctx.save()
+    ctx.globalCompositeOperation = 'screen'
+    ctx.fillStyle = `rgba(180,120,60,${(beatLevel - 0.6) * 1.2})`
+    ctx.beginPath()
+    ctx.arc(x - 34 * scale, y - 32 * scale, 16 * scale, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.restore()
+  }
   resetAlpha(ctx, options.alpha)
 }
 
@@ -76,26 +122,41 @@ export function drawFigure(
 ) {
   applyAlpha(ctx, options.alpha)
   const s = scale * (1 + energy * 0.08)
-  ctx.fillStyle = options.tint ?? palette.figure
-  const headR = 10 * s
-  const bodyH = 38 * s
+  const fillColor = options.tint ?? palette.figure
+  const headR = 11 * s
+  const bodyH = 42 * s
   let lean = 0
-  if (pose === 'lean' || pose === 'bartender') lean = 6 * s
-  if (pose === 'guitar') lean = -4 * s
+  if (pose === 'lean' || pose === 'bartender') lean = 7 * s
+  if (pose === 'guitar') lean = -5 * s
   const hx = x + lean
   const hy = y - bodyH - headR
+
+  // Silhouette body — fill first
+  ctx.fillStyle = fillColor
   ctx.beginPath()
-  ctx.ellipse(hx, hy, headR, headR * 1.1, 0, 0, Math.PI * 2)
+  ctx.ellipse(hx, hy, headR, headR * 1.15, 0, 0, Math.PI * 2)
   ctx.fill()
-  ctx.fillRect(hx - 8 * s, y - bodyH, 16 * s, bodyH)
+  ctx.fillRect(hx - 9 * s, y - bodyH, 18 * s, bodyH)
+
+  // Visible edge highlight — this is what makes silhouettes readable
+  ctx.strokeStyle = palette.figureEdge
+  ctx.lineWidth = 1.5
+  ctx.beginPath()
+  ctx.ellipse(hx, hy, headR, headR * 1.15, 0, 0, Math.PI * 2)
+  ctx.stroke()
+  ctx.strokeRect(hx - 9 * s, y - bodyH, 18 * s, bodyH)
+
+  // Pose details
   if (pose === 'drum') {
-    ctx.fillRect(hx - 22 * s, y - bodyH * 0.5, 44 * s, 8 * s)
+    ctx.fillStyle = fillColor
+    ctx.fillRect(hx - 24 * s, y - bodyH * 0.5, 48 * s, 9 * s)
+    ctx.strokeRect(hx - 24 * s, y - bodyH * 0.5, 48 * s, 9 * s)
   }
   if (pose === 'guitar') {
-    drawGuitarNeck(ctx, hx + 10 * s, y - bodyH * 0.6, 34 * s, -0.5, energy, options)
+    drawGuitarNeck(ctx, hx + 10 * s, y - bodyH * 0.6, 36 * s, -0.5, energy, options)
   }
-  if (pose === 'bartender') {
-    drawFaceMask(ctx, hx, hy, headR * 2.2, energy, options.eyeTrackX ?? 0, options.eyeTrackY ?? 0, options)
+  if (pose === 'bartender' || pose === 'watch') {
+    drawFaceMask(ctx, hx, hy, headR * 2.0, energy, options.eyeTrackX ?? 0, options.eyeTrackY ?? 0, options)
   }
   resetAlpha(ctx, options.alpha)
 }
@@ -120,12 +181,17 @@ export function drawBarCounter(
   options: PrimitiveOptions = {},
 ) {
   applyAlpha(ctx, options.alpha)
-  ctx.fillStyle = options.tint ?? palette.stage
+  // Counter body — slightly lighter than back wall so it reads
+  ctx.fillStyle = options.tint ?? palette.wallLight
   ctx.fillRect(x, y, w, h)
-  ctx.fillStyle = palette.stageLight
-  ctx.fillRect(x, y, w, h * 0.12)
+  // Counter top — lightest strip (shiny surface)
+  ctx.fillStyle = palette.ceilingBar
+  ctx.fillRect(x, y, w, h * 0.18)
+  // Amber edge along front face of counter
+  ctx.fillStyle = palette.amberDim
+  ctx.fillRect(x, y + h * 0.18, w, h * 0.08)
   ctx.strokeStyle = palette.figureEdge
-  ctx.lineWidth = 1
+  ctx.lineWidth = 1.5
   ctx.strokeRect(x, y, w, h)
   resetAlpha(ctx, options.alpha)
 }
@@ -134,11 +200,12 @@ export function drawBottle(
   ctx: Ctx, x: number, y: number, scale: number, highLevel: number,
   options: PrimitiveOptions = {},
 ) {
-  const jitter = highLevel * 3
+  const jitter = highLevel * 4
   const bx = x + (options.mirror ? jitter : -jitter)
   applyAlpha(ctx, options.alpha)
-  const w = 6 * scale
-  const h = 22 * scale
+  const w = 7 * scale
+  const h = 26 * scale
+  // Bottle body
   ctx.fillStyle = palette.bottle
   ctx.beginPath()
   ctx.moveTo(bx - w * 0.4, y)
@@ -149,8 +216,13 @@ export function drawBottle(
   ctx.lineTo(bx - w * 0.55, y - h * 0.75)
   ctx.closePath()
   ctx.fill()
+  // Outline — makes bottles read against counter
+  ctx.strokeStyle = palette.bottleHighlight
+  ctx.lineWidth = 1
+  ctx.stroke()
+  // Highlight
   ctx.fillStyle = palette.bottleHighlight
-  ctx.fillRect(bx - w * 0.15, y - h * 0.55, w * 0.2, h * 0.35)
+  ctx.fillRect(bx - w * 0.1, y - h * 0.6, w * 0.18, h * 0.38)
   resetAlpha(ctx, options.alpha)
 }
 
@@ -316,13 +388,19 @@ export function drawStageLight(
   ctx: Ctx, x: number, y: number, w: number, pulse: number,
   options: PrimitiveOptions = {},
 ) {
-  applyAlpha(ctx, options.alpha ?? clamp(0.25 + pulse * 0.5, 0, 0.85))
+  const [lr, lg, lb] = options.lightTint ?? [255, 160, 80]
+  // Dimmer secondary color — same hue shifted slightly darker
+  const [sr, sg, sb] = [Math.floor(lr * 0.78), Math.floor(lg * 0.62), Math.floor(lb * 0.75)]
+  ctx.save()
+  ctx.globalCompositeOperation = 'screen'
+  ctx.globalAlpha = clamp(0.5 + pulse * 0.5, 0, 1)
   const g = ctx.createRadialGradient(x, y, 0, x, y, w)
-  g.addColorStop(0, `rgba(200,120,80,${0.35 + pulse * 0.4})`)
-  g.addColorStop(1, 'rgba(80,40,60,0)')
+  g.addColorStop(0,   `rgba(${lr},${lg},${lb},${0.55 + pulse * 0.45})`)
+  g.addColorStop(0.3, `rgba(${sr},${sg},${sb},${0.3 + pulse * 0.3})`)
+  g.addColorStop(1,   'rgba(0,0,0,0)')
   ctx.fillStyle = g
-  ctx.fillRect(x - w, y - w * 0.5, w * 2, w)
-  resetAlpha(ctx, options.alpha)
+  ctx.fillRect(x - w, y - w * 0.6, w * 2, w * 1.2)
+  ctx.restore()
 }
 
 export function drawShellQuad(

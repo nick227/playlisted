@@ -95,13 +95,15 @@ export class CastDirector {
       const energy = activityEnergy(m.look.activity, audio, nowMs, m.look.seed)
       const alpha = (m.def.alpha ?? 1) * m.config.dissolveAlpha
 
-      drawStyledBody(ctx, x, y, bodyScale, m.look, energy, nowMs, m.wanderAmp, alpha)
+      const showFace = shouldDrawFace(m.def)
+      drawStyledBody(ctx, x, y, bodyScale, m.look, energy, nowMs, m.wanderAmp, alpha, !showFace)
 
-      if (shouldDrawFace(m.def)) {
+      if (showFace) {
         const head = headAnchor(x, y, bodyScale, m.look)
         const faceScale = (m.def.faceScale ?? m.def.placement.scale) * stageScale
         const breathe = m.config.state !== 'dissolving' ? idleBreath(nowMs, m.config.seed) : 1
-        drawFace(ctx, head.x, head.y, faceScale * breathe * 0.38, m.config, m.cache)
+        m.config.gender = m.look.gender
+        drawFace(ctx, head.x, head.y, faceScale * breathe * 0.42, m.config, m.cache)
       }
 
       if (m.phraseState && m.phraseState.alpha > 0.01) {
