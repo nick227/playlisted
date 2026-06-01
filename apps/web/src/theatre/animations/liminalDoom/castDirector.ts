@@ -2,12 +2,17 @@ import type { CastMemberDef, StageRect } from '../../sceneKit'
 import { placementToXY } from '../../sceneKit'
 import type { AudioReact, BackWallBounds, RoomPhase } from './types'
 import { clamp, hash01, lerp } from './types'
+import type { CastActivity } from './bodies'
 import {
-  drawStyledBody, headAnchor, resolveBodyStyle, resolveGender,
-} from './bodies'
-import type { BodyLook, CastActivity } from './bodies'
+  characterHeadAnchor,
+  drawCharacterBody,
+  drawCharacterFace,
+  recipeDistortBase,
+  resolveCharacterFromDef,
+} from './character'
+import type { ResolvedCharacter } from './character'
 import {
-  drawFace, FaceCacheEntry, idleBreath, watchingGaze, tickDissolve,
+  FaceCacheEntry, idleBreath, watchingGaze, tickDissolve,
 } from './faces'
 import type { FaceConfig, FaceState } from './faces'
 import {
@@ -17,7 +22,7 @@ import type { PhraseTickState } from './phrases'
 
 type MemberRuntime = {
   def: CastMemberDef
-  look: BodyLook
+  character: ResolvedCharacter
   config: FaceConfig
   cache: FaceCacheEntry
   phrase: PhraseTicker | null
@@ -27,6 +32,10 @@ type MemberRuntime = {
   speakArmed: boolean
   speakDelayLeft: number
   phraseUsed: boolean
+  /** Counts down to 0, then re-arms the speaker. -1 = not counting yet. */
+  phraseRepeatCooldown: number
+  /** How many times this member has spoken — used to vary phrase salt. */
+  phraseCount: number
   glanceX: number
   glanceY: number
   wanderAmp: number
@@ -43,9 +52,13 @@ export class CastDirector {
     for (let i = 0; i < members.length; i++) {
       const def = members[i]
       const existing = this.members.find((m) => m.def.id === def.id)
-      if (existing) {
+      // Reuse a member only if it's still visible (appeared or dissolving).
+      // Fully-dissolved members get a fresh spawn so position jitter and
+      // appearance vary on each room visit.
+      const reuse = existing && (existing.appeared || existing.dissolving)
+      if (reuse && existing) {
         existing.def = { ...def, role: def.role ?? existing.def.role, faceLayer: 'studio' }
-        existing.look = bodyLookFromDef(def, this.seed, i)
+        existing.character = resolveCharacterFromDef(existing.def, this.seed, i)
         next.push(existing)
       } else {
         next.push(this.spawnMember(def, i))
@@ -92,18 +105,21 @@ export class CastDirector {
 
       const { x, y } = placementToXY(stage, m.def.placement)
       const bodyScale = (m.def.bodyScale ?? m.def.placement.scale) * stageScale
-      const energy = activityEnergy(m.look.activity, audio, nowMs, m.look.seed)
+      const energy = activityEnergy(m.character.activity, audio, nowMs, m.character.seed)
       const alpha = (m.def.alpha ?? 1) * m.config.dissolveAlpha
 
       const showFace = shouldDrawFace(m.def)
-      drawStyledBody(ctx, x, y, bodyScale, m.look, energy, nowMs, m.wanderAmp, alpha, !showFace)
+      drawCharacterBody(ctx, x, y, bodyScale, m.character, energy, nowMs, m.wanderAmp, alpha, !showFace)
 
       if (showFace) {
-        const head = headAnchor(x, y, bodyScale, m.look)
-        const faceScale = (m.def.faceScale ?? m.def.placement.scale) * stageScale
+        const head = characterHeadAnchor(x, y, bodyScale, m.character)
+        // faceScale is expressed as a fraction of back-wall width (e.g. 0.03 = 3%).
+        // Default 0.03 gives crowd faces ~27px wide on a 432px stage.
+        // Named characters set their own value in CastMemberDef.faceScale.
+        const faceR = stage.width * (m.def.faceScale ?? 0.03)
         const breathe = m.config.state !== 'dissolving' ? idleBreath(nowMs, m.config.seed) : 1
-        m.config.gender = m.look.gender
-        drawFace(ctx, head.x, head.y, faceScale * breathe * 0.42, m.config, m.cache)
+        m.config.gender = m.character.gender
+        drawCharacterFace(ctx, head.x, head.y, faceR * breathe, m.config, m.character, m.cache)
       }
 
       if (m.phraseState && m.phraseState.alpha > 0.01) {
@@ -117,31 +133,53 @@ export class CastDirector {
 
   private spawnMember(def: CastMemberDef, index: number): MemberRuntime {
     const role = def.role ?? (def.speaks ? 'speaker' : 'listener')
-    const look = bodyLookFromDef(def, this.seed, index)
+    // Jitter crowd/ambient positions per room seed so the same preset
+    // looks different each scene cycle. Named/speaker roles are not jittered.
+    const isAmbient = role === 'ambient' || (!def.speaks && role !== 'speaker' && role !== 'listener')
+    const jx = isAmbient ? (hash01(this.seed, index * 13)     - 0.5) * 0.07 : 0
+    const jy = isAmbient ? (hash01(this.seed, index * 13 + 1) - 0.5) * 0.035 : 0
+    const jDef: CastMemberDef = isAmbient ? {
+      ...def,
+      placement: {
+        ...def.placement,
+        nx: clamp(def.placement.nx + jx, 0.04, 0.96),
+        ny: clamp(def.placement.ny + jy, 0.28, 0.97),
+      },
+    } : def
+
+    const character = resolveCharacterFromDef(
+      { ...jDef, role, faceLayer: 'studio', activity: jDef.activity ?? 'hangOut' },
+      this.seed,
+      index,
+    )
+
     return {
-      def: { ...def, role, faceLayer: 'studio', activity: def.activity ?? 'hangOut' },
-      look,
+      def: { ...jDef, role, faceLayer: 'studio', activity: jDef.activity ?? 'hangOut' },
+      character,
       config: {
         state: 'idle',
         talkLevel: 0,
-        trackX: def.eyeTrackX ?? 0,
-        trackY: def.eyeTrackY ?? 0,
-        distort: 0.22 + hash01(this.seed, index * 9) * 0.35,
+        trackX: jDef.eyeTrackX ?? 0,
+        trackY: jDef.eyeTrackY ?? 0,
+        distort: recipeDistortBase(character),
         dissolveAlpha: 0,
         fragmentLevel: 0,
-        seed: this.seed + index * 31,
+        seed: character.seed,
+        gender: character.gender,
       },
       cache: new FaceCacheEntry(96),
-      phrase: def.speaks ? new PhraseTicker() : null,
+      phrase: jDef.speaks ? new PhraseTicker() : null,
       phraseState: null,
       appeared: false,
       dissolving: false,
       speakArmed: false,
       speakDelayLeft: 0,
       phraseUsed: false,
+      phraseRepeatCooldown: -1,
+      phraseCount: 0,
       glanceX: 0,
       glanceY: 0,
-      wanderAmp: def.wanderRadius ?? (def.activity === 'wander' ? 0.04 : 0),
+      wanderAmp: jDef.wanderRadius ?? (jDef.activity === 'wander' ? 0.04 : 0),
     }
   }
 
@@ -182,6 +220,8 @@ export class CastDirector {
         cfg.fragmentLevel = 0
         m.speakArmed = false
         m.phraseUsed = false
+        m.phraseRepeatCooldown = -1
+        m.phraseCount = 0
       }
     }
 
@@ -192,18 +232,35 @@ export class CastDirector {
         cfg.talkLevel = lerp(cfg.talkLevel, audio.mids * 0.9 + beatPop, 0.15)
       } else if (isListener && this.anyPhraseActive()) {
         cfg.talkLevel = lerp(cfg.talkLevel, audio.mids * 0.15, 0.1)
-      } else if (m.look.activity === 'look' || m.look.activity === 'hangOut') {
+      } else if (m.character.activity === 'look' || m.character.activity === 'hangOut') {
         cfg.talkLevel = lerp(cfg.talkLevel, audio.bass * 0.12, 0.08)
       } else {
-        cfg.talkLevel = lerp(cfg.talkLevel, activityEnergy(m.look.activity, audio, nowMs, m.look.seed) * 0.2, 0.1)
+        cfg.talkLevel = lerp(cfg.talkLevel, activityEnergy(m.character.activity, audio, nowMs, m.character.seed) * 0.2, 0.1)
       }
       this.tickGaze(m, nowMs, isListener, isSpeaker)
-      cfg.distort = lerp(cfg.distort, 0.2 + audio.highs * 0.4, 0.05)
+      cfg.distort = lerp(cfg.distort, recipeDistortBase(m.character) + audio.highs * 0.35, 0.05)
       if (audio.highs > 0.68) m.cache.markDirty()
     }
 
     if (m.phrase && !m.phrase.isDone && audio.chaos > 0.72 && audio.highs > 0.55) {
       m.phrase.dissolveNow()
+    }
+
+    // Re-arm speakers after their phrase dissolves so they can speak again.
+    // Each repeat uses an incremented salt so the phrase text and format vary.
+    if (m.phrase && m.phraseUsed && m.appeared) {
+      if (m.phrase.isDone) {
+        if (m.phraseRepeatCooldown < 0) {
+          // Phrase just finished — start cooldown (2–4.5s, seeded per member)
+          m.phraseRepeatCooldown = 2000 + hash01(this.seed + m.config.seed, 88 + m.phraseCount) * 2500
+        }
+        m.phraseRepeatCooldown -= dtMs
+        if (m.phraseRepeatCooldown <= 0) {
+          m.phraseUsed = false
+          m.speakArmed = false
+          m.phraseRepeatCooldown = -1
+        }
+      }
     }
 
     if (m.phrase && allowSpeech && isSpeaker && !m.phraseUsed && m.appeared) {
@@ -231,7 +288,7 @@ export class CastDirector {
       cfg.trackY = lerp(cfg.trackY, Math.sin(nowMs / 2400) * 0.1, 0.05)
       return
     }
-    if (m.look.activity === 'look') {
+    if (m.character.activity === 'look') {
       cfg.trackX = lerp(cfg.trackX, gaze.trackX, 0.06)
       cfg.trackY = lerp(cfg.trackY, gaze.trackY, 0.06)
       return
@@ -243,13 +300,16 @@ export class CastDirector {
   private startPhrase(m: MemberRuntime) {
     if (!m.phrase || m.phraseUsed) return
     const def = m.def
-    const salt = def.phraseSalt ?? 77
+    // Vary salt per repetition so each phrase and format is different
+    const baseSalt = def.phraseSalt ?? 77
+    const salt = baseSalt + m.phraseCount * 31
     m.phrase.start(
       pickPhraseFromBank(def.phraseBank ?? 'venue', this.seed, salt),
       def.phraseFormat ?? pickFormat(this.seed + salt),
       this.seed + salt,
     )
     m.phraseUsed = true
+    m.phraseCount++
   }
 
   private anyPhraseActive(): boolean {
@@ -258,18 +318,16 @@ export class CastDirector {
 }
 
 function shouldDrawFace(def: CastMemberDef): boolean {
-  if (def.showFace === true) return true
+  // Explicit overrides always win
   if (def.showFace === false) return false
-  return !!def.speaks
-}
-
-function bodyLookFromDef(def: CastMemberDef, seed: number, index: number): BodyLook {
-  return {
-    gender: def.gender ?? resolveGender(seed, index + 5),
-    style: def.style ?? resolveBodyStyle(seed, index + 7),
-    activity: def.activity ?? 'hangOut',
-    seed: seed + index * 19,
-  }
+  if (def.showFace === true) return true
+  // Speakers always get faces
+  if (def.speaks) return true
+  // Characters who are explicitly watching or dissolving show faces
+  if (def.faceMode === 'watching' || def.faceMode === 'dissolving') return true
+  // Characters whose job is to look show faces
+  if (def.activity === 'look') return true
+  return false
 }
 
 function activityEnergy(act: CastActivity, audio: AudioReact, timeMs: number, seed: number): number {

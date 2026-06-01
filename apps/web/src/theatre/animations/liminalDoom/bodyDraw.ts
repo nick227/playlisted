@@ -2,6 +2,7 @@ import { palette } from './palette'
 import { clamp, hash01 } from './types'
 import type { FashionSet, HairStyle } from './fashion'
 import type { BodyLook, CastActivity } from './bodies'
+import type { BodyPresetDef } from './character/libraries/body'
 
 type Ctx = CanvasRenderingContext2D
 
@@ -31,6 +32,7 @@ export function drawStyledBodyDetailed(
   wanderAmp: number,
   alpha: number,
   simpleHead: boolean,
+  bodyPreset?: BodyPresetDef,
 ) {
   if (alpha <= 0.01) return
   const wx = look.activity === 'wander' ? Math.sin(timeMs / 2200 + look.seed) * wanderAmp * scale : 0
@@ -41,7 +43,7 @@ export function drawStyledBodyDetailed(
   const cx = x + wx + lean
   const fy = y + bounce
 
-  const m = buildMetrics(cx, fy, s, female)
+  const m = buildMetrics(cx, fy, s, female, bodyPreset)
   const f = fashion
 
   ctx.save()
@@ -59,12 +61,13 @@ export function drawStyledBodyDetailed(
   ctx.restore()
 }
 
-function buildMetrics(cx: number, fy: number, s: number, female: boolean): BodyMetrics {
-  const sh = (female ? 11 : 14) * s
-  const hip = (female ? 16 : 12) * s
-  const torsoH = 28 * s
-  const legH = (female ? 36 : 32) * s
-  const headR = (female ? 10 : 11) * s
+function buildMetrics(cx: number, fy: number, s: number, female: boolean, body?: BodyPresetDef): BodyMetrics {
+  const b = body ?? { shoulderMul: 1, hipMul: 1, torsoMul: 1, legMul: 1, headMul: 1 }
+  const sh = (female ? 11 : 14) * s * b.shoulderMul
+  const hip = (female ? 16 : 12) * s * b.hipMul
+  const torsoH = 28 * s * b.torsoMul
+  const legH = (female ? 36 : 32) * s * b.legMul
+  const headR = (female ? 10 : 11) * s * b.headMul
   const headY = fy - legH - torsoH - headR * 1.05
   const shoulderY = fy - legH - torsoH
   const neckY = shoulderY - headR * 0.35
@@ -417,10 +420,9 @@ function activityLean(act: CastActivity, energy: number, timeMs: number, seed: n
   return 0
 }
 
-export function headAnchorDetailed(cx: number, fy: number, scale: number, female: boolean) {
-  const s = scale
-  const legH = (female ? 36 : 32) * s
-  const torsoH = 28 * s
-  const headR = (female ? 10 : 11) * s
-  return { x: cx, y: fy - legH - torsoH - headR * 1.08, headR }
+export function headAnchorDetailed(
+  cx: number, fy: number, scale: number, female: boolean, body?: BodyPresetDef,
+) {
+  const m = buildMetrics(cx, fy, scale, female, body)
+  return { x: m.cx, y: m.headY, headR: m.headR }
 }

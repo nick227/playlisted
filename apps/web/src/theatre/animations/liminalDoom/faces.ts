@@ -1,3 +1,9 @@
+import type { EyesPresetDef } from './character/libraries/eyes'
+import { EYES_PRESETS } from './character/libraries/eyes'
+import type { FacePresetDef } from './character/libraries/face'
+import { FACE_PRESETS } from './character/libraries/face'
+import type { MouthPresetDef } from './character/libraries/mouth'
+import { MOUTH_PRESETS } from './character/libraries/mouth'
 import { palette } from './palette'
 import { clamp, lerp } from './types'
 
@@ -46,6 +52,7 @@ export class FaceCacheEntry {
   private lastDistort = -1
   private lastSeed = -1
   private lastGender: FaceGender = 'male'
+  private lastFaceId = ''
 
   constructor(size: number) {
     if (typeof OffscreenCanvas !== 'undefined') {
@@ -61,18 +68,20 @@ export class FaceCacheEntry {
     }
   }
 
-  needsRebake(distort: number, seed: number, gender: FaceGender = 'male'): boolean {
+  needsRebake(distort: number, seed: number, gender: FaceGender, faceId: string): boolean {
     return this.dirty
       || Math.abs(distort - this.lastDistort) > 0.04
       || seed !== this.lastSeed
       || gender !== this.lastGender
+      || faceId !== this.lastFaceId
   }
 
-  markClean(distort: number, seed: number, gender: FaceGender = 'male') {
+  markClean(distort: number, seed: number, gender: FaceGender, faceId: string) {
     this.dirty = false
     this.lastDistort = distort
     this.lastSeed = seed
     this.lastGender = gender
+    this.lastFaceId = faceId
   }
 
   markDirty() {
@@ -94,6 +103,14 @@ function h(seed: number, salt: number): number {
 
 // ── Core procedural drawing ───────────────────────────────────────────────────
 
+function skullStretch(skull: FacePresetDef['skull'], fem: boolean) {
+  switch (skull) {
+    case 'angular': return { w: fem ? 0.9 : 1.08, h: fem ? 1.02 : 0.98 }
+    case 'long':    return { w: fem ? 0.88 : 0.98, h: fem ? 1.12 : 1.08 }
+    default:        return { w: fem ? 0.92 : 1.05, h: fem ? 1.06 : 1.0 }
+  }
+}
+
 function drawFaceCore(
   ctx: CacheCtx,
   cx: number,
@@ -101,12 +118,14 @@ function drawFaceCore(
   scale: number,
   distort: number,
   seed: number,
-  gender: FaceGender = 'male',
+  gender: FaceGender,
+  face: FacePresetDef,
 ) {
   const s = scale
   const fem = gender === 'female'
-  const wStretch = (fem ? 0.92 : 1.05) + (h(seed, 1) - 0.5) * distort * 0.35
-  const hStretch = (fem ? 1.06 : 1.0) + (h(seed, 2) - 0.5) * distort * 0.28
+  const sk = skullStretch(face.skull, fem)
+  const wStretch = sk.w + (h(seed, 1) - 0.5) * distort * 0.35
+  const hStretch = sk.h + (h(seed, 2) - 0.5) * distort * 0.28
   const tiltAngle = (h(seed, 3) - 0.5) * distort * 0.18
 
   ctx.save()
@@ -128,8 +147,7 @@ function drawFaceCore(
   ctx.fill()
   ctx.stroke()
 
-  // Cheek / nose plane
-  ctx.fillStyle = 'rgba(60,45,70,0.2)'
+  ctx.fillStyle = `rgba(60,45,70,${0.12 + face.cheekDepth})`
   ctx.beginPath()
   ctx.moveTo(hw * 0.15, hh * 0.05)
   ctx.lineTo(hw * 0.35, hh * 0.35)
@@ -139,7 +157,7 @@ function drawFaceCore(
 
   ctx.strokeStyle = 'rgba(80,60,90,0.25)'
   ctx.lineWidth = 0.5
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < face.scanLines; i++) {
     const ly = -hh * 0.7 + (i / 3) * hh * 1.3
     const xoff = (h(seed, 10 + i) - 0.5) * hw * 0.3
     ctx.beginPath()
@@ -161,27 +179,25 @@ function drawFaceEyes(
   distort: number,
   seed: number,
   talkLevel: number,
+  eyes: EyesPresetDef,
 ) {
   const s = scale
-  const eyeSpread = s * (0.26 + (h(seed, 5) - 0.5) * distort * 0.12)
+  const eyeSpread = s * (0.26 + (h(seed, 5) - 0.5) * distort * 0.12) * eyes.spreadMul
   const eyeRise = s * (0.10 + (h(seed, 6) - 0.5) * distort * 0.08)
-  // One eye slightly higher than the other — wrong
   const eyeSkew = (h(seed, 7) - 0.5) * distort * s * 0.10
 
   for (let side = -1; side <= 1; side += 2) {
     const ex = cx + side * eyeSpread + trackX * s * 0.1
     const ey = cy - eyeRise + (side === 1 ? eyeSkew : 0) + trackY * s * 0.07
 
-    // Eyelid — narrow, slightly wrong shape
-    const ew = s * (0.13 + h(seed, 8 + side) * 0.03)
-    const eh = s * (0.065 + talkLevel * 0.01)
+    const ew = s * (0.13 + h(seed, 8 + side) * 0.03) * eyes.sizeMul
+    const eh = s * (0.065 + talkLevel * 0.01) * eyes.sizeMul
     ctx.fillStyle = palette.strobe
     ctx.beginPath()
-    ctx.ellipse(ex, ey, ew, eh, (h(seed, 9) - 0.5) * 0.25, 0, Math.PI * 2)
+    ctx.ellipse(ex, ey, ew, eh, eyes.lidTilt + (h(seed, 9) - 0.5) * 0.25, 0, Math.PI * 2)
     ctx.fill()
 
-    // Pupil — tracks inward
-    const pr = s * (0.04 + talkLevel * 0.015)
+    const pr = s * (0.04 + talkLevel * 0.015) * eyes.pupilMul
     ctx.fillStyle = palette.figure
     ctx.beginPath()
     ctx.arc(ex + trackX * pr * 2.5, ey + trackY * pr * 2, pr, 0, Math.PI * 2)
@@ -203,12 +219,13 @@ function drawFaceMouth(
   talkLevel: number,
   distort: number,
   seed: number,
+  mouth: MouthPresetDef,
 ) {
   const s = scale
-  const mw = s * (0.22 + (h(seed, 12) - 0.5) * distort * 0.1)
-  const mh = s * (0.04 + talkLevel * 0.16)
+  const mw = s * (0.22 + (h(seed, 12) - 0.5) * distort * 0.1) * mouth.widthMul
+  const mh = s * (0.04 + talkLevel * 0.16) * mouth.heightMul
   const mx = cx + (h(seed, 13) - 0.5) * distort * s * 0.08
-  const my = cy + s * (0.24 + (h(seed, 14) - 0.5) * distort * 0.06)
+  const my = cy + s * (0.24 + (h(seed, 14) - 0.5) * distort * 0.06 + mouth.yBias)
 
   ctx.fillStyle = palette.magenta
   ctx.beginPath()
@@ -263,9 +280,15 @@ export function drawFace(
   scale: number,
   config: FaceConfig,
   cache?: FaceCacheEntry,
+  facePreset?: FacePresetDef,
+  eyesPreset?: EyesPresetDef,
+  mouthPreset?: MouthPresetDef,
 ): void {
   const { state, talkLevel, trackX, trackY, distort, dissolveAlpha, fragmentLevel, seed, gender } = config
   const g = gender ?? 'male'
+  const face = facePreset ?? FACE_PRESETS['face.round']
+  const eyes = eyesPreset ?? EYES_PRESETS['eyes.average']
+  const mouth = mouthPreset ?? MOUTH_PRESETS['mouth.average']
 
   const baseAlpha = state === 'dissolving' ? clamp(dissolveAlpha, 0, 1) : 1
   if (baseAlpha <= 0.01) return
@@ -274,21 +297,21 @@ export function drawFace(
   ctx.globalAlpha = baseAlpha
 
   if (cache) {
-    if (cache.needsRebake(distort, seed, g)) {
+    if (cache.needsRebake(distort, seed, g, face.id)) {
       const size = cache.canvas.width
       const half = size / 2
       cache.ctx.clearRect(0, 0, size, size)
-      drawFaceCore(cache.ctx, half, half, size * 0.46, distort, seed, g)
-      cache.markClean(distort, seed, g)
+      drawFaceCore(cache.ctx, half, half, size * 0.46, distort, seed, g, face)
+      cache.markClean(distort, seed, g, face.id)
     }
     const d = scale * 2.15
     ctx.drawImage(cache.canvas as CanvasImageSource, x - scale * 1.05, y - scale * 1.05, d, d)
   } else {
-    drawFaceCore(ctx, x, y, scale, distort, seed, g)
+    drawFaceCore(ctx, x, y, scale, distort, seed, g, face)
   }
 
-  drawFaceEyes(ctx, x, y, scale, trackX, trackY, distort, seed, talkLevel)
-  drawFaceMouth(ctx, x, y, scale, talkLevel, distort, seed)
+  drawFaceEyes(ctx, x, y, scale, trackX, trackY, distort, seed, talkLevel, eyes)
+  drawFaceMouth(ctx, x, y, scale, talkLevel, distort, seed, mouth)
 
   // Fragment scatter on dissolve
   if (state === 'dissolving' && fragmentLevel > 0.05) {

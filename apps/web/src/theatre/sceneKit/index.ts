@@ -4,6 +4,8 @@ export type {
   CastFaceLayer,
   CastPlacement,
   CastRole,
+  CharacterRecipe,
+  CharacterRecipeModifiers,
   BodyGender,
   BodyStyle,
   FaceMode,

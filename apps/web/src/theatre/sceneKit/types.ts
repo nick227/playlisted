@@ -53,6 +53,21 @@ export type FaceMode = 'idle' | 'watching' | 'talking' | 'dissolving'
 
 export type CastRole = 'speaker' | 'listener' | 'ambient'
 
+/** Studio cast: one preset id per visual library (liminal doom POC). */
+export type CharacterRecipe = {
+  bodyId: string
+  faceId: string
+  hairId: string
+  eyesId: string
+  mouthId: string
+  clothesId: string
+}
+
+export type CharacterRecipeModifiers = {
+  scaleBias?: number
+  distortBias?: number
+}
+
 /** `studio` = high-fidelity face director (e.g. liminal doom); skips primitive renderer faces. */
 export type CastFaceLayer = 'primitive' | 'studio'
 
@@ -100,6 +115,9 @@ export type CastMemberDef = {
   eyeTrackY?: number
   alpha?: number
   faceMode?: FaceMode
+  /** Partial recipe — missing slots filled from seed at spawn. */
+  recipe?: Partial<CharacterRecipe>
+  recipeModifiers?: CharacterRecipeModifiers
 }
 
 export type DrawOpts = {
