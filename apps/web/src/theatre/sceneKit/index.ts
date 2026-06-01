@@ -1,6 +1,8 @@
 export type {
   CastMemberDef,
+  CastFaceLayer,
   CastPlacement,
+  CastRole,
   FaceMode,
   SceneDrawSink,
   SceneFrame,

@@ -51,13 +51,24 @@ export type CastPlacement = {
 
 export type FaceMode = 'idle' | 'watching' | 'talking' | 'dissolving'
 
+export type CastRole = 'speaker' | 'listener' | 'ambient'
+
+/** `studio` = high-fidelity face director (e.g. liminal doom); skips primitive renderer faces. */
+export type CastFaceLayer = 'primitive' | 'studio'
+
 export type CastMemberDef = {
   id: string
   placement: CastPlacement
-  /** When true, shows a speech shard tied to this face. */
+  role?: CastRole
+  faceLayer?: CastFaceLayer
+  /** When true, may deliver a timed phrase line to the viewer. */
   speaks?: boolean
   phraseSalt?: number
   phraseBank?: string
+  /** Ms after watch phase before line starts. */
+  speakDelayMs?: number
+  /** Preferred phrase presentation (studio layer). */
+  phraseFormat?: 'subtitleShard' | 'wallText' | 'tornCaption' | 'bubble'
   eyeTrackX?: number
   eyeTrackY?: number
   alpha?: number

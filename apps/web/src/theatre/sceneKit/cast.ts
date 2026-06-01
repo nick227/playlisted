@@ -28,6 +28,8 @@ function queueCastMember(
   member: CastMemberDef,
   index: number,
 ) {
+  if (member.faceLayer === 'studio') return
+
   const { x, y, z, scale } = placementToXY(stage, member.placement)
   const talk = faceTalkLevel(member, frame)
   const trackX = member.eyeTrackX ?? 0.12
