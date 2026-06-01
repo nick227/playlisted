@@ -145,7 +145,7 @@ export function CollectionView({
               <img
                 src={playlist.coverArtUrl}
                 alt=""
-                className="aspect-square w-full min-w-0 rounded-lg object-cover lg:max-w-[100%]"
+                className="aspect-square w-full min-w-0 rounded-lg object-cover max-w-[100%] sm:max-w-[180px]"
               />
             ) : (
               <div
