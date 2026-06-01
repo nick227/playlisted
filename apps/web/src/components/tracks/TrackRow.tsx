@@ -69,7 +69,7 @@ export function TrackRow({
   queueTrack,
   shareUrl,
 }: TrackRowProps) {
-  const { isActive, isPlaying } = useTrackPlayback(editMode ? undefined : recordingId);
+  const { isActive, isPlaying } = useTrackPlayback(recordingId);
   const showActions = !editMode && queueTrack && shareUrl;
   const artworkInputRef = useRef<HTMLInputElement>(null);
   const [draftTitle, setDraftTitle] = useState(title);
