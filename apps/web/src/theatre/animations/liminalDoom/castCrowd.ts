@@ -55,12 +55,9 @@ function faceMode(activity: CastActivity): CastMemberDef['faceMode'] {
 
 export function buildBarPatrons(seed: number): CastMemberDef[] {
   return [
-    patron('patron-a', 0.18, 0.82, 'drink',   seed + 10),
-    patron('patron-b', 0.32, 0.88, 'smoke',   seed + 20, { gender: 'female', style: 'punk' }),
-    patron('patron-c', 0.75, 0.86, 'hangOut', seed + 30),
-    patron('patron-d', 0.88, 0.78, 'look',    seed + 40, { showFace: true, faceMode: 'watching' }),
-    // Extra loiterer near the door — always watching
-    patron('patron-e', 0.08, 0.75, 'stand',   seed + 50, { showFace: true, faceMode: 'watching', style: 'formal' }),
+    patron('patron-a', 0.22, 0.84, 'drink',   seed + 10),
+    patron('patron-b', 0.78, 0.86, 'hangOut', seed + 30),
+    patron('patron-c', 0.88, 0.78, 'look',    seed + 40, { showFace: true, faceMode: 'watching' }),
   ]
 }
 
@@ -78,16 +75,11 @@ export function buildBandMembers(seed: number): CastMemberDef[] {
       gender: 'male',   style: 'classic',
     }),
     patron('bassist',   0.74, 0.82, 'playBass',   seed + 80, { style: 'thrift' }),
-    // A fifth figure hanging back — stand-in for a vocalist or second guitarist
-    patron('figure-bg', 0.52, 0.74, 'stand',      seed + 90, {
-      showFace: true, faceMode: 'watching',
-      placement: { nx: 0.52, ny: 0.74, scale: 0.34, z: 0.28 },
-    }),
   ]
 }
 
 export function buildDancers(seed: number, count: number): CastMemberDef[] {
-  const n = Math.min(count, 14)
+  const n = Math.min(count, 8)
   const out: CastMemberDef[] = []
   const acts: CastActivity[] = ['dance', 'dance', 'dance', 'dance', 'hangOut', 'wander', 'look', 'drink']
   for (let i = 0; i < n; i++) {
@@ -112,8 +104,8 @@ export function buildHallwayWatchers(seed: number, rows: number, perSide: number
         const depth = row / rows
         const nx = side === 0 ? 0.06 + hash01(s, 1) * 0.22 : 0.94 - hash01(s, 1) * 0.22
         const ny = 0.32 + depth * 0.48
-        // Front rows get faces more often — they're in closer view
-        const faceProbabilityThreshold = 0.25 + depth * 0.35   // front = 25%, back = 60%
+        // Only the nearest row shows faces often — back rows stay silhouettes
+        const faceProbabilityThreshold = 0.55 + depth * 0.35
         out.push(patron(`watcher-${idx}`, nx, ny,
           hash01(s, 4) > 0.6 ? 'look' : 'stand',
           s,

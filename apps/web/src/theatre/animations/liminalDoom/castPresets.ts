@@ -118,8 +118,8 @@ export function registerLiminalCastPresets() {
   registerCastPreset('liminal.bartender', [BARTENDER])
   registerCastPreset('liminal.bar', buildBarPatrons(9001))
   registerCastPreset('liminal.band', buildBandMembers(8001))
-  registerCastPreset('liminal.danceFloor', buildDancers(7001, 12))
-  registerCastPreset('liminal.hallway', buildHallwayWatchers(6001, 5, 5))
+  registerCastPreset('liminal.danceFloor', buildDancers(7001, 6))
+  registerCastPreset('liminal.hallway', buildHallwayWatchers(6001, 2, 2))
   registerCastPreset('liminal.conversation', [CONVERSATION_HOST, CONVERSATION_GUEST])
   registerCastPreset('liminal.doorWhisper', [DOOR_WHISPERER])
 }
