@@ -9,6 +9,7 @@ import {
   hashSessionToken,
   verifyPassword,
 } from "../lib/auth.js";
+import { accountInactiveMessage, isUserActive } from "../lib/publicUserFilter.js";
 import { prisma } from "../lib/prisma.js";
 import { normalizeProfileLinks } from "../lib/profileLinks.js";
 import { slugify } from "../utils/slug.js";
@@ -130,6 +131,13 @@ authRouter.post("/login", async (req, res, next) => {
       return res.status(401).json({
         error: "invalid_credentials",
         message: "Email or password is incorrect.",
+      });
+    }
+
+    if (!isUserActive(user)) {
+      return res.status(403).json({
+        error: "account_inactive",
+        message: accountInactiveMessage(user.status),
       });
     }
 

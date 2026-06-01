@@ -28,8 +28,9 @@ const STATUS_COLORS: Record<UserStatus, string> = {
 };
 
 export function AdminUsersPage() {
-  const { accessToken } = useAuth();
+  const { accessToken, user: currentUser } = useAuth();
   const api = useMemo(() => authedApi(accessToken), [accessToken]);
+  const isFullAdmin = currentUser?.role === "ADMIN";
   const [users, setUsers] = useState<UserSummary[]>([]);
 
   usePageMeta({ title: "Users — Admin" });
@@ -95,7 +96,9 @@ export function AdminUsersPage() {
         <p className="text-xs font-semibold uppercase tracking-wider text-amber-400">Admin / Users</p>
         <h2 className="mt-1 text-2xl font-bold text-white">User Management</h2>
         <p className="mt-1 text-sm text-[var(--color-text-muted)]">
-          Adjust roles, suspend accounts, and flag featured artists.
+          {isFullAdmin
+            ? "Adjust roles, suspend accounts, and flag featured artists."
+            : "Flag featured artists. Only full admins may change roles or account status."}
         </p>
       </div>
 
@@ -177,8 +180,9 @@ export function AdminUsersPage() {
                     <select
                       value={user.role}
                       onChange={(e) => update(user.id, { role: e.target.value as UserRole })}
-                      disabled={saving === user.id}
-                      className={`rounded border border-[var(--color-border)] bg-black/30 px-2 py-1 text-xs font-semibold focus:outline-none ${ROLE_COLORS[user.role as UserRole]}`}
+                      disabled={saving === user.id || !isFullAdmin}
+                      title={isFullAdmin ? undefined : "Only admins can change roles"}
+                      className={`rounded border border-[var(--color-border)] bg-black/30 px-2 py-1 text-xs font-semibold focus:outline-none disabled:opacity-50 ${ROLE_COLORS[user.role as UserRole]}`}
                     >
                       {(["LISTENER", "CREATOR", "EDITOR", "ADMIN"] as UserRole[]).map((r) => (
                         <option key={r} value={r}>{ROLE_LABELS[r]}</option>
@@ -189,8 +193,9 @@ export function AdminUsersPage() {
                     <select
                       value={user.status}
                       onChange={(e) => update(user.id, { status: e.target.value as UserStatus })}
-                      disabled={saving === user.id}
-                      className={`rounded border border-[var(--color-border)] bg-black/30 px-2 py-1 text-xs font-semibold focus:outline-none ${STATUS_COLORS[user.status as UserStatus]}`}
+                      disabled={saving === user.id || !isFullAdmin}
+                      title={isFullAdmin ? undefined : "Only admins can change account status"}
+                      className={`rounded border border-[var(--color-border)] bg-black/30 px-2 py-1 text-xs font-semibold focus:outline-none disabled:opacity-50 ${STATUS_COLORS[user.status as UserStatus]}`}
                     >
                       {(["ACTIVE", "SUSPENDED", "INVITED"] as UserStatus[]).map((s) => (
                         <option key={s} value={s}>{s}</option>

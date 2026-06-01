@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import crypto from "node:crypto";
 
+import { isUserActive } from "./publicUserFilter.js";
 import { prisma } from "./prisma.js";
 
 const SESSION_TTL_DAYS = 30;
@@ -60,7 +61,7 @@ export async function getAuthContextFromRequest(req: { headers: { authorization?
     },
   });
 
-  if (!session) {
+  if (!session || !isUserActive(session.user)) {
     return null;
   }
 

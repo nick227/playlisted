@@ -1,6 +1,7 @@
 import { Router } from "express";
 
 import { isPlaylistBrowsable } from "../lib/publicPlaylistFilter.js";
+import { isUserActive } from "../lib/publicUserFilter.js";
 import { prisma } from "../lib/prisma.js";
 
 export const homepageRouter = Router();
@@ -61,7 +62,7 @@ homepageRouter.get("/", async (_req, res, next) => {
           imageUrl: feature.imageUrl ?? feature.playlist.coverArtUrl,
           href: `/playlists/${feature.playlist.id}`,
         };
-      } else if (feature.user) {
+      } else if (feature.user && isUserActive(feature.user)) {
         const userImage =
           feature.imageUrl ??
           (feature.section === "SPOTLIGHT" || feature.section === "FEATURED_ARTIST"

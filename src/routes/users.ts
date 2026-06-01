@@ -7,6 +7,11 @@ import {
   canViewerAccessPlaylist,
   PUBLIC_PUBLISHED_PLAYLIST,
 } from "../lib/publicPlaylistFilter.js";
+import {
+  ACTIVE_USER,
+  canViewerAccessUserProfile,
+  isUserStaff,
+} from "../lib/publicUserFilter.js";
 import { prisma } from "../lib/prisma.js";
 import { assertProfileLinks, normalizeProfileLinks } from "../lib/profileLinks.js";
 import { requireAdmin } from "../lib/requireAdmin.js";
@@ -68,11 +73,14 @@ usersRouter.get("/", async (req, res, next) => {
     const role = typeof req.query.role === "string" ? req.query.role : undefined;
     const status = typeof req.query.status === "string" ? req.query.status : undefined;
     const featuredOnly = req.query.featured === "true";
+    const auth = await getAuthContextFromRequest(req);
+    const isStaff = isUserStaff(auth?.user.role);
 
     const where = {
       ...(role ? { role: role as UserRole } : {}),
       ...(status ? { status: status as UserStatus } : {}),
       ...(featuredOnly ? { isFeaturedArtist: true } : {}),
+      ...(!status && !isStaff ? ACTIVE_USER : {}),
     };
 
     const [items, total] = await Promise.all([
@@ -204,11 +212,19 @@ usersRouter.get("/by-username/:username", async (req, res, next) => {
       });
     }
 
+    const auth = await getAuthContextFromRequest(req);
+    if (!canViewerAccessUserProfile(user, { userId: auth?.user.id, role: auth?.user.role })) {
+      return res.status(404).json({
+        error: "user_not_found",
+        message: `User @${username} was not found.`,
+      });
+    }
+
     res.json(mapUserDetail(user));
 
     // Fire-and-forget: log profile view without blocking response
-    getAuthContextFromRequest(req).then((auth) => {
-      const viewerId = auth?.user.id ?? null;
+    Promise.resolve(auth).then((viewer) => {
+      const viewerId = viewer?.user.id ?? null;
       if (viewerId === user.id) return; // don't count own visits
       const referrer = typeof req.headers.referer === "string" ? req.headers.referer.slice(0, 255) : null;
       prisma.profileViewEvent.create({
@@ -315,6 +331,14 @@ usersRouter.get("/:userId", async (req, res, next) => {
     });
 
     if (!user) {
+      return res.status(404).json({
+        error: "user_not_found",
+        message: `User ${req.params.userId} was not found.`,
+      });
+    }
+
+    const auth = await getAuthContextFromRequest(req);
+    if (!canViewerAccessUserProfile(user, { userId: auth?.user.id, role: auth?.user.role })) {
       return res.status(404).json({
         error: "user_not_found",
         message: `User ${req.params.userId} was not found.`,

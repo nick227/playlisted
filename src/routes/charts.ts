@@ -4,6 +4,7 @@ import { Router } from "express";
 import { rangeToDate, type ChartRange } from "../lib/chartRange.js";
 import { BROWSABLE_RECORDING } from "../lib/publicRecordingFilter.js";
 import { PUBLIC_PUBLISHED_PLAYLIST } from "../lib/publicPlaylistFilter.js";
+import { ACTIVE_USER } from "../lib/publicUserFilter.js";
 import { prisma } from "../lib/prisma.js";
 
 export const chartsRouter = Router();
@@ -201,7 +202,7 @@ chartsRouter.get("/top-artists", async (req, res, next) => {
 
     const artistIds = rows.map((r) => r.uploaderId);
     const users = await prisma.user.findMany({
-      where: { id: { in: artistIds } },
+      where: { id: { in: artistIds }, ...ACTIVE_USER },
       select: { id: true, username: true, displayName: true, avatarUrl: true, heroImageUrl: true, role: true },
     });
 

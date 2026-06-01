@@ -7,6 +7,7 @@ import {
   PUBLIC_PUBLISHED_RECORDING,
   PUBLIC_RECORDING_TAG_COUNT_SELECT,
 } from "../lib/publicRecordingFilter.js";
+import { ACTIVE_USER } from "../lib/publicUserFilter.js";
 import {
   searchablePlaylistWhereWithTextMatch,
   songInPublicPlaylistTitleMatch,
@@ -107,7 +108,7 @@ searchRouter.get("/unified", async (req, res, next) => {
       }),
       prisma.user.findMany({
         where: {
-          status: "ACTIVE",
+          ...ACTIVE_USER,
           uploadedRecordings: { some: { visibility: "PUBLIC", status: "PUBLISHED" } },
           OR: [
             { displayName: { contains: q } },

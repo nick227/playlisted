@@ -2,12 +2,23 @@ import { UserRole, UserStatus } from "@prisma/client";
 import { Router } from "express";
 
 import { prisma } from "../../lib/prisma.js";
+import { isUserActive } from "../../lib/publicUserFilter.js";
 import { requireAdmin } from "../../lib/requireAdmin.js";
+
+const VALID_ROLES = new Set<string>(["LISTENER", "CREATOR", "EDITOR", "ADMIN"]);
+const VALID_STATUS = new Set<string>(["ACTIVE", "SUSPENDED", "INVITED"]);
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_PAGE_SIZE = 50;
 
 export const adminUsersRouter = Router();
+
+async function revokeUserSessions(userId: string) {
+  await prisma.session.updateMany({
+    where: { userId, revokedAt: null },
+    data: { revokedAt: new Date() },
+  });
+}
 
 function mapUserSummary(user: any) {
   return {
@@ -91,14 +102,41 @@ adminUsersRouter.patch("/:userId", async (req, res, next) => {
     }
 
     const data: Record<string, unknown> = {};
-    if (body.role !== undefined) data.role = body.role as UserRole;
-    if (body.status !== undefined) data.status = body.status as UserStatus;
+    if (body.role !== undefined) {
+      if (!VALID_ROLES.has(body.role)) {
+        return res.status(400).json({
+          error: "invalid_role",
+          message: `Invalid role '${body.role}'.`,
+        });
+      }
+      data.role = body.role as UserRole;
+    }
+    if (body.status !== undefined) {
+      if (!VALID_STATUS.has(body.status)) {
+        return res.status(400).json({
+          error: "invalid_status",
+          message: `Invalid status '${body.status}'.`,
+        });
+      }
+      data.status = body.status as UserStatus;
+    }
     if (body.isFeaturedArtist !== undefined) data.isFeaturedArtist = body.isFeaturedArtist;
+
+    if (Object.keys(data).length === 0) {
+      return res.status(400).json({
+        error: "invalid_body",
+        message: "At least one of role, status, or isFeaturedArtist must be provided.",
+      });
+    }
 
     const user = await prisma.user.update({
       where: { id: req.params.userId },
       data,
     });
+
+    if (body.status !== undefined && !isUserActive(user)) {
+      await revokeUserSessions(user.id);
+    }
 
     return res.json(mapUserSummary(user));
   } catch (error) {
