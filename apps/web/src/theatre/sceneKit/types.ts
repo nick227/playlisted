@@ -56,11 +56,38 @@ export type CastRole = 'speaker' | 'listener' | 'ambient'
 /** `studio` = high-fidelity face director (e.g. liminal doom); skips primitive renderer faces. */
 export type CastFaceLayer = 'primitive' | 'studio'
 
+export type BodyGender = 'male' | 'female'
+export type BodyStyle = 'punk' | 'neon' | 'classic' | 'thrift' | 'street' | 'formal'
+export type CastActivity =
+  | 'hangOut'
+  | 'stand'
+  | 'look'
+  | 'wander'
+  | 'dance'
+  | 'drink'
+  | 'smoke'
+  | 'playDrums'
+  | 'playGuitar'
+  | 'playBass'
+  | 'bartend'
+
 export type CastMemberDef = {
   id: string
   placement: CastPlacement
   role?: CastRole
   faceLayer?: CastFaceLayer
+  /** Body pose — most cast hang out; only some speak. */
+  activity?: CastActivity
+  gender?: BodyGender
+  style?: BodyStyle
+  /** Body scale (defaults to placement.scale). */
+  bodyScale?: number
+  /** Face overlay scale when showFace (defaults to placement.scale). */
+  faceScale?: number
+  /** Draw procedural face on head (default: only when speaks). */
+  showFace?: boolean
+  /** Normalized wander radius for `wander` activity. */
+  wanderRadius?: number
   /** When true, may deliver a timed phrase line to the viewer. */
   speaks?: boolean
   phraseSalt?: number

@@ -176,7 +176,7 @@ export function liminalDoomFactory(): IAnimation {
 
       if (!lp) {
         this.castDir.tick(dtMs, nowMs, audio, pf.phase, rm)
-        this.castDir.draw(this.ctx, nowMs, bounds)
+        this.castDir.draw(this.ctx, nowMs, bounds, audio)
       }
 
       // Restore scene context - return to steady screen-space
