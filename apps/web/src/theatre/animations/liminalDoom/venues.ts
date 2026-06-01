@@ -46,25 +46,44 @@ function pick<T>(arr: T[], seed: number, salt: number): T {
   return arr[Math.floor(hash01(seed, salt) * arr.length)]
 }
 
-function pushSpeakerStack(
+function pushSpeakerUnit(
   r: LiminalRenderer,
   stage: StageRect,
   frame: SceneFrame,
   nx: number,
-  scale: number,
+  baseScale: number,
+  sizeMul: number,
+  heightMul: number,
   extra: PrimitiveOptions = {},
+  z = 0.2,
 ) {
   const floorY = stage.bottom
   const spk = speakerLevel(frame)
-  const w = 56 * scale
-  const h = 100 * scale
+  const s = baseScale * sizeMul
+  const w = 56 * s
+  const h = 100 * s * heightMul
   const x = stage.left + stage.width * nx - w * 0.5
-  const y = floorY - (110 + hash01(frame.seed, 21 + nx * 10) * 20) * scale
-  r.pushSpeaker(0.2, x, y, w, h, spk, {
+  const y = floorY - (110 * heightMul + hash01(frame.seed, 21 + nx * 10) * 20) * baseScale
+  r.pushSpeaker(z, x, y, w, h, spk, {
     ...speakerOpts(frame),
     faceOnCone: frame.highs > 0.5 && spk > 0.35,
     ...extra,
   })
+}
+
+function pushSubSpeaker(
+  r: LiminalRenderer,
+  stage: StageRect,
+  frame: SceneFrame,
+  nx: number,
+  baseScale: number,
+) {
+  const spk = speakerLevel(frame)
+  const w = 96 * baseScale
+  const h = 52 * baseScale
+  const x = stage.left + stage.width * nx - w * 0.5
+  const y = stage.bottom - h - 8 * baseScale
+  r.pushSpeaker(0.18, x, y, w, h, spk, speakerOpts(frame))
 }
 
 // ── Band stage ────────────────────────────────────────────────────────────────
@@ -83,8 +102,13 @@ function composeBand(r: LiminalRenderer, stage: StageRect, frame: SceneFrame) {
     stage.width * 0.45, a + highs * 0.5, { lightTint: keyTint })
 
   const speakerJit = (hash01(seed, 20) - 0.5) * 0.08
-  pushSpeakerStack(r, stage, frame, 0.1 + speakerJit, scale)
-  pushSpeakerStack(r, stage, frame, 0.9 - speakerJit, scale, { mirror: true })
+  pushSpeakerUnit(r, stage, frame, 0.05 + speakerJit, scale, 1.1, 1)
+  pushSpeakerUnit(r, stage, frame, 0.95 - speakerJit, scale, 1.1, 1, { mirror: true })
+  pushSpeakerUnit(r, stage, frame, 0.18, scale, 0.78, 0.9)
+  pushSpeakerUnit(r, stage, frame, 0.82, scale, 0.78, 0.9, { mirror: true })
+  pushSpeakerUnit(r, stage, frame, 0.30, scale, 0.58, 0.62)
+  pushSpeakerUnit(r, stage, frame, 0.70, scale, 0.58, 0.62, { mirror: true })
+  pushSubSpeaker(r, stage, frame, 0.5, scale)
 
   // Drum kit — center, slight depth variation
   r.pushDrumKit(0.35,
@@ -123,6 +147,10 @@ function composeBar(r: LiminalRenderer, stage: StageRect, frame: SceneFrame) {
   const monH = 38 * scale
   r.pushSpeaker(0.22, counterX + 8, counterY - monH + 4, monW, monH, spk, speakerOpts(frame))
   r.pushSpeaker(0.22, counterX + counterW - monW - 8, counterY - monH + 4, monW, monH, spk, speakerOpts(frame))
+  r.pushSpeaker(0.22, counterX + counterW * 0.5 - monW * 0.5, counterY - monH + 4, monW * 1.1, monH, spk, speakerOpts(frame))
+  pushSpeakerUnit(r, stage, frame, 0.12, scale, 0.85, 0.95, {}, 0.19)
+  pushSpeakerUnit(r, stage, frame, 0.88, scale, 0.85, 0.95, { mirror: true }, 0.19)
+  pushSubSpeaker(r, stage, frame, 0.5, scale * 0.9)
 
   r.pushBarCounter(0.2, counterX, counterY, counterW, counterH)
 
@@ -174,8 +202,26 @@ function composeDanceVenue(r: LiminalRenderer, stage: StageRect, frame: SceneFra
     frame.highs * 0.5, { lightTint: rightWash })
 
   const scale = stage.width / 500
-  pushSpeakerStack(r, stage, frame, 0.08, scale * 0.95)
-  pushSpeakerStack(r, stage, frame, 0.92, scale * 0.95, { mirror: true })
+  pushSpeakerUnit(r, stage, frame, 0.04, scale, 1.05, 1)
+  pushSpeakerUnit(r, stage, frame, 0.96, scale, 1.05, 1, { mirror: true })
+  pushSpeakerUnit(r, stage, frame, 0.14, scale, 0.82, 0.92)
+  pushSpeakerUnit(r, stage, frame, 0.86, scale, 0.82, 0.92, { mirror: true })
+  pushSpeakerUnit(r, stage, frame, 0.26, scale, 0.62, 0.7)
+  pushSpeakerUnit(r, stage, frame, 0.74, scale, 0.62, 0.7, { mirror: true })
+  pushSpeakerUnit(r, stage, frame, 0.38, scale, 0.5, 0.55)
+  pushSpeakerUnit(r, stage, frame, 0.62, scale, 0.5, 0.55, { mirror: true })
+  pushSubSpeaker(r, stage, frame, 0.5, scale * 0.85)
+}
+
+// ── Hallway ───────────────────────────────────────────────────────────────────
+
+function composeHallway(r: LiminalRenderer, stage: StageRect, frame: SceneFrame) {
+  if (frame.reducedMotion) return
+  const scale = stage.width / 520
+  pushSpeakerUnit(r, stage, frame, 0.08, scale, 0.75, 0.88)
+  pushSpeakerUnit(r, stage, frame, 0.92, scale, 0.75, 0.88, { mirror: true })
+  pushSpeakerUnit(r, stage, frame, 0.35, scale, 0.5, 0.55)
+  pushSpeakerUnit(r, stage, frame, 0.65, scale, 0.5, 0.55, { mirror: true })
 }
 
 // ── Conversation ──────────────────────────────────────────────────────────────
@@ -206,6 +252,12 @@ function composeConversationVenue(r: LiminalRenderer, stage: StageRect, frame: S
     stage.top + stage.height * (0.08 + hash01(seed, 69) * 0.12),
     stage.width * (0.12 + hash01(seed, 70) * 0.05),
     stage.height * 0.32, 0.08, { alpha: 0.35 + hash01(seed, 71) * 0.2 })
+
+  const scale = stage.width / 520
+  pushSpeakerUnit(r, stage, frame, 0.1, scale, 0.7, 0.75, {}, 0.08)
+  pushSpeakerUnit(r, stage, frame, 0.9, scale, 0.7, 0.75, { mirror: true }, 0.08)
+  pushSpeakerUnit(r, stage, frame, 0.22, scale, 0.55, 0.6)
+  pushSpeakerUnit(r, stage, frame, 0.78, scale, 0.55, 0.6, { mirror: true })
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -241,7 +293,7 @@ export function registerLiminalVenues() {
   })
   registerVenue({
     id: 'hallwayCrowd',
-    compose: wrap(() => {}),
+    compose: wrap(composeHallway),
     castPresetIds: ['liminal.hallway'],
   })
 }

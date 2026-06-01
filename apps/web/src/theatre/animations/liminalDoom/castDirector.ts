@@ -3,6 +3,7 @@ import { placementToXY } from '../../sceneKit'
 import type { AudioReact, BackWallBounds, RoomPhase } from './types'
 import { clamp, hash01, lerp } from './types'
 import type { CastActivity } from './bodies'
+import { CAST_CHARACTER_SCALE } from './castScale'
 import {
   characterHeadAnchor,
   drawCharacterBody,
@@ -104,7 +105,7 @@ export class CastDirector {
       if (m.config.dissolveAlpha <= 0.01 && !m.dissolving) continue
 
       const { x, y } = placementToXY(stage, m.def.placement)
-      const bodyScale = (m.def.bodyScale ?? m.def.placement.scale) * stageScale
+      const bodyScale = (m.def.bodyScale ?? m.def.placement.scale) * stageScale * CAST_CHARACTER_SCALE
       const energy = activityEnergy(m.character.activity, audio, nowMs, m.character.seed)
       const alpha = (m.def.alpha ?? 1) * m.config.dissolveAlpha
 
@@ -116,14 +117,14 @@ export class CastDirector {
         // faceScale is expressed as a fraction of back-wall width (e.g. 0.03 = 3%).
         // Default 0.03 gives crowd faces ~27px wide on a 432px stage.
         // Named characters set their own value in CastMemberDef.faceScale.
-        const faceR = stage.width * (m.def.faceScale ?? 0.03)
+        const faceR = stage.width * (m.def.faceScale ?? 0.04) * CAST_CHARACTER_SCALE
         const breathe = m.config.state !== 'dissolving' ? idleBreath(nowMs, m.config.seed) : 1
         m.config.gender = m.character.gender
         drawCharacterFace(ctx, head.x, head.y, faceR * breathe, m.config, m.character, nowMs, m.cache)
       }
 
       if (m.phraseState && m.phraseState.alpha > 0.01) {
-        const faceScale = (m.def.faceScale ?? m.def.placement.scale) * stageScale
+        const faceScale = (m.def.faceScale ?? m.def.placement.scale) * stageScale * CAST_CHARACTER_SCALE
         const pos = phraseAnchor(stage, m.def, faceScale)
         const tailX = m.def.phraseFormat === 'bubble' ? x : undefined
         drawPhraseState(ctx, m.phraseState, pos.x, pos.y, pos.w, m.config.seed, tailX)
@@ -198,19 +199,23 @@ export class CastDirector {
     const isSpeaker = role === 'speaker' || !!def.speaks
     const isListener = role === 'listener' && !def.speaks
 
+    const allowDissolve = def.faceMode === 'dissolving' || phase === 'voidBloom'
     if (phase === 'passage' || phase === 'voidBloom') {
-      if (m.appeared && !m.dissolving) m.dissolving = true
+      // During passage: don't do the full fragment dissolve; just dim fast.
+      // During voidBloom: allow the full dissolve/fragment behavior.
+      if (phase === 'voidBloom' && m.appeared && !m.dissolving) m.dissolving = true
       m.phrase?.dissolveNow()
     }
 
-    const fadeMs = def.faceMode === 'dissolving' ? 450 : 900
-    if (show && !m.appeared) {
-      cfg.dissolveAlpha = clamp(cfg.dissolveAlpha + dtMs / fadeMs, 0, 1)
-      if (cfg.dissolveAlpha >= 1) m.appeared = true
-    }
-    if (!show && m.appeared && !m.dissolving) m.dissolving = true
+    // Presence should be stable; avoid constant fade in/out between phases.
+    // Use a short eased ramp for entering/exiting visibility without fragments.
+    const targetAlpha = show ? 1 : 0
+    const rampMs = show ? 350 : 220
+    cfg.dissolveAlpha = lerp(cfg.dissolveAlpha, targetAlpha, clamp(dtMs / rampMs, 0, 1))
+    if (cfg.dissolveAlpha >= 0.98) m.appeared = true
+    if (cfg.dissolveAlpha <= 0.02) m.appeared = false
 
-    if (m.dissolving) {
+    if (m.dissolving && allowDissolve) {
       const r = tickDissolve(cfg.dissolveAlpha, cfg.fragmentLevel, dtMs, audio.highs)
       cfg.dissolveAlpha = r.dissolveAlpha
       cfg.fragmentLevel = r.fragmentLevel
@@ -223,6 +228,9 @@ export class CastDirector {
         m.phraseRepeatCooldown = -1
         m.phraseCount = 0
       }
+    } else {
+      // No fragmenty dissolve in normal operation.
+      cfg.fragmentLevel = lerp(cfg.fragmentLevel, 0, 0.12)
     }
 
     if (shouldDrawFace(def)) {
