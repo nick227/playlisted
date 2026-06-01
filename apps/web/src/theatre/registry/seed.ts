@@ -43,20 +43,6 @@ registerPreset({
   ],
 })
 
-// Legacy 3-layer stack (lab)
-registerPreset({
-  id: 'signalOrganismClassic', label: 'Signal Organism (Classic)', category: 'lab', weight: 1,
-  reducedMotionPreset: 'quietPulse',
-  layers: [
-    { animationId: 'bioMachine', role: 'background',
-      options: { opacity: 0.50, zIndex: 100, blendMode: 'normal', intensity: 0.6, sensitivity: 0.8 } },
-    { animationId: 'speaker', role: 'subject',
-      options: { opacity: 0.90, zIndex: 101, blendMode: 'normal', intensity: 1.0, sensitivity: 1.0 } },
-    { animationId: 'spinAmp', role: 'foreground',
-      options: { opacity: 0.80, zIndex: 102, blendMode: 'screen', intensity: 1.0, sensitivity: 1.0 } },
-  ],
-})
-
 // Geometric tunnel: spin rings dominate, bio + wave layers blend underneath
 registerPreset({
   id: 'geometryTunnel', label: 'Geometry Tunnel', category: 'production', weight: 2,
