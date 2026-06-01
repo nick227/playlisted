@@ -1,7 +1,10 @@
 import type { TriggerFrame } from '../../VisualTriggers'
+import type { EvolveCtx } from './evolution'
+import { extremeRoll } from './evolution'
+import { rand01 } from './random'
 import { lerp } from './types'
 
-export type RingMode = 'drift' | 'gather' | 'orbit' | 'scatter'
+export type RingMode = 'drift' | 'gather' | 'orbit' | 'scatter' | 'wild'
 
 export type FlyingRing = {
   x: number
@@ -20,12 +23,7 @@ export type FlyingRing = {
   seed: number
 }
 
-const MAX_RINGS = 36
-
-function rand01(seed: number) {
-  const s = Math.sin(seed * 127.1 + 311.7) * 43758.5453
-  return s - Math.floor(s)
-}
+const MAX_RINGS = 40
 
 export class FlyingRingField {
   rings: FlyingRing[] = []
@@ -43,7 +41,14 @@ export class FlyingRingField {
     h: number,
     energy: number,
     hyper: boolean,
+    evo: EvolveCtx,
+    gatherUntil: number,
   ) {
+    if (evo.ritual === 'hurricane') {
+      this.spawnBurst(cx, cy, w, h, 10 + Math.floor(Math.random() * 8), 'wild', energy)
+      this.gatherWaveUntil = Math.max(this.gatherWaveUntil, now + 800)
+    }
+    if (gatherUntil > now) this.gatherWaveUntil = Math.max(this.gatherWaveUntil, gatherUntil)
     if (triggers.beat) {
       this.gatherWaveUntil = now + 520
       this.spawnBurst(cx, cy, w, h, 4 + Math.floor(energy * 6), 'gather', energy)
@@ -77,6 +82,12 @@ export class FlyingRingField {
       this.gatherWaveUntil = now + 900
       this.spawnBurst(cx, cy, w, h, 8 + Math.floor(energy * 10), 'gather', energy)
       if (hyper) this.spawnBurst(cx, cy, w, h, 6, 'orbit', energy)
+      if (extremeRoll(evo.wildness, evo.age, 0.75)) {
+        this.spawnBurst(cx, cy, w, h, 6 + Math.floor(Math.random() * 8), 'wild', energy)
+      }
+    }
+    if (extremeRoll(evo.wildness, evo.age, 0.9) && energy > 0.35) {
+      this.spawnBurst(cx, cy, w, h, 2, rand01(now) > 0.5 ? 'scatter' : 'wild', energy * 0.8)
     }
   }
 
@@ -103,13 +114,14 @@ export class FlyingRingField {
     else { x = -pad; y = rand01(seed + 4) * h }
 
     const a = Math.atan2(cy - y, cx - x) + (rand01(seed + 5) - 0.5) * 0.8
-    const speed = 40 + rand01(seed + 6) * 90 + strength * 120
+    const speed = 40 + rand01(seed + 6) * 120 + strength * 160
+    const spinMul = mode === 'wild' ? 2.8 + rand01(seed + 12) * 2 : 1
     return {
       x, y,
       vx: Math.cos(a) * speed,
       vy: Math.sin(a) * speed,
       rot: rand01(seed + 7) * Math.PI * 2,
-      spin: (rand01(seed + 8) > 0.5 ? 1 : -1) * (2.2 + strength * 4),
+      spin: (rand01(seed + 8) > 0.5 ? 1 : -1) * (2.2 + strength * 4) * spinMul,
       radius: 10 + rand01(seed + 9) * 8 + strength * 4,
       wobble: rand01(seed + 10) * Math.PI * 2,
       life: 0,
@@ -133,17 +145,25 @@ export class FlyingRingField {
     bass: number,
     reducedMotion: boolean,
     particleScale: number,
+    evo: EvolveCtx,
+    gatherUntil: number,
   ) {
-    const cap = Math.floor(MAX_RINGS * particleScale * (0.35 + phaseMix * 0.65))
+    const cap = Math.floor(MAX_RINGS * particleScale * (0.35 + phaseMix * 0.65) * evo.spawnMul)
     this.spawnCd -= dt
+    const spawnEvery = (220 + rand01(now * 0.02) * 380) / evo.spawnMul
     if (this.spawnCd <= 0 && this.rings.length < cap) {
-      this.spawnCd = 280 + rand01(now * 0.01) * 420
-      this.rings.push(this.makeRing(cx, cy, w, h, 'drift', energy * 0.5, now + this.rings.length))
+      this.spawnCd = spawnEvery
+      const mode = extremeRoll(evo.wildness, evo.age, 0.85) ? 'wild' : 'drift'
+      this.rings.push(this.makeRing(cx, cy, w, h, mode, energy * (0.4 + evo.wildness * 0.4), now + this.rings.length))
+    }
+    if (evo.ritual === 'hurricane' && this.rings.length < cap && rand01(now) > 0.92) {
+      this.rings.push(this.makeRing(cx, cy, w, h, 'wild', energy, now + this.rings.length * 3))
     }
 
-    const globalGather = now < this.gatherWaveUntil
+    const globalGather = now < this.gatherWaveUntil || now < gatherUntil
     const globalOrbit = now < this.orbitBurstUntil
-    const magnet = (0.35 + bass * 0.9 + energy * 0.5) * phaseMix
+    const magnet = (0.35 + bass * 0.9 + energy * 0.5) * phaseMix * evo.speedMul
+    const speedScale = evo.speedMul * (1 + evo.wildness * 0.6)
 
     let write = 0
     for (let i = 0; i < this.rings.length; i++) {
@@ -163,9 +183,19 @@ export class FlyingRingField {
       if (globalGather && mode === 'drift') mode = 'gather'
       if (globalOrbit && mode === 'drift') mode = 'orbit'
 
-      if (mode === 'gather') {
-        const pull = (r.gather + magnet) * (globalGather ? 1.35 : 1)
-        const swirl = Math.sin(r.wobble + now * 0.006) * 0.55
+      if (mode === 'wild') {
+        const pull = magnet * (0.6 + Math.random() * 0.8)
+        const swirl = Math.sin(r.wobble + now * 0.01) * (1.2 + evo.chaosBias)
+        r.vx += (dx * inv * pull - dy * inv * swirl) * dt * 0.18 * speedScale
+        r.vy += (dy * inv * pull + dx * inv * swirl) * dt * 0.18 * speedScale
+        r.vx += evo.chaosBias * 55 * dt * 0.001
+        r.vy += Math.sin(now * 0.007 + r.seed) * 40 * dt * 0.001
+        r.vx *= 0.982
+        r.vy *= 0.982
+        if (extremeRoll(evo.wildness, evo.age, 0.7)) r.spin *= 1.02
+      } else if (mode === 'gather') {
+        const pull = (r.gather + magnet) * (globalGather ? 1.55 : 1) * speedScale
+        const swirl = Math.sin(r.wobble + now * 0.006) * (0.55 + evo.wildness)
         r.vx += (dx * inv * pull - dy * inv * swirl) * dt * 0.14
         r.vy += (dy * inv * pull + dx * inv * swirl) * dt * 0.14
         r.vx *= 0.985
@@ -178,7 +208,7 @@ export class FlyingRingField {
       } else if (mode === 'orbit') {
         const tangentX = -dy * inv
         const tangentY = dx * inv
-        const orbitSpeed = 90 + energy * 140
+        const orbitSpeed = (90 + energy * 140) * speedScale
         r.vx = lerp(r.vx, tangentX * orbitSpeed + dx * inv * 20, 0.06)
         r.vy = lerp(r.vy, tangentY * orbitSpeed + dy * inv * 20, 0.06)
         r.gather = lerp(r.gather, 0.25, 0.02)
@@ -188,16 +218,17 @@ export class FlyingRingField {
         r.gather = lerp(r.gather, 0.35, 0.015)
         if (r.life > 400) r.mode = 'gather'
       } else {
-        r.vx += Math.sin(r.wobble) * 8 * dt * 0.001
-        r.vy += Math.cos(r.wobble * 1.3) * 6 * dt * 0.001 - (reducedMotion ? 0 : 12 * dt * 0.001)
+        r.vx += Math.sin(r.wobble) * 12 * dt * 0.001 * speedScale
+        r.vy += Math.cos(r.wobble * 1.3) * 9 * dt * 0.001 - (reducedMotion ? 0 : 14 * dt * 0.001)
+        r.vx += evo.chaosBias * 22 * dt * 0.001
         r.vx *= 0.998
         r.vy *= 0.998
-        r.gather = lerp(r.gather, 0.12 + bass * 0.2, 0.01)
+        r.gather = lerp(r.gather, 0.12 + bass * 0.2 + evo.wildness * 0.15, 0.01)
         r.vx += dx * inv * r.gather * dt * 0.04
         r.vy += dy * inv * r.gather * dt * 0.04
       }
 
-      const s = dt * 0.001
+      const s = dt * 0.001 * speedScale
       r.x += r.vx * s
       r.y += r.vy * s
 

@@ -8,6 +8,9 @@ export type CellNode = {
   r: number
   heat: number
   splitHold: number
+  stress: number
+  driftX: number
+  driftY: number
 }
 
 export type EchoRing = { t: number; life: number; strength: number }

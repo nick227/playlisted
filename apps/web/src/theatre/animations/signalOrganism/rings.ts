@@ -16,11 +16,13 @@ export function drawRings(
   shatterUntil: number,
   now: number,
   beat: boolean,
+  speedMul = 1,
+  chaosBias = 0,
 ) {
   const ringBase = bass * 240 + mids * 120
   const alpha = clamp(0.12 + (mids * 0.85 + highs * 0.65) * phaseMix, 0.08, 0.92)
   const lineW = 2 + bass * 10
-  const rotateBase = time * 0.18
+  const rotateBase = time * 0.18 * speedMul + chaosBias * 0.15
   const pi2 = Math.PI * 2
   const shatter = now < shatterUntil
   const stepOsc = stepped(Math.sin(frameHold(now, 90) / 600), 5)

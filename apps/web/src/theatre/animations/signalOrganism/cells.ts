@@ -1,6 +1,9 @@
 import type { CellNode } from './types'
+import type { EvolveCtx } from './evolution'
 import { clamp, lerp } from './types'
 import { frameHold } from '../../stopMotion'
+import { extremeRoll } from './evolution'
+import { randSigned } from './random'
 
 export const GRID_COLS = 4
 export const GRID_ROWS = 3
@@ -10,7 +13,7 @@ export function buildCells(w: number, h: number): CellNode[] {
   for (let gy = 0; gy < GRID_ROWS; gy++) {
     for (let gx = 0; gx < GRID_COLS; gx++) {
       cells.push({
-        gx, gy, x: 0, y: 0, r: 22, heat: 0, splitHold: 0,
+        gx, gy, x: 0, y: 0, r: 22, heat: 0, splitHold: 0, stress: 0, driftX: 0, driftY: 0,
       })
     }
   }
@@ -29,6 +32,30 @@ export function layoutCells(cells: CellNode[], w: number, h: number) {
   }
 }
 
+export function applyCensusRitual(cells: CellNode[]) {
+  for (let i = 0; i < cells.length; i++) {
+    const c = cells[i]
+    c.splitHold = 8 + Math.floor(Math.random() * 8)
+    c.r *= 1.08 + Math.random() * 0.4
+    c.heat = clamp(c.heat + 0.25 + Math.random() * 0.55, 0, 1)
+    c.stress = clamp(c.stress + 0.2, 0, 1)
+  }
+}
+
+export function applyMutantRitual(cells: CellNode[]) {
+  const patient = cells[Math.floor(Math.random() * cells.length)]
+  for (const c of cells) {
+    if (Math.random() < 0.35) {
+      c.heat = 1
+      c.r *= 1.2 + Math.random() * 0.5
+    }
+    c.driftX = lerp(c.driftX, randSigned(c.gx + c.gy) * 18, 0.08)
+    c.driftY = lerp(c.driftY, randSigned(c.gx * 2) * 14, 0.08)
+  }
+  patient.r *= 1.6
+  patient.stress = 1
+}
+
 export function updateCells(
   cells: CellNode[],
   bass: number,
@@ -37,16 +64,38 @@ export function updateCells(
   metabolic: boolean,
   chaos: boolean,
   now: number,
+  evo: EvolveCtx,
 ) {
   const stepT = frameHold(now, 110)
-  const grow = (bass * 210 + mids * 90) * phaseMix
+  const grow = (bass * 210 + mids * 90) * phaseMix * evo.sizeMul
+  const lerpRate = metabolic ? 0.35 : 0.1 + evo.age * 0.04
+  const wild = evo.wildness
+
   for (let i = 0; i < cells.length; i++) {
     const c = cells[i]
-    const wobble = Math.abs(Math.sin(stepT / (320 + i * 38))) * 48
-    c.r = lerp(c.r, 18 + wobble + grow * 0.35, metabolic ? 0.35 : 0.12)
+    const wobble = Math.abs(Math.sin(stepT / (320 + i * 38))) * 48 * evo.sizeMul
+    const targetR = (18 + wobble + grow * 0.35) * (1 + c.stress * 0.15)
+    c.r = lerp(c.r, targetR, lerpRate)
     if (c.splitHold > 0) c.splitHold -= 1
-    if (chaos && Math.random() < 0.04) c.heat = clamp(c.heat + 0.35, 0, 1)
-    c.heat = lerp(c.heat, chaos ? 0.5 : 0, 0.02)
+
+    if (chaos && extremeRoll(wild, evo.age, 0.88)) {
+      c.heat = clamp(c.heat + 0.35 + Math.random() * 0.4, 0, 1)
+      c.stress = clamp(c.stress + 0.15, 0, 1)
+    }
+    if (extremeRoll(wild * 0.7, evo.age, 0.94)) {
+      c.driftX = lerp(c.driftX, randSigned(now + i) * (8 + wild * 22), 0.06)
+      c.driftY = lerp(c.driftY, randSigned(now + i * 2) * (6 + wild * 18), 0.06)
+    } else {
+      c.driftX = lerp(c.driftX, 0, 0.03)
+      c.driftY = lerp(c.driftY, 0, 0.03)
+    }
+
+    c.heat = lerp(c.heat, chaos ? 0.35 + wild * 0.25 : 0, 0.018 + wild * 0.01)
+    if (evo.isExhaust || evo.ritual === 'mutant') {
+      c.stress = lerp(c.stress, 0.35 + wild * 0.2, 0.008)
+    } else {
+      c.stress = lerp(c.stress, 0, 0.006)
+    }
     for (let j = 0; j < cells.length; j++) {
       if (i === j) continue
       const o = cells[j]
@@ -68,9 +117,10 @@ export function drawVeins(
   veinPulse: number,
   mids: number,
   phaseMix: number,
+  veinBoost = 0,
 ) {
-  if (phaseMix < 0.35 && veinPulse < 0.05) return
-  const alpha = clamp(0.08 + veinPulse * 0.5 + mids * 0.4, 0, 0.75) * phaseMix
+  if (phaseMix < 0.28 && veinPulse < 0.05 && veinBoost < 0.1) return
+  const alpha = clamp(0.08 + veinPulse * 0.5 + mids * 0.4 + veinBoost * 0.35, 0, 0.85) * phaseMix
   ctx.strokeStyle = `rgba(90,220,160,${alpha})`
   ctx.lineWidth = 1.2 + veinPulse * 2.5
   const at = (gx: number, gy: number) => cells[gy * GRID_COLS + gx]
@@ -107,8 +157,8 @@ export function drawCells(
     const heat = c.heat
     const fillA = clamp(0.12 + mids * 1.1 * phaseMix, 0.1, 0.9)
     const r = c.r
-    const cx = c.x + 60
-    const cy = c.y + 60
+    const cx = c.x + 60 + c.driftX
+    const cy = c.y + 60 + c.driftY
     const grad = ctx.createRadialGradient(cx, cy, r * 0.12, cx, cy, r)
     grad.addColorStop(0, `rgba(${sh + heat * 80},${sf},${st - heat * 40},${fillA})`)
     grad.addColorStop(1, `rgba(12,22,32,${clamp(0.55 - bass * 0.4, 0.1, 0.6)})`)

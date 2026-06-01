@@ -1,11 +1,16 @@
 import { AnimationContext, IAnimation } from '../IAnimation'
 import CanvasAnimation from '../CanvasAnimation'
 import { frameHold, stepped } from '../stopMotion'
+import { generateShapeDescriptor, renderShape } from '../shapeGenerator'
 
 export function speakerFactory(): IAnimation {
   class SpeakerAnim extends CanvasAnimation {
     private lastGlowKey = ''
     private glowGrad: CanvasGradient | null = null
+    private buildProgress = 0
+    private stageOffset = Math.random() * Math.PI * 2
+    private shapeDescriptor = generateShapeDescriptor(Math.random() * 99999)
+    private shapeRotation = 0
 
     constructor() {
       super({ defaultOpacity: 0.97, defaultZIndex: 101, defaultBlendMode: 'normal', useEffects: true })
@@ -31,7 +36,11 @@ export function speakerFactory(): IAnimation {
       const env = features?.env || features?.rms || 0
       const now = context.shared?.time?.elapsed ?? performance.now()
 
-      const pulseFactor = 1 + Math.max(bass, env) * 3.8
+      const targetBuild = Math.min(1, Math.max(0, bass * 0.65 + mids * 0.25 + env * 0.18))
+      this.buildProgress += (targetBuild - this.buildProgress) * 0.032
+      const stageGlow = 0.85 + this.buildProgress * 0.35
+      const stageRing = 0.18 + this.buildProgress * 0.42
+      const pulseFactor = 1 + Math.max(bass, env) * 3.8 * (0.88 + this.buildProgress * 0.22)
       const pulseTime = frameHold(now, 100)
       const pulse = 1 + stepped(Math.sin(pulseTime / 900) * 0.5 + 0.5, 4) * 0.18
       const baseR = Math.min(w, h) * 0.15
@@ -64,11 +73,11 @@ export function speakerFactory(): IAnimation {
       }
 
       const warmth = Math.min(40, bass * 120)
-      const glowKey = `${cx}|${cy}|${r}|${warmth}`
+      const glowKey = `${cx}|${cy}|${r}|${warmth}|${this.buildProgress.toFixed(3)}`
       if (glowKey !== this.lastGlowKey || !this.glowGrad) {
         this.glowGrad = this.ctx.createRadialGradient(cx, cy, r * 0.05, cx, cy, r)
-        this.glowGrad.addColorStop(0, `rgba(${220 + warmth},${190 - warmth * 0.4},100,${Math.min(0.95, 0.45 + bass * 0.8)})`)
-        this.glowGrad.addColorStop(0.5, `rgba(${100 + warmth},80,${180 - warmth},${Math.min(0.6, 0.15 + bass * 0.6)})`)
+        this.glowGrad.addColorStop(0, `rgba(${220 + warmth},${190 - warmth * 0.4},${100 + this.buildProgress * 24},${Math.min(0.95, (0.45 + bass * 0.8) * stageGlow)})`)
+        this.glowGrad.addColorStop(0.5, `rgba(${100 + warmth + this.buildProgress * 18},80,${180 - warmth},${Math.min(0.6, (0.15 + bass * 0.6) * stageGlow)})`)
         this.glowGrad.addColorStop(1, 'rgba(20,20,30,0)')
         this.lastGlowKey = glowKey
       }
@@ -77,20 +86,43 @@ export function speakerFactory(): IAnimation {
       this.ctx.fillStyle = this.glowGrad
       this.ctx.fill()
 
+      if (this.buildProgress > 0.12) {
+        this.ctx.beginPath()
+        this.ctx.strokeStyle = `rgba(160,210,255,${stageRing * (0.04 + this.buildProgress * 0.10)})`
+        this.ctx.lineWidth = 2 + this.buildProgress * 2
+        this.ctx.arc(cx, cy, r * (1.24 + this.buildProgress * 0.18), 0, Math.PI * 2)
+        this.ctx.stroke()
+      }
+
+      // ── Center shape: rotates and bounces with music ──────────────────────
+      this.shapeRotation += (mids * 0.018 + bass * 0.008) * (1 + this.buildProgress * 0.35)
+      const shapeBounce = 1 + bass * 0.22 + (triggers.beat ? 0.15 : 0)
+      const shapeRadius = r * 0.42 * shapeBounce
+      const shapeEnergy = Math.min(1, bass * 1.6 + mids * 0.4)
+      renderShape(this.shapeDescriptor, {
+        ctx: this.ctx,
+        cx,
+        cy,
+        baseRadius: shapeRadius,
+        rotation: this.shapeRotation,
+        time: now,
+        energy: shapeEnergy,
+      })
+
       if (this.allowsHeavyParticles(context)) {
         const pScale = this.particleScale(context)
-        const particles = Math.floor(32 * pScale)
+        const particles = Math.floor(18 * pScale + this.buildProgress * 18)
         if (particles > 0) {
-          const phaseA = now / 2200
+          const phaseA = now / 2200 + this.stageOffset
           const phaseB = now / 180
-          const particleAlpha = Math.min(0.95, 0.08 + bass * 1.1 + highs * 0.7)
+          const particleAlpha = Math.min(0.95, 0.08 + bass * 1.1 + highs * 0.7 + this.buildProgress * 0.18)
           this.ctx.fillStyle = `rgba(200,225,255,${particleAlpha})`
           for (let i = 0; i < particles; i++) {
             const a = (i / particles) * Math.PI * 2 + phaseA
-            const pr = r + 12 + Math.sin(phaseB + i) * 14 + (bass + mids * 0.7) * 300
+            const pr = r + 10 + Math.sin(phaseB + i) * (12 + this.buildProgress * 6) + (bass + mids * 0.7) * 260
             const px = cx + Math.cos(a) * pr
             const py = cy + Math.sin(a) * pr
-            const size = 2 + bass * 18 + highs * 9
+            const size = 2 + bass * 18 + highs * 9 + this.buildProgress * 1.6
             this.ctx.beginPath()
             this.ctx.arc(px, py, size, 0, Math.PI * 2)
             this.ctx.fill()
