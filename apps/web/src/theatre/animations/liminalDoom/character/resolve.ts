@@ -66,13 +66,17 @@ export function resolveRecipe(
   }
 }
 
+const FEMALE_HAIR_IDS = ['hair.bob', 'hair.long', 'hair.bun', 'hair.crop', 'hair.wavy']
+const MALE_HAIR_IDS = ['hair.crop', 'hair.buzz', 'hair.spiky', 'hair.mohawk', 'hair.slick']
+
 function pickHairForBody(body: { gender: string }, seed: number): string {
-  if (body.gender === 'female') {
-    const f = ['hair.bob', 'hair.long', 'hair.bun', 'hair.crop']
-    return f[Math.floor(hash01(seed, 3) * f.length)]
-  }
-  const m = ['hair.crop', 'hair.buzz', 'hair.spiky', 'hair.mohawk']
-  return m[Math.floor(hash01(seed, 3) * m.length)]
+  const pool = body.gender === 'female' ? FEMALE_HAIR_IDS : MALE_HAIR_IDS
+  return pool[Math.floor(hash01(seed, 3) * pool.length)]
+}
+
+/** Deterministic full recipe from seed (crowd / debug). */
+export function buildRecipeFromSeed(seed: number): CharacterRecipe {
+  return resolveRecipe(seed).recipe
 }
 
 function pickBodyForGender(gender: 'male' | 'female', seed: number): string {

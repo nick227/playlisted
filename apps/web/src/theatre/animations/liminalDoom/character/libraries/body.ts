@@ -39,6 +39,14 @@ export const BODY_PRESETS: Record<string, BodyPresetDef> = {
     id: 'body.broad-f', label: 'Broad F', gender: 'female', build: 'broad',
     shoulderMul: 1.06, hipMul: 1.1, torsoMul: 1.02, legMul: 0.98, headMul: 1,
   },
+  'body.lanky-m': {
+    id: 'body.lanky-m', label: 'Lanky M', gender: 'male', build: 'slim',
+    shoulderMul: 0.86, hipMul: 0.9, torsoMul: 1.08, legMul: 1.12, headMul: 0.92,
+  },
+  'body.curvy-f': {
+    id: 'body.curvy-f', label: 'Curvy F', gender: 'female', build: 'broad',
+    shoulderMul: 0.98, hipMul: 1.14, torsoMul: 0.96, legMul: 0.94, headMul: 1.02,
+  },
 }
 
 export const BODY_PRESET_IDS = Object.keys(BODY_PRESETS)

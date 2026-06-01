@@ -4,6 +4,7 @@ import type { FacePresetDef } from './character/libraries/face'
 import { FACE_PRESETS } from './character/libraries/face'
 import type { MouthPresetDef } from './character/libraries/mouth'
 import { MOUTH_PRESETS } from './character/libraries/mouth'
+import { blinkOpen, saccadeJitter } from './character/faceLive'
 import { palette } from './palette'
 import { clamp, lerp } from './types'
 
@@ -158,7 +159,7 @@ function drawFaceCore(
   ctx.strokeStyle = 'rgba(80,60,90,0.25)'
   ctx.lineWidth = 0.5
   for (let i = 0; i < face.scanLines; i++) {
-    const ly = -hh * 0.7 + (i / 3) * hh * 1.3
+    const ly = -hh * 0.7 + (Math.max(1, face.scanLines - 1) > 0 ? i / (face.scanLines - 1) : 0) * hh * 1.3
     const xoff = (h(seed, 10 + i) - 0.5) * hw * 0.3
     ctx.beginPath()
     ctx.moveTo(-hw + xoff, ly)
@@ -166,7 +167,32 @@ function drawFaceCore(
     ctx.stroke()
   }
 
+  drawBrows(ctx, hw, hh, seed, face, gender)
+
   ctx.restore()
+}
+
+function drawBrows(
+  ctx: CacheCtx,
+  hw: number,
+  hh: number,
+  seed: number,
+  face: FacePresetDef,
+  gender: FaceGender,
+) {
+  const bw = face.browWeight * (gender === 'female' ? 0.9 : 1)
+  const y = -hh * 0.42
+  ctx.strokeStyle = palette.faceLine
+  ctx.lineWidth = Math.max(1, hw * 0.06 * bw)
+  ctx.lineCap = 'round'
+  for (const side of [-1, 1]) {
+    const lift = side === 1 ? (h(seed, 16) - 0.5) * hh * 0.06 : 0
+    const arch = side * hw * 0.22
+    ctx.beginPath()
+    ctx.moveTo(side * hw * 0.12, y + lift)
+    ctx.quadraticCurveTo(side * hw * 0.38, y - hh * 0.06 * bw + lift, arch, y + lift * 0.5)
+    ctx.stroke()
+  }
 }
 
 function drawFaceEyes(
@@ -180,34 +206,39 @@ function drawFaceEyes(
   seed: number,
   talkLevel: number,
   eyes: EyesPresetDef,
+  timeMs: number,
 ) {
   const s = scale
+  const blink = blinkOpen(timeMs, seed)
+  const sac = saccadeJitter(timeMs, seed)
+  const tx = trackX + sac.x
+  const ty = trackY + sac.y
   const eyeSpread = s * (0.26 + (h(seed, 5) - 0.5) * distort * 0.12) * eyes.spreadMul
   const eyeRise = s * (0.10 + (h(seed, 6) - 0.5) * distort * 0.08)
   const eyeSkew = (h(seed, 7) - 0.5) * distort * s * 0.10
 
   for (let side = -1; side <= 1; side += 2) {
-    const ex = cx + side * eyeSpread + trackX * s * 0.1
-    const ey = cy - eyeRise + (side === 1 ? eyeSkew : 0) + trackY * s * 0.07
+    const ex = cx + side * eyeSpread + tx * s * 0.1
+    const ey = cy - eyeRise + (side === 1 ? eyeSkew : 0) + ty * s * 0.07
 
     const ew = s * (0.13 + h(seed, 8 + side) * 0.03) * eyes.sizeMul
-    const eh = s * (0.065 + talkLevel * 0.01) * eyes.sizeMul
+    const eh = s * (0.065 + talkLevel * 0.01) * eyes.sizeMul * blink
     ctx.fillStyle = palette.strobe
     ctx.beginPath()
     ctx.ellipse(ex, ey, ew, eh, eyes.lidTilt + (h(seed, 9) - 0.5) * 0.25, 0, Math.PI * 2)
     ctx.fill()
 
-    const pr = s * (0.04 + talkLevel * 0.015) * eyes.pupilMul
-    ctx.fillStyle = palette.figure
-    ctx.beginPath()
-    ctx.arc(ex + trackX * pr * 2.5, ey + trackY * pr * 2, pr, 0, Math.PI * 2)
-    ctx.fill()
-
-    // Specular catch
-    ctx.fillStyle = 'rgba(240,230,255,0.55)'
-    ctx.beginPath()
-    ctx.arc(ex + pr * 0.5, ey - pr * 0.4, pr * 0.35, 0, Math.PI * 2)
-    ctx.fill()
+    if (blink > 0.35) {
+      const pr = s * (0.04 + talkLevel * 0.015) * eyes.pupilMul
+      ctx.fillStyle = palette.figure
+      ctx.beginPath()
+      ctx.arc(ex + tx * pr * 2.5, ey + ty * pr * 2, pr, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.fillStyle = 'rgba(240,230,255,0.55)'
+      ctx.beginPath()
+      ctx.arc(ex + pr * 0.5, ey - pr * 0.4, pr * 0.35, 0, Math.PI * 2)
+      ctx.fill()
+    }
   }
 }
 
@@ -227,9 +258,12 @@ function drawFaceMouth(
   const mx = cx + (h(seed, 13) - 0.5) * distort * s * 0.08
   const my = cy + s * (0.24 + (h(seed, 14) - 0.5) * distort * 0.06 + mouth.yBias)
 
-  ctx.fillStyle = palette.magenta
+  ctx.strokeStyle = 'rgba(60,30,50,0.55)'
+  ctx.lineWidth = Math.max(0.5, s * 0.02)
   ctx.beginPath()
   ctx.ellipse(mx, my, mw, Math.max(1, mh), (h(seed, 15) - 0.5) * 0.15, 0, Math.PI * 2)
+  ctx.stroke()
+  ctx.fillStyle = palette.magenta
   ctx.fill()
 
   // Teeth sliver when talking hard
@@ -283,6 +317,7 @@ export function drawFace(
   facePreset?: FacePresetDef,
   eyesPreset?: EyesPresetDef,
   mouthPreset?: MouthPresetDef,
+  timeMs = 0,
 ): void {
   const { state, talkLevel, trackX, trackY, distort, dissolveAlpha, fragmentLevel, seed, gender } = config
   const g = gender ?? 'male'
@@ -310,7 +345,7 @@ export function drawFace(
     drawFaceCore(ctx, x, y, scale, distort, seed, g, face)
   }
 
-  drawFaceEyes(ctx, x, y, scale, trackX, trackY, distort, seed, talkLevel, eyes)
+  drawFaceEyes(ctx, x, y, scale, trackX, trackY, distort, seed, talkLevel, eyes, timeMs)
   drawFaceMouth(ctx, x, y, scale, talkLevel, distort, seed, mouth)
 
   // Fragment scatter on dissolve

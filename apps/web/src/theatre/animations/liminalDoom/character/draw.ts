@@ -44,7 +44,8 @@ export function drawCharacterFace(
   scale: number,
   config: FaceConfig,
   c: ResolvedCharacter,
+  timeMs: number,
   cache?: FaceCacheEntry,
 ) {
-  drawFace(ctx, x, y, scale, config, cache, c.face, c.eyes, c.mouth)
+  drawFace(ctx, x, y, scale, config, cache, c.face, c.eyes, c.mouth, timeMs)
 }

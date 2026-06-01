@@ -119,7 +119,7 @@ export class CastDirector {
         const faceR = stage.width * (m.def.faceScale ?? 0.03)
         const breathe = m.config.state !== 'dissolving' ? idleBreath(nowMs, m.config.seed) : 1
         m.config.gender = m.character.gender
-        drawCharacterFace(ctx, head.x, head.y, faceR * breathe, m.config, m.character, m.cache)
+        drawCharacterFace(ctx, head.x, head.y, faceR * breathe, m.config, m.character, nowMs, m.cache)
       }
 
       if (m.phraseState && m.phraseState.alpha > 0.01) {

@@ -16,6 +16,8 @@ export const CLOTHES_PRESETS: Record<string, ClothesPresetDef> = {
   'clothes.thrift':  { id: 'clothes.thrift',  label: 'Thrift',  style: 'thrift' },
   'clothes.street':  { id: 'clothes.street',  label: 'Street',  style: 'street', hasJacket: true },
   'clothes.formal':  { id: 'clothes.formal',  label: 'Formal',  style: 'formal', hasJacket: true, hasCollar: true, hasBelt: true },
+  'clothes.work':    { id: 'clothes.work',    label: 'Work',    style: 'street', hasJacket: true },
+  'clothes.rave':    { id: 'clothes.rave',    label: 'Rave',    style: 'neon' },
 }
 
 export const CLOTHES_PRESET_IDS = Object.keys(CLOTHES_PRESETS)

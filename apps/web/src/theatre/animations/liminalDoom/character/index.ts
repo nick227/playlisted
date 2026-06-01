@@ -1,5 +1,9 @@
 export type { CharacterRecipe, CharacterModifiers, ResolvedCharacter } from './types'
-export { resolveRecipe, resolveCharacterFromDef, recipeDistortBase } from './resolve'
+export {
+  resolveRecipe, resolveCharacterFromDef, recipeDistortBase, buildRecipeFromSeed,
+} from './resolve'
+export { PRESET_CATALOG, presetCatalogJson } from './catalog'
+export type { PresetCatalog, PresetCatalogEntry } from './catalog'
 export { drawCharacterBody, drawCharacterFace, characterHeadAnchor, toBodyLook } from './draw'
 export { BODY_PRESETS, BODY_PRESET_IDS } from './libraries/body'
 export { CLOTHES_PRESETS, CLOTHES_PRESET_IDS } from './libraries/clothes'

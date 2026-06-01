@@ -14,6 +14,8 @@ export const HAIR_PRESETS: Record<string, HairPresetDef> = {
   'hair.spiky':   { id: 'hair.spiky',   label: 'Spiky',   hairStyle: 'spiky' },
   'hair.mohawk':  { id: 'hair.mohawk',  label: 'Mohawk',  hairStyle: 'mohawk' },
   'hair.bun':     { id: 'hair.bun',     label: 'Bun',     hairStyle: 'bun' },
+  'hair.wavy':    { id: 'hair.wavy',    label: 'Wavy',    hairStyle: 'long' },
+  'hair.slick':   { id: 'hair.slick',   label: 'Slick',   hairStyle: 'crop' },
 }
 
 export const HAIR_PRESET_IDS = Object.keys(HAIR_PRESETS)
