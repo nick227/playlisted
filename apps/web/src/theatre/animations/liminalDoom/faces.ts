@@ -6,7 +6,13 @@ import type { MouthPresetDef } from './character/libraries/mouth'
 import { MOUTH_PRESETS } from './character/libraries/mouth'
 import { blinkOpen, saccadeJitter } from './character/faceLive'
 import type { HairStyle } from './fashion'
+import { resolveDevicePixelRatio } from '../../resolveDpr'
 import { clamp, lerp } from './types'
+
+/** Max baked head diameter in backing-store pixels (memory cap per cast member). */
+const FACE_CACHE_MAX_PX = 320
+/** Below this on-screen diameter we bake to an offscreen bitmap; above, draw vector at full size. */
+const FACE_CACHE_MAX_DISPLAY_D = 168
 
 export type FaceState = 'idle' | 'watching' | 'talking' | 'dissolving'
 
@@ -86,6 +92,15 @@ export class FaceCacheEntry {
   }
 
   markDirty() {
+    this.dirty = true
+  }
+
+  /** Resize bake buffer to match on-screen face size (avoids blurry upscale). */
+  ensureBakePixels(backingStoreDiameter: number) {
+    const size = Math.min(FACE_CACHE_MAX_PX, Math.max(64, Math.ceil(backingStoreDiameter)))
+    if (this.canvas.width === size) return
+    this.canvas.width = size
+    this.canvas.height = size
     this.dirty = true
   }
 }
@@ -524,7 +539,13 @@ export function drawFace(
   ctx.save()
   ctx.globalAlpha = baseAlpha
 
-  if (cache) {
+  const displayD = scale * 2.15
+  const dpr = resolveDevicePixelRatio()
+  const useBitmapCache = cache && displayD <= FACE_CACHE_MAX_DISPLAY_D
+
+  if (useBitmapCache && cache) {
+    const bakePx = Math.ceil(displayD * dpr)
+    cache.ensureBakePixels(bakePx)
     if (cache.needsRebake(distort, seed, g, face.id)) {
       const size = cache.canvas.width
       const half = size / 2
@@ -532,8 +553,12 @@ export function drawFace(
       drawFaceCore(cache.ctx, half, half, size * 0.46, distort, seed, g, face)
       cache.markClean(distort, seed, g, face.id)
     }
-    const d = scale * 2.15
-    ctx.drawImage(cache.canvas as CanvasImageSource, x - scale * 1.05, y - scale * 1.05, d, d)
+    const destX = x - scale * 1.05
+    const destY = y - scale * 1.05
+    const prevSmooth = ctx.imageSmoothingEnabled
+    ctx.imageSmoothingEnabled = false
+    ctx.drawImage(cache.canvas as CanvasImageSource, destX, destY, displayD, displayD)
+    ctx.imageSmoothingEnabled = prevSmooth
   } else {
     drawFaceCore(ctx, x, y, scale, distort, seed, g, face)
   }
