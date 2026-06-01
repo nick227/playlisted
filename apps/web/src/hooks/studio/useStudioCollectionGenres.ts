@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 
+import type { GenreOption } from "@/components/studio/studioCollectionUtils";
 import { useAuthoringGenres } from "@/hooks/useLibrary";
 
 import type { PlaylistDetailWithTags, RecordingWithTags } from "./types";
@@ -19,10 +20,16 @@ export function useStudioCollectionGenres({
   const queryClient = useQueryClient();
   const genresQuery = useAuthoringGenres();
   const [selectedGenreId, setSelectedGenreId] = useState<string | null>(null);
+  const [trackGenreErrorById, setTrackGenreErrorById] = useState<Record<string, string | undefined>>({});
 
-  const availableGenres = useMemo(() => {
+  const availableGenres = useMemo((): GenreOption[] => {
     const raw = genresQuery.data;
-    return Array.isArray(raw) ? raw : raw?.data ?? [];
+    const list = Array.isArray(raw) ? raw : raw?.data ?? [];
+    return list.map((genre) => ({
+      id: genre.id,
+      name: genre.name,
+      slug: genre.slug,
+    }));
   }, [genresQuery.data]);
 
   const playlistGenreIds = useMemo(
@@ -39,6 +46,13 @@ export function useStudioCollectionGenres({
   useEffect(() => {
     setSelectedGenreId(currentGenreId);
   }, [currentGenreId]);
+
+  const playlistGenreSlug = useMemo(() => {
+    if (selectedGenreId) {
+      return availableGenres.find((genre) => genre.id === selectedGenreId)?.slug ?? null;
+    }
+    return playlist?.tags?.find((tag) => tag.kind === "GENRE")?.slug ?? null;
+  }, [selectedGenreId, availableGenres, playlist?.tags]);
 
   const updateRecordingTagsMutation = useMutation({
     mutationFn: async ({ recordingId, tagSlugs }: { recordingId: string; tagSlugs: string[] }) => {
@@ -66,6 +80,7 @@ export function useStudioCollectionGenres({
     onSuccess: ({ tags }, variables) => {
       if (!playlist) return;
 
+      setTrackGenreErrorById((prev) => ({ ...prev, [variables.recordingId]: undefined }));
       setDraft({
         ...playlist,
         recordings: playlist.recordings.map((recording) =>
@@ -75,7 +90,20 @@ export function useStudioCollectionGenres({
       queryClient.invalidateQueries({ queryKey: ["playlist", playlistId] });
       queryClient.invalidateQueries({ queryKey: ["playlist", playlistId, "edit"] });
     },
+    onError: (error, variables) => {
+      setTrackGenreErrorById((prev) => ({
+        ...prev,
+        [variables.recordingId]: error instanceof Error ? error.message : "Failed to update genre.",
+      }));
+    },
   });
+
+  const trackGenreSavingById = useMemo(() => {
+    if (!updateRecordingTagsMutation.isPending || !updateRecordingTagsMutation.variables) {
+      return {};
+    }
+    return { [updateRecordingTagsMutation.variables.recordingId]: true };
+  }, [updateRecordingTagsMutation.isPending, updateRecordingTagsMutation.variables]);
 
   const setPlaylistTagsMutation = useMutation({
     mutationFn: async ({ genreId, preservedTagIds }: { genreId: string | null; preservedTagIds: string[] }) => {
@@ -116,9 +144,12 @@ export function useStudioCollectionGenres({
   return {
     availableGenres,
     selectedGenreId,
+    playlistGenreSlug,
     genreLoading: genresQuery.isLoading,
     genreSaving: setPlaylistTagsMutation.isPending,
     updateRecordingTagsMutation,
+    trackGenreSavingById,
+    trackGenreErrorById,
     handleGenreChange,
   };
 }

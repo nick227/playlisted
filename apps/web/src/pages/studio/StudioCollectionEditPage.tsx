@@ -64,9 +64,12 @@ export function StudioCollectionEditPage() {
   const {
     availableGenres,
     selectedGenreId,
+    playlistGenreSlug,
     genreLoading,
     genreSaving,
     updateRecordingTagsMutation,
+    trackGenreSavingById,
+    trackGenreErrorById,
     handleGenreChange,
   } = useStudioCollectionGenres({
     playlist: playlist ?? undefined,
@@ -184,11 +187,12 @@ export function StudioCollectionEditPage() {
         onUpdateTrackTags={(recordingId, tagSlugs) =>
           updateRecordingTagsMutation.mutate({ recordingId, tagSlugs })
         }
-        trackSavingById={savingRecordingIds}
-        trackErrorById={recordingErrors}
+        trackSavingById={{ ...savingRecordingIds, ...trackGenreSavingById }}
+        trackErrorById={{ ...recordingErrors, ...trackGenreErrorById }}
         selectedGenreId={selectedGenreId}
         onGenreChange={handleGenreChange}
         genreOptions={availableGenres}
+        playlistGenreSlug={playlistGenreSlug}
         genreLoading={genreLoading}
         genreSaving={genreSaving}
         uploadProgress={

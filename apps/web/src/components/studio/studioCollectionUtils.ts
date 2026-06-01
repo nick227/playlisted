@@ -48,3 +48,11 @@ export function formatShortDate(iso: string | null | undefined): string {
 export function playlistGenreTags(tags: PlaylistSummary["tags"] | undefined) {
   return (tags ?? []).filter((tag) => tag.kind === "GENRE");
 }
+
+export type GenreOption = { id: string; name: string; slug: string };
+
+type TagLike = { kind: string; slug: string };
+
+export function recordingGenreSlug(tags: TagLike[] | undefined): string | null {
+  return tags?.find((tag) => tag.kind === "GENRE")?.slug ?? null;
+}

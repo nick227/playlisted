@@ -1,6 +1,7 @@
 import type { components } from "@playlisted/client-sdk";
 
 import type { CollectionRecording } from "@/components/collection/collectionTypes";
+import type { GenreOption } from "@/components/studio/studioCollectionUtils";
 import {
   type PlaylistTrackContext,
   recordingShareUrlForContext,
@@ -26,6 +27,9 @@ interface TrackListProps {
   onUpdateTitle?: (recordingId: string, title: string) => void;
   onUpdateArtwork?: (recordingId: string, file: File) => void;
   onUpdateTags?: (recordingId: string, tagSlugs: string[]) => void;
+  genreOptions?: GenreOption[];
+  playlistGenreSlug?: string | null;
+  genreLoading?: boolean;
   fallbackArtworkUrl?: string | null;
   savingById?: Record<string, boolean>;
   errorById?: Record<string, string | undefined>;
@@ -43,6 +47,9 @@ export function TrackList({
   onUpdateTitle,
   onUpdateArtwork,
   onUpdateTags,
+  genreOptions,
+  playlistGenreSlug,
+  genreLoading,
   fallbackArtworkUrl,
   savingById,
   errorById,
@@ -96,6 +103,9 @@ export function TrackList({
             onUpdateTitle={onUpdateTitle ? (title: string) => onUpdateTitle(recording.id, title) : undefined}
             onUpdateArtwork={onUpdateArtwork ? (file: File) => onUpdateArtwork(recording.id, file) : undefined}
             onUpdateTags={onUpdateTags ? (tags: string[]) => onUpdateTags(recording.id, tags) : undefined}
+            genreOptions={genreOptions}
+            playlistGenreSlug={playlistGenreSlug}
+            genreLoading={genreLoading}
             saving={savingById?.[recording.id]}
             error={errorById?.[recording.id]}
             queueTrack={

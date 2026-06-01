@@ -10,6 +10,9 @@ import { MediaCover } from "@/components/cards/MediaCover";
 import type { QueueTrack } from "@/providers/AudioPlayerProvider";
 import { Link } from "react-router-dom";
 
+import type { GenreOption } from "@/components/studio/studioCollectionUtils";
+import { recordingGenreSlug } from "@/components/studio/studioCollectionUtils";
+
 type TrackTag = { id: string; name: string; slug: string; kind: string };
 
 interface TrackRowProps {
@@ -28,6 +31,9 @@ interface TrackRowProps {
   onUpdateTitle?: (title: string) => void;
   onUpdateArtwork?: (file: File) => void;
   onUpdateTags?: (tagSlugs: string[]) => void;
+  genreOptions?: GenreOption[];
+  playlistGenreSlug?: string | null;
+  genreLoading?: boolean;
   saving?: boolean;
   error?: string;
   onPlay?: () => void;
@@ -57,6 +63,9 @@ export function TrackRow({
   onUpdateTitle,
   onUpdateArtwork,
   onUpdateTags,
+  genreOptions,
+  playlistGenreSlug,
+  genreLoading,
   saving,
   error,
   onPlay,
@@ -79,16 +88,12 @@ export function TrackRow({
     setDraftTitle(title);
   }, [title]);
 
-  function handleEditTags() {
-    if (!onUpdateTags) return;
-    const current = (tags ?? []).map((t) => t.slug).join(", ");
-    const raw = window.prompt("Tag slugs (comma-separated)", current);
-    if (raw === null) return;
-    const tagSlugs = raw
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
-    onUpdateTags(tagSlugs);
+  const overrideGenreSlug = recordingGenreSlug(tags);
+  const genreSelectValue = overrideGenreSlug ?? "";
+
+  function handleGenreSelect(nextSlug: string) {
+    if (!onUpdateTags || nextSlug === genreSelectValue) return;
+    onUpdateTags(nextSlug ? [nextSlug] : []);
   }
 
   function saveTitleDraft() {
@@ -234,15 +239,28 @@ export function TrackRow({
         <span className="text-xs text-[var(--color-text-muted)]">{formatDuration(durationSeconds)}</span>
         {editMode ? (
           <>
-            {onUpdateTags ? (
-              <button
-                type="button"
-                onClick={handleEditTags}
-                className="rounded px-2 py-1 text-xs text-[var(--color-text-muted)] hover:bg-white/10 hover:text-white"
-                aria-label="Edit tags"
+            {onUpdateTags && genreOptions ? (
+              <select
+                value={genreSelectValue}
+                onChange={(event) => handleGenreSelect(event.target.value)}
+                disabled={saving || genreLoading}
+                title={
+                  genreSelectValue
+                    ? "Custom genre for this track"
+                    : playlistGenreSlug
+                      ? `Uses playlist genre (${genreOptions.find((g) => g.slug === playlistGenreSlug)?.name ?? playlistGenreSlug})`
+                      : "Uses playlist genre"
+                }
+                aria-label="Track genre"
+                className="max-w-[6.5rem] truncate rounded border border-white/10 bg-black/30 px-1.5 py-0.5 text-xs text-white outline-none focus:border-[var(--color-brand)] disabled:opacity-50"
               >
-                Tags
-              </button>
+                <option value="">Default</option>
+                {genreOptions.map((genre) => (
+                  <option key={genre.id} value={genre.slug}>
+                    {genre.name}
+                  </option>
+                ))}
+              </select>
             ) : null}
             <button
               type="button"

@@ -9,6 +9,8 @@ import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
 import { playlistShareUrl, shareContent } from "@/lib/shareContent";
 import type { PlaylistTrackContext } from "@/lib/queueTrack";
 import { useAuth } from "@/providers/AuthProvider";
+import type { GenreOption } from "@/components/studio/studioCollectionUtils";
+
 import type { CollectionRecording } from "./collectionTypes";
 
 export type CollectionViewMode = "view" | "edit";
@@ -37,7 +39,8 @@ export interface CollectionViewProps {
   trackErrorById?: Record<string, string | undefined>;
   selectedGenreId?: string | null;
   onGenreChange?: (genreId: string | null) => void;
-  genreOptions?: { id: string; name: string }[];
+  genreOptions?: GenreOption[];
+  playlistGenreSlug?: string | null;
   genreLoading?: boolean;
   genreSaving?: boolean;
   editToolbar?: React.ReactNode;
@@ -77,6 +80,7 @@ export function CollectionView({
   selectedGenreId,
   onGenreChange,
   genreOptions,
+  playlistGenreSlug,
   genreLoading,
   genreSaving,
   editToolbar,
@@ -343,6 +347,9 @@ export function CollectionView({
               onUpdateTitle={onUpdateTrackTitle}
               onUpdateArtwork={onUpdateTrackArtwork}
               onUpdateTags={onUpdateTrackTags}
+              genreOptions={genreOptions}
+              playlistGenreSlug={playlistGenreSlug}
+              genreLoading={genreLoading}
               fallbackArtworkUrl={playlist.coverArtUrl}
               savingById={trackSavingById}
               errorById={trackErrorById}
