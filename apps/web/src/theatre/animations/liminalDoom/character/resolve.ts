@@ -1,6 +1,6 @@
 import type { CastMemberDef } from '../../../sceneKit'
-import { resolveFashion } from '../fashion'
-import { hash01 } from '../types'
+import { resolveFashion } from '../body/fashion'
+import { hash01 } from '../core/math'
 import { BODY_PRESETS, BODY_PRESET_IDS } from './libraries/body'
 import { CLOTHES_PRESETS, CLOTHES_PRESET_IDS } from './libraries/clothes'
 import { EYES_PRESETS, EYES_PRESET_IDS } from './libraries/eyes'

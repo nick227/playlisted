@@ -1,7 +1,7 @@
-import type { BodyLook } from '../bodies'
-import { drawStyledBodyDetailed, headAnchorDetailed } from '../bodyDraw'
-import { drawFace } from '../faces'
-import type { FaceConfig, FaceCacheEntry } from '../faces'
+import type { BodyLook } from '../body/bodies'
+import { drawStyledBodyDetailed, headAnchorDetailed } from '../body/draw'
+import { drawFace } from '../face'
+import type { FaceConfig, FaceCacheEntry } from '../face'
 import type { ResolvedCharacter } from './types'
 
 export function toBodyLook(c: ResolvedCharacter): BodyLook {
@@ -47,5 +47,5 @@ export function drawCharacterFace(
   timeMs: number,
   cache?: FaceCacheEntry,
 ) {
-  drawFace(ctx, x, y, scale, config, cache, c.face, c.eyes, c.mouth, timeMs)
+  drawFace(ctx, x, y, scale, config, cache, c.face, c.eyes, c.mouth, c.fashion.hairStyle, c.fashion.hair, c.fashion.hairHi, timeMs)
 }

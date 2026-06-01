@@ -1,4 +1,4 @@
-import type { HairStyle } from '../fashion'
+import type { HairStyle } from '../body/fashion'
 import type { CacheCtx } from './faceUtil'
 import { faceHash as h } from './faceUtil'
 

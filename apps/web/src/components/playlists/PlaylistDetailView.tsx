@@ -6,17 +6,19 @@ import type { CollectionRecording } from "@/components/collection/collectionType
 import { ContentRow } from "@/components/discovery/ContentRow";
 import { Skeleton } from "@/components/feedback/Skeleton";
 import { useAddCollectionPlaylist, useCollectionPlaylists } from "@/hooks/useCollections";
+import { useIsMdUp } from "@/hooks/useIsMdUp";
 import { usePlaylists } from "@/hooks/usePlaylists";
 import { useAudioPlayer, type QueueTrack } from "@/providers/AudioPlayerProvider";
 import { useAuth } from "@/providers/AuthProvider";
 
 type PlaylistDetailViewProps = {
   playlist: PlaylistDetail;
-  relatedPlaylistLimit?: number;
 };
 
-export function PlaylistDetailView({ playlist, relatedPlaylistLimit = 6 }: PlaylistDetailViewProps) {
-  const { data: related } = usePlaylists(6);
+export function PlaylistDetailView({ playlist }: PlaylistDetailViewProps) {
+  const isMdUp = useIsMdUp();
+  const relatedPlaylistLimit = isMdUp ? 4 : 6;
+  const { data: related } = usePlaylists(relatedPlaylistLimit + 1);
   const { setQueue, currentTrack, togglePlay, playbackContext, state } = useAudioPlayer();
   const { status, user } = useAuth();
   const savedCollections = useCollectionPlaylists(100);
@@ -109,7 +111,7 @@ export function PlaylistDetailView({ playlist, relatedPlaylistLimit = 6 }: Playl
                   coverArtUrl={item.coverArtUrl}
                   ownerUsername={item.owner.username}
                   slug={item.slug}
-                  className="w-40 shrink-0"
+                  className="w-45 shrink-0"
                 />
               ))}
           </ContentRow>

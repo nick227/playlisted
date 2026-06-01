@@ -305,6 +305,12 @@ Current animation entries in `registry/seed.ts`:
 | `stopMotionFlowerStorm` | Stop-Motion Flower Storm | `dynamic` | `subject` |
 | `cuteMonstro` | Cute Monstro | `dynamic` | `subject` |
 | `signalOrganismScene` | Signal Organism | `dynamic` | `subject` |
+| `goopy` | Goopy | `dynamic` | `subject` |
+| `circuitBot` | Circuit Bot | `dynamic` | `subject` |
+| `eyeCloud` | Eye Cloud | `chaos` | `subject` |
+| `jellyBell` | Jelly Bell | `calm` | `subject` |
+| `monsterCrew` | Monster Crew | `dynamic` | `subject` |
+| `liminalDoom` | Liminal Doom | `dynamic` | `subject` |
 
 Current presets:
 
@@ -315,6 +321,12 @@ Current presets:
 | `geometryTunnel` | Geometry Tunnel | `production` | `spinAmp`, `bioMachine`, `monsterWave` |
 | `stormFlower` | Storm Flower | `lab` | `stopMotionFlowerStorm` |
 | `monsterWaveStack` | Cute Monstro | `production` | `cuteMonstro` |
+| `monsterCrewScene` | Monster Crew | `production` | `monsterCrew` |
+| `goopySlime` | Goopy | `production` | `goopy` |
+| `circuitBotScene` | Circuit Bot | `production` | `circuitBot` |
+| `eyeCloudScene` | Eye Cloud | `production` | `eyeCloud` |
+| `jellyBellScene` | Jelly Bell | `production` | `jellyBell` |
+| `liminal-doom-demo` | Liminal Doom | `lab` | `liminalDoom` |
 
 ## Building a New Animation
 

@@ -8,8 +8,8 @@ For architecture, contracts, and guidance for building new scenes, see [theatre-
 
 | Count | Item |
 | ----: | ---- |
-| 8 | Registered animation entries in `registry/seed.ts` |
-| 5 | Scene presets in `registry/seed.ts` |
+| 14 | Registered animation entries in `registry/seed.ts` |
+| 11 | Scene presets in `registry/seed.ts` |
 | 1 | Emergency fallback, not registered, used by `AnimationBridge` |
 | 1 | Stop-motion script in `scripts/` |
 
@@ -27,6 +27,12 @@ All current registered animations are canvas-based. Most extend `CanvasAnimation
 | `stopMotionFlowerStorm` | Stop-Motion Flower Storm | `animations/stopMotionFlowerStorm.ts` | `canvas` | `dynamic` | `subject` | 2 |
 | `cuteMonstro` | Cute Monstro | `animations/cuteMonstro.ts` | `canvas` | `dynamic` | `subject` | 2 |
 | `signalOrganismScene` | Signal Organism | `animations/signalOrganism.ts` | `canvas` | `dynamic` | `subject` | 2 |
+| `goopy` | Goopy | `animations/goopy.ts` | `canvas` | `dynamic` | `subject` | 2 |
+| `circuitBot` | Circuit Bot | `animations/circuitBot.ts` | `canvas` | `dynamic` | `subject` | 2 |
+| `eyeCloud` | Eye Cloud | `animations/eyeCloud.ts` | `canvas` | `chaos` | `subject` | 2 |
+| `jellyBell` | Jelly Bell | `animations/jellyBell.ts` | `canvas` | `calm` | `subject` | 2 |
+| `monsterCrew` | Monster Crew | `animations/monsterCrew.ts` | `canvas` | `dynamic` | `subject` | 2 |
+| `liminalDoom` | Liminal Doom | `animations/liminalDoom/LiminalDoomScene.ts` | `canvas` | `dynamic` | `subject` | 1 |
 
 Registry helpers in `registry/index.ts`:
 
@@ -56,6 +62,12 @@ Presets are registered with `registerPreset(...)` in `registry/seed.ts` and stor
 | `geometryTunnel` | Geometry Tunnel | `production` | 2 | `spinAmp`, `bioMachine`, `monsterWave` | `quietPulse` |
 | `stormFlower` | Storm Flower | `lab` | 2 | `stopMotionFlowerStorm` | `quietPulse` |
 | `monsterWaveStack` | Cute Monstro | `production` | 2 | `cuteMonstro` | `quietPulse` |
+| `monsterCrewScene` | Monster Crew | `production` | 2 | `monsterCrew` | `quietPulse` |
+| `goopySlime` | Goopy | `production` | 2 | `goopy` | `quietPulse` |
+| `circuitBotScene` | Circuit Bot | `production` | 2 | `circuitBot` | `quietPulse` |
+| `eyeCloudScene` | Eye Cloud | `production` | 2 | `eyeCloud` | `quietPulse` |
+| `jellyBellScene` | Jelly Bell | `production` | 2 | `jellyBell` | `quietPulse` |
+| `liminal-doom-demo` | Liminal Doom | `lab` | 1 | `liminalDoom` | `quietPulse` |
 
 `TheatreController` prefers `lab` presets in development and `production` presets in production. `detectPolicy(...)` caps how many preset layers are instantiated.
 
@@ -103,7 +115,13 @@ Timing defaults:
 apps/web/src/theatre/
 +-- animations/
 |   +-- bioMachine.ts
+|   +-- circuitBot.ts
 |   +-- cuteMonstro.ts
+|   +-- eyeCloud.ts
+|   +-- goopy.ts
+|   +-- jellyBell.ts
+|   +-- liminalDoom/
+|   +-- monsterCrew.ts
 |   +-- monsterWave.ts
 |   +-- signalOrganism.ts
 |   +-- signalOrganism/

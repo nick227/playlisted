@@ -46,16 +46,35 @@ type EnvironmentVisuals = {
   skyMid: Rgb
   skyBottom: Rgb
   sunGlow: Rgb
+  celestial: 'sun' | 'moon' | 'starfield'
+  celestialColor: Rgb
+  celestialGlow: Rgb
+  celestialX: number
+  celestialY: number
+  celestialRadius: number
+  celestialAlpha: number
   groundTop: Rgb
   groundBottom: Rgb
   hill: Rgb
   cloud: Rgb
   cloudAlpha: number
+  cloudFamily: 'wispy' | 'cotton' | 'sheet' | 'storm'
+  cloudSpeed: number
+  cloudVariance: number
+  cloudThickness: number
+  cloudVerticalDrift: number
+  cloudShadow: number
+  cloudEdge: number
   warmth: number
   darkness: number
   dew: number
   mist: number
   rainBias: number
+  starAlpha: number
+  starCount: number
+  starTwinkle: number
+  sunHeight: number
+  wind: number
 }
 
 function clamp(value: number, min: number, max: number) {
@@ -173,7 +192,7 @@ export function stopMotionFlowerStormFactory(): IAnimation {
       const centerX    = stemBaseX
       const centerY    = currentStemTopY - sceneSize * 0.045
 
-      this.drawSky(w, h, cloudDark, stormPulse, run.state, environmentVisuals)
+      this.drawSky(now, w, h, cloudDark, stormPulse, run.state, environmentVisuals)
       this.drawCloudLayer(now, w, h, cloudDark, stormPulse, reducedMotion, environmentVisuals)
       this.drawCloudLighting(now, w, h, cloudDark, stormPulse, environmentVisuals)
       this.drawDistantHills(w, h, groundY, cloudDark, environmentVisuals)
@@ -310,43 +329,68 @@ export function stopMotionFlowerStormFactory(): IAnimation {
     }
 
     private getEnvironmentVisuals(environment: FlowerEnvironment): EnvironmentVisuals {
-      const time = {
+      const time: Record<TimeOfDay, EnvironmentVisuals> = {
         dawn: {
           skyTop: [82, 96, 132], skyMid: [184, 138, 148], skyBottom: [236, 174, 136],
           sunGlow: [255, 216, 158], groundTop: [64, 104, 74], groundBottom: [20, 46, 34], hill: [40, 68, 70],
+          celestial: 'sun' as const, celestialColor: [255, 232, 184] as Rgb, celestialGlow: [255, 196, 148] as Rgb,
+          celestialX: 0.16, celestialY: 0.26, celestialRadius: 0.055, celestialAlpha: 0.72,
+          cloud: [236, 240, 248] as Rgb, cloudAlpha: 0.16, cloudFamily: 'wispy', cloudSpeed: 1, cloudVariance: 0.16, cloudThickness: 0.16, cloudVerticalDrift: 0.08, cloudShadow: 0.04, cloudEdge: 0.24,
+          starAlpha: 0.02, starCount: 6, starTwinkle: 0.22, sunHeight: 0.2, wind: 0.18,
+          mist: 0, rainBias: 0,
           warmth: 0.58, darkness: 0.12, dew: 0.78,
         },
         morning: {
           skyTop: [72, 132, 188], skyMid: [112, 174, 214], skyBottom: [194, 221, 224],
           sunGlow: [255, 232, 168], groundTop: [58, 122, 72], groundBottom: [17, 58, 36], hill: [46, 94, 78],
+          celestial: 'sun' as const, celestialColor: [255, 236, 182] as Rgb, celestialGlow: [255, 222, 154] as Rgb,
+          celestialX: 0.18, celestialY: 0.18, celestialRadius: 0.058, celestialAlpha: 0.88,
+          cloud: [228, 236, 246] as Rgb, cloudAlpha: 0.18, cloudFamily: 'cotton', cloudSpeed: 1, cloudVariance: 0.2, cloudThickness: 0.18, cloudVerticalDrift: 0.1, cloudShadow: 0.05, cloudEdge: 0.2,
+          starAlpha: 0, starCount: 0, starTwinkle: 0.1, sunHeight: 0.45, wind: 0.22,
+          mist: 0, rainBias: 0,
           warmth: 0.48, darkness: 0.02, dew: 0.36,
         },
         afternoon: {
           skyTop: [58, 112, 182], skyMid: [92, 150, 208], skyBottom: [178, 208, 222],
           sunGlow: [255, 220, 132], groundTop: [68, 116, 62], groundBottom: [24, 54, 30], hill: [58, 86, 66],
+          celestial: 'sun' as const, celestialColor: [255, 230, 130] as Rgb, celestialGlow: [255, 204, 92] as Rgb,
+          celestialX: 0.73, celestialY: 0.17, celestialRadius: 0.06, celestialAlpha: 0.95,
+          cloud: [224, 232, 244] as Rgb, cloudAlpha: 0.16, cloudFamily: 'cotton', cloudSpeed: 1, cloudVariance: 0.18, cloudThickness: 0.18, cloudVerticalDrift: 0.08, cloudShadow: 0.04, cloudEdge: 0.18,
+          starAlpha: 0, starCount: 0, starTwinkle: 0.08, sunHeight: 0.72, wind: 0.24,
+          mist: 0, rainBias: 0,
           warmth: 0.68, darkness: 0, dew: 0.12,
         },
         dusk: {
           skyTop: [48, 54, 104], skyMid: [144, 76, 128], skyBottom: [232, 132, 92],
           sunGlow: [255, 174, 120], groundTop: [52, 84, 70], groundBottom: [18, 36, 34], hill: [42, 56, 72],
+          celestial: 'sun' as const, celestialColor: [255, 190, 140] as Rgb, celestialGlow: [255, 160, 110] as Rgb,
+          celestialX: 0.34, celestialY: 0.48, celestialRadius: 0.062, celestialAlpha: 0.76,
+          cloud: [184, 188, 210] as Rgb, cloudAlpha: 0.22, cloudFamily: 'sheet', cloudSpeed: 0.92, cloudVariance: 0.22, cloudThickness: 0.24, cloudVerticalDrift: 0.12, cloudShadow: 0.08, cloudEdge: 0.16,
+          starAlpha: 0.12, starCount: 18, starTwinkle: 0.26, sunHeight: 0.08, wind: 0.26,
+          mist: 0, rainBias: 0,
           warmth: 0.74, darkness: 0.24, dew: 0.44,
         },
         night: {
           skyTop: [12, 18, 42], skyMid: [20, 34, 68], skyBottom: [38, 56, 82],
           sunGlow: [160, 190, 255], groundTop: [24, 58, 56], groundBottom: [8, 24, 28], hill: [18, 34, 48],
+          celestial: 'moon' as const, celestialColor: [218, 230, 255] as Rgb, celestialGlow: [160, 194, 255] as Rgb,
+          celestialX: 0.78, celestialY: 0.22, celestialRadius: 0.048, celestialAlpha: 0.92,
+          cloud: [104, 118, 148] as Rgb, cloudAlpha: 0.3, cloudFamily: 'storm', cloudSpeed: 0.84, cloudVariance: 0.28, cloudThickness: 0.32, cloudVerticalDrift: 0.14, cloudShadow: 0.18, cloudEdge: 0.08,
+          starAlpha: 0.78, starCount: 42, starTwinkle: 0.72, sunHeight: 0.48, wind: 0.14,
+          mist: 0, rainBias: 0,
           warmth: 0.12, darkness: 0.72, dew: 0.68,
         },
-      } satisfies Record<TimeOfDay, Omit<EnvironmentVisuals, 'cloud' | 'cloudAlpha' | 'mist' | 'rainBias'>>
+      }
 
       const condition = {
-        clear: { cloud: [238, 244, 255] as Rgb, cloudAlpha: 0.12, mist: 0.02, rainBias: 0, dew: -0.08, darkness: -0.05 },
-        softClouds: { cloud: [226, 234, 248] as Rgb, cloudAlpha: 0.22, mist: 0.08, rainBias: 0, dew: 0.04, darkness: 0.02 },
-        overcast: { cloud: [174, 184, 202] as Rgb, cloudAlpha: 0.42, mist: 0.18, rainBias: 0.1, dew: 0.16, darkness: 0.18 },
-        mist: { cloud: [218, 224, 228] as Rgb, cloudAlpha: 0.3, mist: 0.54, rainBias: 0, dew: 0.24, darkness: 0.06 },
-        drizzle: { cloud: [176, 194, 210] as Rgb, cloudAlpha: 0.36, mist: 0.28, rainBias: 0.26, dew: 0.34, darkness: 0.12 },
-        stormPassing: { cloud: [96, 112, 136] as Rgb, cloudAlpha: 0.5, mist: 0.16, rainBias: 0.2, dew: 0.28, darkness: 0.28 },
-        afterRain: { cloud: [204, 214, 224] as Rgb, cloudAlpha: 0.2, mist: 0.18, rainBias: 0.04, dew: 0.42, darkness: 0.02 },
-      } satisfies Record<WeatherCondition, { cloud: Rgb; cloudAlpha: number; mist: number; rainBias: number; dew: number; darkness: number }>
+        clear: { cloud: [238, 244, 255] as Rgb, cloudAlpha: 0.12, cloudFamily: 'wispy' as const, cloudSpeed: 1, cloudVariance: 0.18, cloudThickness: 0.18, cloudVerticalDrift: 0.08, cloudShadow: 0.04, cloudEdge: 0.22, mist: 0.02, rainBias: 0, dew: -0.08, darkness: -0.05 },
+        softClouds: { cloud: [226, 234, 248] as Rgb, cloudAlpha: 0.22, cloudFamily: 'cotton' as const, cloudSpeed: 0.86, cloudVariance: 0.26, cloudThickness: 0.28, cloudVerticalDrift: 0.12, cloudShadow: 0.08, cloudEdge: 0.2, mist: 0.08, rainBias: 0, dew: 0.04, darkness: 0.02 },
+        overcast: { cloud: [174, 184, 202] as Rgb, cloudAlpha: 0.42, cloudFamily: 'sheet' as const, cloudSpeed: 0.7, cloudVariance: 0.2, cloudThickness: 0.54, cloudVerticalDrift: 0.18, cloudShadow: 0.2, cloudEdge: 0.12, mist: 0.18, rainBias: 0.1, dew: 0.16, darkness: 0.18 },
+        mist: { cloud: [218, 224, 228] as Rgb, cloudAlpha: 0.3, cloudFamily: 'wispy' as const, cloudSpeed: 0.64, cloudVariance: 0.34, cloudThickness: 0.16, cloudVerticalDrift: 0.06, cloudShadow: 0.05, cloudEdge: 0.16, mist: 0.54, rainBias: 0, dew: 0.24, darkness: 0.06 },
+        drizzle: { cloud: [176, 194, 210] as Rgb, cloudAlpha: 0.36, cloudFamily: 'cotton' as const, cloudSpeed: 0.76, cloudVariance: 0.28, cloudThickness: 0.32, cloudVerticalDrift: 0.16, cloudShadow: 0.12, cloudEdge: 0.14, mist: 0.28, rainBias: 0.26, dew: 0.34, darkness: 0.12 },
+        stormPassing: { cloud: [96, 112, 136] as Rgb, cloudAlpha: 0.5, cloudFamily: 'storm' as const, cloudSpeed: 0.58, cloudVariance: 0.42, cloudThickness: 0.76, cloudVerticalDrift: 0.28, cloudShadow: 0.32, cloudEdge: 0.08, mist: 0.16, rainBias: 0.2, dew: 0.28, darkness: 0.28 },
+        afterRain: { cloud: [204, 214, 224] as Rgb, cloudAlpha: 0.2, cloudFamily: 'cotton' as const, cloudSpeed: 0.92, cloudVariance: 0.22, cloudThickness: 0.24, cloudVerticalDrift: 0.1, cloudShadow: 0.06, cloudEdge: 0.18, mist: 0.18, rainBias: 0.04, dew: 0.42, darkness: 0.02 },
+      } satisfies Record<WeatherCondition, { cloud: Rgb; cloudAlpha: number; cloudFamily: EnvironmentVisuals['cloudFamily']; cloudSpeed: number; cloudVariance: number; cloudThickness: number; cloudVerticalDrift: number; cloudShadow: number; cloudEdge: number; mist: number; rainBias: number; dew: number; darkness: number }>
 
       const base = time[environment.timeOfDay]
       const weather = condition[environment.condition]
@@ -354,10 +398,29 @@ export function stopMotionFlowerStormFactory(): IAnimation {
         ...base,
         cloud: weather.cloud,
         cloudAlpha: weather.cloudAlpha,
+        cloudFamily: weather.cloudFamily,
+        cloudSpeed: base.wind * weather.cloudSpeed,
+        cloudVariance: weather.cloudVariance,
+        cloudThickness: weather.cloudThickness,
+        cloudVerticalDrift: weather.cloudVerticalDrift,
+        cloudShadow: weather.cloudShadow,
+        cloudEdge: weather.cloudEdge,
         mist: weather.mist,
         rainBias: weather.rainBias,
         dew: clamp(base.dew + weather.dew, 0, 1),
         darkness: clamp(base.darkness + weather.darkness, 0, 1),
+        celestial: base.celestial,
+        celestialColor: base.celestialColor,
+        celestialGlow: base.celestialGlow,
+        celestialX: base.celestialX,
+        celestialY: base.celestialY,
+        celestialRadius: base.celestialRadius,
+        celestialAlpha: base.celestialAlpha,
+        starAlpha: base.starAlpha,
+        starCount: base.starCount,
+        starTwinkle: base.starTwinkle,
+        sunHeight: base.sunHeight,
+        wind: base.wind,
       }
     }
 
@@ -367,17 +430,36 @@ export function stopMotionFlowerStormFactory(): IAnimation {
         skyMid: lerpRgb(a.skyMid, b.skyMid, t),
         skyBottom: lerpRgb(a.skyBottom, b.skyBottom, t),
         sunGlow: lerpRgb(a.sunGlow, b.sunGlow, t),
+        celestial: t < 0.5 ? a.celestial : b.celestial,
+        celestialColor: lerpRgb(a.celestialColor, b.celestialColor, t),
+        celestialGlow: lerpRgb(a.celestialGlow, b.celestialGlow, t),
+        celestialX: lerp(a.celestialX, b.celestialX, t),
+        celestialY: lerp(a.celestialY, b.celestialY, t),
+        celestialRadius: lerp(a.celestialRadius, b.celestialRadius, t),
+        celestialAlpha: lerp(a.celestialAlpha, b.celestialAlpha, t),
         groundTop: lerpRgb(a.groundTop, b.groundTop, t),
         groundBottom: lerpRgb(a.groundBottom, b.groundBottom, t),
         hill: lerpRgb(a.hill, b.hill, t),
         cloud: lerpRgb(a.cloud, b.cloud, t),
         cloudAlpha: lerp(a.cloudAlpha, b.cloudAlpha, t),
+        cloudFamily: t < 0.5 ? a.cloudFamily : b.cloudFamily,
+        cloudSpeed: lerp(a.cloudSpeed, b.cloudSpeed, t),
+        cloudVariance: lerp(a.cloudVariance, b.cloudVariance, t),
+        cloudThickness: lerp(a.cloudThickness, b.cloudThickness, t),
+        cloudVerticalDrift: lerp(a.cloudVerticalDrift, b.cloudVerticalDrift, t),
+        cloudShadow: lerp(a.cloudShadow, b.cloudShadow, t),
+        cloudEdge: lerp(a.cloudEdge, b.cloudEdge, t),
         warmth: lerp(a.warmth, b.warmth, t),
         darkness: lerp(a.darkness, b.darkness, t),
         dew: lerp(a.dew, b.dew, t),
         mist: lerp(a.mist, b.mist, t),
         rainBias: lerp(a.rainBias, b.rainBias, t),
-      }
+        starAlpha: lerp(a.starAlpha, b.starAlpha, t),
+        starCount: Math.round(lerp(a.starCount, b.starCount, t)),
+        starTwinkle: lerp(a.starTwinkle, b.starTwinkle, t),
+        sunHeight: lerp(a.sunHeight, b.sunHeight, t),
+        wind: lerp(a.wind, b.wind, t),
+      } as EnvironmentVisuals
     }
 
     private updateLightningFlash(
@@ -408,7 +490,7 @@ export function stopMotionFlowerStormFactory(): IAnimation {
       return clamp(remaining, 0, 1) * this.lightningFlashStrength
     }
 
-    private drawSky(w: number, h: number, cloudDark: number, stormPulse: number, state: string, environment: EnvironmentVisuals) {
+    private drawSky(now: number, w: number, h: number, cloudDark: number, stormPulse: number, state: string, environment: EnvironmentVisuals) {
       const aftermath = state === 'aftermath' ? 1 : 0
       const stormTint: Rgb = [stormPulse * 24 - environment.darkness * 18, cloudDark * 28 + aftermath * 16, cloudDark * 34 + aftermath * 18]
       const skyTop = rgb([environment.skyTop[0] + stormTint[0], environment.skyTop[1] + stormTint[1], environment.skyTop[2] + stormTint[2]])
@@ -433,6 +515,237 @@ export function stopMotionFlowerStormFactory(): IAnimation {
         mistGrad.addColorStop(1, `rgba(220, 232, 236, ${environment.mist * 0.18})`)
         this.ctx.fillStyle = mistGrad
         this.ctx.fillRect(0, h * 0.42, w, h * 0.58)
+      }
+
+      this.drawSkyAtmosphere(now, w, h, environment, cloudDark, stormPulse, state)
+    }
+
+    private drawSkyAtmosphere(now: number, w: number, h: number, environment: EnvironmentVisuals, cloudDark: number, stormPulse: number, state: string) {
+      const celestialY = h * environment.celestialY
+      const celestialX = w * environment.celestialX
+      const celestialRadius = Math.max(w, h) * environment.celestialRadius
+      const bodyAlpha = environment.celestialAlpha * (1 - cloudDark * 0.36)
+      const glow = this.ctx.createRadialGradient(celestialX, celestialY, 0, celestialX, celestialY, celestialRadius * 8)
+      glow.addColorStop(0, rgb(environment.celestialGlow, 0.34 * bodyAlpha))
+      glow.addColorStop(0.24, rgb(environment.celestialGlow, 0.12 * bodyAlpha))
+      glow.addColorStop(1, rgb(environment.celestialGlow, 0))
+      this.ctx.fillStyle = glow
+      this.ctx.fillRect(0, 0, w, h * 0.72)
+
+      if (environment.starAlpha > 0.01) {
+        const starCount = Math.max(0, Math.floor(environment.starCount * (0.5 + environment.starAlpha)))
+        this.ctx.save()
+        for (let i = 0; i < starCount; i++) {
+          const seed = randomSeed(this.effectsSeed + i * 127)
+          const x = seed * w
+          const y = h * (0.02 + randomSeed(i * 41 + 9) * 0.38)
+          const size = 0.6 + randomSeed(i * 19 + 5) * 1.6
+          const twinkle = 0.7 + Math.sin((performance.now() / 1800) + i * 2.3) * environment.starTwinkle * 0.22
+          const synthwaveStar = environment.darkness > 0.18 && (i % 5 === 0 || i % 7 === 0)
+          this.ctx.fillStyle = synthwaveStar
+            ? rgb(i % 2 === 0 ? [255, 98, 204] : [116, 224, 255], 1)
+            : 'rgba(255, 250, 245, 1)'
+          this.ctx.globalAlpha = environment.starAlpha * twinkle
+          this.ctx.beginPath()
+          this.ctx.arc(x, y, size, 0, TWO_PI)
+          this.ctx.fill()
+        }
+        this.ctx.restore()
+      }
+
+      this.drawSynthwaveSkyEffects(now, w, h, environment, cloudDark, stormPulse, state)
+
+      if (environment.celestial !== 'starfield') {
+        this.drawCelestialBody(now, celestialX, celestialY, celestialRadius, environment, cloudDark, stormPulse, state)
+      }
+    }
+
+    private drawSynthwaveSkyEffects(now: number, w: number, h: number, environment: EnvironmentVisuals, cloudDark: number, stormPulse: number, state: string) {
+      const retroMood = clamp(
+        smoothstep(0.16, 0.54, environment.darkness)
+          + smoothstep(0.08, 0.42, environment.starAlpha)
+          + (state === 'dusk' ? 0.18 : 0)
+          + (state === 'night' ? 0.28 : 0)
+          + (environment.rainBias > 0.05 ? 0.08 : 0),
+        0,
+        1,
+      )
+      if (retroMood <= 0.01) return
+
+      const horizon = h * (0.44 + environment.mist * 0.06)
+      const horizonSeed = Math.floor(now / (5000 + (this.effectsSeed % 5) * 900))
+      const drift = now / (1800 + (this.effectsSeed % 7) * 220)
+      const cloudFade = 1 - clamp(cloudDark * 0.72 + stormPulse * 0.24, 0, 0.88)
+
+      this.ctx.save()
+      this.ctx.globalCompositeOperation = 'lighter'
+
+      const colors: Rgb[] = [
+        [255, 78, 188],
+        [133, 235, 255],
+        [207, 102, 255],
+        [255, 142, 102],
+      ]
+
+      for (let i = 0; i < 4; i++) {
+        const seed = randomSeed(this.effectsSeed + horizonSeed * 37 + i * 91)
+        const yBase = horizon - h * (0.04 + seed * 0.12) + Math.sin(drift * (0.7 + seed * 0.5) + i * 1.4) * h * 0.018
+        const color = colors[(i + horizonSeed) % colors.length]
+        const bandWidth = h * (0.02 + seed * 0.02)
+        const wobble = h * (0.014 + seed * 0.016)
+        const alpha = retroMood * cloudFade * (0.06 + seed * 0.08)
+
+        const glow = this.ctx.createLinearGradient(0, yBase - bandWidth * 3, 0, yBase + bandWidth * 3)
+        glow.addColorStop(0, rgb(color, 0))
+        glow.addColorStop(0.5, rgb(color, alpha * 0.46))
+        glow.addColorStop(1, rgb(color, 0))
+        this.ctx.fillStyle = glow
+        this.ctx.fillRect(0, yBase - bandWidth * 3, w, bandWidth * 6)
+
+        this.ctx.strokeStyle = rgb(color, alpha)
+        this.ctx.lineWidth = Math.max(1, bandWidth)
+        this.ctx.beginPath()
+        for (let x = 0; x <= w; x += w / 14) {
+          const progress = x / w
+          const curve = Math.sin(progress * TWO_PI * (1.2 + i * 0.15) + seed * TWO_PI + drift * 0.18) * wobble
+          const bend = Math.cos(progress * Math.PI * 1.1 + seed * 1.6) * wobble * 0.42
+          const y = yBase + curve + bend + Math.sin((now / 8000) + progress * 8 + i) * wobble * 0.12
+          if (x === 0) this.ctx.moveTo(x, y)
+          else this.ctx.lineTo(x, y)
+        }
+        this.ctx.stroke()
+
+        this.ctx.strokeStyle = rgb(color, alpha * 0.34)
+        this.ctx.lineWidth = Math.max(1, bandWidth * 2.2)
+        this.ctx.beginPath()
+        for (let x = 0; x <= w; x += w / 12) {
+          const progress = x / w
+          const curve = Math.sin(progress * TWO_PI * (1.05 + i * 0.12) + seed * 1.7 + drift * 0.12) * wobble * 1.3
+          const y = yBase + curve
+          if (x === 0) this.ctx.moveTo(x, y)
+          else this.ctx.lineTo(x, y)
+        }
+        this.ctx.stroke()
+      }
+
+      const ribbonCount = 2 + Math.floor(retroMood * 2)
+      for (let i = 0; i < ribbonCount; i++) {
+        const seed = randomSeed(this.effectsSeed + horizonSeed * 97 + i * 53)
+        const color: Rgb = seed > 0.5 ? [255, 88, 196] : [104, 232, 255]
+        const yBase = h * (0.16 + seed * 0.24)
+        const wobble = h * (0.014 + seed * 0.022)
+        const alpha = retroMood * cloudFade * (0.05 + seed * 0.08)
+        this.ctx.strokeStyle = rgb(color, alpha)
+        this.ctx.lineWidth = Math.max(1, h * (0.004 + seed * 0.004))
+        this.ctx.beginPath()
+        for (let x = -w * 0.05; x <= w * 1.05; x += w / 18) {
+          const progress = (x + w * 0.05) / (w * 1.1)
+          const arc = Math.sin(progress * TWO_PI * (1.3 + seed * 0.7) + drift * (0.8 + seed * 0.4) + i * 1.4) * wobble
+          const y = yBase + arc + Math.cos(progress * Math.PI * 1.1 + seed * 3.7) * wobble * 0.35
+          if (x <= -w * 0.049) this.ctx.moveTo(x, y)
+          else this.ctx.lineTo(x, y)
+        }
+        this.ctx.stroke()
+      }
+
+      if (environment.darkness > 0.22) {
+        const scanAlpha = retroMood * (0.014 + environment.darkness * 0.012) * cloudFade
+        const scanOffset = (now / (70 + (this.effectsSeed % 5) * 11)) % 6
+        this.ctx.fillStyle = `rgba(255, 110, 210, ${scanAlpha})`
+        for (let y = 0; y < h * 0.72; y += 6) {
+          this.ctx.fillRect(0, y + scanOffset, w, 1)
+        }
+      }
+
+      if (retroMood > 0.46) {
+        const flareSeed = randomSeed(this.effectsSeed + horizonSeed * 17)
+        const flareX = w * (0.2 + flareSeed * 0.62)
+        const flareY = horizon - h * (0.06 + flareSeed * 0.06)
+        const flareRadius = Math.max(w, h) * (0.09 + flareSeed * 0.05)
+        const flare = this.ctx.createRadialGradient(flareX, flareY, 0, flareX, flareY, flareRadius)
+        flare.addColorStop(0, `rgba(255, 96, 214, ${retroMood * 0.12 * cloudFade})`)
+        flare.addColorStop(0.32, `rgba(120, 224, 255, ${retroMood * 0.08 * cloudFade})`)
+        flare.addColorStop(1, 'rgba(120, 224, 255, 0)')
+        this.ctx.fillStyle = flare
+        this.ctx.fillRect(0, 0, w, h * 0.54)
+      }
+
+      this.ctx.restore()
+    }
+
+    private drawCelestialBody(now: number, x: number, y: number, radius: number, environment: EnvironmentVisuals, cloudDark: number, stormPulse: number, state: string) {
+      const isNight = environment.celestial === 'moon' || environment.starAlpha > 0.12
+      const pulse = (0.78 + Math.sin((now / 24000) + environment.sunHeight * TWO_PI) * 0.08) * (isNight ? 0.94 : 1.04)
+      const alpha = environment.celestialAlpha * pulse * (1 - cloudDark * 0.28)
+      const glowRadius = radius * (7 + stormPulse * 2)
+      const glow = this.ctx.createRadialGradient(x, y, 0, x, y, glowRadius)
+      glow.addColorStop(0, rgb(environment.celestialGlow, 0.55 * alpha))
+      glow.addColorStop(0.28, rgb(environment.celestialGlow, 0.22 * alpha))
+      glow.addColorStop(1, rgb(environment.celestialGlow, 0))
+      this.ctx.fillStyle = glow
+      this.ctx.beginPath()
+      this.ctx.arc(x, y, glowRadius, 0, TWO_PI)
+      this.ctx.fill()
+
+      this.ctx.save()
+      this.ctx.globalAlpha = alpha
+      this.ctx.fillStyle = rgb(environment.celestialColor, alpha)
+      this.ctx.beginPath()
+      this.ctx.arc(x, y, radius, 0, TWO_PI)
+      this.ctx.fill()
+
+      if (environment.celestial === 'moon') {
+        this.ctx.fillStyle = 'rgba(205, 220, 238, 0.16)'
+        for (let i = 0; i < 4; i++) {
+          const dx = Math.sin(i * 2.1 + environment.sunHeight) * radius * 0.22
+          const dy = Math.cos(i * 1.7 + environment.sunHeight) * radius * 0.14
+          this.ctx.beginPath()
+          this.ctx.arc(x + dx, y + dy, radius * (0.18 + i * 0.025), 0, TWO_PI)
+          this.ctx.fill()
+        }
+      } else {
+        this.ctx.strokeStyle = 'rgba(255, 236, 190, 0.26)'
+        this.ctx.lineWidth = Math.max(1, radius * 0.14)
+        for (let i = 0; i < 5; i++) {
+          const angle = (i / 5) * TWO_PI
+          const sx = x + Math.cos(angle) * radius * 1.7
+          const sy = y + Math.sin(angle) * radius * 1.7
+          this.ctx.beginPath()
+          this.ctx.moveTo(x + Math.cos(angle) * radius * 1.1, y + Math.sin(angle) * radius * 1.1)
+          this.ctx.lineTo(sx, sy)
+          this.ctx.stroke()
+        }
+      }
+
+      if (environment.darkness > 0.18 || state === 'dusk' || state === 'night') {
+        const neonRadius = radius * 2.65
+        const neon = this.ctx.createRadialGradient(x, y, radius * 0.5, x, y, neonRadius)
+        neon.addColorStop(0, 'rgba(255, 100, 205, 0.12)')
+        neon.addColorStop(0.36, 'rgba(112, 226, 255, 0.16)')
+        neon.addColorStop(0.72, 'rgba(215, 120, 255, 0.08)')
+        neon.addColorStop(1, 'rgba(215, 120, 255, 0)')
+        this.ctx.fillStyle = neon
+        this.ctx.beginPath()
+        this.ctx.arc(x, y, neonRadius, 0, TWO_PI)
+        this.ctx.fill()
+
+        this.ctx.strokeStyle = 'rgba(255, 104, 206, 0.14)'
+        this.ctx.lineWidth = Math.max(1, radius * 0.1)
+        this.ctx.beginPath()
+        this.ctx.arc(x, y, radius * 1.65, 0, TWO_PI)
+        this.ctx.stroke()
+
+        this.ctx.strokeStyle = 'rgba(116, 226, 255, 0.1)'
+        this.ctx.lineWidth = Math.max(1, radius * 0.06)
+        this.ctx.beginPath()
+        this.ctx.arc(x, y, radius * 2.02, 0, TWO_PI)
+        this.ctx.stroke()
+      }
+      this.ctx.restore()
+
+      if (state === 'stormStrain' || state === 'collapse') {
+        this.ctx.fillStyle = `rgba(255, 255, 245, ${0.04 + stormPulse * 0.08})`
+        this.ctx.fillRect(0, 0, this.cssWidth, this.cssHeight * 0.22)
       }
     }
 
@@ -472,21 +785,24 @@ export function stopMotionFlowerStormFactory(): IAnimation {
 
     private drawCloudLayer(now: number, w: number, h: number, cloudDark: number, stormPulse: number, reducedMotion: boolean, environment: EnvironmentVisuals) {
       const layers = [
-        { count: 4, y: 0.12, size: 0.34, speed: 43000, alpha: 0.18, dir: -1 },
-        { count: 5, y: 0.22, size: 0.44, speed: 30000, alpha: 0.24, dir: 1 },
-        { count: 3, y: 0.34, size: 0.58, speed: 52000, alpha: 0.18, dir: -1 },
+        { count: 4, y: 0.12, size: 0.34, speed: 43000, alpha: 0.18, dir: -1, family: environment.cloudFamily === 'storm' ? 'storm' : environment.cloudFamily === 'sheet' ? 'sheet' : 'wispy' as EnvironmentVisuals['cloudFamily'] },
+        { count: 5, y: 0.22, size: 0.44, speed: 30000, alpha: 0.24, dir: 1, family: environment.cloudFamily === 'wispy' ? 'wispy' : 'cotton' as EnvironmentVisuals['cloudFamily'] },
+        { count: 3, y: 0.34, size: 0.58, speed: 52000, alpha: 0.18, dir: -1, family: environment.cloudFamily === 'storm' ? 'storm' : 'sheet' as EnvironmentVisuals['cloudFamily'] },
       ]
-      for (const layer of layers) {
-        const drift = reducedMotion ? 0 : (now / layer.speed) * w * layer.dir
+      for (let layerIndex = 0; layerIndex < layers.length; layerIndex++) {
+        const layer = layers[layerIndex]
+        const cloudSpeed = layer.speed * environment.cloudSpeed * (0.72 + 0.28 * Math.sin(now / (22000 + layerIndex * 7000) + layerIndex))
+        const drift = reducedMotion ? 0 : (now / cloudSpeed) * w * layer.dir
         const span = w + w * layer.size
         for (let i = 0; i < layer.count; i++) {
           const seed = randomSeed(i * 91 + layer.count * 13)
-          const raw = i / layer.count * span + drift + seed * w * 0.18
+          const windWobble = Math.sin(now / (15000 + layerIndex * 4300) + seed * TWO_PI) * environment.wind * w * 0.015
+          const raw = i / layer.count * span + drift + seed * w * 0.18 + windWobble
           const x = ((raw % span) + span) % span - w * layer.size * 0.45
-          const y = h * layer.y + seed * h * 0.055 + stormPulse * h * 0.012
-          const width = w * layer.size * (0.72 + seed * 0.42)
-          const height = h * (0.11 + layer.size * 0.08)
-          this.drawCloud(x, y, width, height, layer.alpha + environment.cloudAlpha + cloudDark * 0.12, environment.cloud)
+          const y = h * layer.y + seed * h * 0.055 + stormPulse * h * 0.012 + environment.cloudVerticalDrift * h * Math.sin(now / (30000 + layerIndex * 8000) + seed * 5)
+          const width = w * layer.size * (0.72 + seed * environment.cloudVariance)
+          const height = h * (0.11 + layer.size * environment.cloudThickness)
+          this.drawCloud(x, y, width, height, layer.alpha + environment.cloudAlpha + cloudDark * 0.12, environment.cloud, environment.cloudFamily, layerIndex, seed, environment)
         }
       }
 
@@ -1205,16 +1521,49 @@ export function stopMotionFlowerStormFactory(): IAnimation {
       this.ctx.restore()
     }
 
-    private drawCloud(x: number, y: number, width: number, height: number, alpha: number, color: Rgb) {
+    private drawCloud(x: number, y: number, width: number, height: number, alpha: number, color: Rgb, family: EnvironmentVisuals['cloudFamily'], layerIndex: number, seed: number, environment: EnvironmentVisuals) {
       this.ctx.save()
       this.ctx.translate(x, y)
+      this.ctx.rotate((layerIndex - 1) * 0.04 + (seed - 0.5) * 0.05)
       this.ctx.globalAlpha = alpha
       this.ctx.fillStyle = rgb(color)
       this.ctx.beginPath()
-      this.ctx.ellipse(0, 0, width * 0.4, height * 0.36, 0, 0, Math.PI * 2)
-      this.ctx.ellipse(width * 0.22, -height * 0.04, width * 0.38, height * 0.28, 0, 0, Math.PI * 2)
-      this.ctx.ellipse(width * 0.48,  height * 0.02, width * 0.32, height * 0.2,  0, 0, Math.PI * 2)
+      if (family === 'wispy') {
+        this.ctx.ellipse(0, 0, width * 0.55, height * 0.11, Math.sin(seed * 12) * 0.08, 0, Math.PI * 2)
+        this.ctx.ellipse(width * 0.18, -height * 0.02, width * 0.34, height * 0.08, 0, 0, Math.PI * 2)
+        this.ctx.ellipse(width * 0.42,  height * 0.01, width * 0.28, height * 0.07, 0, 0, Math.PI * 2)
+      } else if (family === 'sheet') {
+        this.ctx.ellipse(0, 0, width * 0.56, height * 0.22, 0, 0, Math.PI * 2)
+        this.ctx.ellipse(width * 0.28, -height * 0.08, width * 0.46, height * 0.16, 0, 0, Math.PI * 2)
+        this.ctx.ellipse(width * 0.56, -height * 0.02, width * 0.34, height * 0.12, 0, 0, Math.PI * 2)
+        this.ctx.ellipse(-width * 0.12, height * 0.02, width * 0.24, height * 0.1, 0, 0, Math.PI * 2)
+      } else if (family === 'storm') {
+        this.ctx.ellipse(0, 0, width * 0.48, height * 0.28, 0, 0, Math.PI * 2)
+        this.ctx.ellipse(width * 0.24, -height * 0.1, width * 0.44, height * 0.24, 0, 0, Math.PI * 2)
+        this.ctx.ellipse(width * 0.52, -height * 0.02, width * 0.36, height * 0.2, 0, 0, Math.PI * 2)
+        this.ctx.ellipse(width * 0.68, height * 0.06, width * 0.28, height * 0.14, 0, 0, Math.PI * 2)
+      } else {
+        this.ctx.ellipse(0, 0, width * 0.4, height * 0.36, 0, 0, Math.PI * 2)
+        this.ctx.ellipse(width * 0.22, -height * 0.04, width * 0.38, height * 0.28, 0, 0, Math.PI * 2)
+        this.ctx.ellipse(width * 0.48,  height * 0.02, width * 0.32, height * 0.2,  0, 0, Math.PI * 2)
+      }
       this.ctx.fill()
+
+      this.ctx.globalAlpha = alpha * environment.cloudShadow
+      this.ctx.fillStyle = 'rgba(34, 40, 58, 1)'
+      this.ctx.beginPath()
+      this.ctx.ellipse(width * 0.08, height * 0.14, width * 0.42, height * 0.1, 0, 0, Math.PI * 2)
+      this.ctx.ellipse(width * 0.4, height * 0.1, width * 0.34, height * 0.08, 0, 0, Math.PI * 2)
+      this.ctx.fill()
+
+      this.ctx.globalAlpha = alpha * environment.cloudEdge
+      this.ctx.strokeStyle = 'rgba(255, 255, 255, 1)'
+      this.ctx.lineWidth = Math.max(1, height * 0.03)
+      this.ctx.beginPath()
+      this.ctx.moveTo(-width * 0.42, height * 0.02)
+      this.ctx.quadraticCurveTo(-width * 0.18, -height * 0.18, width * 0.08, -height * 0.14)
+      this.ctx.quadraticCurveTo(width * 0.34, -height * 0.22, width * 0.66, -height * 0.08)
+      this.ctx.stroke()
       this.ctx.restore()
     }
 

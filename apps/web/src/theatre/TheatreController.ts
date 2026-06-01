@@ -1,6 +1,5 @@
 import AnimationBridge from './AnimationBridge'
 import registry from './registry'
-import './registry/seed'
 import { AnimationContext, AnimationFactory } from './IAnimation'
 import AudioFeatureExtractor from './AudioFeatureExtractor'
 import { getVisualTriggers } from './VisualTriggers'
@@ -189,6 +188,9 @@ class TheatreController extends EventTarget {
   }
 
   public async enter() {
+    // Load animation factories on first enter — keeps them out of the initial
+    // bundle even if TheatreController itself is somehow imported early.
+    await import('./registry/seed')
     if (!this.audioEl) this.rebindAudio()
     this.overlay = document.createElement('div')
     this.overlay.className = 'theatre-overlay fixed inset-x-0 top-0 z-[9998] flex items-center justify-center'
@@ -205,6 +207,9 @@ class TheatreController extends EventTarget {
     this.overlay.style.bottom = `${playerHeight}px`
     this.overlay.style.height = `${Math.max(0, window.innerHeight - playerHeight)}px`
     this.overlay.style.pointerEvents = 'auto'
+    // Start transparent — animations render one frame before we reveal.
+    this.overlay.style.opacity = '0'
+    this.overlay.style.transition = 'opacity 0.45s cubic-bezier(0.4, 0, 0.2, 1)'
     document.body.appendChild(this.overlay)
     document.body.classList.add('theatre-active')
 
@@ -292,6 +297,14 @@ class TheatreController extends EventTarget {
     this.state.active = true
     this.dispatchEvent(new Event('enter'))
     this.dispatchEvent(new Event('change'))
+
+    // Fade in: double-RAF ensures the browser has committed the opacity:0
+    // frame before we transition, so the animation is always visible.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (this.overlay) this.overlay.style.opacity = '1'
+      })
+    })
 
     // Single RAF loop owns all frame work:
     // 1. advance shared time  2. update audio features  3. drive all externally-driven animations

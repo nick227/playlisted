@@ -10,7 +10,6 @@ import { playlistPath } from "@/lib/routes";
 export function PlaylistPage() {
   const { playlistId } = useParams<{ playlistId: string }>();
   const { data: playlist, isLoading, isError, error } = usePlaylist(playlistId);
-
   usePlaylistPageMeta(playlist);
   const navigate = useNavigate();
 
@@ -35,5 +34,5 @@ export function PlaylistPage() {
     return <PlaylistAccessEmptyState error={error} />;
   }
 
-  return <PlaylistDetailView playlist={playlist} relatedPlaylistLimit={6} />;
+  return <PlaylistDetailView playlist={playlist} />;
 }

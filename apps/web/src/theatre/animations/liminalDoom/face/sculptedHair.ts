@@ -1,4 +1,4 @@
-import type { HairStyle } from '../fashion'
+import type { HairStyle } from '../body/fashion'
 import type { HeadFrame } from './headFrame'
 import { pathHeadSquircle, pathScalpHairline } from './headFrame'
 import type { CacheCtx } from './faceUtil'

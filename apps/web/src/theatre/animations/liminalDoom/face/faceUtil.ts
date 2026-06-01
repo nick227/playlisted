@@ -1,4 +1,4 @@
-import { clamp } from '../types'
+import { clamp } from '../core/math'
 import { pathSquircle } from './faceShapes'
 
 export type FaceGender = 'male' | 'female'

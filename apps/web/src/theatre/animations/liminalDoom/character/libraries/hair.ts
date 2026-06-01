@@ -1,4 +1,4 @@
-import type { HairStyle } from '../../fashion'
+import type { HairStyle } from '../../body/fashion'
 
 export type HairPresetDef = {
   id: string

@@ -1,4 +1,4 @@
-import { clamp } from '../types'
+import { clamp } from '../core/math'
 
 function h(seed: number, salt: number): number {
   let v = (seed ^ ((salt + 0x9e3779b9) | 0)) >>> 0

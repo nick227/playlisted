@@ -36,7 +36,7 @@ function queueCastMember(
   const trackY = member.eyeTrackY ?? -0.05
   const alpha = dissolveAlpha(member, frame) ?? member.alpha
 
-  sink.pushFaceMask(z, x, y, scale, talk, trackX, trackY, { alpha })
+  sink.pushFaceMask(z, x, y, scale * 1.35, talk, trackX, trackY, { alpha })
 
   if (!member.speaks) return
 

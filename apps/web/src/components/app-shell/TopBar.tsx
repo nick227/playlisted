@@ -1,11 +1,11 @@
-import { LogOut, Menu, Settings, User, Monitor } from "lucide-react";
+import { LogOut, Menu, Settings, User, Monitor, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { SearchAutocomplete } from "@/components/search/SearchAutocomplete";
 import { ADMIN_PATH, STUDIO_PATH, panelPathForRole, profilePath } from "@/lib/routes";
 import { useAuth } from "@/providers/AuthProvider";
-import theatreController from '@/theatre/TheatreController'
+import theatreController from '@/theatre/lazyController'
 
 interface TopBarProps {
   onMenuClick: () => void;
@@ -17,21 +17,38 @@ export function TopBar({ onMenuClick }: TopBarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [canEnterTheatre, setCanEnterTheatre] = useState(theatreController.state.canEnter)
   const [theatreActive, setTheatreActive] = useState(theatreController.state.active)
+  const [theatreLoading, setTheatreLoading] = useState(false)
 
   useEffect(() => {
     const sync = () => {
       setCanEnterTheatre(theatreController.state.canEnter)
       setTheatreActive(theatreController.state.active)
     }
+    const onEnter = () => { sync(); setTheatreLoading(false) }
+    const onExit  = () => { sync(); setTheatreLoading(false) }
     theatreController.addEventListener('change', sync)
-    theatreController.addEventListener('enter', sync)
-    theatreController.addEventListener('exit', sync)
+    theatreController.addEventListener('enter', onEnter)
+    theatreController.addEventListener('exit', onExit)
     return () => {
       theatreController.removeEventListener('change', sync)
-      theatreController.removeEventListener('enter', sync)
-      theatreController.removeEventListener('exit', sync)
+      theatreController.removeEventListener('enter', onEnter)
+      theatreController.removeEventListener('exit', onExit)
     }
   }, [])
+
+  async function handleTheatreClick() {
+    if (theatreActive) {
+      // Already loaded — exit is instant, no spinner
+      void theatreController.exit()
+      return
+    }
+    setTheatreLoading(true)
+    try {
+      await theatreController.toggle()
+    } catch {
+      setTheatreLoading(false)
+    }
+  }
 
   async function handleLogout() {
     setMenuOpen(false);
@@ -58,12 +75,15 @@ export function TopBar({ onMenuClick }: TopBarProps) {
       <div className="relative ml-auto flex items-center gap-2">
         <button
           type="button"
-          onClick={() => theatreController.toggle()}
-          disabled={!theatreActive && !canEnterTheatre}
+          onClick={handleTheatreClick}
+          disabled={theatreLoading || (!theatreActive && !canEnterTheatre)}
           className={`hidden px-4 bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded-lg p-2 transition sm:inline-flex disabled:cursor-not-allowed disabled:opacity-40 ${theatreActive ? 'text-[var(--color-brand)]' : 'text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)] hover:text-white'}`}
-          title={theatreActive ? 'Exit Theatre Mode' : canEnterTheatre ? 'Enter Theatre Mode' : 'Play music to enter Theatre Mode'}
+          title={theatreLoading ? 'Loading theatre…' : theatreActive ? 'Exit Theatre Mode' : canEnterTheatre ? 'Enter Theatre Mode' : 'Play music to enter Theatre Mode'}
+          aria-busy={theatreLoading}
         >
-          <Monitor size={26} />
+          {theatreLoading
+            ? <Loader2 size={26} className="animate-spin" />
+            : <Monitor size={26} />}
         </button>
 
         {status === "authenticated" && user ? (

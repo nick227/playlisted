@@ -11,7 +11,7 @@ import {
   type ReactNode,
 } from "react";
 
-import theatreController from "@/theatre/TheatreController";
+import theatreController from "@/theatre/lazyController";
 import { hydrateUpNextSegment } from "@/lib/upNext/hydrateSegment";
 import { shiftPlaybackOriginTrack } from "@/lib/playbackOrigin";
 import { prefetchAutoplayNext, type PrefetchedPlaylistNext } from "@/lib/upNext/prefetchAutoplayNext";
@@ -367,6 +367,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       }).catch(() => setState("paused"));
     } else {
       audio.pause();
+      setState("paused");
     }
   }, [currentTrack]);
 
@@ -549,9 +550,11 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       const track = idx >= 0 ? queueRef.current[idx] : null;
       if (track) logPlaybackStart(track);
     };
-    const onPause = () => setState("paused");
+    const onPause = () => {
+      setState(queueIndexRef.current >= 0 ? "paused" : "idle");
+    };
     const onWaiting = () => {
-      if (!audio.paused) return;
+      if (audio.paused) return;
       setState("loading");
     };
     const onEnded = () => {

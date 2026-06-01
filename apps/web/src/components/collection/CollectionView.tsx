@@ -145,11 +145,11 @@ export function CollectionView({
               <img
                 src={playlist.coverArtUrl}
                 alt=""
-                className="aspect-square w-full min-w-0 rounded-lg object-cover lg:max-w-[180px]"
+                className="aspect-square w-full min-w-0 rounded-lg object-cover lg:max-w-[100%]"
               />
             ) : (
               <div
-                className={`rounded-lg shadow-2xl ${isPodcast ? "aspect-square w-full max-w-[360px]" : "h-56 w-56 md:h-64 md:w-64"}`}
+                className={`aspect-square w-full rounded-lg shadow-2xl ${isPodcast ? "max-w-[360px]" : "h-96 w-96"}`}
                 style={coverStyle}
               />
             )}

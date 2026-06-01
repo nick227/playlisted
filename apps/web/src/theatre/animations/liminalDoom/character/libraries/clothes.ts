@@ -1,4 +1,4 @@
-import type { BodyStyle } from '../../bodies'
+import type { BodyStyle } from '../../body/bodies'
 
 export type ClothesPresetDef = {
   id: string

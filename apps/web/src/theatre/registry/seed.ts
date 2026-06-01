@@ -13,7 +13,8 @@ import goopyFactory from '../animations/goopy'
 import circuitBotFactory from '../animations/circuitBot'
 import eyeCloudFactory from '../animations/eyeCloud'
 import jellyBellFactory from '../animations/jellyBell'
-import liminalDoomFactory from '../animations/liminalDoom/LiminalDoomScene'
+import monsterCrewFactory from '../animations/monsterCrew'
+import liminalDoomFactory from '../animations/liminalDoom'
 
 // ─── Animation registry ──────────────────────────────────────────────────────
 
@@ -29,6 +30,7 @@ registry.register({ id: 'goopy',               label: 'Goopy',                  
 registry.register({ id: 'circuitBot',          label: 'Circuit Bot',            factory: circuitBotFactory,            visualType: 'canvas', mood: 'dynamic', role: 'subject',   weight: 2 })
 registry.register({ id: 'eyeCloud',            label: 'Eye Cloud',              factory: eyeCloudFactory,              visualType: 'canvas', mood: 'chaos',   role: 'subject',   weight: 2 })
 registry.register({ id: 'jellyBell',           label: 'Jelly Bell',             factory: jellyBellFactory,             visualType: 'canvas', mood: 'calm',    role: 'subject',   weight: 2 })
+registry.register({ id: 'monsterCrew',         label: 'Monster Crew',           factory: monsterCrewFactory,           visualType: 'canvas', mood: 'dynamic', role: 'subject',   weight: 2 })
 registry.register({ id: 'liminalDoom',         label: 'Liminal Doom',           factory: liminalDoomFactory,           visualType: 'canvas', mood: 'dynamic', role: 'subject',   weight: 1 })
 
 // ─── Scene presets ────────────────────────────────────────────────────────────
@@ -83,6 +85,12 @@ registerPreset({
   id: 'monsterWaveStack', label: 'Cute Monstro', category: 'production', weight: 2,
   reducedMotionPreset: 'quietPulse',
   layers: [{ animationId: 'cuteMonstro', role: 'subject', options: { opacity: 1.0, zIndex: 101, blendMode: 'normal', intensity: 1.0, sensitivity: 1.0 } }],
+})
+
+registerPreset({
+  id: 'monsterCrewScene', label: 'Monster Crew', category: 'production', weight: 2,
+  reducedMotionPreset: 'quietPulse',
+  layers: [{ animationId: 'monsterCrew', role: 'subject', options: { opacity: 1.0, zIndex: 101, blendMode: 'normal', intensity: 1.0, sensitivity: 1.0 } }],
 })
 
 registerPreset({

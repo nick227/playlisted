@@ -10,7 +10,7 @@ import { coverFallback } from "@/lib/routes";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { useAuth } from "@/providers/AuthProvider";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
-import theatreController from "@/theatre/TheatreController";
+import theatreController from "@/theatre/lazyController";
 
 const LISTENER_ID_KEY = "playlisted.radio.listenerId";
 const MAX_MSG_LENGTH = 300;

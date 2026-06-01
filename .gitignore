@@ -48,3 +48,4 @@ Desktop.ini
 
 # Pi local agent messenger runtime logs/state
 .pi/messenger/
+.antigravitycli/

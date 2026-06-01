@@ -1,0 +1,5 @@
+export { drawFace } from './draw'
+export { FaceCacheEntry } from './cache'
+export { idleBreath, tickDissolve, watchingGaze } from './motion'
+export type { FaceConfig, FaceGender, FaceState } from './types'
+export { DEFAULT_FACE_CONFIG } from './types'

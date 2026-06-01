@@ -10,7 +10,6 @@ import { playlistPath } from "@/lib/routes";
 export function CanonicalPlaylistPage() {
   const { username, slug } = useParams<{ username: string; slug: string }>();
   const { data: playlist, isLoading, isError, error } = usePlaylistByUsernameSlug(username, slug);
-
   usePlaylistPageMeta(playlist);
   const navigate = useNavigate();
 
@@ -36,5 +35,5 @@ export function CanonicalPlaylistPage() {
     return <PlaylistAccessEmptyState error={error} />;
   }
 
-  return <PlaylistDetailView playlist={playlist} relatedPlaylistLimit={5} />;
+  return <PlaylistDetailView playlist={playlist} />;
 }

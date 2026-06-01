@@ -1,4 +1,4 @@
-import type { BodyGender } from '../../bodies'
+import type { BodyGender } from '../../body/bodies'
 
 export type BodyBuild = 'slim' | 'average' | 'broad'
 
