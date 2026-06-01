@@ -9,6 +9,11 @@ import monsterWaveFactory from '../animations/monsterWave'
 import stopMotionFlowerStormFactory from '../animations/stopMotionFlowerStorm'
 import cuteMonstroFactory from '../animations/cuteMonstro'
 import signalOrganismFactory from '../animations/signalOrganism'
+import goopyFactory from '../animations/goopy'
+import circuitBotFactory from '../animations/circuitBot'
+import eyeCloudFactory from '../animations/eyeCloud'
+import jellyBellFactory from '../animations/jellyBell'
+import liminalDoomFactory from '../animations/liminalDoom/LiminalDoomScene'
 
 // ─── Animation registry ──────────────────────────────────────────────────────
 
@@ -20,6 +25,11 @@ registry.register({ id: 'monsterWave',           label: 'Monster Wave',         
 registry.register({ id: 'stopMotionFlowerStorm', label: 'Stop-Motion Flower Storm', factory: stopMotionFlowerStormFactory, visualType: 'canvas', mood: 'dynamic', role: 'subject',   weight: 2 })
 registry.register({ id: 'cuteMonstro',          label: 'Cute Monstro',           factory: cuteMonstroFactory,           visualType: 'canvas', mood: 'dynamic', role: 'subject',   weight: 2 })
 registry.register({ id: 'signalOrganismScene',  label: 'Signal Organism',        factory: signalOrganismFactory,        visualType: 'canvas', mood: 'dynamic', role: 'subject',   weight: 2 })
+registry.register({ id: 'goopy',               label: 'Goopy',                  factory: goopyFactory,                 visualType: 'canvas', mood: 'dynamic', role: 'subject',   weight: 2 })
+registry.register({ id: 'circuitBot',          label: 'Circuit Bot',            factory: circuitBotFactory,            visualType: 'canvas', mood: 'dynamic', role: 'subject',   weight: 2 })
+registry.register({ id: 'eyeCloud',            label: 'Eye Cloud',              factory: eyeCloudFactory,              visualType: 'canvas', mood: 'chaos',   role: 'subject',   weight: 2 })
+registry.register({ id: 'jellyBell',           label: 'Jelly Bell',             factory: jellyBellFactory,             visualType: 'canvas', mood: 'calm',    role: 'subject',   weight: 2 })
+registry.register({ id: 'liminalDoom',         label: 'Liminal Doom',           factory: liminalDoomFactory,           visualType: 'canvas', mood: 'dynamic', role: 'subject',   weight: 1 })
 
 // ─── Scene presets ────────────────────────────────────────────────────────────
 
@@ -67,14 +77,43 @@ registerPreset({
   ],
 })
 
-// Cute monster character with music-reactive lighting and comets
+// ── Monster crew ─────────────────────────────────────────────────────────────
+
 registerPreset({
   id: 'monsterWaveStack', label: 'Cute Monstro', category: 'production', weight: 2,
   reducedMotionPreset: 'quietPulse',
-  layers: [
-    { animationId: 'cuteMonstro', role: 'subject',
-      options: { opacity: 1.0, zIndex: 101, blendMode: 'normal', intensity: 1.0, sensitivity: 1.0 } },
-  ],
+  layers: [{ animationId: 'cuteMonstro', role: 'subject', options: { opacity: 1.0, zIndex: 101, blendMode: 'normal', intensity: 1.0, sensitivity: 1.0 } }],
+})
+
+registerPreset({
+  id: 'goopySlime', label: 'Goopy', category: 'production', weight: 2,
+  reducedMotionPreset: 'quietPulse',
+  layers: [{ animationId: 'goopy', role: 'subject', options: { opacity: 1.0, zIndex: 101, blendMode: 'normal', intensity: 1.0, sensitivity: 1.0 } }],
+})
+
+registerPreset({
+  id: 'circuitBotScene', label: 'Circuit Bot', category: 'production', weight: 2,
+  reducedMotionPreset: 'quietPulse',
+  layers: [{ animationId: 'circuitBot', role: 'subject', options: { opacity: 1.0, zIndex: 101, blendMode: 'normal', intensity: 1.0, sensitivity: 1.0 } }],
+})
+
+registerPreset({
+  id: 'eyeCloudScene', label: 'Eye Cloud', category: 'production', weight: 2,
+  reducedMotionPreset: 'quietPulse',
+  layers: [{ animationId: 'eyeCloud', role: 'subject', options: { opacity: 1.0, zIndex: 101, blendMode: 'normal', intensity: 1.0, sensitivity: 1.0 } }],
+})
+
+registerPreset({
+  id: 'jellyBellScene', label: 'Jelly Bell', category: 'production', weight: 2,
+  reducedMotionPreset: 'quietPulse',
+  layers: [{ animationId: 'jellyBell', role: 'subject', options: { opacity: 1.0, zIndex: 101, blendMode: 'normal', intensity: 1.0, sensitivity: 1.0 } }],
+})
+
+registerPreset({
+  id: 'liminal-doom-demo', label: 'Liminal Doom', category: 'lab', weight: 1,
+  reducedMotionPreset: 'quietPulse',
+  layers: [{ animationId: 'liminalDoom', role: 'subject',
+    options: { opacity: 1.0, zIndex: 101, blendMode: 'normal', intensity: 1.0, sensitivity: 1.0 } }],
 })
 
 export default registry
