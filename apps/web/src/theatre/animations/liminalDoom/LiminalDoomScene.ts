@@ -4,7 +4,9 @@ import { buildWallDecals, queueCorridorDecals, queueWallDecals } from './decals'
 import { doorThresholdState, queueDoor } from './doors'
 import { LiminalRenderer } from './renderer'
 import { queueRoomShell } from './roomShell'
+import { resolveCastIds } from '../../sceneKit'
 import { composeScene } from './scenes'
+import { ensureLiminalScenesRegistered } from './registerScenes'
 import type { AudioReact, RoomPhase, SceneType } from './types'
 import { backWallBounds, clamp } from './types'
 import { palette } from './palette'
@@ -29,6 +31,7 @@ export function liminalDoomFactory(): IAnimation {
 
     constructor() {
       super({ defaultOpacity: 1, defaultZIndex: 101, defaultBlendMode: 'normal', useEffects: true })
+      ensureLiminalScenesRegistered()
     }
 
     private readAudio(context: AnimationContext): AudioReact {
@@ -69,6 +72,9 @@ export function liminalDoomFactory(): IAnimation {
       if (phase === 'passage') {
         queueCorridorDecals(this.renderer, this.decals, w * 0.08, h * 0.35, audio.mids)
       }
+      const extraCast = phase === 'threshold' || phase === 'passage'
+        ? resolveCastIds(['liminal.doorWhisper'])
+        : []
       composeScene(this.renderer, sceneType, {
         bounds,
         audio,
@@ -77,7 +83,7 @@ export function liminalDoomFactory(): IAnimation {
         seed: this.seed + sceneIndex * 17,
         reducedMotion,
         lowPower,
-      })
+      }, extraCast)
       queueDoor(this.renderer, bounds, doorThresholdState(phase, audio, now))
       this.renderer.sortDrawList()
       this.renderer.render(this.ctx)
