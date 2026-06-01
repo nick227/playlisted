@@ -1,5 +1,5 @@
 import { PlaylistedApiError } from "@playlisted/client-sdk";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useRef } from "react";
 import { Link, useParams } from "react-router-dom";
 
@@ -21,6 +21,7 @@ import { useAuth } from "@/providers/AuthProvider";
 export function StudioCollectionEditPage() {
   const { playlistId } = useParams<{ playlistId: string }>();
   const { user, accessToken } = useAuth();
+  const queryClient = useQueryClient();
   const coverInputRef = useRef<HTMLInputElement>(null);
   const tracksInputRef = useRef<HTMLInputElement>(null);
 
@@ -105,10 +106,17 @@ export function StudioCollectionEditPage() {
 
   const removeTrackMutation = useMutation({
     mutationFn: (recordingId: string) => client.playlists.removeItem(playlistId!, recordingId),
-    onSuccess: (updated) => {
+    onSuccess: async (updated) => {
       setDraft(updated as PlaylistDetailWithTags);
       lastSavedTitleRef.current = updated.title;
       lastSavedDescriptionRef.current = updated.description;
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["charts"] }),
+        queryClient.invalidateQueries({ queryKey: ["playlists"] }),
+        queryClient.invalidateQueries({ queryKey: ["search"] }),
+        queryClient.invalidateQueries({ queryKey: ["library"] }),
+        queryClient.invalidateQueries({ queryKey: ["playlist", playlistId] }),
+      ]);
     },
   });
 

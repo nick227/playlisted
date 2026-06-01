@@ -14,6 +14,7 @@ import {
 import { prisma } from "../lib/prisma.js";
 import { getAuthContextFromRequest } from "../lib/auth.js";
 import { requireAuth } from "../lib/requireAuth.js";
+import { deleteRecordingMedia } from "../lib/deleteMediaFile.js";
 import { syncPlaylistStats } from "../lib/playlistStats.js";
 import { resolveUniquePlaylistSlug } from "../lib/playlistSlug.js";
 
@@ -362,41 +363,77 @@ playlistsRouter.delete("/:playlistId/items/:recordingId", async (req, res, next)
     const auth = await requireAuth(req, res);
     if (!auth) return;
 
-    const access = await assertPlaylistOwner(req.params.playlistId, auth.user.id);
+    const { playlistId, recordingId } = req.params;
+
+    const access = await assertPlaylistOwner(playlistId, auth.user.id);
     if (access.error === "not_found") {
       return res.status(404).json({
         error: "playlist_not_found",
-        message: `Playlist ${req.params.playlistId} was not found.`,
+        message: `Playlist ${playlistId} was not found.`,
       });
     }
     if (access.error === "forbidden") {
       return res.status(403).json({ error: "forbidden", message: "You do not own this playlist." });
     }
 
-    await prisma.playlistItem.deleteMany({
-      where: {
-        playlistId: req.params.playlistId,
-        recordingId: req.params.recordingId,
+    const recording = await prisma.recording.findUnique({
+      where: { id: recordingId },
+      select: {
+        id: true,
+        uploaderId: true,
+        publishedPlaylistId: true,
+        audioUrl: true,
+        artworkUrl: true,
       },
     });
 
+    if (!recording) {
+      return res.status(404).json({
+        error: "recording_not_found",
+        message: `Recording ${recordingId} was not found.`,
+      });
+    }
+
+    const item = await prisma.playlistItem.findFirst({
+      where: { playlistId, recordingId },
+    });
+
+    if (!item) {
+      return res.status(404).json({
+        error: "item_not_found",
+        message: "That recording is not in this playlist.",
+      });
+    }
+
+    const deleteRecording =
+      recording.publishedPlaylistId === playlistId && recording.uploaderId === auth.user.id;
+
+    if (deleteRecording) {
+      await prisma.recording.delete({ where: { id: recordingId } });
+      await deleteRecordingMedia(recording);
+    } else {
+      await prisma.playlistItem.deleteMany({
+        where: { playlistId, recordingId },
+      });
+    }
+
     const items = await prisma.playlistItem.findMany({
-      where: { playlistId: req.params.playlistId },
+      where: { playlistId },
       orderBy: { position: "asc" },
     });
 
     await prisma.$transaction(
-      items.map((item, index) =>
+      items.map((row, index) =>
         prisma.playlistItem.update({
-          where: { id: item.id },
+          where: { id: row.id },
           data: { position: index + 1 },
         }),
       ),
     );
 
-    await syncPlaylistStats(req.params.playlistId);
+    await syncPlaylistStats(playlistId);
 
-    const playlist = await loadPlaylistDetail(req.params.playlistId);
+    const playlist = await loadPlaylistDetail(playlistId);
     return res.json(mapPlaylistDetail(playlist!));
   } catch (error) {
     return next(error);
