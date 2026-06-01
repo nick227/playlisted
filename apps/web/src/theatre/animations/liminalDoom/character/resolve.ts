@@ -4,7 +4,7 @@ import { hash01 } from '../types'
 import { BODY_PRESETS, BODY_PRESET_IDS } from './libraries/body'
 import { CLOTHES_PRESETS, CLOTHES_PRESET_IDS } from './libraries/clothes'
 import { EYES_PRESETS, EYES_PRESET_IDS } from './libraries/eyes'
-import { FACE_PRESETS, FACE_PRESET_IDS, RUBBER_FACE_PRESET_IDS } from './libraries/face'
+import { FACE_PRESETS, FACE_PRESET_IDS, RUBBER_FACE_PRESET_IDS, SCULPTED_FACE_PRESET_IDS } from './libraries/face'
 import { HAIR_PRESETS } from './libraries/hair'
 import { MOUTH_PRESETS, MOUTH_PRESET_IDS } from './libraries/mouth'
 import type { CharacterModifiers, CharacterRecipe, ResolvedCharacter } from './types'
@@ -69,10 +69,12 @@ export function resolveRecipe(
 const FEMALE_HAIR_IDS = ['hair.bob', 'hair.long', 'hair.bun', 'hair.crop', 'hair.wavy']
 const MALE_HAIR_IDS = ['hair.crop', 'hair.buzz', 'hair.spiky', 'hair.long', 'hair.slick', 'hair.wavy']
 
-/** ~35% rubber-hose faces in ambient crowd; explicit recipe.faceId overrides. */
+/** Studio squircle, rubber ink, or sculpted (hair-capable); explicit recipe.faceId overrides. */
 function pickFaceId(seed: number): string {
-  if (hash01(seed, 4) < 0.35) return pickId(RUBBER_FACE_PRESET_IDS, seed, 41)
-  const studioIds = FACE_PRESET_IDS.filter((id) => !id.startsWith('face.rubber.'))
+  const r = hash01(seed, 4)
+  if (r < 0.22) return pickId(SCULPTED_FACE_PRESET_IDS, seed, 42)
+  if (r < 0.5) return pickId(RUBBER_FACE_PRESET_IDS, seed, 41)
+  const studioIds = FACE_PRESET_IDS.filter((id) => !id.startsWith('face.rubber.') && !id.startsWith('face.sculpted'))
   return pickId(studioIds, seed, 4)
 }
 

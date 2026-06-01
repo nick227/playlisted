@@ -54,8 +54,11 @@ export function drawStyledBodyDetailed(
   drawTorsoDetailed(ctx, m, f, female)
   drawArmsDetailed(ctx, m, f, look, energy, timeMs)
   drawNeck(ctx, m, f)
-  drawHair(ctx, m.cx, m.headY, m.headR, f.hairStyle, f.hair, f.hairHi, look.seed)
-  if (simpleHead) drawHeadDetailed(ctx, m, f, look.activity, timeMs)
+  // Hair only on simple silhouette heads; studio/rubber/sculpted overlays draw their own (or none).
+  if (simpleHead) {
+    drawHair(ctx, m.cx, m.headY, m.headR, f.hairStyle, f.hair, f.hairHi, look.seed)
+    drawHeadDetailed(ctx, m, f, look.activity, timeMs)
+  }
   drawActivityPropDetailed(ctx, m, f, look, energy, timeMs, s)
 
   ctx.restore()

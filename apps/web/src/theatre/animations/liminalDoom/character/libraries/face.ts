@@ -1,5 +1,5 @@
 export type FaceSkull = 'round' | 'angular' | 'long'
-export type FaceRenderStyle = 'studio' | 'rubberHose'
+export type FaceRenderStyle = 'studio' | 'rubberHose' | 'sculpted'
 
 /** Nine rubber-hose / Cuphead-style expressions (3×3 reference sheet). */
 export type RubberExpression =
@@ -38,6 +38,11 @@ const STUDIO_FACES: Record<string, FacePresetDef> = {
   'face.pinched': { id: 'face.pinched', label: 'Pinched', skull: 'long',    distort: 0.4,  cheekDepth: 0.25, browWeight: 1.25 },
 }
 
+const SCULPTED_FACES: Record<string, FacePresetDef> = {
+  'face.sculpted':      { id: 'face.sculpted',      label: 'Sculpted',      skull: 'angular', distort: 0.12, cheekDepth: 0.1, browWeight: 1.1, renderStyle: 'sculpted' },
+  'face.sculpted.soft': { id: 'face.sculpted.soft', label: 'Sculpted Soft', skull: 'round',   distort: 0.1,  cheekDepth: 0.08, browWeight: 0.95, renderStyle: 'sculpted' },
+}
+
 const RUBBER_FACES: Record<string, FacePresetDef> = {
   'face.rubber.nervous':  { id: 'face.rubber.nervous',  label: 'Rubber Nervous',  skull: 'round', distort: 0.2, cheekDepth: 0, browWeight: 1, renderStyle: 'rubberHose', rubberExpr: 'nervous' },
   'face.rubber.grin':     { id: 'face.rubber.grin',     label: 'Rubber Grin',     skull: 'round', distort: 0.2, cheekDepth: 0, browWeight: 1, renderStyle: 'rubberHose', rubberExpr: 'grin' },
@@ -52,14 +57,25 @@ const RUBBER_FACES: Record<string, FacePresetDef> = {
 
 export const FACE_PRESETS: Record<string, FacePresetDef> = {
   ...STUDIO_FACES,
+  ...SCULPTED_FACES,
   ...RUBBER_FACES,
 }
 
 export const FACE_PRESET_IDS = Object.keys(FACE_PRESETS)
 export const RUBBER_FACE_PRESET_IDS = Object.keys(RUBBER_FACES)
+export const SCULPTED_FACE_PRESET_IDS = Object.keys(SCULPTED_FACES)
 
 export function isRubberFace(face: FacePresetDef): boolean {
   return face.renderStyle === 'rubberHose' || face.id.startsWith('face.rubber.')
+}
+
+export function isSculptedFace(face: FacePresetDef): boolean {
+  return face.renderStyle === 'sculpted' || face.id.startsWith('face.sculpted')
+}
+
+/** Only sculpted heads use the clump / scalp hair system. */
+export function faceSupportsHair(face: FacePresetDef): boolean {
+  return isSculptedFace(face)
 }
 
 export function rubberExprFromSeed(seed: number): RubberExpression {

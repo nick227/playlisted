@@ -1,12 +1,14 @@
 import type { EyesPresetDef } from './character/libraries/eyes'
 import { EYES_PRESETS } from './character/libraries/eyes'
 import type { FacePresetDef } from './character/libraries/face'
-import { FACE_PRESETS, isRubberFace, rubberExprFromSeed } from './character/libraries/face'
+import { FACE_PRESETS, isRubberFace, isSculptedFace, rubberExprFromSeed } from './character/libraries/face'
 import type { MouthPresetDef } from './character/libraries/mouth'
 import { MOUTH_PRESETS } from './character/libraries/mouth'
 import { drawFaceCore } from './face/faceCore'
 import { drawEyeHarness } from './face/faceEyeHarness'
-import { drawStudioHair } from './face/faceHair'
+import { computeHeadFrame } from './face/headFrame'
+import { drawSculptedFace } from './face/sculptedFace'
+import { drawSculptedHair } from './face/sculptedHair'
 import { drawMouthHarness } from './face/faceMouthHarness'
 import { drawRubberHoseFace } from './face/rubberHoseDraw'
 import type { CacheCtx, FaceGender } from './face/faceUtil'
@@ -153,39 +155,45 @@ export function drawFace(
   ctx.save()
   ctx.globalAlpha = baseAlpha
 
-  const displayD = scale * 2.15
-  const useBitmapCache = cache && displayD <= FACE_CACHE_MAX_DISPLAY_D
+  const sculpted = isSculptedFace(face)
+  const frame = computeHeadFrame(x, y, scale, face.skull, g === 'female', seed, distort)
 
-  if (useBitmapCache && cache) {
-    const bakePx = Math.ceil(displayD * resolveDevicePixelRatio())
-    cache.ensureBakePixels(bakePx)
-    if (cache.needsRebake(distort, seed, g, face.id)) {
-      const size = cache.canvas.width
-      const half = size / 2
-      cache.ctx.clearRect(0, 0, size, size)
-      drawFaceCore(cache.ctx, half, half, size * 0.46, distort, seed, g, face)
-      cache.markClean(distort, seed, g, face.id)
+  if (sculpted) {
+    if (hairStyle && hairBase && hairHi) {
+      drawSculptedHair(ctx, frame, hairStyle, hairBase, hairHi)
     }
-    const destX = x - scale * 1.05
-    const destY = y - scale * 1.05
-    const prevSmooth = ctx.imageSmoothingEnabled
-    ctx.imageSmoothingEnabled = false
-    ctx.drawImage(cache.canvas as CanvasImageSource, destX, destY, displayD, displayD)
-    ctx.imageSmoothingEnabled = prevSmooth
+    drawSculptedFace(ctx, frame, seed, distort, g, eyes, mouth, talkLevel, trackX, trackY, timeMs)
   } else {
-    drawFaceCore(ctx, x, y, scale, distort, seed, g, face)
-  }
+    const displayD = scale * 2.15
+    const useBitmapCache = cache && displayD <= FACE_CACHE_MAX_DISPLAY_D
 
-  if (hairStyle && hairBase && hairHi) {
-    drawStudioHair(ctx, x, y, scale, seed, hairStyle, hairBase, hairHi)
-  }
+    if (useBitmapCache && cache) {
+      const bakePx = Math.ceil(displayD * resolveDevicePixelRatio())
+      cache.ensureBakePixels(bakePx)
+      if (cache.needsRebake(distort, seed, g, face.id)) {
+        const size = cache.canvas.width
+        const half = size / 2
+        cache.ctx.clearRect(0, 0, size, size)
+        drawFaceCore(cache.ctx, half, half, size * 0.46, distort, seed, g, face)
+        cache.markClean(distort, seed, g, face.id)
+      }
+      const destX = x - scale * 1.05
+      const destY = y - scale * 1.05
+      const prevSmooth = ctx.imageSmoothingEnabled
+      ctx.imageSmoothingEnabled = false
+      ctx.drawImage(cache.canvas as CanvasImageSource, destX, destY, displayD, displayD)
+      ctx.imageSmoothingEnabled = prevSmooth
+    } else {
+      drawFaceCore(ctx, x, y, scale, distort, seed, g, face)
+    }
 
-  if (isRubberFace(face)) {
-    const expr = face.rubberExpr ?? rubberExprFromSeed(seed)
-    drawRubberHoseFace(ctx, x, y, scale, expr, talkLevel)
-  } else {
-    drawEyeHarness(ctx, x, y, scale, trackX, trackY, distort, seed, talkLevel, eyes, timeMs)
-    drawMouthHarness(ctx, x, y, scale, talkLevel, distort, seed, mouth)
+    if (isRubberFace(face)) {
+      const expr = face.rubberExpr ?? rubberExprFromSeed(seed)
+      drawRubberHoseFace(ctx, x, y, scale, expr, talkLevel)
+    } else {
+      drawEyeHarness(ctx, x, y, scale, trackX, trackY, distort, seed, talkLevel, eyes, timeMs)
+      drawMouthHarness(ctx, x, y, scale, talkLevel, distort, seed, mouth)
+    }
   }
 
   if (state === 'dissolving' && fragmentLevel > 0.05) {
