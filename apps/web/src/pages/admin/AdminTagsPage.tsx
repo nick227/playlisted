@@ -161,7 +161,9 @@ export function AdminTagsPage() {
 
   const handleImport = async () => {
     if (!preview) return;
-    const toImport = preview.filter((p) => !p.duplicate);
+    const toImport = preview
+      .filter((p) => !p.duplicate)
+      .map(({ name, kind }) => ({ name, kind }));
     if (toImport.length === 0) {
       setError("No new tags to import — all entries are duplicates.");
       return;
