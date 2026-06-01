@@ -40,14 +40,14 @@ describe("user account helpers", () => {
   });
 
   it("hides suspended profiles from anonymous viewers", () => {
-    expect(canViewerAccessUserProfile({ id: "u1", status: "SUSPENDED" }, {}, "u1")).toBe(false);
-    expect(canViewerAccessUserProfile({ id: "u1", status: "ACTIVE" }, {}, "u1")).toBe(true);
+    expect(canViewerAccessUserProfile({ id: "u1", status: "SUSPENDED" }, {})).toBe(false);
+    expect(canViewerAccessUserProfile({ id: "u1", status: "ACTIVE" }, {})).toBe(true);
   });
 
   it("allows staff and the account owner to view restricted profiles", () => {
     const suspended = { id: "u1", status: "SUSPENDED" };
-    expect(canViewerAccessUserProfile(suspended, { userId: "u1" }, "u1")).toBe(true);
-    expect(canViewerAccessUserProfile(suspended, { role: "ADMIN" }, "u1")).toBe(true);
+    expect(canViewerAccessUserProfile(suspended, { userId: "u1" })).toBe(true);
+    expect(canViewerAccessUserProfile(suspended, { role: "ADMIN" })).toBe(true);
   });
 
   it("returns status-specific inactive messages", () => {
