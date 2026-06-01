@@ -1,5 +1,6 @@
 import type { CastActivity, CastMemberDef } from '../../sceneKit'
 import { buildRecipeFromSeed } from './character'
+import { spreadNxSlots } from './castPlacement'
 import { hash01 } from './types'
 import { resolveBodyStyle, resolveGender } from './bodies'
 
@@ -25,7 +26,7 @@ export function patron(
     style: opts.style ?? resolveBodyStyle(seed, 3),
     showFace: opts.showFace ?? shouldShowFace(activity, seed),
     faceMode: opts.faceMode ?? faceMode(activity),
-    wanderRadius: opts.wanderRadius ?? (activity === 'wander' ? 0.045 : undefined),
+    wanderRadius: opts.wanderRadius ?? (activity === 'wander' ? 0.03 : undefined),
   }
 }
 
@@ -62,19 +63,20 @@ export function buildBarPatrons(seed: number): CastMemberDef[] {
 }
 
 export function buildBandMembers(seed: number): CastMemberDef[] {
+  const [nx0, nx1, nx2, nx3] = spreadNxSlots(4, 0.28)
   return [
-    patron('drummer',   0.48, 0.78, 'playDrums',  seed + 50, {
+    patron('drummer',   nx0, 0.78, 'playDrums',  seed + 50, {
       bodyScale: 0.44, gender: 'male',   style: 'street',
       // Drummer's face always visible — they're expressive on the beat
       showFace: true, faceMode: 'watching',
     }),
-    patron('guitar-l',  0.34, 0.80, 'playGuitar', seed + 60, {
+    patron('guitar-l',  nx1, 0.80, 'playGuitar', seed + 60, {
       gender: 'female', style: 'neon',
     }),
-    patron('guitar-r',  0.63, 0.80, 'playGuitar', seed + 70, {
+    patron('guitar-r',  nx2, 0.80, 'playGuitar', seed + 70, {
       gender: 'male',   style: 'classic',
     }),
-    patron('bassist',   0.74, 0.82, 'playBass',   seed + 80, { style: 'thrift' }),
+    patron('bassist',   nx3, 0.82, 'playBass',   seed + 80, { style: 'thrift' }),
   ]
 }
 
@@ -82,10 +84,11 @@ export function buildDancers(seed: number, count: number): CastMemberDef[] {
   const n = Math.min(count, 8)
   const out: CastMemberDef[] = []
   const acts: CastActivity[] = ['dance', 'dance', 'dance', 'dance', 'hangOut', 'wander', 'look', 'drink']
+  const nxSlots = spreadNxSlots(n, 0.08)
   for (let i = 0; i < n; i++) {
     const s = seed + i * 13
     out.push(patron(`dancer-${i}`,
-      0.08 + hash01(s, 1) * 0.84,
+      nxSlots[i] + (hash01(s, 1) - 0.5) * 0.03,
       0.70 + hash01(s, 2) * 0.20,
       acts[i % acts.length],
       s,
@@ -102,8 +105,11 @@ export function buildHallwayWatchers(seed: number, rows: number, perSide: number
         const idx = row * 10 + side * 5 + i
         const s = seed + idx
         const depth = row / rows
-        const nx = side === 0 ? 0.06 + hash01(s, 1) * 0.22 : 0.94 - hash01(s, 1) * 0.22
-        const ny = 0.32 + depth * 0.48
+        const sideSlots = spreadNxSlots(perSide, 0.12)
+        const nx = side === 0
+          ? 0.06 + sideSlots[i] * 0.2
+          : 0.94 - sideSlots[i] * 0.2
+        const ny = 0.32 + depth * 0.48 + (hash01(s, 3) - 0.5) * 0.04
         // Only the nearest row shows faces often — back rows stay silhouettes
         const faceProbabilityThreshold = 0.55 + depth * 0.35
         out.push(patron(`watcher-${idx}`, nx, ny,

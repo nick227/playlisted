@@ -20,6 +20,7 @@ import {
   PhraseTicker, drawPhraseState, pickFormat, pickPhraseFromBank,
 } from './phrases'
 import type { PhraseTickState } from './phrases'
+import { separateCastPlacements } from './castPlacement'
 
 type MemberRuntime = {
   def: CastMemberDef
@@ -49,9 +50,11 @@ export class CastDirector {
 
   setCast(members: readonly CastMemberDef[], seed: number) {
     this.seed = seed
+    const prepped = members.map((def, i) => this.jitterAmbientPlacement(def, i))
+    const laidOut = separateCastPlacements(prepped)
     const next: MemberRuntime[] = []
-    for (let i = 0; i < members.length; i++) {
-      const def = members[i]
+    for (let i = 0; i < laidOut.length; i++) {
+      const def = laidOut[i]
       const existing = this.members.find((m) => m.def.id === def.id)
       // Reuse a member only if it's still visible (appeared or dissolving).
       // Fully-dissolved members get a fresh spawn so position jitter and
@@ -66,7 +69,7 @@ export class CastDirector {
       }
     }
     this.members = next.sort((a, b) => (a.def.placement.z ?? 0.5) - (b.def.placement.z ?? 0.5))
-    const speaker = members.find((m) => m.role === 'speaker' || m.speaks)
+    const speaker = laidOut.find((m) => m.role === 'speaker' || m.speaks)
     this.speakerNx = speaker?.placement.nx ?? 0.5
   }
 
@@ -84,7 +87,7 @@ export class CastDirector {
     phase: RoomPhase,
     reducedMotion: boolean,
   ) {
-    const show = !reducedMotion && phase !== 'passage' && phase !== 'voidBloom'
+    const show = !reducedMotion && phase !== 'voidBloom'
     const allowSpeech = phase === 'watch' || phase === 'threshold'
 
     for (const m of this.members) {
@@ -104,8 +107,11 @@ export class CastDirector {
     for (const m of this.members) {
       if (m.config.dissolveAlpha <= 0.01 && !m.dissolving) continue
 
-      const { x, y } = placementToXY(stage, m.def.placement)
+      const { x, y: rawY } = placementToXY(stage, m.def.placement)
       const bodyScale = (m.def.bodyScale ?? m.def.placement.scale) * stageScale * CAST_CHARACTER_SCALE
+      // Pull feet toward the stage floor so characters don't float.
+      const floorY = stage.bottom - bodyScale * 0.35
+      const y = lerp(rawY, floorY, 0.75)
       const energy = activityEnergy(m.character.activity, audio, nowMs, m.character.seed)
       const alpha = (m.def.alpha ?? 1) * m.config.dissolveAlpha
 
@@ -117,7 +123,7 @@ export class CastDirector {
         // faceScale is expressed as a fraction of back-wall width (e.g. 0.03 = 3%).
         // Default 0.03 gives crowd faces ~27px wide on a 432px stage.
         // Named characters set their own value in CastMemberDef.faceScale.
-        const faceR = stage.width * (m.def.faceScale ?? 0.04) * CAST_CHARACTER_SCALE
+        const faceR = stage.width * (m.def.faceScale ?? 0.06) * CAST_CHARACTER_SCALE * 1.25
         const breathe = m.config.state !== 'dissolving' ? idleBreath(nowMs, m.config.seed) : 1
         m.config.gender = m.character.gender
         drawCharacterFace(ctx, head.x, head.y, faceR * breathe, m.config, m.character, nowMs, m.cache)
@@ -132,21 +138,25 @@ export class CastDirector {
     }
   }
 
-  private spawnMember(def: CastMemberDef, index: number): MemberRuntime {
+  private jitterAmbientPlacement(def: CastMemberDef, index: number): CastMemberDef {
     const role = def.role ?? (def.speaks ? 'speaker' : 'listener')
-    // Jitter crowd/ambient positions per room seed so the same preset
-    // looks different each scene cycle. Named/speaker roles are not jittered.
     const isAmbient = role === 'ambient' || (!def.speaks && role !== 'speaker' && role !== 'listener')
-    const jx = isAmbient ? (hash01(this.seed, index * 13)     - 0.5) * 0.07 : 0
-    const jy = isAmbient ? (hash01(this.seed, index * 13 + 1) - 0.5) * 0.035 : 0
-    const jDef: CastMemberDef = isAmbient ? {
+    if (!isAmbient) return def
+    const jx = (hash01(this.seed, index * 13) - 0.5) * 0.04
+    const jy = (hash01(this.seed, index * 13 + 1) - 0.5) * 0.02
+    return {
       ...def,
       placement: {
         ...def.placement,
         nx: clamp(def.placement.nx + jx, 0.04, 0.96),
         ny: clamp(def.placement.ny + jy, 0.28, 0.97),
       },
-    } : def
+    }
+  }
+
+  private spawnMember(def: CastMemberDef, index: number): MemberRuntime {
+    const role = def.role ?? (def.speaks ? 'speaker' : 'listener')
+    const jDef = def
 
     const character = resolveCharacterFromDef(
       { ...jDef, role, faceLayer: 'studio', activity: jDef.activity ?? 'hangOut' },
@@ -209,8 +219,8 @@ export class CastDirector {
 
     // Presence should be stable; avoid constant fade in/out between phases.
     // Use a short eased ramp for entering/exiting visibility without fragments.
-    const targetAlpha = show ? 1 : 0
-    const rampMs = show ? 350 : 220
+    const targetAlpha = show ? (phase === 'passage' ? 0.35 : 1) : 0
+    const rampMs = show ? (phase === 'passage' ? 180 : 350) : 220
     cfg.dissolveAlpha = lerp(cfg.dissolveAlpha, targetAlpha, clamp(dtMs / rampMs, 0, 1))
     if (cfg.dissolveAlpha >= 0.98) m.appeared = true
     if (cfg.dissolveAlpha <= 0.02) m.appeared = false
