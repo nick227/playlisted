@@ -318,6 +318,12 @@ export function CollectionView({
       </div>
 
       <div className={isPodcast ? "mt-10 lg:col-span-2" : "mt-10"}>
+        {isEdit ? (
+          <div className="min-h-[16px]">
+            {uploadProgress ? <div className="py-2">{uploadProgress}</div> : null}
+          </div>
+        ) : null}
+
         {recordings.length === 0 ? (
           <EmptyState
             title="No tracks yet"
@@ -325,11 +331,6 @@ export function CollectionView({
           />
         ) : isEdit ? (
           <div className="space-y-3">
-
-            <div className="min-h-[16px]">
-              {uploadProgress ? <div className="py-2">{uploadProgress}</div> : null}
-            </div>
-
             <TrackList
               recordings={playlist.recordings as CollectionRecording[]}
               ownerName={playlist.owner.displayName}
