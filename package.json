@@ -27,6 +27,7 @@
     "prisma:seed": "prisma db seed",
     "prisma:seed:file": "tsx prisma/seed.ts",
     "prisma:backfill-duration": "tsx prisma/seed/backfillDuration.ts",
+    "prisma:cleanup-orphan-recordings": "tsx prisma/seed/cleanupOrphanRecordings.ts",
     "openapi:validate": "swagger-cli validate openapi/openapi.yaml",
     "openapi:types": "openapi-typescript openapi/openapi.yaml -o packages/client-sdk/src/generated/schema.ts",
     "openapi:check": "npm run openapi:types && git diff --exit-code packages/client-sdk/src/generated/schema.ts",
