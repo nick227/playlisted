@@ -155,6 +155,14 @@ export function StudioCollectionEditPage() {
     if (target < 0 || target >= ids.length) return;
     const next = [...ids];
     [next[index], next[target]] = [next[target], next[index]];
+
+    // Optimistic reorder: update UI immediately, then sync with server response.
+    setDraft({
+      ...collection,
+      recordings: next
+        .map((id) => collection.recordings.find((r) => r.id === id))
+        .filter(Boolean) as PlaylistDetailWithTags["recordings"],
+    });
     reorderMutation.mutate(next);
   }
 
