@@ -2,6 +2,8 @@ import { PublishStatus, RecordingType, Visibility } from "@prisma/client";
 import { Router } from "express";
 
 import { getAllGenres, getAllSubgenres } from "../utils/genresDictionary.js";
+import { getAuthContextFromRequest } from "../lib/auth.js";
+import { canViewerAccessRecording } from "../lib/publicRecordingFilter.js";
 import { requireAuth } from "../lib/requireAuth.js";
 import { prisma } from "../lib/prisma.js";
 
@@ -125,6 +127,18 @@ recordingsRouter.get("/:recordingId", async (req, res, next) => {
     });
 
     if (!recording) {
+      return res.status(404).json({
+        error: "recording_not_found",
+        message: `Recording ${req.params.recordingId} was not found.`,
+      });
+    }
+
+    const auth = await getAuthContextFromRequest(req);
+    if (!canViewerAccessRecording(
+      recording,
+      { userId: auth?.user.id, role: auth?.user.role },
+      recording.uploaderId,
+    )) {
       return res.status(404).json({
         error: "recording_not_found",
         message: `Recording ${req.params.recordingId} was not found.`,

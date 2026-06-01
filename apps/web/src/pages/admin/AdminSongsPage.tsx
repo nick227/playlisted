@@ -4,14 +4,7 @@ import { authedApi } from "@/lib/authedApi";
 import { useAuth } from "@/providers/AuthProvider";
 import { usePageMeta } from "@/hooks/usePageMeta";
 
-type Status = "DRAFT" | "PUBLISHED" | "ARCHIVED";
 type Visibility = "PUBLIC" | "UNLISTED" | "PRIVATE";
-
-const STATUS_COLORS: Record<Status, string> = {
-  PUBLISHED: "text-green-400",
-  DRAFT: "text-zinc-400",
-  ARCHIVED: "text-red-400",
-};
 
 const VIS_COLORS: Record<Visibility, string> = {
   PUBLIC: "text-blue-400",
@@ -75,7 +68,6 @@ export function AdminSongsPage() {
 
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
-  const [filterStatus, setFilterStatus] = useState("");
   const [filterVisibility, setFilterVisibility] = useState("");
   const [filterExplicit, setFilterExplicit] = useState("");
   const [sortBy, setSortBy] = useState("createdAt");
@@ -86,20 +78,19 @@ export function AdminSongsPage() {
     setLoading(true);
     setError(null);
     try {
-      const query: Record<string, any> = { page, pageSize: PAGE_SIZE, sortBy, order };
+      const query: Record<string, string | number | boolean> = { page, pageSize: PAGE_SIZE, sortBy, order };
       if (search.trim()) query.q = search.trim();
-      if (filterStatus) query.status = filterStatus;
       if (filterVisibility) query.visibility = filterVisibility;
       if (filterExplicit) query.explicit = filterExplicit === "true";
       const res = await api.admin.listSongs(query);
       setSongs(res.data);
       setTotal(res.meta.total);
-    } catch (e: any) {
-      setError(e.message ?? "Failed to load songs.");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to load songs.");
     } finally {
       setLoading(false);
     }
-  }, [api, page, search, filterStatus, filterVisibility, filterExplicit, sortBy, order]);
+  }, [api, page, search, filterVisibility, filterExplicit, sortBy, order]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -117,14 +108,27 @@ export function AdminSongsPage() {
     setPage(1);
   };
 
-  const update = async (songId: string, patch: { status?: Status; visibility?: Visibility; explicit?: boolean }) => {
+  const updateVisibility = async (songId: string, visibility: Visibility) => {
     setSaving(songId);
     setError(null);
     try {
-      const updated = await api.admin.updateSong(songId, patch);
+      const updated = await api.admin.updateSong(songId, { visibility });
       setSongs((prev) => prev.map((s) => s.id === songId ? updated : s));
-    } catch (e: any) {
-      setError(e.message ?? "Failed to update song.");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to update song.");
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  const toggleExplicit = async (songId: string, explicit: boolean) => {
+    setSaving(songId);
+    setError(null);
+    try {
+      const updated = await api.admin.updateSong(songId, { explicit: !explicit });
+      setSongs((prev) => prev.map((s) => s.id === songId ? updated : s));
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to update song.");
     } finally {
       setSaving(null);
     }
@@ -137,7 +141,7 @@ export function AdminSongsPage() {
       <div>
         <p className="text-xs font-semibold uppercase tracking-wider text-amber-400">Admin / Songs</p>
         <h2 className="mt-1 text-2xl font-bold text-white">Song Management</h2>
-        <p className="mt-1 text-sm text-[var(--color-text-muted)]">Manage visibility, status, and explicit flags across all tracks.</p>
+        <p className="mt-1 text-sm text-[var(--color-text-muted)]">Control visibility and explicit flags across all tracks.</p>
       </div>
 
       {error && (
@@ -151,12 +155,6 @@ export function AdminSongsPage() {
           placeholder="Search title…"
           className="min-w-[180px] flex-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-white placeholder-[var(--color-text-muted)] focus:outline-none focus:ring-1 focus:ring-amber-400/50"
         />
-        <select value={filterStatus} onChange={(e) => { setFilterStatus(e.target.value); setPage(1); }} className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-white focus:outline-none">
-          <option value="">All statuses</option>
-          <option value="PUBLISHED">Published</option>
-          <option value="DRAFT">Draft</option>
-          <option value="ARCHIVED">Archived</option>
-        </select>
         <select value={filterVisibility} onChange={(e) => { setFilterVisibility(e.target.value); setPage(1); }} className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-white focus:outline-none">
           <option value="">All visibility</option>
           <option value="PUBLIC">Public</option>
@@ -185,7 +183,6 @@ export function AdminSongsPage() {
                 <SortHeader col="plays" label="Plays" sortBy={sortBy} order={order} onSort={handleSort} />
                 <th className="px-4 py-3">Genres</th>
                 <SortHeader col="duration" label="Duration" sortBy={sortBy} order={order} onSort={handleSort} />
-                <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3">Visibility</th>
                 <th className="px-4 py-3">Explicit</th>
                 <SortHeader col="createdAt" label="Added" sortBy={sortBy} order={order} onSort={handleSort} />
@@ -212,20 +209,8 @@ export function AdminSongsPage() {
                   <td className="px-4 py-3 text-xs text-[var(--color-text-muted)]">{fmtDur(song.durationSeconds ?? null)}</td>
                   <td className="px-4 py-3">
                     <select
-                      value={song.status}
-                      onChange={(e) => update(song.id, { status: e.target.value as Status })}
-                      disabled={saving === song.id}
-                      className={`rounded border border-[var(--color-border)] bg-black/30 px-2 py-1 text-xs font-semibold focus:outline-none ${STATUS_COLORS[song.status as Status]}`}
-                    >
-                      <option value="PUBLISHED">Published</option>
-                      <option value="DRAFT">Draft</option>
-                      <option value="ARCHIVED">Archived</option>
-                    </select>
-                  </td>
-                  <td className="px-4 py-3">
-                    <select
                       value={song.visibility}
-                      onChange={(e) => update(song.id, { visibility: e.target.value as Visibility })}
+                      onChange={(e) => updateVisibility(song.id, e.target.value as Visibility)}
                       disabled={saving === song.id}
                       className={`rounded border border-[var(--color-border)] bg-black/30 px-2 py-1 text-xs font-semibold focus:outline-none ${VIS_COLORS[song.visibility as Visibility]}`}
                     >
@@ -236,7 +221,7 @@ export function AdminSongsPage() {
                   </td>
                   <td className="px-4 py-3">
                     <button
-                      onClick={() => update(song.id, { explicit: !song.explicit })}
+                      onClick={() => toggleExplicit(song.id, song.explicit)}
                       disabled={saving === song.id}
                       className={`rounded-full px-2 py-0.5 text-xs font-semibold transition ${song.explicit ? "bg-red-400/20 text-red-400" : "border border-[var(--color-border)] text-zinc-600 hover:text-white"}`}
                     >

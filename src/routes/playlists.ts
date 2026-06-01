@@ -6,7 +6,9 @@ import {
   mapPlaylistSummary,
   playlistDetailInclude,
 } from "../lib/playlistMaps.js";
+import { filterPlaylistItemsForViewer } from "../lib/publicRecordingFilter.js";
 import { prisma } from "../lib/prisma.js";
+import { getAuthContextFromRequest } from "../lib/auth.js";
 import { requireAuth } from "../lib/requireAuth.js";
 import { syncPlaylistStats } from "../lib/playlistStats.js";
 import { resolveUniquePlaylistSlug } from "../lib/playlistSlug.js";
@@ -88,10 +90,16 @@ playlistsRouter.get("/:playlistId", async (req, res, next) => {
       });
     }
 
+    const auth = await getAuthContextFromRequest(req);
+
     if (playlist.visibility === "PRIVATE" || playlist.status !== "PUBLISHED") {
-      const auth = await requireAuth(req, res);
-      if (!auth) return;
-      if (auth.user.id !== playlist.ownerId) {
+      if (!auth) {
+        return res.status(403).json({
+          error: "forbidden",
+          message: "You do not have access to this playlist.",
+        });
+      }
+      if (auth.user.id !== playlist.ownerId && auth.user.role !== "ADMIN" && auth.user.role !== "EDITOR") {
         return res.status(403).json({
           error: "forbidden",
           message: "You do not have access to this playlist.",
@@ -99,7 +107,13 @@ playlistsRouter.get("/:playlistId", async (req, res, next) => {
       }
     }
 
-    return res.json(mapPlaylistDetail(playlist));
+    const visibleItems = filterPlaylistItemsForViewer(
+      playlist.items,
+      { userId: auth?.user.id, role: auth?.user.role },
+      playlist.ownerId,
+    );
+
+    return res.json(mapPlaylistDetail({ ...playlist, items: visibleItems }));
   } catch (error) {
     return next(error);
   }

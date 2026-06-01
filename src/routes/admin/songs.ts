@@ -4,6 +4,9 @@ import { Router } from "express";
 import { prisma } from "../../lib/prisma.js";
 import { requireAdmin } from "../../lib/requireAdmin.js";
 
+const VALID_VISIBILITY = new Set<string>(["PUBLIC", "UNLISTED", "PRIVATE"]);
+const VALID_STATUS = new Set<string>(["DRAFT", "PUBLISHED", "ARCHIVED"]);
+
 export const adminSongsRouter = Router();
 
 const DEFAULT_PAGE = 1;
@@ -114,9 +117,32 @@ adminSongsRouter.patch("/:songId", async (req, res, next) => {
     };
 
     const data: Record<string, unknown> = {};
-    if (body.status !== undefined) data.status = body.status as PublishStatus;
-    if (body.visibility !== undefined) data.visibility = body.visibility as Visibility;
+    if (body.status !== undefined) {
+      if (!VALID_STATUS.has(body.status)) {
+        return res.status(400).json({
+          error: "invalid_status",
+          message: `Invalid status '${body.status}'.`,
+        });
+      }
+      data.status = body.status as PublishStatus;
+    }
+    if (body.visibility !== undefined) {
+      if (!VALID_VISIBILITY.has(body.visibility)) {
+        return res.status(400).json({
+          error: "invalid_visibility",
+          message: `Invalid visibility '${body.visibility}'.`,
+        });
+      }
+      data.visibility = body.visibility as Visibility;
+    }
     if (body.explicit !== undefined) data.explicit = body.explicit;
+
+    if (Object.keys(data).length === 0) {
+      return res.status(400).json({
+        error: "invalid_body",
+        message: "At least one of status, visibility, or explicit must be provided.",
+      });
+    }
 
     const recording = await prisma.recording.update({
       where: { id: req.params.songId },

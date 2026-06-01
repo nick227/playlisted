@@ -2,6 +2,7 @@ import { UserRole, UserStatus } from "@prisma/client";
 import { Router } from "express";
 
 import { getAuthContextFromRequest } from "../lib/auth.js";
+import { filterPlaylistItemsForViewer } from "../lib/publicRecordingFilter.js";
 import { prisma } from "../lib/prisma.js";
 import { assertProfileLinks, normalizeProfileLinks } from "../lib/profileLinks.js";
 import { requireAdmin } from "../lib/requireAdmin.js";
@@ -153,15 +154,16 @@ usersRouter.get("/by-username/:username/playlists/:slug", async (req, res, next)
       });
     }
 
+    const auth = await getAuthContextFromRequest(req);
+
     if (playlist.visibility === "PRIVATE" || playlist.status !== "PUBLISHED") {
-      const auth = await getAuthContextFromRequest(req);
       if (!auth) {
         return res.status(401).json({
           error: "unauthorized",
           message: "You must be logged in to view this playlist.",
         });
       }
-      if (auth.user.id !== playlist.ownerId) {
+      if (auth.user.id !== playlist.ownerId && auth.user.role !== "ADMIN" && auth.user.role !== "EDITOR") {
         return res.status(403).json({
           error: "forbidden",
           message: "You do not have access to this playlist.",
@@ -169,8 +171,14 @@ usersRouter.get("/by-username/:username/playlists/:slug", async (req, res, next)
       }
     }
 
+    const visibleItems = filterPlaylistItemsForViewer(
+      playlist.items,
+      { userId: auth?.user.id, role: auth?.user.role },
+      playlist.ownerId,
+    );
+
     const { mapPlaylistDetail } = await import("../lib/playlistMaps.js");
-    return res.json(mapPlaylistDetail(playlist as any));
+    return res.json(mapPlaylistDetail({ ...playlist, items: visibleItems } as typeof playlist));
   } catch (error) {
     return next(error);
   }
