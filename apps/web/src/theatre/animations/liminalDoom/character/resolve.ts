@@ -4,7 +4,7 @@ import { hash01 } from '../types'
 import { BODY_PRESETS, BODY_PRESET_IDS } from './libraries/body'
 import { CLOTHES_PRESETS, CLOTHES_PRESET_IDS } from './libraries/clothes'
 import { EYES_PRESETS, EYES_PRESET_IDS } from './libraries/eyes'
-import { FACE_PRESETS, FACE_PRESET_IDS } from './libraries/face'
+import { FACE_PRESETS, FACE_PRESET_IDS, RUBBER_FACE_PRESET_IDS } from './libraries/face'
 import { HAIR_PRESETS } from './libraries/hair'
 import { MOUTH_PRESETS, MOUTH_PRESET_IDS } from './libraries/mouth'
 import type { CharacterModifiers, CharacterRecipe, ResolvedCharacter } from './types'
@@ -36,7 +36,7 @@ export function resolveRecipe(
 
   const recipe: CharacterRecipe = {
     bodyId,
-    faceId: partial.faceId ?? pickId(FACE_PRESET_IDS, seed, 4),
+    faceId: partial.faceId ?? pickFaceId(seed),
     hairId,
     eyesId: partial.eyesId ?? pickId(EYES_PRESET_IDS, seed, 5),
     mouthId: partial.mouthId ?? pickId(MOUTH_PRESET_IDS, seed, 6),
@@ -68,6 +68,13 @@ export function resolveRecipe(
 
 const FEMALE_HAIR_IDS = ['hair.bob', 'hair.long', 'hair.bun', 'hair.crop', 'hair.wavy']
 const MALE_HAIR_IDS = ['hair.crop', 'hair.buzz', 'hair.spiky', 'hair.mohawk', 'hair.slick']
+
+/** ~35% rubber-hose faces in ambient crowd; explicit recipe.faceId overrides. */
+function pickFaceId(seed: number): string {
+  if (hash01(seed, 4) < 0.35) return pickId(RUBBER_FACE_PRESET_IDS, seed, 41)
+  const studioIds = FACE_PRESET_IDS.filter((id) => !id.startsWith('face.rubber.'))
+  return pickId(studioIds, seed, 4)
+}
 
 function pickHairForBody(body: { gender: string }, seed: number): string {
   const pool = body.gender === 'female' ? FEMALE_HAIR_IDS : MALE_HAIR_IDS

@@ -1,13 +1,14 @@
 import type { EyesPresetDef } from './character/libraries/eyes'
 import { EYES_PRESETS } from './character/libraries/eyes'
 import type { FacePresetDef } from './character/libraries/face'
-import { FACE_PRESETS } from './character/libraries/face'
+import { FACE_PRESETS, isRubberFace, rubberExprFromSeed } from './character/libraries/face'
 import type { MouthPresetDef } from './character/libraries/mouth'
 import { MOUTH_PRESETS } from './character/libraries/mouth'
 import { drawFaceCore } from './face/faceCore'
 import { drawEyeHarness } from './face/faceEyeHarness'
 import { drawStudioHair } from './face/faceHair'
 import { drawMouthHarness } from './face/faceMouthHarness'
+import { drawRubberHoseFace } from './face/rubberHoseDraw'
 import type { CacheCtx, FaceGender } from './face/faceUtil'
 import { faceColors, faceHash as h } from './face/faceUtil'
 import type { HairStyle } from './fashion'
@@ -179,8 +180,13 @@ export function drawFace(
     drawStudioHair(ctx, x, y, scale, seed, hairStyle, hairBase, hairHi)
   }
 
-  drawEyeHarness(ctx, x, y, scale, trackX, trackY, distort, seed, talkLevel, eyes, timeMs)
-  drawMouthHarness(ctx, x, y, scale, talkLevel, distort, seed, mouth)
+  if (isRubberFace(face)) {
+    const expr = face.rubberExpr ?? rubberExprFromSeed(seed)
+    drawRubberHoseFace(ctx, x, y, scale, expr, talkLevel)
+  } else {
+    drawEyeHarness(ctx, x, y, scale, trackX, trackY, distort, seed, talkLevel, eyes, timeMs)
+    drawMouthHarness(ctx, x, y, scale, talkLevel, distort, seed, mouth)
+  }
 
   if (state === 'dissolving' && fragmentLevel > 0.05) {
     ctx.globalAlpha = 1
