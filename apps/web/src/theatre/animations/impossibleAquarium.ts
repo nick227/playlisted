@@ -6,8 +6,11 @@ import { loadAnimationProgress, saveAnimationProgress } from '../animationProgre
 const PROGRESS_ID = 'impossibleAquarium'
 const PROGRESS_VERSION = 1
 const TWO_PI = Math.PI * 2
-const SCHOOL_COUNT = 14
+const SCHOOL_COUNT = 18
 const BUBBLE_COUNT = 54
+const FISH_SIZE_SCALE = 1.85
+const FISH_BASE = 38
+const FISH_DEPTH_SCALE = 22
 
 type AquariumProgress = {
   version: 1
@@ -174,13 +177,16 @@ export function impossibleAquariumFactory(): IAnimation {
       const growth = this.ageMs / 60000
       const phase = phaseFromGrowth(growth)
       const phasePower = easeOut(clamp(growth / 34, 0, 1))
+      const visibleGrowth = 1 + easeOut(clamp(growth / 9, 0, 1)) * 1.55
       const worldScale = Math.pow(1 + growth * 0.82, 1.34)
-      const heroWorldSize = 42 * worldScale
-      const cameraZoom = clamp(Math.min(w, h) / (heroWorldSize * (3.1 + phasePower * 2.6)), 0.045, 2.1)
+      const heroWorldSize = FISH_BASE * worldScale
+      const cameraZoom = clamp(
+        Math.min(w, h) / (heroWorldSize * (2.85 + phasePower * 2.15)),
+        0.045,
+        2.1,
+      )
       const zoom = cameraZoom
       const time = now / 1000
-      const heroX = Math.sin(time * 0.22 + this.seed) * 18 * worldScale
-      const heroY = Math.sin(time * 0.17 + this.seed * 0.7) * 12 * worldScale
 
       const spectrum: SpectrumFrame = {
         bass,
@@ -200,13 +206,12 @@ export function impossibleAquariumFactory(): IAnimation {
       this.drawDistantScaleAnimals(w, h, time, growth, zoom, phase, audio)
       this.drawBubbles(w, h, time, growth, zoom, highs, heroAudio.bassPulse, reducedMotion)
       this.drawSpectrumPlants(w, h, time, spectrum, phasePower, reducedMotion)
-      this.drawSchool(w, h, time, growth, zoom, heroX, heroY, { bass, mids, highs, energy })
+      this.drawSchool(w, h, time, growth, zoom, visibleGrowth, { bass, mids, highs, energy })
 
       const heroScreenX = w * 0.5 + Math.sin(time * 0.18) * w * 0.04 * (1 - phasePower)
       const heroScreenY = h * 0.52 + Math.sin(time * 0.13) * h * 0.035
       const heroHue = (this.hue + 80 + hash(this.seed) * 180) % 360
-      const heroDepth = 0.35 + hash(this.seed + 59) * 0.9
-      const heroDrawSize = (28 + heroDepth * 16) * zoom
+      const heroDrawSize = heroWorldSize * zoom * FISH_SIZE_SCALE * visibleGrowth
       this.drawHeroAura(heroScreenX, heroScreenY, heroDrawSize, growth, audio, triggers.beat)
       this.drawFish(
         heroScreenX,
@@ -245,11 +250,11 @@ export function impossibleAquariumFactory(): IAnimation {
       this.midsSmoothed += (mids - this.midsSmoothed) * 0.2
 
       if (triggers.beat || triggers.bassHit) {
-        this.bassPulse = Math.max(this.bassPulse, 0.5 + kick * 0.55)
-        this.beatFlash = Math.max(this.beatFlash, 0.55 + triggers.energy * 0.45)
+        this.bassPulse = Math.max(this.bassPulse, 0.58 + kick * 0.62)
+        this.beatFlash = Math.max(this.beatFlash, 0.62 + triggers.energy * 0.52)
       }
-      this.bassPulse = Math.max(kick * 0.42, this.bassPulse - dt / 240)
-      this.beatFlash = Math.max(0, this.beatFlash - dt / 160)
+      this.bassPulse = Math.max(kick * 0.5, this.bassPulse - dt / 280)
+      this.beatFlash = Math.max(0, this.beatFlash - dt / 200)
 
       return {
         bass: this.bassSmoothed,
@@ -305,23 +310,30 @@ export function impossibleAquariumFactory(): IAnimation {
       time: number,
       growth: number,
       zoom: number,
-      heroX: number,
-      heroY: number,
+      visibleGrowth: number,
       audio: { bass: number; mids: number; highs: number; energy: number },
     ) {
-      const cameraPull = Math.max(0, growth - 1.2)
+      const margin = w * 0.48
+      const pathW = w + margin * 2
+
       for (let i = 0; i < this.school.length; i++) {
         const fish = this.school[i]
-        const laneY = (fish.lane - 0.5) * 520 - cameraPull * 15
-        const speed = 28 + hash(fish.seed + 9) * 42
-        const span = 1200 + cameraPull * 80
+        const speed = 40 + hash(fish.seed + 9) * 72
         const dir = i % 2 === 0 ? 1 : -1
-        const x = ((((time * speed * dir + hash(fish.seed) * span) % span) + span) % span) - span * 0.5
-        const y = laneY + Math.sin(time * (0.45 + fish.depth * 0.16) + fish.seed) * 42
-        const sx = w * 0.5 + (x - heroX * 0.45) * zoom
-        const sy = h * 0.52 + (y - heroY * 0.45) * zoom
-        const size = (28 + fish.depth * 16) * zoom
-        if (sx < -120 || sx > w + 120 || sy < -90 || sy > h + 90 || size < 0.8) continue
+        const offset = hash(fish.seed) * pathW
+        const sx = (((time * speed * dir + offset) % pathW) + pathW) % pathW - margin
+        const sy =
+          h * (0.14 + fish.lane * 0.72)
+          + Math.sin(time * (0.45 + fish.depth * 0.16) + fish.seed) * h * 0.045
+        const size =
+          (FISH_BASE + fish.depth * FISH_DEPTH_SCALE)
+          * zoom
+          * FISH_SIZE_SCALE
+          * visibleGrowth
+          * (1 + clamp(growth * 0.06, 0, 0.35))
+        if (sx < -margin - 100 || sx > w + margin + 100 || sy < -size * 2 || sy > h + size * 2 || size < 1) {
+          continue
+        }
         const signal = this.fishSignal(fish.seed, i, time, audio)
         this.drawFish(sx, sy, size, fish.hue, time + fish.seed, false, signal, false, 'school', dir < 0)
       }
@@ -354,9 +366,9 @@ export function impossibleAquariumFactory(): IAnimation {
         const kickShare = i < 3 ? spectrum.bassPulse * 0.72 : spectrum.bassPulse * 0.22
         const beatAccent = spectrum.beat ? 0.28 + hash(this.seed + i * 37) * 0.32 : 0
         const pulse = reducedMotion
-          ? envBands[i] * 0.45
+          ? envBands[i] * 0.55
           : clamp(
-              liveBands[i] * 0.62 + envBands[i] * 0.48 + kickShare + beatAccent + spectrum.beatFlash * 0.18,
+              liveBands[i] * 0.72 + envBands[i] * 0.58 + kickShare + beatAccent + spectrum.beatFlash * 0.32,
               0,
               1,
             )
@@ -416,6 +428,12 @@ export function impossibleAquariumFactory(): IAnimation {
     private drawTopLightFlashes(w: number, h: number, time: number, spectrum: SpectrumFrame, phasePower: number, reducedMotion: boolean) {
       if (reducedMotion) return
 
+      const intense = clamp(
+        spectrum.energy * 1.25 + spectrum.bassPulse * 0.9 + spectrum.beatFlash * 0.85 + (spectrum.beat ? 0.35 : 0),
+        0,
+        1.6,
+      )
+
       const shafts = [
         { x: 0.18, value: spectrum.highs, hue: 188, phase: 0.2 },
         { x: 0.38, value: spectrum.highMids, hue: 258, phase: 1.3 },
@@ -426,20 +444,24 @@ export function impossibleAquariumFactory(): IAnimation {
       this.ctx.save()
       this.ctx.globalCompositeOperation = 'screen'
       for (const shaft of shafts) {
-        const audioShimmer = clamp(shaft.value * 1.15 + spectrum.bassPulse * 0.35, 0, 1)
-        const shimmer = reducedMotion
-          ? audioShimmer * 0.5
-          : clamp(audioShimmer * 0.72 + Math.sin(time * 2.4 + shaft.phase) * shaft.value * 0.12, 0, 1)
-        const alpha = clamp(
-          shaft.value * (0.1 + shimmer * 0.16) + spectrum.bassPulse * 0.08 + (spectrum.beat ? 0.06 : 0),
+        const audioShimmer = clamp(shaft.value * 1.35 + spectrum.bassPulse * 0.55 + intense * 0.2, 0, 1.4)
+        const shimmer = clamp(
+          audioShimmer * 0.78 + Math.sin(time * 2.4 + shaft.phase) * shaft.value * 0.14,
           0,
-          0.28,
+          1,
+        )
+        const alpha = clamp(
+          (shaft.value * (0.14 + shimmer * 0.24) + spectrum.bassPulse * 0.14 + (spectrum.beat ? 0.1 : 0))
+            * (0.55 + intense * 0.95),
+          0,
+          0.55,
         )
         if (alpha <= 0.006) continue
 
         const x = w * shaft.x
-        const width = w * (0.08 + shaft.value * 0.04)
-        const grad = this.ctx.createLinearGradient(x, 0, x, h * (0.52 + phasePower * 0.18))
+        const width = w * (0.1 + shaft.value * 0.06 + intense * 0.04)
+        const reach = h * (0.58 + phasePower * 0.22 + intense * 0.12)
+        const grad = this.ctx.createLinearGradient(x, 0, x, reach)
         grad.addColorStop(0, `hsla(${shaft.hue}, 96%, 72%, ${alpha})`)
         grad.addColorStop(0.28, `hsla(${shaft.hue + 30}, 95%, 62%, ${alpha * 0.38})`)
         grad.addColorStop(1, `hsla(${shaft.hue}, 95%, 54%, 0)`)
@@ -447,8 +469,8 @@ export function impossibleAquariumFactory(): IAnimation {
         this.ctx.beginPath()
         this.ctx.moveTo(x - width * 0.45, 0)
         this.ctx.lineTo(x + width * 0.45, 0)
-        this.ctx.lineTo(x + width * (1.6 + shimmer), h * 0.74)
-        this.ctx.lineTo(x - width * (1.2 + shimmer), h * 0.74)
+        this.ctx.lineTo(x + width * (1.75 + shimmer + intense * 0.25), reach * 1.08)
+        this.ctx.lineTo(x - width * (1.35 + shimmer + intense * 0.15), reach * 1.08)
         this.ctx.closePath()
         this.ctx.fill()
       }
@@ -460,13 +482,13 @@ export function impossibleAquariumFactory(): IAnimation {
       const source = bandPick < 0.34 ? audio.bass : bandPick < 0.72 ? audio.mids : audio.highs
       const offset = hash(seed + 701) * 2.4
       const travelingWave = Math.pow(clamp(Math.sin(time * 1.35 + index * 0.82 + offset) * 0.5 + 0.5, 0, 1), 4)
-      const threshold = 0.12 + hash(seed + 702) * 0.34
-      const value = clamp((source - threshold) * 2.2, 0, 1) * (0.25 + travelingWave * 0.9)
+      const threshold = 0.05 + hash(seed + 702) * 0.18
+      const value = clamp((source - threshold) * 2.85, 0, 1) * (0.35 + travelingWave * 0.95)
       const hueShift = bandPick < 0.34 ? 230 : bandPick < 0.72 ? 95 : 20
       return {
         value,
         hueShift,
-        alpha: clamp(value * (0.18 + audio.energy * 0.24), 0, 0.46),
+        alpha: clamp(value * (0.28 + audio.energy * 0.38), 0, 0.62),
       }
     }
 
@@ -587,8 +609,9 @@ export function impossibleAquariumFactory(): IAnimation {
         : signal
       const motionAudio = hero ? audio : 0
       const dir = flip ? -1 : 1
-      const tail = Math.sin(time * (hero ? 5.2 + motionAudio * 5 : 2.4) + hue) * (hero ? 0.36 + motionAudio * 0.25 : 0.18)
-      const bodyW = size * 1.5 * (1 + motionAudio * 0.08 + (beat ? 0.045 : 0))
+      const tail = Math.sin(time * (hero ? 5.2 + motionAudio * 6 : 2.6 + motionAudio * 2) + hue)
+        * (hero ? 0.36 + motionAudio * 0.28 : 0.2 + motionAudio * 0.14)
+      const bodyW = size * 1.5 * (1 + motionAudio * 0.12 + (beat ? 0.06 : 0))
       const bodyH = size * 0.62
       const light = 42 + colorPulse.value * 16
       const sat = 55 + colorPulse.value * 26
