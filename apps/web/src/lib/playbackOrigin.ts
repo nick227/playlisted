@@ -29,6 +29,10 @@ export function homeGenreSongOrigin(genreSlug: string, recordingId: string): str
   return playbackOriginKey("home", "genre", genreSlug, recordingId);
 }
 
+export function artistProfileTrackOrigin(playlistId: string, recordingId: string): string {
+  return playbackOriginKey("artist-profile", "playlist", playlistId, recordingId);
+}
+
 /** Advance track-scoped origins on queue next/prev; playlist/artist origins stay fixed. */
 export function shiftPlaybackOriginForTrack(
   origin: string | null,

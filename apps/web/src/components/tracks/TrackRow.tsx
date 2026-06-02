@@ -37,6 +37,7 @@ interface TrackRowProps {
   saving?: boolean;
   error?: string;
   onPlay?: () => void;
+  playbackOrigin?: string;
   editMode?: boolean;
   canMoveUp?: boolean;
   canMoveDown?: boolean;
@@ -69,6 +70,7 @@ export function TrackRow({
   saving,
   error,
   onPlay,
+  playbackOrigin,
   editMode,
   canMoveUp,
   canMoveDown,
@@ -78,7 +80,7 @@ export function TrackRow({
   queueTrack,
   shareUrl,
 }: TrackRowProps) {
-  const { isActive, isPlaying } = useTrackPlayback(recordingId);
+  const { isActive, isPlaying } = useTrackPlayback(recordingId, playbackOrigin);
   const showActions = !editMode && queueTrack && shareUrl;
   const artworkInputRef = useRef<HTMLInputElement>(null);
   const [draftTitle, setDraftTitle] = useState(title);

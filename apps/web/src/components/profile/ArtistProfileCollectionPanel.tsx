@@ -12,6 +12,7 @@ import { useAddCollectionPlaylist, useCollectionPlaylists } from "@/hooks/useCol
 import { useAuthAction } from "@/hooks/useAuthAction";
 import { usePlaylistByUsernameSlug } from "@/hooks/usePlaylistByUsernameSlug";
 import { formatPlayCount } from "@/lib/format";
+import { artistProfileTrackOrigin } from "@/lib/playbackOrigin";
 import { coverFallback, playlistPath } from "@/lib/routes";
 import { useAudioPlayer, type QueueTrack } from "@/providers/AudioPlayerProvider";
 import { useAuth } from "@/providers/AuthProvider";
@@ -32,7 +33,7 @@ export function ArtistProfileCollectionPanel({ playlist, owner }: ArtistProfileC
   const savedCollections = useCollectionPlaylists(100);
   const addCollection = useAddCollectionPlaylist();
   const { data: detail, isLoading } = usePlaylistByUsernameSlug(owner.username, playlist.slug);
-  const { setQueue, currentTrack, togglePlay, playbackContext, state } = useAudioPlayer();
+  const { setQueue, currentTrack, togglePlay, playbackContext, activeOriginKey, state } = useAudioPlayer();
 
   const isActive = playbackContext.playlistId === playlist.id;
   const isPlaying = isActive && state === "playing";
@@ -60,7 +61,11 @@ export function ArtistProfileCollectionPanel({ playlist, owner }: ArtistProfileC
         playlistSlug: playlist.slug,
         sourceContext: "artist-profile",
       },
-      { segmentLabel: playlist.title },
+      {
+        segmentLabel: playlist.title,
+        playbackOrigin: artistProfileTrackOrigin(playlist.id, queueTracks[0].id),
+        originScope: "track",
+      },
     );
   }, [recordings, owner.username, playlist.id, playlist.slug, playlist.title, queueTracks, setQueue]);
 
@@ -82,12 +87,18 @@ export function ArtistProfileCollectionPanel({ playlist, owner }: ArtistProfileC
         playlistSlug: playlist.slug,
         sourceContext: "artist-profile",
       },
-      { segmentLabel: playlist.title },
+      {
+        segmentLabel: playlist.title,
+        playbackOrigin: artistProfileTrackOrigin(playlist.id, queueTracks[0].id),
+        originScope: "track",
+      },
     );
   }
 
   function playTrack(recording: CollectionRecording, index: number) {
-    if (currentTrack?.id === recording.id) {
+    const playbackOrigin = artistProfileTrackOrigin(playlist.id, recording.id);
+
+    if (currentTrack?.id === recording.id && activeOriginKey === playbackOrigin) {
       togglePlay();
       return;
     }
@@ -101,7 +112,7 @@ export function ArtistProfileCollectionPanel({ playlist, owner }: ArtistProfileC
         playlistSlug: playlist.slug,
         sourceContext: "artist-profile",
       },
-      { segmentLabel: playlist.title },
+      { segmentLabel: playlist.title, playbackOrigin, originScope: "track" },
     );
   }
 
@@ -200,6 +211,7 @@ export function ArtistProfileCollectionPanel({ playlist, owner }: ArtistProfileC
               slug: playlist.slug,
             }}
             onPlay={playTrack}
+            playbackOriginForTrack={(recording) => artistProfileTrackOrigin(playlist.id, recording.id)}
           />
         )}
       </div>

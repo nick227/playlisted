@@ -1,6 +1,7 @@
 import { AnimationContext, IAnimation } from '../IAnimation'
 import CanvasAnimation from '../CanvasAnimation'
-import { ScriptRunner } from '../stopMotionScript'
+import { loadAnimationProgress, saveAnimationProgress } from '../animationProgressStorage'
+import { ScriptRunner, type ScriptRunnerSnapshot } from '../stopMotionScript'
 import flowerScript from '../scripts/stopMotionFlowerStorm.script'
 
 const flowerPoses = [
@@ -18,6 +19,8 @@ const stemBends = [-0.12, -0.08, -0.04, 0, 0.05, 0.12, 0.08, 0.03]
 
 const TWO_PI = Math.PI * 2
 const MAX_GARDEN_ELEMENTS = 34
+const PROGRESS_ID = 'stopMotionFlowerStorm'
+const PROGRESS_VERSION = 1
 
 type GardenSpecies = 'flower' | 'beautyBlossom' | 'grass' | 'seedPod' | 'mushroom' | 'fern' | 'reed' | 'clover'
 type TimeOfDay = 'dawn' | 'morning' | 'afternoon' | 'dusk' | 'night'
@@ -39,6 +42,22 @@ type GardenElement = {
 type FlowerEnvironment = {
   timeOfDay: TimeOfDay
   condition: WeatherCondition
+}
+
+type FlowerStormProgress = {
+  version: 1
+  runner: ScriptRunnerSnapshot
+  storyElapsed: number
+  effectsSeed: number
+  skyShift: number
+  environment: FlowerEnvironment
+  nextEnvironment: FlowerEnvironment
+  environmentTransitionElapsed: number
+  environmentTransitionMs: number
+  lastEnvironmentShiftElapsed: number
+  gardenElements: Array<Omit<GardenElement, 'bornAt'> & { age: number }>
+  lastGardenElementElapsed: number
+  nextGardenElementId: number
 }
 
 type EnvironmentVisuals = {
@@ -124,9 +143,26 @@ export function stopMotionFlowerStormFactory(): IAnimation {
     private lightningFlashUntil = 0
     private lightningFlashStrength = 0
     private lightningFlashX = 0.5
+    private restoredProgress: FlowerStormProgress | null = null
+    private progressRestored = false
 
     constructor() {
       super({ defaultOpacity: 0.98, defaultZIndex: 102, defaultBlendMode: 'normal', useEffects: true })
+    }
+
+    async init(container: HTMLElement, context: AnimationContext) {
+      await super.init(container, context)
+      this.restoredProgress = this.loadProgress()
+    }
+
+    async stop() {
+      this.saveProgress()
+      await super.stop()
+    }
+
+    destroy() {
+      this.saveProgress()
+      super.destroy()
     }
 
     restartStory() {
@@ -154,6 +190,7 @@ export function stopMotionFlowerStormFactory(): IAnimation {
       const w = this.cssWidth
       const h = this.cssHeight
       const now = context.shared?.time?.elapsed ?? performance.now()
+      this.restoreProgress(now)
       if (this.storyStartMs === 0) this.storyStartMs = now
       const reducedMotion = context.shared?.reducedMotion || false
       const features = context.shared?.features
@@ -284,6 +321,62 @@ export function stopMotionFlowerStormFactory(): IAnimation {
         }
         this.effects.update(this.ctx, now, this.pixelRatio)
       }
+    }
+
+    private loadProgress(): FlowerStormProgress | null {
+      const progress = loadAnimationProgress<FlowerStormProgress>(PROGRESS_ID)
+      if (!progress || progress.version !== PROGRESS_VERSION) return null
+      if (progress.runner?.scriptId !== flowerScript.id) return null
+      return progress
+    }
+
+    private restoreProgress(now: number) {
+      if (this.progressRestored) return
+      this.progressRestored = true
+
+      const progress = this.restoredProgress
+      this.restoredProgress = null
+      if (!progress) return
+
+      this.runner.restoreSnapshot(progress.runner, now)
+      this.effectsSeed = progress.effectsSeed
+      this.skyShift = progress.skyShift
+      this.storyStartMs = now - Math.max(0, progress.storyElapsed)
+      this.environment = progress.environment
+      this.nextEnvironment = progress.nextEnvironment
+      this.environmentTransitionStart = now - Math.max(0, progress.environmentTransitionElapsed)
+      this.environmentTransitionMs = progress.environmentTransitionMs
+      this.lastEnvironmentShiftAt = now - Math.max(0, progress.lastEnvironmentShiftElapsed)
+      this.gardenElements = progress.gardenElements.map((element) => ({
+        ...element,
+        bornAt: now - Math.max(0, element.age),
+      }))
+      this.lastGardenElementAt = now - Math.max(0, progress.lastGardenElementElapsed)
+      this.nextGardenElementId = Math.max(1, progress.nextGardenElementId)
+    }
+
+    private saveProgress() {
+      const now = this.context?.shared?.time?.elapsed ?? performance.now()
+      if (this.storyStartMs === 0) return
+
+      saveAnimationProgress(PROGRESS_ID, {
+        version: PROGRESS_VERSION,
+        runner: this.runner.getSnapshot(now),
+        storyElapsed: Math.max(0, now - this.storyStartMs),
+        effectsSeed: this.effectsSeed,
+        skyShift: this.skyShift,
+        environment: this.environment,
+        nextEnvironment: this.nextEnvironment,
+        environmentTransitionElapsed: Math.max(0, now - this.environmentTransitionStart),
+        environmentTransitionMs: this.environmentTransitionMs,
+        lastEnvironmentShiftElapsed: Math.max(0, now - this.lastEnvironmentShiftAt),
+        gardenElements: this.gardenElements.map(({ bornAt, ...element }) => ({
+          ...element,
+          age: Math.max(0, now - bornAt),
+        })),
+        lastGardenElementElapsed: Math.max(0, now - this.lastGardenElementAt),
+        nextGardenElementId: this.nextGardenElementId,
+      } satisfies FlowerStormProgress)
     }
 
     private updateEnvironment(now: number, reducedMotion: boolean) {

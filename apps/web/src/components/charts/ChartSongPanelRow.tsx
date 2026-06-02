@@ -12,6 +12,7 @@ interface ChartSongPanelRowProps {
   titleHref: string;
   subtitle: string;
   subtitleHref: string;
+  genre?: { name: string; slug: string } | null;
   imageUrl?: string | null;
   playCount: number;
   onPlay: () => void;

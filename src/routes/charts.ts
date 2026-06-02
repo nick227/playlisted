@@ -21,6 +21,8 @@ function chartCandidateTake(limit: number): number {
   return Math.min(CHART_MAX_LIMIT, Math.max(limit * 4, limit + 10));
 }
 
+type GenreRef = { id: string; name: string; slug: string };
+
 function mapTopSongItem(
   r: {
     id: string;
@@ -45,10 +47,12 @@ function mapTopSongItem(
       coverArtUrl: string | null;
       owner: { id: string; username: string; displayName: string; avatarUrl: string | null; role: string };
     };
+    tags?: { tag: { id: string; name: string; slug: string } }[];
   },
   rank: number,
   playCount: number,
 ) {
+  const genre = r.tags?.[0]?.tag ?? null;
   return {
     rank,
     recordingId: r.id,
@@ -67,6 +71,7 @@ function mapTopSongItem(
     updatedAt: r.updatedAt.toISOString(),
     uploader: r.uploader,
     playlist: r.publishedPlaylist,
+    genre: genre as GenreRef | null,
   };
 }
 
@@ -75,6 +80,14 @@ chartsRouter.get("/top-songs", async (req, res, next) => {
     const range = ((req.query.range as string) ?? "30d") as ChartRange;
     const limit = parseChartLimit(req.query.limit);
     const since = rangeToDate(range);
+
+    const songTagInclude = {
+      tags: {
+        take: 1,
+        where: { tag: { kind: "GENRE" as const } },
+        include: { tag: { select: { id: true, name: true, slug: true } } },
+      },
+    };
 
     if (range === "all") {
       const recordings = await prisma.recording.findMany({
@@ -92,6 +105,7 @@ chartsRouter.get("/top-songs", async (req, res, next) => {
               owner: { select: { id: true, username: true, displayName: true, avatarUrl: true, role: true } },
             },
           },
+          ...songTagInclude,
         },
       });
       return res.json({
@@ -122,6 +136,7 @@ chartsRouter.get("/top-songs", async (req, res, next) => {
             owner: { select: { id: true, username: true, displayName: true, avatarUrl: true, role: true } },
           },
         },
+        ...songTagInclude,
       },
     });
 
@@ -162,6 +177,11 @@ chartsRouter.get("/top-playlists", async (req, res, next) => {
       where: { id: { in: playlistIds }, ...PUBLIC_PUBLISHED_PLAYLIST },
       include: {
         owner: { select: { id: true, username: true, displayName: true, avatarUrl: true, role: true } },
+        tags: {
+          take: 1,
+          where: { tag: { kind: "GENRE" } },
+          include: { tag: { select: { id: true, name: true, slug: true } } },
+        },
       },
     });
 
@@ -182,6 +202,7 @@ chartsRouter.get("/top-playlists", async (req, res, next) => {
           totalDurationSeconds: p.totalDurationSeconds,
           playCount: g._count.id,
           owner: p.owner,
+          genre: (p.tags[0]?.tag ?? null) as GenreRef | null,
         };
       });
 

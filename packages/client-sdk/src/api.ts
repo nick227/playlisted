@@ -144,6 +144,8 @@ export interface PlaylistedApi {
     revokeApiKey(keyId: string): Promise<void>;
     listSongs(query?: { page?: number; pageSize?: number; status?: string; visibility?: string; recordingType?: string; explicit?: boolean; genre?: string; uploaderId?: string; q?: string; sortBy?: string; order?: string }): Promise<AdminSongListResponse>;
     updateSong(songId: string, body: AdminUpdateSongRequest): Promise<AdminSong>;
+    deleteSong(songId: string): Promise<void>;
+    setSongTags(songId: string, tagIds: string[]): Promise<AdminSong>;
     listPlaylists(query?: { page?: number; pageSize?: number; status?: string; visibility?: string; type?: string; featured?: boolean; genre?: string; ownerId?: string; q?: string; sortBy?: string; order?: string }): Promise<AdminPlaylistListResponse>;
     updatePlaylist(playlistId: string, body: AdminUpdatePlaylistRequest): Promise<AdminPlaylist>;
   };
@@ -434,6 +436,16 @@ export function createPlaylistedApi(options: PlaylistedClientOptions = {}): Play
         return unwrap(
           raw.PATCH("/api/v1/admin/songs/{songId}", { params: { path: { songId } }, body }),
           "Failed to update song.",
+        );
+      },
+      async deleteSong(songId: string) {
+        const res = await raw.DELETE("/api/v1/admin/songs/{songId}", { params: { path: { songId } } });
+        if (res.error) throw new Error("Failed to delete song.");
+      },
+      setSongTags(songId: string, tagIds: string[]) {
+        return unwrap(
+          raw.PUT("/api/v1/admin/songs/{songId}/tags", { params: { path: { songId } }, body: { tagIds } }),
+          "Failed to update song tags.",
         );
       },
       listPlaylists(query = {}) {

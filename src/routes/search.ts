@@ -132,12 +132,15 @@ searchRouter.get("/unified", async (req, res, next) => {
       prisma.tag.findMany({
         where: {
           kind: "GENRE",
-          OR: [{ name: { contains: q } }, { slug: { contains: q } }],
-          recordingTags: {
-            some: {
-              recording: PUBLIC_PUBLISHED_RECORDING,
+          AND: [
+            { OR: [{ name: { contains: q } }, { slug: { contains: q } }] },
+            {
+              OR: [
+                { recordingTags: { some: { recording: PUBLIC_PUBLISHED_RECORDING } } },
+                { playlistTags: { some: { playlist: { visibility: "PUBLIC", status: "PUBLISHED" } } } },
+              ],
             },
-          },
+          ],
         },
         include: { _count: { select: PUBLIC_RECORDING_TAG_COUNT_SELECT } },
       }),

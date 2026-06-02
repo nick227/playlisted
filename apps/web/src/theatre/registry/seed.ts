@@ -6,6 +6,7 @@ import spinAmpFactory from '../animations/spinAmp'
 import bioMachineFactory from '../animations/bioMachine'
 import weatherSpeakerFactory from '../animations/weatherSpeaker'
 import stopMotionFlowerStormFactory from '../animations/stopMotionFlowerStorm'
+import impossibleAquariumFactory from '../animations/impossibleAquarium'
 import signalOrganismFactory from '../animations/signalOrganism'
 import monsterCrewFactory from '../animations/monsterCrew'
 import liminalDoomFactory from '../animations/liminalDoom'
@@ -17,6 +18,7 @@ registry.register({ id: 'spinAmp',               label: 'Spin Amp',             
 registry.register({ id: 'bioMachine',            label: 'Bio Machine',            factory: bioMachineFactory,            visualType: 'canvas', mood: 'dynamic', role: 'subject',     weight: 1 })
 registry.register({ id: 'weatherSpeaker',        label: 'Weather Speaker',        factory: weatherSpeakerFactory,        visualType: 'canvas', mood: 'dynamic', role: 'background',  weight: 2 })
 registry.register({ id: 'stopMotionFlowerStorm', label: 'Stop-Motion Flower Storm', factory: stopMotionFlowerStormFactory, visualType: 'canvas', mood: 'dynamic', role: 'subject',   weight: 2 })
+registry.register({ id: 'impossibleAquarium',  label: 'Impossible Aquarium',    factory: impossibleAquariumFactory,    visualType: 'canvas', mood: 'dynamic', role: 'subject',   weight: 3 })
 registry.register({ id: 'signalOrganismScene',  label: 'Signal Organism',        factory: signalOrganismFactory,        visualType: 'canvas', mood: 'dynamic', role: 'subject',   weight: 2 })
 registry.register({ id: 'monsterCrew',         label: 'Monster Cycle',          factory: monsterCrewFactory,           visualType: 'canvas', mood: 'dynamic', role: 'subject',   weight: 4 })
 registry.register({ id: 'liminalDoom',         label: 'Liminal Doom',           factory: liminalDoomFactory,           visualType: 'canvas', mood: 'dynamic', role: 'subject',   weight: 1 })
@@ -65,11 +67,21 @@ registerPreset({
   ],
 })
 
-// Single monster animation: cycles through the full crew roughly once a minute
+// One persistent hero fish grows until the rest of the aquarium becomes scale reference
+registerPreset({
+  id: 'impossibleAquarium', label: 'Impossible Aquarium', category: 'production', weight: 3,
+  reducedMotionPreset: 'quietPulse',
+  layers: [
+    { animationId: 'impossibleAquarium', role: 'subject',
+      options: { opacity: 0.98, zIndex: 101, blendMode: 'normal', intensity: 1.0, sensitivity: 1.0 } },
+  ],
+})
+
+// Single monster animation: cycles through the full crew at a brisk showcase pace
 registerPreset({
   id: 'monsterCrewScene', label: 'Monster Cycle', category: 'production', weight: 3,
   reducedMotionPreset: 'quietPulse',
-  layers: [{ animationId: 'monsterCrew', role: 'subject', options: { opacity: 1.0, zIndex: 101, blendMode: 'normal', intensity: 1.0, sensitivity: 1.0, switchMs: 60000, fadeMs: 1200 } }],
+  layers: [{ animationId: 'monsterCrew', role: 'subject', options: { opacity: 1.0, zIndex: 101, blendMode: 'normal', intensity: 1.0, sensitivity: 1.0, switchMs: 15000, fadeMs: 650 } }],
 })
 
 registerPreset({

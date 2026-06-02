@@ -1,5 +1,6 @@
 import { PanelsTopLeft, BookOpen, Heart, Home, ListMusic, Lock, Plus, Radio, Settings, type LucideIcon } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 
 import { useCollectionPlaylists } from "@/hooks/useCollections";
@@ -58,17 +59,21 @@ function NavItem({
 }
 
 export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
-  const { user, accessToken } = useAuth();
+  const { status, user, accessToken } = useAuth();
   const client = authedApi(accessToken);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { data: ownedCollections } = usePlaylists(12, user?.id);
+  const [showCollectionsSignIn, setShowCollectionsSignIn] = useState(false);
+  const isAuthenticated = status === "authenticated" && Boolean(user);
+  const { data: ownedCollections } = usePlaylists(12, user?.id, isAuthenticated);
   const { data: savedCollections } = useCollectionPlaylists(12);
   const panelPath = user ? panelPathForRole(user.role) : null;
-  const collections = [
-    ...(ownedCollections?.data ?? []),
-    ...(savedCollections?.data ?? []),
-  ].filter((playlist, index, all) => all.findIndex((item) => item.id === playlist.id) === index);
+  const collections = isAuthenticated
+    ? [
+        ...(ownedCollections?.data ?? []),
+        ...(savedCollections?.data ?? []),
+      ].filter((playlist, index, all) => all.findIndex((item) => item.id === playlist.id) === index)
+    : [];
 
   const createCollectionMutation = useMutation({
     mutationFn: () =>
@@ -159,15 +164,27 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
               <button
                 type="button"
                 onClick={() => {
-                  if (!user || createCollectionMutation.isPending) return;
+                  if (!isAuthenticated) {
+                    setShowCollectionsSignIn(true);
+                    return;
+                  }
+                  if (createCollectionMutation.isPending) return;
                   createCollectionMutation.mutate();
                 }}
-                disabled={!user || createCollectionMutation.isPending}
+                disabled={createCollectionMutation.isPending}
                 className={navClass(false, "text-left disabled:opacity-60 cursor-pointer")}
               >
                 <Plus size={20} />
                 {createCollectionMutation.isPending ? "Creating..." : "Add Collection"}
               </button>
+              {!isAuthenticated && showCollectionsSignIn ? (
+                <div className="mx-3 mt-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-3">
+                  <p className="text-sm font-semibold text-white">Sign in to see your collections</p>
+                  <p className="mt-1 text-xs leading-relaxed text-[var(--color-text-muted)]">
+                    Collections you create and playlists you save are saved to your account.
+                  </p>
+                </div>
+              ) : null}
               {collections.map((playlist) => (
                 <NavLink
                   key={playlist.id}

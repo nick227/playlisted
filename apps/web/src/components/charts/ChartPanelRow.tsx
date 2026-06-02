@@ -24,6 +24,7 @@ interface ChartPanelRowProps {
   titleHref: string;
   subtitle: string;
   subtitleHref: string;
+  genre?: { name: string; slug: string } | null;
   imageUrl?: string | null;
   imageShape?: "square" | "circle";
   playCount: number;
@@ -38,6 +39,7 @@ export function ChartPanelRow({
   titleHref,
   subtitle,
   subtitleHref,
+  genre,
   imageUrl,
   imageShape = "square",
   playCount,
@@ -77,7 +79,7 @@ export function ChartPanelRow({
 
         <div className="min-w-0">
           <ChartRowTitle title={title} href={titleHref} active={isActive} />
-          <ChartRowSubtitle text={subtitle} href={subtitleHref} />
+          <ChartRowSubtitle text={subtitle} href={subtitleHref} genre={genre} />
         </div>
 
         <div className="ml-auto flex shrink-0 items-center justify-end gap-1 pl-2">

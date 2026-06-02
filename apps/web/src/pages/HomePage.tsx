@@ -422,6 +422,7 @@ export function HomePage() {
         coverArtUrl={item.coverArtUrl}
         ownerUsername={item.owner.username}
         slug={item.slug}
+        genre={item.genre}
         className="w-full"
         playbackOrigin={homeGridPlaylistOrigin("discover", item.playlistId)}
       />
@@ -451,6 +452,7 @@ export function HomePage() {
                   coverArtUrl={item.coverArtUrl}
                   ownerUsername={item.owner.username}
                   slug={item.slug}
+                  genre={item.genre}
                   className="w-full"
                   playbackOrigin={homeGridPlaylistOrigin("featured-playlists", item.playlistId)}
                 />

@@ -4,10 +4,10 @@ import { authedApi } from "@/lib/authedApi";
 import { useAuth } from "@/providers/AuthProvider";
 
 export function useCollectionPlaylists(pageSize = 100) {
-  const { accessToken } = useAuth();
+  const { accessToken, user } = useAuth();
 
   return useQuery({
-    queryKey: ["me", "collections", "playlists", pageSize],
+    queryKey: ["me", "collections", "playlists", pageSize, user?.id ?? "guest"],
     queryFn: () => authedApi(accessToken).me.collectionPlaylists({ pageSize }),
     enabled: Boolean(accessToken),
   });

@@ -20,6 +20,7 @@ interface TrackListProps {
   ownerName?: string;
   playlistContext?: PlaylistTrackContext;
   onPlay: (recording: Recording, index: number) => void;
+  playbackOriginForTrack?: (recording: Recording, index: number) => string | undefined;
   editMode?: boolean;
   onRemove?: (recordingId: string) => void;
   onMoveUp?: (recordingId: string) => void;
@@ -40,6 +41,7 @@ export function TrackList({
   ownerName,
   playlistContext,
   onPlay,
+  playbackOriginForTrack,
   editMode,
   onRemove,
   onMoveUp,
@@ -90,6 +92,7 @@ export function TrackList({
             durationSeconds={recording.durationSeconds}
             artworkUrl={recording.artworkUrl ?? fallbackArtworkUrl}
             onPlay={() => onPlay(recording, index)}
+            playbackOrigin={playbackOriginForTrack?.(recording, index)}
             recordingHref={playlistHref ? `${playlistHref}#track-${recording.id}` : undefined}
             playlistHref={playlistHref}
             playlistTitle={playlistContext?.playlistTitle}

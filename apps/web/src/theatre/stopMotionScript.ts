@@ -30,6 +30,13 @@ export type RunnerOutput = {
   noiseSeed: number
 }
 
+export type ScriptRunnerSnapshot = {
+  scriptId: string
+  stateIndex: number
+  stateElapsed: number
+  poseSeed: number
+}
+
 export class ScriptRunner {
   private script: Script
   private stateIndex = 0
@@ -68,6 +75,26 @@ export class ScriptRunner {
 
   getState(): RunnerOutput | null {
     return this.lastOutput
+  }
+
+  getSnapshot(now = performance.now()): ScriptRunnerSnapshot {
+    return {
+      scriptId: this.script.id,
+      stateIndex: this.stateIndex,
+      stateElapsed: Math.max(0, now - this.stateStart),
+      poseSeed: this.poseSeed,
+    }
+  }
+
+  restoreSnapshot(snapshot: ScriptRunnerSnapshot, now = performance.now()) {
+    if (snapshot.scriptId !== this.script.id) return false
+    if (snapshot.stateIndex < 0 || snapshot.stateIndex >= this.script.states.length) return false
+
+    this.stateIndex = snapshot.stateIndex
+    this.stateStart = now - Math.max(0, snapshot.stateElapsed)
+    this.poseSeed = snapshot.poseSeed
+    this.lastOutput = null
+    return true
   }
 
   private emitIfChanged(now: number, features?: any, triggers?: any, reducedMotion = false) {

@@ -8,6 +8,7 @@ import { PlaybackBars } from "@/features/playback-indicators/PlaybackBars";
 import { usePlaylist } from "@/hooks/usePlaylist";
 import { usePlaylistPlayback } from "@/hooks/usePlaylistPlayback";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
+import { libraryGenrePath } from "@/lib/libraryPaths";
 import { coverFallback, playlistPath } from "@/lib/routes";
 
 export interface SmartPlaylistCardProps {
@@ -18,6 +19,7 @@ export interface SmartPlaylistCardProps {
   ownerUsername?: string | null;
   slug?: string | null;
   meta?: string | null;
+  genre?: { name: string; slug: string } | null;
   className?: string;
   actionSlot?: ReactNode;
   /** When set, only this card shows active for the current playlist (homepage grids). */
@@ -32,6 +34,7 @@ export function SmartPlaylistCard({
   ownerUsername,
   slug,
   meta,
+  genre,
   className,
   actionSlot,
   playbackOrigin,
@@ -273,6 +276,15 @@ export function SmartPlaylistCard({
           <p className="truncate text-xs text-[var(--color-text-subtle)]">{meta}</p>
         )}
       </Link>
+      {genre && (
+        <Link
+          to={libraryGenrePath(genre.slug)}
+          className="-mt-1 block truncate text-xs text-[var(--color-text-subtle)] transition hover:text-[var(--color-text-muted)] hover:underline"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {genre.name}
+        </Link>
+      )}
     </div>
   );
 }

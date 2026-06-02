@@ -70,6 +70,7 @@ export function HomeChartsSection() {
               titleHref={topSongPanelHref(item)}
               subtitle={item.uploader.displayName}
               subtitleHref={topSongPanelSubtitleHref(item)}
+              genre={item.genre}
               imageUrl={item.artworkUrl}
               playCount={item.playCount}
               onPlay={() => playChartSong(item, songs)}
@@ -103,6 +104,7 @@ export function HomeChartsSection() {
               })}
               subtitle={`by ${item.owner.displayName}`}
               subtitleHref={profilePath(item.owner.username)}
+              genre={item.genre}
               imageUrl={item.coverArtUrl}
               playCount={item.playCount}
               play={{

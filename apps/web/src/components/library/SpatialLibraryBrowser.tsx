@@ -455,14 +455,14 @@ function GenresPanel({ push }: { push: (p: PanelDescriptor) => void }) {
                   onClick={() => push({ type: "genre", slug: genre.slug, name: genre.name })}
                   className="group flex w-full items-center justify-between gap-4 py-3 text-left"
                 >
-                  <span className="text-xl font-semibold tracking-tight text-[var(--color-text-muted)] transition-colors group-hover:text-white">
+                  <span className="text-[clamp(1.6rem,3vw,2.4rem)] font-extrabold leading-none tracking-tighter text-[var(--color-text-muted)] transition-colors group-hover:text-white">
                     {genre.name}
                   </span>
                   <div className="flex shrink-0 items-center gap-3">
-                    <span className="tabular-nums text-sm text-white/20">{genre.songCount}</span>
+                    <span className="tabular-nums text-2xl font-bold text-white/20 transition-colors group-hover:text-white/40">{genre.songCount}</span>
                     <ChevronRight
-                      size={15}
-                      className="text-white/15 transition group-hover:text-white/50"
+                      size={20}
+                      className="text-white/20 transition-all group-hover:translate-x-1 group-hover:text-white/70"
                     />
                   </div>
                 </button>

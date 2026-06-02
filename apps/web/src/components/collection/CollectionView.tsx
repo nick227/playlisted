@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { EmptyState } from "@/components/feedback/EmptyState";
 import { TrackList } from "@/components/tracks/TrackList";
 import { coverFallback, profilePath, studioCollectionEditPath } from "@/lib/routes";
+import { libraryGenrePath } from "@/lib/libraryPaths";
 import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
 import { playlistShareUrl, shareContent } from "@/lib/shareContent";
 import type { PlaylistTrackContext } from "@/lib/queueTrack";
@@ -180,6 +181,14 @@ export function CollectionView({
               {playlist.owner.displayName}
             </Link>
             {playlist.itemCount > 0 ? ` • ${playlist.itemCount} tracks` : null}
+            {playlist.tags?.filter((t) => t.kind === "GENRE").map((tag) => (
+              <span key={tag.id}>
+                {" • "}
+                <Link to={libraryGenrePath(tag.slug)} className="hover:underline hover:text-white transition-colors">
+                  {tag.name}
+                </Link>
+              </span>
+            ))}
           </p>
           {isEdit ? (
             <>

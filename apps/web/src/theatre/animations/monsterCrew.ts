@@ -11,8 +11,8 @@ type CrewMember = {
   layer: HTMLDivElement
 }
 
-const DEFAULT_SWITCH_MS = 60000
-const DEFAULT_FADE_MS = 900
+const DEFAULT_SWITCH_MS = 15000
+const DEFAULT_FADE_MS = 650
 
 export function monsterCrewFactory(): IAnimation {
   const factories = [

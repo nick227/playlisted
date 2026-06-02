@@ -892,11 +892,29 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
+        /** Permanently delete a song (admin) */
+        delete: operations["adminDeleteSong"];
+        options?: never;
+        head?: never;
+        /** Update a song's title, status, visibility, or explicit flag (admin) */
+        patch: operations["adminUpdateSong"];
+        trace?: never;
+    };
+    "/api/v1/admin/songs/{songId}/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Replace all genre tags for a song (admin) */
+        put: operations["adminSetSongTags"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
-        /** Update a song's status, visibility, or explicit flag (admin) */
-        patch: operations["adminUpdateSong"];
+        patch?: never;
         trace?: never;
     };
     "/api/v1/admin/playlists": {
@@ -1731,6 +1749,7 @@ export interface components {
             updatedAt: string;
             uploader: components["schemas"]["ChartArtistRef"];
             playlist: components["schemas"]["ChartPlaylistRef"];
+            genre?: components["schemas"]["SongGenreRef"] | null;
         };
         TopSongsResponse: {
             range: components["schemas"]["ChartRange"];
@@ -1748,6 +1767,7 @@ export interface components {
             totalDurationSeconds: number;
             playCount: number;
             owner: components["schemas"]["ChartArtistRef"];
+            genre?: components["schemas"]["SongGenreRef"] | null;
         };
         TopPlaylistsResponse: {
             range: components["schemas"]["ChartRange"];
@@ -2176,9 +2196,13 @@ export interface components {
             meta: components["schemas"]["PaginationMeta"];
         };
         AdminUpdateSongRequest: {
+            title?: string;
             status?: components["schemas"]["PublishStatus"];
             visibility?: components["schemas"]["Visibility"];
             explicit?: boolean;
+        };
+        AdminSetSongTagsRequest: {
+            tagIds: string[];
         };
         AdminPlaylist: {
             id: string;
@@ -4647,6 +4671,92 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["AdminUpdateSongRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated song */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminSong"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    adminDeleteSong: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                songId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: { [name: string]: unknown };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: { [name: string]: unknown };
+                content: { "application/json": components["schemas"]["ErrorResponse"] };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: { [name: string]: unknown };
+                content: { "application/json": components["schemas"]["ErrorResponse"] };
+            };
+            /** @description Not found */
+            404: {
+                headers: { [name: string]: unknown };
+                content: { "application/json": components["schemas"]["ErrorResponse"] };
+            };
+        };
+    };
+    adminSetSongTags: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                songId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminSetSongTagsRequest"];
             };
         };
         responses: {
