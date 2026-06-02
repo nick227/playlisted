@@ -198,14 +198,13 @@ export function impossibleAquariumFactory(): IAnimation {
       this.drawWater(w, h, time, energy, phasePower, heroAudio.bassPulse)
       this.drawTopLightFlashes(w, h, time, spectrum, phasePower, reducedMotion)
       this.drawDistantScaleAnimals(w, h, time, growth, zoom, phase, audio)
-      this.drawBubbles(w, h, time, growth, zoom, highs, reducedMotion)
+      this.drawBubbles(w, h, time, growth, zoom, highs, heroAudio.bassPulse, reducedMotion)
       this.drawSpectrumPlants(w, h, time, spectrum, phasePower, reducedMotion)
       this.drawSchool(w, h, time, growth, zoom, heroX, heroY, { bass, mids, highs, energy })
 
       const heroScreenX = w * 0.5 + Math.sin(time * 0.18) * w * 0.04 * (1 - phasePower)
       const heroScreenY = h * 0.52 + Math.sin(time * 0.13) * h * 0.035
       this.drawHeroAura(heroScreenX, heroScreenY, heroWorldSize * zoom, growth, heroAudio)
-      this.drawHeroBeatRings(heroScreenX, heroScreenY, heroWorldSize * zoom, heroAudio, reducedMotion)
       this.drawFish(
         heroScreenX,
         heroScreenY,
@@ -217,7 +216,9 @@ export function impossibleAquariumFactory(): IAnimation {
         triggers.beat || triggers.bassHit,
         phase,
       )
-      this.fireBeatEffects(heroScreenX, heroScreenY, heroAudio, triggers, reducedMotion, context.shared?.lowPower)
+      if (this.effects && triggers.chaosHit && energy > 0.65 && !context.shared?.lowPower) {
+        this.effects.triggerShockwave(heroScreenX, heroScreenY, energy * 0.9)
+      }
       this.effects?.update(this.ctx, now, this.pixelRatio)
     }
 
@@ -257,43 +258,6 @@ export function impossibleAquariumFactory(): IAnimation {
         beat: triggers.beat,
         bassHit: triggers.bassHit,
         midsHit: triggers.midsHit,
-      }
-    }
-
-    private fireBeatEffects(
-      heroX: number,
-      heroY: number,
-      hero: HeroFishAudio,
-      triggers: TriggerFrame,
-      reducedMotion: boolean,
-      lowPower?: boolean,
-    ) {
-      if (!this.effects || reducedMotion || lowPower) return
-
-      if (triggers.beat || triggers.bassHit) {
-        const strength = 0.35 + hero.bassPulse * 0.55 + hero.energy * 0.25
-        this.effects.triggerShockwave(heroX, heroY, strength)
-        this.effects.triggerParticleBurst(
-          heroX,
-          heroY,
-          Math.floor(10 + hero.energy * 22 + hero.bassPulse * 18),
-          0.55 + hero.bassPulse * 0.5,
-          `${Math.round(90 + hero.bass * 80)},240,255`,
-        )
-        if (triggers.beat) this.effects.triggerScreenPunch(0.22 + hero.energy * 0.28)
-      }
-      if (triggers.midsHit) {
-        this.effects.triggerParticleBurst(
-          heroX + 12,
-          heroY - 8,
-          Math.floor(6 + hero.energy * 10),
-          0.4 + hero.mids * 0.35,
-          '120,255,200',
-        )
-      }
-      if (triggers.chaosHit && hero.energy > 0.65) {
-        this.effects.triggerShockwave(heroX, heroY, hero.energy * 1.05)
-        this.effects.triggerScreenPunch(hero.energy * 0.45)
       }
     }
 
@@ -552,72 +516,55 @@ export function impossibleAquariumFactory(): IAnimation {
       }
     }
 
-    private drawBubbles(w: number, h: number, time: number, growth: number, zoom: number, highs: number, reducedMotion: boolean) {
+    private drawBubbles(
+      w: number,
+      h: number,
+      time: number,
+      growth: number,
+      zoom: number,
+      highs: number,
+      bassPulse: number,
+      reducedMotion: boolean,
+    ) {
       if (reducedMotion) return
       this.ctx.save()
-      this.ctx.strokeStyle = `rgba(196, 246, 255, ${0.12 + highs * 0.18})`
+      this.ctx.lineCap = 'round'
       for (let i = 0; i < BUBBLE_COUNT; i++) {
         const s = this.seed + i * 211
-        const speed = 18 + hash(s) * 62
-        const x = hash(s + 1) * w + Math.sin(time * 0.4 + s) * 18
-        const y = h - (((time * speed + hash(s + 2) * h * 1.4) % (h * 1.35)))
-        const r = (1.5 + hash(s + 3) * 7) * clamp(zoom * 1.8, 0.2, 1.4) * (1 + highs * 0.6)
-        if (r < 0.45) continue
-        this.ctx.globalAlpha = clamp(0.12 + hash(s + 4) * 0.28 - growth * 0.002, 0.04, 0.36)
+        const lane = hash(s + 5)
+        const speed = 22 + hash(s) * 48 + bassPulse * 28 * lane
+        const drift = Math.sin(time * 0.35 + s * 0.02) * 10
+        const x = hash(s + 1) * w + drift
+        const y = h - (((time * speed + hash(s + 2) * h * 1.2) % (h * 1.28)))
+        const baseR = (1.2 + hash(s + 3) * 5.5) * clamp(zoom * 1.6, 0.2, 1.2)
+        const r = baseR * (1 + highs * 0.35 + bassPulse * 0.15 * lane)
+        if (r < 0.4) continue
+        const alpha = clamp(0.1 + hash(s + 4) * 0.22 - growth * 0.002 + highs * 0.08, 0.05, 0.32)
+        this.ctx.strokeStyle = `rgba(196, 246, 255, ${alpha})`
+        this.ctx.lineWidth = Math.max(0.6, r * 0.22)
+        this.ctx.globalAlpha = alpha
         this.ctx.beginPath()
         this.ctx.arc(x, y, r, 0, TWO_PI)
+        this.ctx.stroke()
+        this.ctx.beginPath()
+        this.ctx.arc(x - r * 0.28, y - r * 0.32, r * 0.18, 0, TWO_PI)
+        this.ctx.strokeStyle = `rgba(230, 252, 255, ${alpha * 0.55})`
         this.ctx.stroke()
       }
       this.ctx.restore()
     }
 
     private drawHeroAura(x: number, y: number, size: number, growth: number, hero: HeroFishAudio) {
-      const pulse = hero.bass + hero.bassPulse * 0.85 + hero.beatFlash * 0.35
-      const auraR = size * (1.35 + pulse * 0.55 + (hero.beat ? 0.22 : 0))
+      const pulse = hero.bass + hero.bassPulse * 0.55
+      const auraR = size * (1.32 + pulse * 0.38 + (hero.beat ? 0.1 : 0))
       const grad = this.ctx.createRadialGradient(x, y, size * 0.2, x, y, auraR)
-      grad.addColorStop(0, `hsla(${this.hue + 40}, 96%, 72%, ${0.12 + pulse * 0.28 + hero.beatFlash * 0.2})`)
-      grad.addColorStop(0.42, `hsla(${this.hue + 150}, 90%, 58%, ${0.05 + clamp(growth / 24, 0, 0.12) + hero.mids * 0.08})`)
+      grad.addColorStop(0, `hsla(${this.hue + 40}, 92%, 70%, ${0.1 + pulse * 0.16})`)
+      grad.addColorStop(0.42, `hsla(${this.hue + 150}, 88%, 56%, ${0.045 + clamp(growth / 24, 0, 0.1)})`)
       grad.addColorStop(1, 'rgba(0, 0, 0, 0)')
       this.ctx.fillStyle = grad
       this.ctx.beginPath()
       this.ctx.arc(x, y, auraR, 0, TWO_PI)
       this.ctx.fill()
-
-      if (hero.bassPulse > 0.12 || hero.beatFlash > 0.08) {
-        this.ctx.save()
-        this.ctx.globalCompositeOperation = 'screen'
-        const ringR = size * (0.95 + hero.bassPulse * 0.35)
-        this.ctx.strokeStyle = `hsla(${this.hue + 120}, 98%, 68%, ${0.08 + hero.bassPulse * 0.22 + hero.beatFlash * 0.18})`
-        this.ctx.lineWidth = Math.max(2, size * 0.04) * (1 + hero.bassPulse * 0.6)
-        this.ctx.beginPath()
-        this.ctx.arc(x, y, ringR, 0, TWO_PI)
-        this.ctx.stroke()
-        this.ctx.restore()
-      }
-    }
-
-    private drawHeroBeatRings(
-      x: number,
-      y: number,
-      size: number,
-      hero: HeroFishAudio,
-      reducedMotion: boolean,
-    ) {
-      if (reducedMotion || hero.beatFlash < 0.04) return
-
-      this.ctx.save()
-      this.ctx.globalCompositeOperation = 'screen'
-      const rings = 3
-      for (let i = 0; i < rings; i++) {
-        const t = hero.beatFlash * (1 - i * 0.22)
-        const r = size * (0.55 + i * 0.22 + (1 - t) * 0.45 + hero.bassPulse * 0.25)
-        this.ctx.strokeStyle = `hsla(${this.hue + 90 + i * 40}, 100%, 72%, ${t * 0.35})`
-        this.ctx.lineWidth = Math.max(1.5, size * 0.028) * (1 + hero.bassPulse)
-        this.ctx.beginPath()
-        this.ctx.arc(x, y, r, 0, TWO_PI)
-        this.ctx.stroke()
-      }
-      this.ctx.restore()
     }
 
     private drawFish(
@@ -711,11 +658,6 @@ export function impossibleAquariumFactory(): IAnimation {
           this.ctx.stroke()
         }
         this.ctx.restore()
-
-        this.drawHeroGlints(bodyW, bodyH, hue, heroAudio ?? {
-          bass: audio, mids: 0, highs: 0, energy: 0, bassPulse: bassKick, beatFlash: flash,
-          beat, bassHit: beat, midsHit: false,
-        }, time)
       }
 
       this.ctx.fillStyle = `hsla(${hue + 18}, ${sat}%, ${light + 8}%, ${hero ? 0.82 : 0.5})`
@@ -725,59 +667,20 @@ export function impossibleAquariumFactory(): IAnimation {
       this.ctx.closePath()
       this.ctx.fill()
 
-      const eyeR = Math.max(1.2, size * 0.055) * (hero ? 1 + bassKick * 0.18 + flash * 0.12 : 1)
-      const pupilR = Math.max(0.8, size * 0.026) * (hero ? 1 + (heroAudio?.mids ?? 0) * 0.2 : 1)
-      const pupilShiftX = heroAudio ? Math.sin(time * 0.7) * size * 0.012 + heroAudio.mids * size * 0.02 : 0
-      const pupilShiftY = heroAudio ? -heroAudio.bass * size * 0.018 - bassKick * size * 0.02 : 0
+      const eyeR = Math.max(1.2, size * 0.055) * (hero ? 1 + bassKick * 0.1 : 1)
+      const pupilR = Math.max(0.8, size * 0.026) * (hero ? 1 + (heroAudio?.mids ?? 0) * 0.12 : 1)
+      const pupilShiftX = heroAudio ? Math.sin(time * 0.7) * size * 0.01 + heroAudio.mids * size * 0.015 : 0
+      const pupilShiftY = heroAudio ? -heroAudio.bass * size * 0.012 - bassKick * size * 0.015 : 0
 
-      this.ctx.fillStyle = hero ? `rgba(245, 255, 255, ${0.92 + flash * 0.06})` : 'rgba(230, 248, 255, 0.72)'
+      this.ctx.fillStyle = hero ? 'rgba(245, 255, 255, 0.92)' : 'rgba(230, 248, 255, 0.72)'
       this.ctx.beginPath()
       this.ctx.arc(bodyW * 0.31, -bodyH * 0.12, eyeR, 0, TWO_PI)
       this.ctx.fill()
-      if (hero && (bassKick > 0.1 || flash > 0.05)) {
-        this.ctx.save()
-        this.ctx.globalCompositeOperation = 'screen'
-        this.ctx.strokeStyle = `hsla(${hue + 160}, 100%, 78%, ${0.25 + bassKick * 0.35 + flash * 0.25})`
-        this.ctx.lineWidth = Math.max(1, size * 0.02)
-        this.ctx.beginPath()
-        this.ctx.arc(bodyW * 0.31, -bodyH * 0.12, eyeR * 1.65, 0, TWO_PI)
-        this.ctx.stroke()
-        this.ctx.restore()
-      }
       this.ctx.fillStyle = 'rgba(2, 8, 16, 0.88)'
       this.ctx.beginPath()
       this.ctx.arc(bodyW * 0.33 + pupilShiftX, -bodyH * 0.12 + pupilShiftY, pupilR, 0, TWO_PI)
       this.ctx.fill()
-      if (hero && flash > 0.08) {
-        this.ctx.fillStyle = `rgba(255, 255, 255, ${0.55 + flash * 0.4})`
-        this.ctx.beginPath()
-        this.ctx.arc(bodyW * 0.28 + pupilShiftX, -bodyH * 0.14 + pupilShiftY, pupilR * 0.35, 0, TWO_PI)
-        this.ctx.fill()
-      }
 
-      this.ctx.restore()
-    }
-
-    private drawHeroGlints(bodyW: number, bodyH: number, hue: number, hero: HeroFishAudio, time: number) {
-      const spark = hero.bassPulse + hero.beatFlash * 0.8
-      if (spark < 0.08) return
-
-      this.ctx.save()
-      this.ctx.globalCompositeOperation = 'screen'
-      const spots = [
-        { x: bodyW * 0.08, y: -bodyH * 0.05, phase: 0 },
-        { x: -bodyW * 0.12, y: bodyH * 0.08, phase: 1.2 },
-        { x: bodyW * 0.2, y: bodyH * 0.18, phase: 2.4 },
-      ]
-      for (const spot of spots) {
-        const twinkle = clamp(Math.sin(time * 8 + spot.phase) * 0.5 + 0.5, 0, 1)
-        const a = spark * twinkle * 0.55
-        if (a < 0.04) continue
-        this.ctx.fillStyle = `hsla(${hue + 180}, 100%, 78%, ${a})`
-        this.ctx.beginPath()
-        this.ctx.arc(spot.x, spot.y, bodyW * 0.04 * (1 + hero.bassPulse), 0, TWO_PI)
-        this.ctx.fill()
-      }
       this.ctx.restore()
     }
 
