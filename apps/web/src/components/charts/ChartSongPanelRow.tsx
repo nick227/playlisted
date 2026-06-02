@@ -69,7 +69,7 @@ export function ChartSongPanelRow({
           )}
         </button>
 
-        <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-md">
+        <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md">
           {imageUrl ? (
             <img src={imageUrl} alt="" className="h-full w-full object-cover" />
           ) : (
@@ -79,15 +79,6 @@ export function ChartSongPanelRow({
               aria-hidden
             />
           )}
-          <span
-            className={[
-              "playback-thumb-glow rounded-md",
-              isActive ? "is-active" : "",
-              isPlaying ? "is-playing" : "",
-            ].join(" ")}
-            aria-hidden
-          />
-          <PlaybackBars variant="thumb" active={isActive} playing={isPlaying} />
         </div>
 
         <div className="min-w-0">
