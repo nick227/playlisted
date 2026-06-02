@@ -12,11 +12,13 @@ import {
 
 export function useHomeChartPlaylistPlayback() {
   const { accessToken } = useAuth();
-  const { setQueue, togglePlay, playbackContext, state } = useAudioPlayer();
+  const { setQueue, togglePlay, playbackContext, activeOriginKey, state } = useAudioPlayer();
 
   const isActive = useCallback(
-    (playlistId: string) => playbackContext.playlistId === playlistId,
-    [playbackContext.playlistId],
+    (playlistId: string) =>
+      playbackContext.playlistId === playlistId &&
+      activeOriginKey === homeChartPlaylistOrigin(playlistId),
+    [playbackContext.playlistId, activeOriginKey],
   );
 
   const isPlaying = useCallback(

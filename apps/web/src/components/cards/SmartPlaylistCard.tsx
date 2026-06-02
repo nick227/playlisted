@@ -6,6 +6,7 @@ import { PlaylistActionMenu } from "@/components/media/PlaylistActionMenu";
 import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
 import { PlaybackBars } from "@/features/playback-indicators/PlaybackBars";
 import { usePlaylist } from "@/hooks/usePlaylist";
+import { usePlaylistPlayback } from "@/hooks/usePlaylistPlayback";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 import { coverFallback, playlistPath } from "@/lib/routes";
 
@@ -19,6 +20,8 @@ export interface SmartPlaylistCardProps {
   meta?: string | null;
   className?: string;
   actionSlot?: ReactNode;
+  /** When set, only this card shows active for the current playlist (homepage grids). */
+  playbackOrigin?: string;
 }
 
 export function SmartPlaylistCard({
@@ -31,12 +34,14 @@ export function SmartPlaylistCard({
   meta,
   className,
   actionSlot,
+  playbackOrigin,
 }: SmartPlaylistCardProps) {
   // Lazy fetch — triggered on hover so the page doesn't fire N requests on mount
   const [shouldFetch, setShouldFetch] = useState(false);
   const { data: playlist } = usePlaylist(shouldFetch ? id : undefined);
 
-  const { currentTrack, state, playbackContext, setQueue, togglePlay } = useAudioPlayer();
+  const { currentTrack, setQueue, togglePlay } = useAudioPlayer();
+  const { isActive, isPlaying } = usePlaylistPlayback(id, playbackOrigin);
 
   const [hovered, setHovered] = useState(false);
   const [displaySrc, setDisplaySrc] = useState(coverArtUrl ?? "");
@@ -46,9 +51,6 @@ export function SmartPlaylistCard({
   const fadeTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const cycleIntervalRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const pendingPlayRef = useRef(false);
-
-  const isActive = playbackContext.playlistId === id;
-  const isPlaying = isActive && state === "playing";
 
   const artworks = useMemo(() => {
     if (!playlist?.recordings) return [];
@@ -140,10 +142,10 @@ export function SmartPlaylistCard({
           playlistSlug: slug ?? pl.slug,
           sourceContext: "card",
         },
-        { segmentLabel: pl.title },
+        { segmentLabel: pl.title, playbackOrigin },
       );
     },
-    [id, ownerUsername, slug, setQueue],
+    [id, ownerUsername, playbackOrigin, slug, setQueue],
   );
 
   // Auto-play once data arrives after an early click

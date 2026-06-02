@@ -19,6 +19,7 @@ import { useIsMdUp } from "@/hooks/useIsMdUp";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { useTopArtists, useTopPlaylists } from "@/hooks/useCharts";
 import { useAuth } from "@/providers/AuthProvider";
+import { homeGridPlaylistOrigin } from "@/lib/playbackOrigin";
 import { coverFallback, resolveItemPath } from "@/lib/routes";
 
 type HomepageItem = components["schemas"]["HomepageItem"];
@@ -205,7 +206,13 @@ function EditorialPickCard({ item }: { item: HomepageItem }) {
   );
 }
 
-function HomepageEditorialCard({ item }: { item: HomepageItem }) {
+function HomepageEditorialCard({
+  item,
+  sectionKey,
+}: {
+  item: HomepageItem;
+  sectionKey: string;
+}) {
   if (item.targetType === "USER") {
     return (
       <ArtistCard
@@ -230,6 +237,7 @@ function HomepageEditorialCard({ item }: { item: HomepageItem }) {
       creatorName={item.subtitle}
       coverArtUrl={item.imageUrl}
       className="w-full"
+      playbackOrigin={homeGridPlaylistOrigin(sectionKey, item.id)}
     />
   );
 }
@@ -415,6 +423,7 @@ export function HomePage() {
         ownerUsername={item.owner.username}
         slug={item.slug}
         className="w-full"
+        playbackOrigin={homeGridPlaylistOrigin("discover", item.playlistId)}
       />
     ))}
   </HomeSection>
@@ -431,7 +440,7 @@ export function HomePage() {
         >
           {featuredPlaylistsSection.editorial.length > 0
             ? featuredPlaylistsSection.editorial.map((item) => (
-                <HomepageEditorialCard key={item.id} item={item} />
+                <HomepageEditorialCard key={item.id} item={item} sectionKey="featured-playlists" />
               ))
             : featuredPlaylistsSection.fallback.map((item) => (
                 <SmartPlaylistCard
@@ -443,6 +452,7 @@ export function HomePage() {
                   ownerUsername={item.owner.username}
                   slug={item.slug}
                   className="w-full"
+                  playbackOrigin={homeGridPlaylistOrigin("featured-playlists", item.playlistId)}
                 />
               ))}
         </HomeSection>
@@ -491,7 +501,7 @@ export function HomePage() {
           cols={HOME_SECTION_COLS.editorPicks}
         >
           {editorPicksGrid.map((item) => (
-            <HomepageEditorialCard key={item.id} item={item} />
+            <HomepageEditorialCard key={item.id} item={item} sectionKey="editor-picks" />
           ))}
         </HomeSection>
       )}
@@ -499,7 +509,7 @@ export function HomePage() {
       {newReleasesSection.length > 0 && (
         <HomeSection title="New Releases" cols={HOME_SECTION_COLS.newReleases}>
           {newReleasesSection.map((item) => (
-            <HomepageEditorialCard key={item.id} item={item} />
+            <HomepageEditorialCard key={item.id} item={item} sectionKey="new-releases" />
           ))}
         </HomeSection>
       )}

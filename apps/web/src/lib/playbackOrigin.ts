@@ -15,6 +15,10 @@ export function homeChartArtistOrigin(userId: string): string {
   return playbackOriginKey("home", "chart", "top-artists", userId);
 }
 
+export function homeGridPlaylistOrigin(sectionKey: string, playlistId: string): string {
+  return playbackOriginKey("home", "grid", sectionKey, playlistId);
+}
+
 export function homeSpotlightTrackOrigin(playlistId: string, recordingId: string): string {
   return playbackOriginKey("home", "spotlight", playlistId, recordingId);
 }

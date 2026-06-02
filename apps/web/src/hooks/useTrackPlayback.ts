@@ -8,7 +8,7 @@ export function useTrackPlayback(trackId: string | undefined, originKey?: string
   const isActive =
     originKey !== undefined
       ? trackMatches && activeOriginKey === originKey
-      : trackMatches;
+      : trackMatches && activeOriginKey == null;
   const isPlaying = isActive && playerIsPlaying;
   const isPaused = isActive && state === "paused";
 
