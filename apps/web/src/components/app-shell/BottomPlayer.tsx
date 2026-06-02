@@ -23,7 +23,7 @@ const playerFooterClass =
   "fixed inset-x-0 bottom-0 z-[55] w-full border-t border-[var(--color-border)] bg-[var(--color-canvas-alt)] pb-[env(safe-area-inset-bottom,0px)] md:pb-0";
 
 const playerBodyClass =
-  "relative flex h-[var(--spacing-player-mobile)] w-full min-w-0 max-w-full flex-col justify-center gap-2.5 px-4 md:grid md:h-[var(--spacing-player)] md:grid-cols-3 md:items-center md:gap-2 md:px-4";
+  "relative w-full min-w-0 max-w-full flex-col py-2 justify-center gap-2.5 px-4 md:grid md:h-[var(--spacing-player)] md:grid-cols-3 md:items-center md:gap-2 md:px-4";
 
 export function BottomPlayer() {
   const {
