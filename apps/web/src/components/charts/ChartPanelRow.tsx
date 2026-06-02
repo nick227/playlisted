@@ -1,8 +1,14 @@
 import type { ReactNode } from "react";
 
+import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
 import { coverFallback } from "@/lib/routes";
 
 import { ChartRowSubtitle, ChartRowTitle } from "./ChartRowText";
+
+type ChartPanelFavorite = {
+  target: "playlist" | "artist";
+  id: string;
+};
 
 interface ChartPanelRowProps {
   rank: number;
@@ -14,6 +20,7 @@ interface ChartPanelRowProps {
   imageShape?: "square" | "circle";
   lead?: ReactNode;
   stat?: ReactNode;
+  favorite?: ChartPanelFavorite;
   actionSlot?: ReactNode;
 }
 
@@ -51,6 +58,7 @@ export function ChartPanelRow({
   imageShape = "square",
   lead,
   stat,
+  favorite,
   actionSlot,
 }: ChartPanelRowProps) {
   const rounded = imageShape === "circle" ? "rounded-full" : "rounded-md";
@@ -69,13 +77,28 @@ export function ChartPanelRow({
           {subtitle ? <ChartRowSubtitle text={subtitle} href={subtitleHref} /> : null}
         </div>
 
-        <div className="ml-auto flex shrink-0 items-center justify-end gap-2 pl-2">
-          {stat ? (
-            <div className="text-xs font-medium tabular-nums text-[var(--color-text-muted)]">{stat}</div>
-          ) : null}
+        <div className="ml-auto flex shrink-0 items-center justify-end gap-1 pl-2">
           {actionSlot ? (
             <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
               {actionSlot}
+            </div>
+          ) : null}
+          {stat || favorite ? (
+            <div className="flex items-center gap-2">
+              {stat ? (
+                <div className="text-xs font-medium tabular-nums text-[var(--color-text-muted)]">
+                  {stat}
+                </div>
+              ) : null}
+              {favorite ? (
+                <FavoriteHeartButton
+                  target={favorite.target}
+                  id={favorite.id}
+                  variant="inline"
+                  inlineAlwaysVisible
+                  className="-mr-1.5"
+                />
+              ) : null}
             </div>
           ) : null}
         </div>

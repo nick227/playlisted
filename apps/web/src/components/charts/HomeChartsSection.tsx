@@ -100,6 +100,7 @@ export function HomeChartsSection() {
               subtitleHref={profilePath(item.owner.username)}
               imageUrl={item.coverArtUrl}
               stat={<ChartPlayStat count={item.playCount} />}
+              favorite={{ target: "playlist", id: item.playlistId }}
               actionSlot={
                 <PlaylistActionMenu
                   playlistId={item.playlistId}
@@ -128,6 +129,7 @@ export function HomeChartsSection() {
               imageUrl={item.avatarUrl}
               imageShape="circle"
               stat={<ChartPlayStat count={item.playCount} />}
+              favorite={{ target: "artist", id: item.userId }}
             />
           ))}
         </ChartPanelContainer>
