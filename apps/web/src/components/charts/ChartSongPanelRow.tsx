@@ -1,12 +1,13 @@
 import { Pause, Play } from "lucide-react";
 import type { ReactNode } from "react";
-import { Link } from "react-router-dom";
 
 import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
 import { PlaybackBars } from "@/features/playback-indicators/PlaybackBars";
 import { useTrackPlayback } from "@/hooks/useTrackPlayback";
 import { formatPlayCount } from "@/lib/format";
 import { coverFallback } from "@/lib/routes";
+
+import { ChartRowSubtitle, ChartRowTitle } from "./ChartRowText";
 
 interface ChartSongPanelRowProps {
   rank: number;
@@ -82,21 +83,8 @@ export function ChartSongPanelRow({
         </div>
 
         <div className="min-w-0">
-          <Link
-            to={titleHref}
-            className={[
-              "block truncate text-sm font-medium hover:underline",
-              isActive ? "text-[var(--color-brand)]" : "text-white",
-            ].join(" ")}
-          >
-            {title}
-          </Link>
-          <Link
-            to={subtitleHref}
-            className="mt-0.5 block truncate text-xs text-[var(--color-text-muted)] hover:text-white"
-          >
-            {subtitle}
-          </Link>
+          <ChartRowTitle title={title} href={titleHref} active={isActive} />
+          <ChartRowSubtitle text={subtitle} href={subtitleHref} />
         </div>
 
         <div className="ml-auto flex shrink-0 items-center justify-end gap-1 pl-2">

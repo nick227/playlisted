@@ -1,65 +1,44 @@
-import { Play } from "lucide-react";
-import type { ChartRange, TopArtistItem, TopPlaylistItem, TopSongItem } from "@playlisted/client-sdk";
+import type { TopArtistItem, TopPlaylistItem, TopSongItem } from "@playlisted/client-sdk";
 
 import { RecordingActionMenu } from "@/components/media/RecordingActionMenu";
 import { PlaylistActionMenu } from "@/components/media/PlaylistActionMenu";
 import { useTopArtists, useTopPlaylists, useTopSongs } from "@/hooks/useCharts";
 import { useIsMdUp } from "@/hooks/useIsMdUp";
-import { formatPlayCount } from "@/lib/format";
 import { homeChartSongOrigin } from "@/lib/playbackOrigin";
-import { chartItemPlaybackContext, topSongToQueueTrack } from "@/lib/queueTrack";
+import { topSongToQueueTrack } from "@/lib/queueTrack";
 import { playlistPath, profilePath } from "@/lib/routes";
-import { recordingShareUrl } from "@/lib/shareContent";
-import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 
+import {
+  CHART_PANELS_GRID_CLASS,
+  HOME_CHART_ITEM_LIMIT,
+  HOME_CHART_PLAYLIST_LIMIT,
+  HOME_CHART_RANGE,
+  HOME_CHART_RANGE_LABEL,
+  HOME_CHART_SONG_SECTION,
+} from "./chartConfig";
 import { ChartPanelContainer } from "./ChartPanelContainer";
 import { ChartPanelRow } from "./ChartPanelRow";
 import { ChartPanelSkeleton } from "./ChartPanelSkeleton";
+import { ChartPlayStat } from "./ChartPlayStat";
 import { ChartSongPanelRow } from "./ChartSongPanelRow";
+import {
+  topSongPanelHref,
+  topSongPanelShareUrl,
+  topSongPanelSubtitleHref,
+} from "./chartSongUtils";
+import { useHomeChartSongPlayback } from "./useHomeChartSongPlayback";
 
-const CHART_RANGE: ChartRange = "7d";
-const CHART_RANGE_LABEL = "last 7 days";
-const CHART_SECTION_KEY = "top-songs";
-const TOP_SONGS_LIMIT = 6;
-const TOP_ARTISTS_LIMIT = 6;
-
-function viewportLimit(mobile: number, desktop: number, isMdUp: boolean): number {
-  return isMdUp ? desktop : mobile;
-}
-
-function PlayStat({ count }: { count: number }) {
-  return (
-    <span className="inline-flex items-center gap-1">
-      <Play size={12} className="opacity-70" aria-hidden />
-      {formatPlayCount(count)}
-    </span>
-  );
+function chartPlaylistLimit(isMdUp: boolean): number {
+  return isMdUp ? HOME_CHART_PLAYLIST_LIMIT.desktop : HOME_CHART_PLAYLIST_LIMIT.mobile;
 }
 
 export function HomeChartsSection() {
   const isMdUp = useIsMdUp();
-  const topPlaylistsLimit = viewportLimit(4, 6, isMdUp);
+  const { play: playChartSong } = useHomeChartSongPlayback();
 
-  const topSongs = useTopSongs(CHART_RANGE, TOP_SONGS_LIMIT);
-  const topPlaylists = useTopPlaylists(CHART_RANGE, topPlaylistsLimit);
-  const topArtists = useTopArtists(CHART_RANGE, TOP_ARTISTS_LIMIT);
-
-  const { playTrack, currentTrack, activeOriginKey, togglePlay } = useAudioPlayer();
-
-  function playChartSong(item: TopSongItem, siblings: TopSongItem[]) {
-    const origin = homeChartSongOrigin(CHART_SECTION_KEY, item.recordingId);
-    if (currentTrack?.id === item.recordingId && activeOriginKey === origin) {
-      togglePlay();
-      return;
-    }
-    const idx = siblings.findIndex((s) => s.recordingId === item.recordingId);
-    if (idx < 0) return;
-    const tracks = siblings.map((s) => topSongToQueueTrack(s, "Top Songs"));
-    playTrack(topSongToQueueTrack(item, "Top Songs"), tracks, chartItemPlaybackContext(item), {
-      segmentLabel: "Top Songs",
-      playbackOrigin: origin,
-    });
-  }
+  const topSongs = useTopSongs(HOME_CHART_RANGE, HOME_CHART_ITEM_LIMIT);
+  const topPlaylists = useTopPlaylists(HOME_CHART_RANGE, chartPlaylistLimit(isMdUp));
+  const topArtists = useTopArtists(HOME_CHART_RANGE, HOME_CHART_ITEM_LIMIT);
 
   const loading = topSongs.isLoading || topPlaylists.isLoading || topArtists.isLoading;
   const songs = topSongs.data?.data ?? [];
@@ -68,30 +47,24 @@ export function HomeChartsSection() {
 
   if (loading) return <ChartPanelSkeleton />;
 
-  const hasCharts = songs.length > 0 || playlists.length > 0 || artists.length > 0;
-  if (!hasCharts) return null;
+  if (songs.length === 0 && playlists.length === 0 && artists.length === 0) return null;
+
+  const rangeLabel = HOME_CHART_RANGE_LABEL[HOME_CHART_RANGE];
 
   return (
-    <section className="mb-10 grid gap-4 lg:grid-cols-3" aria-label="Charts">
+    <section className={CHART_PANELS_GRID_CLASS} aria-label="Charts">
       {songs.length > 0 ? (
-        <ChartPanelContainer
-          title="Top Songs"
-          subtitle={`Most-played — ${CHART_RANGE_LABEL}`}
-        >
+        <ChartPanelContainer title="Top Songs" subtitle={`Most-played — ${rangeLabel}`}>
           {songs.map((item: TopSongItem) => (
             <ChartSongPanelRow
               key={item.recordingId}
               rank={item.rank}
               recordingId={item.recordingId}
-              playbackOrigin={homeChartSongOrigin(CHART_SECTION_KEY, item.recordingId)}
+              playbackOrigin={homeChartSongOrigin(HOME_CHART_SONG_SECTION, item.recordingId)}
               title={item.title}
-              titleHref={`${playlistPath({
-                id: item.publishedPlaylistId,
-                username: item.playlist.owner.username,
-                slug: item.playlist.slug,
-              })}#track-${item.recordingId}`}
+              titleHref={topSongPanelHref(item)}
               subtitle={item.uploader.displayName}
-              subtitleHref={profilePath(item.uploader.username)}
+              subtitleHref={topSongPanelSubtitleHref(item)}
               imageUrl={item.artworkUrl}
               playCount={item.playCount}
               onPlay={() => playChartSong(item, songs)}
@@ -100,12 +73,7 @@ export function HomeChartsSection() {
                   recordingId={item.recordingId}
                   title={item.title}
                   queueTrack={topSongToQueueTrack(item)}
-                  shareUrl={recordingShareUrl({
-                    playlistId: item.playlist.id,
-                    recordingId: item.recordingId,
-                    username: item.playlist.owner.username,
-                    slug: item.playlist.slug,
-                  })}
+                  shareUrl={topSongPanelShareUrl(item)}
                 />
               }
             />
@@ -116,7 +84,7 @@ export function HomeChartsSection() {
       {playlists.length > 0 ? (
         <ChartPanelContainer
           title="Top Playlists"
-          subtitle={`Most-played collections — ${CHART_RANGE_LABEL}`}
+          subtitle={`Most-played collections — ${rangeLabel}`}
         >
           {playlists.map((item: TopPlaylistItem) => (
             <ChartPanelRow
@@ -131,7 +99,7 @@ export function HomeChartsSection() {
               subtitle={`by ${item.owner.displayName}`}
               subtitleHref={profilePath(item.owner.username)}
               imageUrl={item.coverArtUrl}
-              stat={<PlayStat count={item.playCount} />}
+              stat={<ChartPlayStat count={item.playCount} />}
               actionSlot={
                 <PlaylistActionMenu
                   playlistId={item.playlistId}
@@ -148,7 +116,7 @@ export function HomeChartsSection() {
       {artists.length > 0 ? (
         <ChartPanelContainer
           title="Top Artists"
-          subtitle={`Creators driving the most plays — ${CHART_RANGE_LABEL}`}
+          subtitle={`Creators driving the most plays — ${rangeLabel}`}
         >
           {artists.map((item: TopArtistItem) => (
             <ChartPanelRow
@@ -159,7 +127,7 @@ export function HomeChartsSection() {
               subtitle={`@${item.username}`}
               imageUrl={item.avatarUrl}
               imageShape="circle"
-              stat={<PlayStat count={item.playCount} />}
+              stat={<ChartPlayStat count={item.playCount} />}
             />
           ))}
         </ChartPanelContainer>

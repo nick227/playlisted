@@ -1,5 +1,6 @@
 import { Skeleton } from "@/components/feedback/Skeleton";
 
+import { CHART_PANELS_GRID_CLASS } from "./chartConfig";
 import { ChartPanelContainer } from "./ChartPanelContainer";
 
 const PLACEHOLDER_TITLES = ["Top Songs", "Top Playlists", "Top Artists"] as const;
@@ -21,7 +22,7 @@ function SkeletonRow() {
 
 export function ChartPanelSkeleton() {
   return (
-    <div className="mb-10 grid gap-4 lg:grid-cols-3">
+    <div className={CHART_PANELS_GRID_CLASS}>
       {PLACEHOLDER_TITLES.map((title) => (
         <ChartPanelContainer key={title} title={title}>
           {Array.from({ length: 6 }).map((_, i) => (
