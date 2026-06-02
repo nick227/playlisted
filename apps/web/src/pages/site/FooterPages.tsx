@@ -1,5 +1,4 @@
 import { EditorialInfoPage } from "@/pages/site/EditorialInfoPage";
-import { title } from "process";
 
 const pages = {
   musicians: {
@@ -29,6 +28,7 @@ const pages = {
     "We just rolled out our first developer features.",
     intro:
       "Hiya, what kind of developer?",
+    sections: [],
     bullets: [
       "API key used to connect through curl.",
       "Public radio api for streaming.",
