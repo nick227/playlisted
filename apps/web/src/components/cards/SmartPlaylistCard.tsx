@@ -142,7 +142,11 @@ export function SmartPlaylistCard({
           playlistSlug: slug ?? pl.slug,
           sourceContext: "card",
         },
-        { segmentLabel: pl.title, playbackOrigin },
+        {
+          segmentLabel: pl.title,
+          playbackOrigin,
+          originScope: playbackOrigin ? "playlist" : undefined,
+        },
       );
     },
     [id, ownerUsername, playbackOrigin, slug, setQueue],

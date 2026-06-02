@@ -54,6 +54,7 @@ export function useHomeChartPlaylistPlayback() {
         {
           segmentLabel: item.title,
           playbackOrigin: homeChartPlaylistOrigin(item.playlistId),
+          originScope: "playlist",
         },
       );
     },

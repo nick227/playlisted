@@ -16,6 +16,7 @@ import { Link } from "react-router-dom";
 import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
 import { formatDuration } from "@/lib/format";
 import { coverFallback, playlistPath } from "@/lib/routes";
+import { usePlaybackTransport } from "@/hooks/usePlaybackTransport";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 
 const playerFooterClass =
@@ -30,13 +31,10 @@ export function BottomPlayer() {
     playerDismissSnapshot,
     playerBarExiting,
     isPlaying,
-    currentTime,
-    duration,
     playbackContext,
     togglePlay,
     playNext,
     playPrevious,
-    seek,
     setQueueOpen,
     autoplayEnabled,
     autoplayNextSegment,
@@ -49,6 +47,7 @@ export function BottomPlayer() {
     volume,
     setVolume,
   } = useAudioPlayer();
+  const { currentTime, duration, seek } = usePlaybackTransport();
 
   const prevVolumeRef = useRef(1);
 

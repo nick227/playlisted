@@ -23,6 +23,7 @@ export function useHomeChartSongPlayback() {
     playTrack(topSongToQueueTrack(item, SEGMENT_LABEL), tracks, chartItemPlaybackContext(item), {
       segmentLabel: SEGMENT_LABEL,
       playbackOrigin: origin,
+      originScope: "track",
     });
   }
 

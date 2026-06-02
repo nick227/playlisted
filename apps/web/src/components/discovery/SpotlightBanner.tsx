@@ -135,6 +135,7 @@ function PlaylistSpotlight({ item }: { item: HomepageItem }) {
       setQueue(queueTracks, 0, context, {
         segmentLabel: pl.title,
         playbackOrigin: homeSpotlightTrackOrigin(pl.id, first.id),
+        originScope: "track",
       });
     }
   }
@@ -145,7 +146,11 @@ function PlaylistSpotlight({ item }: { item: HomepageItem }) {
       togglePlay();
       return;
     }
-    setQueue(queueTracks, idx, context, { segmentLabel: pl.title, playbackOrigin: origin });
+    setQueue(queueTracks, idx, context, {
+      segmentLabel: pl.title,
+      playbackOrigin: origin,
+      originScope: "track",
+    });
   }
 
   const href = playlistPath({ id: pl.id, href: pl.href, username: pl.owner.username, slug: pl.slug });

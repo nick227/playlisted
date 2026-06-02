@@ -13,7 +13,8 @@ import {
 
 import theatreController from "@/theatre/lazyController";
 import { hydrateUpNextSegment } from "@/lib/upNext/hydrateSegment";
-import { shiftPlaybackOriginTrack } from "@/lib/playbackOrigin";
+import type { PlaybackOriginScope } from "@/lib/playbackSurface";
+import { shiftPlaybackOriginForTrack } from "@/lib/playbackOrigin";
 import { prefetchAutoplayNext, type PrefetchedPlaylistNext } from "@/lib/upNext/prefetchAutoplayNext";
 import { readAutoplayEnabled, writeAutoplayEnabled } from "@/lib/upNext/storage";
 import type { BeginSegmentOptions, UpNextSegment } from "@/lib/upNext/types";
@@ -65,8 +66,6 @@ interface AudioPlayerContextValue {
   playerBarExiting: boolean;
   playerDismissSnapshot: PlayerDismissSnapshot | null;
   isPlaying: boolean;
-  currentTime: number;
-  duration: number;
   playbackContext: PlaybackContext;
   /** UI element key for the surface that started the current segment (null = any track-id match). */
   activeOriginKey: string | null;
@@ -94,7 +93,6 @@ interface AudioPlayerContextValue {
   playNext: () => void;
   playPrevious: () => void;
   skipToUpNext: () => void;
-  seek: (time: number) => void;
   appendToQueue: (track: QueueTrack) => void;
   appendUpNextSegment: (segment: UpNextSegment) => void;
   removeUpNextSegment: (segmentId: string) => void;
@@ -105,7 +103,14 @@ interface AudioPlayerContextValue {
   releasePlayback: () => void;
 }
 
+export type PlaybackTransportValue = {
+  currentTime: number;
+  duration: number;
+  seek: (time: number) => void;
+};
+
 const AudioPlayerContext = createContext<AudioPlayerContextValue | null>(null);
+export const PlaybackTransportContext = createContext<PlaybackTransportValue | null>(null);
 
 function autopilotTail(context: PlaybackContext): UpNextSegment {
   return {
@@ -135,6 +140,8 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   const upNextPipelineRef = useRef<UpNextSegment[]>([]);
   const advancingRef = useRef(false);
   const dismissTimerRef = useRef<number | null>(null);
+  const activeOriginScopeRef = useRef<PlaybackOriginScope | null>(null);
+  const currentTimeRef = useRef(0);
 
   const [queue, setQueueState] = useState<QueueTrack[]>([]);
   const [queueIndex, setQueueIndex] = useState(-1);
@@ -143,8 +150,8 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   const [autoplayNextSegment, setAutoplayNextSegment] = useState<PrefetchedPlaylistNext | null>(null);
   const [autoplayEnabled, setAutoplayEnabledState] = useState(() => readAutoplayEnabled());
   const [state, setState] = useState<PlayerState>("idle");
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
+  const [transportCurrentTime, setTransportCurrentTime] = useState(0);
+  const [transportDuration, setTransportDuration] = useState(0);
   const [playbackContext, setPlaybackContext] = useState<PlaybackContext>({ sourceContext: "player" });
   const [activeOriginKey, setActiveOriginKey] = useState<string | null>(null);
   const [queueOpen, setQueueOpen] = useState(false);
@@ -260,6 +267,8 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
 
       segmentEndIndexRef.current = tracks.length - 1;
       setSegmentLabel(options?.segmentLabel ?? tracks[index]?.playlistTitle ?? null);
+      const scope = options?.originScope ?? null;
+      activeOriginScopeRef.current = scope;
       setActiveOriginKey(options?.playbackOrigin ?? null);
       setQueueState(tracks);
       setQueueIndex(index);
@@ -318,14 +327,14 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       options?: BeginSegmentOptions,
     ) => {
       if (currentTrack && currentTrack.id !== track.id) {
-        flushPlayback(currentTrack, audioRef.current?.currentTime ?? currentTime, false);
+        flushPlayback(currentTrack, audioRef.current?.currentTime ?? currentTimeRef.current, false);
         loggedTrackRef.current = null;
       }
       const tracks = nextQueue ?? [track];
       const index = tracks.findIndex((t) => t.id === track.id);
       beginSegment(tracks, index >= 0 ? index : 0, context, options);
     },
-    [currentTrack, currentTime, flushPlayback, beginSegment],
+    [currentTrack, flushPlayback, beginSegment],
   );
 
   const setQueue = useCallback(
@@ -337,13 +346,19 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     ) => {
       if (tracks.length === 0) return;
       if (currentTrack) {
-        flushPlayback(currentTrack, audioRef.current?.currentTime ?? currentTime, false);
+        flushPlayback(currentTrack, audioRef.current?.currentTime ?? currentTimeRef.current, false);
         loggedTrackRef.current = null;
       }
       beginSegment(tracks, startIndex, context, options);
     },
-    [currentTrack, currentTime, flushPlayback, beginSegment],
+    [currentTrack, flushPlayback, beginSegment],
   );
+
+  const shiftOriginToTrack = useCallback((nextTrackId: string) => {
+    setActiveOriginKey((prev) =>
+      shiftPlaybackOriginForTrack(prev, activeOriginScopeRef.current, nextTrackId),
+    );
+  }, []);
 
   const updateQueuePlaylistTitle = useCallback((playlistId: string, title: string) => {
     if (playbackContextRef.current.playlistId !== playlistId) return;
@@ -387,7 +402,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
         next = Math.floor(Math.random() * (end + 1));
       } while (next === idx && end > 0);
       setQueueIndex(next);
-      setActiveOriginKey((prev) => shiftPlaybackOriginTrack(prev, q[next].id));
+      shiftOriginToTrack(q[next].id);
       loadTrack(q[next]);
       return;
     }
@@ -395,20 +410,20 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     if (idx < end) {
       const next = idx + 1;
       setQueueIndex(next);
-      setActiveOriginKey((prev) => shiftPlaybackOriginTrack(prev, q[next].id));
+      shiftOriginToTrack(q[next].id);
       loadTrack(q[next]);
       return;
     }
 
     if (repeatRef.current === "all" && q.length > 0) {
       setQueueIndex(0);
-      setActiveOriginKey((prev) => shiftPlaybackOriginTrack(prev, q[0].id));
+      shiftOriginToTrack(q[0].id);
       loadTrack(q[0]);
       return;
     }
 
     void advanceProgram();
-  }, [loadTrack, advanceProgram]);
+  }, [loadTrack, advanceProgram, shiftOriginToTrack]);
 
   const skipToUpNext = useCallback(() => {
     if (upNextPipelineRef.current.length === 0 && !autoplayRef.current) return;
@@ -417,12 +432,12 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     const idx = queueIndexRef.current;
     const track = idx >= 0 ? queueRef.current[idx] : null;
     if (track) {
-      flushPlayback(track, audioRef.current?.currentTime ?? currentTime, false);
+      flushPlayback(track, audioRef.current?.currentTime ?? currentTimeRef.current, false);
       loggedTrackRef.current = null;
     }
 
     void advanceProgram();
-  }, [currentTime, flushPlayback, advanceProgram]);
+  }, [flushPlayback, advanceProgram]);
 
   const playPrevious = useCallback(() => {
     const audio = audioRef.current;
@@ -433,10 +448,10 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     if (queueIndex > 0) {
       const prev = queueIndex - 1;
       setQueueIndex(prev);
-      setActiveOriginKey((origin) => shiftPlaybackOriginTrack(origin, queue[prev].id));
+      shiftOriginToTrack(queue[prev].id);
       loadTrack(queue[prev]);
     }
-  }, [queue, queueIndex, loadTrack]);
+  }, [queue, queueIndex, loadTrack, shiftOriginToTrack]);
 
   const seek = useCallback((time: number) => {
     const audio = audioRef.current;
@@ -469,7 +484,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     const track = idx >= 0 ? queueRef.current[idx] : null;
     const audio = audioRef.current;
     if (track) {
-      flushPlayback(track, audio?.currentTime ?? currentTime, false);
+      flushPlayback(track, audio?.currentTime ?? currentTimeRef.current, false);
       loggedTrackRef.current = null;
     }
     audio?.pause();
@@ -482,8 +497,8 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       setPlayerDismissSnapshot({
         track,
         playbackContext: { ...playbackContextRef.current },
-        currentTime: audio?.currentTime ?? currentTime,
-        duration: audio?.duration || duration,
+        currentTime: audio?.currentTime ?? currentTimeRef.current,
+        duration: audio?.duration || transportDuration,
       });
       setPlayerBarExiting(true);
       setQueueIndex(-1);
@@ -502,7 +517,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     setQueueIndex(-1);
     setState("idle");
     setQueueOpen(false);
-  }, [currentTime, duration, flushPlayback, state]);
+  }, [transportDuration, flushPlayback, state]);
 
   useEffect(() => {
     return () => {
@@ -542,8 +557,12 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     const audio = audioRef.current;
     if (!audio) return;
 
-    const onTime = () => setCurrentTime(audio.currentTime);
-    const onMeta = () => setDuration(audio.duration || 0);
+    const onTime = () => {
+      const t = audio.currentTime;
+      currentTimeRef.current = t;
+      setTransportCurrentTime(t);
+    };
+    const onMeta = () => setTransportDuration(audio.duration || 0);
     const onPlay = () => {
       setState("playing");
       const idx = queueIndexRef.current;
@@ -561,7 +580,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       const idx = queueIndexRef.current;
       const track = idx >= 0 ? queueRef.current[idx] : null;
       if (track) {
-        flushPlayback(track, audio.duration || currentTime, true);
+        flushPlayback(track, audio.duration || currentTimeRef.current, true);
         loggedTrackRef.current = null;
       }
       if (repeatRef.current === "one") {
@@ -593,7 +612,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       audio.removeEventListener("ended", onEnded);
       audio.removeEventListener("error", onError);
     };
-  }, [playNext, currentTime, flushPlayback, logPlaybackStart, advanceProgram]);
+  }, [playNext, flushPlayback, logPlaybackStart, advanceProgram]);
 
   useEffect(() => {
     if (!autoplayEnabled || !playbackContext.playlistId) {
@@ -624,7 +643,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [currentTrack, togglePlay]);
 
-  const value = useMemo<AudioPlayerContextValue>(
+  const sessionValue = useMemo<AudioPlayerContextValue>(
     () => ({
       audioRef,
       currentTrack,
@@ -641,8 +660,6 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       playerBarExiting,
       playerDismissSnapshot,
       isPlaying,
-      currentTime,
-      duration,
       playbackContext,
       activeOriginKey,
       queueOpen,
@@ -659,7 +676,6 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       playNext,
       playPrevious,
       skipToUpNext,
-      seek,
       appendToQueue,
       appendUpNextSegment,
       removeUpNextSegment,
@@ -683,8 +699,6 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       playerBarExiting,
       playerDismissSnapshot,
       isPlaying,
-      currentTime,
-      duration,
       playbackContext,
       activeOriginKey,
       queueOpen,
@@ -700,7 +714,6 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       playNext,
       playPrevious,
       skipToUpNext,
-      seek,
       appendToQueue,
       appendUpNextSegment,
       removeUpNextSegment,
@@ -711,16 +724,27 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     ],
   );
 
+  const transportValue = useMemo<PlaybackTransportValue>(
+    () => ({
+      currentTime: transportCurrentTime,
+      duration: transportDuration,
+      seek,
+    }),
+    [transportCurrentTime, transportDuration, seek],
+  );
+
   return (
-    <AudioPlayerContext.Provider value={value}>
-      {children}
-      <audio
-        ref={bindAudioElement}
-        data-site-player
-        preload="metadata"
-        crossOrigin="anonymous"
-        className="hidden"
-      />
+    <AudioPlayerContext.Provider value={sessionValue}>
+      <PlaybackTransportContext.Provider value={transportValue}>
+        {children}
+        <audio
+          ref={bindAudioElement}
+          data-site-player
+          preload="metadata"
+          crossOrigin="anonymous"
+          className="hidden"
+        />
+      </PlaybackTransportContext.Provider>
     </AudioPlayerContext.Provider>
   );
 }

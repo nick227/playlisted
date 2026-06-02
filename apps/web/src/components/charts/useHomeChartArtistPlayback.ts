@@ -59,6 +59,7 @@ export function useHomeChartArtistPlayback() {
         {
           segmentLabel: item.displayName,
           playbackOrigin: origin,
+          originScope: "artist",
         },
       );
     },

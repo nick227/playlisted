@@ -1,5 +1,7 @@
 import type { components } from "@playlisted/client-sdk";
 
+import type { PlaybackOriginScope } from "@/lib/playbackSurface";
+
 export type QueueTrack = components["schemas"]["RecordingSummary"] & {
   playlistTitle?: string;
   ownerName?: string;
@@ -46,4 +48,6 @@ export type BeginSegmentOptions = {
   segmentLabel?: string;
   /** UI element that initiated playback — only that element should show the playing indicator. */
   playbackOrigin?: string;
+  /** When track, origin updates on queue next/prev; playlist/artist stay on the clicked surface. */
+  originScope?: PlaybackOriginScope;
 };
