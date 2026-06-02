@@ -20,6 +20,7 @@ import { readAutoplayEnabled, writeAutoplayEnabled } from "@/lib/upNext/storage"
 import type { BeginSegmentOptions, UpNextSegment } from "@/lib/upNext/types";
 import { isPlayerShortcutSuppressed } from "@/lib/playerKeyboard";
 import { postPlaybackEvent } from "@/lib/playbackEvents";
+import { readPlayerVolume, writePlayerVolume } from "@/lib/playerVolumeStorage";
 import { useAuth } from "@/providers/AuthProvider";
 
 export type QueueTrack = components["schemas"]["RecordingSummary"] & {
@@ -126,8 +127,10 @@ function autopilotTail(context: PlaybackContext): UpNextSegment {
 export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   const { accessToken } = useAuth();
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const volumeRef = useRef<number>(readPlayerVolume());
   const bindAudioElement = useCallback((audio: HTMLAudioElement | null) => {
     audioRef.current = audio;
+    if (audio) audio.volume = volumeRef.current;
     theatreController.registerPlaybackSource(audio);
   }, []);
   const playbackContextRef = useRef<PlaybackContext>({ sourceContext: "player" });
@@ -157,11 +160,12 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   const [queueOpen, setQueueOpen] = useState(false);
   const [shuffle, setShuffleState] = useState(false);
   const [repeatMode, setRepeatModeState] = useState<"off" | "one" | "all">("off");
-  const [volume, setVolumeState] = useState(1);
+  const [volume, setVolumeState] = useState(() => readPlayerVolume());
   const [playerDismissSnapshot, setPlayerDismissSnapshot] = useState<PlayerDismissSnapshot | null>(null);
   const [playerBarExiting, setPlayerBarExiting] = useState(false);
 
   upNextPipelineRef.current = upNextPipeline;
+  volumeRef.current = volume;
 
   const currentTrack = queueIndex >= 0 ? queue[queueIndex] ?? null : null;
   const playerBarVisible =
@@ -202,6 +206,8 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   const setVolume = useCallback((v: number) => {
     const clamped = Math.max(0, Math.min(1, v));
     setVolumeState(clamped);
+    volumeRef.current = clamped;
+    writePlayerVolume(clamped);
     if (audioRef.current) audioRef.current.volume = clamped;
   }, []);
 
