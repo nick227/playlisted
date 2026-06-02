@@ -5,14 +5,8 @@ import speakerFactory from '../animations/speaker'
 import spinAmpFactory from '../animations/spinAmp'
 import bioMachineFactory from '../animations/bioMachine'
 import weatherSpeakerFactory from '../animations/weatherSpeaker'
-import monsterWaveFactory from '../animations/monsterWave'
 import stopMotionFlowerStormFactory from '../animations/stopMotionFlowerStorm'
-import cuteMonstroFactory from '../animations/cuteMonstro'
 import signalOrganismFactory from '../animations/signalOrganism'
-import goopyFactory from '../animations/goopy'
-import circuitBotFactory from '../animations/circuitBot'
-import eyeCloudFactory from '../animations/eyeCloud'
-import jellyBellFactory from '../animations/jellyBell'
 import monsterCrewFactory from '../animations/monsterCrew'
 import liminalDoomFactory from '../animations/liminalDoom'
 
@@ -22,15 +16,9 @@ registry.register({ id: 'speaker',               label: 'Speaker Pulse',        
 registry.register({ id: 'spinAmp',               label: 'Spin Amp',               factory: spinAmpFactory,               visualType: 'canvas', mood: 'calm',    role: 'foreground',  weight: 2 })
 registry.register({ id: 'bioMachine',            label: 'Bio Machine',            factory: bioMachineFactory,            visualType: 'canvas', mood: 'dynamic', role: 'subject',     weight: 1 })
 registry.register({ id: 'weatherSpeaker',        label: 'Weather Speaker',        factory: weatherSpeakerFactory,        visualType: 'canvas', mood: 'dynamic', role: 'background',  weight: 2 })
-registry.register({ id: 'monsterWave',           label: 'Monster Wave',           factory: monsterWaveFactory,           visualType: 'canvas', mood: 'chaos',   role: 'foreground',  weight: 1 })
 registry.register({ id: 'stopMotionFlowerStorm', label: 'Stop-Motion Flower Storm', factory: stopMotionFlowerStormFactory, visualType: 'canvas', mood: 'dynamic', role: 'subject',   weight: 2 })
-registry.register({ id: 'cuteMonstro',          label: 'Cute Monstro',           factory: cuteMonstroFactory,           visualType: 'canvas', mood: 'dynamic', role: 'subject',   weight: 2 })
 registry.register({ id: 'signalOrganismScene',  label: 'Signal Organism',        factory: signalOrganismFactory,        visualType: 'canvas', mood: 'dynamic', role: 'subject',   weight: 2 })
-registry.register({ id: 'goopy',               label: 'Goopy',                  factory: goopyFactory,                 visualType: 'canvas', mood: 'dynamic', role: 'subject',   weight: 2 })
-registry.register({ id: 'circuitBot',          label: 'Circuit Bot',            factory: circuitBotFactory,            visualType: 'canvas', mood: 'dynamic', role: 'subject',   weight: 2 })
-registry.register({ id: 'eyeCloud',            label: 'Eye Cloud',              factory: eyeCloudFactory,              visualType: 'canvas', mood: 'chaos',   role: 'subject',   weight: 2 })
-registry.register({ id: 'jellyBell',           label: 'Jelly Bell',             factory: jellyBellFactory,             visualType: 'canvas', mood: 'calm',    role: 'subject',   weight: 2 })
-registry.register({ id: 'monsterCrew',         label: 'Monster Crew',           factory: monsterCrewFactory,           visualType: 'canvas', mood: 'dynamic', role: 'subject',   weight: 2 })
+registry.register({ id: 'monsterCrew',         label: 'Monster Cycle',          factory: monsterCrewFactory,           visualType: 'canvas', mood: 'dynamic', role: 'subject',   weight: 4 })
 registry.register({ id: 'liminalDoom',         label: 'Liminal Doom',           factory: liminalDoomFactory,           visualType: 'canvas', mood: 'dynamic', role: 'subject',   weight: 1 })
 
 // ─── Scene presets ────────────────────────────────────────────────────────────
@@ -55,7 +43,7 @@ registerPreset({
   ],
 })
 
-// Geometric tunnel: spin rings dominate, bio + wave layers blend underneath
+// Geometric tunnel: spin rings dominate with bio layers blended underneath
 registerPreset({
   id: 'geometryTunnel', label: 'Geometry Tunnel', category: 'production', weight: 2,
   reducedMotionPreset: 'quietPulse',
@@ -64,8 +52,6 @@ registerPreset({
       options: { opacity: 0.70, zIndex: 100, blendMode: 'normal', intensity: 1.2, sensitivity: 1.3 } },
     { animationId: 'bioMachine', role: 'subject',
       options: { opacity: 0.60, zIndex: 101, blendMode: 'screen', intensity: 0.8, sensitivity: 0.9 } },
-    { animationId: 'monsterWave', role: 'foreground',
-      options: { opacity: 0.50, zIndex: 102, blendMode: 'screen', intensity: 0.9, sensitivity: 1.0 } },
   ],
 })
 
@@ -79,42 +65,11 @@ registerPreset({
   ],
 })
 
-// ── Monster crew ─────────────────────────────────────────────────────────────
-
+// Single monster animation: cycles through the full crew roughly once a minute
 registerPreset({
-  id: 'monsterWaveStack', label: 'Cute Monstro', category: 'production', weight: 2,
+  id: 'monsterCrewScene', label: 'Monster Cycle', category: 'production', weight: 3,
   reducedMotionPreset: 'quietPulse',
-  layers: [{ animationId: 'cuteMonstro', role: 'subject', options: { opacity: 1.0, zIndex: 101, blendMode: 'normal', intensity: 1.0, sensitivity: 1.0 } }],
-})
-
-registerPreset({
-  id: 'monsterCrewScene', label: 'Monster Crew', category: 'production', weight: 2,
-  reducedMotionPreset: 'quietPulse',
-  layers: [{ animationId: 'monsterCrew', role: 'subject', options: { opacity: 1.0, zIndex: 101, blendMode: 'normal', intensity: 1.0, sensitivity: 1.0 } }],
-})
-
-registerPreset({
-  id: 'goopySlime', label: 'Goopy', category: 'production', weight: 2,
-  reducedMotionPreset: 'quietPulse',
-  layers: [{ animationId: 'goopy', role: 'subject', options: { opacity: 1.0, zIndex: 101, blendMode: 'normal', intensity: 1.0, sensitivity: 1.0 } }],
-})
-
-registerPreset({
-  id: 'circuitBotScene', label: 'Circuit Bot', category: 'production', weight: 2,
-  reducedMotionPreset: 'quietPulse',
-  layers: [{ animationId: 'circuitBot', role: 'subject', options: { opacity: 1.0, zIndex: 101, blendMode: 'normal', intensity: 1.0, sensitivity: 1.0 } }],
-})
-
-registerPreset({
-  id: 'eyeCloudScene', label: 'Eye Cloud', category: 'production', weight: 2,
-  reducedMotionPreset: 'quietPulse',
-  layers: [{ animationId: 'eyeCloud', role: 'subject', options: { opacity: 1.0, zIndex: 101, blendMode: 'normal', intensity: 1.0, sensitivity: 1.0 } }],
-})
-
-registerPreset({
-  id: 'jellyBellScene', label: 'Jelly Bell', category: 'production', weight: 2,
-  reducedMotionPreset: 'quietPulse',
-  layers: [{ animationId: 'jellyBell', role: 'subject', options: { opacity: 1.0, zIndex: 101, blendMode: 'normal', intensity: 1.0, sensitivity: 1.0 } }],
+  layers: [{ animationId: 'monsterCrew', role: 'subject', options: { opacity: 1.0, zIndex: 101, blendMode: 'normal', intensity: 1.0, sensitivity: 1.0, switchMs: 60000, fadeMs: 1200 } }],
 })
 
 registerPreset({

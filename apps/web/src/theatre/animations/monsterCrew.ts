@@ -4,13 +4,14 @@ import eyeCloudFactory from './eyeCloud'
 import circuitBotFactory from './circuitBot'
 import goopyFactory from './goopy'
 import cuteMonstroFactory from './cuteMonstro'
+import monsterWaveFactory from './monsterWave'
 
 type CrewMember = {
   animation: IAnimation
   layer: HTMLDivElement
 }
 
-const DEFAULT_SWITCH_MS = 9000
+const DEFAULT_SWITCH_MS = 60000
 const DEFAULT_FADE_MS = 900
 
 export function monsterCrewFactory(): IAnimation {
@@ -20,6 +21,7 @@ export function monsterCrewFactory(): IAnimation {
     circuitBotFactory,
     goopyFactory,
     cuteMonstroFactory,
+    monsterWaveFactory,
   ]
 
   class MonsterCrew implements IAnimation {
