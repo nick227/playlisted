@@ -896,7 +896,7 @@ export interface paths {
         delete: operations["adminDeleteSong"];
         options?: never;
         head?: never;
-        /** Update a song's title, status, visibility, or explicit flag (admin) */
+        /** Update a song's status, visibility, or explicit flag (admin) */
         patch: operations["adminUpdateSong"];
         trace?: never;
     };
@@ -1749,7 +1749,6 @@ export interface components {
             updatedAt: string;
             uploader: components["schemas"]["ChartArtistRef"];
             playlist: components["schemas"]["ChartPlaylistRef"];
-            genre?: components["schemas"]["SongGenreRef"] | null;
         };
         TopSongsResponse: {
             range: components["schemas"]["ChartRange"];
@@ -1767,7 +1766,6 @@ export interface components {
             totalDurationSeconds: number;
             playCount: number;
             owner: components["schemas"]["ChartArtistRef"];
-            genre?: components["schemas"]["SongGenreRef"] | null;
         };
         TopPlaylistsResponse: {
             range: components["schemas"]["ChartRange"];
@@ -2196,7 +2194,6 @@ export interface components {
             meta: components["schemas"]["PaginationMeta"];
         };
         AdminUpdateSongRequest: {
-            title?: string;
             status?: components["schemas"]["PublishStatus"];
             visibility?: components["schemas"]["Visibility"];
             explicit?: boolean;
@@ -4659,6 +4656,53 @@ export interface operations {
             };
         };
     };
+    adminDeleteSong: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                songId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     adminUpdateSong: {
         parameters: {
             query?: never;
@@ -4712,39 +4756,6 @@ export interface operations {
             };
         };
     };
-    adminDeleteSong: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                songId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Deleted */
-            204: {
-                headers: { [name: string]: unknown };
-                content?: never;
-            };
-            /** @description Unauthorized */
-            401: {
-                headers: { [name: string]: unknown };
-                content: { "application/json": components["schemas"]["ErrorResponse"] };
-            };
-            /** @description Forbidden */
-            403: {
-                headers: { [name: string]: unknown };
-                content: { "application/json": components["schemas"]["ErrorResponse"] };
-            };
-            /** @description Not found */
-            404: {
-                headers: { [name: string]: unknown };
-                content: { "application/json": components["schemas"]["ErrorResponse"] };
-            };
-        };
-    };
     adminSetSongTags: {
         parameters: {
             query?: never;
@@ -4767,6 +4778,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AdminSong"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Unauthorized */
