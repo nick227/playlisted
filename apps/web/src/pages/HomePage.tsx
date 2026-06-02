@@ -49,6 +49,7 @@ const HOME_LIMITS = {
   chartsTopPlaylistsMobile: 4,
   chartsTopPlaylistsDesktop: 5,
   chartsTopArtists: 6,
+  featuredArtists: 6,
   discoverMobile: 4,
   discoverDesktop: 10,
   discoverPoolFetch: 30,
@@ -381,6 +382,20 @@ export function HomePage() {
     pinnedArtists.isLoading &&
     !greetingsFeaturedArtist;
 
+  const featuredArtistsSection = useMemo((): {
+    editorial: HomepageItem[];
+    fallback: TopArtistItem[];
+  } => {
+    const cap = HOME_LIMITS.featuredArtists;
+    if (editorialFeaturedArtists.length > 0) {
+      return { editorial: editorialFeaturedArtists.slice(0, cap), fallback: [] };
+    }
+    return {
+      editorial: [],
+      fallback: (pinnedArtists.data?.data ?? []).slice(0, cap),
+    };
+  }, [editorialFeaturedArtists, pinnedArtists.data]);
+
   // For You / Discover
   const discovered = useMemo((): TopPlaylistItem[] => {
     const pool: TopPlaylistItem[] = discoverPool.data?.data ?? [];
@@ -585,14 +600,15 @@ export function HomePage() {
 
       {/* ── FEATURED ARTISTS ────────────────────────────────── */}
 
-      {(editorialFeaturedArtists.length > 0 || (pinnedArtists.data?.data.length ?? 0) > 0) && (
+      {(featuredArtistsSection.editorial.length > 0 ||
+        featuredArtistsSection.fallback.length > 0) && (
         <HomeSection
           title="Featured Artists"
           subtitle="Artists to know right now"
           cols={HOME_SECTION_COLS.featuredArtists}
         >
-          {editorialFeaturedArtists.length > 0
-            ? editorialFeaturedArtists.map((item) => (
+          {featuredArtistsSection.editorial.length > 0
+            ? featuredArtistsSection.editorial.map((item) => (
                 <ArtistCard
                   key={item.id}
                   id={item.id}
@@ -603,7 +619,7 @@ export function HomePage() {
                   className="w-full"
                 />
               ))
-            : (pinnedArtists.data?.data ?? []).map((item: TopArtistItem) => (
+            : featuredArtistsSection.fallback.map((item: TopArtistItem) => (
                 <ArtistCard
                   key={item.userId}
                   id={item.userId}
