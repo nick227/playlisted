@@ -18,6 +18,8 @@ type FavoriteHeartButtonProps = {
   id: string;
   className?: string;
   variant?: "overlay" | "inline";
+  /** Inline only: keep unfavorited heart visible (default hides until card hover). */
+  inlineAlwaysVisible?: boolean;
 };
 
 export function FavoriteHeartButton({
@@ -25,6 +27,7 @@ export function FavoriteHeartButton({
   id,
   className = "",
   variant = "overlay",
+  inlineAlwaysVisible = false,
 }: FavoriteHeartButtonProps) {
   const requireAuth = useAuthAction();
   const { ids: recordingIds } = useFavoriteIds();
@@ -78,6 +81,7 @@ export function FavoriteHeartButton({
   }
 
   const isInline = variant === "inline";
+  const hideUnfavoritedUntilHover = isInline && !isFavorited && !inlineAlwaysVisible;
 
   return (
     <button
@@ -93,9 +97,13 @@ export function FavoriteHeartButton({
         isFavorited
           ? "text-rose-500 hover:text-rose-400"
           : isInline
-            ? "text-white/20 hover:text-white group-hover/card:opacity-100"
+            ? inlineAlwaysVisible
+              ? "text-[var(--color-text-muted)] hover:text-rose-400"
+              : "text-white/20 hover:text-white"
             : "text-white/80 hover:text-white",
-        isInline && !isFavorited ? "opacity-0 group-hover/card:opacity-100 focus:opacity-100" : "opacity-100",
+        hideUnfavoritedUntilHover
+          ? "opacity-0 group-hover/card:opacity-100 focus:opacity-100"
+          : "opacity-100",
         className,
         !isInline ? "!absolute !bottom-2 !right-2 !left-auto !top-auto z-30" : "",
       ].join(" ")}
@@ -103,6 +111,7 @@ export function FavoriteHeartButton({
       <Heart
         size={isInline ? 15 : 14}
         fill={isFavorited ? "currentColor" : "none"}
+        strokeWidth={isFavorited ? undefined : 2}
         className="block"
       />
     </button>

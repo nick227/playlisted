@@ -108,14 +108,22 @@ export function ChartSongPanelRow({
           </Link>
         </div>
 
-        <div className="flex shrink-0 items-center gap-1.5">
+        <div className="ml-auto flex shrink-0 items-center justify-end gap-0.5 pl-2">
           {playCount > 0 ? (
-            <span className="hidden text-xs tabular-nums text-[var(--color-text-subtle)] sm:inline">
+            <span className="mr-1 hidden text-xs tabular-nums text-[var(--color-text-subtle)] sm:inline">
               {formatPlayCount(playCount)}
             </span>
           ) : null}
-          <FavoriteHeartButton target="recording" id={recordingId} variant="inline" />
-          {actionSlot}
+          <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+            {actionSlot}
+          </div>
+          <FavoriteHeartButton
+            target="recording"
+            id={recordingId}
+            variant="inline"
+            inlineAlwaysVisible
+            className="-mr-1.5"
+          />
         </div>
       </div>
     </li>
