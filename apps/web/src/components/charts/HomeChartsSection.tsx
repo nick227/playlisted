@@ -19,7 +19,6 @@ import {
 import { ChartPanelContainer } from "./ChartPanelContainer";
 import { ChartPanelRow } from "./ChartPanelRow";
 import { ChartPanelSkeleton } from "./ChartPanelSkeleton";
-import { ChartPlayStat } from "./ChartPlayStat";
 import { ChartSongPanelRow } from "./ChartSongPanelRow";
 import {
   topSongPanelHref,
@@ -105,13 +104,13 @@ export function HomeChartsSection() {
               subtitle={`by ${item.owner.displayName}`}
               subtitleHref={profilePath(item.owner.username)}
               imageUrl={item.coverArtUrl}
-              stat={<ChartPlayStat count={item.playCount} />}
-              favorite={{ target: "playlist", id: item.playlistId }}
+              playCount={item.playCount}
               play={{
                 isActive: playlistActive(item.playlistId),
                 isPlaying: playlistPlaying(item.playlistId),
                 onPlay: () => void playChartPlaylist(item),
               }}
+              favorite={{ target: "playlist", id: item.playlistId }}
               actionSlot={
                 <PlaylistActionMenu
                   playlistId={item.playlistId}
@@ -137,15 +136,16 @@ export function HomeChartsSection() {
               title={item.displayName}
               titleHref={profilePath(item.username)}
               subtitle={`@${item.username}`}
+              subtitleHref={profilePath(item.username)}
               imageUrl={item.avatarUrl}
               imageShape="circle"
-              stat={<ChartPlayStat count={item.playCount} />}
-              favorite={{ target: "artist", id: item.userId }}
+              playCount={item.playCount}
               play={{
                 isActive: artistActive(item.userId),
                 isPlaying: artistPlaying(item.userId),
                 onPlay: () => void playChartArtist(item),
               }}
+              favorite={{ target: "artist", id: item.userId }}
             />
           ))}
         </ChartPanelContainer>
