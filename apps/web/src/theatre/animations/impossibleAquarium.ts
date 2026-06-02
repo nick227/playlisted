@@ -8,9 +8,13 @@ const PROGRESS_VERSION = 1
 const TWO_PI = Math.PI * 2
 const SCHOOL_COUNT = 18
 const BUBBLE_COUNT = 54
-const FISH_SIZE_SCALE = 1.85
-const FISH_BASE = 38
-const FISH_DEPTH_SCALE = 22
+const FISH_BASE = 28
+const FISH_DEPTH_SCALE = 16
+const HERO_CAMERA_BASE = 42
+
+function fishDrawSize(depth: number, zoom: number, growthBoost = 1) {
+  return (FISH_BASE + depth * FISH_DEPTH_SCALE) * zoom * growthBoost
+}
 
 type AquariumProgress = {
   version: 1
@@ -177,9 +181,9 @@ export function impossibleAquariumFactory(): IAnimation {
       const growth = this.ageMs / 60000
       const phase = phaseFromGrowth(growth)
       const phasePower = easeOut(clamp(growth / 34, 0, 1))
-      const visibleGrowth = 1 + easeOut(clamp(growth / 9, 0, 1)) * 1.55
+      const heroGrowth = 1 + easeOut(clamp(growth / 9, 0, 1)) * 1.55
       const worldScale = Math.pow(1 + growth * 0.82, 1.34)
-      const heroWorldSize = FISH_BASE * worldScale
+      const heroWorldSize = HERO_CAMERA_BASE * worldScale
       const cameraZoom = clamp(
         Math.min(w, h) / (heroWorldSize * (2.85 + phasePower * 2.15)),
         0.045,
@@ -206,12 +210,13 @@ export function impossibleAquariumFactory(): IAnimation {
       this.drawDistantScaleAnimals(w, h, time, growth, zoom, phase, audio)
       this.drawBubbles(w, h, time, growth, zoom, highs, heroAudio.bassPulse, reducedMotion)
       this.drawSpectrumPlants(w, h, time, spectrum, phasePower, reducedMotion)
-      this.drawSchool(w, h, time, growth, zoom, visibleGrowth, { bass, mids, highs, energy })
+      this.drawSchool(w, h, time, zoom, { bass, mids, highs, energy })
 
       const heroScreenX = w * 0.5 + Math.sin(time * 0.18) * w * 0.04 * (1 - phasePower)
       const heroScreenY = h * 0.52 + Math.sin(time * 0.13) * h * 0.035
       const heroHue = (this.hue + 80 + hash(this.seed) * 180) % 360
-      const heroDrawSize = heroWorldSize * zoom * FISH_SIZE_SCALE * visibleGrowth
+      const heroDepth = 0.35 + hash(this.seed + 59) * 0.9
+      const heroDrawSize = fishDrawSize(heroDepth, zoom, heroGrowth)
       this.drawHeroAura(heroScreenX, heroScreenY, heroDrawSize, growth, audio, triggers.beat)
       this.drawFish(
         heroScreenX,
@@ -308,9 +313,7 @@ export function impossibleAquariumFactory(): IAnimation {
       w: number,
       h: number,
       time: number,
-      growth: number,
       zoom: number,
-      visibleGrowth: number,
       audio: { bass: number; mids: number; highs: number; energy: number },
     ) {
       const margin = w * 0.48
@@ -325,12 +328,7 @@ export function impossibleAquariumFactory(): IAnimation {
         const sy =
           h * (0.14 + fish.lane * 0.72)
           + Math.sin(time * (0.45 + fish.depth * 0.16) + fish.seed) * h * 0.045
-        const size =
-          (FISH_BASE + fish.depth * FISH_DEPTH_SCALE)
-          * zoom
-          * FISH_SIZE_SCALE
-          * visibleGrowth
-          * (1 + clamp(growth * 0.06, 0, 0.35))
+        const size = fishDrawSize(fish.depth, zoom)
         if (sx < -margin - 100 || sx > w + margin + 100 || sy < -size * 2 || sy > h + size * 2 || size < 1) {
           continue
         }
