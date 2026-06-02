@@ -7,6 +7,14 @@ export function homeChartSongOrigin(sectionKey: string, recordingId: string): st
   return playbackOriginKey("home", "chart", sectionKey, recordingId);
 }
 
+export function homeChartPlaylistOrigin(playlistId: string): string {
+  return playbackOriginKey("home", "chart", "top-playlists", playlistId);
+}
+
+export function homeChartArtistOrigin(userId: string): string {
+  return playbackOriginKey("home", "chart", "top-artists", userId);
+}
+
 export function homeSpotlightTrackOrigin(playlistId: string, recordingId: string): string {
   return playbackOriginKey("home", "spotlight", playlistId, recordingId);
 }

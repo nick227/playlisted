@@ -26,6 +26,8 @@ import {
   topSongPanelShareUrl,
   topSongPanelSubtitleHref,
 } from "./chartSongUtils";
+import { useHomeChartArtistPlayback } from "./useHomeChartArtistPlayback";
+import { useHomeChartPlaylistPlayback } from "./useHomeChartPlaylistPlayback";
 import { useHomeChartSongPlayback } from "./useHomeChartSongPlayback";
 
 function chartPlaylistLimit(isMdUp: boolean): number {
@@ -35,6 +37,10 @@ function chartPlaylistLimit(isMdUp: boolean): number {
 export function HomeChartsSection() {
   const isMdUp = useIsMdUp();
   const { play: playChartSong } = useHomeChartSongPlayback();
+  const { play: playChartPlaylist, isActive: playlistActive, isPlaying: playlistPlaying } =
+    useHomeChartPlaylistPlayback();
+  const { play: playChartArtist, isActive: artistActive, isPlaying: artistPlaying } =
+    useHomeChartArtistPlayback();
 
   const topSongs = useTopSongs(HOME_CHART_RANGE, HOME_CHART_ITEM_LIMIT);
   const topPlaylists = useTopPlaylists(HOME_CHART_RANGE, chartPlaylistLimit(isMdUp));
@@ -101,6 +107,11 @@ export function HomeChartsSection() {
               imageUrl={item.coverArtUrl}
               stat={<ChartPlayStat count={item.playCount} />}
               favorite={{ target: "playlist", id: item.playlistId }}
+              play={{
+                isActive: playlistActive(item.playlistId),
+                isPlaying: playlistPlaying(item.playlistId),
+                onPlay: () => void playChartPlaylist(item),
+              }}
               actionSlot={
                 <PlaylistActionMenu
                   playlistId={item.playlistId}
@@ -130,6 +141,11 @@ export function HomeChartsSection() {
               imageShape="circle"
               stat={<ChartPlayStat count={item.playCount} />}
               favorite={{ target: "artist", id: item.userId }}
+              play={{
+                isActive: artistActive(item.userId),
+                isPlaying: artistPlaying(item.userId),
+                onPlay: () => void playChartArtist(item),
+              }}
             />
           ))}
         </ChartPanelContainer>
