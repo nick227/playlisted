@@ -4060,6 +4060,10 @@ components:
           $ref: '#/components/schemas/ChartArtistRef'
         playlist:
           $ref: '#/components/schemas/ChartPlaylistRef'
+        genre:
+          oneOf:
+            - $ref: '#/components/schemas/SongGenreRef'
+            - type: 'null'
 
     TopSongsResponse:
       type: object
@@ -4099,6 +4103,10 @@ components:
           type: integer
         owner:
           $ref: '#/components/schemas/ChartArtistRef'
+        genre:
+          oneOf:
+            - $ref: '#/components/schemas/SongGenreRef'
+            - type: 'null'
 
     TopPlaylistsResponse:
       type: object
@@ -5087,6 +5095,8 @@ components:
       type: object
       additionalProperties: false
       properties:
+        title:
+          type: string
         status:
           $ref: '#/components/schemas/PublishStatus'
         visibility:

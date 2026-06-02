@@ -1749,6 +1749,7 @@ export interface components {
             updatedAt: string;
             uploader: components["schemas"]["ChartArtistRef"];
             playlist: components["schemas"]["ChartPlaylistRef"];
+            genre?: components["schemas"]["SongGenreRef"] | null;
         };
         TopSongsResponse: {
             range: components["schemas"]["ChartRange"];
@@ -1766,6 +1767,7 @@ export interface components {
             totalDurationSeconds: number;
             playCount: number;
             owner: components["schemas"]["ChartArtistRef"];
+            genre?: components["schemas"]["SongGenreRef"] | null;
         };
         TopPlaylistsResponse: {
             range: components["schemas"]["ChartRange"];
@@ -2194,6 +2196,7 @@ export interface components {
             meta: components["schemas"]["PaginationMeta"];
         };
         AdminUpdateSongRequest: {
+            title?: string;
             status?: components["schemas"]["PublishStatus"];
             visibility?: components["schemas"]["Visibility"];
             explicit?: boolean;
