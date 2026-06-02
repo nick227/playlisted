@@ -204,15 +204,18 @@ export function impossibleAquariumFactory(): IAnimation {
 
       const heroScreenX = w * 0.5 + Math.sin(time * 0.18) * w * 0.04 * (1 - phasePower)
       const heroScreenY = h * 0.52 + Math.sin(time * 0.13) * h * 0.035
-      this.drawHeroAura(heroScreenX, heroScreenY, heroWorldSize * zoom, growth, heroAudio)
+      const heroHue = (this.hue + 80 + hash(this.seed) * 180) % 360
+      const heroDepth = 0.35 + hash(this.seed + 59) * 0.9
+      const heroDrawSize = (28 + heroDepth * 16) * zoom
+      this.drawHeroAura(heroScreenX, heroScreenY, heroDrawSize, growth, audio, triggers.beat)
       this.drawFish(
         heroScreenX,
         heroScreenY,
-        heroWorldSize * zoom,
-        this.hue,
+        heroDrawSize,
+        heroHue,
         time,
         true,
-        heroAudio,
+        audio,
         triggers.beat || triggers.bassHit,
         phase,
       )
@@ -554,11 +557,10 @@ export function impossibleAquariumFactory(): IAnimation {
       this.ctx.restore()
     }
 
-    private drawHeroAura(x: number, y: number, size: number, growth: number, hero: HeroFishAudio) {
-      const pulse = hero.bass + hero.bassPulse * 0.55
-      const auraR = size * (1.32 + pulse * 0.38 + (hero.beat ? 0.1 : 0))
+    private drawHeroAura(x: number, y: number, size: number, growth: number, audio: number, beat: boolean) {
+      const auraR = size * (1.35 + audio * 0.45 + (beat ? 0.18 : 0))
       const grad = this.ctx.createRadialGradient(x, y, size * 0.2, x, y, auraR)
-      grad.addColorStop(0, `hsla(${this.hue + 40}, 92%, 70%, ${0.1 + pulse * 0.16})`)
+      grad.addColorStop(0, `hsla(${this.hue + 40}, 92%, 70%, ${0.1 + audio * 0.2})`)
       grad.addColorStop(0.42, `hsla(${this.hue + 150}, 88%, 56%, ${0.045 + clamp(growth / 24, 0, 0.1)})`)
       grad.addColorStop(1, 'rgba(0, 0, 0, 0)')
       this.ctx.fillStyle = grad
@@ -574,35 +576,22 @@ export function impossibleAquariumFactory(): IAnimation {
       hue: number,
       time: number,
       hero: boolean,
-      signal: number | FishSignal | HeroFishAudio,
+      signal: number | FishSignal,
       beat: boolean,
-      phase: string,
+      _phase: string,
       flip = false,
     ) {
-      const heroAudio: HeroFishAudio | null =
-        hero && typeof signal === 'object' && 'bassPulse' in signal ? signal : null
-      const schoolSignal: FishSignal | null =
-        !hero && typeof signal === 'object' && 'value' in signal ? signal : null
-      const audio = typeof signal === 'number'
-        ? signal
-        : heroAudio
-          ? heroAudio.bass + heroAudio.bassPulse * 0.75 + heroAudio.beatFlash * 0.25
-          : schoolSignal?.value ?? 0
-      const colorPulse: FishSignal = typeof signal === 'number'
+      const audio = typeof signal === 'number' ? signal : signal.value
+      const colorPulse = typeof signal === 'number'
         ? { value: signal, hueShift: 130, alpha: clamp(signal * 0.35 + (beat ? 0.16 : 0), 0, 0.52) }
-        : heroAudio
-          ? { value: audio, hueShift: 130 + heroAudio.mids * 40, alpha: clamp(audio * 0.4 + heroAudio.beatFlash * 0.35, 0, 0.62) }
-          : schoolSignal ?? { value: 0, hueShift: 0, alpha: 0 }
+        : signal
       const motionAudio = hero ? audio : 0
-      const bassKick = heroAudio?.bassPulse ?? 0
-      const flash = heroAudio?.beatFlash ?? 0
       const dir = flip ? -1 : 1
-      const tail = Math.sin(time * (hero ? 5.8 + motionAudio * 7 + bassKick * 4 : 2.4) + hue)
-        * (hero ? 0.38 + motionAudio * 0.32 + bassKick * 0.22 : 0.18)
-      const bodyW = size * (hero ? 1.65 : 1.5) * (1 + motionAudio * 0.1 + bassKick * 0.12 + (beat ? 0.07 : 0))
-      const bodyH = size * (hero ? 0.78 : 0.62) * (hero ? 1 - bassKick * 0.06 + flash * 0.04 : 1)
-      const light = hero ? 48 + audio * 22 + flash * 28 + (beat ? 18 : 0) : 42 + colorPulse.value * 16
-      const sat = hero ? 78 + audio * 14 + bassKick * 10 : 55 + colorPulse.value * 26
+      const tail = Math.sin(time * (hero ? 5.2 + motionAudio * 5 : 2.4) + hue) * (hero ? 0.36 + motionAudio * 0.25 : 0.18)
+      const bodyW = size * 1.5 * (1 + motionAudio * 0.08 + (beat ? 0.045 : 0))
+      const bodyH = size * 0.62
+      const light = 42 + colorPulse.value * 16
+      const sat = 55 + colorPulse.value * 26
       const pulseHue = hue + colorPulse.hueShift
 
       this.ctx.save()
@@ -610,7 +599,7 @@ export function impossibleAquariumFactory(): IAnimation {
       this.ctx.scale(dir, 1)
 
       const tailX = -bodyW * 0.55
-      this.ctx.fillStyle = `hsla(${hue + 24}, ${sat}%, ${light - 8}%, ${hero ? 0.9 : 0.72})`
+      this.ctx.fillStyle = `hsla(${hue + 24}, ${sat}%, ${light - 8}%, 0.72)`
       this.ctx.beginPath()
       this.ctx.moveTo(tailX, 0)
       this.ctx.lineTo(tailX - size * (0.62 + motionAudio * 0.22), -bodyH * (0.58 + tail * 0.18))
@@ -619,15 +608,15 @@ export function impossibleAquariumFactory(): IAnimation {
       this.ctx.fill()
 
       const grad = this.ctx.createRadialGradient(-bodyW * 0.1, -bodyH * 0.28, size * 0.1, 0, 0, bodyW * 0.75)
-      grad.addColorStop(0, `hsla(${hue + 42}, ${sat}%, ${light + 24}%, ${hero ? 0.96 : 0.78})`)
-      grad.addColorStop(0.58, `hsla(${hue}, ${sat}%, ${light}%, ${hero ? 0.98 : 0.78})`)
-      grad.addColorStop(1, `hsla(${hue - 28}, ${sat}%, ${light - 14}%, ${hero ? 0.94 : 0.72})`)
+      grad.addColorStop(0, `hsla(${hue + 42}, ${sat}%, ${light + 24}%, 0.78)`)
+      grad.addColorStop(0.58, `hsla(${hue}, ${sat}%, ${light}%, 0.78)`)
+      grad.addColorStop(1, `hsla(${hue - 28}, ${sat}%, ${light - 14}%, 0.72)`)
       this.ctx.fillStyle = grad
       this.ctx.beginPath()
       this.ctx.ellipse(0, 0, bodyW * 0.52, bodyH * 0.52, 0, 0, TWO_PI)
       this.ctx.fill()
 
-      if (!hero && colorPulse.alpha > 0.02) {
+      if (colorPulse.alpha > 0.02) {
         this.ctx.save()
         this.ctx.globalCompositeOperation = 'screen'
         this.ctx.fillStyle = `hsla(${pulseHue}, 96%, 64%, ${colorPulse.alpha})`
@@ -643,42 +632,20 @@ export function impossibleAquariumFactory(): IAnimation {
         this.ctx.restore()
       }
 
-      if (hero) {
-        const stripeCount = phase === 'mythic' ? 9 : phase === 'leviathan' ? 7 : 5
-        this.ctx.save()
-        this.ctx.globalCompositeOperation = 'screen'
-        for (let i = 0; i < stripeCount; i++) {
-          const stripeX = -bodyW * 0.32 + (i / Math.max(1, stripeCount - 1)) * bodyW * 0.68
-          const stripePop = audio + bassKick * (0.35 + (i % 3) * 0.12)
-          this.ctx.strokeStyle = `hsla(${hue + 130 + i * 18}, 98%, ${58 + stripePop * 28}%, ${0.18 + stripePop * 0.32 + flash * 0.22 + (beat ? 0.2 : 0)})`
-          this.ctx.lineWidth = Math.max(1.2, size * 0.035) * (1 + bassKick * 0.45)
-          this.ctx.beginPath()
-          this.ctx.moveTo(stripeX, -bodyH * 0.34)
-          this.ctx.quadraticCurveTo(stripeX + size * 0.08, 0, stripeX - size * 0.02, bodyH * 0.34)
-          this.ctx.stroke()
-        }
-        this.ctx.restore()
-      }
-
-      this.ctx.fillStyle = `hsla(${hue + 18}, ${sat}%, ${light + 8}%, ${hero ? 0.82 : 0.5})`
+      this.ctx.fillStyle = `hsla(${hue + 18}, ${sat}%, ${light + 8}%, ${hero ? 0.72 : 0.5})`
       this.ctx.beginPath()
       this.ctx.moveTo(-size * 0.05, -bodyH * 0.38)
       this.ctx.quadraticCurveTo(size * 0.12, -bodyH * (0.92 + motionAudio * 0.2), size * 0.34, -bodyH * 0.28)
       this.ctx.closePath()
       this.ctx.fill()
 
-      const eyeR = Math.max(1.2, size * 0.055) * (hero ? 1 + bassKick * 0.1 : 1)
-      const pupilR = Math.max(0.8, size * 0.026) * (hero ? 1 + (heroAudio?.mids ?? 0) * 0.12 : 1)
-      const pupilShiftX = heroAudio ? Math.sin(time * 0.7) * size * 0.01 + heroAudio.mids * size * 0.015 : 0
-      const pupilShiftY = heroAudio ? -heroAudio.bass * size * 0.012 - bassKick * size * 0.015 : 0
-
-      this.ctx.fillStyle = hero ? 'rgba(245, 255, 255, 0.92)' : 'rgba(230, 248, 255, 0.72)'
+      this.ctx.fillStyle = 'rgba(230, 248, 255, 0.72)'
       this.ctx.beginPath()
-      this.ctx.arc(bodyW * 0.31, -bodyH * 0.12, eyeR, 0, TWO_PI)
+      this.ctx.arc(bodyW * 0.31, -bodyH * 0.12, Math.max(1.2, size * 0.055), 0, TWO_PI)
       this.ctx.fill()
       this.ctx.fillStyle = 'rgba(2, 8, 16, 0.88)'
       this.ctx.beginPath()
-      this.ctx.arc(bodyW * 0.33 + pupilShiftX, -bodyH * 0.12 + pupilShiftY, pupilR, 0, TWO_PI)
+      this.ctx.arc(bodyW * 0.33, -bodyH * 0.12, Math.max(0.8, size * 0.026), 0, TWO_PI)
       this.ctx.fill()
 
       this.ctx.restore()
