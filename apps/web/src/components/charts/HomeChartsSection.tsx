@@ -15,6 +15,7 @@ import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 import { ChartPanelContainer } from "./ChartPanelContainer";
 import { ChartPanelRow } from "./ChartPanelRow";
 import { ChartPanelSkeleton } from "./ChartPanelSkeleton";
+import { ChartSongPanelRow } from "./ChartSongPanelRow";
 
 const CHART_RANGE: ChartRange = "7d";
 const CHART_RANGE_LABEL = "last 7 days";
@@ -77,10 +78,12 @@ export function HomeChartsSection() {
           title="Top Songs"
           subtitle={`Most-played — ${CHART_RANGE_LABEL}`}
         >
-          {songs.map((item) => (
-            <ChartPanelRow
+          {songs.map((item: TopSongItem) => (
+            <ChartSongPanelRow
               key={item.recordingId}
               rank={item.rank}
+              recordingId={item.recordingId}
+              playbackOrigin={homeChartSongOrigin(CHART_SECTION_KEY, item.recordingId)}
               title={item.title}
               titleHref={`${playlistPath({
                 id: item.publishedPlaylistId,
@@ -90,8 +93,8 @@ export function HomeChartsSection() {
               subtitle={item.uploader.displayName}
               subtitleHref={profilePath(item.uploader.username)}
               imageUrl={item.artworkUrl}
-              stat={<PlayStat count={item.playCount} />}
-              onRowClick={() => playChartSong(item, songs)}
+              playCount={item.playCount}
+              onPlay={() => playChartSong(item, songs)}
               actionSlot={
                 <RecordingActionMenu
                   recordingId={item.recordingId}
