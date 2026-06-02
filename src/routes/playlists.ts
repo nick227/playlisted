@@ -15,6 +15,10 @@ import { prisma } from "../lib/prisma.js";
 import { getAuthContextFromRequest } from "../lib/auth.js";
 import { requireAuth } from "../lib/requireAuth.js";
 import { deleteRecordingMedia } from "../lib/deleteMediaFile.js";
+import {
+  applyPlaylistItemOrderByRecordingIds,
+  compactPlaylistItemPositions,
+} from "../lib/playlistItemOrder.js";
 import { syncPlaylistStats } from "../lib/playlistStats.js";
 import { resolveUniquePlaylistSlug } from "../lib/playlistSlug.js";
 
@@ -417,19 +421,7 @@ playlistsRouter.delete("/:playlistId/items/:recordingId", async (req, res, next)
       });
     }
 
-    const items = await prisma.playlistItem.findMany({
-      where: { playlistId },
-      orderBy: { position: "asc" },
-    });
-
-    await prisma.$transaction(
-      items.map((row, index) =>
-        prisma.playlistItem.update({
-          where: { id: row.id },
-          data: { position: index + 1 },
-        }),
-      ),
-    );
+    await compactPlaylistItemPositions(playlistId);
 
     await syncPlaylistStats(playlistId);
 
@@ -456,16 +448,17 @@ playlistsRouter.put("/:playlistId/items/reorder", async (req, res, next) => {
       return res.status(403).json({ error: "forbidden", message: "You do not own this playlist." });
     }
 
-    const body = req.body as { recordingIds: string[] };
-
-    await prisma.$transaction(
-      body.recordingIds.map((recordingId, index) =>
-        prisma.playlistItem.updateMany({
-          where: { playlistId: req.params.playlistId, recordingId },
-          data: { position: index + 1 },
-        }),
-      ),
+    const body = req.body as { recordingIds?: string[] };
+    const orderError = await applyPlaylistItemOrderByRecordingIds(
+      req.params.playlistId,
+      body.recordingIds ?? [],
     );
+    if (orderError) {
+      return res.status(orderError.status).json({
+        error: orderError.error,
+        message: orderError.message,
+      });
+    }
 
     await syncPlaylistStats(req.params.playlistId);
 
