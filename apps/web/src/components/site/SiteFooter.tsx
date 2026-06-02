@@ -11,6 +11,10 @@ const footerLinks = [
 ] as const;
 
 export function SiteFooter() {
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
+  };
+
   return (
     <footer className="mt-8 border-t border-[var(--color-border)] py-8">
       <div className="flex justify-between">
@@ -32,6 +36,7 @@ export function SiteFooter() {
               <Link
                 key={link.href}
                 to={link.href}
+                onClick={scrollToTop}
                 className="text-sm font-medium text-[var(--color-text-muted)] transition hover:text-white"
               >
                 {link.label}

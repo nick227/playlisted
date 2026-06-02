@@ -119,7 +119,12 @@ export function TrackRow({
       id={`track-${recordingId}`}
       className={`group/card grid w-full grid-cols-[auto_auto_1fr_auto] items-center gap-3 rounded-lg px-3 py-2 transition ${
         isActive ? "bg-white/10" : "hover:bg-[var(--color-surface-hover)]"
-      }`}
+      }${onPlay && !editMode ? " cursor-pointer" : ""}`}
+      onClick={(e) => {
+        if (!onPlay || editMode) return;
+        if ((e.target as HTMLElement).closest("button, a, input, select")) return;
+        onPlay();
+      }}
     >
       <PlaybackBars active={isActive} playing={isPlaying} />
       <button
@@ -140,7 +145,7 @@ export function TrackRow({
         )}
       </button>
       <div className="flex min-w-0 items-center gap-3 text-left">
-        <div className="h-10 w-10 shrink-0">
+        <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg">
           {editMode && onUpdateArtwork ? (
             <>
               <button
@@ -169,7 +174,18 @@ export function TrackRow({
               />
             </>
           ) : (
-            <MediaCover title={title} imageUrl={artworkUrl} />
+            <>
+              <MediaCover title={title} imageUrl={artworkUrl} />
+              {onPlay && (
+                <button
+                  type="button"
+                  onClick={onPlay}
+                  tabIndex={-1}
+                  aria-hidden="true"
+                  className="absolute inset-0"
+                />
+              )}
+            </>
           )}
         </div>
         <div className="min-w-0">
@@ -293,7 +309,7 @@ export function TrackRow({
           </>
         ) : showActions ? (
           <>
-            <FavoriteHeartButton target="recording" id={recordingId} variant="inline" />
+            <FavoriteHeartButton target="recording" id={recordingId} variant="inline" inlineAlwaysVisible />
             <RecordingActionMenu
               recordingId={recordingId}
               title={title}

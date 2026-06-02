@@ -17,7 +17,7 @@ type PlaylistDetailViewProps = {
 
 export function PlaylistDetailView({ playlist }: PlaylistDetailViewProps) {
   const isMdUp = useIsMdUp();
-  const relatedPlaylistLimit = isMdUp ? 4 : 6;
+  const relatedPlaylistLimit = isMdUp ? 5 : 6;
   const { data: related } = usePlaylists(relatedPlaylistLimit + 1);
   const { setQueue, currentTrack, togglePlay, playbackContext, state } = useAudioPlayer();
   const { status, user } = useAuth();
@@ -97,7 +97,7 @@ export function PlaylistDetailView({ playlist }: PlaylistDetailViewProps) {
       />
 
       {related && related.data.length > 0 ? (
-        <div className="mx-auto mt-14 max-w-4xl">
+        <div className="mx-auto mt-14 max-w-5xl">
           <ContentRow title="More playlists">
             {related.data
               .filter((item) => item.id !== playlist.id)

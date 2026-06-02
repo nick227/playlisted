@@ -112,7 +112,7 @@ export function LibraryTrackRow({ song, onPlay, queueTrack }: LibraryTrackRowPro
         {formatDuration(song.durationSeconds)}
       </span>
 
-      <FavoriteHeartButton target="recording" id={song.id} variant="inline" />
+      <FavoriteHeartButton target="recording" id={song.id} variant="inline" inlineAlwaysVisible />
       <RecordingActionMenu
         recordingId={song.id}
         title={song.title}
