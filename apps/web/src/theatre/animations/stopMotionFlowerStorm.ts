@@ -143,11 +143,28 @@ export function stopMotionFlowerStormFactory(): IAnimation {
     private lightningFlashUntil = 0
     private lightningFlashStrength = 0
     private lightningFlashX = 0.5
+    private approxBpm = 120
+    private lastBeatAt = 0
+    private lastBeatAcceptAt = 0
     private restoredProgress: FlowerStormProgress | null = null
     private progressRestored = false
 
     constructor() {
       super({ defaultOpacity: 0.98, defaultZIndex: 102, defaultBlendMode: 'normal', useEffects: true })
+    }
+
+    private updateApproxBpm(now: number, beat: boolean) {
+      if (!beat) return
+      // Avoid double-counting in case beat stays true for multiple frames.
+      if (now - this.lastBeatAcceptAt < 140) return
+      this.lastBeatAcceptAt = now
+
+      if (this.lastBeatAt !== 0) {
+        const delta = now - this.lastBeatAt
+        const bpm = clamp(60000 / Math.max(1, delta), 60, 200)
+        this.approxBpm = lerp(this.approxBpm, bpm, 0.12)
+      }
+      this.lastBeatAt = now
     }
 
     async init(container: HTMLElement, context: AnimationContext) {
@@ -208,12 +225,16 @@ export function stopMotionFlowerStormFactory(): IAnimation {
       const energy = clamp(triggers.energy || env * 1.2, 0, 1)
       const chaos  = triggers.chaosHit && energy > 0.65
 
+      this.updateApproxBpm(now, triggers.beat)
+
       const run = this.runner.update(now, features, triggers, reducedMotion)
       const pose       = flowerPoses[run.poseIndex % flowerPoses.length]
       const bloomLevel = run.progress
       const growthStage = this.resolveGrowthStage(run.state, bloomLevel)
       this.updateEnvironment(now, reducedMotion)
+      const bpmFactor = clamp(this.approxBpm / 120, 0.72, 1.38)
       const environmentVisuals = this.resolveEnvironmentVisuals(now)
+      environmentVisuals.cloudSpeed *= bpmFactor
       // stormPulse is specific to the stormStrain state — computed here, not in the generic runner
       const stormPulse = run.state === 'stormStrain' ? Math.abs(Math.sin(now / 120)) : 0
       const cloudDark  = clamp((highs * 0.4 + mids * 0.2 + energy * 0.6) * 0.8 + bloomLevel * 0.15, 0, 1)
@@ -298,29 +319,32 @@ export function stopMotionFlowerStormFactory(): IAnimation {
       }
 
       // state accents: lightning during storm/collapse
-      if ((run.state === 'stormStrain' || run.state === 'collapse') && heavyParticles) {
-        if (!reducedMotion && !context.shared?.lowPower && Math.random() < 0.05) {
-          const lx = centerX + (Math.random() - 0.5) * w * 0.5
-          const ly = h * 0.1 + Math.random() * h * 0.2
-          this.drawLightning(lx, ly, 1 + Math.random() * 0.8, 1.2)
-        }
+      if (
+        (run.state === 'stormStrain' || run.state === 'collapse') &&
+        heavyParticles &&
+        !reducedMotion &&
+        !context.shared?.lowPower &&
+        Math.random() < 0.05
+      ) {
+        const lx = centerX + (Math.random() - 0.5) * w * 0.5
+        const ly = h * 0.1 + Math.random() * h * 0.2
+        this.drawLightning(lx, ly, 1 + Math.random() * 0.8, 1.2)
       }
 
       // micro-effects triggers
       const punchStrength = run.state === 'stormStrain' ? energy * 0.7
         : run.state === 'collapse' ? 0.9
         : energy * 0.2
-      if (this.effects) {
-        if (chaos && !reducedMotion && heavyParticles) {
-          this.effects.triggerRainSurge(18 + Math.floor(highs * 36), 0.9, '220,245,255')
-          this.effects.triggerShockwave(centerX, centerY, 0.7 + (chaos ? 0.6 : 0))
-          this.effects.triggerScreenPunch(punchStrength)
-        }
-        if (triggers.beat && run.state === 'fullBloom' && heavyParticles) {
-          this.effects.triggerParticleBurst(centerX, centerY, 10 + Math.floor(bass * 18), 0.8, '255,240,220')
-        }
-        this.effects.update(this.ctx, now, this.pixelRatio)
+      const { effects } = this
+      if (effects && chaos && !reducedMotion && heavyParticles) {
+        effects.triggerRainSurge(18 + Math.floor(highs * 36), 0.9, '220,245,255')
+        effects.triggerShockwave(centerX, centerY, 0.7 + (chaos ? 0.6 : 0))
+        effects.triggerScreenPunch(punchStrength)
       }
+      if (effects && triggers.beat && run.state === 'fullBloom' && heavyParticles) {
+        effects.triggerParticleBurst(centerX, centerY, 10 + Math.floor(bass * 18), 0.8, '255,240,220')
+      }
+      if (effects) effects.update(this.ctx, now, this.pixelRatio)
     }
 
     private loadProgress(): FlowerStormProgress | null {

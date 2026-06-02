@@ -30,6 +30,15 @@ import { StudioAnalyticsPage } from "@/pages/studio/StudioAnalyticsPage";
 import { StudioHistoryPage } from "@/pages/studio/StudioHistoryPage";
 import { StudioDeveloperPage } from "@/pages/studio/StudioDeveloperPage";
 import { RadioPage } from "@/pages/RadioPage";
+import {
+  AdvertisingPage,
+  CompanyPage,
+  DevelopersPage,
+  JobsPage,
+  MediaPage,
+  MusiciansPage,
+} from "@/pages/site/FooterPages";
+import { PrivacyPage } from "@/pages/site/PrivacyPage";
 
 function LegacyProfileRedirect() {
   const { username } = useParams<{ username?: string }>();
@@ -50,6 +59,13 @@ function MainRoutes() {
         <Route path="/members/:userId" element={<MemberPage />} />
         <Route path="/explore" element={<Navigate to="/" replace />} />
         <Route path="/trending" element={<Navigate to="/" replace />} />
+        <Route path="/musicians" element={<MusiciansPage />} />
+        <Route path="/developers" element={<DevelopersPage />} />
+        <Route path="/advertising" element={<AdvertisingPage />} />
+        <Route path="/company" element={<CompanyPage />} />
+        <Route path="/jobs" element={<JobsPage />} />
+        <Route path="/media" element={<MediaPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/library" element={<LibraryPage />} />
         <Route path="/library/favorites" element={<FavoritesPage />} />
         <Route

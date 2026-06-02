@@ -122,17 +122,26 @@ export function BottomPlayer() {
             ) : (
               <div className="h-12 w-12 shrink-0 rounded" style={artStyle} />
             )}
-            <div className="min-w-0">
-              {shellPlaybackContext.playlistId ? (
-                <Link
-                  to={`${playlistHref ?? ""}#track-${displayTrack.id}`}
-                  className="block truncate text-sm font-medium text-white hover:underline"
-                >
-                  {displayTrack.title}
-                </Link>
-              ) : (
-                <p className="truncate text-sm font-medium text-white">{displayTrack.title}</p>
-              )}
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5">
+                {shellPlaybackContext.playlistId ? (
+                  <Link
+                    to={`${playlistHref ?? ""}#track-${displayTrack.id}`}
+                    className="cursor-pointer block min-w-0 truncate text-sm font-medium text-white hover:underline"
+                  >
+                    {displayTrack.title}
+                  </Link>
+                ) : (
+                  <p className="min-w-0 truncate text-sm font-medium text-white">{displayTrack.title}</p>
+                )}
+                <FavoriteHeartButton
+                  className="cursor-pointer h-7 w-7 self-center"
+                  target="recording"
+                  id={displayTrack.id}
+                  variant="inline"
+                  inlineAlwaysVisible
+                />
+              </div>
               {playlistHref ? (
                 <Link
                   to={playlistHref}
@@ -155,7 +164,6 @@ export function BottomPlayer() {
                 </button>
               ) : null}
             </div>
-            <FavoriteHeartButton className="text-8xl" target="recording" id={displayTrack.id} variant="inline" />
           </div>
           <div className="bottom-player__section bottom-player__section--controls flex flex-col items-center justify-center gap-1.5">
             <div className="flex items-center gap-4">

@@ -98,7 +98,7 @@ export function FavoriteHeartButton({
           ? "text-rose-500 hover:text-rose-400"
           : isInline
             ? inlineAlwaysVisible
-              ? "text-[var(--color-text-muted)] hover:text-rose-400"
+              ? "text-white/80 hover:text-rose-400"
               : "text-white/20 hover:text-white"
             : "text-white/80 hover:text-white",
         hideUnfavoritedUntilHover
@@ -109,7 +109,7 @@ export function FavoriteHeartButton({
       ].join(" ")}
     >
       <Heart
-        size={isInline ? 15 : 14}
+        size={isInline ? (inlineAlwaysVisible ? 18 : 15) : 14}
         fill={isFavorited ? "currentColor" : "none"}
         strokeWidth={isFavorited ? undefined : 2}
         className="block"

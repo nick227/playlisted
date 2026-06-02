@@ -10,6 +10,7 @@ import impossibleAquariumFactory from '../animations/impossibleAquarium'
 import signalOrganismFactory from '../animations/signalOrganism'
 import monsterCrewFactory from '../animations/monsterCrew'
 import liminalDoomFactory from '../animations/liminalDoom'
+import eqBarsFactory from '../animations/eqBars'
 
 // ─── Animation registry ──────────────────────────────────────────────────────
 
@@ -22,6 +23,7 @@ registry.register({ id: 'impossibleAquarium',  label: 'Impossible Aquarium',    
 registry.register({ id: 'signalOrganismScene',  label: 'Signal Organism',        factory: signalOrganismFactory,        visualType: 'canvas', mood: 'dynamic', role: 'subject',   weight: 2 })
 registry.register({ id: 'monsterCrew',         label: 'Monster Cycle',          factory: monsterCrewFactory,           visualType: 'canvas', mood: 'dynamic', role: 'subject',   weight: 4 })
 registry.register({ id: 'liminalDoom',         label: 'Liminal Doom',           factory: liminalDoomFactory,           visualType: 'canvas', mood: 'dynamic', role: 'subject',   weight: 1 })
+registry.register({ id: 'eqBars',             label: 'EQ Bars',                factory: eqBarsFactory,                visualType: 'canvas', mood: 'dynamic', role: 'subject',   weight: 3 })
 
 // ─── Scene presets ────────────────────────────────────────────────────────────
 
@@ -88,6 +90,13 @@ registerPreset({
   id: 'liminal-doom-demo', label: 'Liminal Doom', category: 'lab', weight: 1,
   reducedMotionPreset: 'quietPulse',
   layers: [{ animationId: 'liminalDoom', role: 'subject',
+    options: { opacity: 1.0, zIndex: 101, blendMode: 'normal', intensity: 1.0, sensitivity: 1.0 } }],
+})
+
+registerPreset({
+  id: 'eqBars', label: 'EQ Bars', category: 'production', weight: 3,
+  reducedMotionPreset: 'quietPulse',
+  layers: [{ animationId: 'eqBars', role: 'subject',
     options: { opacity: 1.0, zIndex: 101, blendMode: 'normal', intensity: 1.0, sensitivity: 1.0 } }],
 })
 

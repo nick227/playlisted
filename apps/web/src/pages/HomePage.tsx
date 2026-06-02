@@ -14,6 +14,7 @@ import {
   pickGreetingsFeaturedArtist,
 } from "@/components/discovery/GreetingsBanner";
 import { SpotlightBanner } from "@/components/discovery/SpotlightBanner";
+import { SiteFooter } from "@/components/site/SiteFooter";
 import { useHomepage } from "@/hooks/useHomepage";
 import { useIsMdUp } from "@/hooks/useIsMdUp";
 import { usePageMeta } from "@/hooks/usePageMeta";
@@ -515,7 +516,8 @@ export function HomePage() {
           ))}
         </HomeSection>
       )}
-      
+
+      <SiteFooter />
     </div>
   );
 }

@@ -182,9 +182,9 @@ export function ArtistProfileCollectionPanel({ playlist, owner }: ArtistProfileC
               type="button"
               onClick={handleFollow}
               disabled={addCollection.isPending || isFollowing}
-              className="text-sm text-[var(--color-text-muted)] transition hover:text-white disabled:opacity-50"
+              className="cursor-pointer text-sm text-[var(--color-text-muted)] transition hover:text-white disabled:opacity-50"
             >
-              {isFollowing ? "Following" : addCollection.isPending ? "Following…" : "Follow collection"}
+              {isFollowing ? "Following" : addCollection.isPending ? "Following…" : "Follow"}
             </button>
           ) : null}
         </div>
