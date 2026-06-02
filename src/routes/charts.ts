@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { Router } from "express";
 
 import { rangeToDate, type ChartRange } from "../lib/chartRange.js";
+import { resolveRecordingArtworkUrl } from "../lib/mediaUrls.js";
 import { BROWSABLE_RECORDING } from "../lib/publicRecordingFilter.js";
 import { PUBLIC_PUBLISHED_PLAYLIST } from "../lib/publicPlaylistFilter.js";
 import { ACTIVE_USER } from "../lib/publicUserFilter.js";
@@ -41,6 +42,7 @@ function mapTopSongItem(
       id: string;
       title: string;
       slug: string;
+      coverArtUrl: string | null;
       owner: { id: string; username: string; displayName: string; avatarUrl: string | null; role: string };
     };
   },
@@ -54,7 +56,7 @@ function mapTopSongItem(
     publishedPlaylistId: r.publishedPlaylistId,
     title: r.title,
     audioUrl: r.audioUrl,
-    artworkUrl: r.artworkUrl ?? null,
+    artworkUrl: resolveRecordingArtworkUrl(r, r.publishedPlaylist),
     durationSeconds: r.durationSeconds ?? null,
     recordingType: r.recordingType,
     visibility: r.visibility,
@@ -86,6 +88,7 @@ chartsRouter.get("/top-songs", async (req, res, next) => {
               id: true,
               title: true,
               slug: true,
+              coverArtUrl: true,
               owner: { select: { id: true, username: true, displayName: true, avatarUrl: true, role: true } },
             },
           },
@@ -115,6 +118,7 @@ chartsRouter.get("/top-songs", async (req, res, next) => {
             id: true,
             title: true,
             slug: true,
+            coverArtUrl: true,
             owner: { select: { id: true, username: true, displayName: true, avatarUrl: true, role: true } },
           },
         },

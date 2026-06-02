@@ -1,3 +1,5 @@
+import { resolveRecordingArtworkUrl } from "./mediaUrls.js";
+
 export function mapPlaybackHistoryItem(event: {
   id: bigint;
   recordingId: string;
@@ -25,7 +27,7 @@ export function mapPlaybackHistoryItem(event: {
     createdAt: Date;
     updatedAt: Date;
   };
-  playlist: { id: string; title: string; owner?: { username?: string | null } | null; slug?: string | null } | null;
+  playlist: { id: string; title: string; coverArtUrl?: string | null; owner?: { username?: string | null } | null; slug?: string | null } | null;
 }) {
   return {
     id: event.id.toString(),
@@ -45,7 +47,7 @@ export function mapPlaybackHistoryItem(event: {
       audioMimeType: event.recording.audioMimeType,
       audioBytes: event.recording.audioBytes ? Number(event.recording.audioBytes) : null,
       durationSeconds: event.recording.durationSeconds,
-      artworkUrl: event.recording.artworkUrl,
+      artworkUrl: resolveRecordingArtworkUrl(event.recording, event.playlist),
       recordingType: event.recording.recordingType,
       visibility: event.recording.visibility,
       status: event.recording.status,

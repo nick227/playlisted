@@ -1,6 +1,7 @@
 import { Router } from "express";
 
 import { rangeToDate, type ChartRange } from "../lib/chartRange.js";
+import { resolveRecordingArtworkUrl } from "../lib/mediaUrls.js";
 import { requireAuth } from "../lib/requireAuth.js";
 import { prisma } from "../lib/prisma.js";
 
@@ -133,7 +134,14 @@ analyticsRouter.get("/recordings", async (req, res, next) => {
 
     const myRecordings = await prisma.recording.findMany({
       where: { uploaderId: auth.user.id },
-      select: { id: true, title: true, artworkUrl: true, durationSeconds: true, playCount: true },
+      select: {
+        id: true,
+        title: true,
+        artworkUrl: true,
+        durationSeconds: true,
+        playCount: true,
+        publishedPlaylist: { select: { coverArtUrl: true } },
+      },
     });
 
     if (myRecordings.length === 0) {
@@ -178,7 +186,7 @@ analyticsRouter.get("/recordings", async (req, res, next) => {
       return {
         recordingId: rec.id,
         title: rec.title,
-        artworkUrl: rec.artworkUrl ?? null,
+        artworkUrl: resolveRecordingArtworkUrl(rec, rec.publishedPlaylist),
         durationSeconds: rec.durationSeconds ?? null,
         totalPlays: range === "all" ? rec.playCount : plays,
         totalPlaySeconds: s?.totalSeconds ?? 0,

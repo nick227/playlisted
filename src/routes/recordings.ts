@@ -3,6 +3,7 @@ import { Router } from "express";
 
 import { getAllGenres, getAllSubgenres } from "../utils/genresDictionary.js";
 import { getAuthContextFromRequest } from "../lib/auth.js";
+import { resolveRecordingArtworkUrl } from "../lib/mediaUrls.js";
 import { canViewerAccessRecording } from "../lib/publicRecordingFilter.js";
 import { canViewerAccessPlaylist } from "../lib/publicPlaylistFilter.js";
 import { requireAuth } from "../lib/requireAuth.js";
@@ -24,7 +25,7 @@ function mapRecordingSummary(recording: any) {
     audioMimeType: recording.audioMimeType,
     audioBytes: recording.audioBytes ? Number(recording.audioBytes) : null,
     durationSeconds: recording.durationSeconds,
-    artworkUrl: recording.artworkUrl,
+    artworkUrl: resolveRecordingArtworkUrl(recording, recording.publishedPlaylist),
     recordingType: recording.recordingType,
     visibility: recording.visibility,
     status: recording.status,
@@ -55,6 +56,7 @@ function mapRecordingDetail(recording: any) {
       ownerId: recording.publishedPlaylist.ownerId,
       title: recording.publishedPlaylist.title,
       slug: recording.publishedPlaylist.slug,
+      coverArtUrl: recording.publishedPlaylist.coverArtUrl,
       type: recording.publishedPlaylist.type,
       visibility: recording.publishedPlaylist.visibility,
       status: recording.publishedPlaylist.status,
@@ -101,6 +103,7 @@ recordingsRouter.get("/", async (req, res, next) => {
     const [items, total] = await Promise.all([
       prisma.recording.findMany({
         where,
+        include: { publishedPlaylist: { select: { coverArtUrl: true } } },
         orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
         skip: (page - 1) * pageSize,
         take: pageSize,

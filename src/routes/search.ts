@@ -1,6 +1,7 @@
 import { Router } from "express";
 
 import { mapPlaylistSummary } from "../lib/playlistMaps.js";
+import { resolveRecordingArtworkUrl } from "../lib/mediaUrls.js";
 import { prisma } from "../lib/prisma.js";
 import {
   BROWSABLE_RECORDING,
@@ -88,7 +89,7 @@ searchRouter.get("/unified", async (req, res, next) => {
           uploader: {
             select: { id: true, username: true, displayName: true, avatarUrl: true, role: true },
           },
-          publishedPlaylist: { select: { id: true, slug: true, title: true } },
+          publishedPlaylist: { select: { id: true, slug: true, title: true, coverArtUrl: true } },
           tags: {
             where: { tag: { kind: "GENRE" } },
             include: { tag: { select: { id: true, name: true, slug: true } } },
@@ -163,7 +164,7 @@ searchRouter.get("/unified", async (req, res, next) => {
         audioMimeType: r.audioMimeType ?? null,
         audioBytes: r.audioBytes != null ? Number(r.audioBytes) : null,
         durationSeconds: r.durationSeconds ?? null,
-        artworkUrl: r.artworkUrl ?? null,
+        artworkUrl: resolveRecordingArtworkUrl(r, r.publishedPlaylist),
         recordingType: r.recordingType,
         visibility: r.visibility,
         status: r.status,

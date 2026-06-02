@@ -1,6 +1,7 @@
 import { Router, type Request, type Response } from "express";
 
 import { getAuthContextFromRequest } from "../lib/auth.js";
+import { normalizeUploadUrl, resolveRecordingArtworkUrl } from "../lib/mediaUrls.js";
 import { prisma } from "../lib/prisma.js";
 import { radioChatLimiter, radioHeartbeatLimiter } from "../lib/rateLimiter.js";
 
@@ -36,20 +37,6 @@ async function requireRadioAdmin(req: Request, res: Response) {
     return null;
   }
   return auth;
-}
-
-function normalizeUploadUrl(url: string | null): string | null {
-  if (!url) return url;
-  if (url.startsWith("/uploads/")) return url;
-
-  try {
-    const parsed = new URL(url);
-    if (parsed.pathname.startsWith("/uploads/")) return parsed.pathname;
-  } catch {
-    // Keep non-URL values as-is.
-  }
-
-  return url;
 }
 
 function getListenerCount(stationSlug = DEFAULT_STATION_SLUG) {
@@ -139,7 +126,7 @@ function mapRecording(recording: RadioRecording) {
     audioUrl: normalizeUploadUrl(recording.audioUrl) ?? recording.audioUrl,
     audioMimeType: recording.audioMimeType,
     durationSeconds: recording.durationSeconds,
-    artworkUrl: normalizeUploadUrl(recording.artworkUrl),
+    artworkUrl: resolveRecordingArtworkUrl(recording, recording.publishedPlaylist),
     explicit: recording.explicit,
     uploader: {
       id: recording.uploader.id,

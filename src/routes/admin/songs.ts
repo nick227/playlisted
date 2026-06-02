@@ -1,6 +1,7 @@
 import { PublishStatus, RecordingType, Visibility } from "@prisma/client";
 import { Router } from "express";
 
+import { resolveRecordingArtworkUrl } from "../../lib/mediaUrls.js";
 import { prisma } from "../../lib/prisma.js";
 import { requireAdmin } from "../../lib/requireAdmin.js";
 
@@ -18,7 +19,7 @@ function mapSong(r: any) {
     title: r.title,
     description: r.description ?? null,
     audioUrl: r.audioUrl,
-    artworkUrl: r.artworkUrl ?? null,
+    artworkUrl: resolveRecordingArtworkUrl(r, r.publishedPlaylist),
     durationSeconds: r.durationSeconds ?? null,
     recordingType: r.recordingType,
     visibility: r.visibility,
@@ -38,6 +39,7 @@ function mapSong(r: any) {
       id: r.publishedPlaylist.id,
       title: r.publishedPlaylist.title,
       slug: r.publishedPlaylist.slug,
+      coverArtUrl: r.publishedPlaylist.coverArtUrl,
     },
     tags: (r.tags ?? []).map((t: any) => ({
       id: t.tag.id,
@@ -92,7 +94,7 @@ adminSongsRouter.get("/", async (req, res, next) => {
         take: pageSize,
         include: {
           uploader: { select: { id: true, username: true, displayName: true, avatarUrl: true } },
-          publishedPlaylist: { select: { id: true, title: true, slug: true } },
+          publishedPlaylist: { select: { id: true, title: true, slug: true, coverArtUrl: true } },
           tags: { include: { tag: { select: { id: true, name: true, slug: true, kind: true } } } },
           _count: { select: { saves: true } },
         },
@@ -149,7 +151,7 @@ adminSongsRouter.patch("/:songId", async (req, res, next) => {
       data,
       include: {
         uploader: { select: { id: true, username: true, displayName: true, avatarUrl: true } },
-        publishedPlaylist: { select: { id: true, title: true, slug: true } },
+        publishedPlaylist: { select: { id: true, title: true, slug: true, coverArtUrl: true } },
         tags: { include: { tag: { select: { id: true, name: true, slug: true, kind: true } } } },
         _count: { select: { saves: true } },
       },

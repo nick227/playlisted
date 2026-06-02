@@ -1,6 +1,7 @@
 import { Router } from "express";
 
 import { mapPlaybackHistoryItem } from "../lib/playbackMaps.js";
+import { resolveRecordingArtworkUrl } from "../lib/mediaUrls.js";
 import { mapPlaylistSummary } from "../lib/playlistMaps.js";
 import { requireAuth } from "../lib/requireAuth.js";
 import { prisma } from "../lib/prisma.js";
@@ -50,7 +51,7 @@ function mapRecordingWithUploader(r: {
   createdAt: Date;
   updatedAt: Date;
   uploader: { id: string; username: string; displayName: string; avatarUrl: string | null; role: string };
-  publishedPlaylist: { id: string; slug: string; title: string };
+  publishedPlaylist: { id: string; slug: string; title: string; coverArtUrl: string | null };
 }) {
   return {
     id: r.id,
@@ -62,7 +63,7 @@ function mapRecordingWithUploader(r: {
     audioMimeType: r.audioMimeType ?? null,
     audioBytes: r.audioBytes != null ? Number(r.audioBytes) : null,
     durationSeconds: r.durationSeconds ?? null,
-    artworkUrl: r.artworkUrl ?? null,
+    artworkUrl: resolveRecordingArtworkUrl(r, r.publishedPlaylist),
     recordingType: r.recordingType,
     visibility: r.visibility,
     status: r.status,
@@ -79,13 +80,14 @@ function mapRecordingWithUploader(r: {
       id: r.publishedPlaylist.id,
       slug: r.publishedPlaylist.slug,
       title: r.publishedPlaylist.title,
+      coverArtUrl: r.publishedPlaylist.coverArtUrl,
     },
   };
 }
 
 const RECORDING_WITH_UPLOADER_INCLUDE = {
   uploader: { select: UPLOADER_SELECT },
-  publishedPlaylist: { select: { id: true, slug: true, title: true } },
+  publishedPlaylist: { select: { id: true, slug: true, title: true, coverArtUrl: true } },
 } as const;
 
 function mapFavoriteArtist(follow: any) {
@@ -269,7 +271,7 @@ meRouter.get("/playback-history", async (req, res, next) => {
         where,
         include: {
           recording: true,
-          playlist: { select: { id: true, title: true, slug: true, owner: { select: { username: true } } } },
+          playlist: { select: { id: true, title: true, slug: true, coverArtUrl: true, owner: { select: { username: true } } } },
         },
         orderBy: { createdAt: "desc" },
         skip: (page - 1) * pageSize,

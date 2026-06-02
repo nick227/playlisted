@@ -1,4 +1,5 @@
 import { getPlaylistHref } from "./playlistHref.js";
+import { normalizeUploadUrl, resolveRecordingArtworkUrl } from "./mediaUrls.js";
 
 export function mapPlaylistSummary(playlist: {
   id: string;
@@ -62,22 +63,6 @@ export function mapPlaylistSummary(playlist: {
   };
 }
 
-function normalizeUploadUrl(url: string | null): string | null {
-  if (!url) return url;
-  if (url.startsWith("/uploads/")) return url;
-
-  try {
-    const parsed = new URL(url);
-    if (parsed.pathname.startsWith("/uploads/")) {
-      return parsed.pathname;
-    }
-  } catch {
-    // ignore parse errors (non-absolute URLs)
-  }
-
-  return url;
-}
-
 export function mapRecordingInPlaylist(recording: {
   id: string;
   uploaderId: string;
@@ -108,7 +93,7 @@ export function mapRecordingInPlaylist(recording: {
     role: string;
   };
   tags?: { tag: { id: string; name: string; slug: string; kind: string } }[];
-}) {
+}, fallbackArtworkUrl?: string | null) {
   return {
     id: recording.id,
     uploaderId: recording.uploaderId,
@@ -118,7 +103,7 @@ export function mapRecordingInPlaylist(recording: {
     audioUrl: normalizeUploadUrl(recording.audioUrl) ?? recording.audioUrl,
     audioMimeType: recording.audioMimeType,
     audioBytes: recording.audioBytes ? Number(recording.audioBytes) : null,
-    artworkUrl: normalizeUploadUrl(recording.artworkUrl),
+    artworkUrl: resolveRecordingArtworkUrl(recording, { coverArtUrl: fallbackArtworkUrl }),
     durationSeconds: recording.durationSeconds,
     trackNumber: recording.trackNumber,
     episodeNumber: recording.episodeNumber,
@@ -154,7 +139,7 @@ export function mapPlaylistDetail(playlist: Parameters<typeof mapPlaylistSummary
 }) {
   return {
     ...mapPlaylistSummary(playlist),
-    recordings: playlist.items.map(({ recording }) => mapRecordingInPlaylist(recording)),
+    recordings: playlist.items.map(({ recording }) => mapRecordingInPlaylist(recording, playlist.coverArtUrl)),
   };
 }
 

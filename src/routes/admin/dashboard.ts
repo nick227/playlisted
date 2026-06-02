@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { Router } from "express";
 
+import { resolveRecordingArtworkUrl } from "../../lib/mediaUrls.js";
 import { prisma } from "../../lib/prisma.js";
 import { requireAdmin } from "../../lib/requireAdmin.js";
 
@@ -82,7 +83,13 @@ adminDashboardRouter.get("/", async (req, res, next) => {
     const topSongDetails = topSongIds.length > 0
       ? await prisma.recording.findMany({
           where: { id: { in: topSongIds } },
-          select: { id: true, title: true, artworkUrl: true, uploader: { select: { displayName: true } } },
+          select: {
+            id: true,
+            title: true,
+            artworkUrl: true,
+            uploader: { select: { displayName: true } },
+            publishedPlaylist: { select: { coverArtUrl: true } },
+          },
         })
       : [];
     const topSongMap = new Map(topSongDetails.map((r) => [r.id, r]));
@@ -106,7 +113,7 @@ adminDashboardRouter.get("/", async (req, res, next) => {
           recordingId: r.recordingId,
           plays: r._count.id,
           title: detail?.title ?? "Unknown",
-          artworkUrl: detail?.artworkUrl ?? null,
+          artworkUrl: detail ? resolveRecordingArtworkUrl(detail, detail.publishedPlaylist) : null,
           artist: detail?.uploader.displayName ?? "Unknown",
         };
       }),
