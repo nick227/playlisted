@@ -4,51 +4,29 @@ import type {
   components,
   TopArtistItem,
   TopPlaylistItem,
-  TopSongItem,
 } from "@playlisted/client-sdk";
 
 import { ArtistCard } from "@/components/cards/ArtistCard";
-import { ChartSongCard } from "@/components/cards/ChartSongCard";
 import { SmartPlaylistCard } from "@/components/cards/SmartPlaylistCard";
+import { HomeChartsSection } from "@/components/charts/HomeChartsSection";
 import {
   GreetingsBanner,
   pickGreetingsFeaturedArtist,
 } from "@/components/discovery/GreetingsBanner";
 import { SpotlightBanner } from "@/components/discovery/SpotlightBanner";
-import { RowSkeleton } from "@/components/feedback/Skeleton";
-import { Skeleton } from "@/components/feedback/Skeleton";
 import { useHomepage } from "@/hooks/useHomepage";
 import { useIsMdUp } from "@/hooks/useIsMdUp";
 import { usePageMeta } from "@/hooks/usePageMeta";
-import { useTopArtists, useTopPlaylists, useTopSongs } from "@/hooks/useCharts";
+import { useTopArtists, useTopPlaylists } from "@/hooks/useCharts";
 import { useAuth } from "@/providers/AuthProvider";
-import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
-import { RecordingActionMenu } from "@/components/media/RecordingActionMenu";
-import { PlaylistActionMenu } from "@/components/media/PlaylistActionMenu";
-import {
-  chartItemPlaybackContext,
-  topSongToQueueTrack,
-} from "@/lib/queueTrack";
-import { homeChartSongOrigin } from "@/lib/playbackOrigin";
 import { coverFallback, resolveItemPath } from "@/lib/routes";
-import { recordingShareUrl } from "@/lib/shareContent";
 
 type HomepageItem = components["schemas"]["HomepageItem"];
-
-const CHART_RANGE_LABELS: Record<"7d" | "30d" | "all", string> = {
-  "7d": "last 7 days",
-  "30d": "last 30 days",
-  all: "all time",
-};
 
 /** Item counts and fetch sizes for home sections (mobile vs md+). */
 const HOME_LIMITS = {
   gridMobile: 4,
   gridDesktop: 8,
-  chartsTopSongs: 6,
-  chartsTopPlaylistsMobile: 4,
-  chartsTopPlaylistsDesktop: 5,
-  chartsTopArtists: 6,
   featuredArtists: 6,
   discoverMobile: 4,
   discoverDesktop: 10,
@@ -62,9 +40,6 @@ const HOME_LIMITS = {
 
 const HOME_SECTION_COLS = {
   discover: "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5",
-  chartsTopSongs: "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6",
-  chartsTopPlaylists: "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5",
-  chartsTopArtists: "grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6",
   featuredPlaylists: "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4",
   featuredArtists: "grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6",
   editorPicks: "grid-cols-2 sm:grid-cols-3 md:grid-cols-4",
@@ -134,8 +109,6 @@ function HomeSection({
     </section>
   );
 }
-
-const CHART_SECTION_KEY = "top-songs";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -273,13 +246,6 @@ export function HomePage() {
     description: "Music charts and curated playlists for independent artists.",
   });
 
-  const chartsRange: "7d" | "30d" | "all" = "7d";
-
-  const topPlaylistsLimit = viewportLimit(
-    HOME_LIMITS.chartsTopPlaylistsMobile,
-    HOME_LIMITS.chartsTopPlaylistsDesktop,
-    isMdUp,
-  );
   const discoverLimit = viewportLimit(
     HOME_LIMITS.discoverMobile,
     HOME_LIMITS.discoverDesktop,
@@ -287,14 +253,10 @@ export function HomePage() {
   );
 
   const editorial = useHomepage();
-  const topSongs = useTopSongs(chartsRange, HOME_LIMITS.chartsTopSongs);
-  const topPlaylists = useTopPlaylists(chartsRange, topPlaylistsLimit);
-  const topArtists = useTopArtists(chartsRange, HOME_LIMITS.chartsTopArtists);
+  const topArtists = useTopArtists("7d", 6);
   const discoverPool = useTopPlaylists("30d", HOME_LIMITS.discoverPoolFetch);
   const allTimeFeatured = useTopPlaylists("all", HOME_LIMITS.featuredPlaylistsFetch);
   const pinnedArtists = useTopArtists("30d", HOME_LIMITS.pinnedArtistsFetch);
-
-  const { playTrack, currentTrack, activeOriginKey, togglePlay } = useAudioPlayer();
 
   // Parse editorial sections into a keyed map
   const sectionMap = useMemo(() => {
@@ -403,24 +365,7 @@ export function HomePage() {
     return stableShuffleByDay(pool).slice(0, discoverLimit);
   }, [discoverPool.data, isGuest, user, discoverLimit]);
 
-  const chartsLoading = topSongs.isLoading || topPlaylists.isLoading || topArtists.isLoading;
-
   const firstName = user?.displayName?.split(" ")[0];
-
-  function handleChartSongPlay(item: TopSongItem, siblings: TopSongItem[], sectionName: string) {
-    const origin = homeChartSongOrigin(CHART_SECTION_KEY, item.recordingId);
-    if (currentTrack?.id === item.recordingId && activeOriginKey === origin) {
-      togglePlay();
-      return;
-    }
-    const idx = siblings.findIndex((s) => s.recordingId === item.recordingId);
-    if (idx < 0) return;
-    const tracks = siblings.map((s) => topSongToQueueTrack(s, sectionName));
-    playTrack(topSongToQueueTrack(item, sectionName), tracks, chartItemPlaybackContext(item), {
-      segmentLabel: sectionName,
-      playbackOrigin: origin,
-    });
-  }
 
   return (
     <div className="mx-auto max-w-[var(--size-container-max,90rem)]">
@@ -433,25 +378,18 @@ export function HomePage() {
         artistLoading={greetingsArtistLoading}
       />
 
-      {/* ── FOR YOU / DISCOVER ───────────────────────────────── */}
+      <HomeChartsSection />
 
-      {discovered.length > 0 && (
+      {/* ── SITE NEWS ────────────────────────────────────────────── */}
+
+      {siteNews.length > 0 && (
         <HomeSection
-          title={!isGuest ? "Picked for you" : "Discover Something New"}
-          subtitle={!isGuest ? "Updated daily based on your taste" : "Fresh picks — updated daily"}
-          cols={HOME_SECTION_COLS.discover}
+          title="Site News"
+          subtitle="Updates from the team"
+          cols={HOME_SECTION_COLS.siteNews}
         >
-          {discovered.map((item) => (
-            <SmartPlaylistCard
-              key={item.playlistId}
-              id={item.playlistId}
-              title={item.title}
-              creatorName={item.owner.displayName}
-              coverArtUrl={item.coverArtUrl}
-              ownerUsername={item.owner.username}
-              slug={item.slug}
-              className="w-full"
-            />
+          {siteNews.map((item) => (
+            <SiteNewsCard key={item.id} item={item} />
           ))}
         </HomeSection>
       )}
@@ -459,116 +397,28 @@ export function HomePage() {
       {/* Spotlight — admin-curated full-width hero, shown before everything */}
       {spotlightItem && <SpotlightBanner item={spotlightItem} />}
 
-      {/* ── CHARTS ───────────────────────────────────────────── */}
+{/* ── FOR YOU / DISCOVER ───────────────────────────────── */}
 
-      {chartsLoading ? (
-        <>
-                <Skeleton className="aspect-square w-full rounded-lg" />
-                <Skeleton className="h-4 w-3/4" />
-          <RowSkeleton />
-          <RowSkeleton />
-          <RowSkeleton />
-        </>
-      ) : (
-        <>
-          {(topSongs.data?.data.length ?? 0) > 0 && (
-            <HomeSection
-              title="Top Songs"
-              subtitle={`Most-played — ${CHART_RANGE_LABELS[chartsRange]}`}
-              cols={HOME_SECTION_COLS.chartsTopSongs}
-            >
-              {topSongs.data!.data.map((item: TopSongItem) => (
-                <ChartSongCard
-                  key={item.recordingId}
-                  item={item}
-                  className="w-full"
-                  playbackOrigin={homeChartSongOrigin(CHART_SECTION_KEY, item.recordingId)}
-                  actionSlot={
-                    <RecordingActionMenu
-                      recordingId={item.recordingId}
-                      title={item.title}
-                      queueTrack={topSongToQueueTrack(item)}
-                      shareUrl={recordingShareUrl({
-                        playlistId: item.playlist.id,
-                        recordingId: item.recordingId,
-                        username: item.playlist.owner.username,
-                        slug: item.playlist.slug,
-                      })}
-                    />
-                  }
-                  onPlay={() =>
-                    handleChartSongPlay(item, topSongs.data!.data, "Top Songs")
-                  }
-                />
-              ))}
-            </HomeSection>
-          )}
-
-          {(topPlaylists.data?.data.length ?? 0) > 0 && (
-            <HomeSection
-              title="Top Playlists"
-              subtitle={`Most-played collections — ${CHART_RANGE_LABELS[chartsRange]}`}
-              cols={HOME_SECTION_COLS.chartsTopPlaylists}
-            >
-              {topPlaylists.data!.data.map((item: TopPlaylistItem) => (
-                <SmartPlaylistCard
-                  key={item.playlistId}
-                  id={item.playlistId}
-                  title={item.title}
-                  creatorName={item.owner.displayName}
-                  coverArtUrl={item.coverArtUrl}
-                  ownerUsername={item.owner.username}
-                  slug={item.slug}
-                  meta={`${item.playCount.toLocaleString()} plays`}
-                  className="w-full"
-                  actionSlot={
-                    <PlaylistActionMenu
-                      playlistId={item.playlistId}
-                      title={item.title}
-                      ownerUsername={item.owner.username}
-                      slug={item.slug}
-                    />
-                  }
-                />
-              ))}
-            </HomeSection>
-          )}
-
-          {/* ── SITE NEWS ────────────────────────────────────────────── */}
-    
-          {siteNews.length > 0 && (
-            <HomeSection
-              title="Site News"
-              subtitle="Updates from the team"
-              cols={HOME_SECTION_COLS.siteNews}
-            >
-              {siteNews.map((item) => (
-                <SiteNewsCard key={item.id} item={item} />
-              ))}
-            </HomeSection>
-          )}
-
-          {(topArtists.data?.data.length ?? 0) > 0 && (
-            <HomeSection
-              title="Top Artists"
-              subtitle={`Creators driving the most plays — ${CHART_RANGE_LABELS[chartsRange]}`}
-              cols={HOME_SECTION_COLS.chartsTopArtists}
-            >
-              {topArtists.data!.data.map((item: TopArtistItem) => (
-                <ArtistCard
-                  key={item.userId}
-                  id={item.userId}
-                  username={item.username}
-                  displayName={item.displayName}
-                  avatarUrl={item.avatarUrl}
-                  subtitle={`${item.playCount.toLocaleString()} plays`}
-                  className="w-full"
-                />
-              ))}
-            </HomeSection>
-          )}
-        </>
-      )}
+{discovered.length > 0 && (
+  <HomeSection
+    title={!isGuest ? "Picked for you" : "Discover Something New"}
+    subtitle={!isGuest ? "Updated daily based on your taste" : "Fresh picks — updated daily"}
+    cols={HOME_SECTION_COLS.discover}
+  >
+    {discovered.map((item) => (
+      <SmartPlaylistCard
+        key={item.playlistId}
+        id={item.playlistId}
+        title={item.title}
+        creatorName={item.owner.displayName}
+        coverArtUrl={item.coverArtUrl}
+        ownerUsername={item.owner.username}
+        slug={item.slug}
+        className="w-full"
+      />
+    ))}
+  </HomeSection>
+)}
 
       {/* ── FEATURED PLAYLISTS ───────────────────────────────── */}
 
