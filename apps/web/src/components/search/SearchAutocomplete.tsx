@@ -228,11 +228,11 @@ export function SearchAutocomplete({
       {/* Mobile open + desktop: full combobox. Width animates from icon size on mobile. */}
       <form
         ref={rootRef}
-        className={`relative min-w-0 ${MOBILE_SEARCH_TRANSITION} sm:!w-full sm:!opacity-100 sm:!translate-x-0 ${
+        className={`relative min-w-0 ${MOBILE_SEARCH_TRANSITION} sm:w-full! sm:opacity-100! sm:translate-x-0! ${
           showMobileForm
-            ? "max-sm:w-full max-sm:translate-x-0 max-sm:opacity-100"
-            : "max-sm:pointer-events-none max-sm:w-9 max-sm:translate-x-2 max-sm:opacity-0"
-        } ${showMobileForm ? "flex flex-1" : "max-sm:absolute max-sm:right-0 sm:flex sm:flex-1"}`}
+            ? "flex flex-1 max-sm:w-full max-sm:translate-x-0 max-sm:opacity-100"
+            : "max-sm:hidden sm:flex sm:flex-1"
+        }`}
         onSubmit={(e) => {
           e.preventDefault();
           handleSubmit();

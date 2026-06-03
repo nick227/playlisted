@@ -90,19 +90,26 @@ export function TopBar({ onMenuClick }: TopBarProps) {
         className="shrink-0 text-base transition-opacity duration-300 motion-reduce:transition-none sm:hidden"
       />
 
+      {/* MOBILE closed: grow spacer so search icon sits flush with action buttons */}
+      {!mobileSearchOpen ? <div className="min-w-0 flex-1 sm:hidden" aria-hidden /> : null}
+
       {/* Search: collapsible on mobile; always expanded from sm+ */}
       <SearchAutocomplete
         className={
           mobileSearchOpen
             ? "min-w-0 flex-1 sm:mx-auto sm:max-w-xl"
-            : "ml-auto shrink-0 sm:ml-0 sm:min-w-0 sm:flex-1 sm:mx-auto sm:max-w-xl"
+            : "shrink-0 sm:min-w-0 sm:flex-1 sm:mx-auto sm:max-w-xl"
         }
         mobileExpanded={mobileSearchOpen}
         onMobileExpandedChange={setMobileSearchOpen}
       />
 
       {/* Right-side actions — theatre, auth, account menu */}
-      <div className="relative ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
+      <div
+        className={`relative flex shrink-0 items-center gap-1.5 sm:gap-2 ${
+          mobileSearchOpen ? "ml-auto" : "sm:ml-auto"
+        }`}
+      >
         <button
           type="button"
           onClick={handleTheatreClick}
