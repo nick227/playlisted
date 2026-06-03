@@ -6,6 +6,7 @@ import { ArtistCard } from "@/components/cards/ArtistCard";
 import { Skeleton } from "@/components/feedback/Skeleton";
 import { coverFallback, profilePath } from "@/lib/routes";
 
+import { FakeAiChat } from "./FakeAiChat";
 import { GreetingSky } from "./greeting/GreetingSky";
 import { getTimeTheme } from "./greeting/getTimeTheme";
 
@@ -84,52 +85,25 @@ export function GreetingsBanner({
   const heroBg = featuredArtist?.heroImageUrl ?? featuredArtist?.avatarUrl;
 
   return (
-    <div className={`mb-10 grid gap-4 ${showArtistPanel ? "lg:grid-cols-2" : ""}`}>
-      <section className="relative min-h-[420px] overflow-hidden rounded-2xl px-8 py-12 md:px-14">
+    <div className={`mb-10 grid items-stretch gap-4 ${showArtistPanel ? "lg:grid-cols-2" : ""}`}>
+      <section className="relative min-h-[340px] overflow-hidden rounded-2xl px-6 py-8 md:px-10 md:py-10">
         <GreetingSky theme={theme} />
-        <div className="relative z-10 mt-20">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-[var(--color-brand)]">
-            Playlisted
-          </p>
-          <h1 className="max-w-lg text-3xl font-extrabold leading-tight tracking-tight text-white md:text-4xl">
-            {headline}
-          </h1>
-          <p
-            className="mt-4 max-w-md text-sm leading-relaxed text-white"
-            style={{ opacity: theme.textMutedOpacity }}
-          >
-            {isGuest
-              ? "Discover independent artists, playlists, and charts curated for the community."
-              : "Browse charts or upload new tracks."}
-          </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Link
-              to="/library"
-              className="inline-flex items-center rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-black transition hover:bg-white/90"
-            >
-              Browse music
-            </Link>
-            {isGuest ? (
-              <Link
-                to="/register"
-                className="inline-flex items-center rounded-full border border-white/20 px-6 py-2.5 text-sm font-medium text-white transition hover:bg-white/10"
-              >
-                Join free
-              </Link>
-            ) : (
-              <Link
-                to="/studio/collections"
-                className="inline-flex items-center rounded-full border border-white/20 px-6 py-2.5 text-sm font-medium text-white transition hover:bg-white/10"
-              >
-                Upload
-              </Link>
-            )}
-          </div>
-        </div>
+
+        <FakeAiChat
+          headline={headline}
+          message={
+            isGuest
+              ? "Find independent artists, playlists, charts, and radio."
+              : "Browse charts, playlists, radio, or publish tracks."
+          }
+          messageOpacity={theme.textMutedOpacity}
+          isGuest={isGuest}
+        />
+
       </section>
 
       {showArtistPanel ? (
-        <section className="relative min-h-[420px] overflow-hidden rounded-2xl">
+        <section className="relative min-h-[320px] overflow-hidden rounded-2xl">
           {artistLoading && !featuredArtist ? (
             <Skeleton className="absolute inset-0 h-full w-full rounded-2xl" />
           ) : featuredArtist ? (
@@ -148,7 +122,7 @@ export function GreetingsBanner({
                 />
               )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/55 to-black/25" />
-              <div className="relative z-10 flex min-h-[420px] flex-col justify-end px-8 py-12 md:px-14 mt-4 ">
+              <div className="relative z-10 flex h-full min-h-[320px] flex-col justify-end px-6 py-8 md:px-10 md:py-10">
                 <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-[var(--color-brand)]">
                   Featured artist
                 </p>

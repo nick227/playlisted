@@ -41,7 +41,7 @@ const pages = {
     eyebrow: "Advertising",
     title: "Advertising and collaborations.",
     description:
-      "Playlisted does not have a formal advertising product right now. We are interested in simple collaborations that fit the project.",
+      "We are interested in collaborations that fit the project and help the artists.",
     intro:
       "If you want to talk about a small partnership, a music-related placement, or another practical idea, send an email.",
     contactEmail: "advertising@playlisted.com",
@@ -89,7 +89,7 @@ const pages = {
     pageKey: "media",
     eyebrow: "Media",
     title: "Media inquiries.",
-    description: "We especially like Survivor and Family Feud.",
+    description: "Coming Soon!",
     intro: "Please send all questions or interests to.",
     contactEmail: "media@playlisted.com",
     sections: [],

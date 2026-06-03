@@ -121,7 +121,7 @@ export type ListUsersQuery = NonNullable<operations["listUsers"]["parameters"]["
 export type ListPlaylistsQuery = NonNullable<operations["listPlaylists"]["parameters"]["query"]>;
 export type ListRecordingsQuery = NonNullable<operations["listRecordings"]["parameters"]["query"]>;
 
-export type ChartsQuery = { range?: ChartRange; limit?: number };
+export type ChartsQuery = { range?: ChartRange; limit?: number; genre?: string };
 export type AnalyticsQuery = { range?: ChartRange };
 export type AnalyticsRecordingsQuery = { range?: ChartRange; sortBy?: "plays" | "duration" | "completion"; order?: "asc" | "desc"; page?: number; pageSize?: number };
 export type AnalyticsPlaylistsQuery = { range?: ChartRange; sortBy?: "plays" | "duration" | "completion" | "likes" | "follows"; order?: "asc" | "desc"; page?: number; pageSize?: number };

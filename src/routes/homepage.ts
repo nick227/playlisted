@@ -1,7 +1,10 @@
 import { Router } from "express";
 
+import { getPlaylistHref } from "../lib/playlistHref.js";
 import { isPlaylistBrowsable } from "../lib/publicPlaylistFilter.js";
+import { BROWSABLE_RECORDING } from "../lib/publicRecordingFilter.js";
 import { isUserActive } from "../lib/publicUserFilter.js";
+import { resolveRecordingArtworkUrl } from "../lib/mediaUrls.js";
 import { prisma } from "../lib/prisma.js";
 
 export const homepageRouter = Router();
@@ -21,32 +24,62 @@ const SECTION_TITLES: Record<string, string> = {
 homepageRouter.get("/", async (_req, res, next) => {
   try {
     const now = new Date();
-    const features = await prisma.homepageFeature.findMany({
-      where: {
-        isActive: true,
-        OR: [{ startsAt: null }, { startsAt: { lte: now } }],
-        AND: [{ OR: [{ endsAt: null }, { endsAt: { gte: now } }] }],
-      },
-      include: {
-        playlist: {
-          include: {
-            owner: true,
+    const [features, newestRecordings] = await Promise.all([
+      prisma.homepageFeature.findMany({
+        where: {
+          isActive: true,
+          OR: [{ startsAt: null }, { startsAt: { lte: now } }],
+          AND: [{ OR: [{ endsAt: null }, { endsAt: { gte: now } }] }],
+        },
+        include: {
+          playlist: {
+            include: {
+              owner: true,
+            },
+          },
+          user: true,
+          editorialPost: {
+            include: {
+              author: true,
+            },
           },
         },
-        user: true,
-        editorialPost: {
-          include: {
-            author: true,
+        orderBy: [{ section: "asc" }, { position: "asc" }],
+      }),
+      prisma.recording.findMany({
+        where: {
+          ...BROWSABLE_RECORDING,
+          recordingType: "SONG",
+        },
+        include: {
+          uploader: {
+            select: { id: true, username: true, displayName: true, avatarUrl: true, role: true },
+          },
+          publishedPlaylist: {
+            select: {
+              id: true,
+              title: true,
+              slug: true,
+              coverArtUrl: true,
+              owner: {
+                select: { id: true, username: true, displayName: true, avatarUrl: true, role: true },
+              },
+            },
           },
         },
-      },
-      orderBy: [{ section: "asc" }, { position: "asc" }],
-    });
+        orderBy: [
+          { publishedAt: { sort: "desc", nulls: "last" } },
+          { createdAt: "desc" },
+        ],
+        take: 10,
+      }),
+    ]);
 
     const grouped = new Map<string, any[]>();
+    const curatedNewReleases: any[] = [];
 
     for (const feature of features) {
-      if (!grouped.has(feature.section)) {
+      if (feature.section !== "NEW_RELEASE" && !grouped.has(feature.section)) {
         grouped.set(feature.section, []);
       }
 
@@ -90,9 +123,46 @@ homepageRouter.get("/", async (_req, res, next) => {
       }
 
       if (item) {
-        grouped.get(feature.section)?.push(item);
+        if (feature.section === "NEW_RELEASE") {
+          curatedNewReleases.push(item);
+        } else {
+          grouped.get(feature.section)?.push(item);
+        }
       }
     }
+
+    const newestReleaseItems = newestRecordings.map((recording) => {
+      const playlistHref = getPlaylistHref(recording.publishedPlaylist);
+      return {
+        id: recording.id,
+        targetType: "RECORDING",
+        title: recording.title,
+        subtitle: recording.uploader.displayName,
+        description: recording.publishedPlaylist.title,
+        imageUrl: resolveRecordingArtworkUrl(recording, recording.publishedPlaylist),
+        href: `${playlistHref}#track-${recording.id}`,
+        uploaderId: recording.uploaderId,
+        publishedPlaylistId: recording.publishedPlaylistId,
+        audioUrl: recording.audioUrl,
+        durationSeconds: recording.durationSeconds,
+        recordingType: recording.recordingType,
+        visibility: recording.visibility,
+        status: recording.status,
+        explicit: recording.explicit,
+        playCount: recording.playCount,
+        createdAt: recording.createdAt.toISOString(),
+        updatedAt: recording.updatedAt.toISOString(),
+        playlistTitle: recording.publishedPlaylist.title,
+        playlistSlug: recording.publishedPlaylist.slug,
+        playlistOwnerUsername: recording.publishedPlaylist.owner.username,
+      };
+    });
+
+    const newestReleaseIds = new Set(newestReleaseItems.map((item) => item.id));
+    grouped.set("NEW_RELEASE", [
+      ...newestReleaseItems,
+      ...curatedNewReleases.filter((item) => !newestReleaseIds.has(item.id)),
+    ]);
 
     const sections = Array.from(grouped.entries()).map(([section, items]) => ({
       section,

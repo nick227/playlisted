@@ -1,6 +1,6 @@
 import { PlaylistedApiError } from "@playlisted/client-sdk";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { CollectionView } from "@/components/collection/CollectionView";
@@ -68,10 +68,12 @@ export function StudioCollectionEditPage() {
     playlistGenreSlug,
     genreLoading,
     genreSaving,
+    genreError,
     updateRecordingTagsMutation,
     trackGenreSavingById,
     trackGenreErrorById,
     handleGenreChange,
+    handleGenreCreate,
   } = useStudioCollectionGenres({
     playlist: playlist ?? undefined,
     playlistId,
@@ -128,6 +130,17 @@ export function StudioCollectionEditPage() {
       lastSavedDescriptionRef.current = updated.description;
     },
   });
+
+  const prevRecordingCountRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (!playlist) return;
+    const curr = playlist.recordings.length;
+    const prev = prevRecordingCountRef.current;
+    prevRecordingCountRef.current = curr;
+    if (prev === 0 && curr > 0) {
+      visibilityMutation.mutate("PUBLIC");
+    }
+  }, [playlist?.recordings.length]);
 
   if (isError) {
     if (loadError instanceof PlaylistedApiError && loadError.status === 403) {
@@ -199,10 +212,12 @@ export function StudioCollectionEditPage() {
         trackErrorById={{ ...recordingErrors, ...trackGenreErrorById }}
         selectedGenreId={selectedGenreId}
         onGenreChange={handleGenreChange}
+        onGenreCreate={handleGenreCreate}
         genreOptions={availableGenres}
         playlistGenreSlug={playlistGenreSlug}
         genreLoading={genreLoading}
         genreSaving={genreSaving}
+        genreError={genreError}
         uploadProgress={
           trackUploadQueue.length > 0 ? (
             <TrackUploadQueue
@@ -218,28 +233,41 @@ export function StudioCollectionEditPage() {
         }
         editToolbar={
           <>
-            <div className="flex items-center gap-2 rounded-full border border-white/20 p-1">
-              <button
-                type="button"
-                onClick={() => visibilityMutation.mutate("PUBLIC")}
-                disabled={visibilityMutation.isPending}
-                className={`rounded-full px-4 py-1.5 text-sm font-semibold ${
-                  playlist.visibility === "PUBLIC" ? "bg-white text-black" : "text-white hover:bg-white/10"
-                }`}
-              >
-                Public
-              </button>
-              <button
-                type="button"
-                onClick={() => visibilityMutation.mutate("PRIVATE")}
-                disabled={visibilityMutation.isPending}
-                className={`rounded-full px-4 py-1.5 text-sm font-semibold ${
-                  playlist.visibility === "PRIVATE" ? "bg-white text-black" : "text-white hover:bg-white/10"
-                }`}
-              >
-                Private
-              </button>
-            </div>
+            {(() => {
+              const hasNoTracks = collection.recordings.length === 0;
+              const effectiveVisibility = hasNoTracks ? "PRIVATE" : playlist.visibility;
+              return (
+                <div
+                  className="flex items-center gap-2 rounded-full border border-white/20 p-1"
+                  title={hasNoTracks ? "Add at least one track to change visibility" : undefined}
+                >
+                  <button
+                    type="button"
+                    onClick={() => visibilityMutation.mutate("PUBLIC")}
+                    disabled={visibilityMutation.isPending || hasNoTracks}
+                    className={[
+                      "rounded-full px-4 py-1.5 text-sm font-semibold transition",
+                      effectiveVisibility === "PUBLIC" ? "bg-white text-black" : "text-white",
+                      hasNoTracks ? "opacity-40 cursor-not-allowed" : "hover:bg-white/10",
+                    ].join(" ")}
+                  >
+                    Public
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => visibilityMutation.mutate("PRIVATE")}
+                    disabled={visibilityMutation.isPending || hasNoTracks}
+                    className={[
+                      "rounded-full px-4 py-1.5 text-sm font-semibold transition",
+                      effectiveVisibility === "PRIVATE" ? "bg-white text-black" : "text-white",
+                      hasNoTracks ? "opacity-40 cursor-not-allowed" : "hover:bg-white/10",
+                    ].join(" ")}
+                  >
+                    Private
+                  </button>
+                </div>
+              );
+            })()}
 
             <div className="flex items-center gap-2 px-3 py-2 text-xs text-[var(--color-text-muted)] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-full select-none">
               {saveMutation.isPending || hasUnsavedDraft ? (

@@ -5,7 +5,7 @@ import { ChartPanelContainer } from "./ChartPanelContainer";
 
 const PLACEHOLDER_TITLES = ["Top Songs", "Top Playlists", "Top Artists"] as const;
 
-function SkeletonRow() {
+export function SkeletonRow() {
   return (
     <li className="grid grid-cols-[auto_auto_auto_1fr_auto] items-center gap-3 px-3 py-2.5">
       <Skeleton className="h-4 w-4" />

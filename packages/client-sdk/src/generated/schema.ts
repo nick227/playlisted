@@ -545,7 +545,8 @@ export interface paths {
         /** List all genre tags for authoring */
         get: operations["getTagGenres"];
         put?: never;
-        post?: never;
+        /** Create a new genre tag */
+        post: operations["createTagGenre"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1085,7 +1086,7 @@ export interface paths {
         put?: never;
         /**
          * Upload an audio or image file using an API key (MVP multipart)
-         * @description MVP multipart upload — the file is received by the app server and written to local storage. Maximum file size is **100 MB**. Requires a Bearer API key; session tokens are rejected.
+         * @description MVP multipart upload — the file is received by the app server and written to local storage. Maximum size is **100 MB** for audio and **15 MB** for images. Requires a Bearer API key; session tokens are rejected.
          *     Allowed audio: mp3, wav, m4a, flac, ogg, aac, webm. Allowed image: jpg, jpeg, png, webp.
          *     Returns a stable `uploadId` that must be passed to the recording/playlist ingest endpoints to reference this asset.
          *     Note: a future milestone will replace this endpoint with a presigned-URL intent flow for direct client-to-storage uploads.
@@ -1377,7 +1378,7 @@ export interface components {
             total: number;
         };
         /** @enum {string} */
-        HomepageTargetType: "PLAYLIST" | "USER" | "EDITORIAL_POST";
+        HomepageTargetType: "PLAYLIST" | "USER" | "EDITORIAL_POST" | "RECORDING";
         HomepageItem: {
             id: string;
             targetType: components["schemas"]["HomepageTargetType"];
@@ -1387,6 +1388,22 @@ export interface components {
             /** Format: uri */
             imageUrl?: string | null;
             href: string;
+            uploaderId?: string;
+            publishedPlaylistId?: string;
+            audioUrl?: string;
+            durationSeconds?: number | null;
+            recordingType?: components["schemas"]["RecordingType"];
+            visibility?: components["schemas"]["Visibility"];
+            status?: components["schemas"]["PublishStatus"];
+            explicit?: boolean;
+            playCount?: number;
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: date-time */
+            updatedAt?: string;
+            playlistTitle?: string;
+            playlistSlug?: string;
+            playlistOwnerUsername?: string;
         };
         HomepageSection: {
             /** @enum {string} */
@@ -3516,6 +3533,8 @@ export interface operations {
             query?: {
                 range?: components["schemas"]["ChartRange"];
                 limit?: number;
+                /** @description Genre tag slug to filter by */
+                genre?: string;
             };
             header?: never;
             path?: never;
@@ -3617,6 +3636,55 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["LibraryGenresResponse"];
                 };
+            };
+        };
+    };
+    createTagGenre: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Genre already existed (returned as-is) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryGenre"];
+                };
+            };
+            /** @description Genre created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryGenre"];
+                };
+            };
+            /** @description Invalid name */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Tag slug conflict with a non-genre tag */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -5478,7 +5546,7 @@ export interface operations {
                 "multipart/form-data": {
                     /**
                      * Format: binary
-                     * @description Max 100 MB
+                     * @description Max 100 MB (audio) or 15 MB (image), per kind
                      */
                     file: string;
                 };
@@ -5512,7 +5580,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description File exceeds the 100 MB limit */
+            /** @description File exceeds the size limit for the requested kind */
             413: {
                 headers: {
                     [name: string]: unknown;

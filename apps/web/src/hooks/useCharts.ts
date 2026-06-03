@@ -8,10 +8,10 @@ import type {
   TopSongsResponse,
 } from "@playlisted/client-sdk";
 
-export function useTopSongs(range: ChartRange = "7d", limit = 10) {
+export function useTopSongs(range: ChartRange = "7d", limit = 10, genre?: string) {
   return useQuery<TopSongsResponse>({
-    queryKey: ["charts", "top-songs", range, limit],
-    queryFn: () => api.charts.topSongs({ range, limit }),
+    queryKey: ["charts", "top-songs", range, limit, genre ?? null],
+    queryFn: () => api.charts.topSongs({ range, limit, genre }),
   });
 }
 

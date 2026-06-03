@@ -3,7 +3,7 @@ import { Router } from "express";
 
 import { rangeToDate, type ChartRange } from "../lib/chartRange.js";
 import { resolveRecordingArtworkUrl } from "../lib/mediaUrls.js";
-import { BROWSABLE_RECORDING } from "../lib/publicRecordingFilter.js";
+import { BROWSABLE_RECORDING, PUBLIC_PUBLISHED_RECORDING } from "../lib/publicRecordingFilter.js";
 import { PUBLIC_PUBLISHED_PLAYLIST } from "../lib/publicPlaylistFilter.js";
 import { ACTIVE_USER } from "../lib/publicUserFilter.js";
 import { prisma } from "../lib/prisma.js";
@@ -79,7 +79,15 @@ chartsRouter.get("/top-songs", async (req, res, next) => {
   try {
     const range = ((req.query.range as string) ?? "30d") as ChartRange;
     const limit = parseChartLimit(req.query.limit);
+    const genre = req.query.genre as string | undefined;
     const since = rangeToDate(range);
+
+    const where = genre
+      ? {
+          ...PUBLIC_PUBLISHED_RECORDING,
+          tags: { some: { tag: { kind: "GENRE" as const, slug: genre } } },
+        }
+      : BROWSABLE_RECORDING;
 
     const songTagInclude = {
       tags: {
@@ -91,7 +99,7 @@ chartsRouter.get("/top-songs", async (req, res, next) => {
 
     if (range === "all") {
       const recordings = await prisma.recording.findMany({
-        where: BROWSABLE_RECORDING,
+        where,
         orderBy: { playCount: "desc" },
         take: limit,
         include: {
@@ -124,7 +132,7 @@ chartsRouter.get("/top-songs", async (req, res, next) => {
 
     const recordingIds = grouped.map((g) => g.recordingId);
     const recordings = await prisma.recording.findMany({
-      where: { id: { in: recordingIds }, ...BROWSABLE_RECORDING },
+      where: { id: { in: recordingIds }, ...where },
       include: {
         uploader: { select: { id: true, username: true, displayName: true, avatarUrl: true, role: true } },
         publishedPlaylist: {

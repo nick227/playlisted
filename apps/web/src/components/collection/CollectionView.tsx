@@ -1,5 +1,6 @@
 import type { PlaylistDetail } from "@playlisted/client-sdk";
-import { Library, Pause, Pencil, Play, Plus, Share2, Shuffle, Upload } from "lucide-react";
+import { Check, ChevronDown, Library, Pause, Pencil, Play, Plus, Search, Share2, Shuffle, Upload, X } from "lucide-react";
+import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { Link } from "react-router-dom";
 
 import { EmptyState } from "@/components/feedback/EmptyState";
@@ -40,10 +41,12 @@ export interface CollectionViewProps {
   trackErrorById?: Record<string, string | undefined>;
   selectedGenreId?: string | null;
   onGenreChange?: (genreId: string | null) => void;
+  onGenreCreate?: (name: string) => void;
   genreOptions?: GenreOption[];
   playlistGenreSlug?: string | null;
   genreLoading?: boolean;
   genreSaving?: boolean;
+  genreError?: string;
   editToolbar?: React.ReactNode;
   uploadProgress?: React.ReactNode;
 }
@@ -55,6 +58,256 @@ const typeLabels: Record<string, string> = {
   RELEASE: "Release",
   MIX: "Mix",
 };
+
+function normalizeGenreName(value: string) {
+  return value.trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+interface GenreSmartInputProps {
+  selectedGenreId?: string | null;
+  genreOptions?: GenreOption[];
+  genreLoading?: boolean;
+  genreSaving?: boolean;
+  onGenreChange: (genreId: string | null) => void;
+  onGenreCreate?: (name: string) => void;
+}
+
+function GenreSmartInput({
+  selectedGenreId,
+  genreOptions = [],
+  genreLoading,
+  genreSaving,
+  onGenreChange,
+  onGenreCreate,
+}: GenreSmartInputProps) {
+  const listboxId = useId();
+  const rootRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const [submittedGenreName, setSubmittedGenreName] = useState<string | null>(null);
+
+  const selectedGenre = genreOptions.find((genre) => genre.id === selectedGenreId) ?? null;
+  const normalizedQuery = normalizeGenreName(query);
+  const disabled = Boolean(genreLoading || genreSaving);
+
+  const filteredGenres = useMemo(() => {
+    if (!normalizedQuery) return genreOptions;
+    return genreOptions.filter((genre) => normalizeGenreName(genre.name).includes(normalizedQuery));
+  }, [genreOptions, normalizedQuery]);
+
+  const exactMatch = genreOptions.find((genre) => normalizeGenreName(genre.name) === normalizedQuery) ?? null;
+  const canCreate = Boolean(onGenreCreate && normalizedQuery && !exactMatch);
+  const showDropdown = open && !disabled;
+  const optionCount = filteredGenres.length + (canCreate ? 1 : 0);
+  const activeDescendant =
+    activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined;
+
+  useEffect(() => {
+    if (open) return;
+    if (selectedGenre) {
+      setSubmittedGenreName(null);
+      setQuery(selectedGenre.name);
+      return;
+    }
+    setQuery(submittedGenreName ?? "");
+  }, [open, selectedGenre, submittedGenreName]);
+
+  useEffect(() => {
+    if (!showDropdown) return;
+    function onPointerDown(event: MouseEvent) {
+      if (!rootRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+        setActiveIndex(-1);
+      }
+    }
+    document.addEventListener("mousedown", onPointerDown);
+    return () => document.removeEventListener("mousedown", onPointerDown);
+  }, [showDropdown]);
+
+  function selectGenre(genre: GenreOption) {
+    setSubmittedGenreName(null);
+    setQuery(genre.name);
+    setOpen(false);
+    setActiveIndex(-1);
+    if (genre.id !== selectedGenreId) onGenreChange(genre.id);
+  }
+
+  function clearGenre() {
+    setSubmittedGenreName(null);
+    setQuery("");
+    setOpen(false);
+    setActiveIndex(-1);
+    if (selectedGenreId) onGenreChange(null);
+    inputRef.current?.focus();
+  }
+
+  function createGenre() {
+    const trimmed = query.trim().replace(/\s+/g, " ");
+    if (!trimmed || !onGenreCreate) return;
+    setSubmittedGenreName(trimmed);
+    setQuery(trimmed);
+    setOpen(false);
+    setActiveIndex(-1);
+    onGenreCreate(trimmed);
+  }
+
+  function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (disabled) return;
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setOpen(true);
+      setActiveIndex((index) => Math.min(index + 1, Math.max(optionCount - 1, 0)));
+      return;
+    }
+
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setOpen(true);
+      setActiveIndex((index) => Math.max(index - 1, 0));
+      return;
+    }
+
+    if (event.key === "Escape") {
+      setOpen(false);
+      setActiveIndex(-1);
+      return;
+    }
+
+    if (event.key === "Tab") {
+      setOpen(false);
+      setActiveIndex(-1);
+      return;
+    }
+
+    if (event.key !== "Enter") return;
+
+    event.preventDefault();
+    if (activeIndex >= 0 && activeIndex < filteredGenres.length) {
+      selectGenre(filteredGenres[activeIndex]);
+      return;
+    }
+    if (activeIndex === filteredGenres.length && canCreate) {
+      createGenre();
+      return;
+    }
+    if (exactMatch) {
+      selectGenre(exactMatch);
+      return;
+    }
+    if (filteredGenres.length === 1) {
+      selectGenre(filteredGenres[0]);
+      return;
+    }
+    if (canCreate) createGenre();
+  }
+
+  return (
+    <div ref={rootRef} className="relative">
+      <Search
+        size={16}
+        className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-text-subtle)]"
+      />
+      <input
+        ref={inputRef}
+        type="search"
+        value={query}
+        role="combobox"
+        aria-autocomplete="list"
+        aria-expanded={showDropdown}
+        aria-controls={listboxId}
+        aria-activedescendant={activeDescendant}
+        aria-haspopup="listbox"
+        autoComplete="off"
+        placeholder={genreLoading ? "Loading genres..." : "Search or create a genre..."}
+        disabled={disabled}
+        onChange={(event) => {
+          setSubmittedGenreName(null);
+          setQuery(event.target.value);
+          setOpen(true);
+          setActiveIndex(-1);
+        }}
+        onFocus={() => setOpen(true)}
+        onKeyDown={handleKeyDown}
+        className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] py-3 pl-11 pr-20 text-sm text-white placeholder:text-[var(--color-text-subtle)] outline-none focus:border-[var(--color-brand)] disabled:cursor-not-allowed disabled:opacity-60"
+      />
+      {(selectedGenreId || query) && !disabled ? (
+        <button
+          type="button"
+          onClick={clearGenre}
+          aria-label="Clear genre"
+          className="absolute right-11 top-1/2 -translate-y-1/2 rounded-md p-1 text-[var(--color-text-subtle)] transition hover:bg-white/10 hover:text-white"
+        >
+          <X size={16} />
+        </button>
+      ) : null}
+      <button
+        type="button"
+        onClick={() => {
+          if (disabled) return;
+          setOpen((value) => !value);
+          inputRef.current?.focus();
+        }}
+        disabled={disabled}
+        aria-label="Show genres"
+        className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-[var(--color-text-subtle)] transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        <ChevronDown size={16} />
+      </button>
+
+      {showDropdown ? (
+        <div
+          id={listboxId}
+          role="listbox"
+          className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-50 max-h-64 overflow-y-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] py-1 shadow-2xl"
+        >
+          {filteredGenres.length === 0 && !canCreate ? (
+            <p className="px-4 py-3 text-sm text-[var(--color-text-muted)]">No genres found.</p>
+          ) : null}
+          {filteredGenres.map((genre, index) => (
+            <button
+              id={`${listboxId}-option-${index}`}
+              key={genre.id}
+              type="button"
+              role="option"
+              aria-selected={genre.id === selectedGenreId}
+              onMouseDown={(event) => event.preventDefault()}
+              onMouseEnter={() => setActiveIndex(index)}
+              onClick={() => selectGenre(genre)}
+              className={[
+                "flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm transition",
+                index === activeIndex ? "bg-white/10 text-white" : "text-white/80 hover:bg-white/5",
+              ].join(" ")}
+            >
+              <span className="min-w-0 flex-1 truncate">{genre.name}</span>
+              {genre.id === selectedGenreId ? <Check size={16} className="shrink-0 text-[var(--color-brand)]" /> : null}
+            </button>
+          ))}
+          {canCreate ? (
+            <button
+              id={`${listboxId}-option-${filteredGenres.length}`}
+              type="button"
+              role="option"
+              aria-selected={activeIndex === filteredGenres.length}
+              onMouseDown={(event) => event.preventDefault()}
+              onMouseEnter={() => setActiveIndex(filteredGenres.length)}
+              onClick={createGenre}
+              className={[
+                "flex w-full items-center gap-3 border-t border-[var(--color-border)] px-4 py-2.5 text-left text-sm transition",
+                activeIndex === filteredGenres.length ? "bg-white/10 text-white" : "text-white/80 hover:bg-white/5",
+              ].join(" ")}
+            >
+              <Plus size={16} className="shrink-0 text-[var(--color-brand)]" />
+              <span className="min-w-0 flex-1 truncate">Create "{query.trim().replace(/\s+/g, " ")}"</span>
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
 export function CollectionView({
   playlist,
@@ -80,17 +333,20 @@ export function CollectionView({
   trackErrorById,
   selectedGenreId,
   onGenreChange,
+  onGenreCreate,
   genreOptions,
   playlistGenreSlug,
   genreLoading,
   genreSaving,
+  genreError,
   editToolbar,
   uploadProgress,
 }: CollectionViewProps) {
   const { user } = useAuth();
   const isEdit = mode === "edit";
-  const isPodcast = playlist.type === "PODCAST_CHANNEL";
   const isOwner = Boolean(user?.id && user.id === playlist.ownerId);
+  const coverArtClassName =
+    "aspect-square w-full min-w-0 max-w-full rounded-lg sm:h-[180px] sm:w-[180px] sm:max-w-[180px]";
   const recordings = playlist.recordings as CollectionRecording[];
 
   const coverStyle = playlist.coverArtUrl
@@ -127,14 +383,8 @@ export function CollectionView({
         <div className="mb-6 flex flex-wrap items-center gap-3">{editToolbar}</div>
       ) : null}
 
-      <div
-        className={
-          isPodcast
-            ? "grid gap-10 lg:grid-cols-[minmax(280px,360px)_1fr]"
-            : "flex flex-col gap-8 md:flex-row md:items-end"
-        }
-      >
-        <div className={isPodcast ? "" : "shrink-0"}>
+      <div className="flex flex-col gap-8 md:flex-row md:items-end">
+        <div className="shrink-0">
           <button
             type="button"
             onClick={isEdit ? onCoverClick : undefined}
@@ -146,13 +396,10 @@ export function CollectionView({
               <img
                 src={playlist.coverArtUrl}
                 alt=""
-                className="aspect-square w-full min-w-0 rounded-lg object-cover max-w-[100%] sm:max-w-[180px]"
+                className={`${coverArtClassName} object-cover`}
               />
             ) : (
-              <div
-                className={`aspect-square w-full rounded-lg shadow-2xl ${isPodcast ? "max-w-[360px]" : "h-96 w-96"}`}
-                style={coverStyle}
-              />
+              <div className={`${coverArtClassName} shadow-2xl`} style={coverStyle} />
             )}
           </button>
         </div>
@@ -205,26 +452,18 @@ export function CollectionView({
                   <label className="mb-2 block text-xs font-semibold uppercase tracking-widest text-[var(--color-text-muted)]">
                     Primary playlist genre
                   </label>
-                  <select
-                    value={selectedGenreId ?? ""}
-                    onChange={(event) => onGenreChange(event.target.value || null)}
-                    disabled={genreLoading}
-                    className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-sm text-white outline-none focus:border-[var(--color-brand)]"
-                  >
-                    <option value="">
-                      No genre selected
-                    </option>
-                    {genreOptions?.map((genre) => (
-                      <option
-                        key={genre.id}
-                        value={genre.id}
-                      >
-                        {genre.name}
-                      </option>
-                    ))}
-                  </select>
+                  <GenreSmartInput
+                    selectedGenreId={selectedGenreId}
+                    onGenreChange={onGenreChange}
+                    onGenreCreate={onGenreCreate}
+                    genreOptions={genreOptions}
+                    genreLoading={genreLoading}
+                    genreSaving={genreSaving}
+                  />
                   <p className="mt-2 min-h-5 text-sm text-[var(--color-text-muted)]">
-                    {genreSaving
+                    {genreError
+                      ? genreError
+                      : genreSaving
                       ? "Saving genre…"
                       : genreLoading
                         ? "Loading genres…"
@@ -330,7 +569,7 @@ export function CollectionView({
           ) : null}
       </div>
 
-      <div className={isPodcast ? "mt-10 lg:col-span-2" : "mt-10"}>
+      <div className="mt-10">
         {isEdit ? (
           <div className="min-h-[16px]">
             {uploadProgress ? <div className="py-2">{uploadProgress}</div> : null}

@@ -7,8 +7,10 @@ import type {
 } from "@playlisted/client-sdk";
 
 import { ArtistCard } from "@/components/cards/ArtistCard";
+import { MediaCover } from "@/components/cards/MediaCover";
 import { SmartPlaylistCard } from "@/components/cards/SmartPlaylistCard";
 import { HomeChartsSection } from "@/components/charts/HomeChartsSection";
+import { HomeGenreSongsSection } from "@/components/charts/HomeGenreSongsSection";
 import {
   GreetingsBanner,
   pickGreetingsFeaturedArtist,
@@ -18,12 +20,32 @@ import { SiteFooter } from "@/components/site/SiteFooter";
 import { useHomepage } from "@/hooks/useHomepage";
 import { useIsMdUp } from "@/hooks/useIsMdUp";
 import { usePageMeta } from "@/hooks/usePageMeta";
+import { useTrackPlayback } from "@/hooks/useTrackPlayback";
 import { useTopArtists, useTopPlaylists } from "@/hooks/useCharts";
+import { formatDuration } from "@/lib/format";
 import { useAuth } from "@/providers/AuthProvider";
+import { useAudioPlayer, type QueueTrack } from "@/providers/AudioPlayerProvider";
 import { homeGridPlaylistOrigin } from "@/lib/playbackOrigin";
 import { coverFallback, resolveItemPath } from "@/lib/routes";
 
 type HomepageItem = components["schemas"]["HomepageItem"];
+type HomepageRecordingItem = HomepageItem & {
+  targetType: "RECORDING";
+  uploaderId: string;
+  publishedPlaylistId: string;
+  audioUrl: string;
+  durationSeconds?: number | null;
+  recordingType: components["schemas"]["RecordingType"];
+  visibility: components["schemas"]["Visibility"];
+  status: components["schemas"]["PublishStatus"];
+  explicit: boolean;
+  playCount: number;
+  createdAt: string;
+  updatedAt: string;
+  playlistTitle: string;
+  playlistSlug: string;
+  playlistOwnerUsername: string;
+};
 
 /** Item counts and fetch sizes for home sections (mobile vs md+). */
 const HOME_LIMITS = {
@@ -37,7 +59,7 @@ const HOME_LIMITS = {
   pinnedArtistsFetch: 8,
   genreGroupsMax: 4,
   genreMinSongs: 3,
-  newReleases: 10,
+  newReleases: 8,
 } as const;
 
 const HOME_SECTION_COLS = {
@@ -239,6 +261,93 @@ function HomepageEditorialCard({
   );
 }
 
+function isHomepageRecordingItem(item: HomepageItem): item is HomepageRecordingItem {
+  return item.targetType === "RECORDING";
+}
+
+function releaseItemToQueueTrack(item: HomepageRecordingItem): QueueTrack {
+  return {
+    id: item.id,
+    uploaderId: item.uploaderId,
+    publishedPlaylistId: item.publishedPlaylistId,
+    title: item.title,
+    description: item.description ?? null,
+    audioUrl: item.audioUrl,
+    audioMimeType: null,
+    audioBytes: null,
+    durationSeconds: item.durationSeconds ?? null,
+    artworkUrl: item.imageUrl ?? null,
+    trackNumber: null,
+    episodeNumber: null,
+    recordingType: item.recordingType,
+    visibility: item.visibility,
+    status: item.status,
+    explicit: item.explicit,
+    playCount: item.playCount,
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt,
+    ownerName: item.subtitle ?? undefined,
+    ownerUsername: item.playlistOwnerUsername,
+    playlistTitle: item.playlistTitle,
+    playlistSlug: item.playlistSlug,
+  };
+}
+
+function newReleaseOrigin(recordingId: string): string {
+  return `home:new-releases:${recordingId}`;
+}
+
+function NewReleaseSongCard({
+  item,
+  queueTracks,
+}: {
+  item: HomepageRecordingItem;
+  queueTracks: QueueTrack[];
+}) {
+  const playbackOrigin = newReleaseOrigin(item.id);
+  const { isActive, isPlaying } = useTrackPlayback(item.id, playbackOrigin);
+  const { playTrack, togglePlay } = useAudioPlayer();
+
+  function handlePlay() {
+    if (isActive) {
+      togglePlay();
+      return;
+    }
+    playTrack(releaseItemToQueueTrack(item), queueTracks, { sourceContext: "home" }, {
+      segmentLabel: "New Releases",
+      playbackOrigin,
+      originScope: "track",
+    });
+  }
+
+  return (
+    <Link
+      to={item.href}
+      className="group flex w-full flex-col gap-2 transition-opacity hover:opacity-90"
+    >
+      <MediaCover
+        title={item.title}
+        imageUrl={item.imageUrl}
+        onPlay={handlePlay}
+        isActive={isActive}
+        isPlaying={isPlaying}
+        showPlaybackBars
+      />
+      <div className="min-w-0">
+        <p className={`truncate text-sm font-medium ${isActive ? "text-[var(--color-brand)]" : "text-white"}`}>
+          {item.title}
+        </p>
+        <p className="truncate text-xs text-[var(--color-text-muted)]">
+          {[item.subtitle, item.playlistTitle].filter(Boolean).join(" • ")}
+        </p>
+        <p className="mt-0.5 text-xs text-[var(--color-text-subtle)]">
+          {formatDuration(item.durationSeconds ?? null)}
+        </p>
+      </div>
+    </Link>
+  );
+}
+
 // ── page ──────────────────────────────────────────────────────────────────────
 
 export function HomePage() {
@@ -310,6 +419,14 @@ export function HomePage() {
         .slice(0, HOME_LIMITS.newReleases),
     [newReleases, editorPickGridIds],
   );
+  const newReleaseSongs = useMemo(
+    () => newReleasesSection.filter(isHomepageRecordingItem),
+    [newReleasesSection],
+  );
+  const newReleaseQueueTracks = useMemo(
+    () => newReleaseSongs.map(releaseItemToQueueTrack),
+    [newReleaseSongs],
+  );
 
   // Featured playlists — same 4/8 cap as editor picks grid
   const editorialFeaturedPlaylists = sectionMap["FEATURED_PLAYLIST"] ?? [];
@@ -380,15 +497,26 @@ export function HomePage() {
         featuredArtist={greetingsFeaturedArtist}
         artistLoading={greetingsArtistLoading}
       />
+      
+
+      {/* ── CHARTS ────────────────────────────────────────────── */}
 
       <HomeChartsSection />
+
+      {/* ── GENRE SONGS ────────────────────────────────────────────── */}
+
+      <HomeGenreSongsSection />
 
       {/* ── NEW RELEASES ────────────────────────────────────────────── */}
 
       {newReleasesSection.length > 0 && (
         <HomeSection title="New Releases" cols={HOME_SECTION_COLS.newReleases}>
           {newReleasesSection.map((item) => (
-            <HomepageEditorialCard key={item.id} item={item} sectionKey="new-releases" />
+            isHomepageRecordingItem(item) ? (
+              <NewReleaseSongCard key={item.id} item={item} queueTracks={newReleaseQueueTracks} />
+            ) : (
+              <HomepageEditorialCard key={item.id} item={item} sectionKey="new-releases" />
+            )
           ))}
         </HomeSection>
       )}

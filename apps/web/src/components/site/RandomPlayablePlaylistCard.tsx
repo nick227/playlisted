@@ -30,7 +30,7 @@ export function RandomPlayablePlaylistCard({ pageKey }: RandomPlayablePlaylistCa
   return (
     <aside className="border-t border-[var(--color-border)] pt-8 md:border-l md:border-t-0 md:pl-10 md:pt-0">
       <p className="text-sm font-semibold uppercase tracking-widest text-[var(--color-text-subtle)]">
-        Press play
+        AUDIO
       </p>
       <div className="mt-8 max-w-sm">
         {playlist ? (
