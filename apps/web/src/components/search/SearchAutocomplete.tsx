@@ -19,13 +19,30 @@ import { pushRecentSearch, readRecentSearches } from "@/lib/recentSearches";
 
 interface SearchAutocompleteProps {
   className?: string;
+  /**
+   * Mobile-only collapsible mode (TopBar). Ignored from `sm` breakpoint up — input is always shown.
+   * When false, renders a search icon button; when true, renders the full combobox.
+   */
+  mobileExpanded?: boolean;
+  onMobileExpandedChange?: (expanded: boolean) => void;
 }
 
-export function SearchAutocomplete({ className = "" }: SearchAutocompleteProps) {
+const MOBILE_SEARCH_TRANSITION =
+  "transition-[width,opacity,transform] duration-300 ease-out motion-reduce:transition-none";
+
+const iconButtonClass =
+  "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-elevated)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)] hover:text-white";
+
+export function SearchAutocomplete({
+  className = "",
+  mobileExpanded = true,
+  onMobileExpandedChange,
+}: SearchAutocompleteProps) {
   const navigate = useNavigate();
   const listboxId = useId();
   const rootRef = useRef<HTMLFormElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const collapsibleMobile = Boolean(onMobileExpandedChange);
 
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -35,6 +52,14 @@ export function SearchAutocomplete({ className = "" }: SearchAutocompleteProps) 
   const debouncedQuery = useDebouncedValue(query, SEARCH_DEBOUNCE_MS);
   const trimmedQuery = debouncedQuery.trim();
   const hasQuery = trimmedQuery.length > 0;
+
+  const collapseMobile = useCallback(() => {
+    if (!collapsibleMobile || !mobileExpanded) return;
+    setOpen(false);
+    setActiveIndex(-1);
+    inputRef.current?.blur();
+    onMobileExpandedChange?.(false);
+  }, [collapsibleMobile, mobileExpanded, onMobileExpandedChange]);
 
   const {
     data,
@@ -73,8 +98,9 @@ export function SearchAutocomplete({ className = "" }: SearchAutocompleteProps) 
       navigate(`/search?q=${encodeURIComponent(q)}`);
       setOpen(false);
       setActiveIndex(-1);
+      onMobileExpandedChange?.(false);
     },
-    [navigate],
+    [navigate, onMobileExpandedChange],
   );
 
   const selectOption = useCallback(
@@ -92,9 +118,15 @@ export function SearchAutocomplete({ className = "" }: SearchAutocompleteProps) 
       setOpen(false);
       setActiveIndex(-1);
       inputRef.current?.blur();
+      onMobileExpandedChange?.(false);
     },
-    [goToSearch, navigate, query, trimmedQuery],
+    [goToSearch, navigate, query, trimmedQuery, onMobileExpandedChange],
   );
+
+  useEffect(() => {
+    if (!mobileExpanded || !collapsibleMobile) return;
+    inputRef.current?.focus();
+  }, [collapsibleMobile, mobileExpanded]);
 
   useEffect(() => {
     if (!showPanel) return;
@@ -102,11 +134,14 @@ export function SearchAutocomplete({ className = "" }: SearchAutocompleteProps) 
       if (!rootRef.current?.contains(event.target as Node)) {
         setOpen(false);
         setActiveIndex(-1);
+        if (collapsibleMobile && !query.trim()) {
+          onMobileExpandedChange?.(false);
+        }
       }
     }
     document.addEventListener("mousedown", onPointerDown);
     return () => document.removeEventListener("mousedown", onPointerDown);
-  }, [showPanel]);
+  }, [collapsibleMobile, onMobileExpandedChange, query, showPanel]);
 
   useEffect(() => {
     setActiveIndex((index) => {
@@ -151,6 +186,9 @@ export function SearchAutocomplete({ className = "" }: SearchAutocompleteProps) 
         event.preventDefault();
         setOpen(false);
         setActiveIndex(-1);
+        if (collapsibleMobile && !query.trim()) {
+          collapseMobile();
+        }
         break;
       case "Tab":
         setOpen(false);
@@ -164,53 +202,85 @@ export function SearchAutocomplete({ className = "" }: SearchAutocompleteProps) 
   const activeDescendant =
     activeIndex >= 0 && flatOptions[activeIndex] ? `${listboxId}-option-${activeIndex}` : undefined;
 
+  const showMobileTrigger = collapsibleMobile && !mobileExpanded;
+  const showMobileForm = !collapsibleMobile || mobileExpanded;
+
   return (
-    <form
-      ref={rootRef}
-      className={`relative ${className}`}
-      onSubmit={(e) => {
-        e.preventDefault();
-        handleSubmit();
-      }}
-    >
-      <Search
-        size={18}
-        className="pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-[var(--color-text-subtle)]"
-      />
-      <input
-        ref={inputRef}
-        type="search"
-        value={query}
-        role="combobox"
-        aria-autocomplete="list"
-        aria-expanded={showPanel}
-        aria-controls={listboxId}
-        aria-activedescendant={activeDescendant}
-        aria-haspopup="listbox"
-        autoComplete="off"
-        placeholder="Search songs, playlists, artists..."
-        className="w-full rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] py-2.5 pl-11 pr-4 text-sm text-white placeholder:text-[var(--color-text-subtle)] outline-none focus:border-white/20"
-        onChange={(e) => {
-          setQuery(e.target.value);
-          setOpen(true);
-          setActiveIndex(-1);
+    <div className={`relative flex min-w-0 items-center ${className}`}>
+      {/* Mobile closed: icon trigger. Hidden on sm+ and when the combobox is expanded. */}
+      <button
+        type="button"
+        onClick={() => onMobileExpandedChange?.(true)}
+        className={`${iconButtonClass} ${MOBILE_SEARCH_TRANSITION} sm:hidden ${
+          showMobileTrigger
+            ? "scale-100 opacity-100"
+            : "pointer-events-none absolute scale-75 opacity-0"
+        }`}
+        aria-label="Open search"
+        aria-hidden={!showMobileTrigger}
+        tabIndex={showMobileTrigger ? 0 : -1}
+      >
+        <Search size={20} />
+      </button>
+
+      {/* Mobile open + desktop: full combobox. Width animates from icon size on mobile. */}
+      <form
+        ref={rootRef}
+        className={`relative min-w-0 ${MOBILE_SEARCH_TRANSITION} sm:!w-full sm:!opacity-100 sm:!translate-x-0 ${
+          showMobileForm
+            ? "max-sm:w-full max-sm:translate-x-0 max-sm:opacity-100"
+            : "max-sm:pointer-events-none max-sm:w-9 max-sm:translate-x-2 max-sm:opacity-0"
+        } ${showMobileForm ? "flex flex-1" : "max-sm:absolute max-sm:right-0 sm:flex sm:flex-1"}`}
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleSubmit();
         }}
-        onFocus={() => setOpen(true)}
-        onKeyDown={onKeyDown}
-      />
-      {showPanel ? (
-        <SearchAutocompleteDropdown
-          listboxId={listboxId}
-          query={trimmedQuery || query}
-          groups={groups}
-          flatOptions={flatOptions}
-          activeIndex={activeIndex}
-          status={status}
-          showRecentHint={showRecentHint}
-          onSelect={selectOption}
-          onHighlight={setActiveIndex}
+        aria-hidden={collapsibleMobile && !mobileExpanded}
+      >
+        <Search
+          size={18}
+          className={`pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-[var(--color-text-subtle)] ${MOBILE_SEARCH_TRANSITION} ${
+            showMobileForm ? "scale-100 opacity-100" : "scale-75 opacity-0"
+          }`}
         />
-      ) : null}
-    </form>
+        <input
+          ref={inputRef}
+          type="search"
+          value={query}
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded={showPanel}
+          aria-controls={listboxId}
+          aria-activedescendant={activeDescendant}
+          aria-haspopup="listbox"
+          autoComplete="off"
+          placeholder="Search songs, playlists, artists..."
+          tabIndex={showMobileForm ? 0 : -1}
+          className={`w-full rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] py-2.5 pl-11 pr-4 text-sm text-white placeholder:text-[var(--color-text-subtle)] outline-none focus:border-white/20 ${MOBILE_SEARCH_TRANSITION} ${
+            showMobileForm ? "max-sm:opacity-100" : "max-sm:opacity-0"
+          }`}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setOpen(true);
+            setActiveIndex(-1);
+          }}
+          onFocus={() => setOpen(true)}
+          onKeyDown={onKeyDown}
+        />
+        {showPanel && showMobileForm ? (
+          <SearchAutocompleteDropdown
+            listboxId={listboxId}
+            query={trimmedQuery || query}
+            groups={groups}
+            flatOptions={flatOptions}
+            activeIndex={activeIndex}
+            status={status}
+            showRecentHint={showRecentHint}
+            onSelect={selectOption}
+            onHighlight={setActiveIndex}
+          />
+        ) : null}
+      </form>
+    </div>
   );
 }

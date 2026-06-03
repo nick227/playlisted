@@ -2,6 +2,7 @@ import { LogOut, Menu, Settings, User, Monitor, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
+import { PlaylistedMasthead } from "@/components/app-shell/PlaylistedMasthead";
 import { SearchAutocomplete } from "@/components/search/SearchAutocomplete";
 import { ADMIN_PATH, STUDIO_PATH, panelPathForRole, profilePath } from "@/lib/routes";
 import { useAuth } from "@/providers/AuthProvider";
@@ -11,10 +12,24 @@ interface TopBarProps {
   onMenuClick: () => void;
 }
 
+/**
+ * Top bar layout uses Tailwind `sm` (640px) as the mobile/desktop split.
+ *
+ * MOBILE (< sm) — two masthead + search states:
+ *   • Closed (default): hamburger · full "Playlisted" wordmark · search icon · actions
+ *   • Open:             hamburger · "PL" mini mark · expanded search field · actions
+ *
+ * DESKTOP (sm+):
+ *   • Always-on centered search combobox; no in-bar wordmark (sidebar has branding).
+ *   • Login / sign-up links replace the mobile avatar shortcut.
+ *   • Hamburger hidden from lg up (persistent sidebar).
+ */
 export function TopBar({ onMenuClick }: TopBarProps) {
   const navigate = useNavigate();
   const { status, user, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
+  /** Mobile-only: false = icon trigger + full wordmark; true = expanded search + PL mini. */
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [canEnterTheatre, setCanEnterTheatre] = useState(theatreController.state.canEnter)
   const [theatreActive, setTheatreActive] = useState(theatreController.state.active)
   const [theatreLoading, setTheatreLoading] = useState(false)
@@ -38,7 +53,6 @@ export function TopBar({ onMenuClick }: TopBarProps) {
 
   async function handleTheatreClick() {
     if (theatreActive) {
-      // Already loaded — exit is instant, no spinner
       void theatreController.exit()
       return
     }
@@ -60,6 +74,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
 
   return (
     <header className="sticky top-0 z-40 flex h-[var(--spacing-topbar)] w-full min-w-0 max-w-full shrink-0 items-center gap-1.5 sm:gap-3 overflow-x-clip border-b border-[var(--color-border)] bg-[var(--color-canvas)]/95 px-2 sm:px-4 backdrop-blur-md">
+      {/* Mobile drawer trigger — hidden on lg+ where sidebar is always visible */}
       <button
         type="button"
         onClick={onMenuClick}
@@ -68,10 +83,25 @@ export function TopBar({ onMenuClick }: TopBarProps) {
       >
         <Menu size={20} />
       </button>
-      <Link to="/" className="shrink-0 text-base font-bold tracking-tight text-white flex sm:hidden">
-        P<span className="text-[var(--color-brand)]">L</span>
-      </Link>
-      <SearchAutocomplete className="mx-auto max-w-xl flex-1 min-w-0" />
+
+      {/* MOBILE ONLY: full wordmark when search closed, PL mini when search open */}
+      <PlaylistedMasthead
+        variant={mobileSearchOpen ? "mini" : "full"}
+        className="shrink-0 text-base transition-opacity duration-300 motion-reduce:transition-none sm:hidden"
+      />
+
+      {/* Search: collapsible on mobile; always expanded from sm+ */}
+      <SearchAutocomplete
+        className={
+          mobileSearchOpen
+            ? "min-w-0 flex-1 sm:mx-auto sm:max-w-xl"
+            : "shrink-0 sm:min-w-0 sm:flex-1 sm:mx-auto sm:max-w-xl"
+        }
+        mobileExpanded={mobileSearchOpen}
+        onMobileExpandedChange={setMobileSearchOpen}
+      />
+
+      {/* Right-side actions — theatre, auth, account menu */}
       <div className="relative ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
         <button
           type="button"
@@ -88,6 +118,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
 
         {status === "authenticated" && user ? (
           <>
+            {/* Studio / Admin pills — desktop only */}
             {panelPath === STUDIO_PATH ? (
               <Link
                 to={STUDIO_PATH}
@@ -161,6 +192,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
           </>
         ) : status !== "loading" ? (
           <>
+            {/* Desktop auth links */}
             <Link
               to="/login"
               className="hidden rounded-full px-4 py-2 text-sm font-medium text-[var(--color-text-muted)] transition hover:text-white sm:inline"
@@ -173,6 +205,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
             >
               Sign up
             </Link>
+            {/* Mobile auth shortcut — icon only */}
             <Link
               to="/login"
               className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-surface-elevated)] text-[var(--color-text-muted)] sm:hidden"
