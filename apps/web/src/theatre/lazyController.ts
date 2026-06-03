@@ -1,3 +1,5 @@
+import { canEnterFromMediaElement } from './theatrePlayback'
+
 /**
  * Lazy façade for TheatreController.
  *
@@ -46,10 +48,11 @@ class LazyTheatreController extends EventTarget {
   private _trackedEl: HTMLMediaElement | null = null
   private _onAudioChange = () => {
     const el = this._trackedEl
-    const playing = !!el && !el.paused
-    if (playing !== this.state.canEnter || (el?.currentSrc ?? null) !== this.state.mediaSrc) {
-      this.state.canEnter = playing
-      this.state.mediaSrc = el?.currentSrc || null
+    const canEnter = canEnterFromMediaElement(el)
+    const mediaSrc = el?.currentSrc || null
+    if (canEnter !== this.state.canEnter || mediaSrc !== this.state.mediaSrc) {
+      this.state.canEnter = canEnter
+      this.state.mediaSrc = mediaSrc
       this.dispatchEvent(new Event('change'))
     }
   }
@@ -60,12 +63,14 @@ class LazyTheatreController extends EventTarget {
       this._trackedEl.removeEventListener('play',    this._onAudioChange)
       this._trackedEl.removeEventListener('pause',   this._onAudioChange)
       this._trackedEl.removeEventListener('emptied', this._onAudioChange)
+      this._trackedEl.removeEventListener('ended',   this._onAudioChange)
     }
     this._trackedEl = el
     if (el) {
       el.addEventListener('play',    this._onAudioChange)
       el.addEventListener('pause',   this._onAudioChange)
       el.addEventListener('emptied', this._onAudioChange)
+      el.addEventListener('ended',   this._onAudioChange)
       this._onAudioChange()
     } else {
       this.state.canEnter = false
@@ -123,7 +128,9 @@ class LazyTheatreController extends EventTarget {
     el: HTMLMediaElement | null,
     meta?: { artworkUrl?: string | null },
   ) {
-    if (meta?.artworkUrl !== undefined) {
+    if (el === null) {
+      this.state.artworkUrl = null
+    } else if (meta?.artworkUrl !== undefined) {
       this.state.artworkUrl = meta.artworkUrl
     }
     this._pendingSource = { el, meta }
@@ -146,8 +153,8 @@ class LazyTheatreController extends EventTarget {
   }
 
   public async exit() {
-    // exit() is only meaningful if theatre is open, which requires load.
-    return this._real?.exit()
+    if (this._real) return this._real.exit()
+    if (this._loadPromise) return (await this._load()).exit()
   }
 
   // ── Heavy methods — trigger load ──────────────────────────────────────────

@@ -2,10 +2,10 @@ import AnimationBridge from './AnimationBridge'
 import registry from './registry'
 import { AnimationContext, AnimationFactory } from './IAnimation'
 import AudioFeatureExtractor from './AudioFeatureExtractor'
-import { getVisualTriggers } from './VisualTriggers'
 import { getOrCreateAudioAnalyserConnection, type AudioAnalyserConnection } from '@/features/playback-indicators/audioAnalyser'
 import { getPreset, listPresets, pickPreset, type SceneCategory, type ScenePresetDef } from './scenePresets'
-import { detectPolicy } from './PerformancePolicy'
+import { buildAnimationFrameContext } from './theatreFrameContext'
+import { canEnterFromMediaElement } from './theatrePlayback'
 
 type PlaybackSourceMeta = { artworkUrl?: string | null }
 
@@ -103,21 +103,13 @@ class TheatreController extends EventTarget {
   }
 
   private syncPlaybackState(el: HTMLMediaElement) {
-    const hasSource = Boolean(el.currentSrc)
-    const ready = el.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA
-    this.state.canEnter = !el.paused && hasSource && ready
+    this.state.canEnter = canEnterFromMediaElement(el)
     this.state.mediaSrc = el.currentSrc || null
     this.dispatchEvent(new Event('change'))
   }
 
   private hasPlayableAudio(): boolean {
-    const el = this.audioEl
-    if (!el) return false
-    return (
-      !el.paused &&
-      Boolean(el.currentSrc) &&
-      el.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA
-    )
+    return canEnterFromMediaElement(this.audioEl)
   }
 
   private stopFeatureLoop() {
@@ -149,6 +141,10 @@ class TheatreController extends EventTarget {
     this.frameContext = null
     if (this.bridge.getInstances().length > 0) await this.bridge.exit()
     if (overlay) this.discardOverlay(overlay)
+    if (!this.state.active) {
+      this.state.presetId = null
+      this.dispatchEvent(new Event('change'))
+    }
   }
 
   private rebindAudio() {
@@ -219,38 +215,16 @@ class TheatreController extends EventTarget {
 
   private async changePresetInner(presetId: string, token: number) {
     const selectedPreset = getPreset(presetId)
-    if (!selectedPreset) return
+    if (!selectedPreset || !this.stillCurrent(token)) return
 
     const analyser = this.getOrCreateAnalyser()
-    const featuresRef = this.extractor?.getFeatures()
-    const reducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    const policy = detectPolicy(reducedMotion)
-    const timeRef = { elapsed: 0, delta: 0, frame: 0 }
-    const triggerCache: Record<string, { frame: number; triggers: ReturnType<typeof getVisualTriggers> }> = {}
-
-    const ctx: AnimationContext = {
-      audioElement: this.audioEl || undefined,
-      analyser: analyser || undefined,
-      mediaSrc: this.state.mediaSrc || undefined,
-      artworkUrl: this.state.artworkUrl || undefined,
-      options: {},
-      shared: {
-        features: featuresRef,
-        reducedMotion,
-        lowPower: policy.lowPower,
-        dprClamp: policy.dprClamp,
-        particleScale: policy.particleScale,
-        time: timeRef,
-        getTriggers: (preset = 'vivid') => {
-          const frame = timeRef.frame
-          const record = triggerCache[preset]
-          if (record?.frame === frame) return record.triggers
-          const triggers = getVisualTriggers(featuresRef, preset)
-          triggerCache[preset] = { frame, triggers }
-          return triggers
-        },
-      },
-    }
+    const { ctx, policy } = buildAnimationFrameContext({
+      audioEl: this.audioEl,
+      analyser,
+      mediaSrc: this.state.mediaSrc,
+      artworkUrl: this.state.artworkUrl,
+      featuresRef: this.extractor?.getFeatures(),
+    })
 
     await this.bridge.exit()
     if (!this.stillCurrent(token) || !this.overlay || !this.state.active) return
@@ -266,7 +240,7 @@ class TheatreController extends EventTarget {
 
   public async toggle() {
     if (!this.audioEl) this.rebindAudio()
-    if (this.state.active) return this.exit()
+    if (this.state.active || this.transitioning) return this.exit()
     return this.enter()
   }
 
@@ -321,43 +295,18 @@ class TheatreController extends EventTarget {
       featuresRef = this.extractor.getFeatures()
     }
 
-    const reducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    const policy = detectPolicy(reducedMotion)
-    const timeRef = { elapsed: 0, delta: 0, frame: 0 }
-    const triggerCache: Record<string, { frame: number; triggers: ReturnType<typeof getVisualTriggers> }> = {}
+    const { ctx, policy } = buildAnimationFrameContext({
+      audioEl: this.audioEl,
+      analyser,
+      mediaSrc: this.state.mediaSrc,
+      artworkUrl: this.state.artworkUrl,
+      featuresRef,
+    })
 
-    const ctx: AnimationContext = {
-      audioElement: this.audioEl || undefined,
-      analyser: analyser || undefined,
-      mediaSrc: this.state.mediaSrc || undefined,
-      artworkUrl: this.state.artworkUrl || undefined,
-      options: {},
-      shared: {
-        features: featuresRef,
-        reducedMotion,
-        lowPower: policy.lowPower,
-        dprClamp: policy.dprClamp,
-        particleScale: policy.particleScale,
-        time: timeRef,
-        getTriggers: (preset = 'vivid') => {
-          const frame = timeRef.frame
-          const record = triggerCache[preset]
-          if (record?.frame === frame) return record.triggers
-          const triggers = getVisualTriggers(featuresRef, preset)
-          triggerCache[preset] = { frame, triggers }
-          return triggers
-        },
-      },
-    }
-
-    // dev/localhost surfaces lab presets; production stays on curated scenes
-    const preferCategory: SceneCategory =
-      typeof import.meta !== 'undefined' && 'env' in import.meta && (import.meta as any).env?.DEV
-        ? 'lab'
-        : 'production'
-
+    const reducedMotion = ctx.shared?.reducedMotion ?? false
+    const preferCategory: SceneCategory = import.meta.env.DEV ? 'lab' : 'production'
     const selectedPreset = pickPreset({ preferCategory, reducedMotion })
-    this.state.presetId = selectedPreset?.id ?? null
+    const initialPresetId = selectedPreset?.id ?? null
 
     const controlPanel = document.createElement('div')
     controlPanel.className = 'theatre-control-panel absolute top-4 right-4 flex items-center gap-2 rounded-xl bg-black/75 p-2 shadow-2xl ring-1 ring-white/10'
@@ -371,7 +320,7 @@ class TheatreController extends EventTarget {
       const option = document.createElement('option')
       option.value = preset.id
       option.textContent = `${preset.label}${preset.category ? ` (${preset.category})` : ''}`
-      if (preset.id === this.state.presetId) option.selected = true
+      if (preset.id === initialPresetId) option.selected = true
       presetSelect.appendChild(option)
     })
     presetSelect.addEventListener('change', event => {
@@ -404,6 +353,7 @@ class TheatreController extends EventTarget {
       return
     }
 
+    this.state.presetId = initialPresetId
     this.state.active = true
     this.dispatchEvent(new Event('enter'))
     this.dispatchEvent(new Event('change'))
