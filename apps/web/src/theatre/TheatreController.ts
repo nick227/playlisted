@@ -40,9 +40,24 @@ class TheatreController extends EventTarget {
     window.addEventListener('visibilitychange', this.onVisibilityChange)
   }
 
-  /** Removes global listeners (e.g. Vite HMR reload). */
+  /** Full teardown for HMR / module unload — does not await bridge.exit(). */
   dispose() {
+    this.bumpTransitionToken()
+    this.transitioning = false
+    this.state.active = false
+    this.state.presetId = null
+
     window.removeEventListener('visibilitychange', this.onVisibilityChange)
+    this.unbindListeners?.()
+    this.unbindListeners = null
+    this.analyserConnection = null
+    this.stopFeatureLoop()
+    this.extractor = null
+    this.frameContext = null
+    this.overlay?.remove()
+    this.overlay = null
+    document.body.classList.remove('theatre-active')
+    void this.bridge.exit()
   }
 
   /** Radio (or other page-local player) overrides the site player while mounted. */
@@ -98,7 +113,11 @@ class TheatreController extends EventTarget {
   private hasPlayableAudio(): boolean {
     const el = this.audioEl
     if (!el) return false
-    return Boolean(el.currentSrc) && el.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA
+    return (
+      !el.paused &&
+      Boolean(el.currentSrc) &&
+      el.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA
+    )
   }
 
   private stopFeatureLoop() {
@@ -108,6 +127,7 @@ class TheatreController extends EventTarget {
     }
   }
 
+  /** Only enter/exit/changePreset/dispose may bump — each must own `transitioning` except dispose. */
   private bumpTransitionToken(): number {
     return ++this.transitionToken
   }
