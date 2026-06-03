@@ -1,14 +1,20 @@
-import { Pause, Play } from "lucide-react";
+import { Library, Pause, Play, Plus } from "lucide-react";
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
 
 import { SmartPlaylistCard } from "@/components/cards/SmartPlaylistCard";
+import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
 import { PlaybackBars } from "@/features/playback-indicators/PlaybackBars";
+import { useAuthAction } from "@/hooks/useAuthAction";
+import { useAddCollectionPlaylist, useCollectionPlaylists } from "@/hooks/useCollections";
 import { useTrackPlayback } from "@/hooks/useTrackPlayback";
 import { usePlaylist } from "@/hooks/usePlaylist";
 import { useUser } from "@/hooks/useUser";
+import { formatPlayCount } from "@/lib/format";
+import { libraryGenrePath } from "@/lib/libraryPaths";
 import { coverFallback, playlistPath, profilePath } from "@/lib/routes";
 import { homeSpotlightTrackOrigin } from "@/lib/playbackOrigin";
+import { useAuth } from "@/providers/AuthProvider";
 import { useAudioPlayer, type QueueTrack } from "@/providers/AudioPlayerProvider";
 import type { components, PlaylistDetail } from "@playlisted/client-sdk";
 
@@ -92,7 +98,54 @@ function CompactSongRow({
       >
         {recording.title}
       </Link>
+
+      <span className="hidden w-16 shrink-0 text-right text-xs text-[var(--color-text-subtle)] sm:inline">
+        {formatPlayCount(recording.playCount)} listens
+      </span>
+      <FavoriteHeartButton target="recording" id={recording.id} variant="inline" inlineAlwaysVisible />
     </div>
+  );
+}
+
+function AddPlaylistToCollectionButton({ playlistId, ownerId }: { playlistId: string; ownerId: string }) {
+  const requireAuth = useAuthAction();
+  const { user } = useAuth();
+  const collectionPlaylists = useCollectionPlaylists();
+  const addCollectionPlaylist = useAddCollectionPlaylist();
+  const isSaved = collectionPlaylists.data?.data.some((item) => item.id === playlistId) ?? false;
+  const isOwner = user?.id === ownerId;
+  const isPending = addCollectionPlaylist.isPending;
+  const disabled = isSaved || isOwner || isPending;
+  const label = isOwner
+    ? "Your collection"
+    : isSaved
+      ? "In collections"
+      : isPending
+        ? "Adding to collections"
+        : "Add to collections";
+
+  function handleClick() {
+    requireAuth(() => {
+      if (disabled) return;
+      addCollectionPlaylist.mutate(playlistId);
+    });
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      disabled={disabled}
+      aria-label={label}
+      aria-pressed={isSaved || isOwner}
+      title={label}
+      className={[
+        "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/20 text-white transition hover:bg-white/10 disabled:cursor-default disabled:opacity-80",
+        isSaved || isOwner ? "bg-white/10" : "",
+      ].join(" ")}
+    >
+      {isSaved || isOwner ? <Library size={16} /> : <Plus size={16} />}
+    </button>
   );
 }
 
@@ -155,6 +208,7 @@ function PlaylistSpotlight({ item }: { item: HomepageItem }) {
 
   const href = playlistPath({ id: pl.id, href: pl.href, username: pl.owner.username, slug: pl.slug });
   const description = item.description ?? pl.description;
+  const genre = pl.tags?.find((tag) => tag.kind === "GENRE");
 
   return (
     <section className="mb-10 overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]">
@@ -186,6 +240,14 @@ function PlaylistSpotlight({ item }: { item: HomepageItem }) {
               <Link to={profilePath(pl.owner.username)} className="hover:underline hover:text-white">
                 {pl.owner.displayName}
               </Link>
+              {genre ? (
+                <>
+                  <span className="mx-1.5 text-white/20">·</span>
+                  <Link to={libraryGenrePath(genre.slug)} className="hover:underline hover:text-white">
+                    {genre.name}
+                  </Link>
+                </>
+              ) : null}
             </p>
             {description && (
               <p className="pt-1 text-sm leading-relaxed text-[var(--color-text-muted)] line-clamp-2">
@@ -206,12 +268,13 @@ function PlaylistSpotlight({ item }: { item: HomepageItem }) {
                     <><Play size={13} fill="currentColor" />Play all</>
                   )}
                 </button>
-                <Link
-                  to={href}
-                  className="text-sm font-medium text-[var(--color-text-muted)] transition hover:text-white"
-                >
-                  Show all
-                </Link>
+                <FavoriteHeartButton
+                  target="playlist"
+                  id={pl.id}
+                  variant="inline"
+                  className="!h-9 !w-9 !rounded-full !border !border-white/20 !bg-transparent !opacity-100"
+                />
+                <AddPlaylistToCollectionButton playlistId={pl.id} ownerId={pl.ownerId} />
               </div>
             )}
           </div>

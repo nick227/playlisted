@@ -37,7 +37,7 @@ import {
   JobsPage,
   MediaPage,
   MusiciansPage,
-} from "@/pages/site/FooterPages";
+} from "@/pages/site/SitePages";
 import { PrivacyPage } from "@/pages/site/PrivacyPage";
 
 function LegacyProfileRedirect() {

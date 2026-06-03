@@ -23,7 +23,10 @@ const playerFooterClass =
   "fixed inset-x-0 bottom-0 z-[55] w-full border-t border-[var(--color-border)] bg-[var(--color-canvas-alt)] pb-[env(safe-area-inset-bottom,0px)] md:pb-0";
 
 const playerBodyClass =
-  "relative w-full min-w-0 max-w-full flex-col py-2 justify-center gap-2.5 px-4 md:grid md:h-[var(--spacing-player)] md:grid-cols-3 md:items-center md:gap-2 md:px-4";
+  "relative flex h-[var(--spacing-player-mobile)] w-full min-w-0 max-w-full flex-col justify-center gap-1.5 px-4 py-2 md:grid md:h-[var(--spacing-player)] md:grid-cols-3 md:items-center md:gap-2 md:px-4";
+
+const mobileActionButtonClass =
+  "grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white/5 text-[var(--color-text-muted)] transition hover:bg-white/10 hover:text-white";
 
 export function BottomPlayer() {
   const {
@@ -112,7 +115,7 @@ export function BottomPlayer() {
           />
         </div>
         <div className={playerBodyClass}>
-          <div className="bottom-player__section bottom-player__section--track group/card flex min-w-0 items-center gap-3">
+          <div className="bottom-player__section bottom-player__section--track group/card flex min-w-0 items-start gap-3 md:items-center">
             {displayTrack.artworkUrl ? (
               <img
                 src={displayTrack.artworkUrl}
@@ -123,24 +126,28 @@ export function BottomPlayer() {
               <div className="h-12 w-12 shrink-0 rounded" style={artStyle} />
             )}
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5">
-                {shellPlaybackContext.playlistId ? (
-                  <Link
-                    to={`${playlistHref ?? ""}#track-${displayTrack.id}`}
-                    className="cursor-pointer block min-w-0 truncate text-sm font-medium text-white hover:underline"
-                  >
-                    {displayTrack.title}
-                  </Link>
-                ) : (
-                  <p className="min-w-0 truncate text-sm font-medium text-white">{displayTrack.title}</p>
-                )}
-                <FavoriteHeartButton
-                  className="cursor-pointer h-7 w-7 self-center"
-                  target="recording"
-                  id={displayTrack.id}
-                  variant="inline"
-                  inlineAlwaysVisible
-                />
+              <div className="flex w-full min-w-0 items-start justify-between gap-2 md:justify-start md:items-center">
+                <div className="contents md:flex md:min-w-0 md:max-w-full md:items-center md:gap-1.5">
+                  {shellPlaybackContext.playlistId ? (
+                    <Link
+                      to={`${playlistHref ?? ""}#track-${displayTrack.id}`}
+                      className="block min-w-0 flex-1 cursor-pointer truncate pr-1 text-sm font-medium leading-5 text-white hover:underline md:pr-0"
+                    >
+                      {displayTrack.title}
+                    </Link>
+                  ) : (
+                    <p className="min-w-0 flex-1 truncate pr-1 text-sm font-medium leading-5 text-white md:pr-0">
+                      {displayTrack.title}
+                    </p>
+                  )}
+                  <FavoriteHeartButton
+                    className="h-7 w-7 shrink-0 cursor-pointer self-start md:self-center"
+                    target="recording"
+                    id={displayTrack.id}
+                    variant="inline"
+                    inlineAlwaysVisible
+                  />
+                </div>
               </div>
               {playlistHref ? (
                 <Link
@@ -158,15 +165,15 @@ export function BottomPlayer() {
                 <button
                   type="button"
                   onClick={skipToUpNext}
-                  className="block max-w-full truncate text-left text-[10px] text-[var(--color-text-subtle)] hover:text-white hover:underline"
+                  className="hidden max-w-full truncate text-left text-[10px] text-[var(--color-text-subtle)] hover:text-white hover:underline md:block"
                 >
                   Up next · {upNextText}
                 </button>
               ) : null}
             </div>
           </div>
-          <div className="bottom-player__section bottom-player__section--controls flex flex-col items-center justify-center gap-1.5">
-            <div className="flex items-center gap-4">
+          <div className="bottom-player__section bottom-player__section--controls flex flex-col items-center justify-center gap-1 md:gap-1.5">
+            <div className="flex items-center gap-4 md:gap-4">
               <button type="button" onClick={playPrevious} className="text-[var(--color-text-muted)] hover:text-white">
                 <SkipBack size={20} />
               </button>
@@ -187,7 +194,7 @@ export function BottomPlayer() {
                 <SkipForward size={20} />
               </button>
             </div>
-            <div className="flex items-center gap-2 text-xs text-[var(--color-text-subtle)]">
+            <div className="flex items-center gap-2 text-[11px] leading-none text-[var(--color-text-subtle)] md:text-xs md:leading-normal">
               <span>{formatDuration(shellCurrentTime)}</span>
               <input
                 type="range"
@@ -200,6 +207,25 @@ export function BottomPlayer() {
               />
               <span>{formatDuration(shellDuration)}</span>
             </div>
+          </div>
+          <div className="bottom-player__section bottom-player__section--actions absolute right-4 bottom-2.5 flex items-center gap-2 md:hidden">
+            <button
+              type="button"
+              onClick={toggleShuffle}
+              aria-pressed={shuffle}
+              aria-label="Shuffle"
+              className={`${mobileActionButtonClass} ${shuffle ? "!text-[var(--color-brand)]" : ""}`}
+            >
+              <Shuffle size={17} />
+            </button>
+            <button
+              type="button"
+              onClick={() => setQueueOpen(true)}
+              className={mobileActionButtonClass}
+              aria-label="Open up next"
+            >
+              <ListMusic size={18} />
+            </button>
           </div>
           <div className="bottom-player__section bottom-player__section--actions hidden items-center justify-end gap-2 md:flex">
             <button

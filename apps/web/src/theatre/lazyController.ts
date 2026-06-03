@@ -127,7 +127,11 @@ class LazyTheatreController extends EventTarget {
       this.state.artworkUrl = meta.artworkUrl
     }
     this._pendingSource = { el, meta }
-    this._trackElement(el)
+    // When the override is cleared (null), fall back to the site player so
+    // canEnter stays reactive after leaving the radio page — mirrors the real
+    // controller's pickPlaybackElement() fallback.
+    const toTrack = el ?? (document.querySelector('audio[data-site-player]') as HTMLMediaElement | null)
+    this._trackElement(toTrack)
     this._real?.registerPlaybackSource(el, meta)
   }
 

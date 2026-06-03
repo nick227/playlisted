@@ -59,31 +59,31 @@ export function TopBar({ onMenuClick }: TopBarProps) {
   const panelPath = user ? panelPathForRole(user.role) : null;
 
   return (
-    <header className="sticky top-0 z-40 flex h-[var(--spacing-topbar)] w-full min-w-0 max-w-full shrink-0 items-center gap-4 overflow-x-clip border-b border-[var(--color-border)] bg-[var(--color-canvas)]/95 px-4 backdrop-blur-md">
+    <header className="sticky top-0 z-40 flex h-[var(--spacing-topbar)] w-full min-w-0 max-w-full shrink-0 items-center gap-1.5 sm:gap-3 overflow-x-clip border-b border-[var(--color-border)] bg-[var(--color-canvas)]/95 px-2 sm:px-4 backdrop-blur-md">
       <button
         type="button"
         onClick={onMenuClick}
-        className="rounded-lg p-2 text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-hover)] hover:text-white lg:hidden"
+        className="shrink-0 rounded-lg p-1.5 sm:p-2 text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-hover)] hover:text-white lg:hidden"
         aria-label="Open menu"
       >
-        <Menu size={22} />
+        <Menu size={20} />
       </button>
-      <Link to="/" className="shrink-0 text-lg font-bold tracking-tight text-white flex sm:hidden">
-        Play<span className="text-[var(--color-brand)]">Listed</span>
+      <Link to="/" className="shrink-0 text-base font-bold tracking-tight text-white flex sm:hidden">
+        P<span className="text-[var(--color-brand)]">L</span>
       </Link>
-      <SearchAutocomplete className="mx-auto hidden max-w-xl flex-1 md:block" />
-      <div className="relative ml-auto flex items-center gap-2">
+      <SearchAutocomplete className="mx-auto max-w-xl flex-1 min-w-0" />
+      <div className="relative ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
         <button
           type="button"
           onClick={handleTheatreClick}
           disabled={theatreLoading || (!theatreActive && !canEnterTheatre)}
-          className={`hidden px-4 bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded-lg p-2 transition sm:inline-flex disabled:cursor-not-allowed disabled:opacity-40 ${theatreActive ? 'text-[var(--color-brand)]' : 'text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)] hover:text-white'}`}
+          className={`inline-flex bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded-lg p-1.5 sm:p-2 transition disabled:cursor-not-allowed disabled:opacity-40 ${theatreActive ? 'text-[var(--color-brand)]' : 'text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)] hover:text-white'}`}
           title={theatreLoading ? 'Loading theatre…' : theatreActive ? 'Exit Theatre Mode' : canEnterTheatre ? 'Enter Theatre Mode' : 'Play music to enter Theatre Mode'}
           aria-busy={theatreLoading}
         >
           {theatreLoading
-            ? <Loader2 size={26} className="animate-spin" />
-            : <Monitor size={26} />}
+            ? <Loader2 size={20} className="animate-spin" />
+            : <Monitor size={20} />}
         </button>
 
         {status === "authenticated" && user ? (

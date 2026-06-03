@@ -19,13 +19,27 @@ export function SiteFooter() {
     <footer className="mt-8 border-t border-[var(--color-border)] py-8">
       <div className="flex justify-between">
         <div className="flex flex-col items-start gap-6" style={{ flex: "1 1 auto" }}>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center">
+              <Link
+                key={'home'}
+                to={"/"}
+                onClick={scrollToTop}
+                className="text-sm font-medium text-[var(--color-text-muted)] transition hover:text-white"
+              >
             <img
               className="pointer-events-none-translate-x-1/2 w-8 h-8 mr-2"
               src="/src/images/favicon.png" alt="" />
+              </Link>
+              <Link
+                key={'home'}
+                to={"/"}
+                onClick={scrollToTop}
+                className="text-sm font-medium text-[var(--color-text-muted)] transition hover:text-white"
+              >
             <p className="text-lg font-bold tracking-tight text-white">
               Play<span className="text-[var(--color-brand)]">Listed</span>
             </p>
+              </Link>
           </div>
 
           <nav

@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { MessageCircle, Pause, Play, Send, Users, X } from "lucide-react";
 
 import { PlaybackBars } from "@/features/playback-indicators/PlaybackBars";
 import { api } from "@/lib/api";
 import { authedApi } from "@/lib/authedApi";
-import { coverFallback } from "@/lib/routes";
+import { coverFallback, playlistPath } from "@/lib/routes";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { useAuth } from "@/providers/AuthProvider";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
@@ -94,6 +95,10 @@ export function RadioPage() {
 
   const radioArtworkUrl = nowPlaying?.artworkUrl ?? null;
 
+  const playlistUrl = nowPlaying
+    ? playlistPath({ id: nowPlaying.playlist.id, slug: nowPlaying.playlist.slug, username: nowPlaying.uploader.username })
+    : null;
+
   useEffect(() => {
     releasePlayback();
     if (theatreController.state.active) void theatreController.exit();
@@ -121,7 +126,8 @@ export function RadioPage() {
     bindTheatreToRadio(el);
   }
 
-  function handleRadioPause() {
+  function handleRadioPause(e: React.SyntheticEvent<HTMLAudioElement>) {
+    if (e.currentTarget.ended) return;
     setPlaying(false);
     unbindTheatreFromRadio();
   }
@@ -356,10 +362,19 @@ export function RadioPage() {
         ) : null}
 
         {/* Artwork */}
-        <div
-          className="aspect-square w-full max-w-[min(68vw,360px)] rounded-xl bg-white/5 bg-cover bg-center shadow-2xl shadow-black/30"
-          style={artStyle}
-        />
+        {playlistUrl ? (
+          <Link
+            to={playlistUrl}
+            className="aspect-square w-full max-w-[min(68vw,360px)] rounded-xl bg-white/5 bg-cover bg-center shadow-2xl shadow-black/30 transition hover:brightness-90"
+            style={artStyle}
+            aria-label={`Go to playlist: ${nowPlaying?.playlist.title}`}
+          />
+        ) : (
+          <div
+            className="aspect-square w-full max-w-[min(68vw,360px)] rounded-xl bg-white/5 bg-cover bg-center shadow-2xl shadow-black/30"
+            style={artStyle}
+          />
+        )}
 
         {/* Status */}
         <div className="mt-8 flex items-center justify-center gap-3">
@@ -376,7 +391,13 @@ export function RadioPage() {
         </div>
 
         <h1 className="mt-4 max-w-full text-balance text-4xl font-extrabold tracking-tight text-white md:text-6xl">
-          {nowPlaying?.title ?? "Radio"}
+          {playlistUrl ? (
+            <Link to={playlistUrl} className="transition hover:text-[var(--color-brand)]">
+              {nowPlaying?.title ?? "Radio"}
+            </Link>
+          ) : (
+            nowPlaying?.title ?? "Radio"
+          )}
         </h1>
 
         {description ? (
