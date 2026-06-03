@@ -42,6 +42,7 @@ export default class AudioFeatureExtractor {
     }
   }
 
+  /** Live object — mutated in place each {@link update}; not a snapshot. */
   getFeatures(): Features {
     return this.features
   }

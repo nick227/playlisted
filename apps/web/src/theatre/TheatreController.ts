@@ -19,6 +19,12 @@ class TheatreController extends EventTarget {
   private extractor: AudioFeatureExtractor | null = null
   private featureLoopId: number | null = null
   private frameContext: AnimationContext | null = null
+  private transitioning = false
+  private readonly onVisibilityChange = () => {
+    if (document.hidden && this.state.active) this.bridge.pause()
+    else if (!document.hidden && this.state.active) this.bridge.resume()
+  }
+
   public state = {
     active: false,
     canEnter: false,
@@ -30,16 +36,20 @@ class TheatreController extends EventTarget {
   constructor() {
     super()
     this.rebindAudio()
-    window.addEventListener('visibilitychange', () => {
-      if (document.hidden && this.state.active) this.bridge.pause()
-      else if (!document.hidden && this.state.active) this.bridge.resume()
-    })
+    window.addEventListener('visibilitychange', this.onVisibilityChange)
+  }
+
+  /** Removes global listeners (e.g. Vite HMR reload). */
+  dispose() {
+    window.removeEventListener('visibilitychange', this.onVisibilityChange)
   }
 
   /** Radio (or other page-local player) overrides the site player while mounted. */
   public registerPlaybackSource(el: HTMLMediaElement | null, meta?: PlaybackSourceMeta) {
     this.overrideEl = el
-    if (meta && 'artworkUrl' in meta) {
+    if (el === null) {
+      this.state.artworkUrl = null
+    } else if (meta && 'artworkUrl' in meta) {
       this.state.artworkUrl = meta.artworkUrl ?? null
     }
     this.rebindAudio()
@@ -77,9 +87,24 @@ class TheatreController extends EventTarget {
   }
 
   private syncPlaybackState(el: HTMLMediaElement) {
-    this.state.canEnter = !el.paused
+    const hasSource = Boolean(el.currentSrc)
+    const ready = el.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA
+    this.state.canEnter = !el.paused && hasSource && ready
     this.state.mediaSrc = el.currentSrc || null
     this.dispatchEvent(new Event('change'))
+  }
+
+  private hasPlayableAudio(): boolean {
+    const el = this.audioEl
+    if (!el) return false
+    return Boolean(el.currentSrc) && el.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA
+  }
+
+  private stopFeatureLoop() {
+    if (this.featureLoopId !== null) {
+      cancelAnimationFrame(this.featureLoopId)
+      this.featureLoopId = null
+    }
   }
 
   private rebindAudio() {
@@ -137,8 +162,17 @@ class TheatreController extends EventTarget {
   }
 
   public async changePreset(presetId: string) {
-    if (!this.overlay || !this.state.active) return
+    if (this.transitioning || !this.overlay || !this.state.active) return
 
+    this.transitioning = true
+    try {
+      await this.changePresetInner(presetId)
+    } finally {
+      this.transitioning = false
+    }
+  }
+
+  private async changePresetInner(presetId: string) {
     const selectedPreset = getPreset(presetId)
     if (!selectedPreset) return
 
@@ -158,8 +192,8 @@ class TheatreController extends EventTarget {
       shared: {
         features: featuresRef,
         reducedMotion,
-        lowPower:      policy.lowPower,
-        dprClamp:      policy.dprClamp,
+        lowPower: policy.lowPower,
+        dprClamp: policy.dprClamp,
         particleScale: policy.particleScale,
         time: timeRef,
         getTriggers: (preset = 'vivid') => {
@@ -177,7 +211,7 @@ class TheatreController extends EventTarget {
     this.state.presetId = selectedPreset.id
     this.frameContext = ctx
     const factories = this.buildFactoriesForPreset(selectedPreset, policy.maxLayers)
-    await this.bridge.enter(this.overlay, factories, ctx)
+    await this.bridge.enter(this.overlay!, factories, ctx)
     this.dispatchEvent(new Event('change'))
   }
 
@@ -188,10 +222,23 @@ class TheatreController extends EventTarget {
   }
 
   public async enter() {
+    if (this.state.active || this.transitioning) return
+
+    this.transitioning = true
+    try {
+      await this.enterInner()
+    } finally {
+      this.transitioning = false
+    }
+  }
+
+  private async enterInner() {
     // Load animation factories on first enter — keeps them out of the initial
     // bundle even if TheatreController itself is somehow imported early.
     await import('./registry/seed')
     if (!this.audioEl) this.rebindAudio()
+    if (!this.hasPlayableAudio()) return
+
     this.overlay = document.createElement('div')
     this.overlay.className = 'theatre-overlay fixed inset-x-0 top-0 z-[9998] flex items-center justify-center'
     let playerHeight = 0
@@ -235,8 +282,8 @@ class TheatreController extends EventTarget {
       shared: {
         features: featuresRef,
         reducedMotion,
-        lowPower:      policy.lowPower,
-        dprClamp:      policy.dprClamp,
+        lowPower: policy.lowPower,
+        dprClamp: policy.dprClamp,
         particleScale: policy.particleScale,
         time: timeRef,
         getTriggers: (preset = 'vivid') => {
@@ -330,21 +377,34 @@ class TheatreController extends EventTarget {
   }
 
   public async exit() {
-    await this.bridge.exit()
-    if (this.overlay?.parentElement) this.overlay.parentElement.removeChild(this.overlay)
-    this.overlay = null
-    document.body.classList.remove('theatre-active')
-    this.state.active = false
-    if (this.featureLoopId) {
-      cancelAnimationFrame(this.featureLoopId)
-      this.featureLoopId = null
+    if (!this.state.active && !this.overlay) return
+    if (this.transitioning) return
+
+    this.transitioning = true
+    try {
+      this.state.active = false
+      this.stopFeatureLoop()
+      this.extractor = null
+      this.frameContext = null
+
+      await this.bridge.exit()
+
+      if (this.overlay?.parentElement) this.overlay.parentElement.removeChild(this.overlay)
+      this.overlay = null
+      document.body.classList.remove('theatre-active')
+      this.state.presetId = null
+
+      this.dispatchEvent(new Event('exit'))
+      this.dispatchEvent(new Event('change'))
+    } finally {
+      this.transitioning = false
     }
-    this.extractor = null
-    this.frameContext = null
-    this.dispatchEvent(new Event('exit'))
-    this.dispatchEvent(new Event('change'))
   }
 }
 
 const controller = new TheatreController()
 export default controller
+
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => controller.dispose())
+}
