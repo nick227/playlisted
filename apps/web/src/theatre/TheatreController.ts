@@ -20,6 +20,7 @@ class TheatreController extends EventTarget {
   private featureLoopId: number | null = null
   private frameContext: AnimationContext | null = null
   private transitioning = false
+  private transitionToken = 0
   private readonly onVisibilityChange = () => {
     if (document.hidden && this.state.active) this.bridge.pause()
     else if (!document.hidden && this.state.active) this.bridge.resume()
@@ -107,6 +108,29 @@ class TheatreController extends EventTarget {
     }
   }
 
+  private bumpTransitionToken(): number {
+    return ++this.transitionToken
+  }
+
+  private stillCurrent(token: number): boolean {
+    return token === this.transitionToken
+  }
+
+  private discardOverlay(el: HTMLElement) {
+    if (el.parentElement) el.parentElement.removeChild(el)
+    if (this.overlay === el) this.overlay = null
+    document.body.classList.remove('theatre-active')
+  }
+
+  private async abortStaleTransition(token: number, overlay: HTMLElement | null) {
+    if (this.stillCurrent(token)) return
+    this.stopFeatureLoop()
+    this.extractor = null
+    this.frameContext = null
+    await this.bridge.exit()
+    if (overlay) this.discardOverlay(overlay)
+  }
+
   private rebindAudio() {
     const next = this.pickPlaybackElement()
     if (next === this.audioEl) {
@@ -162,17 +186,18 @@ class TheatreController extends EventTarget {
   }
 
   public async changePreset(presetId: string) {
-    if (this.transitioning || !this.overlay || !this.state.active) return
+    if (!this.overlay || !this.state.active) return
 
+    const token = this.bumpTransitionToken()
     this.transitioning = true
     try {
-      await this.changePresetInner(presetId)
+      await this.changePresetInner(presetId, token)
     } finally {
-      this.transitioning = false
+      if (this.stillCurrent(token)) this.transitioning = false
     }
   }
 
-  private async changePresetInner(presetId: string) {
+  private async changePresetInner(presetId: string, token: number) {
     const selectedPreset = getPreset(presetId)
     if (!selectedPreset) return
 
@@ -208,10 +233,14 @@ class TheatreController extends EventTarget {
     }
 
     await this.bridge.exit()
+    if (!this.stillCurrent(token) || !this.overlay || !this.state.active) return
+
     this.state.presetId = selectedPreset.id
     this.frameContext = ctx
     const factories = this.buildFactoriesForPreset(selectedPreset, policy.maxLayers)
-    await this.bridge.enter(this.overlay!, factories, ctx)
+    await this.bridge.enter(this.overlay, factories, ctx)
+    if (!this.stillCurrent(token) || !this.overlay || !this.state.active) return
+
     this.dispatchEvent(new Event('change'))
   }
 
@@ -222,42 +251,46 @@ class TheatreController extends EventTarget {
   }
 
   public async enter() {
-    if (this.state.active || this.transitioning) return
+    if (this.state.active) return
 
+    const token = this.bumpTransitionToken()
     this.transitioning = true
     try {
-      await this.enterInner()
+      await this.enterInner(token)
     } finally {
-      this.transitioning = false
+      if (this.stillCurrent(token)) this.transitioning = false
     }
   }
 
-  private async enterInner() {
+  private async enterInner(token: number) {
     // Load animation factories on first enter — keeps them out of the initial
     // bundle even if TheatreController itself is somehow imported early.
     await import('./registry/seed')
+    if (!this.stillCurrent(token)) return
     if (!this.audioEl) this.rebindAudio()
     if (!this.hasPlayableAudio()) return
+    if (!this.stillCurrent(token)) return
 
-    this.overlay = document.createElement('div')
-    this.overlay.className = 'theatre-overlay fixed inset-x-0 top-0 z-[9998] flex items-center justify-center'
+    const overlay = document.createElement('div')
+    this.overlay = overlay
+    overlay.className = 'theatre-overlay fixed inset-x-0 top-0 z-[9998] flex items-center justify-center'
     let playerHeight = 0
     try {
       const playerEl = document.querySelector('.bottom-player__surface') as HTMLElement | null
       if (playerEl) playerHeight = Math.round(playerEl.getBoundingClientRect().height)
     } catch { /* ignore */ }
     if (!playerHeight) {
-      const token = getComputedStyle(document.documentElement).getPropertyValue('--spacing-player')
-      const parsed = parseFloat(token)
+      const spacingToken = getComputedStyle(document.documentElement).getPropertyValue('--spacing-player')
+      const parsed = parseFloat(spacingToken)
       if (!Number.isNaN(parsed)) playerHeight = Math.round(parsed)
     }
-    this.overlay.style.bottom = `${playerHeight}px`
-    this.overlay.style.height = `${Math.max(0, window.innerHeight - playerHeight)}px`
-    this.overlay.style.pointerEvents = 'auto'
+    overlay.style.bottom = `${playerHeight}px`
+    overlay.style.height = `${Math.max(0, window.innerHeight - playerHeight)}px`
+    overlay.style.pointerEvents = 'auto'
     // Start transparent — animations render one frame before we reveal.
-    this.overlay.style.opacity = '0'
-    this.overlay.style.transition = 'opacity 0.45s cubic-bezier(0.4, 0, 0.2, 1)'
-    document.body.appendChild(this.overlay)
+    overlay.style.opacity = '0'
+    overlay.style.transition = 'opacity 0.45s cubic-bezier(0.4, 0, 0.2, 1)'
+    document.body.appendChild(overlay)
     document.body.classList.add('theatre-active')
 
     const analyser = this.getOrCreateAnalyser()
@@ -336,11 +369,21 @@ class TheatreController extends EventTarget {
     })
 
     controlPanel.append(presetSelect, exitLink)
-    this.overlay.appendChild(controlPanel)
+    overlay.appendChild(controlPanel)
+
+    if (!this.stillCurrent(token)) {
+      await this.abortStaleTransition(token, overlay)
+      return
+    }
 
     this.frameContext = ctx
     const factories = this.buildFactoriesForPreset(selectedPreset, policy.maxLayers)
-    await this.bridge.enter(this.overlay, factories, ctx)
+    await this.bridge.enter(overlay, factories, ctx)
+    if (!this.stillCurrent(token)) {
+      await this.abortStaleTransition(token, overlay)
+      return
+    }
+
     this.state.active = true
     this.dispatchEvent(new Event('enter'))
     this.dispatchEvent(new Event('change'))
@@ -349,7 +392,7 @@ class TheatreController extends EventTarget {
     // frame before we transition, so the animation is always visible.
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        if (this.overlay) this.overlay.style.opacity = '1'
+        if (this.stillCurrent(token) && this.overlay === overlay) overlay.style.opacity = '1'
       })
     })
 
@@ -377,9 +420,9 @@ class TheatreController extends EventTarget {
   }
 
   public async exit() {
-    if (!this.state.active && !this.overlay) return
-    if (this.transitioning) return
+    if (!this.state.active && !this.overlay && !this.transitioning) return
 
+    const token = this.bumpTransitionToken()
     this.transitioning = true
     try {
       this.state.active = false
@@ -388,6 +431,7 @@ class TheatreController extends EventTarget {
       this.frameContext = null
 
       await this.bridge.exit()
+      if (!this.stillCurrent(token)) return
 
       if (this.overlay?.parentElement) this.overlay.parentElement.removeChild(this.overlay)
       this.overlay = null
@@ -397,7 +441,7 @@ class TheatreController extends EventTarget {
       this.dispatchEvent(new Event('exit'))
       this.dispatchEvent(new Event('change'))
     } finally {
-      this.transitioning = false
+      if (this.stillCurrent(token)) this.transitioning = false
     }
   }
 }
