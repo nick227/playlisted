@@ -17,9 +17,10 @@ export function SiteFooter() {
 
   return (
     <footer className="mt-8 border-t border-[var(--color-border)] py-8">
-      <div className="flex justify-between">
-        <div className="flex flex-col items-start gap-6" style={{ flex: "1 1 auto" }}>
-          <div className="flex items-center">
+      <div className="flex justify-between w-full items-end">
+        
+          <div>
+            <div className="flex items-center mb-4">
               <Link
                 key={'home'}
                 to={"/"}
@@ -41,7 +42,6 @@ export function SiteFooter() {
             </p>
               </Link>
           </div>
-
           <nav
             aria-label="Footer"
             className="flex flex-col items-start gap-3"
@@ -57,6 +57,13 @@ export function SiteFooter() {
               </Link>
             ))}
           </nav>
+          </div>
+
+        <div className="flex justify-end items-center gap-2">
+          
+            <p>digital music project</p>
+            <h6 className="text-sm font-bold text-[var(--color-text-muted)]">© 2026</h6>
+
         </div>
       </div>
     </footer>
