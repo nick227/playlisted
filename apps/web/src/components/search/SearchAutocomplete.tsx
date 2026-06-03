@@ -30,6 +30,9 @@ interface SearchAutocompleteProps {
 const MOBILE_SEARCH_TRANSITION =
   "transition-[width,opacity,transform] duration-300 ease-out motion-reduce:transition-none";
 
+/** After mobile search input blurs, delay before restoring the closed top bar. */
+const MOBILE_COLLAPSE_DELAY_MS = 2000;
+
 const iconButtonClass =
   "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-elevated)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)] hover:text-white";
 
@@ -42,6 +45,7 @@ export function SearchAutocomplete({
   const listboxId = useId();
   const rootRef = useRef<HTMLFormElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const mobileCollapseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const collapsibleMobile = Boolean(onMobileExpandedChange);
 
   const [query, setQuery] = useState("");
@@ -53,13 +57,32 @@ export function SearchAutocomplete({
   const trimmedQuery = debouncedQuery.trim();
   const hasQuery = trimmedQuery.length > 0;
 
+  const clearMobileCollapseTimer = useCallback(() => {
+    if (mobileCollapseTimerRef.current) {
+      clearTimeout(mobileCollapseTimerRef.current);
+      mobileCollapseTimerRef.current = null;
+    }
+  }, []);
+
   const collapseMobile = useCallback(() => {
-    if (!collapsibleMobile || !mobileExpanded) return;
+    clearMobileCollapseTimer();
     setOpen(false);
     setActiveIndex(-1);
+    if (!collapsibleMobile || !mobileExpanded) return;
     inputRef.current?.blur();
     onMobileExpandedChange?.(false);
-  }, [collapsibleMobile, mobileExpanded, onMobileExpandedChange]);
+  }, [clearMobileCollapseTimer, collapsibleMobile, mobileExpanded, onMobileExpandedChange]);
+
+  const scheduleMobileCollapse = useCallback(() => {
+    if (!collapsibleMobile || !mobileExpanded) return;
+    clearMobileCollapseTimer();
+    mobileCollapseTimerRef.current = setTimeout(() => {
+      mobileCollapseTimerRef.current = null;
+      setOpen(false);
+      setActiveIndex(-1);
+      onMobileExpandedChange?.(false);
+    }, MOBILE_COLLAPSE_DELAY_MS);
+  }, [clearMobileCollapseTimer, collapsibleMobile, mobileExpanded, onMobileExpandedChange]);
 
   const {
     data,
@@ -98,11 +121,9 @@ export function SearchAutocomplete({
       if (!q) return;
       setRecentSearches(pushRecentSearch(q));
       navigate(`/search?q=${encodeURIComponent(q)}`);
-      setOpen(false);
-      setActiveIndex(-1);
-      onMobileExpandedChange?.(false);
+      collapseMobile();
     },
-    [navigate, onMobileExpandedChange],
+    [collapseMobile, navigate],
   );
 
   const selectOption = useCallback(
@@ -117,18 +138,23 @@ export function SearchAutocomplete({
       }
       setRecentSearches(pushRecentSearch(trimmedQuery || option.label));
       navigate(option.href);
-      setOpen(false);
-      setActiveIndex(-1);
-      inputRef.current?.blur();
-      onMobileExpandedChange?.(false);
+      collapseMobile();
     },
-    [goToSearch, navigate, query, trimmedQuery, onMobileExpandedChange],
+    [collapseMobile, goToSearch, navigate, query, trimmedQuery],
   );
 
   useEffect(() => {
     if (!mobileExpanded || !collapsibleMobile) return;
+    clearMobileCollapseTimer();
     inputRef.current?.focus();
-  }, [collapsibleMobile, mobileExpanded]);
+  }, [clearMobileCollapseTimer, collapsibleMobile, mobileExpanded]);
+
+  useEffect(() => () => clearMobileCollapseTimer(), [clearMobileCollapseTimer]);
+
+  useEffect(() => {
+    if (mobileExpanded) return;
+    clearMobileCollapseTimer();
+  }, [clearMobileCollapseTimer, mobileExpanded]);
 
   useEffect(() => {
     if (!showPanel) return;
@@ -136,14 +162,11 @@ export function SearchAutocomplete({
       if (!rootRef.current?.contains(event.target as Node)) {
         setOpen(false);
         setActiveIndex(-1);
-        if (collapsibleMobile && !query.trim()) {
-          onMobileExpandedChange?.(false);
-        }
       }
     }
     document.addEventListener("mousedown", onPointerDown);
     return () => document.removeEventListener("mousedown", onPointerDown);
-  }, [collapsibleMobile, onMobileExpandedChange, query, showPanel]);
+  }, [showPanel]);
 
   useEffect(() => {
     setActiveIndex((index) => {
@@ -267,7 +290,11 @@ export function SearchAutocomplete({
             setActiveIndex(-1);
           }}
           onFocus={() => {
+            clearMobileCollapseTimer();
             if (recentSearches.length > 0 || query.trim()) setOpen(true);
+          }}
+          onBlur={() => {
+            scheduleMobileCollapse();
           }}
           onKeyDown={onKeyDown}
         />

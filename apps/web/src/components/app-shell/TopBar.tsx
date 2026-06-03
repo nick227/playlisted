@@ -18,6 +18,7 @@ interface TopBarProps {
  * MOBILE (< sm) — two masthead + search states:
  *   • Closed (default): hamburger · full "Playlisted" wordmark · [search icon + actions right-aligned]
  *   • Open:             hamburger · "PL" mini mark · expanded search field · actions
+ *     (blurring the input restores closed view after 2s; Escape / pick result closes immediately)
  *
  * DESKTOP (sm+):
  *   • Always-on centered search combobox; no in-bar wordmark (sidebar has branding).
