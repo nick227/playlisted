@@ -4,6 +4,7 @@ import request from "supertest";
 vi.mock("../lib/prisma.js", () => ({
   prisma: {
     tag: { findMany: vi.fn() },
+    playlist: { findMany: vi.fn() },
   },
 }));
 
@@ -17,6 +18,7 @@ const PUBLIC_RECORDING = { visibility: "PUBLIC", status: "PUBLISHED" };
 describe("GET /api/v1/library/genres", () => {
   beforeEach(() => {
     vi.mocked(prisma.tag.findMany).mockResolvedValue([]);
+    vi.mocked(prisma.playlist.findMany).mockResolvedValue([]);
   });
 
   it("returns only genres with public published recordings and public-only counts", async () => {
