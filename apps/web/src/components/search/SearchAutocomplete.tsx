@@ -13,6 +13,7 @@ import {
 } from "@/components/search/searchAutocompleteModel";
 import type { SearchSuggestionOption } from "@/components/search/searchAutocompleteModel";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { useIsSmUp } from "@/hooks/useIsSmUp";
 import { api } from "@/lib/api";
 import { normalizeSearchResponse } from "@/lib/searchResults";
 import { pushRecentSearch, readRecentSearches } from "@/lib/recentSearches";
@@ -47,6 +48,10 @@ export function SearchAutocomplete({
   const inputRef = useRef<HTMLInputElement>(null);
   const mobileCollapseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const collapsibleMobile = Boolean(onMobileExpandedChange);
+  const isSmUp = useIsSmUp();
+  /** Collapsible mode only applies below `sm`; desktop always shows the full combobox. */
+  const isMobileCollapsed = collapsibleMobile && !mobileExpanded && !isSmUp;
+  const showCombobox = !isMobileCollapsed;
 
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -74,7 +79,7 @@ export function SearchAutocomplete({
   }, [clearMobileCollapseTimer, collapsibleMobile, mobileExpanded, onMobileExpandedChange]);
 
   const scheduleMobileCollapse = useCallback(() => {
-    if (!collapsibleMobile || !mobileExpanded) return;
+    if (!collapsibleMobile || !mobileExpanded || isSmUp) return;
     clearMobileCollapseTimer();
     mobileCollapseTimerRef.current = setTimeout(() => {
       mobileCollapseTimerRef.current = null;
@@ -82,7 +87,7 @@ export function SearchAutocomplete({
       setActiveIndex(-1);
       onMobileExpandedChange?.(false);
     }, MOBILE_COLLAPSE_DELAY_MS);
-  }, [clearMobileCollapseTimer, collapsibleMobile, mobileExpanded, onMobileExpandedChange]);
+  }, [clearMobileCollapseTimer, collapsibleMobile, isSmUp, mobileExpanded, onMobileExpandedChange]);
 
   const {
     data,
@@ -107,11 +112,12 @@ export function SearchAutocomplete({
     (data?.playlists.length ?? 0) +
     (data?.genres.length ?? 0);
 
-  const hasSuggestions = hasQuery || recentSearches.length > 0;
+  const hasInput = query.trim().length > 0;
+  const hasSuggestions = hasInput || hasQuery || recentSearches.length > 0;
   const loading = hasQuery && (isLoading || isFetching) && !data;
   const status =
     loading ? "loading" : isError ? "error" : hasQuery && resultCount === 0 && !loading ? "empty" : "idle";
-  const showRecentHint = open && !hasQuery && recentSearches.length > 0;
+  const showRecentHint = open && !hasQuery && !hasInput && recentSearches.length > 0;
   /** Skip the dropdown when focused with nothing to show (avoids empty "no recent searches" panel). */
   const showPanel = open && (hasSuggestions || loading || isError || status === "empty");
 
@@ -227,8 +233,7 @@ export function SearchAutocomplete({
   const activeDescendant =
     activeIndex >= 0 && flatOptions[activeIndex] ? `${listboxId}-option-${activeIndex}` : undefined;
 
-  const showMobileTrigger = collapsibleMobile && !mobileExpanded;
-  const showMobileForm = !collapsibleMobile || mobileExpanded;
+  const showMobileTrigger = isMobileCollapsed;
 
   return (
     <div className={`relative flex min-w-0 items-center ${className}`}>
@@ -252,7 +257,7 @@ export function SearchAutocomplete({
       <form
         ref={rootRef}
         className={`relative min-w-0 ${MOBILE_SEARCH_TRANSITION} sm:w-full! sm:opacity-100! sm:translate-x-0! ${
-          showMobileForm
+          showCombobox
             ? "flex flex-1 max-sm:w-full max-sm:translate-x-0 max-sm:opacity-100"
             : "max-sm:hidden sm:flex sm:flex-1"
         }`}
@@ -260,12 +265,12 @@ export function SearchAutocomplete({
           e.preventDefault();
           handleSubmit();
         }}
-        aria-hidden={collapsibleMobile && !mobileExpanded}
+        aria-hidden={isMobileCollapsed}
       >
         <Search
           size={18}
           className={`pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-[var(--color-text-subtle)] ${MOBILE_SEARCH_TRANSITION} ${
-            showMobileForm ? "scale-100 opacity-100" : "scale-75 opacity-0"
+            showCombobox ? "scale-100 opacity-100" : "scale-75 opacity-0"
           }`}
         />
         <input
@@ -280,9 +285,9 @@ export function SearchAutocomplete({
           aria-haspopup="listbox"
           autoComplete="off"
           placeholder="Search songs, playlists, artists..."
-          tabIndex={showMobileForm ? 0 : -1}
+          tabIndex={showCombobox ? 0 : -1}
           className={`w-full rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] py-2.5 pl-11 pr-4 text-sm text-white placeholder:text-[var(--color-text-subtle)] outline-none focus:border-white/20 ${MOBILE_SEARCH_TRANSITION} ${
-            showMobileForm ? "max-sm:opacity-100" : "max-sm:opacity-0"
+            showCombobox ? "max-sm:opacity-100" : "max-sm:opacity-0"
           }`}
           onChange={(e) => {
             setQuery(e.target.value);
@@ -293,12 +298,10 @@ export function SearchAutocomplete({
             clearMobileCollapseTimer();
             if (recentSearches.length > 0 || query.trim()) setOpen(true);
           }}
-          onBlur={() => {
-            scheduleMobileCollapse();
-          }}
+          onBlur={() => scheduleMobileCollapse()}
           onKeyDown={onKeyDown}
         />
-        {showPanel && showMobileForm ? (
+        {showPanel && showCombobox ? (
           <SearchAutocompleteDropdown
             listboxId={listboxId}
             query={trimmedQuery || query}
