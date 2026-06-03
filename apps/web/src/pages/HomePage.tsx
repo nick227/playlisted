@@ -385,27 +385,14 @@ export function HomePage() {
   // Editor picks: homepage_features where section = EDITOR_PICK (API order = position)
   const editorPicks = sectionMap["EDITOR_PICK"] ?? [];
 
-  // Hero spotlight: first editor pick, or first item from any section
-  const heroItem = useMemo(() => {
-    if (editorPicks.length > 0) return editorPicks[0];
-    for (const s of editorial.data?.sections ?? []) {
-      if (s.items.length > 0) return s.items[0];
-    }
-    return null;
-  }, [editorPicks, editorial.data]);
-
   const siteNews = sectionMap["SITE_NEWS"] ?? [];
   const newReleases = sectionMap["NEW_RELEASE"] ?? [];
   const customMixes = sectionMap["CUSTOM_MIX"] ?? [];
 
   const editorPicksGrid = useMemo(() => {
-    const heroId = heroItem?.id;
-    const pool = mergeUniqueHomepageItems(
-      editorPicks.filter((i) => i.id !== heroId),
-      customMixes,
-    );
+    const pool = mergeUniqueHomepageItems(editorPicks, customMixes);
     return pool.slice(0, homeGridItemLimit(pool.length, isMdUp));
-  }, [editorPicks, heroItem, customMixes, isMdUp]);
+  }, [editorPicks, customMixes, isMdUp]);
 
   const editorPickGridIds = useMemo(
     () => new Set(editorPicksGrid.map((i) => i.id)),
