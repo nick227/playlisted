@@ -108,6 +108,9 @@ export function LibraryTrackRow({ song, onPlay, queueTrack }: LibraryTrackRowPro
           {formatPlayCount(song.playCount)} plays
         </span>
       ) : null}
+      <span className="hidden w-16 shrink-0 text-right text-xs text-[var(--color-text-subtle)] md:inline">
+        {formatPlayCount(song.favoriteCount)} favs
+      </span>
       <span className="w-10 shrink-0 text-right text-xs text-[var(--color-text-muted)]">
         {formatDuration(song.durationSeconds)}
       </span>

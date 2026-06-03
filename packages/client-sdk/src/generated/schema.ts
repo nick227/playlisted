@@ -416,6 +416,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/analytics/playlists": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get per-playlist analytics for the current creator */
+        get: operations["getAnalyticsPlaylists"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me/playback-history": {
         parameters: {
             query?: never;
@@ -1800,20 +1817,46 @@ export interface components {
                 totalPlays: components["schemas"]["MetricTrend"];
                 totalPlaySeconds: components["schemas"]["MetricTrend"];
                 avgCompletionRate: components["schemas"]["MetricTrend"];
+                totalLikes: components["schemas"]["MetricTrend"];
+                totalFollows: components["schemas"]["MetricTrend"];
+                playlistPlays: components["schemas"]["MetricTrend"];
+                songAdds: components["schemas"]["MetricTrend"];
             };
         };
         AnalyticsRecordingItem: {
             recordingId: string;
             title: string;
+            playlistId: string;
+            playlistTitle: string;
             /** Format: uri-reference */
             artworkUrl?: string | null;
             durationSeconds?: number | null;
             totalPlays: number;
             totalPlaySeconds: number;
             completionRate: number;
+            likes: number;
         };
         AnalyticsRecordingsResponse: {
             data: components["schemas"]["AnalyticsRecordingItem"][];
+            meta: components["schemas"]["PaginationMeta"];
+        };
+        AnalyticsPlaylistItem: {
+            playlistId: string;
+            title: string;
+            /** Format: uri-reference */
+            coverArtUrl?: string | null;
+            trackCount: number;
+            totalPlays: number;
+            totalPlaySeconds: number;
+            completionRate: number;
+            likes: number;
+            followers: number;
+            topRecordingId: string | null;
+            topRecordingTitle?: string | null;
+            topRecordingPlays: number;
+        };
+        AnalyticsPlaylistsResponse: {
+            data: components["schemas"]["AnalyticsPlaylistItem"][];
             meta: components["schemas"]["PaginationMeta"];
         };
         SetPlaylistTagsRequest: {
@@ -1862,6 +1905,7 @@ export interface components {
             /** Format: date-time */
             publishedAt?: string | null;
             playCount: number;
+            favoriteCount: number;
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
@@ -3367,6 +3411,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AnalyticsRecordingsResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getAnalyticsPlaylists: {
+        parameters: {
+            query?: {
+                range?: components["schemas"]["ChartRange"];
+                sortBy?: "plays" | "duration" | "completion" | "likes" | "follows";
+                order?: "asc" | "desc";
+                page?: components["parameters"]["Page"];
+                pageSize?: components["parameters"]["PageSize"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Per-playlist analytics */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalyticsPlaylistsResponse"];
                 };
             };
             /** @description Unauthorized */

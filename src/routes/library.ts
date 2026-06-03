@@ -93,6 +93,9 @@ libraryRouter.get("/songs", async (req, res, next) => {
             where: { tag: { kind: "GENRE" } },
             include: { tag: { select: { id: true, name: true, slug: true } } },
           },
+          _count: {
+            select: { saves: { where: { kind: "FAVORITE" } } },
+          },
         },
         orderBy: { title: "asc" },
         skip: (page - 1) * pageSize,
@@ -122,6 +125,7 @@ libraryRouter.get("/songs", async (req, res, next) => {
         releaseDate: r.releaseDate?.toISOString() ?? null,
         publishedAt: r.publishedAt?.toISOString() ?? null,
         playCount: r.playCount,
+        favoriteCount: r._count.saves,
         createdAt: r.createdAt.toISOString(),
         updatedAt: r.updatedAt.toISOString(),
         uploader: r.uploader,

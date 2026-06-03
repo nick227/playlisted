@@ -742,6 +742,46 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /api/v1/me/analytics/playlists:
+    get:
+      tags: [Analytics]
+      operationId: getAnalyticsPlaylists
+      summary: Get per-playlist analytics for the current creator
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: range
+          schema:
+            $ref: '#/components/schemas/ChartRange'
+        - in: query
+          name: sortBy
+          schema:
+            type: string
+            enum: [plays, duration, completion, likes, follows]
+            default: plays
+        - in: query
+          name: order
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Per-playlist analytics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyticsPlaylistsResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /api/v1/me/playback-history:
     get:
       tags: [Me]
@@ -4176,7 +4216,15 @@ components:
         summary:
           type: object
           additionalProperties: false
-          required: [totalPageViews, totalPlays, totalPlaySeconds, avgCompletionRate]
+          required:
+            - totalPageViews
+            - totalPlays
+            - totalPlaySeconds
+            - avgCompletionRate
+            - totalLikes
+            - totalFollows
+            - playlistPlays
+            - songAdds
           properties:
             totalPageViews:
               $ref: '#/components/schemas/MetricTrend'
@@ -4186,15 +4234,27 @@ components:
               $ref: '#/components/schemas/MetricTrend'
             avgCompletionRate:
               $ref: '#/components/schemas/MetricTrend'
+            totalLikes:
+              $ref: '#/components/schemas/MetricTrend'
+            totalFollows:
+              $ref: '#/components/schemas/MetricTrend'
+            playlistPlays:
+              $ref: '#/components/schemas/MetricTrend'
+            songAdds:
+              $ref: '#/components/schemas/MetricTrend'
 
     AnalyticsRecordingItem:
       type: object
       additionalProperties: false
-      required: [recordingId, title, totalPlays, totalPlaySeconds, completionRate]
+      required: [recordingId, title, playlistId, playlistTitle, totalPlays, totalPlaySeconds, completionRate, likes]
       properties:
         recordingId:
           type: string
         title:
+          type: string
+        playlistId:
+          type: string
+        playlistTitle:
           type: string
         artworkUrl:
           type: [string, 'null']
@@ -4207,6 +4267,8 @@ components:
           type: integer
         completionRate:
           type: number
+        likes:
+          type: integer
 
     AnalyticsRecordingsResponse:
       type: object
@@ -4217,6 +4279,59 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AnalyticsRecordingItem'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    AnalyticsPlaylistItem:
+      type: object
+      additionalProperties: false
+      required:
+        - playlistId
+        - title
+        - trackCount
+        - totalPlays
+        - totalPlaySeconds
+        - completionRate
+        - likes
+        - followers
+        - topRecordingId
+        - topRecordingPlays
+      properties:
+        playlistId:
+          type: string
+        title:
+          type: string
+        coverArtUrl:
+          type: [string, 'null']
+          format: uri-reference
+        trackCount:
+          type: integer
+        totalPlays:
+          type: integer
+        totalPlaySeconds:
+          type: integer
+        completionRate:
+          type: number
+        likes:
+          type: integer
+        followers:
+          type: integer
+        topRecordingId:
+          type: [string, 'null']
+        topRecordingTitle:
+          type: [string, 'null']
+        topRecordingPlays:
+          type: integer
+
+    AnalyticsPlaylistsResponse:
+      type: object
+      additionalProperties: false
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnalyticsPlaylistItem'
         meta:
           $ref: '#/components/schemas/PaginationMeta'
 
@@ -4281,7 +4396,7 @@ components:
     LibrarySong:
       type: object
       additionalProperties: false
-      required: [id, uploaderId, publishedPlaylistId, title, audioUrl, recordingType, visibility, status, explicit, playCount, createdAt, updatedAt, uploader, playlist, genres]
+      required: [id, uploaderId, publishedPlaylistId, title, audioUrl, recordingType, visibility, status, explicit, playCount, favoriteCount, createdAt, updatedAt, uploader, playlist, genres]
       properties:
         id:
           type: string
@@ -4324,6 +4439,8 @@ components:
           type: [string, 'null']
           format: date-time
         playCount:
+          type: integer
+        favoriteCount:
           type: integer
         createdAt:
           type: string

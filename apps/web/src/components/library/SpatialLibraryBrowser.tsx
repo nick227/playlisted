@@ -7,6 +7,18 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { Skeleton } from "@/components/feedback/Skeleton";
+import { LibraryArtistFilter } from "@/components/library/LibraryArtistFilter";
+import { LibraryGenreFilter } from "@/components/library/LibraryGenreFilter";
+import {
+  filterArtistsByGenre,
+  filterPlaylistsByGenre,
+  filterSongsByArtist,
+  sortLibrarySongs,
+  topArtistsBySongCount,
+  type SortDirection,
+  type SongSortKey,
+} from "@/components/library/libraryFilterUtils";
+import { LibrarySongSortBar } from "@/components/library/LibrarySongSortBar";
 import { LibraryTrackRow } from "@/components/library/LibraryTrackRow";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 import {
@@ -512,14 +524,21 @@ function GenreDetailPanel({ slug, name }: { slug: string; name: string }) {
 // ─── Artists panel ────────────────────────────────────────────────────────────
 
 function ArtistsPanel({ push }: { push: (p: PanelDescriptor) => void }) {
+  const [genreSlug, setGenreSlug] = useState<string | null>(null);
+  const { data: genresData } = useLibraryGenres();
+  const genres = (genresData?.data ?? []).filter((g) => g.songCount > 0);
   const { data, isLoading } = useLibraryArtists();
-  const artists = data?.data ?? [];
+  const artists = filterArtistsByGenre(data?.data ?? [], genreSlug);
 
   if (isLoading) return <PanelSkeleton />;
 
   return (
     <div>
       <PanelHeader label="Artists" count={artists.length} />
+      <LibraryGenreFilter genres={genres} value={genreSlug} onChange={setGenreSlug} />
+      {artists.length === 0 ? (
+        <p className="mt-10 text-sm text-[var(--color-text-subtle)]">No artists match this genre.</p>
+      ) : (
       <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         {artists.map((artist) => (
           <button
@@ -559,6 +578,7 @@ function ArtistsPanel({ push }: { push: (p: PanelDescriptor) => void }) {
           </button>
         ))}
       </div>
+      )}
     </div>
   );
 }
@@ -618,14 +638,21 @@ function ArtistDetailPanel({
 // ─── Playlists panel ──────────────────────────────────────────────────────────
 
 function PlaylistsPanel() {
+  const [genreSlug, setGenreSlug] = useState<string | null>(null);
+  const { data: genresData } = useLibraryGenres();
+  const genres = (genresData?.data ?? []).filter((g) => g.songCount > 0);
   const { data, isLoading } = useLibraryPlaylists();
-  const playlists = data?.data ?? [];
+  const playlists = filterPlaylistsByGenre(data?.data ?? [], genreSlug);
 
   if (isLoading) return <PanelSkeleton />;
 
   return (
     <div>
       <PanelHeader label="Playlists" count={playlists.length} />
+      <LibraryGenreFilter genres={genres} value={genreSlug} onChange={setGenreSlug} />
+      {playlists.length === 0 ? (
+        <p className="mt-10 text-sm text-[var(--color-text-subtle)]">No playlists match this genre.</p>
+      ) : (
       <div className="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
         {playlists.map((playlist) => (
           <Link
@@ -655,6 +682,7 @@ function PlaylistsPanel() {
           </Link>
         ))}
       </div>
+      )}
     </div>
   );
 }
@@ -662,8 +690,22 @@ function PlaylistsPanel() {
 // ─── Songs panel ─────────────────────────────────────────────────────────────
 
 function SongsPanel() {
-  const { data, isLoading } = useLibrarySongs();
-  const songs = data?.data ?? [];
+  const [genreSlug, setGenreSlug] = useState<string | null>(null);
+  const [artistId, setArtistId] = useState<string | null>(null);
+  const [sortKey, setSortKey] = useState<SongSortKey>("title");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+
+  const { data: genresData } = useLibraryGenres();
+  const genres = (genresData?.data ?? []).filter((g) => g.songCount > 0);
+  const { data: artistsData } = useLibraryArtists();
+  const artists = artistsData?.data ?? [];
+  const suggestedArtists = useMemo(() => topArtistsBySongCount(artists, 4), [artists]);
+  const { data, isLoading } = useLibrarySongs(genreSlug);
+
+  const songs = useMemo(() => {
+    const filtered = filterSongsByArtist(data?.data ?? [], artistId);
+    return sortLibrarySongs(filtered, sortKey, sortDirection);
+  }, [data?.data, artistId, sortKey, sortDirection]);
 
   if (isLoading) return <PanelSkeleton />;
 
@@ -679,9 +721,22 @@ function SongsPanel() {
           {curatorNote}
         </p>
       )}
+      <LibraryGenreFilter genres={genres} value={genreSlug} onChange={setGenreSlug} />
+      <LibraryArtistFilter
+        artists={artists}
+        suggestedArtists={suggestedArtists}
+        selectedArtistId={artistId}
+        onSelect={setArtistId}
+      />
+      <LibrarySongSortBar
+        sortKey={sortKey}
+        sortDirection={sortDirection}
+        onSortKeyChange={setSortKey}
+        onSortDirectionChange={setSortDirection}
+      />
       <div className="mt-10">
         {songs.length === 0 ? (
-          <p className="text-sm text-[var(--color-text-subtle)]">No recordings yet.</p>
+          <p className="text-sm text-[var(--color-text-subtle)]">No recordings match these filters.</p>
         ) : (
           <TracksWithPreview songs={songs} />
         )}
@@ -759,37 +814,6 @@ function BreadcrumbRail({
   );
 }
 
-// ─── Peek strips ─────────────────────────────────────────────────────────────
-
-function PeekStrips({
-  stack,
-  popTo,
-}: {
-  stack: PanelDescriptor[];
-  popTo: (i: number) => void;
-}) {
-  return (
-    <div className="flex shrink-0 select-none">
-      {stack.map((panel, i) => (
-        <button
-          key={i}
-          type="button"
-          title={`Back to ${labelFor(panel)}`}
-          onClick={() => popTo(i)}
-          className="group flex w-10 items-center justify-center border-r border-white/[0.07] bg-transparent transition-colors hover:bg-white/[0.04]"
-        >
-          <span
-            className="max-h-[180px] overflow-hidden text-ellipsis whitespace-nowrap text-[9px] font-bold uppercase tracking-[0.22em] text-white/20 transition-colors group-hover:text-white/45"
-            style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
-          >
-            {labelFor(panel)}
-          </span>
-        </button>
-      ))}
-    </div>
-  );
-}
-
 // ─── Panel renderer ───────────────────────────────────────────────────────────
 
 function renderPanel(
@@ -845,7 +869,6 @@ export function SpatialLibraryBrowser() {
   const songsQuery = useLibrarySongs();
 
   const currentPanel = stack[stack.length - 1];
-  const peekStack = stack.slice(0, -1);
 
   function push(panel: PanelDescriptor) {
     setDirection("push");
@@ -880,17 +903,8 @@ export function SpatialLibraryBrowser() {
     <div className="mx-auto max-w-5xl">
       <BreadcrumbRail stack={stack} popTo={popTo} />
 
-      <div className={["flex min-h-[72vh]", stack.length > 1 ? "mt-5" : "mt-0"].join(" ")}>
-        {peekStack.length > 0 && (
-          <PeekStrips stack={peekStack} popTo={popTo} />
-        )}
-
-        <div
-          className={[
-            "min-w-0 flex-1 overflow-hidden",
-            peekStack.length > 0 ? "pl-8" : "",
-          ].join(" ")}
-        >
+      <div className={["min-h-[72vh]", stack.length > 1 ? "mt-5" : "mt-0"].join(" ")}>
+        <div className="min-w-0 overflow-hidden">
           <AnimatedPanel key={JSON.stringify(currentPanel)} direction={direction}>
             {renderPanel(currentPanel, push, counts, previews)}
           </AnimatedPanel>
