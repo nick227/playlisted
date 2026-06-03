@@ -8,6 +8,7 @@ import { prisma } from "../lib/prisma.js";
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_PAGE_SIZE = 50;
+const COMPLETION_THRESHOLD = 0.9;
 
 const UPLOADER_SELECT = {
   id: true, username: true, displayName: true, avatarUrl: true, role: true,
@@ -200,7 +201,7 @@ meRouter.post("/playback-events", async (req, res, next) => {
 
     const recording = await prisma.recording.findUnique({
       where: { id: body.recordingId },
-      select: { id: true },
+      select: { id: true, durationSeconds: true },
     });
 
     if (!recording) {
@@ -224,18 +225,28 @@ meRouter.post("/playback-events", async (req, res, next) => {
       }
     }
 
+    const playedSeconds = body.playedSeconds ?? null;
+    const completed =
+      Boolean(body.completed) ||
+      Boolean(
+        recording.durationSeconds &&
+          recording.durationSeconds > 0 &&
+          playedSeconds != null &&
+          playedSeconds >= Math.ceil(recording.durationSeconds * COMPLETION_THRESHOLD),
+      );
+
     const event = await prisma.playbackEvent.create({
       data: {
         userId: auth.user.id,
         recordingId: body.recordingId,
         playlistId: body.playlistId ?? null,
         sourceContext: body.sourceContext ?? null,
-        playedSeconds: body.playedSeconds ?? null,
-        completed: body.completed ?? false,
+        playedSeconds,
+        completed,
       },
     });
 
-    if (body.completed || (body.playedSeconds ?? 0) >= 30) {
+    if (completed || (playedSeconds ?? 0) >= 30) {
       await prisma.recording.update({
         where: { id: body.recordingId },
         data: { playCount: { increment: 1 } },

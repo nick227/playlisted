@@ -11,7 +11,7 @@ export type HydratedSegment = {
 
 export async function hydrateUpNextSegment(
   segment: UpNextSegment,
-  playedIds: Set<string>,
+  avoidedPlaylistIds: Set<string>,
 ): Promise<HydratedSegment | null> {
   if (segment.kind === "tracks") {
     const tracks = segment.tracks.filter((t) => Boolean(t.audioUrl));
@@ -34,7 +34,7 @@ export async function hydrateUpNextSegment(
     };
   }
 
-  const resolved = await resolveAutopilotSegment(segment, playedIds);
+  const resolved = await resolveAutopilotSegment(segment, avoidedPlaylistIds);
   if (!resolved || resolved.kind === "autopilot") return null;
-  return hydrateUpNextSegment(resolved, playedIds);
+  return hydrateUpNextSegment(resolved, avoidedPlaylistIds);
 }

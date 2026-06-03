@@ -46,6 +46,7 @@ export type TopPlaylistItem = components["schemas"]["TopPlaylistItem"];
 export type TopArtistItem = components["schemas"]["TopArtistItem"];
 export type AnalyticsSummaryResponse = components["schemas"]["AnalyticsSummaryResponse"];
 export type AnalyticsRecordingsResponse = components["schemas"]["AnalyticsRecordingsResponse"];
+export type AnalyticsPlaylistsResponse = components["schemas"]["AnalyticsPlaylistsResponse"];
 export type FavoriteRecordingItem = components["schemas"]["FavoriteRecordingItem"];
 export type FavoriteRecordingsResponse = components["schemas"]["FavoriteRecordingsResponse"];
 export type FavoritePlaylistItem = components["schemas"]["FavoritePlaylistItem"];
@@ -123,6 +124,7 @@ export type ListRecordingsQuery = NonNullable<operations["listRecordings"]["para
 export type ChartsQuery = { range?: ChartRange; limit?: number };
 export type AnalyticsQuery = { range?: ChartRange };
 export type AnalyticsRecordingsQuery = { range?: ChartRange; sortBy?: "plays" | "duration" | "completion"; order?: "asc" | "desc"; page?: number; pageSize?: number };
+export type AnalyticsPlaylistsQuery = { range?: ChartRange; sortBy?: "plays" | "duration" | "completion" | "likes" | "follows"; order?: "asc" | "desc"; page?: number; pageSize?: number };
 
 export interface PlaylistedApi {
   readonly raw: RawPlaylistedClient;
@@ -220,6 +222,7 @@ export interface PlaylistedApi {
   analytics: {
     summary(query?: AnalyticsQuery): Promise<AnalyticsSummaryResponse>;
     recordings(query?: AnalyticsRecordingsQuery): Promise<AnalyticsRecordingsResponse>;
+    playlists(query?: AnalyticsPlaylistsQuery): Promise<AnalyticsPlaylistsResponse>;
   };
   library: {
     genres(): Promise<LibraryGenresResponse>;
@@ -809,6 +812,12 @@ export function createPlaylistedApi(options: PlaylistedClientOptions = {}): Play
         return unwrap(
           raw.GET("/api/v1/me/analytics/recordings", { params: { query } }),
           "Failed to load recording analytics.",
+        );
+      },
+      playlists(query = {}) {
+        return unwrap(
+          raw.GET("/api/v1/me/analytics/playlists", { params: { query } }),
+          "Failed to load playlist analytics.",
         );
       },
     },

@@ -16,9 +16,9 @@ function autopilotProbe(seedPlaylistId: string | undefined): Extract<UpNextSegme
 
 export async function prefetchAutoplayNext(
   seedPlaylistId: string | undefined,
-  playedIds: Set<string>,
+  avoidedPlaylistIds: Set<string>,
 ): Promise<PrefetchedPlaylistNext | null> {
-  const resolved = await resolveAutopilotSegment(autopilotProbe(seedPlaylistId), playedIds);
+  const resolved = await resolveAutopilotSegment(autopilotProbe(seedPlaylistId), avoidedPlaylistIds);
   if (!resolved || resolved.kind !== "playlist") return null;
   return resolved;
 }

@@ -26,3 +26,17 @@ export function useAnalyticsRecordings(
     enabled: Boolean(accessToken),
   });
 }
+
+export function useAnalyticsPlaylists(
+  range: ChartRange,
+  sortBy: "plays" | "duration" | "completion" | "likes" | "follows",
+  order: "asc" | "desc",
+) {
+  const { accessToken } = useAuth();
+  return useQuery({
+    queryKey: ["analytics", "playlists", range, sortBy, order],
+    queryFn: () =>
+      authedApi(accessToken).analytics.playlists({ range, sortBy, order, pageSize: 100 }),
+    enabled: Boolean(accessToken),
+  });
+}

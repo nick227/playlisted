@@ -105,8 +105,15 @@ export function RadioPage() {
   }, [releasePlayback]);
 
   useEffect(() => {
-    return () => theatreController.registerPlaybackSource(null);
+    return () => {
+      theatreController.registerPlaybackSource(null);
+      theatreController.setCanEnter(false);
+    };
   }, []);
+
+  useEffect(() => {
+    theatreController.setCanEnter(playing);
+  }, [playing]);
 
   useEffect(() => {
     if (!playing) return;
@@ -459,7 +466,7 @@ export function RadioPage() {
         data-radio-player
         crossOrigin="anonymous"
         onPlay={(e) => handleRadioPlay(e.currentTarget)}
-        onEnded={() => radioQuery.refetch()}
+        onEnded={() => { setPlaying(false); void radioQuery.refetch(); }}
         onPause={handleRadioPause}
       />
     </>

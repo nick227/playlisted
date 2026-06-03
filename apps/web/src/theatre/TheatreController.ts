@@ -5,7 +5,7 @@ import AudioFeatureExtractor from './AudioFeatureExtractor'
 import { getOrCreateAudioAnalyserConnection, type AudioAnalyserConnection } from '@/features/playback-indicators/audioAnalyser'
 import { getPreset, listPresets, pickPreset, type SceneCategory, type ScenePresetDef } from './scenePresets'
 import { buildAnimationFrameContext } from './theatreFrameContext'
-import { canEnterFromMediaElement } from './theatrePlayback'
+
 
 type PlaybackSourceMeta = { artworkUrl?: string | null }
 
@@ -14,7 +14,6 @@ class TheatreController extends EventTarget {
   private overlay: HTMLElement | null = null
   private overrideEl: HTMLMediaElement | null = null
   private audioEl: HTMLMediaElement | null = null
-  private unbindListeners: (() => void) | null = null
   private analyserConnection: AudioAnalyserConnection | null = null
   private extractor: AudioFeatureExtractor | null = null
   private featureLoopId: number | null = null
@@ -48,8 +47,6 @@ class TheatreController extends EventTarget {
     this.state.presetId = null
 
     window.removeEventListener('visibilitychange', this.onVisibilityChange)
-    this.unbindListeners?.()
-    this.unbindListeners = null
     this.analyserConnection = null
     this.stopFeatureLoop()
     this.extractor = null
@@ -73,6 +70,13 @@ class TheatreController extends EventTarget {
 
   public setArtwork(artworkUrl: string | null) {
     this.state.artworkUrl = artworkUrl
+    this.dispatchEvent(new Event('change'))
+  }
+
+  /** Called by React whenever playback readiness changes. Single source of truth for canEnter. */
+  public setCanEnter(canEnter: boolean) {
+    if (this.state.canEnter === canEnter) return
+    this.state.canEnter = canEnter
     this.dispatchEvent(new Event('change'))
   }
 
@@ -102,14 +106,8 @@ class TheatreController extends EventTarget {
     return el instanceof HTMLMediaElement ? el : null
   }
 
-  private syncPlaybackState(el: HTMLMediaElement) {
-    this.state.canEnter = canEnterFromMediaElement(el)
-    this.state.mediaSrc = el.currentSrc || null
-    this.dispatchEvent(new Event('change'))
-  }
-
   private hasPlayableAudio(): boolean {
-    return canEnterFromMediaElement(this.audioEl)
+    return this.state.canEnter
   }
 
   private stopFeatureLoop() {
@@ -149,37 +147,11 @@ class TheatreController extends EventTarget {
 
   private rebindAudio() {
     const next = this.pickPlaybackElement()
-    if (next === this.audioEl) {
-      if (next) this.syncPlaybackState(next)
-      return
-    }
-
+    if (next === this.audioEl) return
     if (this.state.active) void this.exit()
-
-    this.unbindListeners?.()
-    this.unbindListeners = null
     this.analyserConnection = null
     this.audioEl = next
-
-    if (!next) {
-      this.state.canEnter = false
-      this.state.mediaSrc = null
-      this.dispatchEvent(new Event('change'))
-      return
-    }
-
-    const update = () => this.syncPlaybackState(next)
-    next.addEventListener('play', update)
-    next.addEventListener('pause', update)
-    next.addEventListener('emptied', update)
-    next.addEventListener('ended', update)
-    this.unbindListeners = () => {
-      next.removeEventListener('play', update)
-      next.removeEventListener('pause', update)
-      next.removeEventListener('emptied', update)
-      next.removeEventListener('ended', update)
-    }
-    update()
+    this.state.mediaSrc = next?.currentSrc || null
   }
 
   private getOrCreateAnalyser(): AnalyserNode | null {
@@ -221,7 +193,7 @@ class TheatreController extends EventTarget {
     const { ctx, policy } = buildAnimationFrameContext({
       audioEl: this.audioEl,
       analyser,
-      mediaSrc: this.state.mediaSrc,
+      mediaSrc: this.audioEl?.currentSrc || null,
       artworkUrl: this.state.artworkUrl,
       featuresRef: this.extractor?.getFeatures(),
     })
@@ -298,7 +270,7 @@ class TheatreController extends EventTarget {
     const { ctx, policy } = buildAnimationFrameContext({
       audioEl: this.audioEl,
       analyser,
-      mediaSrc: this.state.mediaSrc,
+      mediaSrc: this.audioEl?.currentSrc || null,
       artworkUrl: this.state.artworkUrl,
       featuresRef,
     })

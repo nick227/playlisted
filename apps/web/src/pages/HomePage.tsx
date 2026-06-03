@@ -37,7 +37,7 @@ const HOME_LIMITS = {
   pinnedArtistsFetch: 8,
   genreGroupsMax: 4,
   genreMinSongs: 3,
-  newReleasesColumns: 4,
+  newReleases: 10,
 } as const;
 
 const HOME_SECTION_COLS = {
@@ -143,10 +143,6 @@ function mergeUniqueHomepageItems(...lists: HomepageItem[][]): HomepageItem[] {
     }
   }
   return merged;
-}
-
-function completeRows<T>(items: T[], columns: number): T[] {
-  return items.slice(0, items.length - (items.length % columns));
 }
 
 function SiteNewsCard({ item }: { item: HomepageItem }) {
@@ -297,11 +293,10 @@ export function HomePage() {
     const heroId = heroItem?.id;
     const pool = mergeUniqueHomepageItems(
       editorPicks.filter((i) => i.id !== heroId),
-      newReleases,
       customMixes,
     );
     return pool.slice(0, homeGridItemLimit(pool.length, isMdUp));
-  }, [editorPicks, heroItem, newReleases, customMixes, isMdUp]);
+  }, [editorPicks, heroItem, customMixes, isMdUp]);
 
   const editorPickGridIds = useMemo(
     () => new Set(editorPicksGrid.map((i) => i.id)),
@@ -310,10 +305,9 @@ export function HomePage() {
 
   const newReleasesSection = useMemo(
     () =>
-      completeRows(
-        newReleases.filter((i) => !editorPickGridIds.has(i.id)),
-        HOME_LIMITS.newReleasesColumns,
-      ),
+      newReleases
+        .filter((i) => !editorPickGridIds.has(i.id))
+        .slice(0, HOME_LIMITS.newReleases),
     [newReleases, editorPickGridIds],
   );
 
@@ -388,6 +382,16 @@ export function HomePage() {
       />
 
       <HomeChartsSection />
+
+      {/* ── NEW RELEASES ────────────────────────────────────────────── */}
+
+      {newReleasesSection.length > 0 && (
+        <HomeSection title="New Releases" cols={HOME_SECTION_COLS.newReleases}>
+          {newReleasesSection.map((item) => (
+            <HomepageEditorialCard key={item.id} item={item} sectionKey="new-releases" />
+          ))}
+        </HomeSection>
+      )}
 
       {/* ── SITE NEWS ────────────────────────────────────────────── */}
 
@@ -505,14 +509,6 @@ export function HomePage() {
         >
           {editorPicksGrid.map((item) => (
             <HomepageEditorialCard key={item.id} item={item} sectionKey="editor-picks" />
-          ))}
-        </HomeSection>
-      )}
-
-      {newReleasesSection.length > 0 && (
-        <HomeSection title="New Releases" cols={HOME_SECTION_COLS.newReleases}>
-          {newReleasesSection.map((item) => (
-            <HomepageEditorialCard key={item.id} item={item} sectionKey="new-releases" />
           ))}
         </HomeSection>
       )}

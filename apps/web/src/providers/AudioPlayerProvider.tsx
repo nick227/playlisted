@@ -12,10 +12,18 @@ import {
 } from "react";
 
 import theatreController from "@/theatre/lazyController";
+import {
+  buildAutoplayAvoidance,
+  buildRelaxedAutoplayAvoidance,
+  recordAutoplayPlaylistCompleted,
+  recordAutoplayPlaylistRejected,
+  recordAutoplayPlaylistStarted,
+} from "@/lib/upNext/autoplayPointerStorage";
 import { hydrateUpNextSegment } from "@/lib/upNext/hydrateSegment";
 import type { PlaybackOriginScope } from "@/lib/playbackSurface";
 import { shiftPlaybackOriginForTrack } from "@/lib/playbackOrigin";
 import { prefetchAutoplayNext, type PrefetchedPlaylistNext } from "@/lib/upNext/prefetchAutoplayNext";
+import { resolveAutopilotSegment } from "@/lib/upNext/resolveAutopilot";
 import { readAutoplayEnabled, writeAutoplayEnabled } from "@/lib/upNext/storage";
 import type { BeginSegmentOptions, UpNextSegment } from "@/lib/upNext/types";
 import { isPlayerShortcutSuppressed } from "@/lib/playerKeyboard";
@@ -42,12 +50,18 @@ export type { UpNextSegment };
 type PlayerState = "idle" | "loading" | "playing" | "paused" | "error";
 
 const PLAYER_DISMISS_MS = 320;
+const AUTOPLAY_ADVANCE_ATTEMPTS = 8;
 
 type PlayerDismissSnapshot = {
   track: QueueTrack;
   playbackContext: PlaybackContext;
   currentTime: number;
   duration: number;
+};
+
+type CurrentSegmentSnapshot = {
+  playlistId?: string;
+  autoplay: boolean;
 };
 
 interface AudioPlayerContextValue {
@@ -145,6 +159,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   const dismissTimerRef = useRef<number | null>(null);
   const activeOriginScopeRef = useRef<PlaybackOriginScope | null>(null);
   const currentTimeRef = useRef(0);
+  const currentSegmentRef = useRef<CurrentSegmentSnapshot>({ autoplay: false });
 
   const [queue, setQueueState] = useState<QueueTrack[]>([]);
   const [queueIndex, setQueueIndex] = useState(-1);
@@ -176,8 +191,13 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     if (!currentTrack?.artworkUrl) return;
     theatreController.setArtwork(currentTrack.artworkUrl);
   }, [currentTrack?.artworkUrl]);
+
   const playerShellActive = playerBarVisible || playerDismissSnapshot !== null;
   const isPlaying = currentTrack !== null && (state === "playing" || state === "loading");
+
+  useEffect(() => {
+    theatreController.setCanEnter(isPlaying);
+  }, [isPlaying]);
 
   const queueRef = useRef(queue);
   const queueIndexRef = useRef(queueIndex);
@@ -253,6 +273,13 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     }).catch(() => setState("paused"));
   }, []);
 
+  const completeAutoplaySegmentIfNeeded = useCallback(() => {
+    const segment = currentSegmentRef.current;
+    if (!segment.autoplay || !segment.playlistId) return;
+    recordAutoplayPlaylistCompleted(segment.playlistId);
+    currentSegmentRef.current = { ...segment, autoplay: false };
+  }, []);
+
   const beginSegment = useCallback(
     (
       tracks: QueueTrack[],
@@ -271,6 +298,10 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
         }
       }
 
+      currentSegmentRef.current = {
+        playlistId: context?.playlistId,
+        autoplay: options?.seedAutoplay === true,
+      };
       segmentEndIndexRef.current = tracks.length - 1;
       setSegmentLabel(options?.segmentLabel ?? tracks[index]?.playlistTitle ?? null);
       const scope = options?.originScope ?? null;
@@ -291,8 +322,9 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     try {
       let pipeline = [...upNextPipelineRef.current];
 
-      for (let attempt = 0; attempt < 8; attempt += 1) {
+      for (let attempt = 0; attempt < AUTOPLAY_ADVANCE_ATTEMPTS; attempt += 1) {
         let segment = pipeline.shift();
+        let autoplaySeedPlaylistId: string | undefined;
         if (!segment) {
           if (!autoplayRef.current) break;
           segment = autopilotTail(playbackContextRef.current);
@@ -300,17 +332,39 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
 
         setUpNextPipeline(pipeline);
 
+        if (segment.kind === "autopilot") {
+          autoplaySeedPlaylistId = segment.seedPlaylistId;
+          const avoidance = buildAutoplayAvoidance(playedPlaylistIdsRef.current);
+          const resolved =
+            (await resolveAutopilotSegment(segment, avoidance.avoidedPlaylistIds)) ??
+            (await resolveAutopilotSegment(
+              segment,
+              buildRelaxedAutoplayAvoidance(playedPlaylistIdsRef.current),
+            ));
+          if (!resolved) break;
+          segment = resolved;
+        }
+
         const hydrated = await hydrateUpNextSegment(segment, playedPlaylistIdsRef.current);
-        if (!hydrated || hydrated.tracks.length === 0) continue;
+        if (!hydrated || hydrated.tracks.length === 0) {
+          if (segment.kind === "playlist" && segment.source === "autopilot") {
+            recordAutoplayPlaylistRejected(segment.playlistId);
+            playedPlaylistIdsRef.current.add(segment.playlistId);
+          }
+          continue;
+        }
 
         if (hydrated.playlistId) {
           playedPlaylistIdsRef.current.add(hydrated.playlistId);
+          if (segment.kind === "playlist" && segment.source === "autopilot") {
+            recordAutoplayPlaylistStarted(hydrated.playlistId, autoplaySeedPlaylistId);
+          }
         }
 
         beginSegment(hydrated.tracks, 0, hydrated.context, {
-          seedAutoplay: true,
+          seedAutoplay: segment.source === "autopilot",
           segmentLabel:
-            segment.kind === "autopilot"
+            segment.source === "autopilot"
               ? (hydrated.tracks[0]?.playlistTitle ?? segment.label)
               : segment.label,
         });
@@ -428,8 +482,9 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    completeAutoplaySegmentIfNeeded();
     void advanceProgram();
-  }, [loadTrack, advanceProgram, shiftOriginToTrack]);
+  }, [loadTrack, advanceProgram, shiftOriginToTrack, completeAutoplaySegmentIfNeeded]);
 
   const skipToUpNext = useCallback(() => {
     if (upNextPipelineRef.current.length === 0 && !autoplayRef.current) return;
@@ -597,6 +652,12 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       }
     };
     const onError = () => {
+      const segment = currentSegmentRef.current;
+      if (segment.autoplay && segment.playlistId) {
+        recordAutoplayPlaylistRejected(segment.playlistId);
+        playedPlaylistIdsRef.current.add(segment.playlistId);
+        currentSegmentRef.current = { ...segment, autoplay: false };
+      }
       setState("error");
       void advanceProgram();
     };
@@ -627,9 +688,19 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     }
 
     let cancelled = false;
-    void prefetchAutoplayNext(playbackContext.playlistId, playedPlaylistIdsRef.current).then((segment) => {
-      if (!cancelled) setAutoplayNextSegment(segment);
-    });
+    void (async () => {
+      const strict = await prefetchAutoplayNext(
+        playbackContext.playlistId,
+        buildAutoplayAvoidance(playedPlaylistIdsRef.current).avoidedPlaylistIds,
+      );
+      const relaxed =
+        strict ??
+        (await prefetchAutoplayNext(
+          playbackContext.playlistId,
+          buildRelaxedAutoplayAvoidance(playedPlaylistIdsRef.current),
+        ));
+      if (!cancelled) setAutoplayNextSegment(relaxed);
+    })();
 
     return () => {
       cancelled = true;

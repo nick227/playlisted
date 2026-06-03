@@ -4,15 +4,16 @@ import { Link } from "react-router-dom";
 
 import { Skeleton } from "@/components/feedback/Skeleton";
 import { EmptyState } from "@/components/feedback/EmptyState";
-import { useAnalyticsSummary, useAnalyticsRecordings } from "@/hooks/useAnalytics";
-import { coverFallback } from "@/lib/routes";
+import { useAnalyticsSummary, useAnalyticsRecordings, useAnalyticsPlaylists } from "@/hooks/useAnalytics";
+import { coverFallback, playlistIdPath } from "@/lib/routes";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import type { ChartRange } from "@playlisted/client-sdk";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
 function fmtSeconds(s: number) {
-  if (s < 60) return `${s}s`;
+  if (!Number.isFinite(s) || s <= 0) return "0s";
+  if (s < 60) return `${Math.floor(s)}s`;
   const m = Math.floor(s / 60);
   if (m < 60) return `${m}m`;
   const h = Math.floor(m / 60);
@@ -21,9 +22,20 @@ function fmtSeconds(s: number) {
 }
 
 function fmtNumber(n: number) {
+  if (!Number.isFinite(n) || n <= 0) return "0";
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return String(n);
+  return String(Math.floor(n));
+}
+
+function fmtPercent(n: number) {
+  if (!Number.isFinite(n)) return "0%";
+  return `${Math.round(Math.abs(n))}%`;
+}
+
+function clampPercent(n: number) {
+  if (!Number.isFinite(n)) return 0;
+  return Math.min(100, Math.max(0, Math.round(n)));
 }
 
 // ── KPI card ─────────────────────────────────────────────────────────────────
@@ -36,6 +48,7 @@ interface KpiCardProps {
   changePercent: number;
   accentColor: string;
   loading?: boolean;
+  showTrend?: boolean;
 }
 
 function TrendBadge({ changePercent, previous }: { changePercent: number; previous: number }) {
@@ -60,19 +73,19 @@ function TrendBadge({ changePercent, previous }: { changePercent: number; previo
       ) : (
         <ArrowDownRight size={11} />
       )}
-      {Math.abs(changePercent)}%
+      {fmtPercent(changePercent)}
     </span>
   );
 }
 
-function KpiCard({ label, value, current, previous, changePercent, accentColor, loading }: KpiCardProps) {
+function KpiCard({ label, value, current, previous, changePercent, accentColor, loading, showTrend = true }: KpiCardProps) {
   return (
     <div className="flex flex-col gap-3 rounded-2xl border border-white/[0.08] bg-[var(--color-surface)] p-5">
       <div className="flex items-start justify-between gap-2">
         <p className="text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
           {label}
         </p>
-        <TrendBadge changePercent={changePercent} previous={previous} />
+        {!loading && showTrend ? <TrendBadge changePercent={changePercent} previous={previous} /> : null}
       </div>
 
       {loading ? (
@@ -93,8 +106,11 @@ function KpiCard({ label, value, current, previous, changePercent, accentColor, 
 
 // ── track table ───────────────────────────────────────────────────────────────
 
-type SortKey = "plays" | "duration" | "completion";
+type TrackSortKey = "plays" | "duration" | "completion";
+type PlaylistSortKey = "plays" | "duration" | "completion" | "likes" | "follows";
+type SortKey = TrackSortKey | PlaylistSortKey;
 type SortDir = "asc" | "desc";
+type PerformanceTab = "tracks" | "playlists";
 
 interface SortButtonProps {
   label: string;
@@ -133,15 +149,19 @@ const RANGES: { value: ChartRange; label: string }[] = [
 
 export function StudioAnalyticsPage() {
   const [range, setRange] = useState<ChartRange>("30d");
-  const [sortBy, setSortBy] = useState<SortKey>("plays");
+  const [sortBy, setSortBy] = useState<TrackSortKey>("plays");
 
   usePageMeta({ title: "Analytics — Studio" });
   const [order, setOrder] = useState<SortDir>("desc");
+  const [playlistSortBy, setPlaylistSortBy] = useState<PlaylistSortKey>("plays");
+  const [playlistOrder, setPlaylistOrder] = useState<SortDir>("desc");
+  const [activeTab, setActiveTab] = useState<PerformanceTab>("tracks");
 
   const summary = useAnalyticsSummary(range);
   const recordings = useAnalyticsRecordings(range, sortBy, order);
+  const playlists = useAnalyticsPlaylists(range, playlistSortBy, playlistOrder);
 
-  function handleSort(key: SortKey) {
+  function handleSort(key: TrackSortKey) {
     if (key === sortBy) {
       setOrder((d) => (d === "desc" ? "asc" : "desc"));
     } else {
@@ -150,10 +170,23 @@ export function StudioAnalyticsPage() {
     }
   }
 
+  function handlePlaylistSort(key: PlaylistSortKey) {
+    if (key === playlistSortBy) {
+      setPlaylistOrder((d) => (d === "desc" ? "asc" : "desc"));
+    } else {
+      setPlaylistSortBy(key);
+      setPlaylistOrder("desc");
+    }
+  }
+
   const s = summary.data?.summary;
   const tracks = recordings.data?.data ?? [];
+  const playlistRows = playlists.data?.data ?? [];
   const hasAnyPlays = (s?.totalPlays.current ?? 0) > 0 || tracks.some((t) => t.totalPlays > 0);
-  const maxPlays = tracks[0]?.totalPlays ?? 1;
+  const hasAnyPlaylistPlays = (s?.playlistPlays.current ?? 0) > 0 || playlistRows.some((p) => p.totalPlays > 0);
+  const maxPlays = Math.max(1, ...tracks.map((t) => t.totalPlays));
+  const maxPlaylistPlays = Math.max(1, ...playlistRows.map((p) => p.totalPlays));
+  const showTrends = range !== "all";
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -200,6 +233,7 @@ export function StudioAnalyticsPage() {
           changePercent={s?.totalPageViews.changePercent ?? 0}
           accentColor="#06b6d4"
           loading={summary.isLoading}
+          showTrend={showTrends}
         />
         <KpiCard
           label="Total plays"
@@ -209,6 +243,7 @@ export function StudioAnalyticsPage() {
           changePercent={s?.totalPlays.changePercent ?? 0}
           accentColor="#10b981"
           loading={summary.isLoading}
+          showTrend={showTrends}
         />
         <KpiCard
           label="Time listened"
@@ -218,23 +253,92 @@ export function StudioAnalyticsPage() {
           changePercent={s?.totalPlaySeconds.changePercent ?? 0}
           accentColor="#8b5cf6"
           loading={summary.isLoading}
+          showTrend={showTrends}
         />
         <KpiCard
           label="Avg completion"
-          value={`${s?.avgCompletionRate.current ?? 0}%`}
+          value={`${clampPercent(s?.avgCompletionRate.current ?? 0)}%`}
           current={s?.avgCompletionRate.current ?? 0}
           previous={s?.avgCompletionRate.previous ?? 0}
           changePercent={s?.avgCompletionRate.changePercent ?? 0}
           accentColor="#f43f5e"
           loading={summary.isLoading}
+          showTrend={showTrends}
+        />
+        <KpiCard
+          label="Total likes"
+          value={fmtNumber(s?.totalLikes.current ?? 0)}
+          current={s?.totalLikes.current ?? 0}
+          previous={s?.totalLikes.previous ?? 0}
+          changePercent={s?.totalLikes.changePercent ?? 0}
+          accentColor="#fb7185"
+          loading={summary.isLoading}
+          showTrend={showTrends}
+        />
+        <KpiCard
+          label="Total follows"
+          value={fmtNumber(s?.totalFollows.current ?? 0)}
+          current={s?.totalFollows.current ?? 0}
+          previous={s?.totalFollows.previous ?? 0}
+          changePercent={s?.totalFollows.changePercent ?? 0}
+          accentColor="#f59e0b"
+          loading={summary.isLoading}
+          showTrend={showTrends}
+        />
+        <KpiCard
+          label="Playlist plays"
+          value={fmtNumber(s?.playlistPlays.current ?? 0)}
+          current={s?.playlistPlays.current ?? 0}
+          previous={s?.playlistPlays.previous ?? 0}
+          changePercent={s?.playlistPlays.changePercent ?? 0}
+          accentColor="#14b8a6"
+          loading={summary.isLoading}
+          showTrend={showTrends}
+        />
+        <KpiCard
+          label="Song adds"
+          value={fmtNumber(s?.songAdds.current ?? 0)}
+          current={s?.songAdds.current ?? 0}
+          previous={s?.songAdds.previous ?? 0}
+          changePercent={s?.songAdds.changePercent ?? 0}
+          accentColor="#a3e635"
+          loading={summary.isLoading}
+          showTrend={showTrends}
         />
       </div>
 
-      {/* Track table */}
-      <div className="mt-10">
-        <div className="mb-4 flex items-end justify-between gap-4">
+      <div className="mt-10 flex rounded-full border border-white/[0.12] bg-[var(--color-surface)] p-1 sm:w-fit">
+        <button
+          type="button"
+          onClick={() => setActiveTab("tracks")}
+          className={[
+            "flex-1 rounded-full px-4 py-1.5 text-sm font-medium transition sm:flex-none",
+            activeTab === "tracks"
+              ? "bg-white text-black"
+              : "text-[var(--color-text-muted)] hover:text-white",
+          ].join(" ")}
+        >
+          Songs
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("playlists")}
+          className={[
+            "flex-1 rounded-full px-4 py-1.5 text-sm font-medium transition sm:flex-none",
+            activeTab === "playlists"
+              ? "bg-white text-black"
+              : "text-[var(--color-text-muted)] hover:text-white",
+          ].join(" ")}
+        >
+          Playlists
+        </button>
+      </div>
+
+      {activeTab === "tracks" ? (
+        <div className="mt-6">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <h2 className="text-xl font-bold tracking-tight text-white">Track performance</h2>
-          <div className="flex items-center gap-5">
+          <div className="flex flex-wrap items-center gap-4 sm:gap-5">
             <SortButton label="Plays" sortKey="plays" active={sortBy} dir={order} onClick={() => handleSort("plays")} />
             <SortButton label="Time" sortKey="duration" active={sortBy} dir={order} onClick={() => handleSort("duration")} />
             <SortButton label="Completion" sortKey="completion" active={sortBy} dir={order} onClick={() => handleSort("completion")} />
@@ -256,6 +360,9 @@ export function StudioAnalyticsPage() {
           <div className="flex flex-col gap-1.5">
             {tracks.map((track, i) => {
               const barWidth = maxPlays > 0 ? Math.round((track.totalPlays / maxPlays) * 100) : 0;
+              const completion = clampPercent(track.completionRate);
+              const playlistHref = playlistIdPath(track.playlistId);
+              const trackHref = `${playlistHref}#track-${track.recordingId}`;
 
               return (
                 <div
@@ -284,12 +391,21 @@ export function StudioAnalyticsPage() {
 
                   {/* title */}
                   <div className="relative min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-white">{track.title}</p>
-                    {track.durationSeconds ? (
-                      <p className="text-xs text-[var(--color-text-muted)]">
-                        {fmtSeconds(track.durationSeconds)}
-                      </p>
-                    ) : null}
+                    <Link
+                      to={trackHref}
+                      className="relative block truncate text-sm font-semibold text-white transition hover:text-[var(--color-brand)] hover:underline"
+                    >
+                      {track.title}
+                    </Link>
+                    <p className="truncate text-xs text-[var(--color-text-muted)]">
+                      <Link
+                        to={playlistHref}
+                        className="transition hover:text-white hover:underline"
+                      >
+                        {track.playlistTitle}
+                      </Link>
+                      {track.durationSeconds ? ` · ${fmtSeconds(track.durationSeconds)}` : ""}
+                    </p>
                   </div>
 
                   {/* plays */}
@@ -299,29 +415,144 @@ export function StudioAnalyticsPage() {
                   </div>
 
                   {/* time listened */}
-                  <div className="relative w-20 shrink-0 text-right">
+                  <div className="relative hidden w-20 shrink-0 text-right sm:block">
                     <p className="text-sm font-bold text-white">{fmtSeconds(track.totalPlaySeconds)}</p>
                     <p className="text-xs text-[var(--color-text-muted)]">listened</p>
                   </div>
 
-                  {/* completion bar + % */}
-                  <div className="relative w-24 shrink-0">
-                    <div className="mb-1 flex justify-end">
-                      <span className="text-xs font-semibold text-white">{track.completionRate}%</span>
-                    </div>
-                    <div className="h-1 overflow-hidden rounded-full bg-white/10">
-                      <div
-                        className="h-full rounded-full bg-rose-500"
-                        style={{ width: `${track.completionRate}%` }}
-                      />
-                    </div>
+                  {/* likes */}
+                  <div className="relative hidden w-16 shrink-0 text-right md:block">
+                    <p className="text-sm font-bold text-white">{fmtNumber(track.likes)}</p>
+                    <p className="text-xs text-[var(--color-text-muted)]">likes</p>
+                  </div>
+
+                  {/* completion */}
+                  <div className="relative hidden w-20 shrink-0 text-right sm:block">
+                    <p className="text-sm font-bold text-white">{completion}%</p>
+                    <p className="text-xs text-[var(--color-text-muted)]">complete</p>
                   </div>
                 </div>
               );
             })}
           </div>
         )}
-      </div>
+        </div>
+      ) : (
+        <div className="mt-6">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <h2 className="text-xl font-bold tracking-tight text-white">Playlist performance</h2>
+          <div className="flex flex-wrap items-center gap-4 sm:gap-5">
+            <SortButton label="Plays" sortKey="plays" active={playlistSortBy} dir={playlistOrder} onClick={() => handlePlaylistSort("plays")} />
+            <SortButton label="Time" sortKey="duration" active={playlistSortBy} dir={playlistOrder} onClick={() => handlePlaylistSort("duration")} />
+            <SortButton label="Completion" sortKey="completion" active={playlistSortBy} dir={playlistOrder} onClick={() => handlePlaylistSort("completion")} />
+            <SortButton label="Likes" sortKey="likes" active={playlistSortBy} dir={playlistOrder} onClick={() => handlePlaylistSort("likes")} />
+            <SortButton label="Follows" sortKey="follows" active={playlistSortBy} dir={playlistOrder} onClick={() => handlePlaylistSort("follows")} />
+          </div>
+        </div>
+
+        {playlists.isLoading ? (
+          <div className="flex flex-col gap-2">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="h-16 w-full rounded-xl" />
+            ))}
+          </div>
+        ) : playlistRows.length === 0 ? (
+          <EmptyState
+            title="No playlists yet"
+            description="Create playlists to see how they move listeners through your catalog."
+          />
+        ) : !hasAnyPlaylistPlays ? (
+          <EmptyState
+            title="No playlist play data yet"
+            description="Once listeners play tracks from your playlists, playlist stats will appear here."
+          />
+        ) : (
+          <div className="flex flex-col gap-1.5">
+            {playlistRows.map((playlist, i) => {
+              const barWidth = Math.round((playlist.totalPlays / maxPlaylistPlays) * 100);
+              const completion = clampPercent(playlist.completionRate);
+              const playlistHref = playlistIdPath(playlist.playlistId);
+              const topTrackHref = playlist.topRecordingId
+                ? `${playlistHref}#track-${playlist.topRecordingId}`
+                : null;
+
+              return (
+                <div
+                  key={playlist.playlistId}
+                  className="group relative flex items-center gap-4 overflow-hidden rounded-xl border border-white/[0.06] bg-[var(--color-surface)] px-4 py-3 transition hover:border-white/[0.12]"
+                >
+                  <div
+                    className="pointer-events-none absolute inset-y-0 left-0 bg-white/[0.03] transition-all group-hover:bg-white/[0.05]"
+                    style={{ width: `${barWidth}%` }}
+                  />
+
+                  <span className="relative w-5 shrink-0 text-right text-xs font-bold text-[var(--color-text-subtle)]">
+                    {i + 1}
+                  </span>
+
+                  <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-md">
+                    {playlist.coverArtUrl ? (
+                      <img src={playlist.coverArtUrl} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="h-full w-full" style={{ background: coverFallback(playlist.title) }} aria-hidden />
+                    )}
+                  </div>
+
+                  <div className="relative min-w-0 flex-1">
+                    <Link
+                      to={playlistHref}
+                      className="relative block truncate text-sm font-semibold text-white transition hover:text-[var(--color-brand)] hover:underline"
+                    >
+                      {playlist.title}
+                    </Link>
+                    <p className="truncate text-xs text-[var(--color-text-muted)]">
+                      {fmtNumber(playlist.trackCount)} songs
+                      {playlist.topRecordingTitle && topTrackHref ? (
+                        <>
+                          {" · Top track: "}
+                          <Link
+                            to={topTrackHref}
+                            className="transition hover:text-white hover:underline"
+                          >
+                            {playlist.topRecordingTitle}
+                          </Link>
+                          {` · ${fmtNumber(playlist.topRecordingPlays)} plays`}
+                        </>
+                      ) : null}
+                    </p>
+                  </div>
+
+                  <div className="relative hidden w-16 shrink-0 text-right md:block">
+                    <p className="text-sm font-bold text-white">{fmtNumber(playlist.trackCount)}</p>
+                    <p className="text-xs text-[var(--color-text-muted)]">songs</p>
+                  </div>
+
+                  <div className="relative w-20 shrink-0 text-right">
+                    <p className="text-sm font-bold text-white">{fmtNumber(playlist.totalPlays)}</p>
+                    <p className="text-xs text-[var(--color-text-muted)]">plays</p>
+                  </div>
+
+                  <div className="relative hidden w-20 shrink-0 text-right sm:block">
+                    <p className="text-sm font-bold text-white">{fmtSeconds(playlist.totalPlaySeconds)}</p>
+                    <p className="text-xs text-[var(--color-text-muted)]">listened</p>
+                  </div>
+
+                  <div className="relative hidden w-20 shrink-0 text-right md:block">
+                    <p className="text-sm font-bold text-white">{fmtNumber(playlist.followers)}</p>
+                    <p className="text-xs text-[var(--color-text-muted)]">follows</p>
+                  </div>
+
+                  <div className="relative hidden w-20 shrink-0 text-right lg:block">
+                    <p className="text-sm font-bold text-white">{completion}%</p>
+                    <p className="text-xs text-[var(--color-text-muted)]">complete</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+        </div>
+      )}
     </div>
   );
 }

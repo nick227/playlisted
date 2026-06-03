@@ -1,5 +1,3 @@
-import { canEnterFromMediaElement } from './theatrePlayback'
-
 /**
  * Lazy façade for TheatreController.
  *
@@ -21,6 +19,7 @@ interface RealTheatreController extends EventTarget {
   }
   registerPlaybackSource(el: HTMLMediaElement | null, meta?: { artworkUrl?: string | null }): void
   setArtwork(url: string | null): void
+  setCanEnter(canEnter: boolean): void
   toggle(): Promise<void>
   enter(): Promise<void>
   exit(): Promise<void>
@@ -30,56 +29,21 @@ interface RealTheatreController extends EventTarget {
 class LazyTheatreController extends EventTarget {
   // Mirrors the real controller's state shape; safe defaults before load.
   public state = {
-    active:    false,
-    canEnter:  false,
-    presetId:  null as string | null,
-    mediaSrc:  null as string | null,
+    active:     false,
+    canEnter:   false,
+    presetId:   null as string | null,
+    mediaSrc:   null as string | null,
     artworkUrl: null as string | null,
   }
 
   private _real: RealTheatreController | null = null
   private _loadPromise: Promise<RealTheatreController> | null = null
 
-  // Last buffered calls — replayed when the real controller loads.
+  // Buffered calls replayed when the real controller loads.
   private _pendingSource: { el: HTMLMediaElement | null; meta?: { artworkUrl?: string | null } } | null = null
   private _pendingArtwork: { url: string | null } | null = null
 
-  // Lightweight audio-element tracking so canEnter works before load.
-  private _trackedEl: HTMLMediaElement | null = null
-  private _onAudioChange = () => {
-    const el = this._trackedEl
-    const canEnter = canEnterFromMediaElement(el)
-    const mediaSrc = el?.currentSrc || null
-    if (canEnter !== this.state.canEnter || mediaSrc !== this.state.mediaSrc) {
-      this.state.canEnter = canEnter
-      this.state.mediaSrc = mediaSrc
-      this.dispatchEvent(new Event('change'))
-    }
-  }
-
-  private _trackElement(el: HTMLMediaElement | null) {
-    if (el === this._trackedEl) return
-    if (this._trackedEl) {
-      this._trackedEl.removeEventListener('play',    this._onAudioChange)
-      this._trackedEl.removeEventListener('pause',   this._onAudioChange)
-      this._trackedEl.removeEventListener('emptied', this._onAudioChange)
-      this._trackedEl.removeEventListener('ended',   this._onAudioChange)
-    }
-    this._trackedEl = el
-    if (el) {
-      el.addEventListener('play',    this._onAudioChange)
-      el.addEventListener('pause',   this._onAudioChange)
-      el.addEventListener('emptied', this._onAudioChange)
-      el.addEventListener('ended',   this._onAudioChange)
-      this._onAudioChange()
-    } else {
-      this.state.canEnter = false
-      this.state.mediaSrc = null
-      this.dispatchEvent(new Event('change'))
-    }
-  }
-
-  // ── Private load ─────────────────────────────────────────────────────────────
+  // ── Private load ──────────────────────────────────────────────────────────
 
   private async _load(): Promise<RealTheatreController> {
     if (this._real) return this._real
@@ -95,14 +59,14 @@ class LazyTheatreController extends EventTarget {
         if (this._pendingArtwork !== null) {
           real.setArtwork(this._pendingArtwork.url)
         }
+        // Push current canEnter so the real controller starts in sync.
+        real.setCanEnter(this.state.canEnter)
 
         // Replace our stub state with the real state object so reads on
         // `theatreController.state.X` automatically reflect real state.
         this.state = real.state
 
         // Forward every event from the real controller through this façade.
-        // All handlers were registered on the façade via super.addEventListener
-        // so this.dispatchEvent reaches them without double-registration.
         real.addEventListener('change', () => {
           this.state = real.state
           this.dispatchEvent(new Event('change'))
@@ -134,11 +98,6 @@ class LazyTheatreController extends EventTarget {
       this.state.artworkUrl = meta.artworkUrl
     }
     this._pendingSource = { el, meta }
-    // When the override is cleared (null), fall back to the site player so
-    // canEnter stays reactive after leaving the radio page — mirrors the real
-    // controller's pickPlaybackElement() fallback.
-    const toTrack = el ?? (document.querySelector('audio[data-site-player]') as HTMLMediaElement | null)
-    this._trackElement(toTrack)
     this._real?.registerPlaybackSource(el, meta)
   }
 
@@ -150,6 +109,13 @@ class LazyTheatreController extends EventTarget {
     } else {
       this.dispatchEvent(new Event('change'))
     }
+  }
+
+  public setCanEnter(canEnter: boolean) {
+    if (this.state.canEnter === canEnter) return
+    this.state.canEnter = canEnter
+    this.dispatchEvent(new Event('change'))
+    this._real?.setCanEnter(canEnter)
   }
 
   public async exit() {
