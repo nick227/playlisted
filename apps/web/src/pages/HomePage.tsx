@@ -16,6 +16,7 @@ import {
   pickGreetingsFeaturedArtist,
 } from "@/components/discovery/GreetingsBanner";
 import { SpotlightBanner } from "@/components/discovery/SpotlightBanner";
+import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { useHomepage } from "@/hooks/useHomepage";
 import { useIsMdUp } from "@/hooks/useIsMdUp";
@@ -321,19 +322,21 @@ function NewReleaseSongCard({
   }
 
   return (
-    <Link
-      to={item.href}
-      className="group flex w-full flex-col gap-2 transition-opacity hover:opacity-90"
-    >
-      <MediaCover
-        title={item.title}
-        imageUrl={item.imageUrl}
-        onPlay={handlePlay}
-        isActive={isActive}
-        isPlaying={isPlaying}
-        showPlaybackBars
-      />
-      <div className="min-w-0">
+    <div className="group/card flex w-full flex-col gap-2">
+      <div className="relative">
+        <Link to={item.href} className="block transition-opacity hover:opacity-90">
+          <MediaCover
+            title={item.title}
+            imageUrl={item.imageUrl}
+            onPlay={handlePlay}
+            isActive={isActive}
+            isPlaying={isPlaying}
+            showPlaybackBars
+          />
+        </Link>
+        <FavoriteHeartButton target="recording" id={item.id} />
+      </div>
+      <Link to={item.href} className="min-w-0 transition-opacity hover:opacity-90">
         <p className={`truncate text-sm font-medium ${isActive ? "text-[var(--color-brand)]" : "text-white"}`}>
           {item.title}
         </p>
@@ -343,8 +346,8 @@ function NewReleaseSongCard({
         <p className="mt-0.5 text-xs text-[var(--color-text-subtle)]">
           {formatDuration(item.durationSeconds ?? null)}
         </p>
-      </div>
-    </Link>
+      </Link>
+    </div>
   );
 }
 

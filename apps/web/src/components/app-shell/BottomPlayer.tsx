@@ -15,7 +15,7 @@ import { Link } from "react-router-dom";
 
 import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
 import { formatDuration } from "@/lib/format";
-import { coverFallback, playlistPath } from "@/lib/routes";
+import { coverFallback, playlistIdPath, playlistPath, profilePath } from "@/lib/routes";
 import { usePlaybackTransport } from "@/hooks/usePlaybackTransport";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 
@@ -80,13 +80,29 @@ export function BottomPlayer() {
     ? undefined
     : { background: coverFallback(displayTrack.title) };
 
-  const playlistHref = shellPlaybackContext.playlistId
+  const ownerUsername =
+    displayTrack.ownerUsername ?? shellPlaybackContext.playlistOwnerUsername ?? null;
+  const playlistSlug =
+    displayTrack.playlistSlug ?? shellPlaybackContext.playlistSlug ?? null;
+  const playlistId =
+    shellPlaybackContext.playlistId ?? displayTrack.publishedPlaylistId ?? null;
+
+  const playlistHref = playlistId
     ? playlistPath({
-        id: shellPlaybackContext.playlistId,
-        username: shellPlaybackContext.playlistOwnerUsername,
-        slug: shellPlaybackContext.playlistSlug,
+        id: playlistId,
+        username: ownerUsername ?? undefined,
+        slug: playlistSlug ?? undefined,
       })
     : null;
+
+  const songHref =
+    ownerUsername && playlistSlug
+      ? `/@/${encodeURIComponent(ownerUsername)}/${encodeURIComponent(playlistSlug)}#track-${displayTrack.id}`
+      : playlistId
+        ? `${playlistIdPath(playlistId)}#track-${displayTrack.id}`
+        : null;
+
+  const artistHref = ownerUsername ? profilePath(ownerUsername) : null;
 
   const firstUpNext = upNextPipeline[0];
   const upNextName = firstUpNext?.label ?? autoplayNextSegment?.label;
@@ -128,9 +144,9 @@ export function BottomPlayer() {
             <div className="min-w-0 flex-1">
               <div className="flex w-full min-w-0 items-start justify-between gap-2 md:justify-start md:items-center">
                 <div className="contents md:flex md:min-w-0 md:max-w-full md:items-center md:gap-1.5">
-                  {shellPlaybackContext.playlistId ? (
+                  {songHref ? (
                     <Link
-                      to={`${playlistHref ?? ""}#track-${displayTrack.id}`}
+                      to={songHref}
                       className="block min-w-0 flex-1 cursor-pointer truncate pr-1 text-sm font-medium leading-5 text-white hover:underline md:pr-0"
                     >
                       {displayTrack.title}
@@ -149,18 +165,33 @@ export function BottomPlayer() {
                   />
                 </div>
               </div>
-              {playlistHref ? (
-                <Link
-                  to={playlistHref}
-                  className="block truncate text-xs text-[var(--color-text-muted)] hover:underline"
-                >
-                  {[displayTrack.ownerName, displayTrack.playlistTitle].filter(Boolean).join(" • ")}
-                </Link>
-              ) : (
+              {displayTrack.ownerName || displayTrack.playlistTitle ? (
                 <p className="truncate text-xs text-[var(--color-text-muted)]">
-                  {[displayTrack.ownerName, displayTrack.playlistTitle].filter(Boolean).join(" • ")}
+                  {displayTrack.ownerName ? (
+                    artistHref ? (
+                      <Link to={artistHref} className="hover:underline">
+                        {displayTrack.ownerName}
+                      </Link>
+                    ) : (
+                      displayTrack.ownerName
+                    )
+                  ) : null}
+                  {displayTrack.ownerName && displayTrack.playlistTitle ? (
+                    <span className="mx-1 text-white/20" aria-hidden>
+                      ·
+                    </span>
+                  ) : null}
+                  {displayTrack.playlistTitle ? (
+                    playlistHref ? (
+                      <Link to={playlistHref} className="hover:underline">
+                        {displayTrack.playlistTitle}
+                      </Link>
+                    ) : (
+                      displayTrack.playlistTitle
+                    )
+                  ) : null}
                 </p>
-              )}
+              ) : null}
               {canSkipToUpNext && upNextText && !playerBarExiting ? (
                 <button
                   type="button"
