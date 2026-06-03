@@ -84,11 +84,13 @@ export function SearchAutocomplete({
     (data?.playlists.length ?? 0) +
     (data?.genres.length ?? 0);
 
-  const showPanel = open;
+  const hasSuggestions = hasQuery || recentSearches.length > 0;
   const loading = hasQuery && (isLoading || isFetching) && !data;
   const status =
     loading ? "loading" : isError ? "error" : hasQuery && resultCount === 0 && !loading ? "empty" : "idle";
-  const showRecentHint = showPanel && !hasQuery && recentSearches.length > 0;
+  const showRecentHint = open && !hasQuery && recentSearches.length > 0;
+  /** Skip the dropdown when focused with nothing to show (avoids empty "no recent searches" panel). */
+  const showPanel = open && (hasSuggestions || loading || isError || status === "empty");
 
   const goToSearch = useCallback(
     (term: string) => {
@@ -264,7 +266,9 @@ export function SearchAutocomplete({
             setOpen(true);
             setActiveIndex(-1);
           }}
-          onFocus={() => setOpen(true)}
+          onFocus={() => {
+            if (recentSearches.length > 0 || query.trim()) setOpen(true);
+          }}
           onKeyDown={onKeyDown}
         />
         {showPanel && showMobileForm ? (
@@ -272,7 +276,6 @@ export function SearchAutocomplete({
             listboxId={listboxId}
             query={trimmedQuery || query}
             groups={groups}
-            flatOptions={flatOptions}
             activeIndex={activeIndex}
             status={status}
             showRecentHint={showRecentHint}

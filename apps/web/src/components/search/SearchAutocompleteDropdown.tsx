@@ -18,7 +18,6 @@ interface SearchAutocompleteDropdownProps {
   listboxId: string;
   query: string;
   groups: SearchSuggestionGroup[];
-  flatOptions: SearchSuggestionOption[];
   activeIndex: number;
   status: "idle" | "loading" | "empty" | "error";
   showRecentHint: boolean;
@@ -30,7 +29,6 @@ export function SearchAutocompleteDropdown({
   listboxId,
   query,
   groups,
-  flatOptions,
   activeIndex,
   status,
   showRecentHint,
@@ -128,9 +126,6 @@ export function SearchAutocompleteDropdown({
         );
       })}
 
-      {flatOptions.length === 0 && status === "idle" && !showRecentHint && !query.trim() ? (
-        <p className="px-4 py-3 text-sm text-[var(--color-text-muted)]">No recent searches yet</p>
-      ) : null}
     </div>
   );
 }

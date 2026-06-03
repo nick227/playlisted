@@ -16,7 +16,7 @@ interface TopBarProps {
  * Top bar layout uses Tailwind `sm` (640px) as the mobile/desktop split.
  *
  * MOBILE (< sm) — two masthead + search states:
- *   • Closed (default): hamburger · full "Playlisted" wordmark · search icon · actions
+ *   • Closed (default): hamburger · full "Playlisted" wordmark · [search icon + actions right-aligned]
  *   • Open:             hamburger · "PL" mini mark · expanded search field · actions
  *
  * DESKTOP (sm+):
@@ -95,7 +95,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
         className={
           mobileSearchOpen
             ? "min-w-0 flex-1 sm:mx-auto sm:max-w-xl"
-            : "shrink-0 sm:min-w-0 sm:flex-1 sm:mx-auto sm:max-w-xl"
+            : "ml-auto shrink-0 sm:ml-0 sm:min-w-0 sm:flex-1 sm:mx-auto sm:max-w-xl"
         }
         mobileExpanded={mobileSearchOpen}
         onMobileExpandedChange={setMobileSearchOpen}
