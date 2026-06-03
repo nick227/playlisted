@@ -1,6 +1,11 @@
-import type { LibraryArtist, LibrarySong, PlaylistSummary } from "@playlisted/client-sdk";
+import type { LibraryArtist, LibraryGenre, LibrarySong, PlaylistSummary } from "@playlisted/client-sdk";
 
 import { playlistGenreTags } from "@/components/studio/studioCollectionUtils";
+
+export const EMPTY_LIBRARY_GENRES: LibraryGenre[] = [];
+export const EMPTY_LIBRARY_ARTISTS: LibraryArtist[] = [];
+export const EMPTY_LIBRARY_SONGS: LibrarySong[] = [];
+export const EMPTY_PLAYLISTS: PlaylistSummary[] = [];
 
 export type SongSortKey = "title" | "plays" | "favorites";
 export type SortDirection = "asc" | "desc";

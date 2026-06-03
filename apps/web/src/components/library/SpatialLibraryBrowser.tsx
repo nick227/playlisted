@@ -10,6 +10,10 @@ import { Skeleton } from "@/components/feedback/Skeleton";
 import { LibraryArtistFilter } from "@/components/library/LibraryArtistFilter";
 import { LibraryGenreFilter } from "@/components/library/LibraryGenreFilter";
 import {
+  EMPTY_LIBRARY_ARTISTS,
+  EMPTY_LIBRARY_GENRES,
+  EMPTY_LIBRARY_SONGS,
+  EMPTY_PLAYLISTS,
   filterArtistsByGenre,
   filterPlaylistsByGenre,
   filterSongsByArtist,
@@ -436,7 +440,9 @@ function RootPanel({
 
 function GenresPanel({ push }: { push: (p: PanelDescriptor) => void }) {
   const { data, isLoading } = useLibraryGenres();
-  const genres = (data?.data ?? []).filter((g) => g.songCount > 0);
+  const genres = data?.data
+    ? data.data.filter((g) => g.songCount > 0)
+    : EMPTY_LIBRARY_GENRES;
 
   if (isLoading) return <PanelSkeleton />;
 
@@ -490,7 +496,7 @@ function GenresPanel({ push }: { push: (p: PanelDescriptor) => void }) {
 
 function GenreDetailPanel({ slug, name }: { slug: string; name: string }) {
   const { data, isLoading } = useLibrarySongs(slug);
-  const songs = data?.data ?? [];
+  const songs = data?.data ?? EMPTY_LIBRARY_SONGS;
 
   const curatorNote = useMemo(() => {
     if (!songs.length) return null;
@@ -526,9 +532,11 @@ function GenreDetailPanel({ slug, name }: { slug: string; name: string }) {
 function ArtistsPanel({ push }: { push: (p: PanelDescriptor) => void }) {
   const [genreSlug, setGenreSlug] = useState<string | null>(null);
   const { data: genresData } = useLibraryGenres();
-  const genres = (genresData?.data ?? []).filter((g) => g.songCount > 0);
+  const genres = genresData?.data
+    ? genresData.data.filter((g) => g.songCount > 0)
+    : EMPTY_LIBRARY_GENRES;
   const { data, isLoading } = useLibraryArtists();
-  const artists = filterArtistsByGenre(data?.data ?? [], genreSlug);
+  const artists = filterArtistsByGenre(data?.data ?? EMPTY_LIBRARY_ARTISTS, genreSlug);
 
   if (isLoading) return <PanelSkeleton />;
 
@@ -597,7 +605,7 @@ function ArtistDetailPanel({
   yearRange: { earliest: number | null; latest: number | null };
 }) {
   const { data, isLoading } = useLibrarySongs();
-  const songs = (data?.data ?? []).filter((s) => s.uploaderId === artistId);
+  const songs = (data?.data ?? EMPTY_LIBRARY_SONGS).filter((s) => s.uploaderId === artistId);
 
   const curatorNote = useMemo(() => {
     if (!songs.length && !artistGenres.length) return null;
@@ -640,9 +648,11 @@ function ArtistDetailPanel({
 function PlaylistsPanel() {
   const [genreSlug, setGenreSlug] = useState<string | null>(null);
   const { data: genresData } = useLibraryGenres();
-  const genres = (genresData?.data ?? []).filter((g) => g.songCount > 0);
+  const genres = genresData?.data
+    ? genresData.data.filter((g) => g.songCount > 0)
+    : EMPTY_LIBRARY_GENRES;
   const { data, isLoading } = useLibraryPlaylists();
-  const playlists = filterPlaylistsByGenre(data?.data ?? [], genreSlug);
+  const playlists = filterPlaylistsByGenre(data?.data ?? EMPTY_PLAYLISTS, genreSlug);
 
   if (isLoading) return <PanelSkeleton />;
 
@@ -696,14 +706,16 @@ function SongsPanel() {
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
   const { data: genresData } = useLibraryGenres();
-  const genres = (genresData?.data ?? []).filter((g) => g.songCount > 0);
+  const genres = genresData?.data
+    ? genresData.data.filter((g) => g.songCount > 0)
+    : EMPTY_LIBRARY_GENRES;
   const { data: artistsData } = useLibraryArtists();
-  const artists = artistsData?.data ?? [];
+  const artists = artistsData?.data ?? EMPTY_LIBRARY_ARTISTS;
   const suggestedArtists = useMemo(() => topArtistsBySongCount(artists, 4), [artists]);
   const { data, isLoading } = useLibrarySongs(genreSlug);
 
   const songs = useMemo(() => {
-    const filtered = filterSongsByArtist(data?.data ?? [], artistId);
+    const filtered = filterSongsByArtist(data?.data ?? EMPTY_LIBRARY_SONGS, artistId);
     return sortLibrarySongs(filtered, sortKey, sortDirection);
   }, [data?.data, artistId, sortKey, sortDirection]);
 
@@ -880,10 +892,12 @@ export function SpatialLibraryBrowser() {
     setStack((prev) => prev.slice(0, index + 1));
   }
 
-  const allGenres = (genresQuery.data?.data ?? []).filter((g) => g.songCount > 0);
-  const allArtists = artistsQuery.data?.data ?? [];
-  const allPlaylists = playlistsQuery.data?.data ?? [];
-  const allSongs = songsQuery.data?.data ?? [];
+  const allGenres = genresQuery.data?.data
+    ? genresQuery.data.data.filter((g) => g.songCount > 0)
+    : EMPTY_LIBRARY_GENRES;
+  const allArtists = artistsQuery.data?.data ?? EMPTY_LIBRARY_ARTISTS;
+  const allPlaylists = playlistsQuery.data?.data ?? EMPTY_PLAYLISTS;
+  const allSongs = songsQuery.data?.data ?? EMPTY_LIBRARY_SONGS;
 
   const counts = {
     genreCount: allGenres.length,
