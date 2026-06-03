@@ -22,7 +22,6 @@ export function SiteFooter() {
           <div>
             <div className="flex items-center mb-4">
               <Link
-                key={'home'}
                 to={"/"}
                 onClick={scrollToTop}
                 className="text-sm font-medium text-[var(--color-text-muted)] transition hover:text-white"
@@ -32,7 +31,6 @@ export function SiteFooter() {
               src="/src/images/favicon.png" alt="" />
               </Link>
               <Link
-                key={'home'}
                 to={"/"}
                 onClick={scrollToTop}
                 className="text-sm font-medium text-[var(--color-text-muted)] transition hover:text-white"

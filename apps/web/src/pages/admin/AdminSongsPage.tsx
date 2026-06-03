@@ -3,6 +3,7 @@ import type { AdminSong, AdminContentTagRef, AdminTag } from "@playlisted/client
 import { authedApi } from "@/lib/authedApi";
 import { useAuth } from "@/providers/AuthProvider";
 import { usePageMeta } from "@/hooks/usePageMeta";
+import { useAudioPlayer, type QueueTrack } from "@/providers/AudioPlayerProvider";
 
 type Visibility = "PUBLIC" | "UNLISTED" | "PRIVATE";
 
@@ -149,6 +150,78 @@ function DeleteButton({
   );
 }
 
+function adminSongToQueueTrack(song: AdminSong): QueueTrack {
+  return {
+    id: song.id,
+    title: song.title,
+    description: song.description ?? null,
+    audioUrl: song.audioUrl,
+    durationSeconds: song.durationSeconds ?? null,
+    artworkUrl: song.artworkUrl ?? null,
+    recordingType: song.recordingType,
+    visibility: song.visibility,
+    status: song.status,
+    explicit: song.explicit,
+    playCount: song.playCount,
+    publishedAt: song.publishedAt ?? null,
+    createdAt: song.createdAt,
+    updatedAt: song.updatedAt,
+    uploaderId: song.uploader.id,
+    publishedPlaylistId: song.playlist.id,
+    ownerName: song.uploader.displayName,
+    ownerUsername: song.uploader.username,
+    playlistTitle: song.playlist.title,
+    playlistSlug: song.playlist.slug,
+  };
+}
+
+function SongPlayButton({ song }: { song: AdminSong }) {
+  const { currentTrack, isPlaying, playTrack, togglePlay } = useAudioPlayer();
+  const isActive = currentTrack?.id === song.id;
+  const isCurrentlyPlaying = isActive && isPlaying;
+
+  function handleClick(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (isActive) {
+      togglePlay();
+    } else {
+      const track = adminSongToQueueTrack(song);
+      playTrack(track, [track], { sourceContext: "admin" });
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      className="group/play relative h-9 w-9 shrink-0 overflow-hidden rounded"
+      title={isCurrentlyPlaying ? "Pause" : "Play"}
+    >
+      {song.artworkUrl ? (
+        <img src={song.artworkUrl} alt="" className="h-full w-full object-cover" />
+      ) : (
+        <div className="h-full w-full rounded bg-zinc-800" />
+      )}
+      <div
+        className={`absolute inset-0 flex items-center justify-center rounded bg-black/60 transition-opacity ${
+          isActive ? "opacity-100" : "opacity-0 group-hover/play:opacity-100"
+        }`}
+      >
+        {isCurrentlyPlaying ? (
+          <svg className="h-4 w-4 text-white" viewBox="0 0 24 24" fill="currentColor">
+            <rect x="6" y="4" width="4" height="16" rx="1" />
+            <rect x="14" y="4" width="4" height="16" rx="1" />
+          </svg>
+        ) : (
+          <svg className="h-4 w-4 text-white" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M8 5v14l11-7z" />
+          </svg>
+        )}
+      </div>
+    </button>
+  );
+}
+
 function GenreEditor({
   song,
   allGenres,
@@ -164,12 +237,22 @@ function GenreEditor({
   const [selected, setSelected] = useState<Set<string>>(
     () => new Set(song.tags.filter((t) => t.kind === "GENRE").map((t) => t.id)),
   );
+  const [genreSearch, setGenreSearch] = useState("");
   const ref = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
 
   // Sync external changes (e.g., after save lands)
   useEffect(() => {
     setSelected(new Set(song.tags.filter((t) => t.kind === "GENRE").map((t) => t.id)));
   }, [song.tags]);
+
+  // Focus search input when dropdown opens; clear on close
+  useEffect(() => {
+    if (open) {
+      setGenreSearch("");
+      setTimeout(() => searchRef.current?.focus(), 0);
+    }
+  }, [open]);
 
   // Close on outside click
   useEffect(() => {
@@ -182,6 +265,9 @@ function GenreEditor({
   }, [open]);
 
   const currentGenres = song.tags.filter((t: AdminContentTagRef) => t.kind === "GENRE");
+  const filteredGenres = genreSearch
+    ? allGenres.filter((g) => g.name.toLowerCase().includes(genreSearch.toLowerCase()))
+    : allGenres;
 
   function toggle(id: string) {
     setSelected((prev) => {
@@ -222,11 +308,24 @@ function GenreEditor({
 
       {open && (
         <div className="absolute left-0 top-full z-50 mt-1 w-52 rounded-xl border border-[var(--color-border)] bg-[#1a1a2e] shadow-2xl">
-          <div className="max-h-52 overflow-y-auto p-1">
-            {allGenres.length === 0 ? (
-              <p className="px-3 py-2 text-xs text-zinc-500">No genre tags found.</p>
+          <div className="border-b border-[var(--color-border)] px-2 py-1.5">
+            <input
+              ref={searchRef}
+              value={genreSearch}
+              onChange={(e) => setGenreSearch(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") { e.stopPropagation(); setOpen(false); }
+                if (e.key === "Enter" && filteredGenres.length === 1) toggle(filteredGenres[0].id);
+              }}
+              placeholder="Find genre…"
+              className="w-full rounded border border-transparent bg-black/30 px-2 py-1 text-xs text-white placeholder-zinc-600 focus:border-purple-400/40 focus:outline-none"
+            />
+          </div>
+          <div className="max-h-44 overflow-y-auto p-1">
+            {filteredGenres.length === 0 ? (
+              <p className="px-3 py-2 text-xs text-zinc-500">No match.</p>
             ) : (
-              allGenres.map((g) => {
+              filteredGenres.map((g) => {
                 const checked = selected.has(g.id);
                 return (
                   <button
@@ -451,11 +550,7 @@ export function AdminSongsPage() {
                 <tr key={song.id} className={`transition ${saving === song.id ? "opacity-40" : ""}`}>
                   <td className="px-4 py-3 max-w-[240px]">
                     <div className="flex items-center gap-2">
-                      {song.artworkUrl ? (
-                        <img src={song.artworkUrl} alt="" className="h-9 w-9 rounded object-cover shrink-0" />
-                      ) : (
-                        <div className="h-9 w-9 rounded bg-zinc-800 shrink-0" />
-                      )}
+                      <SongPlayButton song={song} />
                       <div className="min-w-0 flex-1">
                         <TitleEditor
                           song={song}
