@@ -10,9 +10,17 @@ export const developerKeyLimiter = rateLimit({
   message: RATE_LIMIT_MESSAGE,
 });
 
-// Stricter limit for uploads — large file uploads are expensive per-request
+// Upload endpoints — large bodies are expensive per-request
+export const studioUploadLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: RATE_LIMIT_MESSAGE,
+});
+
 export const ingestUploadLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour window
+  windowMs: 60 * 60 * 1000,
   max: 200,
   standardHeaders: true,
   legacyHeaders: false,

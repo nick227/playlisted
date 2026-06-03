@@ -1,13 +1,18 @@
 import crypto from "node:crypto";
 import fs from "node:fs/promises";
-import path from "node:path";
 
 import { Router } from "express";
-import multer from "multer";
 
 import { requireApiKeyAuth } from "../../lib/apiKeyAuth.js";
 import { prisma } from "../../lib/prisma.js";
-import { slugify } from "../../utils/slug.js";
+import {
+  handleMulterSingleError,
+  ingestAudioUpload,
+  ingestImageUpload,
+  storedUploadUrl,
+} from "../../lib/uploadMulter.js";
+import type { UploadMediaKind } from "../../lib/uploadPolicy.js";
+import { rejectDisallowedUpload } from "../../lib/uploadValidate.js";
 
 const UPLOAD_SELECT = {
   id: true,
@@ -21,71 +26,9 @@ const UPLOAD_SELECT = {
   createdAt: true,
 } as const;
 
-// ── allowlists ────────────────────────────────────────────────────────────────
-
-const ALLOWED: Record<"audio" | "image", { mimes: Set<string>; exts: Set<string> }> = {
-  audio: {
-    mimes: new Set([
-      "audio/mpeg", "audio/mp3", "audio/wav", "audio/wave", "audio/x-wav",
-      "audio/mp4", "audio/m4a", "audio/x-m4a", "audio/flac", "audio/x-flac",
-      "audio/ogg", "audio/vorbis", "audio/aac", "audio/webm",
-    ]),
-    exts: new Set([".mp3", ".wav", ".m4a", ".flac", ".ogg", ".aac", ".webm"]),
-  },
-  image: {
-    mimes: new Set(["image/jpeg", "image/png", "image/webp"]),
-    exts: new Set([".jpg", ".jpeg", ".png", ".webp"]),
-  },
-};
-
-function isAllowed(kind: "audio" | "image", mimeType: string, ext: string): boolean {
-  const list = ALLOWED[kind];
-  return list.mimes.has(mimeType.toLowerCase()) && list.exts.has(ext.toLowerCase());
-}
-
-// ── storage ───────────────────────────────────────────────────────────────────
-
-const uploadsDir = path.resolve(process.cwd(), process.env.UPLOADS_DIR ?? "uploads");
-const mediaBaseUrl = process.env.MEDIA_BASE_URL?.replace(/\/$/, "") ?? null;
-
-function fileUrl(subdir: string, filename: string): string {
-  if (mediaBaseUrl) return `${mediaBaseUrl}/${subdir}/${filename}`;
-  return `/uploads/${subdir}/${filename}`;
-}
-
-function createUpload(subdir: "audio" | "images") {
-  const storage = multer.diskStorage({
-    destination: async (_req, _file, cb) => {
-      try {
-        const dest = path.join(uploadsDir, subdir);
-        await fs.mkdir(dest, { recursive: true });
-        cb(null, dest);
-      } catch (err) {
-        cb(err as Error, "");
-      }
-    },
-    filename: (_req, file, cb) => {
-      // Sanitize: slug the basename + 8 random hex chars — no user input reaches the path
-      const ext = path.extname(file.originalname).toLowerCase() || ".bin";
-      const base = slugify(path.basename(file.originalname, path.extname(file.originalname))) || "file";
-      const rand = crypto.randomBytes(8).toString("hex");
-      cb(null, `${base}-${rand}${ext}`);
-    },
-  });
-  // 100 MB hard cap — documented in OpenAPI
-  return multer({ storage, limits: { fileSize: 100 * 1024 * 1024 } });
-}
-
-const audioUpload = createUpload("audio");
-const imageUpload = createUpload("images");
-
-// ── helpers ───────────────────────────────────────────────────────────────────
-
 function generateUploadId(): string {
   return "upl_" + crypto.randomBytes(16).toString("hex");
 }
-
-// ── router ────────────────────────────────────────────────────────────────────
 
 export const ingestUploadsRouter = Router();
 
@@ -134,7 +77,6 @@ ingestUploadsRouter.get("/", async (req, res, next) => {
 
 ingestUploadsRouter.post("/", async (req, res, next) => {
   try {
-    // API key auth — session tokens are rejected by requireApiKeyAuth
     const auth = await requireApiKeyAuth(req, res);
     if (!auth) return;
 
@@ -146,20 +88,12 @@ ingestUploadsRouter.post("/", async (req, res, next) => {
       });
     }
 
-    const upload = kind === "audio" ? audioUpload : imageUpload;
+    const mediaKind = kind as UploadMediaKind;
+    const upload = kind === "audio" ? ingestAudioUpload : ingestImageUpload;
     const subdir = kind === "audio" ? "audio" : "images";
 
     upload.single("file")(req, res, async (multerErr) => {
-      if (multerErr instanceof multer.MulterError) {
-        if (multerErr.code === "LIMIT_FILE_SIZE") {
-          return res.status(413).json({
-            error: "file_too_large",
-            message: "File exceeds the 100 MB limit.",
-          });
-        }
-        return res.status(400).json({ error: "upload_error", message: multerErr.message });
-      }
-      if (multerErr) return next(multerErr);
+      if (handleMulterSingleError(multerErr, mediaKind, res, next)) return;
 
       const file = req.file;
       if (!file) {
@@ -169,21 +103,11 @@ ingestUploadsRouter.post("/", async (req, res, next) => {
         });
       }
 
-      const ext = path.extname(file.originalname).toLowerCase();
+      if (await rejectDisallowedUpload(mediaKind, file, res)) return;
 
-      // Validate MIME type + extension together
-      if (!isAllowed(kind, file.mimetype, ext)) {
-        await fs.unlink(file.path).catch(() => undefined);
-        const allowed = ALLOWED[kind];
-        return res.status(415).json({
-          error: "unsupported_media_type",
-          message: `Unsupported file type. Allowed extensions: ${[...allowed.exts].join(", ")}.`,
-        });
-      }
-
-      const url = fileUrl(subdir, file.filename);
+      const url = storedUploadUrl(subdir, file.filename);
       const storageKey = `${subdir}/${file.filename}`;
-      const originalName = path.basename(file.originalname);
+      const originalName = file.originalname;
       const uploadId = generateUploadId();
 
       try {
@@ -201,7 +125,6 @@ ingestUploadsRouter.post("/", async (req, res, next) => {
           },
         });
       } catch (dbErr) {
-        // Clean up the file if we can't record it
         await fs.unlink(file.path).catch(() => undefined);
         return next(dbErr);
       }

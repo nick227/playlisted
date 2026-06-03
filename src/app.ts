@@ -13,7 +13,7 @@ import YAML from "yaml";
 
 import { authRouter } from "./routes/auth.js";
 import { developerKeysRouter } from "./routes/developer/keys.js";
-import { developerKeyLimiter, ingestUploadLimiter } from "./lib/rateLimiter.js";
+import { developerKeyLimiter, ingestUploadLimiter, studioUploadLimiter } from "./lib/rateLimiter.js";
 import { analyticsRouter } from "./routes/analytics.js";
 import { adminDashboardRouter } from "./routes/admin/dashboard.js";
 import { adminHomepageRouter } from "./routes/admin/homepage.js";
@@ -52,7 +52,7 @@ export function createApp() {
   app.use(cors(getCorsOptions()));
   app.use(express.json());
   app.use("/uploads", express.static(uploadsDir));
-  app.use("/api/v1/uploads", uploadsRouter);
+  app.use("/api/v1/uploads", studioUploadLimiter, uploadsRouter);
   // Ingest upload: multipart — mounted before OpenAPI validator
   app.use("/api/v1/ingest/uploads", ingestUploadLimiter, ingestUploadsRouter);
 

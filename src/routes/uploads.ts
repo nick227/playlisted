@@ -1,103 +1,80 @@
-import crypto from "node:crypto";
-import fs from "node:fs/promises";
 import path from "node:path";
 
 import { Router } from "express";
-import multer from "multer";
 
 import { prisma } from "../lib/prisma.js";
 import { requireAuth } from "../lib/requireAuth.js";
-import { slugify } from "../utils/slug.js";
-
-const uploadsDir = path.resolve(process.cwd(), process.env.UPLOADS_DIR ?? "uploads");
-const mediaBaseUrl = process.env.MEDIA_BASE_URL?.replace(/\/$/, "") ?? null;
-
-function createUpload(subdir: "audio" | "images") {
-  const storage = multer.diskStorage({
-    destination: async (_req, _file, cb) => {
-      try {
-        const dest = path.join(uploadsDir, subdir);
-        await fs.mkdir(dest, { recursive: true });
-        cb(null, dest);
-      } catch (error) {
-        cb(error as Error, "");
-      }
-    },
-    filename: (_req, file, cb) => {
-      const ext = path.extname(file.originalname) || ".bin";
-      const key = slugify(path.basename(file.originalname, ext)) || "file";
-      const hash = crypto.randomBytes(4).toString("hex");
-      cb(null, `${key}-${hash}${ext}`);
-    },
-  });
-
-  return multer({ storage, limits: { fileSize: 50 * 1024 * 1024 } });
-}
-
-const audioUpload = createUpload("audio");
-const imageUpload = createUpload("images");
+import { BULK_REGISTER_MAX_FILES } from "../lib/uploadPolicy.js";
+import {
+  handleMulterSingleError,
+  storedUploadUrlFromRequest,
+  studioAudioUpload,
+  studioImageUpload,
+} from "../lib/uploadMulter.js";
+import { rejectDisallowedUpload } from "../lib/uploadValidate.js";
 
 export const uploadsRouter = Router();
 
-function fileUrl(req: { protocol: string; get: (header: string) => string | undefined }, subdir: string, filename: string) {
-  if (mediaBaseUrl) {
-    return `${mediaBaseUrl}/${subdir}/${filename}`;
-  }
+uploadsRouter.post("/audio", (req, res, next) => {
+  studioAudioUpload.single("file")(req, res, async (multerErr) => {
+    if (handleMulterSingleError(multerErr, "audio", res, next)) return;
 
-  // Prefer relative URLs so the web app can proxy /uploads in dev.
-  // This also avoids cross-origin media playback quirks (range/CORS).
-  void req;
-  return `/uploads/${subdir}/${filename}`;
-}
+    try {
+      const auth = await requireAuth(req, res);
+      if (!auth) return;
 
-uploadsRouter.post("/audio", audioUpload.single("file"), async (req, res, next) => {
-  try {
-    const auth = await requireAuth(req, res);
-    if (!auth) return;
+      const file = req.file;
+      if (!file) {
+        return res.status(400).json({
+          error: "file_required",
+          message: "Multipart field 'file' is required.",
+        });
+      }
 
-    const file = req.file;
-    if (!file) {
-      return res.status(400).json({
-        error: "file_required",
-        message: "Multipart field 'file' is required.",
+      if (await rejectDisallowedUpload("audio", file, res)) return;
+
+      const url = storedUploadUrlFromRequest(req, "audio", file.filename);
+      const title = path.basename(file.originalname, path.extname(file.originalname));
+
+      res.status(201).json({
+        url,
+        mimeType: file.mimetype,
+        bytes: file.size,
+        title,
       });
+    } catch (error) {
+      next(error);
     }
-
-    const url = fileUrl(req, "audio", file.filename);
-    const title = path.basename(file.originalname, path.extname(file.originalname));
-
-    res.status(201).json({
-      url,
-      mimeType: file.mimetype,
-      bytes: file.size,
-      title,
-    });
-  } catch (error) {
-    next(error);
-  }
+  });
 });
 
-uploadsRouter.post("/images", imageUpload.single("file"), async (req, res, next) => {
-  try {
-    const auth = await requireAuth(req, res);
-    if (!auth) return;
+uploadsRouter.post("/images", (req, res, next) => {
+  studioImageUpload.single("file")(req, res, async (multerErr) => {
+    if (handleMulterSingleError(multerErr, "image", res, next)) return;
 
-    const file = req.file;
-    if (!file) {
-      return res.status(400).json({
-        error: "file_required",
-        message: "Multipart field 'file' is required.",
+    try {
+      const auth = await requireAuth(req, res);
+      if (!auth) return;
+
+      const file = req.file;
+      if (!file) {
+        return res.status(400).json({
+          error: "file_required",
+          message: "Multipart field 'file' is required.",
+        });
+      }
+
+      if (await rejectDisallowedUpload("image", file, res)) return;
+
+      res.status(201).json({
+        url: storedUploadUrlFromRequest(req, "images", file.filename),
+        mimeType: file.mimetype,
+        bytes: file.size,
       });
+    } catch (error) {
+      next(error);
     }
-
-    res.status(201).json({
-      url: fileUrl(req, "images", file.filename),
-      mimeType: file.mimetype,
-      bytes: file.size,
-    });
-  } catch (error) {
-    next(error);
-  }
+  });
 });
 
 uploadsRouter.post("/audio/bulk-register", async (req, res, next) => {
@@ -127,6 +104,13 @@ uploadsRouter.post("/audio/bulk-register", async (req, res, next) => {
       return res.status(400).json({
         error: "files_required",
         message: "Provide a non-empty files array.",
+      });
+    }
+
+    if (body.files.length > BULK_REGISTER_MAX_FILES) {
+      return res.status(400).json({
+        error: "too_many_files",
+        message: `At most ${BULK_REGISTER_MAX_FILES} files per request.`,
       });
     }
 

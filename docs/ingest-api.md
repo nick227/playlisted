@@ -86,7 +86,7 @@ file=<binary>
 | `audio` | `.mp3`, `.wav`, `.m4a`, `.flac`, `.ogg`, `.aac`, `.webm` | `audio/mpeg`, `audio/wav`, `audio/mp4`, `audio/flac`, `audio/ogg`, `audio/aac`, `audio/webm` |
 | `image` | `.jpg`, `.jpeg`, `.png`, `.webp` | `image/jpeg`, `image/png`, `image/webp` |
 
-**Size limit:** 100 MB per file.
+**Size limits:** 100 MB audio, 15 MB image.
 
 **Response 201:**
 ```json
