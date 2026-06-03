@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import faviconUrl from "@/images/favicon.png";
 
 const footerLinks = [
   { label: "Musicians", href: "/musicians" },
@@ -28,7 +29,7 @@ export function SiteFooter() {
               >
             <img
               className="pointer-events-none-translate-x-1/2 w-8 h-8 mr-2"
-              src="/src/images/favicon.png" alt="" />
+              src={faviconUrl} alt="" />
               </Link>
               <Link
                 to={"/"}
