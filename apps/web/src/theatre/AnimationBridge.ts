@@ -44,7 +44,9 @@ export class AnimationBridge {
     }
   }
 
+  /** Safe to call repeatedly — no-op when {@link instances} is already empty. */
   async exit() {
+    if (this.instances.length === 0) return
     await Promise.all(this.instances.map(i => i.stop().catch(() => {})))
     this.instances.forEach(i => { try { i.destroy() } catch { /* ignore */ } })
     this.instances = []

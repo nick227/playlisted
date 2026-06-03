@@ -127,7 +127,7 @@ class TheatreController extends EventTarget {
     this.stopFeatureLoop()
     this.extractor = null
     this.frameContext = null
-    await this.bridge.exit()
+    if (this.bridge.getInstances().length > 0) await this.bridge.exit()
     if (overlay) this.discardOverlay(overlay)
   }
 
@@ -186,7 +186,7 @@ class TheatreController extends EventTarget {
   }
 
   public async changePreset(presetId: string) {
-    if (!this.overlay || !this.state.active) return
+    if (this.transitioning || !this.overlay || !this.state.active) return
 
     const token = this.bumpTransitionToken()
     this.transitioning = true
@@ -251,7 +251,7 @@ class TheatreController extends EventTarget {
   }
 
   public async enter() {
-    if (this.state.active) return
+    if (this.state.active || this.transitioning) return
 
     const token = this.bumpTransitionToken()
     this.transitioning = true
