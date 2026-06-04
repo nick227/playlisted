@@ -15,6 +15,7 @@ import {
   GreetingsBanner,
   pickGreetingsFeaturedArtist,
 } from "@/components/discovery/GreetingsBanner";
+import { HomeExploreBento } from "@/components/discovery/HomeExploreBento";
 import { SpotlightBanner } from "@/components/discovery/SpotlightBanner";
 import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
 import { SiteFooter } from "@/components/site/SiteFooter";
@@ -22,7 +23,7 @@ import { useHomepage } from "@/hooks/useHomepage";
 import { useIsMdUp } from "@/hooks/useIsMdUp";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { useTrackPlayback } from "@/hooks/useTrackPlayback";
-import { useTopArtists, useTopPlaylists } from "@/hooks/useCharts";
+import { useTopArtists, useTopPlaylists, useUserRandomPlaylists } from "@/hooks/useCharts";
 import { formatDuration } from "@/lib/format";
 import { useAuth } from "@/providers/AuthProvider";
 import { useAudioPlayer, type QueueTrack } from "@/providers/AudioPlayerProvider";
@@ -139,16 +140,6 @@ function HomeSection({
 
 function stableShuffleByDay<T>(arr: T[]): T[] {
   const seed = Math.floor(Date.now() / 86_400_000);
-  return [...arr]
-    .map((item, i) => ({ item, sort: Math.sin(seed + i * 127) }))
-    .sort((a, b) => a.sort - b.sort)
-    .map(({ item }) => item);
-}
-
-function stableShuffleForUser<T>(arr: T[], userId: string): T[] {
-  const day = Math.floor(Date.now() / 86_400_000);
-  let seed = day;
-  for (const ch of userId) seed = ((seed * 31) + ch.charCodeAt(0)) & 0xffffffff;
   return [...arr]
     .map((item, i) => ({ item, sort: Math.sin(seed + i * 127) }))
     .sort((a, b) => a.sort - b.sort)
@@ -371,7 +362,7 @@ export function HomePage() {
 
   const editorial = useHomepage();
   const topArtists = useTopArtists("7d", 6);
-  const discoverPool = useTopPlaylists("30d", HOME_LIMITS.discoverPoolFetch);
+  const userRandom = useUserRandomPlaylists(HOME_LIMITS.discoverPoolFetch);
   const allTimeFeatured = useTopPlaylists("all", HOME_LIMITS.featuredPlaylistsFetch);
   const pinnedArtists = useTopArtists("30d", HOME_LIMITS.pinnedArtistsFetch);
 
@@ -470,10 +461,9 @@ export function HomePage() {
 
   // For You / Discover
   const discovered = useMemo((): TopPlaylistItem[] => {
-    const pool: TopPlaylistItem[] = discoverPool.data?.data ?? [];
-    if (!isGuest && user) return stableShuffleForUser(pool, user.id).slice(0, discoverLimit);
-    return stableShuffleByDay(pool).slice(0, discoverLimit);
-  }, [discoverPool.data, isGuest, user, discoverLimit]);
+    const pool: TopPlaylistItem[] = userRandom.data?.data ?? [];
+    return pool.slice(0, discoverLimit);
+  }, [userRandom.data, discoverLimit]);
 
   const firstName = user?.displayName?.split(" ")[0];
 
@@ -487,7 +477,8 @@ export function HomePage() {
         featuredArtist={greetingsFeaturedArtist}
         artistLoading={greetingsArtistLoading}
       />
-      
+
+      <HomeExploreBento username={user?.username} />
 
       {/* ── CHARTS ────────────────────────────────────────────── */}
 
@@ -496,6 +487,31 @@ export function HomePage() {
       {/* ── GENRE SONGS ────────────────────────────────────────────── */}
 
       <HomeGenreSongsSection />
+
+{/* ── FOR YOU / DISCOVER ───────────────────────────────── */}
+
+{discovered.length > 0 && (
+  <HomeSection
+    title={!isGuest ? "Picked for you" : "Discover Something New"}
+    subtitle={!isGuest ? "Updated daily based on your taste" : "Fresh picks — updated daily"}
+    cols={HOME_SECTION_COLS.discover}
+  >
+    {discovered.map((item) => (
+      <SmartPlaylistCard
+        key={item.playlistId}
+        id={item.playlistId}
+        title={item.title}
+        creatorName={item.owner.displayName}
+        coverArtUrl={item.coverArtUrl}
+        ownerUsername={item.owner.username}
+        slug={item.slug}
+        genre={item.genre}
+        className="w-full"
+        playbackOrigin={homeGridPlaylistOrigin("discover", item.playlistId)}
+      />
+    ))}
+  </HomeSection>
+)}
 
       {/* ── NEW RELEASES ────────────────────────────────────────────── */}
 
@@ -527,31 +543,6 @@ export function HomePage() {
 
       {/* Spotlight — admin-curated full-width hero, shown before everything */}
       {spotlightItem && <SpotlightBanner item={spotlightItem} />}
-
-{/* ── FOR YOU / DISCOVER ───────────────────────────────── */}
-
-{discovered.length > 0 && (
-  <HomeSection
-    title={!isGuest ? "Picked for you" : "Discover Something New"}
-    subtitle={!isGuest ? "Updated daily based on your taste" : "Fresh picks — updated daily"}
-    cols={HOME_SECTION_COLS.discover}
-  >
-    {discovered.map((item) => (
-      <SmartPlaylistCard
-        key={item.playlistId}
-        id={item.playlistId}
-        title={item.title}
-        creatorName={item.owner.displayName}
-        coverArtUrl={item.coverArtUrl}
-        ownerUsername={item.owner.username}
-        slug={item.slug}
-        genre={item.genre}
-        className="w-full"
-        playbackOrigin={homeGridPlaylistOrigin("discover", item.playlistId)}
-      />
-    ))}
-  </HomeSection>
-)}
 
       {/* ── FEATURED PLAYLISTS ───────────────────────────────── */}
 
