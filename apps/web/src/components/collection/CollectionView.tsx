@@ -17,8 +17,9 @@ import type { CollectionRecording } from "./collectionTypes";
 
 export type CollectionViewMode = "view" | "edit";
 
-interface CollectionViewBaseProps {
+export interface CollectionViewProps {
   playlist: PlaylistDetail;
+  mode?: CollectionViewMode;
   onPlayAll?: (shuffle: boolean) => void;
   onPlayTrack?: (recording: CollectionRecording, index: number) => void;
   playlistIsPlaying?: boolean;
@@ -50,9 +51,6 @@ interface CollectionViewBaseProps {
   uploadProgress?: React.ReactNode;
 }
 
-export type CollectionViewProps = CollectionViewBaseProps &
-  ({ mode?: "view" } | ({ mode: "edit" } & { onGenreChange: (genreId: string | null) => void }));
-
 const typeLabels: Record<string, string> = {
   PLAYLIST: "Playlist",
   ALBUM: "Album",
@@ -70,7 +68,6 @@ interface GenreSmartInputProps {
   genreOptions?: GenreOption[];
   genreLoading?: boolean;
   genreSaving?: boolean;
-  required?: boolean;
   onGenreChange: (genreId: string | null) => void;
   onGenreCreate?: (name: string) => void;
 }
@@ -80,7 +77,6 @@ function GenreSmartInput({
   genreOptions = [],
   genreLoading,
   genreSaving,
-  required = true,
   onGenreChange,
   onGenreCreate,
 }: GenreSmartInputProps) {
@@ -232,7 +228,6 @@ function GenreSmartInput({
         aria-controls={listboxId}
         aria-activedescendant={activeDescendant}
         aria-haspopup="listbox"
-        aria-required={required}
         autoComplete="off"
         placeholder={genreLoading ? "Loading genres..." : "Search or create a genre..."}
         disabled={disabled}
@@ -246,7 +241,7 @@ function GenreSmartInput({
         onKeyDown={handleKeyDown}
         className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] py-3 pl-11 pr-20 text-sm text-white placeholder:text-[var(--color-text-subtle)] outline-none focus:border-[var(--color-brand)] disabled:cursor-not-allowed disabled:opacity-60"
       />
-      {!required && (selectedGenreId || query) && !disabled ? (
+      {(selectedGenreId || query) && !disabled ? (
         <button
           type="button"
           onClick={clearGenre}
@@ -460,43 +455,32 @@ export function CollectionView({
                 placeholder="Describe this collection…"
                 className="mt-4 w-full max-w-2xl resize-none rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-sm text-white placeholder:text-[var(--color-text-subtle)] outline-none focus:border-[var(--color-brand)]"
               />
-              <div className="mt-4 max-w-2xl">
-                <label className="mb-2 block text-xs font-semibold uppercase tracking-widest text-[var(--color-text-muted)]">
-                  Primary playlist genre
-                  <span className="ml-1 text-[var(--color-brand)]" aria-hidden="true">
-                    *
-                  </span>
-                </label>
-                <GenreSmartInput
-                  selectedGenreId={selectedGenreId}
-                  onGenreChange={onGenreChange!}
-                  onGenreCreate={onGenreCreate}
-                  genreOptions={genreOptions}
-                  genreLoading={genreLoading}
-                  genreSaving={genreSaving}
-                  required
-                />
-                <p
-                  className={[
-                    "mt-2 min-h-5 text-sm",
-                    !selectedGenreId && !genreLoading && !genreSaving && !genreError
-                      ? "text-amber-200/90"
-                      : "text-[var(--color-text-muted)]",
-                  ].join(" ")}
-                >
-                  {genreError
-                    ? genreError
-                    : genreSaving
-                      ? "Saving genre…"
-                      : genreLoading
-                        ? "Loading genres…"
-                        : genreOptions?.length === 0
-                          ? "No genres available."
-                          : !selectedGenreId
-                            ? "Select or create a primary genre for this playlist."
-                            : "Primary genre for this playlist."}
-                </p>
-              </div>
+              {onGenreChange ? (
+                <div className="mt-4 max-w-2xl">
+                  <label className="mb-2 block text-xs font-semibold uppercase tracking-widest text-[var(--color-text-muted)]">
+                    Primary playlist genre
+                  </label>
+                  <GenreSmartInput
+                    selectedGenreId={selectedGenreId}
+                    onGenreChange={onGenreChange}
+                    onGenreCreate={onGenreCreate}
+                    genreOptions={genreOptions}
+                    genreLoading={genreLoading}
+                    genreSaving={genreSaving}
+                  />
+                  <p className="mt-2 min-h-5 text-sm text-[var(--color-text-muted)]">
+                    {genreError
+                      ? genreError
+                      : genreSaving
+                        ? "Saving genre…"
+                        : genreLoading
+                          ? "Loading genres…"
+                          : genreOptions?.length === 0
+                            ? "No genres available."
+                            : "Optional primary genre for this playlist."}
+                  </p>
+                </div>
+              ) : null}
             </>
           ) : playlist.description ? (
             <p className="mt-4 max-w-2xl text-sm leading-relaxed text-[var(--color-text-muted)]">
