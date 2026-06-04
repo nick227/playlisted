@@ -9,7 +9,7 @@ import {
   SONGS_PATH,
   ARTISTS_PATH,
 } from "@/lib/browsePaths";
-import { playlistPath, profilePath } from "@/lib/routes";
+import { playlistPath } from "@/lib/routes";
 
 export { artistPath, genrePath, ARTISTS_PATH, FAVORITES_PATH, GENRES_PATH, PLAYLISTS_PATH, SONGS_PATH };
 
@@ -28,9 +28,4 @@ export function libraryRecordingPath(song: LibrarySong): string {
 
 export function libraryArtistPath(song: LibrarySong): string {
   return artistPath(song.uploader.username);
-}
-
-/** @deprecated Use artistPath for library browse; profilePath for public profile links. */
-export function libraryArtistProfilePath(song: LibrarySong): string {
-  return profilePath(song.uploader.username);
 }

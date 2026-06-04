@@ -16,7 +16,7 @@ import { HomePage } from "@/pages/HomePage";
 import { FavoritesPage } from "@/pages/FavoritesPage";
 import { LibraryPage } from "@/pages/LibraryPage";
 import {
-  LibraryArtistPage,
+  LibraryArtistRedirect,
   LibraryArtistsPage,
   LibraryGenrePage,
   LibraryGenresPage,
@@ -82,7 +82,7 @@ function MainRoutes() {
         <Route path="/genres" element={<LibraryGenresPage />} />
         <Route path="/genres/:slug" element={<LibraryGenrePage />} />
         <Route path="/artists" element={<LibraryArtistsPage />} />
-        <Route path="/artists/:username" element={<LibraryArtistPage />} />
+        <Route path="/artists/:username" element={<LibraryArtistRedirect />} />
         <Route
           path="/studio"
           element={

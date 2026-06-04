@@ -1,3 +1,5 @@
+import { profilePath } from "@/lib/routes";
+
 export const LIBRARY_PATH = "/library";
 export const SONGS_PATH = "/songs";
 export const GENRES_PATH = "/genres";
@@ -18,7 +20,7 @@ export function genrePath(slug: string): string {
 }
 
 export function artistPath(username: string): string {
-  return `${ARTISTS_PATH}/${encodeURIComponent(username.replace(/^@/, ""))}`;
+  return profilePath(username);
 }
 
 export function libraryCrumb(): BrowseCrumb {

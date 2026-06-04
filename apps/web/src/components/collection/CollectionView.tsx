@@ -478,7 +478,7 @@ export function CollectionView({
                           ? "Loading genres…"
                           : genreOptions?.length === 0
                             ? "No genres available."
-                            : "Optional primary genre for this playlist."}
+                            : ""}
                   </p>
                 </div>
               ) : null}
@@ -578,7 +578,7 @@ export function CollectionView({
         ) : null}
       </div>
 
-      <div className="mt-10">
+      <div className="mt-10 max-w-3xl">
         {isEdit ? (
           <div className="min-h-[16px]">
             {uploadProgress ? <div className="py-2">{uploadProgress}</div> : null}

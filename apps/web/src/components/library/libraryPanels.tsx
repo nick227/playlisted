@@ -36,7 +36,7 @@ import {
   SONGS_PATH,
 } from "@/lib/browsePaths";
 import { librarySongToQueueTrack } from "@/lib/queueTrack";
-import { coverFallback, playlistPath, profilePath } from "@/lib/routes";
+import { coverFallback, playlistPath } from "@/lib/routes";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 
 type PlaylistPreview = PlaylistListResponse["data"][number];
@@ -488,66 +488,6 @@ export function ArtistsPanel() {
           ))}
         </div>
       )}
-    </div>
-  );
-}
-
-export function ArtistDetailPanel({
-  artistId,
-  artistName,
-  artistUsername,
-  artistGenres,
-  yearRange,
-}: {
-  artistId: string;
-  artistName: string;
-  artistUsername: string;
-  artistGenres: { name: string }[];
-  yearRange: { earliest: number | null; latest: number | null };
-}) {
-  const { data, isLoading } = useLibrarySongs();
-  const songs = (data?.data ?? EMPTY_LIBRARY_SONGS).filter((s) => s.uploaderId === artistId);
-
-  const curatorNote = useMemo(() => {
-    if (!songs.length && !artistGenres.length) return null;
-    const parts: string[] = [];
-    if (songs.length) parts.push(`${songs.length} recording${songs.length !== 1 ? "s" : ""}`);
-    if (artistGenres.length) parts.push(artistGenres.map((g) => g.name).join(", "));
-    if (yearRange.earliest && yearRange.latest) {
-      parts.push(
-        yearRange.earliest === yearRange.latest
-          ? `${yearRange.earliest}`
-          : `${yearRange.earliest}–${yearRange.latest}`,
-      );
-    }
-    return parts.join(" · ");
-  }, [songs, artistGenres, yearRange]);
-
-  if (isLoading) return <PanelSkeleton />;
-
-  return (
-    <div>
-      <PanelHeader label={artistName} count={songs.length} unit="recording" />
-      <p className="mt-3">
-        <Link
-          to={profilePath(artistUsername)}
-          className="text-sm font-medium text-[var(--color-brand)] hover:underline"
-        >
-          View full profile
-        </Link>
-      </p>
-      {curatorNote && (
-        <p className="mt-3 max-w-2xl text-sm italic leading-relaxed text-[var(--color-text-muted)]">
-          {curatorNote}
-        </p>
-      )}
-      <div className="mt-10">
-        {songs.length === 0 ? (
-          <p className="text-sm text-[var(--color-text-subtle)]">No recordings found.</p>
-        ) : (
-          <TracksWithPreview songs={songs} />
-        )}
-      </div>
     </div>
   );
 }

@@ -1,10 +1,10 @@
 import type { UserDetail } from "@playlisted/client-sdk";
 import { useMemo } from "react";
-import { Link } from "react-router-dom";
 
 import { EmptyState } from "@/components/feedback/EmptyState";
+import { BrowseBreadcrumbs } from "@/components/library/BrowseBreadcrumbs";
 import { useArtistTracks } from "@/hooks/useArtistTracks";
-import { artistPath } from "@/lib/browsePaths";
+import { artistDetailCrumbs, BROWSE_LAYOUT_CLASS } from "@/lib/browsePaths";
 import { useAuth } from "@/providers/AuthProvider";
 
 import { ArtistProfileCollectionPanel } from "./ArtistProfileCollectionPanel";
@@ -24,6 +24,8 @@ export function ArtistProfileView({ user, preview }: ArtistProfileViewProps) {
 
   const isOwner = authUser?.id === user.id;
   const totalStreams = useMemo(() => computeArtistStreams(tracks), [tracks]);
+  const displayName = preview?.displayName ?? user.displayName;
+  const browseCrumbs = artistDetailCrumbs(displayName);
 
   const sortedPlaylists = useMemo(() => {
     return [...user.publicPlaylists].sort((a, b) => {
@@ -35,38 +37,35 @@ export function ArtistProfileView({ user, preview }: ArtistProfileViewProps) {
   }, [user.publicPlaylists]);
 
   return (
-    <div className="space-y-10 pb-16">
-      <ArtistProfileHero user={user} totalStreams={totalStreams} isOwner={isOwner} preview={preview} />
+    <div className="pb-16">
+      <div className={BROWSE_LAYOUT_CLASS}>
+        <BrowseBreadcrumbs crumbs={browseCrumbs} />
+      </div>
 
-      <p>
-        <Link
-          to={artistPath(user.username)}
-          className="text-sm font-medium text-[var(--color-brand)] hover:underline"
-        >
-          Browse catalog
-        </Link>
-      </p>
+      <div className="mx-auto mt-5 max-w-7xl space-y-10">
+        <ArtistProfileHero user={user} totalStreams={totalStreams} isOwner={isOwner} preview={preview} />
 
-      {sortedPlaylists.length > 0 ? (
-        <section>
-          <div>
-            {sortedPlaylists.map((playlist) => (
-              <ArtistProfileCollectionPanel key={playlist.id} playlist={playlist} owner={user} />
-            ))}
-          </div>
-        </section>
-      ) : null}
+        {sortedPlaylists.length > 0 ? (
+          <section>
+            <div>
+              {sortedPlaylists.map((playlist) => (
+                <ArtistProfileCollectionPanel key={playlist.id} playlist={playlist} owner={user} />
+              ))}
+            </div>
+          </section>
+        ) : null}
 
-      {!tracksLoading && sortedPlaylists.length === 0 ? (
-        <EmptyState
-          title="No public music yet"
-          description={
-            isOwner
-              ? "Upload tracks and publish collections to fill out your profile."
-              : "This creator has not published yet."
-          }
-        />
-      ) : null}
+        {!tracksLoading && sortedPlaylists.length === 0 ? (
+          <EmptyState
+            title="No public music yet"
+            description={
+              isOwner
+                ? "Upload tracks and publish collections to fill out your profile."
+                : "This creator has not published yet."
+            }
+          />
+        ) : null}
+      </div>
     </div>
   );
 }
