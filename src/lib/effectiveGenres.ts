@@ -15,6 +15,32 @@ export function mergeGenreRefs(
   return Array.from(genres.values()).sort((a, b) => a.name.localeCompare(b.name));
 }
 
+function sortedRecordingGenres(recordingTags: { tag: GenreRef }[]): GenreRef[] {
+  return recordingTags
+    .map(({ tag }) => tag)
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/** Badge genre for charts/library rows: panel slug wins, else first song genre, else playlist. */
+export function pickDisplayGenre(
+  recordingTags: { tag: GenreRef }[] = [],
+  playlistTags: { tag: GenreRef }[] = [],
+  preferSlug?: string,
+): GenreRef | null {
+  const merged = mergeGenreRefs(recordingTags, playlistTags);
+  if (merged.length === 0) return null;
+
+  if (preferSlug) {
+    const match = merged.find((g) => g.slug === preferSlug);
+    if (match) return match;
+  }
+
+  const recordingGenres = sortedRecordingGenres(recordingTags);
+  if (recordingGenres.length > 0) return recordingGenres[0];
+
+  return merged[0] ?? null;
+}
+
 export function effectiveGenreWhere(slug: string) {
   return {
     OR: [

@@ -2288,6 +2288,8 @@ export interface components {
                 slug: string;
             };
             tags: components["schemas"]["AdminContentTagRef"][];
+            /** @description Genre tags on the song's published playlist (homepage effective genres) */
+            playlistGenres: components["schemas"]["AdminContentTagRef"][];
         };
         AdminSongListResponse: {
             data: components["schemas"]["AdminSong"][];

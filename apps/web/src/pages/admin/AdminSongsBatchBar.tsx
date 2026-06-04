@@ -10,6 +10,7 @@ type Props = {
   busy: boolean;
   onClear: () => void;
   onAddGenres: (genreIds: string[]) => Promise<void>;
+  onSetGenres: (genreIds: string[]) => Promise<void>;
   onSetVisibility: (visibility: Visibility) => Promise<void>;
   onDelete: () => Promise<void>;
 };
@@ -21,6 +22,7 @@ export function AdminSongsBatchBar({
   busy,
   onClear,
   onAddGenres,
+  onSetGenres,
   onSetVisibility,
   onDelete,
 }: Props) {
@@ -52,9 +54,15 @@ export function AdminSongsBatchBar({
     ? allGenres.filter((g) => g.name.toLowerCase().includes(genreSearch.toLowerCase()))
     : allGenres;
 
-  async function applyGenres() {
+  async function applyAddGenres() {
     if (genrePick.size === 0) return;
     await onAddGenres(Array.from(genrePick));
+    setGenrePick(new Set());
+    setGenreOpen(false);
+  }
+
+  async function applySetGenres() {
+    await onSetGenres(Array.from(genrePick));
     setGenrePick(new Set());
     setGenreOpen(false);
   }
@@ -106,10 +114,10 @@ export function AdminSongsBatchBar({
             onClick={() => setGenreOpen((o) => !o)}
             className="rounded-lg border border-purple-400/30 bg-purple-500/10 px-3 py-1.5 text-xs font-semibold text-purple-300 transition hover:bg-purple-500/20 disabled:opacity-40"
           >
-            Add genres…
+            Genres…
           </button>
           {genreOpen && count > 0 && (
-            <div className="absolute left-0 top-full z-50 mt-1 w-56 rounded-xl border border-[var(--color-border)] bg-[#1a1a2e] shadow-2xl">
+            <div className="absolute left-0 top-full z-50 mt-1 w-64 rounded-xl border border-[var(--color-border)] bg-[#1a1a2e] shadow-2xl">
               <div className="border-b border-[var(--color-border)] px-2 py-1.5">
                 <input
                   value={genreSearch}
@@ -140,14 +148,25 @@ export function AdminSongsBatchBar({
                   );
                 })}
               </div>
-              <div className="border-t border-[var(--color-border)] p-2">
+              <div className="space-y-1.5 border-t border-[var(--color-border)] p-2">
+                <p className="px-0.5 text-[10px] leading-snug text-zinc-500">
+                  Add keeps existing song genres. Set replaces all song genres (playlist genres unchanged).
+                </p>
                 <button
                   type="button"
                   disabled={genrePick.size === 0 || busy}
-                  onClick={applyGenres}
+                  onClick={applyAddGenres}
                   className="w-full rounded-lg bg-purple-500/20 px-2 py-1.5 text-xs font-semibold text-purple-300 transition hover:bg-purple-500/30 disabled:opacity-40"
                 >
-                  Add to {count} song{count === 1 ? "" : "s"}
+                  Add (merge) — {count} song{count === 1 ? "" : "s"}
+                </button>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={applySetGenres}
+                  className="w-full rounded-lg border border-purple-400/30 px-2 py-1.5 text-xs font-semibold text-purple-200 transition hover:bg-purple-500/10 disabled:opacity-40"
+                >
+                  Set (replace){genrePick.size === 0 ? " — clear all" : ""} — {count} song{count === 1 ? "" : "s"}
                 </button>
               </div>
             </div>

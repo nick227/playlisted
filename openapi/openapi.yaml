@@ -5261,7 +5261,7 @@ components:
     AdminSong:
       type: object
       additionalProperties: false
-      required: [id, title, audioUrl, recordingType, visibility, status, explicit, playCount, savesCount, createdAt, updatedAt, uploader, playlist, tags]
+      required: [id, title, audioUrl, recordingType, visibility, status, explicit, playCount, savesCount, createdAt, updatedAt, uploader, playlist, tags, playlistGenres]
       properties:
         id:
           type: string
@@ -5313,6 +5313,11 @@ components:
               type: string
         tags:
           type: array
+          items:
+            $ref: '#/components/schemas/AdminContentTagRef'
+        playlistGenres:
+          type: array
+          description: Genre tags on the song's published playlist (homepage effective genres)
           items:
             $ref: '#/components/schemas/AdminContentTagRef'
 

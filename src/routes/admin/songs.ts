@@ -13,6 +13,33 @@ export const adminSongsRouter = Router();
 const DEFAULT_PAGE = 1;
 const DEFAULT_PAGE_SIZE = 50;
 
+const adminSongInclude = {
+  uploader: { select: { id: true, username: true, displayName: true, avatarUrl: true } },
+  publishedPlaylist: {
+    select: {
+      id: true,
+      title: true,
+      slug: true,
+      coverArtUrl: true,
+      tags: {
+        where: { tag: { kind: "GENRE" as const } },
+        include: { tag: { select: { id: true, name: true, slug: true, kind: true } } },
+      },
+    },
+  },
+  tags: { include: { tag: { select: { id: true, name: true, slug: true, kind: true } } } },
+  _count: { select: { saves: true } },
+} as const;
+
+function mapTagRef(t: { tag: { id: string; name: string; slug: string; kind: string } }) {
+  return {
+    id: t.tag.id,
+    name: t.tag.name,
+    slug: t.tag.slug,
+    kind: t.tag.kind,
+  };
+}
+
 function isPrismaRetryable(error: unknown): boolean {
   if (!error || typeof error !== "object") return false;
   if ("code" in error && (error as { code: string }).code === "P2034") return true;
@@ -68,12 +95,8 @@ function mapSong(r: any) {
       slug: r.publishedPlaylist.slug,
       coverArtUrl: r.publishedPlaylist.coverArtUrl,
     },
-    tags: (r.tags ?? []).map((t: any) => ({
-      id: t.tag.id,
-      name: t.tag.name,
-      slug: t.tag.slug,
-      kind: t.tag.kind,
-    })),
+    tags: (r.tags ?? []).map(mapTagRef),
+    playlistGenres: (r.publishedPlaylist?.tags ?? []).map(mapTagRef),
     savesCount: r._count?.saves ?? 0,
   };
 }
@@ -119,12 +142,7 @@ adminSongsRouter.get("/", async (req, res, next) => {
         orderBy,
         skip: (page - 1) * pageSize,
         take: pageSize,
-        include: {
-          uploader: { select: { id: true, username: true, displayName: true, avatarUrl: true } },
-          publishedPlaylist: { select: { id: true, title: true, slug: true, coverArtUrl: true } },
-          tags: { include: { tag: { select: { id: true, name: true, slug: true, kind: true } } } },
-          _count: { select: { saves: true } },
-        },
+        include: adminSongInclude,
       }),
       prisma.recording.count({ where }),
     ]);
@@ -160,12 +178,7 @@ adminSongsRouter.put("/:songId/tags", async (req, res, next) => {
 
     const recording = await prisma.recording.findUnique({
       where: { id: req.params.songId },
-      include: {
-        uploader: { select: { id: true, username: true, displayName: true, avatarUrl: true } },
-        publishedPlaylist: { select: { id: true, title: true, slug: true, coverArtUrl: true } },
-        tags: { include: { tag: { select: { id: true, name: true, slug: true, kind: true } } } },
-        _count: { select: { saves: true } },
-      },
+      include: adminSongInclude,
     });
 
     if (!recording) {
@@ -227,12 +240,7 @@ adminSongsRouter.patch("/:songId", async (req, res, next) => {
     const recording = await prisma.recording.update({
       where: { id: req.params.songId },
       data,
-      include: {
-        uploader: { select: { id: true, username: true, displayName: true, avatarUrl: true } },
-        publishedPlaylist: { select: { id: true, title: true, slug: true, coverArtUrl: true } },
-        tags: { include: { tag: { select: { id: true, name: true, slug: true, kind: true } } } },
-        _count: { select: { saves: true } },
-      },
+      include: adminSongInclude,
     });
 
     return res.json(mapSong(recording));

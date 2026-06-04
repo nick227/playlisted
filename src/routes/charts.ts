@@ -2,7 +2,7 @@ import { Prisma } from "@prisma/client";
 import { Router } from "express";
 
 import { rangeToDate, type ChartRange } from "../lib/chartRange.js";
-import { effectiveGenreSelect, effectiveGenreWhere, mergeGenreRefs } from "../lib/effectiveGenres.js";
+import { effectiveGenreSelect, effectiveGenreWhere, pickDisplayGenre } from "../lib/effectiveGenres.js";
 import { resolveRecordingArtworkUrl } from "../lib/mediaUrls.js";
 import { BROWSABLE_RECORDING } from "../lib/publicRecordingFilter.js";
 import { PUBLIC_PUBLISHED_PLAYLIST } from "../lib/publicPlaylistFilter.js";
@@ -53,8 +53,9 @@ function mapTopSongItem(
   },
   rank: number,
   playCount: number,
+  genreSlug?: string,
 ) {
-  const genre = mergeGenreRefs(r.tags, r.publishedPlaylist.tags)[0] ?? null;
+  const genre = pickDisplayGenre(r.tags, r.publishedPlaylist.tags, genreSlug);
   const { tags: _playlistTags, ...playlist } = r.publishedPlaylist;
   return {
     rank,
@@ -118,7 +119,7 @@ chartsRouter.get("/top-songs", async (req, res, next) => {
       });
       return res.json({
         range,
-        data: recordings.map((r, i) => mapTopSongItem(r, i + 1, r.playCount)),
+        data: recordings.map((r, i) => mapTopSongItem(r, i + 1, r.playCount, genre)),
       });
     }
 
@@ -155,7 +156,7 @@ chartsRouter.get("/top-songs", async (req, res, next) => {
       .slice(0, limit)
       .map((g, i) => {
         const r = recMap.get(g.recordingId)!;
-        return mapTopSongItem(r, i + 1, g._count.id);
+        return mapTopSongItem(r, i + 1, g._count.id, genre);
       });
 
     return res.json({ range, data });
