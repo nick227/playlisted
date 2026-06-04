@@ -2,6 +2,7 @@ import type { PlaylistDetail } from "@playlisted/client-sdk";
 
 import { SmartPlaylistCard } from "@/components/cards/SmartPlaylistCard";
 import { CollectionView } from "@/components/collection/CollectionView";
+import { BrowseBreadcrumbs } from "@/components/library/BrowseBreadcrumbs";
 import type { CollectionRecording } from "@/components/collection/collectionTypes";
 import { ContentRow } from "@/components/discovery/ContentRow";
 import { Skeleton } from "@/components/feedback/Skeleton";
@@ -9,6 +10,7 @@ import { useAddCollectionPlaylist, useCollectionPlaylists } from "@/hooks/useCol
 import { useIsMdUp } from "@/hooks/useIsMdUp";
 import { usePlaylists } from "@/hooks/usePlaylists";
 import { useAudioPlayer, type QueueTrack } from "@/providers/AudioPlayerProvider";
+import { playlistBrowseCrumbs } from "@/lib/browsePaths";
 import { useAuth } from "@/providers/AuthProvider";
 
 type PlaylistDetailViewProps = {
@@ -80,21 +82,31 @@ export function PlaylistDetailView({ playlist }: PlaylistDetailViewProps) {
     );
   }
 
+  const browseCrumbs = playlistBrowseCrumbs(
+    { displayName: playlist.owner.displayName, username: playlist.owner.username },
+    playlist.title,
+  );
+
   return (
     <>
-      <CollectionView
-        playlist={playlist}
-        mode="view"
-        onPlayAll={playAll}
-        onPlayTrack={playRecording}
-        playlistIsPlaying={playlistIsPlaying}
-        playlistIsPaused={playlistIsPaused}
-        onAddCollection={
-          status === "authenticated" ? () => addCollection.mutate(playlist.id) : undefined
-        }
-        collectionAddPending={addCollection.isPending}
-        collectionAdded={isInCollections}
-      />
+      <div className="mx-auto max-w-5xl">
+        <BrowseBreadcrumbs crumbs={browseCrumbs} />
+        <div className="mt-5">
+          <CollectionView
+            playlist={playlist}
+            mode="view"
+            onPlayAll={playAll}
+            onPlayTrack={playRecording}
+            playlistIsPlaying={playlistIsPlaying}
+            playlistIsPaused={playlistIsPaused}
+            onAddCollection={
+              status === "authenticated" ? () => addCollection.mutate(playlist.id) : undefined
+            }
+            collectionAddPending={addCollection.isPending}
+            collectionAdded={isInCollections}
+          />
+        </div>
+      </div>
 
       {related && related.data.length > 0 ? (
         <div className="mx-auto mt-14 max-w-5xl">

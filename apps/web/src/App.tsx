@@ -15,6 +15,14 @@ import { AdminRadioPage } from "@/pages/admin/AdminRadioPage";
 import { HomePage } from "@/pages/HomePage";
 import { FavoritesPage } from "@/pages/FavoritesPage";
 import { LibraryPage } from "@/pages/LibraryPage";
+import {
+  LibraryArtistPage,
+  LibraryArtistsPage,
+  LibraryGenrePage,
+  LibraryGenresPage,
+  LibraryPlaylistsPage,
+  LibrarySongsPage,
+} from "@/pages/library/LibraryBrowsePages";
 import { LoginPage } from "@/pages/LoginPage";
 import { MemberPage } from "@/pages/MemberPage";
 import { PlaylistPage } from "@/pages/PlaylistPage";
@@ -54,6 +62,7 @@ function MainRoutes() {
         <Route path="/radio" element={<RadioPage />} />
         <Route path="/@:username" element={<LegacyProfileRedirect />} />
         <Route path="/@/:username/:slug" element={<CanonicalPlaylistPage />} />
+        <Route path="/playlists" element={<LibraryPlaylistsPage />} />
         <Route path="/playlists/:playlistId" element={<PlaylistPage />} />
         <Route path="/@/:username" element={<MemberPage />} />
         <Route path="/members/:userId" element={<MemberPage />} />
@@ -68,6 +77,11 @@ function MainRoutes() {
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/library" element={<LibraryPage />} />
         <Route path="/library/favorites" element={<FavoritesPage />} />
+        <Route path="/songs" element={<LibrarySongsPage />} />
+        <Route path="/genres" element={<LibraryGenresPage />} />
+        <Route path="/genres/:slug" element={<LibraryGenrePage />} />
+        <Route path="/artists" element={<LibraryArtistsPage />} />
+        <Route path="/artists/:username" element={<LibraryArtistPage />} />
         <Route
           path="/studio"
           element={
