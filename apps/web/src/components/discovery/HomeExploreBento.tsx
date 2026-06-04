@@ -1,10 +1,17 @@
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
 
 import { HOME_CHART_RANGE, HOME_CHART_RANGE_LABEL } from "@/components/charts/chartConfig";
 import { useTopArtists, useTopPlaylists, useTopSongs } from "@/hooks/useCharts";
 import { ARTISTS_PATH, PLAYLISTS_PATH, SONGS_PATH } from "@/lib/browsePaths";
 
-import { HOME_BENTO_FETCH, HOME_BENTO_SLOTS } from "./homeBentoLayout";
+import {
+  HOME_BENTO_DEFAULT_LIMITS,
+  HOME_BENTO_SLOTS,
+  resolveHomeBentoLimits,
+  selectBentoSlots,
+  type HomeExploreBentoLimits,
+} from "./homeBentoLayout";
 import { HomeBentoMediaGrid } from "./homeBentoPanels";
 import {
   useHomeBentoArtistPlayback,
@@ -12,22 +19,36 @@ import {
   useHomeBentoSongPlayback,
 } from "./homeBentoPlayback";
 
-export function HomeExploreBento() {
+export type { HomeExploreBentoLimits };
+
+export type HomeExploreBentoProps = {
+  /** Per-category item caps; slots and API fetch sizes follow these counts. */
+  limits?: Partial<HomeExploreBentoLimits>;
+};
+
+export function HomeExploreBento({ limits: limitsProp }: HomeExploreBentoProps = {}) {
+  const limits = useMemo(
+    () => resolveHomeBentoLimits(limitsProp),
+    [limitsProp?.songs, limitsProp?.playlists, limitsProp?.artists],
+  );
+  const slots = useMemo(() => selectBentoSlots(HOME_BENTO_SLOTS, limits), [limits]);
+
   const { play: playSong } = useHomeBentoSongPlayback();
   const { play: playPlaylist, isActive: playlistActive, isPlaying: playlistPlaying } =
     useHomeBentoPlaylistPlayback();
   const { play: playArtist, isActive: artistActive, isPlaying: artistPlaying } =
     useHomeBentoArtistPlayback();
 
-  const topSongs = useTopSongs(HOME_CHART_RANGE, HOME_BENTO_FETCH.songs);
-  const topPlaylists = useTopPlaylists(HOME_CHART_RANGE, HOME_BENTO_FETCH.playlists);
-  const topArtists = useTopArtists(HOME_CHART_RANGE, HOME_BENTO_FETCH.artists);
+  const topSongs = useTopSongs(HOME_CHART_RANGE, limits.songs);
+  const topPlaylists = useTopPlaylists(HOME_CHART_RANGE, limits.playlists);
+  const topArtists = useTopArtists(HOME_CHART_RANGE, limits.artists);
 
   const songs = topSongs.data?.data ?? [];
   const playlists = topPlaylists.data?.data ?? [];
   const artists = topArtists.data?.data ?? [];
   const loading = topSongs.isLoading || topPlaylists.isLoading || topArtists.isLoading;
 
+  if (!loading && slots.length === 0) return null;
   if (!loading && songs.length === 0 && playlists.length === 0 && artists.length === 0) {
     return null;
   }
@@ -54,7 +75,7 @@ export function HomeExploreBento() {
       </div>
 
       <HomeBentoMediaGrid
-        slots={HOME_BENTO_SLOTS}
+        slots={slots}
         songs={songs}
         playlists={playlists}
         artists={artists}
@@ -70,3 +91,5 @@ export function HomeExploreBento() {
     </section>
   );
 }
+
+export { HOME_BENTO_DEFAULT_LIMITS };

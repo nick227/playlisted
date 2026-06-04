@@ -10,6 +10,18 @@ export type BentoSlot = {
   meta?: "below" | "overlay";
 };
 
+export type HomeExploreBentoLimits = {
+  songs: number;
+  playlists: number;
+  artists: number;
+};
+
+export const HOME_BENTO_DEFAULT_LIMITS: HomeExploreBentoLimits = {
+  songs: 5,
+  playlists: 4,
+  artists: 4,
+};
+
 /** Mixed-size bento slots (4-column desktop grid). */
 export const HOME_BENTO_SLOTS: BentoSlot[] = [
   { kind: "song", index: 0, placement: "md:col-span-2 md:row-span-2", aspectClass: "aspect-square", meta: "overlay" },
@@ -33,4 +45,15 @@ export const HOME_BENTO_SLOTS: BentoSlot[] = [
   },
 ];
 
-export const HOME_BENTO_FETCH = { songs: 4, playlists: 4, artists: 4 } as const;
+export function resolveHomeBentoLimits(
+  limits?: Partial<HomeExploreBentoLimits>,
+): HomeExploreBentoLimits {
+  return { ...HOME_BENTO_DEFAULT_LIMITS, ...limits };
+}
+
+export function selectBentoSlots(
+  slots: BentoSlot[],
+  limits: HomeExploreBentoLimits,
+): BentoSlot[] {
+  return slots.filter((slot) => slot.index < limits[slot.kind]);
+}
