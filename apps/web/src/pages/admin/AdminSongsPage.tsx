@@ -423,7 +423,10 @@ export function AdminSongsPage() {
   const selectedCount = selectedIds.size;
   const allPageSelected = songs.length > 0 && songs.every((s) => selectedIds.has(s.id));
   const somePageSelected = songs.some((s) => selectedIds.has(s.id)) && !allPageSelected;
-  const previewSongs = songs.filter((s) => selectedIds.has(s.id)).slice(0, 5).map((s) => ({ id: s.id, title: s.title }));
+  const previewTitles = songs
+    .filter((s) => selectedIds.has(s.id))
+    .slice(0, 5)
+    .map((s) => ({ id: s.id, title: s.title }));
 
   function toggleSelect(songId: string) {
     setSelectedIds((prev) => {
@@ -598,7 +601,7 @@ export function AdminSongsPage() {
 
       <AdminSongsBatchBar
         count={selectedCount}
-        previewSongs={previewSongs}
+        previewTitles={previewTitles}
         allGenres={allGenres}
         busy={batchBusy}
         onClear={() => setSelectedIds(new Set())}

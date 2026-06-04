@@ -5,7 +5,7 @@ type Visibility = "PUBLIC" | "UNLISTED" | "PRIVATE";
 
 type Props = {
   count: number;
-  previewSongs: { id: string; title: string }[];
+  previewTitles: { id: string; title: string }[];
   allGenres: AdminTag[];
   busy: boolean;
   onClear: () => void;
@@ -16,7 +16,7 @@ type Props = {
 
 export function AdminSongsBatchBar({
   count,
-  previewSongs,
+  previewTitles,
   allGenres,
   busy,
   onClear,
@@ -193,13 +193,13 @@ export function AdminSongsBatchBar({
                     Permanently delete {count} song{count === 1 ? "" : "s"}?
                   </p>
                   <p className="mt-1 text-red-300/90">This cannot be undone. Audio files and playlist links may be affected.</p>
-                  {previewSongs.length > 0 && (
+                  {previewTitles.length > 0 && (
                     <ul className="mt-2 list-inside list-disc text-red-300/80">
-                      {previewSongs.map((s) => (
+                      {previewTitles.map((s) => (
                         <li key={s.id} className="truncate">{s.title}</li>
                       ))}
-                      {count > previewSongs.length && (
-                        <li>…and {count - previewSongs.length} more</li>
+                      {count > previewTitles.length && (
+                        <li>…and {count - previewTitles.length} more</li>
                       )}
                     </ul>
                   )}
