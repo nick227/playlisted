@@ -16,6 +16,12 @@ vi.mock("../lib/prisma.js", () => ({
 
 vi.mock("../lib/auth.js", () => ({
   getAuthContextFromRequest: vi.fn().mockResolvedValue(null),
+  getBearerToken: vi.fn((authorizationHeader?: string | null) => {
+    if (!authorizationHeader) return null;
+    const [scheme, token] = authorizationHeader.split(" ");
+    return scheme?.toLowerCase() === "bearer" && token ? token : null;
+  }),
+  hashSessionToken: vi.fn((token: string) => `hashed-${token}`),
 }));
 
 import { prisma } from "../lib/prisma.js";
