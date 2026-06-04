@@ -70,7 +70,7 @@ const TILES: BentoTile[] = [
     label: "Creator hub",
     title: "Artist",
     titleLine2: "Studio",
-    description: "Collections, analytics, and your creator dashboard in one place.",
+    description: "Collections, analytics, and your dashboard.",
     icon: Mic2,
     placement: "md:col-span-2 md:row-span-2 md:col-start-1 md:row-start-1",
     iconTint: "text-violet-300",
@@ -92,7 +92,7 @@ const TILES: BentoTile[] = [
     href: GENRES_PATH,
     label: "Browse",
     title: "Genres",
-    description: "Dig in by mood, style, and sonic territory.",
+    description: "Browse by mood and style.",
     icon: Sparkles,
     placement: "md:col-start-4 md:row-start-1",
     iconTint: "text-amber-300",
@@ -103,7 +103,7 @@ const TILES: BentoTile[] = [
     href: ARTISTS_PATH,
     label: "Community",
     title: "Artists",
-    description: "Profiles, pins, and the humans behind the music.",
+    description: "Creator profiles and pins.",
     icon: Users,
     placement: "md:col-span-2 md:col-start-3 md:row-start-2",
     iconTint: "text-emerald-300",
@@ -114,7 +114,7 @@ const TILES: BentoTile[] = [
     href: PLAYLISTS_PATH,
     label: "Collections",
     title: "Playlists",
-    description: "Curated sets and listener-made mixes worth a spin.",
+    description: "Curated sets and mixes.",
     icon: ListMusic,
     placement: "md:col-span-2 md:row-span-2 md:col-start-1 md:row-start-3",
     iconTint: "text-rose-300",
@@ -125,7 +125,7 @@ const TILES: BentoTile[] = [
     href: STUDIO_COLLECTIONS_PATH,
     label: "Publish",
     title: "Upload",
-    description: "Add audio, artwork, and ship your next release.",
+    description: "Audio, artwork, and releases.",
     icon: Upload,
     placement: "md:col-start-3 md:row-start-3",
     iconTint: "text-orange-300",
@@ -137,7 +137,7 @@ const TILES: BentoTile[] = [
     label: "Account",
     title: "Profile",
     titleLine2: "Edit",
-    description: "Bio, avatar, links, and how you show up.",
+    description: "Bio, avatar, and links.",
     icon: UserPen,
     placement: "md:col-start-4 md:row-start-3",
     iconTint: "text-cyan-300",
@@ -149,7 +149,7 @@ const TILES: BentoTile[] = [
     label: "Public page",
     title: "Profile",
     titleLine2: "View",
-    description: "See your live artist page as listeners do.",
+    description: "Your public artist page.",
     icon: Eye,
     placement: "md:col-span-2 md:col-start-3 md:row-start-4",
     iconTint: "text-indigo-300",
@@ -183,7 +183,7 @@ function BentoCardFill({
   if (!kind) return null;
 
   const fillWrap = (child: ReactNode) => (
-    <div className="flex min-h-[6.5rem] flex-1 w-full py-1 md:min-h-[7.5rem] [&>*]:h-full [&>*]:min-h-0 [&>*]:w-full">
+    <div className="flex min-h-[2.5rem] flex-1 w-full py-0.5 md:min-h-[3rem] [&>*]:h-full [&>*]:min-h-0 [&>*]:w-full">
       {child}
     </div>
   );
@@ -267,21 +267,21 @@ function BentoCard({
     <Link
       to={href}
       className={[
-        "group relative flex flex-col overflow-hidden rounded-2xl border border-white/[0.09] bg-[var(--color-surface)] p-5 transition duration-300",
-        hasFill ? "min-h-[11rem] md:min-h-[12.5rem]" : "min-h-[9.5rem]",
+        "group relative flex flex-col overflow-hidden rounded-xl border border-white/[0.09] bg-[var(--color-surface)] p-2.5 transition duration-300",
+        "min-h-0",
         "hover:border-white/[0.16] hover:bg-white/[0.04] hover:shadow-[0_20px_50px_-24px_rgba(0,0,0,0.85)]",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand)]",
         tile.placement,
       ].join(" ")}
     >
-      <div className="relative flex items-start justify-between gap-3">
-        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-text-subtle)]">
+      <div className="relative flex items-start justify-between gap-1.5">
+        <span className="text-[8px] font-bold uppercase tracking-[0.16em] text-[var(--color-text-subtle)]">
           {tile.label}
         </span>
         <span
-          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/[0.1] bg-black/25 ${tile.iconTint} transition group-hover:scale-105 group-hover:border-white/[0.18]`}
+          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-white/[0.1] bg-black/25 ${tile.iconTint} transition group-hover:scale-105 group-hover:border-white/[0.18]`}
         >
-          <Icon size={isHero ? 22 : 18} strokeWidth={1.75} aria-hidden />
+          <Icon size={isHero ? 13 : 11} strokeWidth={1.75} aria-hidden />
         </span>
       </div>
 
@@ -300,11 +300,11 @@ function BentoCard({
         />
       ) : null}
 
-      <div className={`relative ${hasFill ? "mt-2" : "mt-auto pt-6"}`}>
+      <div className={`relative ${hasFill ? "mt-1" : "mt-auto pt-2"}`}>
         <h3
           className={[
             "font-black leading-[0.92] tracking-tighter text-white",
-            isHero ? "text-4xl sm:text-5xl" : "text-2xl sm:text-3xl",
+            isHero ? "text-xl sm:text-2xl" : "text-base sm:text-lg",
           ].join(" ")}
         >
           {tile.title}
@@ -314,16 +314,16 @@ function BentoCard({
         </h3>
         <p
           className={[
-            "mt-2 text-[var(--color-text-muted)]",
-            isHero ? "max-w-sm text-sm leading-relaxed" : "text-xs leading-relaxed sm:text-sm",
+            "mt-0.5 line-clamp-1 text-[var(--color-text-muted)]",
+            isHero ? "max-w-sm text-[10px] leading-snug" : "text-[9px] leading-snug",
           ].join(" ")}
         >
           {tile.description}
         </p>
-        <span className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-white/70 transition group-hover:text-white">
+        <span className="mt-1 inline-flex items-center gap-0.5 text-[9px] font-semibold text-white/70 transition group-hover:text-white">
           Open
           <ArrowUpRight
-            size={14}
+            size={10}
             className="transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
             aria-hidden
           />
@@ -354,27 +354,27 @@ export function HomeExploreBento({ username }: { username?: string }) {
     : playlistCovers[0] ?? null;
 
   return (
-    <section className="mb-10" aria-labelledby="home-explore-bento-heading">
-      <div className="mb-5 flex items-end justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/[0.1] bg-white/[0.04] text-[var(--color-brand)]">
-            <LayoutGrid size={18} strokeWidth={1.75} aria-hidden />
+    <section className="mb-6" aria-labelledby="home-explore-bento-heading">
+      <div className="mb-2.5 flex items-end justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <span className="flex h-6 w-6 items-center justify-center rounded-md border border-white/[0.1] bg-white/[0.04] text-[var(--color-brand)]">
+            <LayoutGrid size={12} strokeWidth={1.75} aria-hidden />
           </span>
           <div>
             <h2
               id="home-explore-bento-heading"
-              className="text-xl font-bold tracking-tight text-white"
+              className="text-sm font-bold tracking-tight text-white"
             >
               Explore the site
             </h2>
-            <p className="mt-0.5 text-sm text-[var(--color-text-muted)]">
-              Jump to browse, publish, and manage your presence
+            <p className="text-[10px] text-[var(--color-text-muted)]">
+              Browse, publish, and manage your presence
             </p>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4 md:grid-rows-4 md:auto-rows-fr">
+      <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-2 md:grid-cols-4 md:grid-rows-4 md:auto-rows-[minmax(3.75rem,auto)]">
         {TILES.map((tile) => (
           <BentoCard
             key={tile.id}

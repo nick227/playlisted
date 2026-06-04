@@ -10,9 +10,9 @@ export function BentoCoverMosaic({ items }: { items: CoverItem[] }) {
   while (cells.length < 4) cells.push({ id: `e-${cells.length}`, title: "", imageUrl: null });
 
   return (
-    <div className="grid h-full w-full min-h-0 grid-cols-2 grid-rows-2 gap-1.5">
+    <div className="grid h-full w-full min-h-0 grid-cols-2 grid-rows-2 gap-0.5">
       {cells.map((item) => (
-        <div key={item.id} className="min-h-0 overflow-hidden rounded-lg border border-white/[0.08] bg-black/20">
+        <div key={item.id} className="min-h-0 overflow-hidden rounded border border-white/[0.08] bg-black/20">
           {item.imageUrl ? (
             <img src={item.imageUrl} alt="" className="h-full w-full object-cover opacity-90" />
           ) : item.title ? (
@@ -72,7 +72,7 @@ export function BentoAvatarStrip({ artists }: { artists: TopArtistItem[] }) {
 export function BentoSongStack({ songs }: { songs: TopSongItem[] }) {
   const stack = songs.slice(0, 3);
   const artClass =
-    "aspect-square h-[88%] max-h-full overflow-hidden rounded-lg border-2 border-[var(--color-surface)] shadow-lg";
+    "aspect-square h-[88%] max-h-full overflow-hidden rounded border-2 border-[var(--color-surface)] shadow-md";
 
   if (stack.length === 0) {
     return (
@@ -123,17 +123,17 @@ export function BentoGenreGrid({ genres }: { genres: LibraryGenre[] }) {
   while (cells.length < 4) cells.push({ id: `g-${cells.length}`, name: "", slug: "", songCount: 0 });
 
   return (
-    <div className="grid h-full w-full min-h-0 grid-cols-2 grid-rows-2 gap-1.5">
+    <div className="grid h-full w-full min-h-0 grid-cols-2 grid-rows-2 gap-0.5">
       {cells.map((genre) => (
         <div
           key={genre.id}
-          className="flex min-h-0 items-end overflow-hidden rounded-lg border border-white/[0.08] p-2"
+          className="flex min-h-0 items-end overflow-hidden rounded border border-white/[0.08] p-1"
           style={{
             background: genre.name ? coverFallback(genre.name) : "rgba(255,255,255,0.04)",
           }}
         >
           {genre.name ? (
-            <span className="line-clamp-2 text-[10px] font-bold leading-tight text-white drop-shadow-sm sm:text-xs">
+            <span className="line-clamp-2 text-[7px] font-bold leading-tight text-white drop-shadow-sm sm:text-[8px]">
               {genre.name}
             </span>
           ) : null}
@@ -146,7 +146,7 @@ export function BentoGenreGrid({ genres }: { genres: LibraryGenre[] }) {
 export function BentoUploadCover({ cover }: { cover?: CoverItem | null }) {
   if (cover?.imageUrl || cover?.title) {
     return (
-      <div className="h-full w-full min-h-0 overflow-hidden rounded-xl border border-white/[0.1] shadow-lg">
+      <div className="h-full w-full min-h-0 overflow-hidden rounded-md border border-white/[0.1] shadow-md">
         {cover.imageUrl ? (
           <img src={cover.imageUrl} alt="" className="h-full w-full object-cover" />
         ) : (
@@ -157,12 +157,12 @@ export function BentoUploadCover({ cover }: { cover?: CoverItem | null }) {
   }
 
   return (
-    <div className="grid h-full w-full min-h-0 grid-cols-2 gap-2 text-orange-300/80">
-      <span className="flex items-center justify-center rounded-xl border border-white/[0.1] bg-black/25">
-        <FileAudio className="h-[40%] w-[40%] min-h-8 min-w-8" strokeWidth={1.5} aria-hidden />
+    <div className="grid h-full w-full min-h-0 grid-cols-2 gap-1 text-orange-300/80">
+      <span className="flex items-center justify-center rounded-md border border-white/[0.1] bg-black/25">
+        <FileAudio className="h-[40%] w-[40%] min-h-4 min-w-4" strokeWidth={1.5} aria-hidden />
       </span>
-      <span className="flex items-center justify-center rounded-xl border border-white/[0.1] bg-black/25">
-        <ImagePlus className="h-[40%] w-[40%] min-h-8 min-w-8" strokeWidth={1.5} aria-hidden />
+      <span className="flex items-center justify-center rounded-md border border-white/[0.1] bg-black/25">
+        <ImagePlus className="h-[40%] w-[40%] min-h-4 min-w-4" strokeWidth={1.5} aria-hidden />
       </span>
     </div>
   );
@@ -191,7 +191,7 @@ export function BentoProfileAvatar({
         <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
       ) : (
         <div
-          className="flex h-full w-full items-center justify-center text-3xl font-black text-white sm:text-4xl"
+          className="flex h-full w-full items-center justify-center text-lg font-black text-white"
           style={{ background: coverFallback(name) }}
           aria-hidden
         >
@@ -216,15 +216,15 @@ export function BentoProfileHero({
   const name = displayName ?? "Artist";
 
   return (
-    <div className="relative h-full w-full min-h-0 overflow-hidden rounded-xl border border-white/[0.08]">
+    <div className="relative h-full w-full min-h-0 overflow-hidden rounded-md border border-white/[0.08]">
       {image ? (
         <img src={image} alt="" className="h-full w-full object-cover opacity-75" />
       ) : (
         <div className="h-full w-full" style={{ background: coverFallback(name) }} aria-hidden />
       )}
       <div className="absolute inset-0 bg-black/35" aria-hidden />
-      <div className="absolute bottom-2 left-2 right-2 flex items-center gap-2.5">
-        <div className="aspect-square h-10 w-10 shrink-0 overflow-hidden rounded-full border border-white/20 sm:h-12 sm:w-12">
+      <div className="absolute bottom-1 left-1 right-1 flex items-center gap-1">
+        <div className="aspect-square h-5 w-5 shrink-0 overflow-hidden rounded-full border border-white/20">
           {avatarUrl ? (
             <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
           ) : (
@@ -237,7 +237,7 @@ export function BentoProfileHero({
             </div>
           )}
         </div>
-        <span className="truncate text-xs font-semibold text-white">{name}</span>
+        <span className="truncate text-[8px] font-semibold text-white">{name}</span>
       </div>
     </div>
   );
