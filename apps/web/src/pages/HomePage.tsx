@@ -60,7 +60,7 @@ const HOME_LIMITS = {
   pinnedArtistsFetch: 8,
   genreGroupsMax: 4,
   genreMinSongs: 3,
-  newReleases: 8,
+  newReleases: 12,
 } as const;
 
 const HOME_SECTION_COLS = {
