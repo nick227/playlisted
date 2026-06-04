@@ -92,9 +92,6 @@ export function LoginPage() {
         </Link>
       </p>
 
-      <p className="mt-4 text-center text-xs text-[var(--color-text-subtle)]">
-        Dev seed: admin@playlisted.local / Playlisted123!
-      </p>
     </div>
   );
 }
