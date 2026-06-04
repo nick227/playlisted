@@ -4,7 +4,7 @@ import { authedApi } from "@/lib/authedApi";
 import { useAuth } from "@/providers/AuthProvider";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { useAudioPlayer, type QueueTrack } from "@/providers/AudioPlayerProvider";
-import { AdminSongsBatchBar, mergeGenreIds } from "./AdminSongsBatchBar";
+import { AdminSongsBatchBar, mergeGenreIds, runSequential } from "./AdminSongsBatchBar";
 
 type Visibility = "PUBLIC" | "UNLISTED" | "PRIVATE";
 
@@ -514,13 +514,11 @@ export function AdminSongsPage() {
     setBatchBusy(true);
     setError(null);
     try {
-      const updated = await Promise.all(
-        ids.map((id) => {
-          const song = songs.find((s) => s.id === id);
-          if (!song) return null;
-          return api.admin.setSongTags(id, mergeGenreIds(song, genreIds));
-        }),
-      );
+      const updated = await runSequential(ids, async (id) => {
+        const song = songs.find((s) => s.id === id);
+        if (!song) return null;
+        return api.admin.setSongTags(id, mergeGenreIds(song, genreIds));
+      });
       const byId = new Map(updated.filter(Boolean).map((u) => [u!.id, u!]));
       setSongs((prev) => prev.map((s) => (byId.has(s.id) ? byId.get(s.id)! : s)));
     } catch (e: unknown) {
@@ -536,7 +534,7 @@ export function AdminSongsPage() {
     setBatchBusy(true);
     setError(null);
     try {
-      const updated = await Promise.all(ids.map((id) => api.admin.updateSong(id, { visibility })));
+      const updated = await runSequential(ids, (id) => api.admin.updateSong(id, { visibility }));
       const byId = new Map(updated.map((u) => [u.id, u]));
       setSongs((prev) => prev.map((s) => (byId.has(s.id) ? byId.get(s.id)! : s)));
     } catch (e: unknown) {
@@ -552,7 +550,7 @@ export function AdminSongsPage() {
     setBatchBusy(true);
     setError(null);
     try {
-      await Promise.all(ids.map((id) => api.admin.deleteSong(id)));
+      for (const id of ids) await api.admin.deleteSong(id);
       const removed = new Set(ids);
       setSongs((prev) => prev.filter((s) => !removed.has(s.id)));
       setSelectedIds(new Set());

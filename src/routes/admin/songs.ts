@@ -13,6 +13,33 @@ export const adminSongsRouter = Router();
 const DEFAULT_PAGE = 1;
 const DEFAULT_PAGE_SIZE = 50;
 
+function isPrismaRetryable(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  if ("code" in error && (error as { code: string }).code === "P2034") return true;
+  return error instanceof Error && /deadlock|write conflict/i.test(error.message);
+}
+
+async function replaceSongGenreTags(recordingId: string, tagIds: string[]) {
+  const maxAttempts = 3;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      await prisma.$transaction(async (tx) => {
+        await tx.recordingTag.deleteMany({ where: { recordingId } });
+        if (tagIds.length > 0) {
+          await tx.recordingTag.createMany({
+            data: tagIds.map((tagId) => ({ recordingId, tagId })),
+            skipDuplicates: true,
+          });
+        }
+      });
+      return;
+    } catch (error) {
+      if (!isPrismaRetryable(error) || attempt === maxAttempts) throw error;
+      await new Promise((r) => setTimeout(r, 25 * attempt));
+    }
+  }
+}
+
 function mapSong(r: any) {
   return {
     id: r.id,
@@ -129,15 +156,7 @@ adminSongsRouter.put("/:songId/tags", async (req, res, next) => {
       }
     }
 
-    await prisma.$transaction([
-      prisma.recordingTag.deleteMany({ where: { recordingId: req.params.songId } }),
-      ...(ids.length > 0
-        ? [prisma.recordingTag.createMany({
-            data: ids.map((tagId) => ({ recordingId: req.params.songId, tagId })),
-            skipDuplicates: true,
-          })]
-        : []),
-    ]);
+    await replaceSongGenreTags(req.params.songId, ids);
 
     const recording = await prisma.recording.findUnique({
       where: { id: req.params.songId },
