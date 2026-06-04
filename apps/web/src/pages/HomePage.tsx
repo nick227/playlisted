@@ -470,6 +470,7 @@ export function HomePage() {
   return (
     <div className="mx-auto max-w-[var(--size-container-max,90rem)]">
 
+
       {/* Greeting / banner */}
       <GreetingsBanner
         firstName={firstName}
@@ -477,8 +478,6 @@ export function HomePage() {
         featuredArtist={greetingsFeaturedArtist}
         artistLoading={greetingsArtistLoading}
       />
-
-      <HomeExploreBento />
 
       {/* ── CHARTS ────────────────────────────────────────────── */}
 
@@ -621,6 +620,10 @@ export function HomePage() {
           ))}
         </HomeSection>
       )}
+
+      {/* ── HOME EXPLORE ────────────────────────────────────────────── */}
+
+      <HomeExploreBento />
 
       <SiteFooter />
     </div>

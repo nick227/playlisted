@@ -72,15 +72,27 @@ function BentoSongCell({
   item,
   siblings,
   slot,
+  loading,
   onPlay,
 }: {
-  item: TopSongItem;
+  item?: TopSongItem;
   siblings: TopSongItem[];
   slot: BentoSlot;
+  loading: boolean;
   onPlay: (item: TopSongItem, siblings: TopSongItem[]) => void;
 }) {
-  const origin = homeBentoSongOrigin(item.recordingId);
-  const { isActive, isPlaying } = useTrackPlayback(item.recordingId, origin);
+  const recordingId = item?.recordingId;
+  const origin = recordingId ? homeBentoSongOrigin(recordingId) : undefined;
+  const { isActive, isPlaying } = useTrackPlayback(recordingId, origin);
+
+  if (loading || !item) {
+    return (
+      <div className={`flex min-h-0 min-w-0 flex-col ${slot.placement}`}>
+        <BentoTileSkeleton aspectClass={slot.aspectClass} />
+      </div>
+    );
+  }
+
   const href = topSongPanelHref(item);
 
   return (
@@ -120,16 +132,26 @@ function BentoSongCell({
 function BentoPlaylistCell({
   item,
   slot,
+  loading,
   isActive,
   isPlaying,
   onPlay,
 }: {
-  item: TopPlaylistItem;
+  item?: TopPlaylistItem;
   slot: BentoSlot;
+  loading: boolean;
   isActive: boolean;
   isPlaying: boolean;
   onPlay: () => void;
 }) {
+  if (loading || !item) {
+    return (
+      <div className={`flex min-h-0 min-w-0 flex-col ${slot.placement}`}>
+        <BentoTileSkeleton aspectClass={slot.aspectClass} />
+      </div>
+    );
+  }
+
   const href = playlistPath({
     id: item.playlistId,
     username: item.owner.username,
@@ -173,16 +195,26 @@ function BentoPlaylistCell({
 function BentoArtistCell({
   item,
   slot,
+  loading,
   isActive,
   isPlaying,
   onPlay,
 }: {
-  item: TopArtistItem;
+  item?: TopArtistItem;
   slot: BentoSlot;
+  loading: boolean;
   isActive: boolean;
   isPlaying: boolean;
   onPlay: () => void;
 }) {
+  if (loading || !item) {
+    return (
+      <div className={`flex min-h-0 min-w-0 flex-col ${slot.placement}`}>
+        <BentoTileSkeleton aspectClass={slot.aspectClass} />
+      </div>
+    );
+  }
+
   const href = profilePath(item.username);
   const shape = slot.shape ?? "square";
 
@@ -243,23 +275,14 @@ export function HomeBentoMediaGrid({
       {slots.map((slot) => {
         const key = `${slot.kind}-${slot.index}`;
 
-        if (loading) {
-          return (
-            <div key={key} className={slot.placement}>
-              <BentoTileSkeleton aspectClass={slot.aspectClass} />
-            </div>
-          );
-        }
-
         if (slot.kind === "song") {
-          const item = songs[slot.index];
-          if (!item) return null;
           return (
             <BentoSongCell
               key={key}
-              item={item}
+              item={songs[slot.index]}
               siblings={songs}
               slot={slot}
+              loading={loading}
               onPlay={onPlaySong}
             />
           );
@@ -267,29 +290,29 @@ export function HomeBentoMediaGrid({
 
         if (slot.kind === "playlist") {
           const item = playlists[slot.index];
-          if (!item) return null;
           return (
             <BentoPlaylistCell
               key={key}
               item={item}
               slot={slot}
-              isActive={playlistActive(item.playlistId)}
-              isPlaying={playlistPlaying(item.playlistId)}
-              onPlay={() => onPlayPlaylist(item)}
+              loading={loading}
+              isActive={item ? playlistActive(item.playlistId) : false}
+              isPlaying={item ? playlistPlaying(item.playlistId) : false}
+              onPlay={() => item && onPlayPlaylist(item)}
             />
           );
         }
 
         const item = artists[slot.index];
-        if (!item) return null;
         return (
           <BentoArtistCell
             key={key}
             item={item}
             slot={slot}
-            isActive={artistActive(item.userId)}
-            isPlaying={artistPlaying(item.userId)}
-            onPlay={() => void onPlayArtist(item)}
+            loading={loading}
+            isActive={item ? artistActive(item.userId) : false}
+            isPlaying={item ? artistPlaying(item.userId) : false}
+            onPlay={() => item && void onPlayArtist(item)}
           />
         );
       })}

@@ -48,7 +48,11 @@ export const HOME_BENTO_SLOTS: BentoSlot[] = [
 export function resolveHomeBentoLimits(
   limits?: Partial<HomeExploreBentoLimits>,
 ): HomeExploreBentoLimits {
-  return { ...HOME_BENTO_DEFAULT_LIMITS, ...limits };
+  const resolved = { ...HOME_BENTO_DEFAULT_LIMITS };
+  if (limits?.songs != null) resolved.songs = Math.max(0, limits.songs);
+  if (limits?.playlists != null) resolved.playlists = Math.max(0, limits.playlists);
+  if (limits?.artists != null) resolved.artists = Math.max(0, limits.artists);
+  return resolved;
 }
 
 export function selectBentoSlots(

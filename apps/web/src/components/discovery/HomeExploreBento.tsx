@@ -39,9 +39,9 @@ export function HomeExploreBento({ limits: limitsProp }: HomeExploreBentoProps =
   const { play: playArtist, isActive: artistActive, isPlaying: artistPlaying } =
     useHomeBentoArtistPlayback();
 
-  const topSongs = useTopSongs(HOME_CHART_RANGE, limits.songs);
-  const topPlaylists = useTopPlaylists(HOME_CHART_RANGE, limits.playlists);
-  const topArtists = useTopArtists(HOME_CHART_RANGE, limits.artists);
+  const topSongs = useTopSongs(HOME_CHART_RANGE, Math.max(limits.songs, 1));
+  const topPlaylists = useTopPlaylists(HOME_CHART_RANGE, Math.max(limits.playlists, 1));
+  const topArtists = useTopArtists(HOME_CHART_RANGE, Math.max(limits.artists, 1));
 
   const songs = topSongs.data?.data ?? [];
   const playlists = topPlaylists.data?.data ?? [];
