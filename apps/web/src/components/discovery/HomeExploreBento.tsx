@@ -1,4 +1,5 @@
-import type { LibraryGenre, TopArtistItem } from "@playlisted/client-sdk";
+import type { ReactNode } from "react";
+import type { LibraryGenre, TopArtistItem, TopSongItem } from "@playlisted/client-sdk";
 import type { LucideIcon } from "lucide-react";
 import {
   ArrowUpRight,
@@ -14,7 +15,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
-import { useTopArtists, useTopPlaylists } from "@/hooks/useCharts";
+import { useTopArtists, useTopPlaylists, useTopSongs } from "@/hooks/useCharts";
 import { useLibraryGenres } from "@/hooks/useLibrary";
 import { usePlaylists } from "@/hooks/usePlaylists";
 import {
@@ -23,13 +24,17 @@ import {
   PLAYLISTS_PATH,
   SONGS_PATH,
 } from "@/lib/browsePaths";
-import { coverFallback, profilePath, STUDIO_PATH } from "@/lib/routes";
+import { profilePath, STUDIO_PATH } from "@/lib/routes";
 import { useAuth } from "@/providers/AuthProvider";
 
 import {
   BentoAvatarStrip,
   BentoCoverMosaic,
-  BentoGenreTags,
+  BentoGenreGrid,
+  BentoProfileAvatar,
+  BentoProfileHero,
+  BentoSongStack,
+  BentoUploadCover,
   collectionsToCovers,
   playlistsToCovers,
 } from "./homeExploreBentoFills";
@@ -47,7 +52,15 @@ type BentoTile = {
   icon: LucideIcon;
   placement: string;
   iconTint: string;
-  fill?: "studio" | "playlists" | "artists" | "genres" | "profile-view";
+  fill?:
+    | "studio"
+    | "songs"
+    | "genres"
+    | "artists"
+    | "playlists"
+    | "upload"
+    | "profile-edit"
+    | "profile-view";
 };
 
 const TILES: BentoTile[] = [
@@ -72,6 +85,7 @@ const TILES: BentoTile[] = [
     icon: Disc3,
     placement: "md:col-start-3 md:row-start-1",
     iconTint: "text-sky-300",
+    fill: "songs",
   },
   {
     id: "genres",
@@ -115,6 +129,7 @@ const TILES: BentoTile[] = [
     icon: Upload,
     placement: "md:col-start-3 md:row-start-3",
     iconTint: "text-orange-300",
+    fill: "upload",
   },
   {
     id: "profile-edit",
@@ -126,6 +141,7 @@ const TILES: BentoTile[] = [
     icon: UserPen,
     placement: "md:col-start-4 md:row-start-3",
     iconTint: "text-cyan-300",
+    fill: "profile-edit",
   },
   {
     id: "profile-view",
@@ -147,7 +163,10 @@ function BentoCardFill({
   playlistCovers,
   artists,
   genres,
+  songs,
+  uploadCover,
   avatarUrl,
+  heroUrl,
   displayName,
 }: {
   kind: BentoTile["fill"];
@@ -155,26 +174,29 @@ function BentoCardFill({
   playlistCovers: ReturnType<typeof playlistsToCovers>;
   artists?: TopArtistItem[];
   genres?: LibraryGenre[];
+  songs?: TopSongItem[];
+  uploadCover?: ReturnType<typeof collectionsToCovers>[number] | null;
   avatarUrl?: string | null;
+  heroUrl?: string | null;
   displayName?: string;
 }) {
   if (!kind) return null;
 
+  const fillWrap = (child: ReactNode) => (
+    <div className="flex flex-1 items-center justify-center py-2">{child}</div>
+  );
+
   if (kind === "studio") {
     const covers = studioCovers.length > 0 ? studioCovers : playlistCovers;
-    return (
-      <div className="flex flex-1 items-center justify-center py-2">
-        <BentoCoverMosaic items={covers} />
-      </div>
-    );
+    return fillWrap(<BentoCoverMosaic items={covers} />);
   }
 
-  if (kind === "playlists") {
-    return (
-      <div className="flex flex-1 items-center justify-center py-2">
-        <BentoCoverMosaic items={playlistCovers} />
-      </div>
-    );
+  if (kind === "songs") {
+    return fillWrap(<BentoSongStack songs={songs ?? []} />);
+  }
+
+  if (kind === "genres") {
+    return fillWrap(<BentoGenreGrid genres={genres ?? []} />);
   }
 
   if (kind === "artists" && artists) {
@@ -185,27 +207,29 @@ function BentoCardFill({
     );
   }
 
-  if (kind === "genres" && genres) {
-    const sorted = [...genres].sort((a, b) => b.songCount - a.songCount);
-    return (
-      <div className="flex flex-1 items-end justify-end pb-1">
-        <BentoGenreTags genres={sorted} />
-      </div>
+  if (kind === "playlists") {
+    return fillWrap(<BentoCoverMosaic items={playlistCovers} />);
+  }
+
+  if (kind === "upload") {
+    return fillWrap(<BentoUploadCover cover={uploadCover} />);
+  }
+
+  if (kind === "profile-edit") {
+    return fillWrap(
+      <BentoProfileAvatar avatarUrl={avatarUrl} displayName={displayName} />,
     );
   }
 
-  if (kind === "profile-view" && (avatarUrl || displayName)) {
+  if (kind === "profile-view") {
+    const featured = artists?.[0];
     return (
-      <div className="pointer-events-none absolute right-4 top-14 h-24 w-24 overflow-hidden rounded-2xl border border-white/[0.1] opacity-40 sm:h-28 sm:w-28 sm:opacity-50">
-        {avatarUrl ? (
-          <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
-        ) : (
-          <div
-            className="h-full w-full"
-            style={{ background: coverFallback(displayName ?? "Artist") }}
-            aria-hidden
-          />
-        )}
+      <div className="flex flex-1 py-1">
+        <BentoProfileHero
+          avatarUrl={avatarUrl ?? featured?.avatarUrl}
+          heroUrl={heroUrl ?? featured?.heroImageUrl ?? featured?.avatarUrl}
+          displayName={displayName ?? featured?.displayName}
+        />
       </div>
     );
   }
@@ -220,7 +244,10 @@ function BentoCard({
   playlistCovers,
   artists,
   genres,
+  songs,
+  uploadCover,
   avatarUrl,
+  heroUrl,
   displayName,
 }: {
   tile: BentoTile;
@@ -229,7 +256,10 @@ function BentoCard({
   playlistCovers: ReturnType<typeof playlistsToCovers>;
   artists?: TopArtistItem[];
   genres?: LibraryGenre[];
+  songs?: TopSongItem[];
+  uploadCover?: ReturnType<typeof collectionsToCovers>[number] | null;
   avatarUrl?: string | null;
+  heroUrl?: string | null;
   displayName?: string;
 }) {
   const href = tile.id === "profile-view" ? profileViewHref : tile.href;
@@ -265,7 +295,10 @@ function BentoCard({
           playlistCovers={playlistCovers}
           artists={artists}
           genres={genres}
+          songs={songs}
+          uploadCover={uploadCover}
           avatarUrl={avatarUrl}
+          heroUrl={heroUrl}
           displayName={displayName}
         />
       ) : null}
@@ -307,6 +340,7 @@ export function HomeExploreBento({ username }: { username?: string }) {
   const { user } = useAuth();
   const profileViewHref = username ? profilePath(username) : ARTISTS_PATH;
 
+  const topSongs = useTopSongs("7d", 3);
   const topArtists = useTopArtists("7d", 5);
   const topPlaylists = useTopPlaylists("7d", 4);
   const libraryGenres = useLibraryGenres();
@@ -316,6 +350,11 @@ export function HomeExploreBento({ username }: { username?: string }) {
   const studioCovers = collectionsToCovers(myPlaylists.data?.data ?? []);
   const artists = topArtists.data?.data;
   const genres = libraryGenres.data?.data;
+  const songs = topSongs.data?.data;
+  const latestCollection = myPlaylists.data?.data?.[0];
+  const uploadCover = latestCollection
+    ? { id: latestCollection.id, title: latestCollection.title, imageUrl: latestCollection.coverArtUrl }
+    : playlistCovers[0] ?? null;
 
   return (
     <section className="mb-10" aria-labelledby="home-explore-bento-heading">
@@ -348,7 +387,10 @@ export function HomeExploreBento({ username }: { username?: string }) {
             playlistCovers={playlistCovers}
             artists={artists}
             genres={genres}
+            songs={songs}
+            uploadCover={uploadCover}
             avatarUrl={user?.avatarUrl}
+            heroUrl={user?.heroImageUrl}
             displayName={user?.displayName}
           />
         ))}
