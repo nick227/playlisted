@@ -466,18 +466,6 @@ export function HomePage() {
 
   const firstName = user?.displayName?.split(" ")[0];
 
-  const homeBentoExclude = useMemo((): HomeBentoExcludeIds => {
-    const playlistIds = [
-      ...discovered.map((p) => p.playlistId),
-      ...featuredPlaylistsSection.fallback.map((p) => p.playlistId),
-      ...featuredPlaylistsSection.editorial
-        .filter((item) => item.targetType === "PLAYLIST")
-        .map((item) => item.id),
-    ];
-    const recordingIds = newReleaseSongs.map((item) => item.id);
-    return { playlistIds, recordingIds };
-  }, [discovered, featuredPlaylistsSection, newReleaseSongs]);
-
   return (
     <div className="mx-auto max-w-[var(--size-container-max,90rem)]">
 
