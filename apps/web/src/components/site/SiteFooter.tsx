@@ -60,7 +60,7 @@ export function SiteFooter() {
 
         <div className="flex justify-end items-center gap-2">
           
-            <p>digital music project</p>
+            <p className="text-sm">digital music project</p>
             <h6 className="text-sm font-bold text-[var(--color-text-muted)]">© 2026</h6>
 
         </div>
