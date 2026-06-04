@@ -31,7 +31,10 @@ export function HomeExploreBento({ limits: limitsProp }: HomeExploreBentoProps =
     () => resolveHomeBentoLimits(limitsProp),
     [limitsProp?.songs, limitsProp?.playlists, limitsProp?.artists],
   );
-  const slots = useMemo(() => selectBentoSlots(HOME_BENTO_SLOTS, limits), [limits]);
+  const slots = useMemo(
+    () => selectBentoSlots(HOME_BENTO_SLOTS, limits),
+    [limits.songs, limits.playlists, limits.artists],
+  );
 
   const { play: playSong } = useHomeBentoSongPlayback();
   const { play: playPlaylist, isActive: playlistActive, isPlaying: playlistPlaying } =
@@ -48,10 +51,10 @@ export function HomeExploreBento({ limits: limitsProp }: HomeExploreBentoProps =
   const artists = topArtists.data?.data ?? [];
   const loading = topSongs.isLoading || topPlaylists.isLoading || topArtists.isLoading;
 
-  if (!loading && slots.length === 0) return null;
-  if (!loading && songs.length === 0 && playlists.length === 0 && artists.length === 0) {
-    return null;
-  }
+  if (slots.length === 0) return null;
+
+  const hasContent = loading || songs.length > 0 || playlists.length > 0 || artists.length > 0;
+  if (!hasContent) return null;
 
   const rangeLabel = HOME_CHART_RANGE_LABEL[HOME_CHART_RANGE];
 

@@ -55,9 +55,15 @@ export function resolveHomeBentoLimits(
   return resolved;
 }
 
+const BENTO_LIMIT_KEY: Record<BentoMediaKind, keyof HomeExploreBentoLimits> = {
+  song: "songs",
+  playlist: "playlists",
+  artist: "artists",
+};
+
 export function selectBentoSlots(
   slots: BentoSlot[],
   limits: HomeExploreBentoLimits,
 ): BentoSlot[] {
-  return slots.filter((slot) => slot.index < limits[slot.kind]);
+  return slots.filter((slot) => slot.index < limits[BENTO_LIMIT_KEY[slot.kind]]);
 }
