@@ -110,6 +110,7 @@ model User {
   uploadAssets           UploadAsset[]
   receivedProfileViews   ProfileViewEvent[] @relation("ProfileViews")
   viewedProfiles         ProfileViewEvent[] @relation("ViewerActivities")
+  trafficEvents          TrafficEvent[]
 
   @@index([role, status])
 }
@@ -419,4 +420,34 @@ model ApiKey {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+model TrafficEvent {
+  id          BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  eventType   String   @default("REQUEST") @db.VarChar(40)
+  visitorId   String?  @db.VarChar(64)
+  userId      String?  @db.VarChar(191)
+  sessionId   String?  @db.VarChar(191)
+  path        String   @db.VarChar(2048)
+  method      String?  @db.VarChar(10)
+  status      Int?     @db.UnsignedSmallInt
+  latencyMs   Int?     @db.UnsignedInt
+  ipHash      String?  @db.VarChar(64)
+  userAgent   String?  @db.VarChar(512)
+  referrer    String?  @db.VarChar(2048)
+  isBot       Boolean  @default(false)
+  botReason   String?  @db.VarChar(100)
+  bytesSent   BigInt?  @db.UnsignedBigInt
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([eventType, createdAt])
+  @@index([visitorId, createdAt])
+  @@index([userId, createdAt])
+  @@index([path(length: 191), createdAt])
+  @@index([status, createdAt])
+  @@index([isBot, createdAt])
 }

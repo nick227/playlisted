@@ -1,6 +1,7 @@
 import { createPlaylistedApi } from "@playlisted/client-sdk";
 
 import { api } from "./api";
+import { trafficHeaders } from "./trafficIdentity";
 
 export function authedApi(accessToken: string | null) {
   if (!accessToken) {
@@ -9,7 +10,7 @@ export function authedApi(accessToken: string | null) {
 
   return createPlaylistedApi({
     baseUrl: import.meta.env.VITE_API_BASE_URL ?? "",
-    headers: { Authorization: `Bearer ${accessToken}` },
+    headers: { ...trafficHeaders(), Authorization: `Bearer ${accessToken}` },
   });
 }
 
@@ -35,6 +36,9 @@ export async function uploadAudioFile(
     const xhr = new XMLHttpRequest();
     xhr.open("POST", url);
     xhr.setRequestHeader("Authorization", `Bearer ${accessToken}`);
+    for (const [key, value] of Object.entries(trafficHeaders())) {
+      xhr.setRequestHeader(key, value);
+    }
 
     xhr.upload.onprogress = (event) => {
       if (!options?.onProgress) return;
@@ -77,7 +81,7 @@ export async function uploadImageFile(file: File, accessToken: string) {
   const base = import.meta.env.VITE_API_BASE_URL ?? "";
   const response = await fetch(`${base}/api/v1/uploads/images`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${accessToken}` },
+    headers: { ...trafficHeaders(), Authorization: `Bearer ${accessToken}` },
     body: form,
   });
 
@@ -102,6 +106,7 @@ export async function bulkRegisterUploads(
   const response = await fetch(`${base}/api/v1/uploads/audio/bulk-register`, {
     method: "POST",
     headers: {
+      ...trafficHeaders(),
       Authorization: `Bearer ${accessToken}`,
       "Content-Type": "application/json",
     },

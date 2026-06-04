@@ -3,6 +3,7 @@ import { useAuth } from "@/providers/AuthProvider";
 
 const NAV = [
   { to: "/admin", label: "Dashboard", end: true },
+  { to: "/admin/traffic", label: "Traffic" },
   { to: "/admin/songs", label: "Songs" },
   { to: "/admin/playlists", label: "Playlists" },
   { to: "/admin/users", label: "Users" },

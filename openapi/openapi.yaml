@@ -4215,7 +4215,7 @@ components:
 
     ChartRange:
       type: string
-      enum: [7d, 30d, all]
+      enum: [today, 7d, 30d, all]
       default: 30d
 
     ChartArtistRef:
@@ -5645,6 +5645,16 @@ components:
         - avgKnownSessionSeconds
         - activeSessions
         - registeredUsers
+        - requests
+        - humanRequests
+        - botRequests
+        - uniqueVisitors
+        - activeVisitors
+        - errorRequests
+        - errorRate
+        - avgLatencyMs
+        - p95LatencyMs
+        - bandwidthBytes
       properties:
         profilePageViews:
           type: integer
@@ -5672,11 +5682,31 @@ components:
           type: integer
         registeredUsers:
           type: integer
+        requests:
+          type: integer
+        humanRequests:
+          type: integer
+        botRequests:
+          type: integer
+        uniqueVisitors:
+          type: integer
+        activeVisitors:
+          type: integer
+        errorRequests:
+          type: integer
+        errorRate:
+          type: number
+        avgLatencyMs:
+          type: integer
+        p95LatencyMs:
+          type: integer
+        bandwidthBytes:
+          type: integer
 
     AdminTrafficResponse:
       type: object
       additionalProperties: false
-      required: [range, caveat, totals, dailyProfileViews, dailyPlays, topProfiles, referrers, topConsumers, limitations]
+      required: [range, caveat, totals, dailyProfileViews, dailyPlays, topProfiles, referrers, topConsumers, topRoutes, limitations]
       properties:
         range:
           $ref: '#/components/schemas/ChartRange'
@@ -5760,6 +5790,25 @@ components:
               lastActivityAt:
                 type: [string, 'null']
                 format: date-time
+        topRoutes:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [path, method, requests, avgLatencyMs, errors, errorRate]
+            properties:
+              path:
+                type: string
+              method:
+                type: string
+              requests:
+                type: integer
+              avgLatencyMs:
+                type: integer
+              errors:
+                type: integer
+              errorRate:
+                type: number
         limitations:
           type: array
           items:

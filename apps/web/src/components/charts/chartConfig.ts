@@ -3,6 +3,7 @@ import type { ChartRange } from "@playlisted/client-sdk";
 export const HOME_CHART_RANGE: ChartRange = "7d";
 
 export const HOME_CHART_RANGE_LABEL: Record<ChartRange, string> = {
+  today: "today",
   "7d": "last 7 days",
   "30d": "last 30 days",
   all: "all time",

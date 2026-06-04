@@ -1814,7 +1814,7 @@ export interface components {
          * @default 30d
          * @enum {string}
          */
-        ChartRange: "7d" | "30d" | "all";
+        ChartRange: "today" | "7d" | "30d" | "all";
         ChartArtistRef: {
             id: string;
             username: string;
@@ -2434,6 +2434,16 @@ export interface components {
             avgKnownSessionSeconds: number;
             activeSessions: number;
             registeredUsers: number;
+            requests: number;
+            humanRequests: number;
+            botRequests: number;
+            uniqueVisitors: number;
+            activeVisitors: number;
+            errorRequests: number;
+            errorRate: number;
+            avgLatencyMs: number;
+            p95LatencyMs: number;
+            bandwidthBytes: number;
         };
         AdminTrafficResponse: {
             range: components["schemas"]["ChartRange"];
@@ -2469,6 +2479,14 @@ export interface components {
                 totalActions: number;
                 /** Format: date-time */
                 lastActivityAt: string | null;
+            }[];
+            topRoutes: {
+                path: string;
+                method: string;
+                requests: number;
+                avgLatencyMs: number;
+                errors: number;
+                errorRate: number;
             }[];
             limitations: string[];
         };

@@ -9,6 +9,7 @@ import { AdminHomepagePage } from "@/pages/admin/AdminHomepagePage";
 import { AdminPlaylistsPage } from "@/pages/admin/AdminPlaylistsPage";
 import { AdminSongsPage } from "@/pages/admin/AdminSongsPage";
 import { AdminTagsPage } from "@/pages/admin/AdminTagsPage";
+import { AdminTrafficPage } from "@/pages/admin/AdminTrafficPage";
 import { AdminUsersPage } from "@/pages/admin/AdminUsersPage";
 import { AdminApiKeysPage } from "@/pages/admin/AdminApiKeysPage";
 import { AdminRadioPage } from "@/pages/admin/AdminRadioPage";
@@ -156,6 +157,7 @@ function MainRoutes() {
           }
         >
           <Route index element={<AdminDashboardPage />} />
+          <Route path="traffic" element={<AdminTrafficPage />} />
           <Route path="songs" element={<AdminSongsPage />} />
           <Route path="playlists" element={<AdminPlaylistsPage />} />
           <Route path="users" element={<AdminUsersPage />} />

@@ -5,6 +5,7 @@ import express from "express";
 import { isApiDocsEnabled } from "./lib/apiDocs.js";
 import { getCorsOptions } from "./lib/corsOptions.js";
 import { installWebApp } from "./lib/serveWeb.js";
+import { trafficInstrumentation } from "./lib/trafficInstrumentation.js";
 import OpenApiValidator from "express-openapi-validator";
 import fs from "node:fs";
 import path from "node:path";
@@ -20,6 +21,7 @@ import { adminHomepageRouter } from "./routes/admin/homepage.js";
 import { adminPlaylistsRouter } from "./routes/admin/playlists.js";
 import { adminSongsRouter } from "./routes/admin/songs.js";
 import { adminTagsRouter } from "./routes/admin/tags.js";
+import { adminTrafficRouter } from "./routes/admin/traffic.js";
 import { adminUsersRouter } from "./routes/admin/users.js";
 import { adminDeveloperKeysRouter } from "./routes/admin/developerKeys.js";
 import { chartsRouter } from "./routes/charts.js";
@@ -51,6 +53,7 @@ export function createApp() {
 
   app.use(cors(getCorsOptions()));
   app.use(express.json());
+  app.use(trafficInstrumentation);
   app.use("/uploads", express.static(uploadsDir));
   app.use("/api/v1/uploads", studioUploadLimiter, uploadsRouter);
   // Ingest upload: multipart — mounted before OpenAPI validator
@@ -89,6 +92,7 @@ export function createApp() {
   app.use("/api/v1/admin/songs", adminSongsRouter);
   app.use("/api/v1/admin/playlists", adminPlaylistsRouter);
   app.use("/api/v1/admin/tags", adminTagsRouter);
+  app.use("/api/v1/admin/traffic", adminTrafficRouter);
   app.use("/api/v1/admin/homepage-features", adminHomepageRouter);
   app.use("/api/v1/admin/users", adminUsersRouter);
   app.use("/api/v1/admin/developer/keys", adminDeveloperKeysRouter);
