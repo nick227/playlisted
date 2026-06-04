@@ -6,11 +6,22 @@ export const EMPTY_LIBRARY_SONGS: LibrarySong[] = [];
 export const EMPTY_PLAYLISTS: PlaylistSummary[] = [];
 
 export type SongSortKey = "title" | "plays" | "favorites";
+export type ArtistSortKey = "name" | "recordings";
 export type SortDirection = "asc" | "desc";
 
 export function filterArtistsByGenre(artists: LibraryArtist[], genreSlug: string | null): LibraryArtist[] {
   if (!genreSlug) return artists;
   return artists.filter((artist) => artist.genres.some((genre) => genre.slug === genreSlug));
+}
+
+export function filterArtistsByQuery(artists: LibraryArtist[], query: string): LibraryArtist[] {
+  const term = query.trim().toLowerCase();
+  if (!term) return artists;
+  return artists.filter(
+    (artist) =>
+      artist.displayName.toLowerCase().includes(term) ||
+      artist.username.toLowerCase().includes(term),
+  );
 }
 
 export function filterSongsByArtist(songs: LibrarySong[], artistId: string | null): LibrarySong[] {
@@ -53,6 +64,22 @@ export function genresFromArtists(artists: LibraryArtist[]): LibraryGenre[] {
     }
   }
   return sortGenres(Array.from(genres.values()));
+}
+
+export function sortLibraryArtists(
+  artists: LibraryArtist[],
+  sortKey: ArtistSortKey,
+  direction: SortDirection,
+): LibraryArtist[] {
+  const factor = direction === "asc" ? 1 : -1;
+  return [...artists].sort((a, b) => {
+    if (sortKey === "recordings") {
+      if (a.songCount !== b.songCount) return (a.songCount - b.songCount) * factor;
+    } else if (a.displayName.localeCompare(b.displayName) !== 0) {
+      return a.displayName.localeCompare(b.displayName) * factor;
+    }
+    return a.username.localeCompare(b.username) * factor;
+  });
 }
 
 export function sortLibrarySongs(

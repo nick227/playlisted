@@ -1,25 +1,34 @@
 import type { LibraryArtist, LibraryGenre, LibrarySong, PlaylistListResponse } from "@playlisted/client-sdk";
 import { ChevronRight, Pause, Play } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { Skeleton } from "@/components/feedback/Skeleton";
 import { LibraryArtistFilter } from "@/components/library/LibraryArtistFilter";
-import { LibraryGenreFilter } from "@/components/library/LibraryGenreFilter";
+import {
+  createLibraryGenreSelectionStore,
+  LibraryGenreFilter,
+  useLibraryGenreSelection,
+  type LibraryGenreSelectionStore,
+} from "@/components/library/LibraryGenreFilter";
 import {
   EMPTY_LIBRARY_ARTISTS,
   EMPTY_LIBRARY_GENRES,
   EMPTY_LIBRARY_SONGS,
   EMPTY_PLAYLISTS,
   filterArtistsByGenre,
+  filterArtistsByQuery,
   filterSongsByArtist,
   genresFromArtists,
   genresFromSongs,
+  sortLibraryArtists,
   sortLibrarySongs,
   topArtistsBySongCount,
+  type ArtistSortKey,
   type SortDirection,
   type SongSortKey,
 } from "@/components/library/libraryFilterUtils";
+import { LibraryArtistSortBar } from "@/components/library/LibraryArtistSortBar";
 import { LibrarySongSortBar } from "@/components/library/LibrarySongSortBar";
 import { LibraryTrackRow } from "@/components/library/LibraryTrackRow";
 import {
@@ -56,7 +65,7 @@ export function PanelSkeleton() {
       <Skeleton className="h-14 w-56 rounded-lg" />
       <Skeleton className="h-4 w-72 rounded" />
       <div className="mt-10 space-y-2">
-        {Array.from({ length: 7 }).map((_, i) => (
+        {Array.from({ length: 4 }).map((_, i) => (
           <Skeleton key={i} className="h-12 w-full rounded-lg" />
         ))}
       </div>
@@ -87,61 +96,7 @@ export function PanelHeader({
   );
 }
 
-function ArtworkPreview({ song }: { song: LibrarySong | null }) {
-  const [displaySong, setDisplaySong] = useState<LibrarySong | null>(null);
-  const [opacity, setOpacity] = useState(0);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    if (timerRef.current) clearTimeout(timerRef.current);
-    if (!song) {
-      setOpacity(0);
-      timerRef.current = setTimeout(() => setDisplaySong(null), 300);
-      return;
-    }
-    setOpacity(0);
-    timerRef.current = setTimeout(() => {
-      setDisplaySong(song);
-      setOpacity(1);
-    }, 120);
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
-  }, [song?.id]);
-
-  return (
-    <div className="hidden w-52 shrink-0 xl:block">
-      <div className="sticky top-24">
-        <div
-          className="aspect-square w-full overflow-hidden rounded-xl shadow-2xl"
-          style={{
-            opacity,
-            transform: `scale(${opacity === 1 ? 1 : 0.96})`,
-            transition: "opacity 300ms ease, transform 300ms ease",
-          }}
-        >
-          {displaySong?.artworkUrl ? (
-            <img src={displaySong.artworkUrl} alt="" className="h-full w-full object-cover" />
-          ) : (
-            <div
-              className="h-full w-full"
-              style={{ background: coverFallback(displaySong?.title ?? "") }}
-            />
-          )}
-        </div>
-        {displaySong && (
-          <div className="mt-4 space-y-0.5" style={{ opacity, transition: "opacity 300ms ease" }}>
-            <p className="text-sm font-semibold leading-tight text-white">{displaySong.title}</p>
-            <p className="text-xs text-[var(--color-text-muted)]">{displaySong.uploader.displayName}</p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function TracksWithPreview({ songs }: { songs: LibrarySong[] }) {
-  const [hoveredSong, setHoveredSong] = useState<LibrarySong | null>(null);
+function TracksList({ songs }: { songs: LibrarySong[] }) {
   const { playTrack, currentTrack, togglePlay } = useAudioPlayer();
 
   function handlePlay(song: LibrarySong) {
@@ -156,23 +111,15 @@ function TracksWithPreview({ songs }: { songs: LibrarySong[] }) {
   }
 
   return (
-    <div className="flex gap-10">
-      <div className="min-w-0 flex-1">
-        {songs.map((song) => (
-          <div
-            key={song.id}
-            onMouseEnter={() => setHoveredSong(song)}
-            onMouseLeave={() => setHoveredSong(null)}
-          >
-            <LibraryTrackRow
-              song={song}
-              onPlay={() => handlePlay(song)}
-              queueTrack={librarySongToQueueTrack(song)}
-            />
-          </div>
-        ))}
-      </div>
-      <ArtworkPreview song={hoveredSong} />
+    <div className="min-w-0">
+      {songs.map((song) => (
+        <LibraryTrackRow
+          key={song.id}
+          song={song}
+          onPlay={() => handlePlay(song)}
+          queueTrack={librarySongToQueueTrack(song)}
+        />
+      ))}
     </div>
   );
 }
@@ -365,7 +312,7 @@ export function GenresPanel() {
   if (isLoading) return <PanelSkeleton />;
 
   const byLetter = genres.reduce<Record<string, typeof genres>>((acc, g) => {
-    const letter = g.name[0].toUpperCase();
+    const letter = g.name.trim()[0]?.toUpperCase() ?? "#";
     (acc[letter] ??= []).push(g);
     return acc;
   }, {});
@@ -437,7 +384,7 @@ export function GenreDetailPanel({ slug, name }: { slug: string; name: string })
         {songs.length === 0 ? (
           <p className="text-sm text-[var(--color-text-subtle)]">No recordings in this genre yet.</p>
         ) : (
-          <TracksWithPreview songs={songs} />
+          <TracksList songs={songs} />
         )}
       </div>
     </div>
@@ -445,144 +392,212 @@ export function GenreDetailPanel({ slug, name }: { slug: string; name: string })
 }
 
 export function ArtistsPanel() {
-  const [genreSlug, setGenreSlug] = useState<string | null>(null);
+  const genreStore = useMemo(() => createLibraryGenreSelectionStore(), []);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortKey, setSortKey] = useState<ArtistSortKey>("name");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const { data, isLoading } = useLibraryArtists();
   const allArtists = data?.data ?? EMPTY_LIBRARY_ARTISTS;
   const genres = useMemo(() => genresFromArtists(allArtists), [allArtists]);
-  const artists = filterArtistsByGenre(allArtists, genreSlug);
+  const suggestedArtists = useMemo(() => topArtistsBySongCount(allArtists, 4), [allArtists]);
 
   if (isLoading) return <PanelSkeleton />;
 
   return (
     <div>
-      <PanelHeader label="Artists" count={artists.length} />
-      <LibraryGenreFilter genres={genres} value={genreSlug} onChange={setGenreSlug} />
-      {artists.length === 0 ? (
-        <p className="mt-10 text-sm text-[var(--color-text-subtle)]">No artists match this genre.</p>
-      ) : (
-        <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {artists.map((artist) => (
-            <Link
-              key={artist.id}
-              to={artistPath(artist.username)}
-              className="group rounded-xl p-3 text-left transition-colors hover:bg-white/5"
-            >
-              <div className="mb-3 aspect-square w-full overflow-hidden rounded-lg">
-                {artist.avatarUrl ? (
-                  <img
-                    src={artist.avatarUrl}
-                    alt=""
-                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  />
-                ) : (
-                  <div
-                    className="h-full w-full"
-                    style={{ background: coverFallback(artist.displayName) }}
-                  />
-                )}
-              </div>
-              <p className="truncate font-semibold text-white">{artist.displayName}</p>
-              <p className="mt-0.5 truncate text-xs text-[var(--color-text-muted)]">
-                {artist.songCount} recording{artist.songCount !== 1 ? "s" : ""}
-                {artist.genres.length > 0 ? ` · ${artist.genres[0].name}` : ""}
-              </p>
-            </Link>
-          ))}
-        </div>
-      )}
+      <PanelHeader label="Artists" count={allArtists.length} />
+      <LibraryGenreFilter genres={genres} store={genreStore} />
+      <LibraryArtistFilter
+        mode="filter"
+        artists={allArtists}
+        suggestedArtists={suggestedArtists}
+        filterQuery={searchQuery}
+        onFilterQueryChange={setSearchQuery}
+      />
+      <LibraryArtistSortBar
+        sortKey={sortKey}
+        sortDirection={sortDirection}
+        onSortKeyChange={setSortKey}
+        onSortDirectionChange={setSortDirection}
+      />
+      <ArtistResults
+        artists={allArtists}
+        genreStore={genreStore}
+        searchQuery={searchQuery}
+        sortDirection={sortDirection}
+        sortKey={sortKey}
+      />
     </div>
   );
 }
 
-export function PlaylistsPanel() {
-  const [genreSlug, setGenreSlug] = useState<string | null>(null);
-  const { data: genresData } = useLibraryPlaylistGenres();
-  const genres = genresData?.data ?? EMPTY_LIBRARY_GENRES;
-  const { data, isLoading } = useLibraryPlaylists(genreSlug);
-  const playlists = data?.data ?? EMPTY_PLAYLISTS;
-
-  if (isLoading) return <PanelSkeleton />;
-
-  return (
-    <div>
-      <PanelHeader label="Playlists" count={playlists.length} />
-      <LibraryGenreFilter genres={genres} value={genreSlug} onChange={setGenreSlug} />
-      {playlists.length === 0 ? (
-        <p className="mt-10 text-sm text-[var(--color-text-subtle)]">No playlists match this genre.</p>
-      ) : (
-        <div className="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          {playlists.map((playlist) => (
-            <Link
-              key={playlist.id}
-              to={playlistPath({ id: playlist.id, href: playlist.href })}
-              className="group block"
-            >
-              <div className="mb-3 aspect-square overflow-hidden rounded-lg">
-                {playlist.coverArtUrl ? (
-                  <img
-                    src={playlist.coverArtUrl}
-                    alt=""
-                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  />
-                ) : (
-                  <div
-                    className="h-full w-full"
-                    style={{ background: coverFallback(playlist.title) }}
-                  />
-                )}
-              </div>
-              <p className="truncate text-sm font-semibold text-white">{playlist.title}</p>
-              <p className="mt-0.5 truncate text-xs text-[var(--color-text-muted)]">
-                {playlist.owner.displayName}
-                {playlist.itemCount > 0 ? ` · ${playlist.itemCount} tracks` : ""}
-              </p>
-            </Link>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-export function SongsPanel() {
-  const [genreSlug, setGenreSlug] = useState<string | null>(null);
-  const [artistId, setArtistId] = useState<string | null>(null);
-  const [sortKey, setSortKey] = useState<SongSortKey>("title");
-  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
-
-  const { data: artistsData } = useLibraryArtists();
-  const artists = artistsData?.data ?? EMPTY_LIBRARY_ARTISTS;
-  const suggestedArtists = useMemo(() => topArtistsBySongCount(artists, 4), [artists]);
-  const allSongsQuery = useLibrarySongs(null);
-  const genreSongsQuery = useLibrarySongs(genreSlug, Boolean(genreSlug));
-  const data = genreSlug ? genreSongsQuery.data : allSongsQuery.data;
-  const isLoading = allSongsQuery.isLoading || (Boolean(genreSlug) && genreSongsQuery.isLoading);
-  const genres = useMemo(
-    () => genresFromSongs(allSongsQuery.data?.data ?? EMPTY_LIBRARY_SONGS),
-    [allSongsQuery.data?.data],
-  );
-
-  const songs = useMemo(() => {
-    const filtered = filterSongsByArtist(data?.data ?? EMPTY_LIBRARY_SONGS, artistId);
-    return sortLibrarySongs(filtered, sortKey, sortDirection);
-  }, [data?.data, artistId, sortKey, sortDirection]);
-
-  if (isLoading) return <PanelSkeleton />;
+function ArtistResults({
+  artists,
+  genreStore,
+  searchQuery,
+  sortDirection,
+  sortKey,
+}: {
+  artists: LibraryArtist[];
+  genreStore: LibraryGenreSelectionStore;
+  searchQuery: string;
+  sortDirection: SortDirection;
+  sortKey: ArtistSortKey;
+}) {
+  const genreSlug = useLibraryGenreSelection(genreStore);
+  const filteredArtists = useMemo(() => {
+    const byGenre = filterArtistsByGenre(artists, genreSlug);
+    const byQuery = filterArtistsByQuery(byGenre, searchQuery);
+    return sortLibraryArtists(byQuery, sortKey, sortDirection);
+  }, [artists, genreSlug, searchQuery, sortKey, sortDirection]);
 
   const curatorNote =
-    songs.length > 0
-      ? `${songs.length} recording${songs.length !== 1 ? "s" : ""} from ${new Set(songs.map((s) => s.uploaderId)).size} artists`
+    filteredArtists.length > 0
+      ? `${filteredArtists.length} artist${filteredArtists.length !== 1 ? "s" : ""} · ${filteredArtists.reduce((sum, artist) => sum + artist.songCount, 0)} recordings`
       : null;
 
+  if (filteredArtists.length === 0) {
+    return (
+      <p className="mt-10 text-sm text-[var(--color-text-subtle)]">No artists match these filters.</p>
+    );
+  }
+
   return (
-    <div>
-      <PanelHeader label="Songs" count={songs.length} unit="recording" />
+    <>
       {curatorNote && (
         <p className="mt-3 max-w-2xl text-sm italic leading-relaxed text-[var(--color-text-muted)]">
           {curatorNote}
         </p>
       )}
-      <LibraryGenreFilter genres={genres} value={genreSlug} onChange={setGenreSlug} />
+    <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+      {filteredArtists.map((artist) => (
+        <Link
+          key={artist.id}
+          to={artistPath(artist.username)}
+          className="group rounded-xl p-3 text-left transition-colors hover:bg-white/5"
+        >
+          <div className="mb-3 aspect-square w-full overflow-hidden rounded-lg">
+            {artist.avatarUrl ? (
+              <img
+                src={artist.avatarUrl}
+                alt=""
+                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+              />
+            ) : (
+              <div className="h-full w-full" style={{ background: coverFallback(artist.displayName) }} />
+            )}
+          </div>
+          <p className="truncate font-semibold text-white">{artist.displayName}</p>
+          <p className="mt-0.5 truncate text-xs text-[var(--color-text-muted)]">
+            {artist.songCount} recording{artist.songCount !== 1 ? "s" : ""}
+            {artist.genres.length > 0 ? ` · ${artist.genres[0].name}` : ""}
+          </p>
+        </Link>
+      ))}
+    </div>
+    </>
+  );
+}
+
+export function PlaylistsPanel() {
+  const genreStore = useMemo(() => createLibraryGenreSelectionStore(), []);
+  const { data: genresData, isLoading: genresLoading } = useLibraryPlaylistGenres();
+  const genres = genresData?.data ?? EMPTY_LIBRARY_GENRES;
+
+  return (
+    <div>
+      <PanelHeader label="Playlists" />
+      {genresLoading ? <GenreFilterSkeleton /> : <LibraryGenreFilter genres={genres} store={genreStore} />}
+      <PlaylistResults genreStore={genreStore} />
+    </div>
+  );
+}
+
+function GenreFilterSkeleton() {
+  return (
+    <div className="mt-8">
+      <Skeleton className="mb-3 h-3 w-14 rounded" />
+      <div className="flex flex-wrap gap-2">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-8 w-16 rounded-full" />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ResultGridSkeleton() {
+  return (
+    <div className="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <Skeleton key={i} className="aspect-square w-full rounded-lg" />
+      ))}
+    </div>
+  );
+}
+
+function PlaylistResults({ genreStore }: { genreStore: LibraryGenreSelectionStore }) {
+  const genreSlug = useLibraryGenreSelection(genreStore);
+  const { data, isLoading } = useLibraryPlaylists(genreSlug);
+  const playlists = data?.data ?? EMPTY_PLAYLISTS;
+
+  if (isLoading) return <ResultGridSkeleton />;
+
+  if (playlists.length === 0) {
+    return <p className="mt-10 text-sm text-[var(--color-text-subtle)]">No playlists match this genre.</p>;
+  }
+
+  return (
+    <div className="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+      {playlists.map((playlist) => (
+        <Link
+          key={playlist.id}
+          to={playlistPath({ id: playlist.id, href: playlist.href })}
+          className="group block"
+        >
+          <div className="mb-3 aspect-square overflow-hidden rounded-lg">
+            {playlist.coverArtUrl ? (
+              <img
+                src={playlist.coverArtUrl}
+                alt=""
+                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+              />
+            ) : (
+              <div className="h-full w-full" style={{ background: coverFallback(playlist.title) }} />
+            )}
+          </div>
+          <p className="truncate text-sm font-semibold text-white">{playlist.title}</p>
+          <p className="mt-0.5 truncate text-xs text-[var(--color-text-muted)]">
+            {playlist.owner.displayName}
+            {playlist.itemCount > 0 ? ` · ${playlist.itemCount} tracks` : ""}
+          </p>
+        </Link>
+      ))}
+    </div>
+  );
+}
+
+export function SongsPanel() {
+  const genreStore = useMemo(() => createLibraryGenreSelectionStore(), []);
+  const [artistId, setArtistId] = useState<string | null>(null);
+  const [sortKey, setSortKey] = useState<SongSortKey>("title");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+
+  const { data: artistsData } = useLibraryArtists();
+  const artists = artistsData?.data ?? EMPTY_LIBRARY_ARTISTS;
+  const suggestedArtists = useMemo(() => topArtistsBySongCount(artists, 4), [artists]);
+  const allSongsQuery = useLibrarySongs(null);
+  const genres = useMemo(
+    () => genresFromSongs(allSongsQuery.data?.data ?? EMPTY_LIBRARY_SONGS),
+    [allSongsQuery.data?.data],
+  );
+
+  if (allSongsQuery.isLoading) return <PanelSkeleton />;
+
+  return (
+    <div>
+      <PanelHeader label="Songs" count={allSongsQuery.data?.data.length ?? 0} unit="recording" />
+      <LibraryGenreFilter genres={genres} store={genreStore} />
       <LibraryArtistFilter
         artists={artists}
         suggestedArtists={suggestedArtists}
@@ -595,13 +610,67 @@ export function SongsPanel() {
         onSortKeyChange={setSortKey}
         onSortDirectionChange={setSortDirection}
       />
+      <SongResults
+        allSongs={allSongsQuery.data?.data ?? EMPTY_LIBRARY_SONGS}
+        artistId={artistId}
+        genreStore={genreStore}
+        sortDirection={sortDirection}
+        sortKey={sortKey}
+      />
+    </div>
+  );
+}
+
+function SongResults({
+  allSongs,
+  artistId,
+  genreStore,
+  sortDirection,
+  sortKey,
+}: {
+  allSongs: LibrarySong[];
+  artistId: string | null;
+  genreStore: LibraryGenreSelectionStore;
+  sortDirection: SortDirection;
+  sortKey: SongSortKey;
+}) {
+  const genreSlug = useLibraryGenreSelection(genreStore);
+  const genreSongsQuery = useLibrarySongs(genreSlug, Boolean(genreSlug));
+  const sourceSongs = genreSlug ? (genreSongsQuery.data?.data ?? EMPTY_LIBRARY_SONGS) : allSongs;
+  const songs = useMemo(() => {
+    const filtered = filterSongsByArtist(sourceSongs, artistId);
+    return sortLibrarySongs(filtered, sortKey, sortDirection);
+  }, [sourceSongs, artistId, sortKey, sortDirection]);
+
+  const curatorNote =
+    songs.length > 0
+      ? `${songs.length} recording${songs.length !== 1 ? "s" : ""} from ${new Set(songs.map((s) => s.uploaderId)).size} artists`
+      : null;
+
+  if (genreSlug && genreSongsQuery.isLoading) {
+    return (
+      <div className="mt-10 space-y-2">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-12 w-full rounded-lg" />
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {curatorNote && (
+        <p className="mt-3 max-w-2xl text-sm italic leading-relaxed text-[var(--color-text-muted)]">
+          {curatorNote}
+        </p>
+      )}
       <div className="mt-10">
         {songs.length === 0 ? (
           <p className="text-sm text-[var(--color-text-subtle)]">No recordings match these filters.</p>
         ) : (
-          <TracksWithPreview songs={songs} />
+          <TracksList songs={songs} />
         )}
       </div>
-    </div>
+    </>
   );
 }

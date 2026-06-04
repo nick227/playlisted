@@ -5,19 +5,26 @@ import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import { matchArtistsByQuery } from "@/components/library/libraryFilterUtils";
 import { coverFallback } from "@/lib/routes";
 
-interface LibraryArtistFilterProps {
-  artists: LibraryArtist[];
-  suggestedArtists: LibraryArtist[];
+type LibraryArtistFilterSelectProps = {
+  mode?: "select";
   selectedArtistId: string | null;
   onSelect: (artistId: string | null) => void;
-}
+};
 
-export function LibraryArtistFilter({
-  artists,
-  suggestedArtists,
-  selectedArtistId,
-  onSelect,
-}: LibraryArtistFilterProps) {
+type LibraryArtistFilterBrowseProps = {
+  mode: "filter";
+  filterQuery: string;
+  onFilterQueryChange: (query: string) => void;
+};
+
+type LibraryArtistFilterProps = {
+  artists: LibraryArtist[];
+  suggestedArtists: LibraryArtist[];
+} & (LibraryArtistFilterSelectProps | LibraryArtistFilterBrowseProps);
+
+export function LibraryArtistFilter(props: LibraryArtistFilterProps) {
+  const { artists, suggestedArtists } = props;
+
   const listboxId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -25,9 +32,13 @@ export function LibraryArtistFilter({
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
 
-  const selectedArtist = artists.find((artist) => artist.id === selectedArtistId) ?? null;
-  const matches = matchArtistsByQuery(artists, query);
-  const showDropdown = open && query.trim().length > 0;
+  const selectedArtist =
+    props.mode !== "filter" && props.selectedArtistId
+      ? (artists.find((artist) => artist.id === props.selectedArtistId) ?? null)
+      : null;
+  const displayQuery = props.mode === "filter" ? props.filterQuery : query;
+  const matches = matchArtistsByQuery(artists, displayQuery);
+  const showDropdown = open && displayQuery.trim().length > 0;
 
   useEffect(() => {
     if (!showDropdown) return;
@@ -41,15 +52,36 @@ export function LibraryArtistFilter({
     return () => document.removeEventListener("mousedown", onPointerDown);
   }, [showDropdown]);
 
+  function applyQuery(value: string) {
+    if (props.mode === "filter") {
+      props.onFilterQueryChange(value);
+      return;
+    }
+    setQuery(value);
+  }
+
   function pickArtist(artist: LibraryArtist) {
-    onSelect(artist.id);
+    if (props.mode === "filter") {
+      applyQuery(artist.displayName);
+      setOpen(false);
+      setActiveIndex(-1);
+      return;
+    }
+    props.onSelect(artist.id);
     setQuery(artist.displayName);
     setOpen(false);
     setActiveIndex(-1);
   }
 
   function clearArtist() {
-    onSelect(null);
+    if (props.mode === "filter") {
+      applyQuery("");
+      setOpen(false);
+      setActiveIndex(-1);
+      inputRef.current?.focus();
+      return;
+    }
+    props.onSelect(null);
     setQuery("");
     setOpen(false);
     setActiveIndex(-1);
@@ -58,7 +90,7 @@ export function LibraryArtistFilter({
 
   function onKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     if (!showDropdown) {
-      if (event.key === "ArrowDown" && query.trim()) setOpen(true);
+      if (event.key === "ArrowDown" && displayQuery.trim()) setOpen(true);
       return;
     }
     if (event.key === "Escape") {
@@ -82,9 +114,18 @@ export function LibraryArtistFilter({
     }
   }
 
+  const inputValue =
+    props.mode !== "filter" && selectedArtist && !open ? selectedArtist.displayName : displayQuery;
+  const sectionLabel = props.mode === "filter" ? "Search" : "Artist";
+  const hasValue =
+    props.mode === "filter" ? Boolean(displayQuery.trim()) : Boolean(selectedArtist || query);
+  const activeSuggestedId = props.mode !== "filter" ? props.selectedArtistId : null;
+
   return (
     <div className="mt-8">
-      <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-white/25">Artist</p>
+      <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-white/25">
+        {sectionLabel}
+      </p>
 
       <div ref={rootRef} className="relative max-w-md">
         <Search
@@ -94,12 +135,12 @@ export function LibraryArtistFilter({
         <input
           ref={inputRef}
           type="search"
-          value={selectedArtist && !open ? selectedArtist.displayName : query}
+          value={inputValue}
           onChange={(event) => {
-            setQuery(event.target.value);
+            applyQuery(event.target.value);
             setOpen(true);
             setActiveIndex(-1);
-            if (selectedArtistId) onSelect(null);
+            if (props.mode !== "filter" && props.selectedArtistId) props.onSelect(null);
           }}
           onFocus={() => setOpen(true)}
           onKeyDown={onKeyDown}
@@ -110,11 +151,11 @@ export function LibraryArtistFilter({
           aria-autocomplete="list"
           className="w-full rounded-lg border border-white/10 bg-white/[0.03] py-2.5 pl-9 pr-10 text-sm text-white placeholder:text-white/30 focus:border-white/20 focus:outline-none"
         />
-        {(selectedArtist || query) && (
+        {hasValue && (
           <button
             type="button"
             onClick={clearArtist}
-            aria-label="Clear artist filter"
+            aria-label="Clear artist search"
             className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-white/30 transition hover:text-white/70"
           >
             <X size={14} />
@@ -165,12 +206,21 @@ export function LibraryArtistFilter({
       {suggestedArtists.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-2">
           {suggestedArtists.map((artist) => {
-            const active = selectedArtistId === artist.id;
+            const active =
+              props.mode === "filter"
+                ? displayQuery.trim().toLowerCase() === artist.displayName.trim().toLowerCase()
+                : activeSuggestedId === artist.id;
             return (
               <button
                 key={artist.id}
                 type="button"
-                onClick={() => (active ? clearArtist() : pickArtist(artist))}
+                onClick={() =>
+                  active
+                    ? clearArtist()
+                    : props.mode === "filter"
+                      ? applyQuery(artist.displayName)
+                      : pickArtist(artist)
+                }
                 className={[
                   "flex items-center gap-2 rounded-full border py-1.5 pl-1.5 pr-3 text-xs transition-colors",
                   active
