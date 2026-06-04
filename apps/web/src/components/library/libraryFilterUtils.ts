@@ -7,6 +7,7 @@ export const EMPTY_PLAYLISTS: PlaylistSummary[] = [];
 
 export type SongSortKey = "title" | "plays" | "favorites";
 export type ArtistSortKey = "name" | "recordings";
+export type PlaylistSortKey = "title" | "tracks";
 export type SortDirection = "asc" | "desc";
 
 export function filterArtistsByGenre(artists: LibraryArtist[], genreSlug: string | null): LibraryArtist[] {
@@ -27,6 +28,18 @@ export function filterArtistsByQuery(artists: LibraryArtist[], query: string): L
 export function filterSongsByArtist(songs: LibrarySong[], artistId: string | null): LibrarySong[] {
   if (!artistId) return songs;
   return songs.filter((song) => song.uploaderId === artistId);
+}
+
+export function filterPlaylistsByQuery(playlists: PlaylistSummary[], query: string): PlaylistSummary[] {
+  const term = query.trim().toLowerCase();
+  if (!term) return playlists;
+  return playlists.filter(
+    (playlist) =>
+      playlist.title.toLowerCase().includes(term) ||
+      playlist.slug.toLowerCase().includes(term) ||
+      playlist.owner.displayName.toLowerCase().includes(term) ||
+      playlist.owner.username.toLowerCase().includes(term),
+  );
 }
 
 function sortGenres(genres: LibraryGenre[]): LibraryGenre[] {
@@ -66,6 +79,22 @@ export function genresFromArtists(artists: LibraryArtist[]): LibraryGenre[] {
   return sortGenres(Array.from(genres.values()));
 }
 
+export function sortLibraryPlaylists(
+  playlists: PlaylistSummary[],
+  sortKey: PlaylistSortKey,
+  direction: SortDirection,
+): PlaylistSummary[] {
+  const factor = direction === "asc" ? 1 : -1;
+  return [...playlists].sort((a, b) => {
+    if (sortKey === "tracks") {
+      if (a.itemCount !== b.itemCount) return (a.itemCount - b.itemCount) * factor;
+    } else if (a.title.localeCompare(b.title) !== 0) {
+      return a.title.localeCompare(b.title) * factor;
+    }
+    return a.owner.displayName.localeCompare(b.owner.displayName) * factor;
+  });
+}
+
 export function sortLibraryArtists(
   artists: LibraryArtist[],
   sortKey: ArtistSortKey,
@@ -100,6 +129,24 @@ export function sortLibrarySongs(
 
 export function topArtistsBySongCount(artists: LibraryArtist[], count: number): LibraryArtist[] {
   return [...artists].sort((a, b) => b.songCount - a.songCount).slice(0, count);
+}
+
+export function topPlaylistsByItemCount(playlists: PlaylistSummary[], count: number): PlaylistSummary[] {
+  return [...playlists].sort((a, b) => b.itemCount - a.itemCount).slice(0, count);
+}
+
+export function matchPlaylistsByQuery(playlists: PlaylistSummary[], query: string): PlaylistSummary[] {
+  const term = query.trim().toLowerCase();
+  if (!term) return [];
+  return playlists
+    .filter(
+      (playlist) =>
+        playlist.title.toLowerCase().includes(term) ||
+        playlist.slug.toLowerCase().includes(term) ||
+        playlist.owner.displayName.toLowerCase().includes(term) ||
+        playlist.owner.username.toLowerCase().includes(term),
+    )
+    .slice(0, 8);
 }
 
 export function matchArtistsByQuery(artists: LibraryArtist[], query: string): LibraryArtist[] {

@@ -18,17 +18,23 @@ import {
   EMPTY_PLAYLISTS,
   filterArtistsByGenre,
   filterArtistsByQuery,
+  filterPlaylistsByQuery,
   filterSongsByArtist,
   genresFromArtists,
   genresFromSongs,
   sortLibraryArtists,
+  sortLibraryPlaylists,
   sortLibrarySongs,
   topArtistsBySongCount,
+  topPlaylistsByItemCount,
   type ArtistSortKey,
+  type PlaylistSortKey,
   type SortDirection,
   type SongSortKey,
 } from "@/components/library/libraryFilterUtils";
 import { LibraryArtistSortBar } from "@/components/library/LibraryArtistSortBar";
+import { LibraryPlaylistFilter } from "@/components/library/LibraryPlaylistFilter";
+import { LibraryPlaylistSortBar } from "@/components/library/LibraryPlaylistSortBar";
 import { LibrarySongSortBar } from "@/components/library/LibrarySongSortBar";
 import { LibraryTrackRow } from "@/components/library/LibraryTrackRow";
 import {
@@ -501,14 +507,39 @@ function ArtistResults({
 
 export function PlaylistsPanel() {
   const genreStore = useMemo(() => createLibraryGenreSelectionStore(), []);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortKey, setSortKey] = useState<PlaylistSortKey>("title");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const { data: genresData, isLoading: genresLoading } = useLibraryPlaylistGenres();
   const genres = genresData?.data ?? EMPTY_LIBRARY_GENRES;
+  const allPlaylistsQuery = useLibraryPlaylists(null);
+  const allPlaylists = allPlaylistsQuery.data?.data ?? EMPTY_PLAYLISTS;
+  const suggestedPlaylists = useMemo(() => topPlaylistsByItemCount(allPlaylists, 4), [allPlaylists]);
+
+  if (allPlaylistsQuery.isLoading) return <PanelSkeleton />;
 
   return (
     <div>
-      <PanelHeader label="Playlists" />
+      <PanelHeader label="Playlists" count={allPlaylists.length} />
       {genresLoading ? <GenreFilterSkeleton /> : <LibraryGenreFilter genres={genres} store={genreStore} />}
-      <PlaylistResults genreStore={genreStore} />
+      <LibraryPlaylistFilter
+        playlists={allPlaylists}
+        suggestedPlaylists={suggestedPlaylists}
+        filterQuery={searchQuery}
+        onFilterQueryChange={setSearchQuery}
+      />
+      <LibraryPlaylistSortBar
+        sortKey={sortKey}
+        sortDirection={sortDirection}
+        onSortKeyChange={setSortKey}
+        onSortDirectionChange={setSortDirection}
+      />
+      <PlaylistResults
+        genreStore={genreStore}
+        searchQuery={searchQuery}
+        sortDirection={sortDirection}
+        sortKey={sortKey}
+      />
     </div>
   );
 }
@@ -536,18 +567,43 @@ function ResultGridSkeleton() {
   );
 }
 
-function PlaylistResults({ genreStore }: { genreStore: LibraryGenreSelectionStore }) {
+function PlaylistResults({
+  genreStore,
+  searchQuery,
+  sortDirection,
+  sortKey,
+}: {
+  genreStore: LibraryGenreSelectionStore;
+  searchQuery: string;
+  sortDirection: SortDirection;
+  sortKey: PlaylistSortKey;
+}) {
   const genreSlug = useLibraryGenreSelection(genreStore);
   const { data, isLoading } = useLibraryPlaylists(genreSlug);
-  const playlists = data?.data ?? EMPTY_PLAYLISTS;
+  const playlists = useMemo(() => {
+    const source = data?.data ?? EMPTY_PLAYLISTS;
+    const byQuery = filterPlaylistsByQuery(source, searchQuery);
+    return sortLibraryPlaylists(byQuery, sortKey, sortDirection);
+  }, [data?.data, searchQuery, sortKey, sortDirection]);
+
+  const curatorNote =
+    playlists.length > 0
+      ? `${playlists.length} playlist${playlists.length !== 1 ? "s" : ""} · ${playlists.reduce((sum, playlist) => sum + playlist.itemCount, 0)} tracks`
+      : null;
 
   if (isLoading) return <ResultGridSkeleton />;
 
   if (playlists.length === 0) {
-    return <p className="mt-10 text-sm text-[var(--color-text-subtle)]">No playlists match this genre.</p>;
+    return <p className="mt-10 text-sm text-[var(--color-text-subtle)]">No playlists match these filters.</p>;
   }
 
   return (
+    <>
+      {curatorNote && (
+        <p className="mt-3 max-w-2xl text-sm italic leading-relaxed text-[var(--color-text-muted)]">
+          {curatorNote}
+        </p>
+      )}
     <div className="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
       {playlists.map((playlist) => (
         <Link
@@ -574,6 +630,7 @@ function PlaylistResults({ genreStore }: { genreStore: LibraryGenreSelectionStor
         </Link>
       ))}
     </div>
+    </>
   );
 }
 
