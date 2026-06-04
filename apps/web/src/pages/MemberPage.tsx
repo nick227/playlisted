@@ -7,7 +7,7 @@ import { Skeleton } from "@/components/feedback/Skeleton";
 import { useUser } from "@/hooks/useUser";
 import { useUserByUsername } from "@/hooks/useUserByUsername";
 import { usePageMeta } from "@/hooks/usePageMeta";
-import { artistDetailCrumbs, BROWSE_LAYOUT_CLASS } from "@/lib/browsePaths";
+import { artistDetailCrumbs, ARTIST_PROFILE_LAYOUT_CLASS } from "@/lib/browsePaths";
 
 export function MemberPage() {
   const { userId, username } = useParams<{ userId?: string; username?: string }>();
@@ -26,7 +26,7 @@ export function MemberPage() {
   if (isLoading) {
     return (
       <div className="pb-16">
-        <div className={BROWSE_LAYOUT_CLASS}>
+        <div className={ARTIST_PROFILE_LAYOUT_CLASS}>
           <BrowseBreadcrumbs crumbs={artistDetailCrumbs(fallbackName)} />
         </div>
         <div className="mx-auto mt-5 max-w-7xl space-y-10">

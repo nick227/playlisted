@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { EmptyState } from "@/components/feedback/EmptyState";
 import { BrowseBreadcrumbs } from "@/components/library/BrowseBreadcrumbs";
 import { useArtistTracks } from "@/hooks/useArtistTracks";
-import { artistDetailCrumbs, BROWSE_LAYOUT_CLASS } from "@/lib/browsePaths";
+import { artistDetailCrumbs, ARTIST_PROFILE_LAYOUT_CLASS } from "@/lib/browsePaths";
 import { useAuth } from "@/providers/AuthProvider";
 
 import { ArtistProfileCollectionPanel } from "./ArtistProfileCollectionPanel";
@@ -38,7 +38,7 @@ export function ArtistProfileView({ user, preview }: ArtistProfileViewProps) {
 
   return (
     <div className="pb-16">
-      <div className={BROWSE_LAYOUT_CLASS}>
+      <div className={ARTIST_PROFILE_LAYOUT_CLASS}>
         <BrowseBreadcrumbs crumbs={browseCrumbs} />
       </div>
 

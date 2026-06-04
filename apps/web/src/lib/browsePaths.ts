@@ -10,6 +10,9 @@ export const FAVORITES_PATH = "/favorites";
 /** Shared max-width for browse breadcrumbs and collection content. */
 export const BROWSE_LAYOUT_CLASS = "mx-auto max-w-4xl";
 
+/** Artist profile breadcrumbs align with the wider profile layout below. */
+export const ARTIST_PROFILE_LAYOUT_CLASS = "mx-auto max-w-7xl";
+
 export interface BrowseCrumb {
   label: string;
   to?: string;
