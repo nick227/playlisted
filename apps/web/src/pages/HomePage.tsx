@@ -636,14 +636,6 @@ export function HomePage() {
         </HomeSection>
       )}
 
-      {/* ── HOME EXPLORE ────────────────────────────────────────────── */}
-
-      <HomeExploreBento
-        limits={{ songs: 7, playlists: 4, artists: 5 }}
-        skipChartOverlap
-        exclude={homeBentoExclude}
-      />
-
       <SiteFooter />
     </div>
   );

@@ -45,13 +45,7 @@ export function SiteFooter() {
             aria-label="Footer"
             className="flex flex-col items-start gap-3"
           >
-<div
-  style={{
-    display: "grid",
-    gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
-    gap: "0.5rem 1.5rem",
-  }}
->
+
   {footerLinks.map((link) => (
     <Link
       key={link.href}
@@ -62,7 +56,7 @@ export function SiteFooter() {
       {link.label}
     </Link>
   ))}
-</div>
+
           </nav>
           </div>
 
