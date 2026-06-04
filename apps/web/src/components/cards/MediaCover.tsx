@@ -7,6 +7,8 @@ interface MediaCoverProps {
   title: string;
   imageUrl?: string | null;
   shape?: "square" | "circle";
+  /** Tailwind aspect class, e.g. aspect-[2/1]. Defaults to aspect-square. */
+  aspectClass?: string;
   onPlay?: () => void;
   isPlaying?: boolean;
   isActive?: boolean;
@@ -17,6 +19,7 @@ export function MediaCover({
   title,
   imageUrl,
   shape = "square",
+  aspectClass = "aspect-square",
   onPlay,
   isPlaying = false,
   isActive = false,
@@ -26,7 +29,7 @@ export function MediaCover({
   const showOverlay = Boolean(onPlay);
 
   return (
-    <div className={`group relative aspect-square w-full overflow-hidden ${rounded}`}>
+    <div className={`group relative w-full overflow-hidden ${aspectClass} ${rounded}`}>
       {imageUrl ? (
         <img src={imageUrl} alt="" className={`h-full w-full object-cover ${rounded}`} />
       ) : (

@@ -1,12 +1,11 @@
-import { useTopArtists, useTopPlaylists, useTopSongs } from "@/hooks/useCharts";
-import { HOME_CHART_RANGE, HOME_CHART_RANGE_LABEL } from "@/components/charts/chartConfig";
+import { Link } from "react-router-dom";
 
-import {
-  BentoArtistsPanel,
-  BentoPlaylistsPanel,
-  BentoSongsPanel,
-  HOME_BENTO_ITEM_LIMIT,
-} from "./homeBentoPanels";
+import { HOME_CHART_RANGE, HOME_CHART_RANGE_LABEL } from "@/components/charts/chartConfig";
+import { useTopArtists, useTopPlaylists, useTopSongs } from "@/hooks/useCharts";
+import { ARTISTS_PATH, PLAYLISTS_PATH, SONGS_PATH } from "@/lib/browsePaths";
+
+import { HOME_BENTO_FETCH, HOME_BENTO_SLOTS } from "./homeBentoLayout";
+import { HomeBentoMediaGrid } from "./homeBentoPanels";
 import {
   useHomeBentoArtistPlayback,
   useHomeBentoPlaylistPlayback,
@@ -20,9 +19,9 @@ export function HomeExploreBento() {
   const { play: playArtist, isActive: artistActive, isPlaying: artistPlaying } =
     useHomeBentoArtistPlayback();
 
-  const topSongs = useTopSongs(HOME_CHART_RANGE, HOME_BENTO_ITEM_LIMIT);
-  const topPlaylists = useTopPlaylists(HOME_CHART_RANGE, HOME_BENTO_ITEM_LIMIT);
-  const topArtists = useTopArtists(HOME_CHART_RANGE, HOME_BENTO_ITEM_LIMIT);
+  const topSongs = useTopSongs(HOME_CHART_RANGE, HOME_BENTO_FETCH.songs);
+  const topPlaylists = useTopPlaylists(HOME_CHART_RANGE, HOME_BENTO_FETCH.playlists);
+  const topArtists = useTopArtists(HOME_CHART_RANGE, HOME_BENTO_FETCH.artists);
 
   const songs = topSongs.data?.data ?? [];
   const playlists = topPlaylists.data?.data ?? [];
@@ -37,32 +36,37 @@ export function HomeExploreBento() {
 
   return (
     <section className="mb-6" aria-label="Trending music">
-      <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-subtle)]">
-        Trending — {rangeLabel}
-      </p>
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 lg:grid-rows-1">
-        {(loading || songs.length > 0) && (
-          <BentoSongsPanel songs={songs} loading={loading} onPlay={playSong} />
-        )}
-        {(loading || playlists.length > 0) && (
-          <BentoPlaylistsPanel
-            playlists={playlists}
-            loading={loading}
-            isActive={playlistActive}
-            isPlaying={playlistPlaying}
-            onPlay={(item) => void playPlaylist(item)}
-          />
-        )}
-        {(loading || artists.length > 0) && (
-          <BentoArtistsPanel
-            artists={artists}
-            loading={loading}
-            isActive={artistActive}
-            isPlaying={artistPlaying}
-            onPlay={playArtist}
-          />
-        )}
+      <div className="mb-2 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-subtle)]">
+          Trending — {rangeLabel}
+        </p>
+        <div className="flex flex-wrap gap-x-3 text-[10px] font-medium text-[var(--color-text-muted)]">
+          <Link to={SONGS_PATH} className="hover:text-white">
+            Songs
+          </Link>
+          <Link to={PLAYLISTS_PATH} className="hover:text-white">
+            Playlists
+          </Link>
+          <Link to={ARTISTS_PATH} className="hover:text-white">
+            Artists
+          </Link>
+        </div>
       </div>
+
+      <HomeBentoMediaGrid
+        slots={HOME_BENTO_SLOTS}
+        songs={songs}
+        playlists={playlists}
+        artists={artists}
+        loading={loading}
+        onPlaySong={playSong}
+        onPlayPlaylist={onPlayPlaylist}
+        playlistActive={playlistActive}
+        playlistPlaying={playlistPlaying}
+        onPlayArtist={playArtist}
+        artistActive={artistActive}
+        artistPlaying={artistPlaying}
+      />
     </section>
   );
 }
