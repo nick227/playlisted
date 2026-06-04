@@ -26,6 +26,31 @@ interface RealTheatreController extends EventTarget {
   changePreset(id: string): Promise<void>
 }
 
+const THEATRE_RELOAD_KEY = 'playlisted:theatre:chunk-reload-attempted'
+
+function isDynamicImportFailure(error: unknown) {
+  if (!(error instanceof Error)) return false
+  return /Failed to fetch dynamically imported module|Importing a module script failed|error loading dynamically imported module|Unable to preload CSS/i.test(
+    error.message,
+  )
+}
+
+function reloadForFreshTheatreChunk(error: unknown): Promise<never> {
+  if (
+    typeof window !== 'undefined' &&
+    isDynamicImportFailure(error) &&
+    window.sessionStorage.getItem(THEATRE_RELOAD_KEY) !== '1'
+  ) {
+    window.sessionStorage.setItem(THEATRE_RELOAD_KEY, '1')
+    window.location.reload()
+    return new Promise(() => {
+      // Keep the current promise pending while the browser navigates.
+    })
+  }
+
+  throw error
+}
+
 class LazyTheatreController extends EventTarget {
   // Mirrors the real controller's state shape; safe defaults before load.
   public state = {
@@ -49,6 +74,10 @@ class LazyTheatreController extends EventTarget {
     if (this._real) return this._real
     if (!this._loadPromise) {
       this._loadPromise = import('./TheatreController').then(mod => {
+        if (typeof window !== 'undefined') {
+          window.sessionStorage.removeItem(THEATRE_RELOAD_KEY)
+        }
+
         const real = mod.default as unknown as RealTheatreController
         this._real = real
 
@@ -81,7 +110,7 @@ class LazyTheatreController extends EventTarget {
         })
 
         return real
-      })
+      }).catch(reloadForFreshTheatreChunk)
     }
     return this._loadPromise
   }
