@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
 
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
@@ -15,9 +15,17 @@ interface AppShellProps {
 }
 
 export function AppShell({ children }: AppShellProps) {
+  const mainRef = useRef<HTMLElement | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
   const { playerShellActive } = useAudioPlayer();
+
+  useLayoutEffect(() => {
+    if (location.hash) return;
+
+    mainRef.current?.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [location.pathname, location.search, location.hash]);
 
   return (
     <div className="relative flex min-h-full w-full max-w-full overflow-x-clip bg-transparent">
@@ -26,6 +34,7 @@ export function AppShell({ children }: AppShellProps) {
       <div className="relative z-10 flex min-h-full min-w-0 w-full max-w-full flex-1 flex-col overflow-x-clip lg:pl-[var(--spacing-sidebar)]">
         <TopBar onMenuClick={() => setSidebarOpen(true)} />
         <main
+          ref={mainRef}
           key={location.pathname}
           className={`player-shell-transition flex-1 min-w-0 max-w-full overflow-x-clip overflow-y-auto px-4 pt-[calc(var(--spacing-topbar))] md:px-8 ${
             playerShellActive
