@@ -56,6 +56,7 @@ const pages = {
       "Playlisted is another music community. Trying to be like Soundcloud.",
     intro:
       "The site started because Nick wanted a real place to listen to his own AI-generated music. The goal is a platform for all kinds of audio creators.",
+    sections: [],
   },
   jobs: {
     pageKey: "jobs",
