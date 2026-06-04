@@ -15,6 +15,7 @@ export type PlaylistSummary = components["schemas"]["PlaylistSummary"];
 export type UserDetail = components["schemas"]["UserDetail"];
 export type ProfileLink = components["schemas"]["ProfileLink"];
 export type PlaylistListResponse = components["schemas"]["PlaylistListResponse"];
+export type RandomPlaylistsResponse = components["schemas"]["RandomPlaylistsResponse"];
 export type PlaylistDetail = components["schemas"]["PlaylistDetail"];
 export type RecordingListResponse = components["schemas"]["RecordingListResponse"];
 export type RecordingDetail = components["schemas"]["RecordingDetail"];
@@ -200,6 +201,7 @@ export interface PlaylistedApi {
   };
   playlists: {
     list(query?: ListPlaylistsQuery): Promise<PlaylistListResponse>;
+    userRandom(query?: { limit?: number }): Promise<RandomPlaylistsResponse>;
     getById(playlistId: string): Promise<PlaylistDetail>;
     create(body: CreatePlaylistRequest): Promise<PlaylistDetail>;
     update(playlistId: string, body: UpdatePlaylistRequest): Promise<PlaylistDetail>;
@@ -689,6 +691,14 @@ export function createPlaylistedApi(options: PlaylistedClientOptions = {}): Play
             params: { query },
           }),
           "Failed to list playlists.",
+        );
+      },
+      userRandom(query = {}) {
+        return unwrap(
+          raw.GET("/api/v1/playlists/random", {
+            params: { query },
+          }),
+          "Failed to load random playlists.",
         );
       },
       getById(playlistId) {

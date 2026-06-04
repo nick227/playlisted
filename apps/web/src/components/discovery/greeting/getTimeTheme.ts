@@ -13,6 +13,14 @@ type ThemeAnchor = {
   starOpacity: number;
 };
 
+type SkyPalette = {
+  hue: number;
+  viaOffset: number;
+  toOffset: number;
+  glowOffset: number;
+  saturationBoost: number;
+};
+
 export type TimeTheme = {
   skyGradient: string;
   glowColor: string;
@@ -106,6 +114,16 @@ const ANCHORS: ThemeAnchor[] = [
   },
 ];
 
+const SKY_PALETTES: readonly SkyPalette[] = [
+  { hue: 188, viaOffset: 58, toOffset: 134, glowOffset: -30, saturationBoost: 6 },
+  { hue: 216, viaOffset: 42, toOffset: 108, glowOffset: 172, saturationBoost: 4 },
+  { hue: 268, viaOffset: 36, toOffset: 96, glowOffset: -52, saturationBoost: 7 },
+  { hue: 305, viaOffset: 44, toOffset: 122, glowOffset: 66, saturationBoost: 8 },
+  { hue: 350, viaOffset: 32, toOffset: 92, glowOffset: 44, saturationBoost: 5 },
+  { hue: 30, viaOffset: -52, toOffset: 168, glowOffset: 28, saturationBoost: 6 },
+  { hue: 148, viaOffset: 48, toOffset: 118, glowOffset: -70, saturationBoost: 5 },
+];
+
 const SUN_PATH = {
   p0: { x: 10, y: 78 },
   p1: { x: 28, y: 22 },
@@ -133,7 +151,72 @@ function lerpHsl(a: Hsl, b: Hsl, t: number): Hsl {
 }
 
 function hsl([h, s, l]: Hsl): string {
-  return `hsl(${h} ${s}% ${l}%)`;
+  return `hsl(${Math.round(h)} ${Math.round(s)}% ${Math.round(l)}%)`;
+}
+
+function hsla([h, s, l]: Hsl, alpha: number): string {
+  return `hsl(${Math.round(h)} ${Math.round(s)}% ${Math.round(l)}% / ${alpha})`;
+}
+
+function normalizeHue(hue: number): number {
+  return ((hue % 360) + 360) % 360;
+}
+
+function randomBetween(rng: () => number, min: number, max: number): number {
+  return min + (max - min) * rng();
+}
+
+function randomizeSkyHsl(
+  base: Hsl,
+  hue: number,
+  rng: () => number,
+  options: {
+    hueBlend: number;
+    saturationBoost: number;
+    lightnessJitter: number;
+  },
+): Hsl {
+  return [
+    lerpHue(base[0], normalizeHue(hue), options.hueBlend),
+    clamp(base[1] + options.saturationBoost + randomBetween(rng, -5, 5), 30, 92),
+    clamp(
+      base[2] + randomBetween(rng, -options.lightnessJitter, options.lightnessJitter),
+      5,
+      76,
+    ),
+  ];
+}
+
+function getRandomizedSky(
+  anchor: ThemeAnchor,
+  rng: () => number,
+): Pick<ThemeAnchor, "skyFrom" | "skyVia" | "skyTo" | "glow"> {
+  const palette = SKY_PALETTES[Math.floor(rng() * SKY_PALETTES.length)] ?? SKY_PALETTES[0];
+  const hue = normalizeHue(palette.hue + randomBetween(rng, -18, 18));
+  const lightnessJitter = anchor.skyFrom[2] < 18 ? 2 : 5;
+
+  return {
+    skyFrom: randomizeSkyHsl(anchor.skyFrom, hue, rng, {
+      hueBlend: 0.52,
+      saturationBoost: palette.saturationBoost,
+      lightnessJitter,
+    }),
+    skyVia: randomizeSkyHsl(anchor.skyVia, hue + palette.viaOffset, rng, {
+      hueBlend: 0.68,
+      saturationBoost: palette.saturationBoost + 4,
+      lightnessJitter,
+    }),
+    skyTo: randomizeSkyHsl(anchor.skyTo, hue + palette.toOffset, rng, {
+      hueBlend: 0.58,
+      saturationBoost: palette.saturationBoost,
+      lightnessJitter: Math.max(1, lightnessJitter - 1),
+    }),
+    glow: randomizeSkyHsl(anchor.glow, hue + palette.glowOffset, rng, {
+      hueBlend: 0.7,
+      saturationBoost: palette.saturationBoost + 8,
+      lightnessJitter: lightnessJitter + 3,
+    }),
+  };
 }
 
 function cubicBezier(
@@ -218,15 +301,32 @@ export function getGreeting(hour = new Date().getHours()): string {
   return "Good evening";
 }
 
-export function getTimeTheme(date = new Date()): TimeTheme {
+export function getTimeTheme(
+  date = new Date(),
+  rng: () => number = Math.random,
+): TimeTheme {
   const hour = date.getHours() + date.getMinutes() / 60;
   const anchor = interpolateAnchors(hour);
+  const sky = getRandomizedSky(anchor, rng);
   const sun = getSunState(hour);
   const moon = getMoonState(hour);
+  const glowHalo: Hsl = [
+    normalizeHue(sky.glow[0] + randomBetween(rng, -18, 18)),
+    clamp(sky.glow[1] - 8, 35, 92),
+    clamp(sky.glow[2] - 14, 8, 72),
+  ];
 
   return {
-    skyGradient: `linear-gradient(135deg, ${hsl(anchor.skyFrom)} 0%, ${hsl(anchor.skyVia)} 55%, ${hsl(anchor.skyTo)} 100%)`,
-    glowColor: hsl(anchor.glow),
+    skyGradient: [
+      `radial-gradient(circle at ${anchor.glowX}% ${anchor.glowY}%, ` +
+        `${hsla(sky.glow, 0.28)} 0%, ${hsla(sky.glow, 0)} 34%)`,
+      `radial-gradient(circle at ${100 - anchor.glowX}% ${100 - anchor.glowY}%, ` +
+        `${hsla(sky.skyVia, 0.2)} 0%, ${hsla(sky.skyVia, 0)} 42%)`,
+      `linear-gradient(135deg, ${hsl(sky.skyFrom)} 0%, ${hsl(sky.skyVia)} 55%, ${hsl(sky.skyTo)} 100%)`,
+    ].join(", "),
+    glowColor:
+      `radial-gradient(circle, ${hsla(sky.glow, 0.95)} 0%, ` +
+      `${hsla(glowHalo, 0.45)} 48%, ${hsla(glowHalo, 0)} 72%)`,
     glowOpacity: anchor.glowOpacity,
     glowX: anchor.glowX,
     glowY: anchor.glowY,

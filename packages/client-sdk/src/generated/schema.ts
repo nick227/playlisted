@@ -742,6 +742,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/playlists/random": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get random public published playlists */
+        get: operations["getRandomPlaylists"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/playlists/{playlistId}": {
         parameters: {
             query?: never;
@@ -1822,6 +1839,9 @@ export interface components {
         };
         TopPlaylistsResponse: {
             range: components["schemas"]["ChartRange"];
+            data: components["schemas"]["TopPlaylistItem"][];
+        };
+        RandomPlaylistsResponse: {
             data: components["schemas"]["TopPlaylistItem"][];
         };
         TopArtistItem: {
@@ -4132,6 +4152,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getRandomPlaylists: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Random playlist collection */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RandomPlaylistsResponse"];
                 };
             };
         };

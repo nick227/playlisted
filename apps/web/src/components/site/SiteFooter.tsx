@@ -17,7 +17,7 @@ export function SiteFooter() {
   };
 
   return (
-    <footer className="mt-8 border-t border-[var(--color-border)] py-8">
+    <footer className="mt-16 border-t border-[var(--color-border)] py-8">
       <div className="flex justify-between w-full items-end">
         
           <div>
@@ -45,16 +45,24 @@ export function SiteFooter() {
             aria-label="Footer"
             className="flex flex-col items-start gap-3"
           >
-            {footerLinks.map((link) => (
-              <Link
-                key={link.href}
-                to={link.href}
-                onClick={scrollToTop}
-                className="text-sm font-medium text-[var(--color-text-muted)] transition hover:text-white"
-              >
-                {link.label}
-              </Link>
-            ))}
+<div
+  style={{
+    display: "grid",
+    gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+    gap: "0.5rem 1.5rem",
+  }}
+>
+  {footerLinks.map((link) => (
+    <Link
+      key={link.href}
+      to={link.href}
+      onClick={scrollToTop}
+      className="text-sm font-medium text-[var(--color-text-muted)] transition hover:text-white"
+    >
+      {link.label}
+    </Link>
+  ))}
+</div>
           </nav>
           </div>
 

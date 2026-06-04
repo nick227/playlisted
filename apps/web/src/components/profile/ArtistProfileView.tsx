@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/feedback/EmptyState";
 import { BrowseBreadcrumbs } from "@/components/library/BrowseBreadcrumbs";
 import { useArtistTracks } from "@/hooks/useArtistTracks";
 import { useTopArtists } from "@/hooks/useCharts";
+import { genresFromSongs } from "@/components/library/libraryFilterUtils";
 import { artistDetailCrumbs, ARTIST_PROFILE_LAYOUT_CLASS } from "@/lib/browsePaths";
 import { useAuth } from "@/providers/AuthProvider";
 
@@ -29,6 +30,10 @@ export function ArtistProfileView({ user, preview }: ArtistProfileViewProps) {
 
   const isOwner = authUser?.id === user.id;
   const totalStreams = useMemo(() => computeArtistStreams(tracks), [tracks]);
+  const genreNames = useMemo(
+    () => genresFromSongs(tracks).map((genre) => genre.name).join(" · "),
+    [tracks],
+  );
   const displayName = preview?.displayName ?? user.displayName;
   const browseCrumbs = artistDetailCrumbs(displayName);
   const relatedArtists = useMemo(() => {
@@ -53,7 +58,13 @@ export function ArtistProfileView({ user, preview }: ArtistProfileViewProps) {
       </div>
 
       <div className="mx-auto mt-5 max-w-7xl space-y-10">
-        <ArtistProfileHero user={user} totalStreams={totalStreams} isOwner={isOwner} preview={preview} />
+        <ArtistProfileHero
+          user={user}
+          genreNames={genreNames}
+          totalStreams={totalStreams}
+          isOwner={isOwner}
+          preview={preview}
+        />
 
         {sortedPlaylists.length > 0 ? (
           <section>

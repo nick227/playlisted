@@ -639,7 +639,7 @@ export function HomePage() {
       {/* ── HOME EXPLORE ────────────────────────────────────────────── */}
 
       <HomeExploreBento
-        limits={{ songs: 1, playlists: 2, artists: 0 }}
+        limits={{ songs: 7, playlists: 4, artists: 5 }}
         skipChartOverlap
         exclude={homeBentoExclude}
       />

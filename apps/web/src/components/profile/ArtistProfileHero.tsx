@@ -9,12 +9,13 @@ import { getProfileLinkPlatform } from "./profileLinks";
 
 type ArtistProfileHeroProps = {
   user: UserDetail;
+  genreNames: string;
   totalStreams: number;
   isOwner: boolean;
   preview?: Partial<Pick<UserDetail, "displayName" | "username" | "bio" | "profileLinks">>;
 };
 
-export function ArtistProfileHero({ user, totalStreams, isOwner, preview }: ArtistProfileHeroProps) {
+export function ArtistProfileHero({ user, genreNames, totalStreams, isOwner, preview }: ArtistProfileHeroProps) {
   const displayName = preview?.displayName ?? user.displayName;
   const username = preview?.username ?? user.username;
   const bio = preview?.bio ?? user.bio;
@@ -61,12 +62,24 @@ export function ArtistProfileHero({ user, totalStreams, isOwner, preview }: Arti
             <p className="max-w-prose text-sm leading-relaxed text-[var(--color-text-muted)]">{bio}</p>
           ) : null}
 
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-[var(--color-text-muted)]">
-            <span>{formatPlayCount(totalStreams) || "0"} streams</span>
+          <p className="flex min-w-0 items-center overflow-hidden text-sm text-[var(--color-text-muted)]">
+            {genreNames ? (
+              <>
+                <span className="min-w-0 truncate">{genreNames}</span>
+                <span aria-hidden className="mx-1.5 shrink-0 text-white/20">
+                  ·
+                </span>
+              </>
+            ) : null}
+            <span className="shrink-0 whitespace-nowrap">
+              {formatPlayCount(totalStreams) || "0"} streams
+            </span>
             {!isOwner ? (
               <>
-                <span aria-hidden>·</span>
-                <span className="inline-flex items-center gap-1.5">
+                <span aria-hidden className="mx-1.5 shrink-0 text-white/20">
+                  ·
+                </span>
+                <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap">
                   Like
                   <FavoriteHeartButton
                     target="artist"
@@ -77,7 +90,7 @@ export function ArtistProfileHero({ user, totalStreams, isOwner, preview }: Arti
                 </span>
               </>
             ) : null}
-          </div>
+          </p>
 
           {profileLinks.length > 0 ? (
             <nav aria-label={`${displayName} links`} className="flex flex-wrap gap-2">

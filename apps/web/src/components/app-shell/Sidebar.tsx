@@ -1,4 +1,18 @@
-import { PanelsTopLeft, BookOpen, Heart, Home, ListMusic, Lock, Plus, Radio, Settings, type LucideIcon } from "lucide-react";
+import {
+  AudioLines,
+  BookOpen,
+  Heart,
+  Home,
+  ListMusic,
+  Lock,
+  Mic2,
+  PanelsTopLeft,
+  Plus,
+  Radio,
+  Settings,
+  Tags,
+  type LucideIcon,
+} from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
@@ -28,10 +42,10 @@ const discoverLinks = [
 ];
 
 const libraryBrowseLinks = [
-  { to: SONGS_PATH, label: "Songs" },
-  { to: GENRES_PATH, label: "Genres" },
-  { to: ARTISTS_PATH, label: "Artists" },
-  { to: PLAYLISTS_PATH, label: "Playlists" },
+  { to: SONGS_PATH, label: "Songs", icon: AudioLines },
+  { to: GENRES_PATH, label: "Genres", icon: Tags },
+  { to: ARTISTS_PATH, label: "Artists", icon: Mic2 },
+  { to: PLAYLISTS_PATH, label: "Playlists", icon: ListMusic },
 ];
 
 const baseNavClass = "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition";
@@ -71,10 +85,12 @@ function NavItem({
 function SubNavItem({
   to,
   label,
+  icon: Icon,
   onClick,
 }: {
   to: string;
   label: string;
+  icon: LucideIcon;
   onClick?: () => void;
 }) {
   return (
@@ -82,8 +98,9 @@ function SubNavItem({
       to={to}
       end
       onClick={onClick}
-      className={({ isActive }) => navClass(isActive, "py-1.5 pl-9 text-xs")}
+      className={({ isActive }) => navClass(isActive, "py-1.5 text-xs")}
     >
+      <Icon size={16} />
       {label}
     </NavLink>
   );
@@ -159,7 +176,6 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
               {libraryBrowseLinks.map((link) => (
                 <SubNavItem key={link.to} {...link} onClick={onClose} />
               ))}
-              <NavItem to={FAVORITES_PATH} label="Favorites" icon={Heart} onClick={onClose} />
             </div>
           </div>
           <div>
@@ -187,6 +203,7 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
                 My Studio
               </NavLink>
           ) : null}
+              <NavItem to={FAVORITES_PATH} label="Favorites" icon={Heart} onClick={onClose} />
           </div>
           <div>
             <p className="mb-2 flex items-center gap-2 px-3 text-xs font-semibold uppercase tracking-wider text-[var(--color-text-subtle)]">

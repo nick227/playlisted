@@ -24,6 +24,7 @@ import { resolveUniquePlaylistSlug } from "../lib/playlistSlug.js";
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_PAGE_SIZE = 20;
+const RANDOM_PLAYLIST_MAX_LIMIT = 50;
 
 export const playlistsRouter = Router();
 
@@ -49,6 +50,41 @@ async function assertPlaylistOwner(playlistId: string, userId: string) {
   }
 
   return { playlist };
+}
+
+function parseRandomPlaylistLimit(raw: unknown): number {
+  const parsed = Number(raw ?? 20);
+  if (!Number.isFinite(parsed)) return 20;
+  return Math.min(RANDOM_PLAYLIST_MAX_LIMIT, Math.max(1, parsed));
+}
+
+function mapRandomPlaylistItem(
+  playlist: {
+    id: string;
+    title: string;
+    slug: string;
+    coverArtUrl: string | null;
+    type: PlaylistType;
+    itemCount: number;
+    totalDurationSeconds: number;
+    owner: { id: string; username: string; displayName: string; avatarUrl: string | null; role: string };
+    tags: { tag: { id: string; name: string; slug: string } }[];
+  },
+  rank: number,
+) {
+  return {
+    rank,
+    playlistId: playlist.id,
+    title: playlist.title,
+    slug: playlist.slug,
+    coverArtUrl: playlist.coverArtUrl ?? null,
+    type: playlist.type,
+    itemCount: playlist.itemCount,
+    totalDurationSeconds: playlist.totalDurationSeconds,
+    playCount: 0,
+    owner: playlist.owner,
+    genre: playlist.tags[0]?.tag ?? null,
+  };
 }
 
 playlistsRouter.get("/", async (req, res, next) => {
@@ -91,6 +127,45 @@ playlistsRouter.get("/", async (req, res, next) => {
     });
   } catch (error) {
     next(error);
+  }
+});
+
+playlistsRouter.get("/random", async (req, res, next) => {
+  try {
+    const limit = parseRandomPlaylistLimit(req.query.limit);
+    const ids = await prisma.$queryRaw<{ id: string }[]>`
+      SELECT id
+      FROM \`Playlist\`
+      WHERE visibility = ${PUBLIC_PUBLISHED_PLAYLIST.visibility}
+        AND status = ${PUBLIC_PUBLISHED_PLAYLIST.status}
+      ORDER BY RAND()
+      LIMIT ${limit}
+    `;
+
+    const playlistIds = ids.map((row) => row.id);
+    const playlists = await prisma.playlist.findMany({
+      where: { id: { in: playlistIds }, ...PUBLIC_PUBLISHED_PLAYLIST },
+      include: {
+        owner: { select: { id: true, username: true, displayName: true, avatarUrl: true, role: true } },
+        tags: {
+          take: 1,
+          where: { tag: { kind: "GENRE" } },
+          include: { tag: { select: { id: true, name: true, slug: true } } },
+        },
+      },
+    });
+
+    const playlistMap = new Map(playlists.map((playlist) => [playlist.id, playlist]));
+    const data = [];
+    for (const playlistId of playlistIds) {
+      const playlist = playlistMap.get(playlistId);
+      if (!playlist) continue;
+      data.push(mapRandomPlaylistItem(playlist, data.length + 1));
+    }
+
+    return res.json({ data });
+  } catch (error) {
+    return next(error);
   }
 });
 

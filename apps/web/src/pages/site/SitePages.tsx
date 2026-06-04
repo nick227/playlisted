@@ -23,18 +23,18 @@ const pages = {
   developers: {
     pageKey: "developers",
     eyebrow: "For developers",
-    title: "For people who want to work with the experiment.",
+    title: "Now offering API access.",
     description:
-    "We just rolled out our first developer features.",
+    "We just released cool new features.",
     intro:
-      "Hiya, what kind of developer?",
+      "Hello, we would love to hear from you.",
     sections: [],
     bullets: [
       "API key used to connect through curl.",
       "Public radio api for streaming.",
       "Desktop app coming soon.",
     ],
-    contactEmail: "it@playlisted.com",
+    contactEmail: "email coming soon",
   },
   advertising: {
     pageKey: "advertising",
@@ -43,26 +43,19 @@ const pages = {
     description:
       "We are interested in collaborations that fit the project and help the artists.",
     intro:
-      "If you want to talk about a small partnership, a music-related placement, or another practical idea, send an email.",
-    contactEmail: "advertising@playlisted.com",
+      "If you want to talk about music, technology or online promotions let's chat.",
+    contactEmail: "email coming soon",
     sections: [],
   },
   company: {
     pageKey: "company",
     eyebrow: "Company",
     title: "About Playlisted.",
-    contactEmail: "company@playlisted.com",
+    contactEmail: "email coming soon",
     description:
-      "Playlisted is a creator services platform for insomniacs.",
+      "Playlisted is another music community. Trying to be like Soundcloud.",
     intro:
-      "The site started because Nick wanted a real place to organize, publish, and listen to his own AI-generated music. That is part of the project, but the broader goal is a platform for music pages, playlists, radio, discovery, and creator tools.",
-    sections: [
-      {
-        title: "Long term realism",
-        body:
-          "Playlisted is still trying to find a niche to fill. We are also interested in advertising, but for now, the focus is to improve the product, and collect interesting music.",
-      },
-    ],
+      "The site started because Nick wanted a real place to listen to his own AI-generated music. The goal is a platform for all kinds of audio creators.",
   },
   jobs: {
     pageKey: "jobs",
@@ -71,8 +64,8 @@ const pages = {
     description:
       "An organization is only as good as it's people.",
     intro:
-      "We still have a lot of growth before we can even begins to consider making these key hires..",
-    contactEmail: "jobs@playlisted.com",
+      "Here is our current and pressing business needs.",
+    contactEmail: "email coming soon",
     contactAfterContent: true,
     sections: [],
     tableItems: [
@@ -91,7 +84,7 @@ const pages = {
     title: "Media inquiries.",
     description: "Coming Soon!",
     intro: "Please send all questions or interests to.",
-    contactEmail: "media@playlisted.com",
+    contactEmail: "email coming soon",
     sections: [],
   },
 } as const;
