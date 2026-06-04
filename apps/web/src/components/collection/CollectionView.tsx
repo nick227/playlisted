@@ -354,7 +354,7 @@ export function CollectionView({
   const isEdit = mode === "edit";
   const isOwner = Boolean(user?.id && user.id === playlist.ownerId);
   const coverArtClassName =
-    "aspect-square w-full min-w-0 max-w-full overflow-hidden rounded-lg sm:h-[180px] sm:w-[180px] sm:max-w-[180px]";
+    "aspect-square w-full min-w-0 max-w-[180px] overflow-hidden rounded-lg object-cover sm:h-[180px] sm:w-[180px] sm:max-w-[180px]";
   const recordings = playlist.recordings as CollectionRecording[];
 
   const coverStyle = playlist.coverArtUrl
@@ -386,13 +386,13 @@ export function CollectionView({
   }
 
   return (
-    <div className="mx-auto max-w-4xl flex flex-col justify-center">
+    <div className="mx-auto flex max-w-4xl flex-col justify-center">
       {isEdit && editToolbar ? (
         <div className="mb-6 flex flex-wrap items-center gap-3">{editToolbar}</div>
       ) : null}
 
       <div className="flex flex-col gap-8 md:flex-row md:items-end">
-        <div className="shrink-0">
+        <div className="mx-auto shrink-0 md:mx-0">
           <button
             type="button"
             onClick={isEdit ? onCoverClick : undefined}
@@ -404,7 +404,7 @@ export function CollectionView({
               <img
                 src={playlist.coverArtUrl}
                 alt=""
-                className={`${coverArtClassName} object-cover`}
+                className={coverArtClassName}
               />
             ) : (
               <div className={`${coverArtClassName} shadow-2xl`} style={coverStyle} />
@@ -564,17 +564,17 @@ export function CollectionView({
           ) : null}
         </div>
       </div>
-      <div className="w-full flex justify-center">
-          {isEdit && onAddTracks ? (
-            <button
-              type="button"
-              onClick={onAddTracks}
-              className="mt-6 inline-flex items-center gap-2 rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-black"
-            >
-              <Upload size={18} />
-              Add tracks
-            </button>
-          ) : null}
+      <div className="flex w-full justify-center">
+        {isEdit && onAddTracks ? (
+          <button
+            type="button"
+            onClick={onAddTracks}
+            className="mt-6 inline-flex items-center gap-2 rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-black"
+          >
+            <Upload size={18} />
+            Add tracks
+          </button>
+        ) : null}
       </div>
 
       <div className="mt-10">
