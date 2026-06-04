@@ -71,6 +71,17 @@ describe("GET /api/v1/library/genres", () => {
     expect(res.body.data).toEqual([]);
   });
 
+  it("passes minSongCount through to the genre count query", async () => {
+    vi.mocked(prisma.$queryRaw).mockResolvedValue([]);
+
+    const res = await request(app).get("/api/v1/library/genres?minSongCount=5");
+
+    expect(res.status).toBe(200);
+    expect(vi.mocked(prisma.$queryRaw).mock.calls[0]?.[0]).toMatchObject({
+      values: [5],
+    });
+  });
+
   it("does not query standalone playlist tags for library genres", async () => {
     await request(app).get("/api/v1/library/genres");
 

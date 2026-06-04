@@ -24,12 +24,11 @@ import { useHomeChartSongPlayback } from "./useHomeChartSongPlayback";
 
 const GENRE_CHART_RANGE = "all" as const;
 const GENRE_PANEL_COUNT = 3;
-const GENRE_MIN_SONGS = 1;
+const GENRE_MIN_SONGS = 5;
 
 function stablePickGenresByDay(genres: LibraryGenre[], count: number): LibraryGenre[] {
   const seed = Math.floor(Date.now() / 86_400_000);
   return genres
-    .filter((g) => g.songCount >= GENRE_MIN_SONGS)
     .map((item, i) => ({ item, sort: Math.sin(seed + i * 127) }))
     .sort((a, b) => a.sort - b.sort)
     .slice(0, count)
@@ -79,7 +78,7 @@ function GenreSongPanel({ genre }: { genre: LibraryGenre }) {
 }
 
 export function HomeGenreSongsSection() {
-  const { data: genreData, isLoading } = useLibraryGenres();
+  const { data: genreData, isLoading } = useLibraryGenres({ minSongCount: GENRE_MIN_SONGS });
 
   const picks = useMemo(
     () => stablePickGenresByDay(genreData?.data ?? [], GENRE_PANEL_COUNT),

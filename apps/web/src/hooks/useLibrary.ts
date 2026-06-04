@@ -1,11 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
+import type { LibraryGenresQuery } from "@playlisted/client-sdk";
 
 import { api } from "@/lib/api";
 
-export function useLibraryGenres() {
+export function useLibraryGenres(query: LibraryGenresQuery = {}) {
+  const minSongCount = query.minSongCount ?? null;
+
   return useQuery({
-    queryKey: ["library", "genres"],
-    queryFn: () => api.library.genres(),
+    queryKey: ["library", "genres", { minSongCount }],
+    queryFn: () => api.library.genres(query),
     staleTime: 5 * 60_000,
   });
 }

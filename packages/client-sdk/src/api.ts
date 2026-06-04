@@ -127,6 +127,7 @@ export type ChartsQuery = { range?: ChartRange; limit?: number; genre?: string }
 export type AnalyticsQuery = { range?: ChartRange };
 export type AnalyticsRecordingsQuery = { range?: ChartRange; sortBy?: "plays" | "duration" | "completion"; order?: "asc" | "desc"; page?: number; pageSize?: number };
 export type AnalyticsPlaylistsQuery = { range?: ChartRange; sortBy?: "plays" | "duration" | "completion" | "likes" | "follows"; order?: "asc" | "desc"; page?: number; pageSize?: number };
+export type LibraryGenresQuery = NonNullable<operations["getLibraryGenres"]["parameters"]["query"]>;
 
 export interface PlaylistedApi {
   readonly raw: RawPlaylistedClient;
@@ -230,7 +231,7 @@ export interface PlaylistedApi {
     playlists(query?: AnalyticsPlaylistsQuery): Promise<AnalyticsPlaylistsResponse>;
   };
   library: {
-    genres(): Promise<LibraryGenresResponse>;
+    genres(query?: LibraryGenresQuery): Promise<LibraryGenresResponse>;
     playlistGenres(): Promise<LibraryGenresResponse>;
     songs(query?: { genre?: string; page?: number; pageSize?: number }): Promise<LibrarySongsResponse>;
     artists(): Promise<LibraryArtistsResponse>;
@@ -921,8 +922,11 @@ export function createPlaylistedApi(options: PlaylistedClientOptions = {}): Play
       },
     },
     library: {
-      genres() {
-        return unwrap(raw.GET("/api/v1/library/genres"), "Failed to load genres.");
+      genres(query = {}) {
+        return unwrap(
+          raw.GET("/api/v1/library/genres", { params: { query } }),
+          "Failed to load genres.",
+        );
       },
       playlistGenres() {
         return unwrap(raw.GET("/api/v1/library/playlist-genres"), "Failed to load playlist genres.");

@@ -13,9 +13,14 @@ import { PUBLIC_PUBLISHED_PLAYLIST } from "../lib/publicPlaylistFilter.js";
 
 export const libraryRouter = Router();
 
-libraryRouter.get("/genres", async (_req, res, next) => {
+libraryRouter.get("/genres", async (req, res, next) => {
   try {
-    return res.json({ data: await listEffectiveLibraryGenres() });
+    const requestedMinSongCount = Number(req.query.minSongCount ?? 1);
+    const minSongCount = Number.isFinite(requestedMinSongCount)
+      ? Math.max(1, requestedMinSongCount)
+      : 1;
+
+    return res.json({ data: await listEffectiveLibraryGenres(minSongCount) });
   } catch (error) {
     return next(error);
   }

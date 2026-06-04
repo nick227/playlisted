@@ -904,6 +904,13 @@ paths:
       tags: [Library]
       operationId: getLibraryGenres
       summary: List genre tags that have public published songs (library browse)
+      parameters:
+        - in: query
+          name: minSongCount
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
       responses:
         '200':
           description: Genre list

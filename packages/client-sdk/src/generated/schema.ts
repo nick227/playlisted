@@ -3745,7 +3745,9 @@ export interface operations {
     };
     getLibraryGenres: {
         parameters: {
-            query?: never;
+            query?: {
+                minSongCount?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;

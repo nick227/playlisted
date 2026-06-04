@@ -428,19 +428,19 @@ export function HomePage() {
 
   // Featured artists grid (NEW_ARTIST) vs greetings banner slot (FEATURED_ARTIST)
   const editorialFeaturedArtists = sectionMap["NEW_ARTIST"] ?? [];
-  const greetingsCuratedArtist = sectionMap["FEATURED_ARTIST"]?.[0] ?? null;
+  const greetingsCuratedArtists = sectionMap["FEATURED_ARTIST"] ?? [];
 
   const greetingsFeaturedArtist = useMemo(
     () =>
       pickGreetingsFeaturedArtist(
-        greetingsCuratedArtist,
+        greetingsCuratedArtists,
         pinnedArtists.data?.data ?? topArtists.data?.data ?? [],
       ),
-    [greetingsCuratedArtist, pinnedArtists.data, topArtists.data],
+    [greetingsCuratedArtists, pinnedArtists.data, topArtists.data],
   );
 
   const greetingsArtistLoading =
-    !greetingsCuratedArtist &&
+    greetingsCuratedArtists.length === 0 &&
     pinnedArtists.isLoading &&
     !greetingsFeaturedArtist;
 

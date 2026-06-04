@@ -57,12 +57,14 @@ function stableShuffleByDay<T>(arr: T[]): T[] {
     .map(({ item }) => item);
 }
 
-/** Admin-curated FEATURED_ARTIST (position 0) first; otherwise daily-rotated chart artists. */
+/** Daily-rotated admin FEATURED_ARTIST selection first; otherwise daily-rotated chart artists. */
 export function pickGreetingsFeaturedArtist(
-  curatedArtist: HomepageItem | null | undefined,
+  curatedArtists: HomepageItem[],
   chartArtists: TopArtistItem[],
 ): BannerFeaturedArtist | null {
+  const curatedArtist = stableShuffleByDay(curatedArtists)[0];
   if (curatedArtist) return toBannerArtistFromHomepage(curatedArtist);
+
   const picked = stableShuffleByDay(chartArtists)[0];
   return picked ? toBannerArtistFromChart(picked) : null;
 }

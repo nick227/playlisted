@@ -67,7 +67,7 @@ export const effectiveGenreSelect = {
 
 export type LibraryGenreCount = GenreRef & { songCount: number };
 
-export async function listEffectiveLibraryGenres(): Promise<LibraryGenreCount[]> {
+export async function listEffectiveLibraryGenres(minSongCount = 1): Promise<LibraryGenreCount[]> {
   const rows = await prisma.$queryRaw<Array<{
     id: string;
     name: string;
@@ -101,6 +101,7 @@ export async function listEffectiveLibraryGenres(): Promise<LibraryGenreCount[]>
         AND p.status = 'PUBLISHED'
     ) AS tagRows
     GROUP BY tagRows.id, tagRows.name, tagRows.slug
+    HAVING COUNT(*) >= ${minSongCount}
     ORDER BY tagRows.name ASC
   `);
 
