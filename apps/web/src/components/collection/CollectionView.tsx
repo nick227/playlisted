@@ -5,7 +5,8 @@ import { Link } from "react-router-dom";
 
 import { EmptyState } from "@/components/feedback/EmptyState";
 import { TrackList } from "@/components/tracks/TrackList";
-import { coverFallback, profilePath, studioCollectionEditPath } from "@/lib/routes";
+import { coverFallback, studioCollectionEditPath } from "@/lib/routes";
+import { artistPath } from "@/lib/browsePaths";
 import { libraryGenrePath } from "@/lib/libraryPaths";
 import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
 import { playlistShareUrl, shareContent } from "@/lib/shareContent";
@@ -432,7 +433,7 @@ export function CollectionView({
             <h1 className="mt-2 text-3xl font-bold tracking-tight md:text-5xl">{playlist.title}</h1>
           )}
           <p className="mt-3 text-sm text-[var(--color-text-muted)]">
-            <Link to={profilePath(playlist.owner.username)} className="font-medium text-white hover:underline">
+            <Link to={artistPath(playlist.owner.username)} className="font-medium text-white hover:underline">
               {playlist.owner.displayName}
             </Link>
             {playlist.itemCount > 0 ? ` • ${playlist.itemCount} tracks` : null}

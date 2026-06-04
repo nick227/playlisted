@@ -76,7 +76,8 @@ function MainRoutes() {
         <Route path="/media" element={<MediaPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/library" element={<LibraryPage />} />
-        <Route path="/library/favorites" element={<FavoritesPage />} />
+        <Route path="/favorites" element={<FavoritesPage />} />
+        <Route path="/library/favorites" element={<Navigate to="/favorites" replace />} />
         <Route path="/songs" element={<LibrarySongsPage />} />
         <Route path="/genres" element={<LibraryGenresPage />} />
         <Route path="/genres/:slug" element={<LibraryGenrePage />} />

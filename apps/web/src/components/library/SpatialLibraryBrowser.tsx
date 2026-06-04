@@ -13,6 +13,7 @@ import {
   useLibraryPlaylists,
   useLibrarySongs,
 } from "@/hooks/useLibrary";
+import { BROWSE_LAYOUT_CLASS } from "@/lib/browsePaths";
 
 function sample<T>(arr: T[], n: number): T[] {
   if (arr.length <= n) return arr;
@@ -48,7 +49,7 @@ export function SpatialLibraryBrowser() {
   );
 
   return (
-    <div className="mx-auto min-h-[72vh] max-w-5xl">
+    <div className={`${BROWSE_LAYOUT_CLASS} min-h-[72vh]`}>
       <RootPanel
         genreCount={allGenres.length}
         artistCount={allArtists.length}

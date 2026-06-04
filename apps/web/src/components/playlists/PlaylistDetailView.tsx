@@ -8,9 +8,10 @@ import { ContentRow } from "@/components/discovery/ContentRow";
 import { Skeleton } from "@/components/feedback/Skeleton";
 import { useAddCollectionPlaylist, useCollectionPlaylists } from "@/hooks/useCollections";
 import { useIsMdUp } from "@/hooks/useIsMdUp";
+import { usePlaylistHashTrack } from "@/hooks/usePlaylistHashTrack";
 import { usePlaylists } from "@/hooks/usePlaylists";
+import { BROWSE_LAYOUT_CLASS, playlistBrowseCrumbs } from "@/lib/browsePaths";
 import { useAudioPlayer, type QueueTrack } from "@/providers/AudioPlayerProvider";
-import { playlistBrowseCrumbs } from "@/lib/browsePaths";
 import { useAuth } from "@/providers/AuthProvider";
 
 type PlaylistDetailViewProps = {
@@ -87,9 +88,11 @@ export function PlaylistDetailView({ playlist }: PlaylistDetailViewProps) {
     playlist.title,
   );
 
+  usePlaylistHashTrack(recordings.length > 0);
+
   return (
     <>
-      <div className="mx-auto max-w-5xl">
+      <div className={BROWSE_LAYOUT_CLASS}>
         <BrowseBreadcrumbs crumbs={browseCrumbs} />
         <div className="mt-5">
           <CollectionView
@@ -109,7 +112,7 @@ export function PlaylistDetailView({ playlist }: PlaylistDetailViewProps) {
       </div>
 
       {related && related.data.length > 0 ? (
-        <div className="mx-auto mt-14 max-w-5xl">
+        <div className={`${BROWSE_LAYOUT_CLASS} mt-14`}>
           <ContentRow title="More playlists">
             {related.data
               .filter((item) => item.id !== playlist.id)

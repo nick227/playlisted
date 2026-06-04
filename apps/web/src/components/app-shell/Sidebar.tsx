@@ -6,6 +6,14 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { useCollectionPlaylists } from "@/hooks/useCollections";
 import { usePlaylists } from "@/hooks/usePlaylists";
 import { authedApi } from "@/lib/authedApi";
+import {
+  ARTISTS_PATH,
+  FAVORITES_PATH,
+  GENRES_PATH,
+  LIBRARY_PATH,
+  PLAYLISTS_PATH,
+  SONGS_PATH,
+} from "@/lib/browsePaths";
 import { ADMIN_PATH, panelPathForRole, playlistPath, studioCollectionEditPath } from "@/lib/routes";
 import { useAuth } from "@/providers/AuthProvider";
 
@@ -19,9 +27,11 @@ const discoverLinks = [
   { to: "/radio", label: "Radio", icon: Radio },
 ];
 
-const libraryLinks = [
-  { to: "/library", label: "Library", icon: BookOpen },
-  { to: "/library/favorites", label: "Favorites", icon: Heart },
+const libraryBrowseLinks = [
+  { to: SONGS_PATH, label: "Songs" },
+  { to: GENRES_PATH, label: "Genres" },
+  { to: ARTISTS_PATH, label: "Artists" },
+  { to: PLAYLISTS_PATH, label: "Playlists" },
 ];
 
 const baseNavClass = "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition";
@@ -53,6 +63,27 @@ function NavItem({
       className={({ isActive }) => navClass(isActive)}
     >
       <Icon size={20} />
+      {label}
+    </NavLink>
+  );
+}
+
+function SubNavItem({
+  to,
+  label,
+  onClick,
+}: {
+  to: string;
+  label: string;
+  onClick?: () => void;
+}) {
+  return (
+    <NavLink
+      to={to}
+      end
+      onClick={onClick}
+      className={({ isActive }) => navClass(isActive, "py-1.5 pl-9 text-xs")}
+    >
       {label}
     </NavLink>
   );
@@ -124,9 +155,11 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
               Library
             </p>
             <div className="flex flex-col gap-0.5">
-              {libraryLinks.map((link) => (
-                <NavItem key={link.to} {...link} onClick={onClose} />
+              <NavItem to={LIBRARY_PATH} label="Library" icon={BookOpen} onClick={onClose} end />
+              {libraryBrowseLinks.map((link) => (
+                <SubNavItem key={link.to} {...link} onClick={onClose} />
               ))}
+              <NavItem to={FAVORITES_PATH} label="Favorites" icon={Heart} onClick={onClose} />
             </div>
           </div>
           <div>

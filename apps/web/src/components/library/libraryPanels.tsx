@@ -36,7 +36,7 @@ import {
   SONGS_PATH,
 } from "@/lib/browsePaths";
 import { librarySongToQueueTrack } from "@/lib/queueTrack";
-import { coverFallback, playlistPath } from "@/lib/routes";
+import { coverFallback, playlistPath, profilePath } from "@/lib/routes";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 
 type PlaylistPreview = PlaylistListResponse["data"][number];
@@ -48,7 +48,7 @@ export interface RootPreviewData {
   songs: LibrarySong[];
 }
 
-function PanelSkeleton() {
+export function PanelSkeleton() {
   return (
     <div className="space-y-5 pt-2">
       <Skeleton className="h-14 w-56 rounded-lg" />
@@ -495,11 +495,13 @@ export function ArtistsPanel() {
 export function ArtistDetailPanel({
   artistId,
   artistName,
+  artistUsername,
   artistGenres,
   yearRange,
 }: {
   artistId: string;
   artistName: string;
+  artistUsername: string;
   artistGenres: { name: string }[];
   yearRange: { earliest: number | null; latest: number | null };
 }) {
@@ -526,6 +528,14 @@ export function ArtistDetailPanel({
   return (
     <div>
       <PanelHeader label={artistName} count={songs.length} unit="recording" />
+      <p className="mt-3">
+        <Link
+          to={profilePath(artistUsername)}
+          className="text-sm font-medium text-[var(--color-brand)] hover:underline"
+        >
+          View full profile
+        </Link>
+      </p>
       {curatorNote && (
         <p className="mt-3 max-w-2xl text-sm italic leading-relaxed text-[var(--color-text-muted)]">
           {curatorNote}

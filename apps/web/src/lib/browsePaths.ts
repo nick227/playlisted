@@ -3,6 +3,10 @@ export const SONGS_PATH = "/songs";
 export const GENRES_PATH = "/genres";
 export const ARTISTS_PATH = "/artists";
 export const PLAYLISTS_PATH = "/playlists";
+export const FAVORITES_PATH = "/favorites";
+
+/** Shared max-width for browse breadcrumbs and collection content. */
+export const BROWSE_LAYOUT_CLASS = "mx-auto max-w-4xl";
 
 export interface BrowseCrumb {
   label: string;
@@ -55,4 +59,11 @@ export function playlistBrowseCrumbs(
     { label: owner.displayName, to: artistPath(owner.username) },
     { label: playlistTitle },
   ];
+}
+
+export function parseTrackHash(hash: string): string | null {
+  const prefix = "#track-";
+  if (!hash.startsWith(prefix)) return null;
+  const id = hash.slice(prefix.length).trim();
+  return id || null;
 }

@@ -7,6 +7,7 @@ import {
   ArtistsPanel,
   GenreDetailPanel,
   GenresPanel,
+  PanelSkeleton,
   PlaylistsPanel,
   SongsPanel,
 } from "@/components/library/libraryPanels";
@@ -80,7 +81,13 @@ export function LibraryArtistPage() {
     description: artist ? `Browse ${artist.displayName}'s catalog recordings.` : undefined,
   });
 
-  if (isLoading) return null;
+  if (isLoading) {
+    return (
+      <LibraryBrowseLayout crumbs={artistsBrowseCrumbs()}>
+        <PanelSkeleton />
+      </LibraryBrowseLayout>
+    );
+  }
 
   if (!artist) {
     return <EmptyState title="Artist not found" />;
@@ -91,6 +98,7 @@ export function LibraryArtistPage() {
       <ArtistDetailPanel
         artistId={artist.id}
         artistName={artist.displayName}
+        artistUsername={artist.username}
         artistGenres={artist.genres}
         yearRange={artist.yearRange}
       />
