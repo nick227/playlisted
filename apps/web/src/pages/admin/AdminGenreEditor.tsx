@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import type { AdminContentTagRef, AdminTag } from "@playlisted/client-sdk";
 
-import { genreIdsFromTags } from "./adminGenreUtils";
+function genreIdsFromTags(tags: AdminContentTagRef[]): string[] {
+  return tags.filter((t) => t.kind === "GENRE").map((t) => t.id);
+}
 
 type Props = {
   tags: AdminContentTagRef[];

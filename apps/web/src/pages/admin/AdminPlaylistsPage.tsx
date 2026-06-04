@@ -7,7 +7,7 @@ import { usePageMeta } from "@/hooks/usePageMeta";
 import { AdminGenreEditor } from "./AdminGenreEditor";
 import { AdminInlineTitleEditor } from "./AdminInlineTitleEditor";
 import { AdminPlaylistsBatchBar } from "./AdminPlaylistsBatchBar";
-import { mergeGenreIdsFromTags, runSequential } from "./adminGenreUtils";
+import { runSequential } from "./adminGenreUtils";
 
 type Status = "DRAFT" | "PUBLISHED" | "ARCHIVED";
 type Visibility = "PUBLIC" | "UNLISTED" | "PRIVATE";
@@ -155,26 +155,6 @@ export function AdminPlaylistsPage() {
     }
   };
 
-  const batchAddGenres = async (genreIds: string[]) => {
-    const ids = [...selectedIds];
-    if (ids.length === 0 || genreIds.length === 0) return;
-    setBatchBusy(true);
-    setError(null);
-    try {
-      const updated = await runSequential(ids, async (id) => {
-        const pl = playlists.find((p) => p.id === id);
-        if (!pl) return null;
-        return api.admin.setPlaylistTags(id, mergeGenreIdsFromTags(pl.tags, genreIds));
-      });
-      const byId = new Map(updated.filter(Boolean).map((u) => [u!.id, u!]));
-      setPlaylists((prev) => prev.map((p) => (byId.has(p.id) ? byId.get(p.id)! : p)));
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Failed to add genres.");
-    } finally {
-      setBatchBusy(false);
-    }
-  };
-
   const batchSetGenres = async (genreIds: string[]) => {
     const ids = [...selectedIds];
     if (ids.length === 0) return;
@@ -262,7 +242,6 @@ export function AdminPlaylistsPage() {
         allGenres={allGenres}
         busy={batchBusy}
         onClear={() => setSelectedIds(new Set())}
-        onAddGenres={batchAddGenres}
         onSetGenres={batchSetGenres}
         onSetStatus={(status) => batchPatch({ status })}
         onSetVisibility={(visibility) => batchPatch({ visibility })}

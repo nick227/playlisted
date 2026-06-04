@@ -11,7 +11,6 @@ type Props = {
   allGenres: AdminTag[];
   busy: boolean;
   onClear: () => void;
-  onAddGenres: (genreIds: string[]) => Promise<void>;
   onSetGenres: (genreIds: string[]) => Promise<void>;
   onSetStatus: (status: Status) => Promise<void>;
   onSetVisibility: (visibility: Visibility) => Promise<void>;
@@ -23,7 +22,6 @@ export function AdminPlaylistsBatchBar({
   allGenres,
   busy,
   onClear,
-  onAddGenres,
   onSetGenres,
   onSetStatus,
   onSetVisibility,
@@ -57,10 +55,9 @@ export function AdminPlaylistsBatchBar({
         <AdminBatchGenrePanel
           count={count}
           entityLabel="playlist"
-          mergeHint="Add keeps existing playlist genres. Set replaces all playlist genres (affects homepage for every track on the playlist)."
+          hint="Replaces playlist genres (homepage panels use these for every track on the playlist)."
           allGenres={allGenres}
           busy={busy}
-          onAddGenres={onAddGenres}
           onSetGenres={onSetGenres}
         />
 

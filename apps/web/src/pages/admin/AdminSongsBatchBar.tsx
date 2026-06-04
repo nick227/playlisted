@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import type { AdminSong, AdminTag } from "@playlisted/client-sdk";
+import type { AdminTag } from "@playlisted/client-sdk";
 
 import { AdminBatchGenrePanel } from "./AdminBatchGenrePanel";
-import { mergeGenreIdsFromTags, runSequential } from "./adminGenreUtils";
+import { runSequential } from "./adminGenreUtils";
 
 type Visibility = "PUBLIC" | "UNLISTED" | "PRIVATE";
 
@@ -12,7 +12,6 @@ type Props = {
   allGenres: AdminTag[];
   busy: boolean;
   onClear: () => void;
-  onAddGenres: (genreIds: string[]) => Promise<void>;
   onSetGenres: (genreIds: string[]) => Promise<void>;
   onSetVisibility: (visibility: Visibility) => Promise<void>;
   onDelete: () => Promise<void>;
@@ -24,7 +23,6 @@ export function AdminSongsBatchBar({
   allGenres,
   busy,
   onClear,
-  onAddGenres,
   onSetGenres,
   onSetVisibility,
   onDelete,
@@ -79,10 +77,9 @@ export function AdminSongsBatchBar({
         <AdminBatchGenrePanel
           count={count}
           entityLabel="song"
-          mergeHint="Add keeps existing song genres. Set replaces all song genres (playlist genres unchanged)."
+          hint="Replaces song genres on each selection. Playlist genres are unchanged."
           allGenres={allGenres}
           busy={busy}
-          onAddGenres={onAddGenres}
           onSetGenres={onSetGenres}
         />
 
@@ -170,7 +167,3 @@ export function AdminSongsBatchBar({
 }
 
 export { runSequential };
-
-export function mergeGenreIds(song: AdminSong, addIds: string[]): string[] {
-  return mergeGenreIdsFromTags(song.tags, addIds);
-}
