@@ -15,10 +15,6 @@ import {
   GreetingsBanner,
   pickGreetingsFeaturedArtist,
 } from "@/components/discovery/GreetingsBanner";
-import {
-  HomeExploreBento,
-  type HomeBentoExcludeIds,
-} from "@/components/discovery/HomeExploreBento";
 import { SpotlightBanner } from "@/components/discovery/SpotlightBanner";
 import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
 import { SiteFooter } from "@/components/site/SiteFooter";
