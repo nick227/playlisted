@@ -12,6 +12,39 @@ export const adminPlaylistsRouter = Router();
 const DEFAULT_PAGE = 1;
 const DEFAULT_PAGE_SIZE = 50;
 
+const adminPlaylistInclude = {
+  owner: { select: { id: true, username: true, displayName: true, avatarUrl: true } },
+  tags: { include: { tag: { select: { id: true, name: true, slug: true, kind: true } } } },
+  _count: { select: { saves: true, playbackEvents: true } },
+} as const;
+
+function isPrismaRetryable(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  if ("code" in error && (error as { code: string }).code === "P2034") return true;
+  return error instanceof Error && /deadlock|write conflict/i.test(error.message);
+}
+
+async function replacePlaylistGenreTags(playlistId: string, tagIds: string[]) {
+  const maxAttempts = 3;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      await prisma.$transaction(async (tx) => {
+        await tx.playlistTag.deleteMany({ where: { playlistId } });
+        if (tagIds.length > 0) {
+          await tx.playlistTag.createMany({
+            data: tagIds.map((tagId) => ({ playlistId, tagId })),
+            skipDuplicates: true,
+          });
+        }
+      });
+      return;
+    } catch (error) {
+      if (!isPrismaRetryable(error) || attempt === maxAttempts) throw error;
+      await new Promise((r) => setTimeout(r, 25 * attempt));
+    }
+  }
+}
+
 function mapPlaylist(p: any) {
   return {
     id: p.id,
@@ -87,11 +120,7 @@ adminPlaylistsRouter.get("/", async (req, res, next) => {
         orderBy,
         skip: (page - 1) * pageSize,
         take: pageSize,
-        include: {
-          owner: { select: { id: true, username: true, displayName: true, avatarUrl: true } },
-          tags: { include: { tag: { select: { id: true, name: true, slug: true, kind: true } } } },
-          _count: { select: { saves: true, playbackEvents: true } },
-        },
+        include: adminPlaylistInclude,
       }),
       prisma.playlist.count({ where }),
     ]);
@@ -107,12 +136,20 @@ adminPlaylistsRouter.patch("/:playlistId", async (req, res, next) => {
     if (!(await requireAdmin(req, res))) return;
 
     const body = req.body as {
+      title?: string;
       status?: string;
       visibility?: string;
       featured?: boolean;
     };
 
     const data: Record<string, unknown> = {};
+    if (body.title !== undefined) {
+      const title = body.title.trim();
+      if (!title) {
+        return res.status(400).json({ error: "invalid_title", message: "Title cannot be empty." });
+      }
+      data.title = title;
+    }
     if (body.status !== undefined) {
       if (!VALID_STATUS.has(body.status)) {
         return res.status(400).json({
@@ -136,18 +173,14 @@ adminPlaylistsRouter.patch("/:playlistId", async (req, res, next) => {
     if (Object.keys(data).length === 0) {
       return res.status(400).json({
         error: "invalid_body",
-        message: "At least one of status, visibility, or featured must be provided.",
+        message: "At least one of title, status, visibility, or featured must be provided.",
       });
     }
 
     const playlist = await prisma.playlist.update({
       where: { id: req.params.playlistId },
       data,
-      include: {
-        owner: { select: { id: true, username: true, displayName: true, avatarUrl: true } },
-        tags: { include: { tag: { select: { id: true, name: true, slug: true, kind: true } } } },
-        _count: { select: { saves: true, playbackEvents: true } },
-      },
+      include: adminPlaylistInclude,
     });
 
     return res.json(mapPlaylist(playlist));
@@ -155,6 +188,44 @@ adminPlaylistsRouter.patch("/:playlistId", async (req, res, next) => {
     if (error && typeof error === "object" && "code" in error && (error as any).code === "P2025") {
       return res.status(404).json({ error: "playlist_not_found", message: "Playlist not found." });
     }
+    return next(error);
+  }
+});
+
+adminPlaylistsRouter.put("/:playlistId/tags", async (req, res, next) => {
+  try {
+    if (!(await requireAdmin(req, res))) return;
+
+    const { tagIds } = req.body as { tagIds?: unknown };
+    if (!Array.isArray(tagIds) || tagIds.some((id) => typeof id !== "string")) {
+      return res.status(400).json({ error: "invalid_body", message: "tagIds must be an array of tag ID strings." });
+    }
+
+    const ids: string[] = tagIds as string[];
+
+    if (ids.length > 0) {
+      const tags = await prisma.tag.findMany({
+        where: { id: { in: ids }, kind: "GENRE" },
+        select: { id: true },
+      });
+      if (tags.length !== ids.length) {
+        return res.status(400).json({ error: "invalid_tags", message: "One or more tag IDs are not valid GENRE tags." });
+      }
+    }
+
+    await replacePlaylistGenreTags(req.params.playlistId, ids);
+
+    const playlist = await prisma.playlist.findUnique({
+      where: { id: req.params.playlistId },
+      include: adminPlaylistInclude,
+    });
+
+    if (!playlist) {
+      return res.status(404).json({ error: "playlist_not_found", message: "Playlist not found." });
+    }
+
+    return res.json(mapPlaylist(playlist));
+  } catch (error) {
     return next(error);
   }
 });

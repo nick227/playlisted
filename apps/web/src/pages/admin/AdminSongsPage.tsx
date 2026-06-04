@@ -4,6 +4,7 @@ import { authedApi } from "@/lib/authedApi";
 import { useAuth } from "@/providers/AuthProvider";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { useAudioPlayer, type QueueTrack } from "@/providers/AudioPlayerProvider";
+import { AdminInlineTitleEditor } from "./AdminInlineTitleEditor";
 import { AdminSongGenreCell } from "./AdminSongGenreCell";
 import { AdminSongsBatchBar, mergeGenreIds, runSequential } from "./AdminSongsBatchBar";
 
@@ -39,68 +40,6 @@ function SortHeader({ col, label, sortBy, order, onSort }: {
     >
       {label} {sortBy === col ? (order === "desc" ? "↓" : "↑") : ""}
     </th>
-  );
-}
-
-function TitleEditor({
-  song,
-  saving,
-  onSave,
-}: {
-  song: AdminSong;
-  saving: boolean;
-  onSave: (title: string) => void;
-}) {
-  const [editing, setEditing] = useState(false);
-  const [value, setValue] = useState(song.title);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => { setValue(song.title); }, [song.title]);
-
-  function startEdit() {
-    setValue(song.title);
-    setEditing(true);
-    setTimeout(() => inputRef.current?.select(), 0);
-  }
-
-  function commit() {
-    const trimmed = value.trim();
-    if (trimmed && trimmed !== song.title) onSave(trimmed);
-    setEditing(false);
-  }
-
-  function cancel() {
-    setValue(song.title);
-    setEditing(false);
-  }
-
-  if (editing) {
-    return (
-      <input
-        ref={inputRef}
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        onBlur={commit}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") { e.preventDefault(); commit(); }
-          if (e.key === "Escape") cancel();
-        }}
-        disabled={saving}
-        className="w-full rounded border border-amber-400/50 bg-black/40 px-1.5 py-0.5 text-xs font-medium text-white focus:outline-none focus:ring-1 focus:ring-amber-400/70"
-      />
-    );
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={startEdit}
-      className="group/title block w-full truncate rounded px-1 py-0.5 text-left text-xs font-medium text-white transition hover:bg-white/[0.06]"
-      title="Click to edit title"
-    >
-      {song.title}
-      <span className="ml-1 opacity-0 text-zinc-600 group-hover/title:opacity-100">✎</span>
-    </button>
   );
 }
 
@@ -535,8 +474,8 @@ export function AdminSongsPage() {
                     <div className="flex items-center gap-2">
                       <SongPlayButton song={song} />
                       <div className="min-w-0 flex-1">
-                        <TitleEditor
-                          song={song}
+                        <AdminInlineTitleEditor
+                          title={song.title}
                           saving={rowBusy(song.id)}
                           onSave={(title) => updateTitle(song.id, title)}
                         />

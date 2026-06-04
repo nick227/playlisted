@@ -87,6 +87,7 @@ export type AdminPlaylist = components["schemas"]["AdminPlaylist"];
 export type AdminPlaylistListResponse = components["schemas"]["AdminPlaylistListResponse"];
 export type AdminUpdatePlaylistRequest = components["schemas"]["AdminUpdatePlaylistRequest"];
 export type AdminDashboardResponse = components["schemas"]["AdminDashboardResponse"];
+export type AdminTrafficResponse = components["schemas"]["AdminTrafficResponse"];
 export type AdminContentTagRef = components["schemas"]["AdminContentTagRef"];
 export type AdminApiKey = components["schemas"]["AdminApiKey"];
 export type AdminApiKeyStats = components["schemas"]["AdminApiKeyStats"];
@@ -143,6 +144,7 @@ export interface PlaylistedApi {
     listUsers(query?: { page?: number; pageSize?: number; role?: string; status?: string; q?: string }): Promise<UserListResponse>;
     updateUser(userId: string, body: AdminUpdateUserRequest): Promise<UserSummary>;
     getDashboard(): Promise<AdminDashboardResponse>;
+    getTraffic(query?: { range?: ChartRange }): Promise<AdminTrafficResponse>;
     listApiKeys(query?: { status?: "all" | "active" | "revoked"; q?: string; userId?: string; page?: number; pageSize?: number }): Promise<AdminApiKeyListResponse>;
     revokeApiKey(keyId: string): Promise<void>;
     listSongs(query?: { page?: number; pageSize?: number; status?: string; visibility?: string; recordingType?: string; explicit?: boolean; genre?: string; uploaderId?: string; q?: string; sortBy?: string; order?: string }): Promise<AdminSongListResponse>;
@@ -151,6 +153,7 @@ export interface PlaylistedApi {
     setSongTags(songId: string, tagIds: string[]): Promise<AdminSong>;
     listPlaylists(query?: { page?: number; pageSize?: number; status?: string; visibility?: string; type?: string; featured?: boolean; genre?: string; ownerId?: string; q?: string; sortBy?: string; order?: string }): Promise<AdminPlaylistListResponse>;
     updatePlaylist(playlistId: string, body: AdminUpdatePlaylistRequest): Promise<AdminPlaylist>;
+    setPlaylistTags(playlistId: string, tagIds: string[]): Promise<AdminPlaylist>;
   };
   auth: {
     register(body: RegisterRequest): Promise<AuthResponse>;
@@ -420,6 +423,12 @@ export function createPlaylistedApi(options: PlaylistedClientOptions = {}): Play
       getDashboard() {
         return unwrap(raw.GET("/api/v1/admin/dashboard"), "Failed to load dashboard.");
       },
+      getTraffic(query = {}) {
+        return unwrap(
+          raw.GET("/api/v1/admin/traffic", { params: { query } }),
+          "Failed to load traffic.",
+        );
+      },
       listApiKeys(query = {}) {
         return unwrap(
           raw.GET("/api/v1/admin/developer/keys", { params: { query } }),
@@ -464,6 +473,12 @@ export function createPlaylistedApi(options: PlaylistedClientOptions = {}): Play
         return unwrap(
           raw.PATCH("/api/v1/admin/playlists/{playlistId}", { params: { path: { playlistId } }, body }),
           "Failed to update playlist.",
+        );
+      },
+      setPlaylistTags(playlistId: string, tagIds: string[]) {
+        return unwrap(
+          raw.PUT("/api/v1/admin/playlists/{playlistId}/tags", { params: { path: { playlistId } }, body: { tagIds } }),
+          "Failed to update playlist tags.",
         );
       },
     },

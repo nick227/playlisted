@@ -1881,6 +1881,38 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /api/v1/admin/traffic:
+    get:
+      tags: [Admin]
+      operationId: adminGetTraffic
+      summary: Admin traffic report from currently captured events
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: range
+          schema:
+            $ref: '#/components/schemas/ChartRange'
+      responses:
+        '200':
+          description: Traffic report
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminTrafficResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /api/v1/admin/songs:
     get:
       tags: [Admin]
@@ -2053,6 +2085,57 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AdminSong'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/admin/playlists/{playlistId}/tags:
+    put:
+      tags: [Admin]
+      operationId: adminSetPlaylistTags
+      summary: Replace all genre tags for a playlist (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: playlistId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminSetSongTagsRequest'
+      responses:
+        '200':
+          description: Updated playlist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminPlaylist'
         '400':
           description: Invalid request
           content:
@@ -5418,6 +5501,8 @@ components:
       type: object
       additionalProperties: false
       properties:
+        title:
+          type: string
         status:
           $ref: '#/components/schemas/PublishStatus'
         visibility:
@@ -5542,6 +5627,143 @@ components:
                 format: uri-reference
               artist:
                 type: string
+
+    AdminTrafficTotals:
+      type: object
+      additionalProperties: false
+      required:
+        - profilePageViews
+        - uniqueProfileViewsEstimate
+        - knownUniqueProfileViewers
+        - anonymousProfileViews
+        - anonymousPlays
+        - guestActions
+        - plays
+        - engagementActions
+        - clickthroughRateEstimate
+        - totalPlaySeconds
+        - avgKnownSessionSeconds
+        - activeSessions
+        - registeredUsers
+      properties:
+        profilePageViews:
+          type: integer
+        uniqueProfileViewsEstimate:
+          type: integer
+        knownUniqueProfileViewers:
+          type: integer
+        anonymousProfileViews:
+          type: integer
+        anonymousPlays:
+          type: integer
+        guestActions:
+          type: integer
+        plays:
+          type: integer
+        engagementActions:
+          type: integer
+        clickthroughRateEstimate:
+          type: number
+        totalPlaySeconds:
+          type: integer
+        avgKnownSessionSeconds:
+          type: integer
+        activeSessions:
+          type: integer
+        registeredUsers:
+          type: integer
+
+    AdminTrafficResponse:
+      type: object
+      additionalProperties: false
+      required: [range, caveat, totals, dailyProfileViews, dailyPlays, topProfiles, referrers, topConsumers, limitations]
+      properties:
+        range:
+          $ref: '#/components/schemas/ChartRange'
+        caveat:
+          type: string
+        totals:
+          $ref: '#/components/schemas/AdminTrafficTotals'
+        dailyProfileViews:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [day, views]
+            properties:
+              day:
+                type: string
+              views:
+                type: integer
+        dailyPlays:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [day, plays]
+            properties:
+              day:
+                type: string
+              plays:
+                type: integer
+        topProfiles:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [userId, username, displayName, views]
+            properties:
+              userId:
+                type: string
+              username:
+                type: string
+              displayName:
+                type: string
+              views:
+                type: integer
+        referrers:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [referrer, views]
+            properties:
+              referrer:
+                type: string
+              views:
+                type: integer
+        topConsumers:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [userId, username, displayName, role, plays, profileViews, saves, follows, totalActions, lastActivityAt]
+            properties:
+              userId:
+                type: string
+              username:
+                type: string
+              displayName:
+                type: string
+              role:
+                $ref: '#/components/schemas/UserRole'
+              plays:
+                type: integer
+              profileViews:
+                type: integer
+              saves:
+                type: integer
+              follows:
+                type: integer
+              totalActions:
+                type: integer
+              lastActivityAt:
+                type: [string, 'null']
+                format: date-time
+        limitations:
+          type: array
+          items:
+            type: string
 
     ApiKey:
       type: object

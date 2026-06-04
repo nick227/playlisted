@@ -1,8 +1,13 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import type { AdminPlaylist, AdminContentTagRef } from "@playlisted/client-sdk";
+import type { AdminPlaylist, AdminTag } from "@playlisted/client-sdk";
 import { authedApi } from "@/lib/authedApi";
 import { useAuth } from "@/providers/AuthProvider";
 import { usePageMeta } from "@/hooks/usePageMeta";
+
+import { AdminGenreEditor } from "./AdminGenreEditor";
+import { AdminInlineTitleEditor } from "./AdminInlineTitleEditor";
+import { AdminPlaylistsBatchBar } from "./AdminPlaylistsBatchBar";
+import { mergeGenreIdsFromTags, runSequential } from "./adminGenreUtils";
 
 type Status = "DRAFT" | "PUBLISHED" | "ARCHIVED";
 type Visibility = "PUBLIC" | "UNLISTED" | "PRIVATE";
@@ -40,20 +45,6 @@ function fmtDur(s: number) {
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
-function GenreChips({ tags }: { tags: AdminContentTagRef[] }) {
-  const genres = tags.filter((t) => t.kind === "GENRE");
-  if (!genres.length) return <span className="text-xs text-zinc-600">—</span>;
-  return (
-    <div className="flex flex-wrap gap-1">
-      {genres.map((g) => (
-        <span key={g.id} className="rounded-full bg-purple-400/10 px-2 py-0.5 text-xs font-medium text-purple-400">
-          {g.name}
-        </span>
-      ))}
-    </div>
-  );
-}
-
 function SortHeader({ col, label, sortBy, order, onSort }: {
   col: string; label: string; sortBy: string; order: string;
   onSort: (col: string) => void;
@@ -72,6 +63,7 @@ export function AdminPlaylistsPage() {
   const { accessToken } = useAuth();
   const api = useMemo(() => authedApi(accessToken), [accessToken]);
   const [playlists, setPlaylists] = useState<AdminPlaylist[]>([]);
+  const [allGenres, setAllGenres] = useState<AdminTag[]>([]);
 
   usePageMeta({ title: "Playlists — Admin" });
   const [loading, setLoading] = useState(true);
@@ -89,13 +81,19 @@ export function AdminPlaylistsPage() {
   const [filterFeatured, setFilterFeatured] = useState("");
   const [sortBy, setSortBy] = useState("createdAt");
   const [order, setOrder] = useState("desc");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [batchBusy, setBatchBusy] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    api.admin.listTags({ kind: "GENRE" }).then((res) => setAllGenres(res.data)).catch(() => {});
+  }, [api]);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const query: Record<string, any> = { page, pageSize: PAGE_SIZE, sortBy, order };
+      const query: Record<string, string | number | boolean> = { page, pageSize: PAGE_SIZE, sortBy, order };
       if (search.trim()) query.q = search.trim();
       if (filterStatus) query.status = filterStatus;
       if (filterVisibility) query.visibility = filterVisibility;
@@ -104,16 +102,20 @@ export function AdminPlaylistsPage() {
       const res = await api.admin.listPlaylists(query);
       setPlaylists(res.data);
       setTotal(res.meta.total);
-    } catch (e: any) {
-      setError(e.message ?? "Failed to load playlists.");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to load playlists.");
     } finally {
       setLoading(false);
     }
   }, [api, page, search, filterStatus, filterVisibility, filterType, filterFeatured, sortBy, order]);
 
   useEffect(() => { load(); }, [load]);
-
+  useEffect(() => { setSelectedIds(new Set()); }, [page]);
   useEffect(() => () => { if (debounceRef.current) clearTimeout(debounceRef.current); }, []);
+
+  const selectedCount = selectedIds.size;
+  const allPageSelected = playlists.length > 0 && playlists.every((p) => selectedIds.has(p.id));
+  const somePageSelected = playlists.some((p) => selectedIds.has(p.id)) && !allPageSelected;
 
   const handleSearchChange = (value: string) => {
     setSearchInput(value);
@@ -127,27 +129,95 @@ export function AdminPlaylistsPage() {
     setPage(1);
   };
 
-  const update = async (playlistId: string, patch: { status?: Status; visibility?: Visibility; featured?: boolean }) => {
+  const patch = async (playlistId: string, body: Parameters<typeof api.admin.updatePlaylist>[1]) => {
     setSaving(playlistId);
     setError(null);
     try {
-      const updated = await api.admin.updatePlaylist(playlistId, patch);
-      setPlaylists((prev) => prev.map((p) => p.id === playlistId ? updated : p));
-    } catch (e: any) {
-      setError(e.message ?? "Failed to update playlist.");
+      const updated = await api.admin.updatePlaylist(playlistId, body);
+      setPlaylists((prev) => prev.map((p) => (p.id === playlistId ? updated : p)));
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to update playlist.");
     } finally {
       setSaving(null);
     }
   };
 
+  const updateGenres = async (playlistId: string, tagIds: string[]) => {
+    setSaving(playlistId);
+    setError(null);
+    try {
+      const updated = await api.admin.setPlaylistTags(playlistId, tagIds);
+      setPlaylists((prev) => prev.map((p) => (p.id === playlistId ? updated : p)));
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to update genres.");
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  const batchAddGenres = async (genreIds: string[]) => {
+    const ids = [...selectedIds];
+    if (ids.length === 0 || genreIds.length === 0) return;
+    setBatchBusy(true);
+    setError(null);
+    try {
+      const updated = await runSequential(ids, async (id) => {
+        const pl = playlists.find((p) => p.id === id);
+        if (!pl) return null;
+        return api.admin.setPlaylistTags(id, mergeGenreIdsFromTags(pl.tags, genreIds));
+      });
+      const byId = new Map(updated.filter(Boolean).map((u) => [u!.id, u!]));
+      setPlaylists((prev) => prev.map((p) => (byId.has(p.id) ? byId.get(p.id)! : p)));
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to add genres.");
+    } finally {
+      setBatchBusy(false);
+    }
+  };
+
+  const batchSetGenres = async (genreIds: string[]) => {
+    const ids = [...selectedIds];
+    if (ids.length === 0) return;
+    setBatchBusy(true);
+    setError(null);
+    try {
+      const updated = await runSequential(ids, (id) => api.admin.setPlaylistTags(id, genreIds));
+      const byId = new Map(updated.map((u) => [u.id, u]));
+      setPlaylists((prev) => prev.map((p) => (byId.has(p.id) ? byId.get(p.id)! : p)));
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to set genres.");
+    } finally {
+      setBatchBusy(false);
+    }
+  };
+
+  const batchPatch = async (body: Parameters<typeof api.admin.updatePlaylist>[1]) => {
+    const ids = [...selectedIds];
+    if (ids.length === 0) return;
+    setBatchBusy(true);
+    setError(null);
+    try {
+      const updated = await runSequential(ids, (id) => api.admin.updatePlaylist(id, body));
+      const byId = new Map(updated.map((u) => [u.id, u]));
+      setPlaylists((prev) => prev.map((p) => (byId.has(p.id) ? byId.get(p.id)! : p)));
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to update playlists.");
+    } finally {
+      setBatchBusy(false);
+    }
+  };
+
   const totalPages = Math.ceil(total / PAGE_SIZE);
+  const rowBusy = (id: string) => saving === id || batchBusy;
 
   return (
     <div className="space-y-4">
       <div>
         <p className="text-xs font-semibold uppercase tracking-wider text-amber-400">Admin / Playlists</p>
         <h2 className="mt-1 text-2xl font-bold text-white">Playlist Management</h2>
-        <p className="mt-1 text-sm text-[var(--color-text-muted)]">Feature, archive, or adjust visibility across all playlists.</p>
+        <p className="mt-1 text-sm text-[var(--color-text-muted)]">
+          Edit titles, genres, status, and visibility. Playlist genres drive homepage genre panels for all tracks on the release.
+        </p>
       </div>
 
       {error && (
@@ -187,6 +257,18 @@ export function AdminPlaylistsPage() {
         </select>
       </div>
 
+      <AdminPlaylistsBatchBar
+        count={selectedCount}
+        allGenres={allGenres}
+        busy={batchBusy}
+        onClear={() => setSelectedIds(new Set())}
+        onAddGenres={batchAddGenres}
+        onSetGenres={batchSetGenres}
+        onSetStatus={(status) => batchPatch({ status })}
+        onSetVisibility={(visibility) => batchPatch({ visibility })}
+        onSetFeatured={(featured) => batchPatch({ featured })}
+      />
+
       <div className="text-xs text-[var(--color-text-muted)]">{total} playlists · page {page}</div>
 
       {loading ? (
@@ -198,6 +280,17 @@ export function AdminPlaylistsPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface)] text-left text-xs text-[var(--color-text-muted)]">
+                <th className="w-10 px-3 py-3">
+                  <input
+                    type="checkbox"
+                    checked={allPageSelected}
+                    ref={(el) => { if (el) el.indeterminate = somePageSelected; }}
+                    onChange={() => (allPageSelected ? setSelectedIds(new Set()) : setSelectedIds(new Set(playlists.map((p) => p.id))))}
+                    disabled={batchBusy}
+                    className="h-3.5 w-3.5 rounded border-zinc-600 accent-amber-400"
+                    title="Select all on this page"
+                  />
+                </th>
                 <th className="px-4 py-3">Playlist</th>
                 <th className="px-4 py-3">Type</th>
                 <SortHeader col="items" label="Tracks" sortBy={sortBy} order={order} onSort={handleSort} />
@@ -212,16 +305,39 @@ export function AdminPlaylistsPage() {
             </thead>
             <tbody className="divide-y divide-[var(--color-border)] bg-[var(--color-surface)]">
               {playlists.map((pl) => (
-                <tr key={pl.id} className={`transition ${saving === pl.id ? "opacity-40" : ""}`}>
-                  <td className="px-4 py-3 max-w-[200px]">
+                <tr
+                  key={pl.id}
+                  className={`transition ${rowBusy(pl.id) ? "opacity-40" : ""} ${selectedIds.has(pl.id) ? "bg-amber-400/[0.04]" : ""}`}
+                >
+                  <td className="px-3 py-3">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(pl.id)}
+                      onChange={() =>
+                        setSelectedIds((prev) => {
+                          const next = new Set(prev);
+                          if (next.has(pl.id)) next.delete(pl.id);
+                          else next.add(pl.id);
+                          return next;
+                        })
+                      }
+                      disabled={batchBusy}
+                      className="h-3.5 w-3.5 rounded border-zinc-600 accent-amber-400"
+                    />
+                  </td>
+                  <td className="px-4 py-3 max-w-[220px]">
                     <div className="flex items-center gap-2">
                       {pl.coverArtUrl ? (
-                        <img src={pl.coverArtUrl} alt="" className="h-9 w-9 rounded object-cover shrink-0" />
+                        <img src={pl.coverArtUrl} alt="" className="h-9 w-9 shrink-0 rounded object-cover" />
                       ) : (
-                        <div className="h-9 w-9 rounded bg-zinc-800 shrink-0" />
+                        <div className="h-9 w-9 shrink-0 rounded bg-zinc-800" />
                       )}
-                      <div className="min-w-0">
-                        <p className="truncate font-medium text-white text-xs">{pl.title}</p>
+                      <div className="min-w-0 flex-1">
+                        <AdminInlineTitleEditor
+                          title={pl.title}
+                          saving={rowBusy(pl.id)}
+                          onSave={(title) => patch(pl.id, { title })}
+                        />
                         <p className="truncate text-xs text-[var(--color-text-muted)]">{pl.owner.displayName}</p>
                       </div>
                     </div>
@@ -229,12 +345,21 @@ export function AdminPlaylistsPage() {
                   <td className="px-4 py-3 text-xs text-[var(--color-text-muted)]">{TYPE_LABELS[pl.type] ?? pl.type}</td>
                   <td className="px-4 py-3 text-xs text-white">{pl.itemCount}</td>
                   <td className="px-4 py-3 text-xs text-[var(--color-text-muted)]">{fmtDur(pl.totalDurationSeconds)}</td>
-                  <td className="px-4 py-3"><GenreChips tags={pl.tags} /></td>
+                  <td className="px-4 py-3">
+                    <AdminGenreEditor
+                      tags={pl.tags}
+                      allGenres={allGenres}
+                      saving={rowBusy(pl.id)}
+                      emptyLabel="— playlist genre"
+                      onSave={(tagIds) => updateGenres(pl.id, tagIds)}
+                    />
+                  </td>
                   <td className="px-4 py-3 text-xs font-medium text-white">{fmt(pl.savesCount)}</td>
                   <td className="px-4 py-3">
                     <button
-                      onClick={() => update(pl.id, { featured: !pl.featured })}
-                      disabled={saving === pl.id}
+                      type="button"
+                      onClick={() => patch(pl.id, { featured: !pl.featured })}
+                      disabled={rowBusy(pl.id)}
                       className={`rounded-full px-2 py-0.5 text-xs font-semibold transition ${pl.featured ? "bg-amber-500/20 text-amber-400 hover:bg-amber-500/30" : "border border-[var(--color-border)] text-zinc-600 hover:text-white"}`}
                     >
                       {pl.featured ? "Featured" : "Feature"}
@@ -243,8 +368,8 @@ export function AdminPlaylistsPage() {
                   <td className="px-4 py-3">
                     <select
                       value={pl.status}
-                      onChange={(e) => update(pl.id, { status: e.target.value as Status })}
-                      disabled={saving === pl.id}
+                      onChange={(e) => patch(pl.id, { status: e.target.value as Status })}
+                      disabled={rowBusy(pl.id)}
                       className={`rounded border border-[var(--color-border)] bg-black/30 px-2 py-1 text-xs font-semibold focus:outline-none ${STATUS_COLORS[pl.status as Status]}`}
                     >
                       <option value="PUBLISHED">Published</option>
@@ -255,8 +380,8 @@ export function AdminPlaylistsPage() {
                   <td className="px-4 py-3">
                     <select
                       value={pl.visibility}
-                      onChange={(e) => update(pl.id, { visibility: e.target.value as Visibility })}
-                      disabled={saving === pl.id}
+                      onChange={(e) => patch(pl.id, { visibility: e.target.value as Visibility })}
+                      disabled={rowBusy(pl.id)}
                       className={`rounded border border-[var(--color-border)] bg-black/30 px-2 py-1 text-xs font-semibold focus:outline-none ${VIS_COLORS[pl.visibility as Visibility]}`}
                     >
                       <option value="PUBLIC">Public</option>

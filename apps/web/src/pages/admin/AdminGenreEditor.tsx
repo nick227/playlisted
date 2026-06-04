@@ -1,25 +1,34 @@
 import { useState, useEffect, useRef } from "react";
-import type { AdminContentTagRef, AdminSong, AdminTag } from "@playlisted/client-sdk";
+import type { AdminContentTagRef, AdminTag } from "@playlisted/client-sdk";
+
+import { genreIdsFromTags } from "./adminGenreUtils";
 
 type Props = {
-  song: AdminSong;
+  tags: AdminContentTagRef[];
   allGenres: AdminTag[];
   saving: boolean;
+  emptyLabel?: string;
   onSave: (tagIds: string[]) => void;
 };
 
-export function GenreEditor({ song, allGenres, saving, onSave }: Props) {
+export function AdminGenreEditor({
+  tags,
+  allGenres,
+  saving,
+  emptyLabel = "— add genre",
+  onSave,
+}: Props) {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(
-    () => new Set(song.tags.filter((t) => t.kind === "GENRE").map((t) => t.id)),
+    () => new Set(genreIdsFromTags(tags)),
   );
   const [genreSearch, setGenreSearch] = useState("");
   const ref = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    setSelected(new Set(song.tags.filter((t) => t.kind === "GENRE").map((t) => t.id)));
-  }, [song.tags]);
+    setSelected(new Set(genreIdsFromTags(tags)));
+  }, [tags]);
 
   useEffect(() => {
     if (open) {
@@ -37,7 +46,7 @@ export function GenreEditor({ song, allGenres, saving, onSave }: Props) {
     return () => document.removeEventListener("mousedown", handler);
   }, [open]);
 
-  const currentGenres = song.tags.filter((t: AdminContentTagRef) => t.kind === "GENRE");
+  const currentGenres = tags.filter((t) => t.kind === "GENRE");
   const filteredGenres = genreSearch
     ? allGenres.filter((g) => g.name.toLowerCase().includes(genreSearch.toLowerCase()))
     : allGenres;
@@ -56,7 +65,7 @@ export function GenreEditor({ song, allGenres, saving, onSave }: Props) {
   }
 
   function cancel() {
-    setSelected(new Set(song.tags.filter((t) => t.kind === "GENRE").map((t) => t.id)));
+    setSelected(new Set(genreIdsFromTags(tags)));
     setOpen(false);
   }
 
@@ -66,10 +75,10 @@ export function GenreEditor({ song, allGenres, saving, onSave }: Props) {
         type="button"
         disabled={saving}
         onClick={() => setOpen((o) => !o)}
-        className="group flex min-w-[80px] flex-wrap gap-1 rounded p-1 text-left transition hover:bg-white/[0.04]"
+        className="group flex min-w-[80px] flex-wrap gap-1 rounded p-1 text-left transition hover:bg-white/[0.06]"
       >
         {currentGenres.length === 0 ? (
-          <span className="text-xs text-zinc-600 group-hover:text-zinc-400">— song genre</span>
+          <span className="text-xs text-zinc-600 group-hover:text-zinc-400">{emptyLabel}</span>
         ) : (
           currentGenres.map((g) => (
             <span key={g.id} className="rounded-full bg-purple-400/10 px-2 py-0.5 text-xs font-medium text-purple-400">

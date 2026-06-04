@@ -1,5 +1,8 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import type { AdminSong, AdminTag } from "@playlisted/client-sdk";
+
+import { AdminBatchGenrePanel } from "./AdminBatchGenrePanel";
+import { mergeGenreIdsFromTags, runSequential } from "./adminGenreUtils";
 
 type Visibility = "PUBLIC" | "UNLISTED" | "PRIVATE";
 
@@ -26,46 +29,12 @@ export function AdminSongsBatchBar({
   onSetVisibility,
   onDelete,
 }: Props) {
-  const [genreOpen, setGenreOpen] = useState(false);
-  const [genrePick, setGenrePick] = useState<Set<string>>(new Set());
-  const [genreSearch, setGenreSearch] = useState("");
   const [vis, setVis] = useState<Visibility>("PUBLIC");
   const [deleteStep, setDeleteStep] = useState<0 | 1 | 2>(0);
-  const genreRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (count === 0) {
-      setGenrePick(new Set());
-      setDeleteStep(0);
-      setGenreOpen(false);
-    }
+    if (count === 0) setDeleteStep(0);
   }, [count]);
-
-  useEffect(() => {
-    if (!genreOpen) return;
-    function handler(e: MouseEvent) {
-      if (genreRef.current && !genreRef.current.contains(e.target as Node)) setGenreOpen(false);
-    }
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [genreOpen]);
-
-  const filteredGenres = genreSearch
-    ? allGenres.filter((g) => g.name.toLowerCase().includes(genreSearch.toLowerCase()))
-    : allGenres;
-
-  async function applyAddGenres() {
-    if (genrePick.size === 0) return;
-    await onAddGenres(Array.from(genrePick));
-    setGenrePick(new Set());
-    setGenreOpen(false);
-  }
-
-  async function applySetGenres() {
-    await onSetGenres(Array.from(genrePick));
-    setGenrePick(new Set());
-    setGenreOpen(false);
-  }
 
   async function applyVisibility() {
     await onSetVisibility(vis);
@@ -107,71 +76,15 @@ export function AdminSongsBatchBar({
           </button>
         )}
 
-        <div ref={genreRef} className="relative">
-          <button
-            type="button"
-            disabled={disabled}
-            onClick={() => setGenreOpen((o) => !o)}
-            className="rounded-lg border border-purple-400/30 bg-purple-500/10 px-3 py-1.5 text-xs font-semibold text-purple-300 transition hover:bg-purple-500/20 disabled:opacity-40"
-          >
-            Genres…
-          </button>
-          {genreOpen && count > 0 && (
-            <div className="absolute left-0 top-full z-50 mt-1 w-64 rounded-xl border border-[var(--color-border)] bg-[#1a1a2e] shadow-2xl">
-              <div className="border-b border-[var(--color-border)] px-2 py-1.5">
-                <input
-                  value={genreSearch}
-                  onChange={(e) => setGenreSearch(e.target.value)}
-                  placeholder="Find genre…"
-                  className="w-full rounded border border-transparent bg-black/30 px-2 py-1 text-xs text-white placeholder-zinc-600 focus:border-purple-400/40 focus:outline-none"
-                />
-              </div>
-              <div className="max-h-40 overflow-y-auto p-1">
-                {filteredGenres.map((g) => {
-                  const checked = genrePick.has(g.id);
-                  return (
-                    <button
-                      key={g.id}
-                      type="button"
-                      onClick={() =>
-                        setGenrePick((prev) => {
-                          const next = new Set(prev);
-                          checked ? next.delete(g.id) : next.add(g.id);
-                          return next;
-                        })
-                      }
-                      className={`flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-left text-xs transition hover:bg-white/[0.06] ${checked ? "text-purple-300" : "text-[var(--color-text-muted)]"}`}
-                    >
-                      <span className={`h-3.5 w-3.5 shrink-0 rounded border ${checked ? "border-purple-400 bg-purple-400" : "border-zinc-600"}`} />
-                      {g.name}
-                    </button>
-                  );
-                })}
-              </div>
-              <div className="space-y-1.5 border-t border-[var(--color-border)] p-2">
-                <p className="px-0.5 text-[10px] leading-snug text-zinc-500">
-                  Add keeps existing song genres. Set replaces all song genres (playlist genres unchanged).
-                </p>
-                <button
-                  type="button"
-                  disabled={genrePick.size === 0 || busy}
-                  onClick={applyAddGenres}
-                  className="w-full rounded-lg bg-purple-500/20 px-2 py-1.5 text-xs font-semibold text-purple-300 transition hover:bg-purple-500/30 disabled:opacity-40"
-                >
-                  Add (merge) — {count} song{count === 1 ? "" : "s"}
-                </button>
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={applySetGenres}
-                  className="w-full rounded-lg border border-purple-400/30 px-2 py-1.5 text-xs font-semibold text-purple-200 transition hover:bg-purple-500/10 disabled:opacity-40"
-                >
-                  Set (replace){genrePick.size === 0 ? " — clear all" : ""} — {count} song{count === 1 ? "" : "s"}
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+        <AdminBatchGenrePanel
+          count={count}
+          entityLabel="song"
+          mergeHint="Add keeps existing song genres. Set replaces all song genres (playlist genres unchanged)."
+          allGenres={allGenres}
+          busy={busy}
+          onAddGenres={onAddGenres}
+          onSetGenres={onSetGenres}
+        />
 
         <div className="flex items-center gap-2">
           <select
@@ -256,22 +169,8 @@ export function AdminSongsBatchBar({
   );
 }
 
-export async function runSequential<T>(
-  ids: string[],
-  fn: (id: string) => Promise<T | null>,
-): Promise<T[]> {
-  const results: T[] = [];
-  for (const id of ids) {
-    const result = await fn(id);
-    if (result !== null) results.push(result);
-  }
-  return results;
-}
-
-export function songGenreIds(song: AdminSong): string[] {
-  return song.tags.filter((t) => t.kind === "GENRE").map((t) => t.id);
-}
+export { runSequential };
 
 export function mergeGenreIds(song: AdminSong, addIds: string[]): string[] {
-  return [...new Set([...songGenreIds(song), ...addIds])];
+  return mergeGenreIdsFromTags(song.tags, addIds);
 }

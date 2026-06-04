@@ -917,6 +917,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/traffic": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Admin traffic report from currently captured events */
+        get: operations["adminGetTraffic"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/songs": {
         parameters: {
             query?: never;
@@ -962,6 +979,23 @@ export interface paths {
         get?: never;
         /** Replace all genre tags for a song (admin) */
         put: operations["adminSetSongTags"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/playlists/{playlistId}/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Replace all genre tags for a playlist (admin) */
+        put: operations["adminSetPlaylistTags"];
         post?: never;
         delete?: never;
         options?: never;
@@ -2332,6 +2366,7 @@ export interface components {
             meta: components["schemas"]["PaginationMeta"];
         };
         AdminUpdatePlaylistRequest: {
+            title?: string;
             status?: components["schemas"]["PublishStatus"];
             visibility?: components["schemas"]["Visibility"];
             featured?: boolean;
@@ -2384,6 +2419,58 @@ export interface components {
                 artworkUrl?: string | null;
                 artist: string;
             }[];
+        };
+        AdminTrafficTotals: {
+            profilePageViews: number;
+            uniqueProfileViewsEstimate: number;
+            knownUniqueProfileViewers: number;
+            anonymousProfileViews: number;
+            anonymousPlays: number;
+            guestActions: number;
+            plays: number;
+            engagementActions: number;
+            clickthroughRateEstimate: number;
+            totalPlaySeconds: number;
+            avgKnownSessionSeconds: number;
+            activeSessions: number;
+            registeredUsers: number;
+        };
+        AdminTrafficResponse: {
+            range: components["schemas"]["ChartRange"];
+            caveat: string;
+            totals: components["schemas"]["AdminTrafficTotals"];
+            dailyProfileViews: {
+                day: string;
+                views: number;
+            }[];
+            dailyPlays: {
+                day: string;
+                plays: number;
+            }[];
+            topProfiles: {
+                userId: string;
+                username: string;
+                displayName: string;
+                views: number;
+            }[];
+            referrers: {
+                referrer: string;
+                views: number;
+            }[];
+            topConsumers: {
+                userId: string;
+                username: string;
+                displayName: string;
+                role: components["schemas"]["UserRole"];
+                plays: number;
+                profileViews: number;
+                saves: number;
+                follows: number;
+                totalActions: number;
+                /** Format: date-time */
+                lastActivityAt: string | null;
+            }[];
+            limitations: string[];
         };
         ApiKey: {
             id: string;
@@ -4839,6 +4926,46 @@ export interface operations {
             };
         };
     };
+    adminGetTraffic: {
+        parameters: {
+            query?: {
+                range?: components["schemas"]["ChartRange"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Traffic report */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminTrafficResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     adminListSongs: {
         parameters: {
             query?: {
@@ -5011,6 +5138,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AdminSong"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    adminSetPlaylistTags: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                playlistId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminSetSongTagsRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated playlist */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminPlaylist"];
                 };
             };
             /** @description Invalid request */
