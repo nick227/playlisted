@@ -116,7 +116,9 @@ export function TrackRow({
   return (
     <div
       id={`track-${recordingId}`}
-      className={`group/card grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-lg px-2 py-1.5 transition ${
+      className={`group/card grid w-full ${
+        editMode && onPlay ? "grid-cols-[auto_auto_minmax(0,1fr)_auto]" : "grid-cols-[auto_minmax(0,1fr)_auto]"
+      } items-center gap-2 rounded-lg px-2 py-1.5 transition ${
         isActive ? "bg-white/10" : "hover:bg-[var(--color-surface-hover)]"
       }${onPlay && !editMode ? " cursor-pointer" : ""}`}
       onClick={(e) => {
@@ -126,6 +128,25 @@ export function TrackRow({
       }}
     >
       <PlaybackBars active={isActive} playing={isPlaying} />
+      {editMode && onPlay ? (
+        <button
+          type="button"
+          onClick={onPlay}
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md transition ${
+            isActive
+              ? "bg-transparent text-white"
+              : "text-[var(--color-text-muted)] hover:bg-white/10 hover:text-white"
+          }`}
+          aria-label={isPlaying ? "Pause track" : "Play track"}
+          title={isPlaying ? "Pause" : "Play"}
+        >
+          {isPlaying ? (
+            <Pause size={15} fill="currentColor" />
+          ) : (
+            <Play size={15} className="ml-px" fill="currentColor" />
+          )}
+        </button>
+      ) : null}
       <div className="flex min-w-0 items-center gap-2 text-left">
         <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-md">
           {editMode && onUpdateArtwork ? (
