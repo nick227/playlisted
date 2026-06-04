@@ -21,45 +21,48 @@ const BOT_MESSAGES: Record<string, BotMessage> = {
     title: "",
     body: "",
     choices: [
-      { label: "Find music", next: "discover" },
       { label: "For artists", next: "artists" },
-      { label: "Radio?", next: "radio" },
-    ],
-  },
-  discover: {
-    eyebrow: "Discovery",
-    title: "Start with charts.",
-    body: "Then try genre rows, playlists, and new artist pages.",
-    choices: [
-      { label: "Charts", next: "charts" },
+      { label: "Site Charts", next: "charts" },
       { label: "Playlists", next: "playlists" },
-      { label: "Start over", next: "welcome" },
+      { label: "Radio", next: "radio" },
     ],
   },
-  artists: {
-    eyebrow: "Artists",
-    title: "Upload tracks and artwork.",
-    body: "Studio helps organize releases, playlists, and profile pages.",
+  aimusic: {
+    eyebrow: "AI Music",
+    title: "We are cool with AI music.",
+    body: "Everybody might hate it, but I like it.",
     choices: [
       { label: "Studio", next: "studio" },
       { label: "Pages", next: "pages" },
       { label: "Start over", next: "welcome" },
     ],
   },
+  artists: {
+    eyebrow: "Artists",
+    title: "Upload tracks and artwork.",
+    body: "Insights like number of plays and duration.",
+    choices: [
+      { label: "Studio", next: "studio" },
+      { label: "Pages", next: "pages" },
+      { label: "AI Music", next: "aimusic" },
+      { label: "Start over", next: "welcome" },
+    ],
+  },
   radio: {
     eyebrow: "Radio",
-    title: "Public radio is part of it.",
-    body: "Playlisted is also testing streaming and developer APIs.",
+    title: "Streaming ad-free music all day.",
+    body: "And we have an API.",
     choices: [
       { label: "Developers", next: "dev" },
-      { label: "Discovery", next: "discover" },
+      { label: "Studio", next: "studio" },
+      { label: "Pages", next: "pages" },
       { label: "Start over", next: "welcome" },
     ],
   },
   charts: {
     eyebrow: "Charts",
-    title: "Charts surface momentum.",
-    body: "Use them for quick listens and active artists.",
+    title: "Get your music on the charts.",
+    body: "Showcase your music and get seen.",
     choices: [
       { label: "Playlists", next: "playlists" },
       { label: "Radio", next: "radio" },
@@ -68,8 +71,8 @@ const BOT_MESSAGES: Record<string, BotMessage> = {
   },
   playlists: {
     eyebrow: "Playlists",
-    title: "Playlists are listening maps.",
-    body: "Save favorites, follow moods, and find artists faster.",
+    title: "Heart and soul of the app.",
+    body: "Save favorites, follow artists and playlists.",
     choices: [
       { label: "Charts", next: "charts" },
       { label: "Artist pages", next: "pages" },
@@ -78,8 +81,8 @@ const BOT_MESSAGES: Record<string, BotMessage> = {
   },
   studio: {
     eyebrow: "Studio",
-    title: "Studio is for publishing.",
-    body: "Manage music, collections, profile links, and artwork.",
+    title: "Check the studio's artist features.",
+    body: "Manage music, metrics, social links, and profile.",
     choices: [
       { label: "Artist pages", next: "pages" },
       { label: "Developers", next: "dev" },
@@ -88,8 +91,8 @@ const BOT_MESSAGES: Record<string, BotMessage> = {
   },
   pages: {
     eyebrow: "Pages",
-    title: "Artist pages stay clean.",
-    body: "Tracks, playlists, profile links, and favorites connect there.",
+    title: "The platform is for artists.",
+    body: "Tracks, playlists, profile links, and favorites.",
     choices: [
       { label: "For artists", next: "artists" },
       { label: "Playlists", next: "playlists" },
@@ -99,7 +102,7 @@ const BOT_MESSAGES: Record<string, BotMessage> = {
   dev: {
     eyebrow: "Developers",
     title: "API keys are live.",
-    body: "Public radio APIs and curl-friendly tools are starting here.",
+    body: "Public APIs and tools.",
     choices: [
       { label: "Radio", next: "radio" },
       { label: "Studio", next: "studio" },
