@@ -2,6 +2,7 @@ import { BODY_PRESETS, BODY_PRESET_IDS } from './libraries/body'
 import { CLOTHES_PRESETS, CLOTHES_PRESET_IDS } from './libraries/clothes'
 import { EYES_PRESETS, EYES_PRESET_IDS } from './libraries/eyes'
 import { FACE_PRESETS, FACE_PRESET_IDS } from './libraries/face'
+import { GRAPHIC_HEADS, GRAPHIC_HEAD_IDS } from './libraries/graphicHeads'
 import { HAIR_PRESETS, HAIR_PRESET_IDS } from './libraries/hair'
 import { MOUTH_PRESETS, MOUTH_PRESET_IDS } from './libraries/mouth'
 
@@ -14,6 +15,7 @@ export type PresetCatalog = {
   eyes: PresetCatalogEntry[]
   mouth: PresetCatalogEntry[]
   clothes: PresetCatalogEntry[]
+  graphicHead: PresetCatalogEntry[]
 }
 
 function entries(ids: string[], map: Record<string, { label: string }>): PresetCatalogEntry[] {
@@ -28,6 +30,7 @@ export const PRESET_CATALOG: PresetCatalog = {
   mouth: entries(MOUTH_PRESET_IDS, MOUTH_PRESETS),
   eyes: entries(EYES_PRESET_IDS, EYES_PRESETS),
   clothes: entries(CLOTHES_PRESET_IDS, CLOTHES_PRESETS),
+  graphicHead: entries(GRAPHIC_HEAD_IDS, GRAPHIC_HEADS),
 }
 
 export function presetCatalogJson(pretty = true): string {

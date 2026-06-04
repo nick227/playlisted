@@ -5,6 +5,11 @@ import { clamp, hash01, lerp } from '../core/math'
 import type { CastActivity } from '../body/bodies'
 import { CAST_CHARACTER_SCALE } from './scale'
 import {
+  GRAPHIC_HEAD_IDS,
+  GRAPHIC_HEAD_IMAGE_SOURCES,
+  RASTER_GRAPHIC_HEAD_IMAGE_SOURCES,
+} from '../character/libraries/graphicHeads'
+import {
   characterHeadAnchor,
   drawCharacterBody,
   drawCharacterFace,
@@ -50,7 +55,8 @@ export class CastDirector {
 
   setCast(members: readonly CastMemberDef[], seed: number) {
     this.seed = seed
-    const prepped = members.map((def, i) => this.jitterAmbientPlacement(def, i))
+    const withGraphicHeads = assignGraphicHeads(members, seed)
+    const prepped = withGraphicHeads.map((def, i) => this.jitterAmbientPlacement(def, i))
     const laidOut = separateCastPlacements(prepped)
     const next: MemberRuntime[] = []
     for (let i = 0; i < laidOut.length; i++) {
@@ -338,6 +344,7 @@ export class CastDirector {
 function shouldDrawFace(def: CastMemberDef): boolean {
   // Explicit overrides always win
   if (def.showFace === false) return false
+  if (def.recipe?.graphicHeadId) return true
   if (def.showFace === true) return true
   // Speakers always get faces
   if (def.speaks) return true
@@ -346,6 +353,73 @@ function shouldDrawFace(def: CastMemberDef): boolean {
   // Characters whose job is to look show faces
   if (def.activity === 'look') return true
   return false
+}
+
+function assignGraphicHeads(members: readonly CastMemberDef[], seed: number): CastMemberDef[] {
+  if (!members.length) return []
+
+  const explicit = members.filter((m) => !!m.recipe?.graphicHeadId).length
+  const target = Math.min(2, Math.max(explicit, 1 + Math.floor(hash01(seed, 811) * 2)))
+  const ranked = explicit >= target ? [] : members
+    .map((member, index) => ({ member, index, score: graphicHeadCandidateScore(member, seed, index) }))
+    .filter((entry) => entry.score > -Infinity)
+    .sort((a, b) => b.score - a.score)
+
+  const chosen = new Set<number>()
+  for (const entry of ranked) {
+    if (chosen.size >= target - explicit) break
+    chosen.add(entry.index)
+  }
+  const graphicIndexes = members
+    .map((member, index) => (chosen.has(index) || member.recipe?.graphicHeadId ? index : -1))
+    .filter((index) => index >= 0)
+  const hasExplicitImage = graphicIndexes.some((index) => !!members[index].recipe?.graphicHeadImageSrc)
+  const forcedRasterImageIndex = !hasExplicitImage && RASTER_GRAPHIC_HEAD_IMAGE_SOURCES.length && graphicIndexes.length
+    ? graphicIndexes[Math.floor(hash01(seed, 816) * graphicIndexes.length)]
+    : -1
+
+  return members.map((member, index) => {
+    const existingGraphicHeadId = member.recipe?.graphicHeadId
+    if (!chosen.has(index) && !existingGraphicHeadId) return member
+
+    const graphicHeadId = existingGraphicHeadId
+      ?? GRAPHIC_HEAD_IDS[Math.floor(hash01(seed + index * 17, 812) * GRAPHIC_HEAD_IDS.length)]
+    const graphicHeadImageSrc = member.recipe?.graphicHeadImageSrc
+      ?? maybeGraphicHeadImageSrc(seed, index, index === forcedRasterImageIndex)
+
+    return {
+      ...member,
+      showFace: true,
+      faceMode: member.faceMode ?? 'watching',
+      recipe: { ...member.recipe, graphicHeadId, graphicHeadImageSrc },
+    }
+  })
+}
+
+function maybeGraphicHeadImageSrc(seed: number, index: number, forceRaster: boolean): string | undefined {
+  const preferred = RASTER_GRAPHIC_HEAD_IMAGE_SOURCES.length
+    ? RASTER_GRAPHIC_HEAD_IMAGE_SOURCES
+    : GRAPHIC_HEAD_IMAGE_SOURCES
+  if (!preferred.length) return undefined
+  if (!forceRaster && hash01(seed + index * 19, 814) > 0.58) return undefined
+  const imageIndex = Math.floor(hash01(seed + index * 23, 815) * preferred.length)
+  return preferred[imageIndex]?.src
+}
+
+function graphicHeadCandidateScore(member: CastMemberDef, seed: number, index: number): number {
+  if (member.recipe?.graphicHeadId) return -Infinity
+  if (member.showFace === false) return -Infinity
+  if (member.faceMode === 'dissolving') return -Infinity
+  if (member.speaks || member.role === 'speaker') return -Infinity
+
+  const activity = member.activity ?? 'hangOut'
+  const activityBias = activity === 'look' || activity === 'stand'
+    ? 0.35
+    : activity === 'hangOut' || activity === 'drink'
+      ? 0.2
+      : 0
+  const frontBias = member.placement.ny * 0.2
+  return hash01(seed + index * 29, 813) + activityBias + frontBias
 }
 
 function activityEnergy(act: CastActivity, audio: AudioReact, timeMs: number, seed: number): number {

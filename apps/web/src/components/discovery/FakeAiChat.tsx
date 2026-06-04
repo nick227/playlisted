@@ -384,10 +384,10 @@ export function FakeAiChat({
             </Link>
           ) : (
             <Link
-              to="/studio/collections"
+              to="/studio"
               className="inline-flex items-center rounded-full bg-white px-4 py-1.5 text-xs font-semibold text-black transition hover:bg-white/90"
             >
-              Upload
+              Studio
             </Link>
           )}
           {choiceButtons}

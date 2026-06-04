@@ -5,6 +5,7 @@ import type { BodyPresetDef } from './libraries/body'
 import type { ClothesPresetDef } from './libraries/clothes'
 import type { EyesPresetDef } from './libraries/eyes'
 import type { FacePresetDef } from './libraries/face'
+import type { GraphicHeadDef } from './libraries/graphicHeads'
 import type { HairPresetDef } from './libraries/hair'
 import type { MouthPresetDef } from './libraries/mouth'
 
@@ -17,6 +18,8 @@ export type ResolvedCharacter = {
   seed: number
   body: BodyPresetDef
   face: FacePresetDef
+  graphicHead?: GraphicHeadDef
+  graphicHeadImageSrc?: string
   hair: HairPresetDef
   eyes: EyesPresetDef
   mouth: MouthPresetDef

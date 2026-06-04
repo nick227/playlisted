@@ -343,7 +343,7 @@ export function StudioPage() {
           <button
             type="submit"
             disabled={saveMutation.isPending}
-            className="w-full rounded-full bg-white py-3 font-bold text-black transition hover:bg-white/90 disabled:opacity-60"
+            className="px-4 rounded-full bg-white py-3 font-bold text-black transition hover:bg-white/90 disabled:opacity-60"
           >
             {saveMutation.isPending ? "Saving..." : "Save profile"}
           </button>
@@ -363,7 +363,7 @@ export function StudioPage() {
                 type="button"
                 onClick={() => createMutation.mutate(opt.value)}
                 disabled={createMutation.isPending}
-                className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-[var(--color-border)] px-8 py-2 text-lg font-semibold text-white transition hover:border-[var(--color-brand)] disabled:opacity-60 w-full bg-gradient-to-r from-[var(--color-brand)] to-[var(--color-brand-hover)] bg-[length:200%_100%]"
+                className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-[var(--color-border)] px-8 py-2 text-lg font-semibold text-white transition hover:border-[var(--color-brand)] disabled:opacity-60 bg-gradient-to-r from-[var(--color-brand)] to-[var(--color-brand-hover)] bg-[length:200%_100%]"
               >
                 <Plus size={15} />
                 New {opt.label}

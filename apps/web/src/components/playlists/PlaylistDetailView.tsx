@@ -20,7 +20,7 @@ type PlaylistDetailViewProps = {
 
 export function PlaylistDetailView({ playlist }: PlaylistDetailViewProps) {
   const isMdUp = useIsMdUp();
-  const relatedPlaylistLimit = isMdUp ? 5 : 6;
+  const relatedPlaylistLimit = isMdUp ? 4 : 6;
   const { data: related } = usePlaylists(relatedPlaylistLimit + 1);
   const { setQueue, currentTrack, togglePlay, playbackContext, state } = useAudioPlayer();
   const { status, user } = useAuth();

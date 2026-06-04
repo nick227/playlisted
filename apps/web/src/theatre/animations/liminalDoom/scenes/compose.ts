@@ -29,5 +29,3 @@ export function composeScene(
   ensureLiminalScenesRegistered()
   composeVenueAndCast(renderer, p.bounds, toSceneFrame(p), type, extraCast)
 }
-
-export { VENUE_PHRASES as PHRASE_BANK } from '../../../sceneKit'

@@ -1,9 +1,12 @@
-import type { UserDetail } from "@playlisted/client-sdk";
+import type { TopArtistItem, UserDetail } from "@playlisted/client-sdk";
 import { useMemo } from "react";
 
+import { ArtistCard } from "@/components/cards/ArtistCard";
+import { ContentRow } from "@/components/discovery/ContentRow";
 import { EmptyState } from "@/components/feedback/EmptyState";
 import { BrowseBreadcrumbs } from "@/components/library/BrowseBreadcrumbs";
 import { useArtistTracks } from "@/hooks/useArtistTracks";
+import { useTopArtists } from "@/hooks/useCharts";
 import { artistDetailCrumbs, ARTIST_PROFILE_LAYOUT_CLASS } from "@/lib/browsePaths";
 import { useAuth } from "@/providers/AuthProvider";
 
@@ -19,6 +22,8 @@ type ArtistProfileViewProps = {
 };
 
 export function ArtistProfileView({ user, preview }: ArtistProfileViewProps) {
+  const relatedArtistLimit = 6;
+  const { data: related } = useTopArtists("7d", relatedArtistLimit + 1);
   const { user: authUser } = useAuth();
   const { tracks, isLoading: tracksLoading } = useArtistTracks(user.id);
 
@@ -26,6 +31,11 @@ export function ArtistProfileView({ user, preview }: ArtistProfileViewProps) {
   const totalStreams = useMemo(() => computeArtistStreams(tracks), [tracks]);
   const displayName = preview?.displayName ?? user.displayName;
   const browseCrumbs = artistDetailCrumbs(displayName);
+  const relatedArtists = useMemo(() => {
+    return (related?.data ?? [])
+      .filter((item: TopArtistItem) => item.userId !== user.id)
+      .slice(0, relatedArtistLimit);
+  }, [related?.data, user.id]);
 
   const sortedPlaylists = useMemo(() => {
     return [...user.publicPlaylists].sort((a, b) => {
@@ -47,11 +57,9 @@ export function ArtistProfileView({ user, preview }: ArtistProfileViewProps) {
 
         {sortedPlaylists.length > 0 ? (
           <section>
-            <div>
-              {sortedPlaylists.map((playlist) => (
-                <ArtistProfileCollectionPanel key={playlist.id} playlist={playlist} owner={user} />
-              ))}
-            </div>
+            {sortedPlaylists.map((playlist) => (
+              <ArtistProfileCollectionPanel key={playlist.id} playlist={playlist} owner={user} />
+            ))}
           </section>
         ) : null}
 
@@ -66,6 +74,23 @@ export function ArtistProfileView({ user, preview }: ArtistProfileViewProps) {
           />
         ) : null}
       </div>
+
+      {relatedArtists.length > 0 ? (
+        <div className={`${ARTIST_PROFILE_LAYOUT_CLASS} mt-14`}>
+          <ContentRow title="More Artists">
+            {relatedArtists.map((item: TopArtistItem) => (
+              <ArtistCard
+                key={item.userId}
+                id={item.userId}
+                username={item.username}
+                displayName={item.displayName}
+                avatarUrl={item.avatarUrl}
+                className="w-45 shrink-0"
+              />
+            ))}
+          </ContentRow>
+        </div>
+      ) : null}
     </div>
   );
 }

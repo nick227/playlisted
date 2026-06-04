@@ -2,6 +2,7 @@ import type { BodyLook } from '../body/bodies'
 import { drawStyledBodyDetailed, headAnchorDetailed } from '../body/draw'
 import { drawFace } from '../face'
 import type { FaceConfig, FaceCacheEntry } from '../face'
+import { drawGraphicHead } from './graphicHead'
 import type { ResolvedCharacter } from './types'
 
 export function toBodyLook(c: ResolvedCharacter): BodyLook {
@@ -47,5 +48,9 @@ export function drawCharacterFace(
   timeMs: number,
   cache?: FaceCacheEntry,
 ) {
+  if (c.graphicHead) {
+    drawGraphicHead(ctx, x, y, scale, config, c.graphicHead, timeMs, c.graphicHeadImageSrc)
+    return
+  }
   drawFace(ctx, x, y, scale, config, cache, c.face, c.eyes, c.mouth, c.fashion.hairStyle, c.fashion.hair, c.fashion.hairHi, timeMs)
 }

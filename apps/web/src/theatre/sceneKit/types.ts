@@ -61,6 +61,8 @@ export type CharacterRecipe = {
   eyesId: string
   mouthId: string
   clothesId: string
+  graphicHeadId?: string
+  graphicHeadImageSrc?: string
 }
 
 export type CharacterRecipeModifiers = {

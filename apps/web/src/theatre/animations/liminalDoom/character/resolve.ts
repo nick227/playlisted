@@ -5,6 +5,7 @@ import { BODY_PRESETS, BODY_PRESET_IDS } from './libraries/body'
 import { CLOTHES_PRESETS, CLOTHES_PRESET_IDS } from './libraries/clothes'
 import { EYES_PRESETS, EYES_PRESET_IDS } from './libraries/eyes'
 import { FACE_PRESETS, FACE_PRESET_IDS, RUBBER_FACE_PRESET_IDS, SCULPTED_FACE_PRESET_IDS } from './libraries/face'
+import { GRAPHIC_HEADS } from './libraries/graphicHeads'
 import { HAIR_PRESETS } from './libraries/hair'
 import { MOUTH_PRESETS, MOUTH_PRESET_IDS } from './libraries/mouth'
 import type { CharacterModifiers, CharacterRecipe, ResolvedCharacter } from './types'
@@ -41,6 +42,8 @@ export function resolveRecipe(
     eyesId: partial.eyesId ?? pickId(EYES_PRESET_IDS, seed, 5),
     mouthId: partial.mouthId ?? pickId(MOUTH_PRESET_IDS, seed, 6),
     clothesId,
+    graphicHeadId: partial.graphicHeadId,
+    graphicHeadImageSrc: partial.graphicHeadImageSrc,
   }
 
   const fashion = resolveFashion(clothes.style, body.gender, seed)
@@ -55,6 +58,10 @@ export function resolveRecipe(
     seed,
     body,
     face: presetOrThrow(FACE_PRESETS, recipe.faceId, 'face'),
+    graphicHead: recipe.graphicHeadId
+      ? presetOrThrow(GRAPHIC_HEADS, recipe.graphicHeadId, 'graphic head')
+      : undefined,
+    graphicHeadImageSrc: recipe.graphicHeadImageSrc,
     hair,
     eyes: presetOrThrow(EYES_PRESETS, recipe.eyesId, 'eyes'),
     mouth: presetOrThrow(MOUTH_PRESETS, recipe.mouthId, 'mouth'),

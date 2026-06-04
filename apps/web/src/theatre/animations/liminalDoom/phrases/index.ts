@@ -1,32 +1,6 @@
 import { palette } from '../core/palette'
 import { clamp, hash01 } from '../core/math'
-
-export const PHRASE_BANK = [
-  'you came through the wrong door',
-  'the sound guy left already',
-  "don't look at the lights",
-  'we played here before the ceiling fell',
-  'your friend was just here',
-  'cash only after midnight',
-  'the green room is not green',
-  'everyone hears it different',
-  'keep your wristband visible',
-  'that speaker has a face',
-  'you missed the first set',
-  'nobody goes backstage twice',
-  'she said the hallway moved',
-  'the drums are under the floor',
-  'drink tickets are a kind of prayer',
-  "you can stand there but don't stay",
-  'the bartender knows your name wrong',
-  'follow the cable',
-  'this room used to be louder',
-  'they are waiting between songs',
-  'the exit sign is lying',
-  'beautiful crowd tonight',
-  "don't tell them you saw me",
-  'one more door and then it starts',
-] as const
+import { VENUE_PHRASES } from '../../../sceneKit'
 
 const BAR_PHRASE_BANK = [
   'cash only after midnight',
@@ -45,12 +19,12 @@ const THRESHOLD_PHRASE_BANK = [
 ] as const
 
 const PHRASE_BANKS: Record<string, readonly string[]> = {
-  venue: PHRASE_BANK,
+  venue: VENUE_PHRASES,
   bar: BAR_PHRASE_BANK,
   threshold: THRESHOLD_PHRASE_BANK,
 }
 
-export type PhraseText = typeof PHRASE_BANK[number] | string
+export type PhraseText = string
 
 export type PhraseFormat = 'subtitleShard' | 'wallText' | 'tornCaption' | 'bubble'
 
@@ -71,7 +45,7 @@ export function pickPhrase(seed: number): PhraseText {
 }
 
 export function pickPhraseFromBank(bankId: string, seed: number, salt = 0): PhraseText {
-  const bank = PHRASE_BANKS[bankId] ?? PHRASE_BANK
+  const bank = PHRASE_BANKS[bankId] ?? VENUE_PHRASES
   const i = Math.floor(hash01(seed, salt) * bank.length)
   return bank[i]
 }
