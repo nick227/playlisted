@@ -4,6 +4,7 @@ import { authedApi } from "@/lib/authedApi";
 import { useAuth } from "@/providers/AuthProvider";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { useAudioPlayer, type QueueTrack } from "@/providers/AudioPlayerProvider";
+import { AdminSongsBatchBar, mergeGenreIds } from "./AdminSongsBatchBar";
 
 type Visibility = "PUBLIC" | "UNLISTED" | "PRIVATE";
 
@@ -127,14 +128,17 @@ function DeleteButton({
 
   if (confirming) {
     return (
-      <button
-        type="button"
-        onClick={handleClick}
-        disabled={saving}
-        className="rounded px-2 py-0.5 text-xs font-semibold text-red-400 ring-1 ring-red-400/50 transition hover:bg-red-400/10"
-      >
-        Confirm?
-      </button>
+      <div className="flex flex-col items-end gap-0.5">
+        <span className="text-[10px] font-medium text-red-400/80">Cannot undo</span>
+        <button
+          type="button"
+          onClick={handleClick}
+          disabled={saving}
+          className="rounded px-2 py-0.5 text-xs font-semibold text-red-400 ring-1 ring-red-400/50 transition hover:bg-red-400/10"
+        >
+          Confirm delete?
+        </button>
+      </div>
     );
   }
 
@@ -383,6 +387,8 @@ export function AdminSongsPage() {
   const [filterExplicit, setFilterExplicit] = useState("");
   const [sortBy, setSortBy] = useState("createdAt");
   const [order, setOrder] = useState("desc");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [batchBusy, setBatchBusy] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Load genre tags once
@@ -410,7 +416,28 @@ export function AdminSongsPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  useEffect(() => { setSelectedIds(new Set()); }, [page]);
+
   useEffect(() => () => { if (debounceRef.current) clearTimeout(debounceRef.current); }, []);
+
+  const selectedCount = selectedIds.size;
+  const allPageSelected = songs.length > 0 && songs.every((s) => selectedIds.has(s.id));
+  const somePageSelected = songs.some((s) => selectedIds.has(s.id)) && !allPageSelected;
+  const previewSongs = songs.filter((s) => selectedIds.has(s.id)).slice(0, 5).map((s) => ({ id: s.id, title: s.title }));
+
+  function toggleSelect(songId: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(songId)) next.delete(songId);
+      else next.add(songId);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    if (allPageSelected) setSelectedIds(new Set());
+    else setSelectedIds(new Set(songs.map((s) => s.id)));
+  }
 
   const handleSearchChange = (value: string) => {
     setSearchInput(value);
@@ -429,19 +456,6 @@ export function AdminSongsPage() {
     setError(null);
     try {
       const updated = await api.admin.updateSong(songId, { visibility });
-      setSongs((prev) => prev.map((s) => s.id === songId ? updated : s));
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Failed to update song.");
-    } finally {
-      setSaving(null);
-    }
-  };
-
-  const toggleExplicit = async (songId: string, explicit: boolean) => {
-    setSaving(songId);
-    setError(null);
-    try {
-      const updated = await api.admin.updateSong(songId, { explicit: !explicit });
       setSongs((prev) => prev.map((s) => s.id === songId ? updated : s));
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to update song.");
@@ -482,6 +496,7 @@ export function AdminSongsPage() {
     try {
       await api.admin.deleteSong(songId);
       setSongs((prev) => prev.filter((s) => s.id !== songId));
+      setSelectedIds((prev) => { const next = new Set(prev); next.delete(songId); return next; });
       setTotal((t) => t - 1);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to delete song.");
@@ -490,14 +505,71 @@ export function AdminSongsPage() {
     }
   };
 
+  const batchAddGenres = async (genreIds: string[]) => {
+    const ids = [...selectedIds];
+    if (ids.length === 0 || genreIds.length === 0) return;
+    setBatchBusy(true);
+    setError(null);
+    try {
+      const updated = await Promise.all(
+        ids.map((id) => {
+          const song = songs.find((s) => s.id === id);
+          if (!song) return null;
+          return api.admin.setSongTags(id, mergeGenreIds(song, genreIds));
+        }),
+      );
+      const byId = new Map(updated.filter(Boolean).map((u) => [u!.id, u!]));
+      setSongs((prev) => prev.map((s) => (byId.has(s.id) ? byId.get(s.id)! : s)));
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to add genres.");
+    } finally {
+      setBatchBusy(false);
+    }
+  };
+
+  const batchSetVisibility = async (visibility: Visibility) => {
+    const ids = [...selectedIds];
+    if (ids.length === 0) return;
+    setBatchBusy(true);
+    setError(null);
+    try {
+      const updated = await Promise.all(ids.map((id) => api.admin.updateSong(id, { visibility })));
+      const byId = new Map(updated.map((u) => [u.id, u]));
+      setSongs((prev) => prev.map((s) => (byId.has(s.id) ? byId.get(s.id)! : s)));
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to update visibility.");
+    } finally {
+      setBatchBusy(false);
+    }
+  };
+
+  const batchDelete = async () => {
+    const ids = [...selectedIds];
+    if (ids.length === 0) return;
+    setBatchBusy(true);
+    setError(null);
+    try {
+      await Promise.all(ids.map((id) => api.admin.deleteSong(id)));
+      const removed = new Set(ids);
+      setSongs((prev) => prev.filter((s) => !removed.has(s.id)));
+      setSelectedIds(new Set());
+      setTotal((t) => Math.max(0, t - ids.length));
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to delete songs.");
+    } finally {
+      setBatchBusy(false);
+    }
+  };
+
   const totalPages = Math.ceil(total / PAGE_SIZE);
+  const rowBusy = (songId: string) => saving === songId || batchBusy;
 
   return (
     <div className="space-y-4">
       <div>
         <p className="text-xs font-semibold uppercase tracking-wider text-amber-400">Admin / Songs</p>
         <h2 className="mt-1 text-2xl font-bold text-white">Song Management</h2>
-        <p className="mt-1 text-sm text-[var(--color-text-muted)]">Control visibility, explicit flags, and genres across all tracks.</p>
+        <p className="mt-1 text-sm text-[var(--color-text-muted)]">Control visibility and genres across all tracks. Select rows for batch edits.</p>
       </div>
 
       {error && (
@@ -524,6 +596,17 @@ export function AdminSongsPage() {
         </select>
       </div>
 
+      <AdminSongsBatchBar
+        count={selectedCount}
+        previewSongs={previewSongs}
+        allGenres={allGenres}
+        busy={batchBusy}
+        onClear={() => setSelectedIds(new Set())}
+        onAddGenres={batchAddGenres}
+        onSetVisibility={batchSetVisibility}
+        onDelete={batchDelete}
+      />
+
       <div className="text-xs text-[var(--color-text-muted)]">{total} songs · page {page}</div>
 
       {loading ? (
@@ -535,26 +618,48 @@ export function AdminSongsPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface)] text-left text-xs text-[var(--color-text-muted)]">
+                <th className="w-10 px-3 py-3">
+                  <input
+                    type="checkbox"
+                    checked={allPageSelected}
+                    ref={(el) => { if (el) el.indeterminate = somePageSelected; }}
+                    onChange={toggleSelectAll}
+                    disabled={batchBusy}
+                    className="h-3.5 w-3.5 rounded border-zinc-600 accent-amber-400"
+                    title="Select all on this page"
+                  />
+                </th>
                 <th className="px-4 py-3">Song</th>
                 <SortHeader col="plays" label="Plays" sortBy={sortBy} order={order} onSort={handleSort} />
                 <th className="px-4 py-3">Genres</th>
                 <SortHeader col="duration" label="Duration" sortBy={sortBy} order={order} onSort={handleSort} />
                 <th className="px-4 py-3">Visibility</th>
-                <th className="px-4 py-3">Explicit</th>
                 <SortHeader col="createdAt" label="Added" sortBy={sortBy} order={order} onSort={handleSort} />
                 <th className="px-4 py-3" />
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--color-border)] bg-[var(--color-surface)]">
               {songs.map((song) => (
-                <tr key={song.id} className={`transition ${saving === song.id ? "opacity-40" : ""}`}>
+                <tr
+                  key={song.id}
+                  className={`transition ${rowBusy(song.id) ? "opacity-40" : ""} ${selectedIds.has(song.id) ? "bg-amber-400/[0.04]" : ""}`}
+                >
+                  <td className="px-3 py-3">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(song.id)}
+                      onChange={() => toggleSelect(song.id)}
+                      disabled={batchBusy}
+                      className="h-3.5 w-3.5 rounded border-zinc-600 accent-amber-400"
+                    />
+                  </td>
                   <td className="px-4 py-3 max-w-[240px]">
                     <div className="flex items-center gap-2">
                       <SongPlayButton song={song} />
                       <div className="min-w-0 flex-1">
                         <TitleEditor
                           song={song}
-                          saving={saving === song.id}
+                          saving={rowBusy(song.id)}
                           onSave={(title) => updateTitle(song.id, title)}
                         />
                         <p className="truncate text-xs text-[var(--color-text-muted)]">{song.uploader.displayName}</p>
@@ -566,7 +671,7 @@ export function AdminSongsPage() {
                     <GenreEditor
                       song={song}
                       allGenres={allGenres}
-                      saving={saving === song.id}
+                      saving={rowBusy(song.id)}
                       onSave={(tagIds) => updateGenres(song.id, tagIds)}
                     />
                   </td>
@@ -575,7 +680,7 @@ export function AdminSongsPage() {
                     <select
                       value={song.visibility}
                       onChange={(e) => updateVisibility(song.id, e.target.value as Visibility)}
-                      disabled={saving === song.id}
+                      disabled={rowBusy(song.id)}
                       className={`rounded border border-[var(--color-border)] bg-black/30 px-2 py-1 text-xs font-semibold focus:outline-none ${VIS_COLORS[song.visibility as Visibility]}`}
                     >
                       <option value="PUBLIC">Public</option>
@@ -583,21 +688,12 @@ export function AdminSongsPage() {
                       <option value="PRIVATE">Private</option>
                     </select>
                   </td>
-                  <td className="px-4 py-3">
-                    <button
-                      onClick={() => toggleExplicit(song.id, song.explicit)}
-                      disabled={saving === song.id}
-                      className={`rounded-full px-2 py-0.5 text-xs font-semibold transition ${song.explicit ? "bg-red-400/20 text-red-400" : "border border-[var(--color-border)] text-zinc-600 hover:text-white"}`}
-                    >
-                      {song.explicit ? "Explicit" : "Clean"}
-                    </button>
-                  </td>
                   <td className="px-4 py-3 text-xs text-[var(--color-text-muted)]">
                     {new Date(song.createdAt).toLocaleDateString()}
                   </td>
                   <td className="px-4 py-3">
                     <DeleteButton
-                      saving={saving === song.id}
+                      saving={rowBusy(song.id)}
                       onDelete={() => deleteSong(song.id)}
                     />
                   </td>
