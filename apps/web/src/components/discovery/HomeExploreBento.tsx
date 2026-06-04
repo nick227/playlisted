@@ -60,7 +60,7 @@ export function HomeExploreBento() {
         artists={artists}
         loading={loading}
         onPlaySong={playSong}
-        onPlayPlaylist={onPlayPlaylist}
+        onPlayPlaylist={(item) => void playPlaylist(item)}
         playlistActive={playlistActive}
         playlistPlaying={playlistPlaying}
         onPlayArtist={playArtist}
