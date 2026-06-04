@@ -31,11 +31,11 @@ export function libraryCrumb(): BrowseCrumb {
 }
 
 export function songsBrowseCrumbs(): BrowseCrumb[] {
-  return [libraryCrumb(), { label: "Songs" }];
+  return [libraryCrumb(), { label: "Songs", to: SONGS_PATH }];
 }
 
 export function genresBrowseCrumbs(): BrowseCrumb[] {
-  return [libraryCrumb(), { label: "Genres" }];
+  return [libraryCrumb(), { label: "Genres", to: GENRES_PATH }];
 }
 
 export function genreDetailCrumbs(name: string): BrowseCrumb[] {
@@ -43,7 +43,7 @@ export function genreDetailCrumbs(name: string): BrowseCrumb[] {
 }
 
 export function artistsBrowseCrumbs(): BrowseCrumb[] {
-  return [libraryCrumb(), { label: "Artists" }];
+  return [libraryCrumb(), { label: "Artists", to: ARTISTS_PATH }];
 }
 
 export function artistDetailCrumbs(displayName: string): BrowseCrumb[] {
@@ -51,7 +51,7 @@ export function artistDetailCrumbs(displayName: string): BrowseCrumb[] {
 }
 
 export function playlistsBrowseCrumbs(): BrowseCrumb[] {
-  return [libraryCrumb(), { label: "Playlists" }];
+  return [libraryCrumb(), { label: "Playlists", to: PLAYLISTS_PATH }];
 }
 
 export function playlistBrowseCrumbs(
