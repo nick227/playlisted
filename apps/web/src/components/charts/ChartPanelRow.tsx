@@ -54,7 +54,7 @@ export function ChartPanelRow({
     <li>
       <div
         className={[
-          "group/row grid w-full grid-cols-[auto_auto_auto_1fr_auto] items-center gap-3 px-3 py-2.5 transition",
+          "grid w-full grid-cols-[auto_auto_auto_1fr_auto] items-center gap-3 px-3 py-2.5 transition",
           isActive ? "bg-white/10" : "hover:bg-white/[0.04]",
         ].join(" ")}
       >
@@ -65,7 +65,12 @@ export function ChartPanelRow({
           onPlay={onPlay}
         />
 
-        <div className={`h-10 w-10 shrink-0 overflow-hidden ${rounded}`}>
+        <button
+          type="button"
+          onClick={onPlay}
+          aria-label={isPlaying ? `Pause ${title}` : `Play ${title}`}
+          className={`h-10 w-10 shrink-0 cursor-pointer overflow-hidden ${rounded}`}
+        >
           {imageUrl ? (
             <img src={imageUrl} alt="" className={`h-full w-full object-cover ${rounded}`} />
           ) : (
@@ -75,7 +80,7 @@ export function ChartPanelRow({
               aria-hidden
             />
           )}
-        </div>
+        </button>
 
         <div className="min-w-0">
           <ChartRowTitle title={title} href={titleHref} active={isActive} />
