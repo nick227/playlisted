@@ -2,7 +2,6 @@ import { Pause, Play } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { LibrarySong } from "@playlisted/client-sdk";
 
-import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
 import { RecordingActionMenu } from "@/components/media/RecordingActionMenu";
 import { PlaybackBars } from "@/features/playback-indicators/PlaybackBars";
 import { useTrackPlayback } from "@/hooks/useTrackPlayback";
@@ -35,12 +34,12 @@ export function LibraryTrackRow({ song, onPlay, queueTrack }: LibraryTrackRowPro
     <div
       id={`track-${song.id}`}
       className={[
-        "group/card flex items-center gap-3 rounded-lg px-3 py-2 transition",
+        "group/card flex items-center gap-2 rounded-lg px-2 py-1.5 transition",
         isActive ? "bg-white/10" : "hover:bg-[var(--color-surface-hover)]",
       ].join(" ")}
     >
       <PlaybackBars active={isActive} playing={isPlaying} />
-      <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-md">
+      <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-md">
         {song.artworkUrl ? (
           <img src={song.artworkUrl} alt="" className="h-full w-full object-cover" />
         ) : (
@@ -104,18 +103,17 @@ export function LibraryTrackRow({ song, onPlay, queueTrack }: LibraryTrackRowPro
       </div>
 
       {song.playCount > 0 ? (
-        <span className="hidden w-20 shrink-0 text-right text-xs text-[var(--color-text-subtle)] sm:inline">
+        <span className="hidden w-16 shrink-0 text-right text-xs text-[var(--color-text-subtle)] sm:inline">
           {formatPlayCount(song.playCount)} plays
         </span>
       ) : null}
-      <span className="hidden w-16 shrink-0 text-right text-xs text-[var(--color-text-subtle)] md:inline">
+      <span className="hidden w-12 shrink-0 text-right text-xs text-[var(--color-text-subtle)] md:inline">
         {formatPlayCount(song.favoriteCount)} favs
       </span>
-      <span className="w-10 shrink-0 text-right text-xs text-[var(--color-text-muted)]">
+      <span className="w-9 shrink-0 text-right text-xs text-[var(--color-text-muted)]">
         {formatDuration(song.durationSeconds)}
       </span>
 
-      <FavoriteHeartButton target="recording" id={song.id} variant="inline" inlineAlwaysVisible />
       <RecordingActionMenu
         recordingId={song.id}
         title={song.title}

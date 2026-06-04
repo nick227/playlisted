@@ -129,7 +129,7 @@ export function ArtistProfileCollectionPanel({ playlist, owner }: ArtistProfileC
 
   return (
     <article className="border-b border-white/8 py-6 last:border-b-0">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+      <div className="flex gap-4 flex-row items-start justify-start">
         <button
           type="button"
           onClick={playAll}
@@ -170,7 +170,6 @@ export function ArtistProfileCollectionPanel({ playlist, owner }: ArtistProfileC
               ? ` · ${formatPlayCount(totalStreams) || "0"} streams`
               : null}
           </p>
-        </div>
 
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-1.5 text-sm text-[var(--color-text-muted)]">
@@ -187,6 +186,8 @@ export function ArtistProfileCollectionPanel({ playlist, owner }: ArtistProfileC
               {isFollowing ? "Following" : addCollection.isPending ? "Following…" : "Follow"}
             </button>
           ) : null}
+        </div>
+          
         </div>
       </div>
 

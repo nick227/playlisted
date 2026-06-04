@@ -50,7 +50,6 @@ interface TrackRowProps {
 
 export function TrackRow({
   recordingId,
-  index,
   title,
   creator,
   meta,
@@ -117,7 +116,7 @@ export function TrackRow({
   return (
     <div
       id={`track-${recordingId}`}
-      className={`group/card grid w-full grid-cols-[auto_auto_1fr_auto] items-center gap-3 rounded-lg px-3 py-2 transition ${
+      className={`group/card grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-lg px-2 py-1.5 transition ${
         isActive ? "bg-white/10" : "hover:bg-[var(--color-surface-hover)]"
       }${onPlay && !editMode ? " cursor-pointer" : ""}`}
       onClick={(e) => {
@@ -127,32 +126,15 @@ export function TrackRow({
       }}
     >
       <PlaybackBars active={isActive} playing={isPlaying} />
-      <button
-        type="button"
-        onClick={onPlay}
-        className="flex w-10 items-center justify-center"
-        aria-label={isPlaying ? "Pause" : "Play"}
-      >
-        {isPlaying ? (
-          <Pause size={16} className="text-white" fill="currentColor" />
-        ) : (
-          <>
-            <span className="text-sm text-[var(--color-text-subtle)] group-hover/card:hidden">
-              {index != null ? index + 1 : ""}
-            </span>
-            <Play size={16} className="hidden text-white group-hover/card:block" fill="currentColor" />
-          </>
-        )}
-      </button>
-      <div className="flex min-w-0 items-center gap-3 text-left">
-        <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg">
+      <div className="flex min-w-0 items-center gap-2 text-left">
+        <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-md">
           {editMode && onUpdateArtwork ? (
             <>
               <button
                 type="button"
                 onClick={() => artworkInputRef.current?.click()}
                 disabled={saving}
-                className="group/art relative block h-10 w-10 overflow-hidden rounded-lg text-left disabled:opacity-60"
+                className="group/art relative block h-9 w-9 overflow-hidden rounded-md text-left disabled:opacity-60"
                 aria-label="Change track artwork"
                 title="Change track artwork"
               >
@@ -180,15 +162,22 @@ export function TrackRow({
                 <button
                   type="button"
                   onClick={onPlay}
-                  tabIndex={-1}
-                  aria-hidden="true"
-                  className="absolute inset-0"
-                />
+                  className={`absolute inset-0 flex items-center justify-center bg-black/50 transition-opacity ${
+                    isActive ? "opacity-100" : "opacity-0 group-hover/card:opacity-100"
+                  }`}
+                  aria-label={isPlaying ? "Pause" : "Play"}
+                >
+                  {isPlaying ? (
+                    <Pause size={14} className="text-white" fill="currentColor" />
+                  ) : (
+                    <Play size={14} className="ml-px text-white" fill="currentColor" />
+                  )}
+                </button>
               )}
             </>
           )}
         </div>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           {editMode && onUpdateTitle ? (
             <input
               value={draftTitle}
@@ -248,7 +237,7 @@ export function TrackRow({
           ) : null}
         </div>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex shrink-0 items-center gap-1.5">
         {playCount != null && playCount > 0 && (
           <span className="hidden text-xs text-[var(--color-text-subtle)] sm:inline">
             {formatPlayCount(playCount)} plays
