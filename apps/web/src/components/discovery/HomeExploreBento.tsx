@@ -183,7 +183,9 @@ function BentoCardFill({
   if (!kind) return null;
 
   const fillWrap = (child: ReactNode) => (
-    <div className="flex flex-1 items-center justify-center py-2">{child}</div>
+    <div className="flex min-h-[6.5rem] flex-1 w-full py-1 md:min-h-[7.5rem] [&>*]:h-full [&>*]:min-h-0 [&>*]:w-full">
+      {child}
+    </div>
   );
 
   if (kind === "studio") {
@@ -200,11 +202,7 @@ function BentoCardFill({
   }
 
   if (kind === "artists" && artists) {
-    return (
-      <div className="flex flex-1 items-center py-1">
-        <BentoAvatarStrip artists={artists} />
-      </div>
-    );
+    return fillWrap(<BentoAvatarStrip artists={artists} />);
   }
 
   if (kind === "playlists") {
@@ -217,20 +215,18 @@ function BentoCardFill({
 
   if (kind === "profile-edit") {
     return fillWrap(
-      <BentoProfileAvatar avatarUrl={avatarUrl} displayName={displayName} />,
+      <BentoProfileAvatar avatarUrl={avatarUrl} displayName={displayName} fill />,
     );
   }
 
   if (kind === "profile-view") {
     const featured = artists?.[0];
-    return (
-      <div className="flex flex-1 py-1">
-        <BentoProfileHero
-          avatarUrl={avatarUrl ?? featured?.avatarUrl}
-          heroUrl={heroUrl ?? featured?.heroImageUrl ?? featured?.avatarUrl}
-          displayName={displayName ?? featured?.displayName}
-        />
-      </div>
+    return fillWrap(
+      <BentoProfileHero
+        avatarUrl={avatarUrl ?? featured?.avatarUrl}
+        heroUrl={heroUrl ?? featured?.heroImageUrl ?? featured?.avatarUrl}
+        displayName={displayName ?? featured?.displayName}
+      />,
     );
   }
 
@@ -271,7 +267,8 @@ function BentoCard({
     <Link
       to={href}
       className={[
-        "group relative flex min-h-[9.5rem] flex-col overflow-hidden rounded-2xl border border-white/[0.09] bg-[var(--color-surface)] p-5 transition duration-300",
+        "group relative flex flex-col overflow-hidden rounded-2xl border border-white/[0.09] bg-[var(--color-surface)] p-5 transition duration-300",
+        hasFill ? "min-h-[11rem] md:min-h-[12.5rem]" : "min-h-[9.5rem]",
         "hover:border-white/[0.16] hover:bg-white/[0.04] hover:shadow-[0_20px_50px_-24px_rgba(0,0,0,0.85)]",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand)]",
         tile.placement,
