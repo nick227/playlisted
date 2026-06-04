@@ -17,9 +17,8 @@ import type { CollectionRecording } from "./collectionTypes";
 
 export type CollectionViewMode = "view" | "edit";
 
-export interface CollectionViewProps {
+interface CollectionViewBaseProps {
   playlist: PlaylistDetail;
-  mode?: CollectionViewMode;
   onPlayAll?: (shuffle: boolean) => void;
   onPlayTrack?: (recording: CollectionRecording, index: number) => void;
   playlistIsPlaying?: boolean;
@@ -51,6 +50,9 @@ export interface CollectionViewProps {
   uploadProgress?: React.ReactNode;
 }
 
+export type CollectionViewProps = CollectionViewBaseProps &
+  ({ mode?: "view" } | ({ mode: "edit" } & { onGenreChange: (genreId: string | null) => void }));
+
 const typeLabels: Record<string, string> = {
   PLAYLIST: "Playlist",
   ALBUM: "Album",
@@ -68,6 +70,7 @@ interface GenreSmartInputProps {
   genreOptions?: GenreOption[];
   genreLoading?: boolean;
   genreSaving?: boolean;
+  required?: boolean;
   onGenreChange: (genreId: string | null) => void;
   onGenreCreate?: (name: string) => void;
 }
@@ -77,6 +80,7 @@ function GenreSmartInput({
   genreOptions = [],
   genreLoading,
   genreSaving,
+  required = true,
   onGenreChange,
   onGenreCreate,
 }: GenreSmartInputProps) {
@@ -126,6 +130,14 @@ function GenreSmartInput({
     return () => document.removeEventListener("mousedown", onPointerDown);
   }, [showDropdown]);
 
+  useEffect(() => {
+    if (optionCount === 0) {
+      setActiveIndex(-1);
+      return;
+    }
+    setActiveIndex((index) => (index >= optionCount ? optionCount - 1 : index));
+  }, [optionCount]);
+
   function selectGenre(genre: GenreOption) {
     setSubmittedGenreName(null);
     setQuery(genre.name);
@@ -139,7 +151,7 @@ function GenreSmartInput({
     setQuery("");
     setOpen(false);
     setActiveIndex(-1);
-    if (selectedGenreId) onGenreChange(null);
+    if (selectedGenreId != null) onGenreChange(null);
     inputRef.current?.focus();
   }
 
@@ -159,14 +171,14 @@ function GenreSmartInput({
     if (event.key === "ArrowDown") {
       event.preventDefault();
       setOpen(true);
-      setActiveIndex((index) => Math.min(index + 1, Math.max(optionCount - 1, 0)));
+      setActiveIndex((index) => (optionCount === 0 ? -1 : (index + 1) % optionCount));
       return;
     }
 
     if (event.key === "ArrowUp") {
       event.preventDefault();
       setOpen(true);
-      setActiveIndex((index) => Math.max(index - 1, 0));
+      setActiveIndex((index) => (optionCount === 0 ? -1 : index <= 0 ? optionCount - 1 : index - 1));
       return;
     }
 
@@ -220,6 +232,7 @@ function GenreSmartInput({
         aria-controls={listboxId}
         aria-activedescendant={activeDescendant}
         aria-haspopup="listbox"
+        aria-required={required}
         autoComplete="off"
         placeholder={genreLoading ? "Loading genres..." : "Search or create a genre..."}
         disabled={disabled}
@@ -233,7 +246,7 @@ function GenreSmartInput({
         onKeyDown={handleKeyDown}
         className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] py-3 pl-11 pr-20 text-sm text-white placeholder:text-[var(--color-text-subtle)] outline-none focus:border-[var(--color-brand)] disabled:cursor-not-allowed disabled:opacity-60"
       />
-      {(selectedGenreId || query) && !disabled ? (
+      {!required && (selectedGenreId || query) && !disabled ? (
         <button
           type="button"
           onClick={clearGenre}
@@ -346,7 +359,7 @@ export function CollectionView({
   const isEdit = mode === "edit";
   const isOwner = Boolean(user?.id && user.id === playlist.ownerId);
   const coverArtClassName =
-    "aspect-square w-full min-w-0 max-w-full rounded-lg sm:h-[180px] sm:w-[180px] sm:max-w-[180px]";
+    "aspect-square w-full min-w-0 max-w-full overflow-hidden rounded-lg sm:h-[180px] sm:w-[180px] sm:max-w-[180px]";
   const recordings = playlist.recordings as CollectionRecording[];
 
   const coverStyle = playlist.coverArtUrl
@@ -447,32 +460,43 @@ export function CollectionView({
                 placeholder="Describe this collection…"
                 className="mt-4 w-full max-w-2xl resize-none rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-sm text-white placeholder:text-[var(--color-text-subtle)] outline-none focus:border-[var(--color-brand)]"
               />
-              {onGenreChange ? (
-                <div className="mt-4 max-w-2xl">
-                  <label className="mb-2 block text-xs font-semibold uppercase tracking-widest text-[var(--color-text-muted)]">
-                    Primary playlist genre
-                  </label>
-                  <GenreSmartInput
-                    selectedGenreId={selectedGenreId}
-                    onGenreChange={onGenreChange}
-                    onGenreCreate={onGenreCreate}
-                    genreOptions={genreOptions}
-                    genreLoading={genreLoading}
-                    genreSaving={genreSaving}
-                  />
-                  <p className="mt-2 min-h-5 text-sm text-[var(--color-text-muted)]">
-                    {genreError
-                      ? genreError
-                      : genreSaving
+              <div className="mt-4 max-w-2xl">
+                <label className="mb-2 block text-xs font-semibold uppercase tracking-widest text-[var(--color-text-muted)]">
+                  Primary playlist genre
+                  <span className="ml-1 text-[var(--color-brand)]" aria-hidden="true">
+                    *
+                  </span>
+                </label>
+                <GenreSmartInput
+                  selectedGenreId={selectedGenreId}
+                  onGenreChange={onGenreChange!}
+                  onGenreCreate={onGenreCreate}
+                  genreOptions={genreOptions}
+                  genreLoading={genreLoading}
+                  genreSaving={genreSaving}
+                  required
+                />
+                <p
+                  className={[
+                    "mt-2 min-h-5 text-sm",
+                    !selectedGenreId && !genreLoading && !genreSaving && !genreError
+                      ? "text-amber-200/90"
+                      : "text-[var(--color-text-muted)]",
+                  ].join(" ")}
+                >
+                  {genreError
+                    ? genreError
+                    : genreSaving
                       ? "Saving genre…"
                       : genreLoading
                         ? "Loading genres…"
                         : genreOptions?.length === 0
                           ? "No genres available."
-                          : "Optional primary genre for this playlist."}
-                  </p>
-                </div>
-              ) : null}
+                          : !selectedGenreId
+                            ? "Select or create a primary genre for this playlist."
+                            : "Primary genre for this playlist."}
+                </p>
+              </div>
             </>
           ) : playlist.description ? (
             <p className="mt-4 max-w-2xl text-sm leading-relaxed text-[var(--color-text-muted)]">
@@ -480,7 +504,7 @@ export function CollectionView({
             </p>
           ) : null}
           {!isEdit && onPlayAll ? (
-            <div className="mt-6 flex flex-nowrap gap-3 collection-controls">
+            <div className="mt-6 flex flex-wrap gap-3 collection-controls">
               <button
                 type="button"
                 onClick={() => onPlayAll(false)}
@@ -584,7 +608,7 @@ export function CollectionView({
         ) : isEdit ? (
           <div className="space-y-3">
             <TrackList
-              recordings={playlist.recordings as CollectionRecording[]}
+              recordings={recordings}
               ownerName={playlist.owner.displayName}
               playlistContext={playlistContext}
               onPlay={handlePlayRecording}
