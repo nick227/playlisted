@@ -67,3 +67,12 @@ export const PUBLIC_RECORDING_TAG_COUNT_SELECT = {
     },
   },
 } as const;
+
+/** Prisma filter for counting only recordings visible in library browse surfaces. */
+export const BROWSABLE_RECORDING_TAG_COUNT_SELECT = {
+  recordingTags: {
+    where: {
+      recording: BROWSABLE_RECORDING,
+    },
+  },
+} as const;

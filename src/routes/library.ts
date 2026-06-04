@@ -4,65 +4,30 @@ import { prisma } from "../lib/prisma.js";
 import { resolveRecordingArtworkUrl } from "../lib/mediaUrls.js";
 import {
   BROWSABLE_RECORDING,
-  PUBLIC_PUBLISHED_RECORDING,
-  PUBLIC_RECORDING_TAG_COUNT_SELECT,
+  BROWSABLE_RECORDING_TAG_COUNT_SELECT,
 } from "../lib/publicRecordingFilter.js";
 
 export const libraryRouter = Router();
 
 libraryRouter.get("/genres", async (_req, res, next) => {
   try {
-    const [recordingGenres, playlistsWithGenres] = await Promise.all([
-      prisma.tag.findMany({
-        where: {
-          kind: "GENRE",
-          recordingTags: { some: { recording: PUBLIC_PUBLISHED_RECORDING } },
-        },
-        include: { _count: { select: PUBLIC_RECORDING_TAG_COUNT_SELECT } },
-        orderBy: { name: "asc" },
-      }),
-      // Trickle-down: find public playlists that have genre tags
-      prisma.playlist.findMany({
-        where: {
-          visibility: "PUBLIC",
-          status: "PUBLISHED",
-          tags: { some: { tag: { kind: "GENRE" } } },
-        },
-        select: {
-          itemCount: true,
-          tags: {
-            where: { tag: { kind: "GENRE" } },
-            include: { tag: { select: { id: true, name: true, slug: true } } },
-          },
-        },
-      }),
-    ]);
+    const genres = await prisma.tag.findMany({
+      where: {
+        kind: "GENRE",
+        recordingTags: { some: { recording: BROWSABLE_RECORDING } },
+      },
+      include: { _count: { select: BROWSABLE_RECORDING_TAG_COUNT_SELECT } },
+      orderBy: { name: "asc" },
+    });
 
-    // Start with recording-level genres (accurate song counts)
-    const genreMap = new Map<string, { id: string; name: string; slug: string; songCount: number }>();
-    for (const g of recordingGenres) {
-      genreMap.set(g.id, { id: g.id, name: g.name, slug: g.slug, songCount: g._count.recordingTags });
-    }
-
-    // Build playlist-derived counts per genre (sum across all playlists)
-    const playlistGenreCounts = new Map<string, { tag: { id: string; name: string; slug: string }; count: number }>();
-    for (const playlist of playlistsWithGenres) {
-      for (const { tag } of playlist.tags) {
-        const entry = playlistGenreCounts.get(tag.id) ?? { tag, count: 0 };
-        entry.count += playlist.itemCount;
-        playlistGenreCounts.set(tag.id, entry);
-      }
-    }
-
-    // Add playlist-only genres (not already covered by recording-level tags)
-    for (const [id, { tag, count }] of playlistGenreCounts) {
-      if (!genreMap.has(id)) {
-        genreMap.set(id, { id: tag.id, name: tag.name, slug: tag.slug, songCount: count });
-      }
-    }
-
-    const sorted = Array.from(genreMap.values()).sort((a, b) => a.name.localeCompare(b.name));
-    return res.json({ data: sorted });
+    return res.json({
+      data: genres.map((g) => ({
+        id: g.id,
+        name: g.name,
+        slug: g.slug,
+        songCount: g._count.recordingTags,
+      })),
+    });
   } catch (error) {
     return next(error);
   }

@@ -13,7 +13,11 @@ import { createApp } from "../app.js";
 
 const app = createApp();
 
-const PUBLIC_RECORDING = { visibility: "PUBLIC", status: "PUBLISHED" };
+const BROWSABLE_RECORDING = {
+  visibility: "PUBLIC",
+  status: "PUBLISHED",
+  publishedPlaylist: { visibility: "PUBLIC", status: "PUBLISHED" },
+};
 
 describe("GET /api/v1/library/genres", () => {
   beforeEach(() => {
@@ -21,7 +25,7 @@ describe("GET /api/v1/library/genres", () => {
     vi.mocked(prisma.playlist.findMany).mockResolvedValue([]);
   });
 
-  it("returns only genres with public published recordings and public-only counts", async () => {
+  it("returns only genres with browsable recordings and browsable-only counts", async () => {
     vi.mocked(prisma.tag.findMany).mockResolvedValue([
       {
         id: "tag-jazz",
@@ -44,7 +48,7 @@ describe("GET /api/v1/library/genres", () => {
         kind: "GENRE",
         recordingTags: {
           some: {
-            recording: PUBLIC_RECORDING,
+            recording: BROWSABLE_RECORDING,
           },
         },
       },
@@ -53,7 +57,7 @@ describe("GET /api/v1/library/genres", () => {
           select: {
             recordingTags: {
               where: {
-                recording: PUBLIC_RECORDING,
+                recording: BROWSABLE_RECORDING,
               },
             },
           },
@@ -70,5 +74,21 @@ describe("GET /api/v1/library/genres", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.data).toEqual([]);
+  });
+
+  it("does not include playlist-only genres in library filter chips", async () => {
+    vi.mocked(prisma.tag.findMany).mockResolvedValue([]);
+    vi.mocked(prisma.playlist.findMany).mockResolvedValue([
+      {
+        itemCount: 3,
+        tags: [{ tag: { id: "tag-house", name: "House", slug: "house" } }],
+      },
+    ] as never);
+
+    const res = await request(app).get("/api/v1/library/genres");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toEqual([]);
+    expect(prisma.playlist.findMany).not.toHaveBeenCalled();
   });
 });
