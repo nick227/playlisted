@@ -26,7 +26,7 @@ export function AdminPage() {
         </p>
       </div>
 
-      <nav className="-mx-4 flex gap-1 overflow-x-auto border-b border-[var(--color-border)] px-4 md:mx-0">
+      <nav className="flex gap-1 border-b border-[var(--color-border)] md:mx-0">
         {NAV.filter((item) => item.roles?.includes(user?.role ?? "") ?? true).map((item) => (
           <NavLink
             key={item.to}
