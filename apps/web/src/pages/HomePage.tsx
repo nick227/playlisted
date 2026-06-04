@@ -15,7 +15,10 @@ import {
   GreetingsBanner,
   pickGreetingsFeaturedArtist,
 } from "@/components/discovery/GreetingsBanner";
-import { HomeExploreBento } from "@/components/discovery/HomeExploreBento";
+import {
+  HomeExploreBento,
+  type HomeBentoExcludeIds,
+} from "@/components/discovery/HomeExploreBento";
 import { SpotlightBanner } from "@/components/discovery/SpotlightBanner";
 import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
 import { SiteFooter } from "@/components/site/SiteFooter";
@@ -467,6 +470,18 @@ export function HomePage() {
 
   const firstName = user?.displayName?.split(" ")[0];
 
+  const homeBentoExclude = useMemo((): HomeBentoExcludeIds => {
+    const playlistIds = [
+      ...discovered.map((p) => p.playlistId),
+      ...featuredPlaylistsSection.fallback.map((p) => p.playlistId),
+      ...featuredPlaylistsSection.editorial
+        .filter((item) => item.targetType === "PLAYLIST")
+        .map((item) => item.id),
+    ];
+    const recordingIds = newReleaseSongs.map((item) => item.id);
+    return { playlistIds, recordingIds };
+  }, [discovered, featuredPlaylistsSection, newReleaseSongs]);
+
   return (
     <div className="mx-auto max-w-[var(--size-container-max,90rem)]">
 
@@ -623,7 +638,11 @@ export function HomePage() {
 
       {/* ── HOME EXPLORE ────────────────────────────────────────────── */}
 
-      <HomeExploreBento />
+      <HomeExploreBento
+        limits={{ songs: 1, playlists: 2, artists: 0 }}
+        skipChartOverlap
+        exclude={homeBentoExclude}
+      />
 
       <SiteFooter />
     </div>

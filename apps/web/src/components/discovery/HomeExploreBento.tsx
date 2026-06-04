@@ -1,3 +1,4 @@
+import type { TopArtistItem, TopPlaylistItem, TopSongItem } from "@playlisted/client-sdk";
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
 
@@ -12,6 +13,13 @@ import {
   selectBentoSlots,
   type HomeExploreBentoLimits,
 } from "./homeBentoLayout";
+import {
+  bentoChartFetchSize,
+  pickBentoArtists,
+  pickBentoPlaylists,
+  pickBentoSongs,
+  type HomeBentoExcludeIds,
+} from "./homeBentoPool";
 import { HomeBentoMediaGrid } from "./homeBentoPanels";
 import {
   useHomeBentoArtistPlayback,
@@ -19,14 +27,25 @@ import {
   useHomeBentoSongPlayback,
 } from "./homeBentoPlayback";
 
-export type { HomeExploreBentoLimits };
+export type { HomeExploreBentoLimits, HomeBentoExcludeIds };
 
 export type HomeExploreBentoProps = {
   /** Per-category item caps; slots and API fetch sizes follow these counts. */
   limits?: Partial<HomeExploreBentoLimits>;
+  /**
+   * Skip the first N rows from the 7d chart lists (same source as HomeChartsSection)
+   * so the bento shows deeper picks instead of repeating the chart panels.
+   */
+  skipChartOverlap?: boolean;
+  /** Extra ids to omit (e.g. playlists already in Discover / Featured). */
+  exclude?: HomeBentoExcludeIds;
 };
 
-export function HomeExploreBento({ limits: limitsProp }: HomeExploreBentoProps = {}) {
+export function HomeExploreBento({
+  limits: limitsProp,
+  skipChartOverlap = false,
+  exclude,
+}: HomeExploreBentoProps = {}) {
   const limits = useMemo(
     () => resolveHomeBentoLimits(limitsProp),
     [limitsProp?.songs, limitsProp?.playlists, limitsProp?.artists],
@@ -36,19 +55,46 @@ export function HomeExploreBento({ limits: limitsProp }: HomeExploreBentoProps =
     [limits.songs, limits.playlists, limits.artists],
   );
 
+  const poolOptions = useMemo(
+    () => ({ skipChartOverlap, exclude }),
+    [skipChartOverlap, exclude],
+  );
+
   const { play: playSong } = useHomeBentoSongPlayback();
   const { play: playPlaylist, isActive: playlistActive, isPlaying: playlistPlaying } =
     useHomeBentoPlaylistPlayback();
   const { play: playArtist, isActive: artistActive, isPlaying: artistPlaying } =
     useHomeBentoArtistPlayback();
 
-  const topSongs = useTopSongs(HOME_CHART_RANGE, Math.max(limits.songs, 1));
-  const topPlaylists = useTopPlaylists(HOME_CHART_RANGE, Math.max(limits.playlists, 1));
-  const topArtists = useTopArtists(HOME_CHART_RANGE, Math.max(limits.artists, 1));
+  const topSongs = useTopSongs(
+    HOME_CHART_RANGE,
+    bentoChartFetchSize(limits.songs, skipChartOverlap, "songs"),
+  );
+  const topPlaylists = useTopPlaylists(
+    HOME_CHART_RANGE,
+    bentoChartFetchSize(limits.playlists, skipChartOverlap, "playlists"),
+  );
+  const topArtists = useTopArtists(
+    HOME_CHART_RANGE,
+    bentoChartFetchSize(limits.artists, skipChartOverlap, "artists"),
+  );
 
-  const songs = topSongs.data?.data ?? [];
-  const playlists = topPlaylists.data?.data ?? [];
-  const artists = topArtists.data?.data ?? [];
+  const songs = useMemo(
+    (): TopSongItem[] =>
+      pickBentoSongs(topSongs.data?.data ?? [], limits.songs, poolOptions),
+    [topSongs.data, limits.songs, poolOptions],
+  );
+  const playlists = useMemo(
+    (): TopPlaylistItem[] =>
+      pickBentoPlaylists(topPlaylists.data?.data ?? [], limits.playlists, poolOptions),
+    [topPlaylists.data, limits.playlists, poolOptions],
+  );
+  const artists = useMemo(
+    (): TopArtistItem[] =>
+      pickBentoArtists(topArtists.data?.data ?? [], limits.artists, poolOptions),
+    [topArtists.data, limits.artists, poolOptions],
+  );
+
   const loading = topSongs.isLoading || topPlaylists.isLoading || topArtists.isLoading;
 
   if (slots.length === 0) return null;
@@ -61,9 +107,14 @@ export function HomeExploreBento({ limits: limitsProp }: HomeExploreBentoProps =
   return (
     <section className="mb-6" aria-label="Trending music">
       <div className="mb-2 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-subtle)]">
-          Trending — {rangeLabel}
-        </p>
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-subtle)]">
+            Trending — {rangeLabel}
+          </p>
+          {skipChartOverlap ? (
+            <p className="text-[9px] text-[var(--color-text-muted)]">More from the charts, past the homepage top lists</p>
+          ) : null}
+        </div>
         <div className="flex flex-wrap gap-x-3 text-[10px] font-medium text-[var(--color-text-muted)]">
           <Link to={SONGS_PATH} className="hover:text-white">
             Songs
