@@ -1,13 +1,14 @@
 import { Router } from "express";
 
+import {
+  effectiveGenreSelect,
+  listEffectiveLibraryGenres,
+  mergeGenreRefs,
+} from "../lib/effectiveGenres.js";
 import { mapPlaylistSummary } from "../lib/playlistMaps.js";
 import { resolveRecordingArtworkUrl } from "../lib/mediaUrls.js";
 import { prisma } from "../lib/prisma.js";
-import {
-  BROWSABLE_RECORDING,
-  PUBLIC_PUBLISHED_RECORDING,
-  PUBLIC_RECORDING_TAG_COUNT_SELECT,
-} from "../lib/publicRecordingFilter.js";
+import { BROWSABLE_RECORDING } from "../lib/publicRecordingFilter.js";
 import { ACTIVE_USER } from "../lib/publicUserFilter.js";
 import {
   searchablePlaylistWhereWithTextMatch,
@@ -81,6 +82,7 @@ searchRouter.get("/unified", async (req, res, next) => {
                 songPublishedPlaylistTitleMatch(q),
                 songInPublicPlaylistTitleMatch(q),
                 { tags: { some: tagMatch } },
+                { publishedPlaylist: { tags: { some: tagMatch } } },
               ],
             },
           ],
@@ -89,10 +91,18 @@ searchRouter.get("/unified", async (req, res, next) => {
           uploader: {
             select: { id: true, username: true, displayName: true, avatarUrl: true, role: true },
           },
-          publishedPlaylist: { select: { id: true, slug: true, title: true, coverArtUrl: true } },
-          tags: {
-            where: { tag: { kind: "GENRE" } },
-            include: { tag: { select: { id: true, name: true, slug: true } } },
+          tags: effectiveGenreSelect.tags,
+          publishedPlaylist: {
+            select: {
+              id: true,
+              slug: true,
+              title: true,
+              coverArtUrl: true,
+              tags: effectiveGenreSelect.publishedPlaylist.select.tags,
+            },
+          },
+          _count: {
+            select: { saves: { where: { kind: "FAVORITE" } } },
           },
         },
         orderBy: [{ playCount: "desc" }, { publishedAt: "desc" }, { createdAt: "desc" }, { id: "asc" }],
@@ -110,7 +120,7 @@ searchRouter.get("/unified", async (req, res, next) => {
       prisma.user.findMany({
         where: {
           ...ACTIVE_USER,
-          uploadedRecordings: { some: { visibility: "PUBLIC", status: "PUBLISHED" } },
+          uploadedRecordings: { some: BROWSABLE_RECORDING },
           OR: [
             { displayName: { contains: q } },
             { username: { contains: q } },
@@ -118,9 +128,11 @@ searchRouter.get("/unified", async (req, res, next) => {
             {
               uploadedRecordings: {
                 some: {
-                  visibility: "PUBLIC",
-                  status: "PUBLISHED",
-                  tags: { some: tagMatch },
+                  ...BROWSABLE_RECORDING,
+                  OR: [
+                    { tags: { some: tagMatch } },
+                    { publishedPlaylist: { tags: { some: tagMatch } } },
+                  ],
                 },
               },
             },
@@ -129,30 +141,14 @@ searchRouter.get("/unified", async (req, res, next) => {
         orderBy: [{ isFeaturedArtist: "desc" }, { createdAt: "desc" }, { id: "asc" }],
         take: pageSize,
       }),
-      prisma.tag.findMany({
-        where: {
-          kind: "GENRE",
-          AND: [
-            { OR: [{ name: { contains: q } }, { slug: { contains: q } }] },
-            {
-              OR: [
-                { recordingTags: { some: { recording: PUBLIC_PUBLISHED_RECORDING } } },
-                { playlistTags: { some: { playlist: { visibility: "PUBLIC", status: "PUBLISHED" } } } },
-              ],
-            },
-          ],
-        },
-        include: { _count: { select: PUBLIC_RECORDING_TAG_COUNT_SELECT } },
-      }),
+      listEffectiveLibraryGenres(),
     ]);
 
     const rankedGenres = genres
-      .map((genre) => ({
-        id: genre.id,
-        name: genre.name,
-        slug: genre.slug,
-        songCount: genre._count.recordingTags,
-      }))
+      .filter((genre) =>
+        genre.name.toLowerCase().includes(q.toLowerCase())
+        || genre.slug.toLowerCase().includes(q.toLowerCase()),
+      )
       .sort((a, b) => b.songCount - a.songCount || a.name.localeCompare(b.name))
       .slice(0, pageSize);
 
@@ -177,11 +173,16 @@ searchRouter.get("/unified", async (req, res, next) => {
         releaseDate: r.releaseDate?.toISOString() ?? null,
         publishedAt: r.publishedAt?.toISOString() ?? null,
         playCount: r.playCount,
+        favoriteCount: r._count.saves,
         createdAt: r.createdAt.toISOString(),
         updatedAt: r.updatedAt.toISOString(),
         uploader: r.uploader,
-        playlist: r.publishedPlaylist,
-        genres: r.tags.map((t) => ({ id: t.tag.id, name: t.tag.name, slug: t.tag.slug })),
+        playlist: {
+          id: r.publishedPlaylist.id,
+          slug: r.publishedPlaylist.slug,
+          title: r.publishedPlaylist.title,
+        },
+        genres: mergeGenreRefs(r.tags, r.publishedPlaylist.tags),
       })),
       playlists: playlists.map(mapPlaylistSummary),
       artists: artists.map(mapUserSummary),

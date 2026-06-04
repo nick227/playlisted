@@ -10,6 +10,14 @@ export function useLibraryGenres() {
   });
 }
 
+export function useLibraryPlaylistGenres() {
+  return useQuery({
+    queryKey: ["library", "playlist-genres"],
+    queryFn: () => api.library.playlistGenres(),
+    staleTime: 5 * 60_000,
+  });
+}
+
 export function useAuthoringGenres() {
   return useQuery({
     queryKey: ["tags", "genres"],
@@ -40,10 +48,11 @@ export function useLibraryArtists() {
   });
 }
 
-export function useLibraryPlaylists() {
+export function useLibraryPlaylists(genreSlug?: string | null) {
+  const genre = genreSlug?.trim() || undefined;
   return useQuery({
-    queryKey: ["library", "playlists"],
-    queryFn: () => api.playlists.list({ pageSize: 50 }),
+    queryKey: ["library", "playlists", genre ?? "all"],
+    queryFn: () => api.playlists.list({ pageSize: 50, ...(genre ? { genre } : {}) }),
     staleTime: 2 * 60_000,
   });
 }

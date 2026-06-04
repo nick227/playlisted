@@ -2,8 +2,9 @@ import { Prisma } from "@prisma/client";
 import { Router } from "express";
 
 import { rangeToDate, type ChartRange } from "../lib/chartRange.js";
+import { effectiveGenreSelect, effectiveGenreWhere, mergeGenreRefs } from "../lib/effectiveGenres.js";
 import { resolveRecordingArtworkUrl } from "../lib/mediaUrls.js";
-import { BROWSABLE_RECORDING, PUBLIC_PUBLISHED_RECORDING } from "../lib/publicRecordingFilter.js";
+import { BROWSABLE_RECORDING } from "../lib/publicRecordingFilter.js";
 import { PUBLIC_PUBLISHED_PLAYLIST } from "../lib/publicPlaylistFilter.js";
 import { ACTIVE_USER } from "../lib/publicUserFilter.js";
 import { prisma } from "../lib/prisma.js";
@@ -46,13 +47,15 @@ function mapTopSongItem(
       slug: string;
       coverArtUrl: string | null;
       owner: { id: string; username: string; displayName: string; avatarUrl: string | null; role: string };
+      tags: { tag: { id: string; name: string; slug: string } }[];
     };
     tags?: { tag: { id: string; name: string; slug: string } }[];
   },
   rank: number,
   playCount: number,
 ) {
-  const genre = r.tags?.[0]?.tag ?? null;
+  const genre = mergeGenreRefs(r.tags, r.publishedPlaylist.tags)[0] ?? null;
+  const { tags: _playlistTags, ...playlist } = r.publishedPlaylist;
   return {
     rank,
     recordingId: r.id,
@@ -70,7 +73,7 @@ function mapTopSongItem(
     createdAt: r.createdAt.toISOString(),
     updatedAt: r.updatedAt.toISOString(),
     uploader: r.uploader,
-    playlist: r.publishedPlaylist,
+    playlist,
     genre: genre as GenreRef | null,
   };
 }
@@ -84,17 +87,13 @@ chartsRouter.get("/top-songs", async (req, res, next) => {
 
     const where = genre
       ? {
-          ...PUBLIC_PUBLISHED_RECORDING,
-          tags: { some: { tag: { kind: "GENRE" as const, slug: genre } } },
+          ...BROWSABLE_RECORDING,
+          ...effectiveGenreWhere(genre),
         }
       : BROWSABLE_RECORDING;
 
     const songTagInclude = {
-      tags: {
-        take: 1,
-        where: { tag: { kind: "GENRE" as const } },
-        include: { tag: { select: { id: true, name: true, slug: true } } },
-      },
+      tags: effectiveGenreSelect.tags,
     };
 
     if (range === "all") {
@@ -111,6 +110,7 @@ chartsRouter.get("/top-songs", async (req, res, next) => {
               slug: true,
               coverArtUrl: true,
               owner: { select: { id: true, username: true, displayName: true, avatarUrl: true, role: true } },
+              tags: effectiveGenreSelect.publishedPlaylist.select.tags,
             },
           },
           ...songTagInclude,
@@ -142,6 +142,7 @@ chartsRouter.get("/top-songs", async (req, res, next) => {
             slug: true,
             coverArtUrl: true,
             owner: { select: { id: true, username: true, displayName: true, avatarUrl: true, role: true } },
+            tags: effectiveGenreSelect.publishedPlaylist.select.tags,
           },
         },
         ...songTagInclude,

@@ -3,7 +3,7 @@ import { useMemo } from "react";
 
 import { RecordingActionMenu } from "@/components/media/RecordingActionMenu";
 import { useTopSongs } from "@/hooks/useCharts";
-import { useAuthoringGenres } from "@/hooks/useLibrary";
+import { useLibraryGenres } from "@/hooks/useLibrary";
 import { homeChartSongOrigin } from "@/lib/playbackOrigin";
 import { topSongToQueueTrack } from "@/lib/queueTrack";
 
@@ -79,7 +79,7 @@ function GenreSongPanel({ genre }: { genre: LibraryGenre }) {
 }
 
 export function HomeGenreSongsSection() {
-  const { data: genreData, isLoading } = useAuthoringGenres();
+  const { data: genreData, isLoading } = useLibraryGenres();
 
   const picks = useMemo(
     () => stablePickGenresByDay(genreData?.data ?? [], GENRE_PANEL_COUNT),

@@ -58,6 +58,7 @@ playlistsRouter.get("/", async (req, res, next) => {
     const ownerId = typeof req.query.ownerId === "string" ? req.query.ownerId : undefined;
     const visibility = typeof req.query.visibility === "string" ? req.query.visibility : undefined;
     const status = typeof req.query.status === "string" ? req.query.status : undefined;
+    const genreSlug = typeof req.query.genre === "string" ? req.query.genre : undefined;
     const auth = await getAuthContextFromRequest(req);
     const isStaff = auth?.user.role === "ADMIN" || auth?.user.role === "EDITOR";
     const isOwnerBrowse = Boolean(ownerId && auth?.user.id === ownerId);
@@ -66,6 +67,7 @@ playlistsRouter.get("/", async (req, res, next) => {
       ...(ownerId ? { ownerId } : {}),
       ...(visibility ? { visibility: visibility as Visibility } : {}),
       ...(status ? { status: status as PublishStatus } : {}),
+      ...(genreSlug ? { tags: { some: { tag: { slug: genreSlug, kind: "GENRE" as const } } } } : {}),
       ...(!visibility && !status && !isStaff && !isOwnerBrowse ? PUBLIC_PUBLISHED_PLAYLIST : {}),
     };
 

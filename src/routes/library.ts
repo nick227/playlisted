@@ -1,22 +1,40 @@
 import { Router } from "express";
 
+import {
+  effectiveGenreSelect,
+  effectiveGenreWhere,
+  listEffectiveLibraryGenres,
+  mergeGenreRefs,
+} from "../lib/effectiveGenres.js";
 import { prisma } from "../lib/prisma.js";
 import { resolveRecordingArtworkUrl } from "../lib/mediaUrls.js";
-import {
-  BROWSABLE_RECORDING,
-  BROWSABLE_RECORDING_TAG_COUNT_SELECT,
-} from "../lib/publicRecordingFilter.js";
+import { BROWSABLE_RECORDING } from "../lib/publicRecordingFilter.js";
+import { PUBLIC_PUBLISHED_PLAYLIST } from "../lib/publicPlaylistFilter.js";
 
 export const libraryRouter = Router();
 
 libraryRouter.get("/genres", async (_req, res, next) => {
   try {
+    return res.json({ data: await listEffectiveLibraryGenres() });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+libraryRouter.get("/playlist-genres", async (_req, res, next) => {
+  try {
     const genres = await prisma.tag.findMany({
       where: {
         kind: "GENRE",
-        recordingTags: { some: { recording: BROWSABLE_RECORDING } },
+        playlistTags: { some: { playlist: PUBLIC_PUBLISHED_PLAYLIST } },
       },
-      include: { _count: { select: BROWSABLE_RECORDING_TAG_COUNT_SELECT } },
+      include: {
+        _count: {
+          select: {
+            playlistTags: { where: { playlist: PUBLIC_PUBLISHED_PLAYLIST } },
+          },
+        },
+      },
       orderBy: { name: "asc" },
     });
 
@@ -25,7 +43,7 @@ libraryRouter.get("/genres", async (_req, res, next) => {
         id: g.id,
         name: g.name,
         slug: g.slug,
-        songCount: g._count.recordingTags,
+        songCount: g._count.playlistTags,
       })),
     });
   } catch (error) {
@@ -41,9 +59,7 @@ libraryRouter.get("/songs", async (req, res, next) => {
 
     const where = {
       ...BROWSABLE_RECORDING,
-      ...(genreSlug
-        ? { tags: { some: { tag: { slug: genreSlug, kind: "GENRE" as const } } } }
-        : {}),
+      ...(genreSlug ? effectiveGenreWhere(genreSlug) : {}),
     };
 
     const [items, total] = await Promise.all([
@@ -53,10 +69,15 @@ libraryRouter.get("/songs", async (req, res, next) => {
           uploader: {
             select: { id: true, username: true, displayName: true, avatarUrl: true, role: true },
           },
-          publishedPlaylist: { select: { id: true, slug: true, title: true, coverArtUrl: true } },
-          tags: {
-            where: { tag: { kind: "GENRE" } },
-            include: { tag: { select: { id: true, name: true, slug: true } } },
+          tags: effectiveGenreSelect.tags,
+          publishedPlaylist: {
+            select: {
+              id: true,
+              slug: true,
+              title: true,
+              coverArtUrl: true,
+              tags: effectiveGenreSelect.publishedPlaylist.select.tags,
+            },
           },
           _count: {
             select: { saves: { where: { kind: "FAVORITE" } } },
@@ -94,8 +115,12 @@ libraryRouter.get("/songs", async (req, res, next) => {
         createdAt: r.createdAt.toISOString(),
         updatedAt: r.updatedAt.toISOString(),
         uploader: r.uploader,
-        playlist: r.publishedPlaylist,
-        genres: r.tags.map((t) => ({ id: t.tag.id, name: t.tag.name, slug: t.tag.slug })),
+        playlist: {
+          id: r.publishedPlaylist.id,
+          slug: r.publishedPlaylist.slug,
+          title: r.publishedPlaylist.title,
+        },
+        genres: mergeGenreRefs(r.tags, r.publishedPlaylist.tags),
       })),
       meta: { page, pageSize, total },
     });
@@ -115,10 +140,7 @@ libraryRouter.get("/artists", async (_req, res, next) => {
         uploader: {
           select: { id: true, username: true, displayName: true, avatarUrl: true },
         },
-        tags: {
-          where: { tag: { kind: "GENRE" } },
-          include: { tag: { select: { id: true, name: true, slug: true } } },
-        },
+        ...effectiveGenreSelect,
       },
     });
 
@@ -140,8 +162,8 @@ libraryRouter.get("/artists", async (_req, res, next) => {
       }
       const entry = artistMap.get(r.uploaderId)!;
       entry.songCount++;
-      for (const rt of r.tags) {
-        entry.genres.set(rt.tag.id, rt.tag);
+      for (const genre of mergeGenreRefs(r.tags, r.publishedPlaylist.tags)) {
+        entry.genres.set(genre.id, genre);
       }
       const year = r.releaseDate?.getFullYear() ?? r.publishedAt?.getFullYear();
       if (year) entry.years.push(year);

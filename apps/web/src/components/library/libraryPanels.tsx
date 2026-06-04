@@ -12,8 +12,9 @@ import {
   EMPTY_LIBRARY_SONGS,
   EMPTY_PLAYLISTS,
   filterArtistsByGenre,
-  filterPlaylistsByGenre,
   filterSongsByArtist,
+  genresFromArtists,
+  genresFromSongs,
   sortLibrarySongs,
   topArtistsBySongCount,
   type SortDirection,
@@ -24,6 +25,7 @@ import { LibraryTrackRow } from "@/components/library/LibraryTrackRow";
 import {
   useLibraryArtists,
   useLibraryGenres,
+  useLibraryPlaylistGenres,
   useLibraryPlaylists,
   useLibrarySongs,
 } from "@/hooks/useLibrary";
@@ -444,10 +446,10 @@ export function GenreDetailPanel({ slug, name }: { slug: string; name: string })
 
 export function ArtistsPanel() {
   const [genreSlug, setGenreSlug] = useState<string | null>(null);
-  const { data: genresData } = useLibraryGenres();
-  const genres = genresData?.data ? genresData.data.filter((g) => g.songCount > 0) : EMPTY_LIBRARY_GENRES;
   const { data, isLoading } = useLibraryArtists();
-  const artists = filterArtistsByGenre(data?.data ?? EMPTY_LIBRARY_ARTISTS, genreSlug);
+  const allArtists = data?.data ?? EMPTY_LIBRARY_ARTISTS;
+  const genres = useMemo(() => genresFromArtists(allArtists), [allArtists]);
+  const artists = filterArtistsByGenre(allArtists, genreSlug);
 
   if (isLoading) return <PanelSkeleton />;
 
@@ -494,10 +496,10 @@ export function ArtistsPanel() {
 
 export function PlaylistsPanel() {
   const [genreSlug, setGenreSlug] = useState<string | null>(null);
-  const { data: genresData } = useLibraryGenres();
-  const genres = genresData?.data ? genresData.data.filter((g) => g.songCount > 0) : EMPTY_LIBRARY_GENRES;
-  const { data, isLoading } = useLibraryPlaylists();
-  const playlists = filterPlaylistsByGenre(data?.data ?? EMPTY_PLAYLISTS, genreSlug);
+  const { data: genresData } = useLibraryPlaylistGenres();
+  const genres = genresData?.data ?? EMPTY_LIBRARY_GENRES;
+  const { data, isLoading } = useLibraryPlaylists(genreSlug);
+  const playlists = data?.data ?? EMPTY_PLAYLISTS;
 
   if (isLoading) return <PanelSkeleton />;
 
@@ -548,12 +550,17 @@ export function SongsPanel() {
   const [sortKey, setSortKey] = useState<SongSortKey>("title");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
-  const { data: genresData } = useLibraryGenres();
-  const genres = genresData?.data ? genresData.data.filter((g) => g.songCount > 0) : EMPTY_LIBRARY_GENRES;
   const { data: artistsData } = useLibraryArtists();
   const artists = artistsData?.data ?? EMPTY_LIBRARY_ARTISTS;
   const suggestedArtists = useMemo(() => topArtistsBySongCount(artists, 4), [artists]);
-  const { data, isLoading } = useLibrarySongs(genreSlug);
+  const allSongsQuery = useLibrarySongs(null);
+  const genreSongsQuery = useLibrarySongs(genreSlug, Boolean(genreSlug));
+  const data = genreSlug ? genreSongsQuery.data : allSongsQuery.data;
+  const isLoading = allSongsQuery.isLoading || (Boolean(genreSlug) && genreSongsQuery.isLoading);
+  const genres = useMemo(
+    () => genresFromSongs(allSongsQuery.data?.data ?? EMPTY_LIBRARY_SONGS),
+    [allSongsQuery.data?.data],
+  );
 
   const songs = useMemo(() => {
     const filtered = filterSongsByArtist(data?.data ?? EMPTY_LIBRARY_SONGS, artistId);

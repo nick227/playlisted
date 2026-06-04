@@ -912,6 +912,19 @@ paths:
               schema:
                 $ref: '#/components/schemas/LibraryGenresResponse'
 
+  /api/v1/library/playlist-genres:
+    get:
+      tags: [Library]
+      operationId: getLibraryPlaylistGenres
+      summary: List genre tags that have public published playlists (library browse)
+      responses:
+        '200':
+          description: Playlist genre list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LibraryGenresResponse'
+
   /api/v1/tags/genres:
     get:
       tags: [Tags]
@@ -1272,6 +1285,11 @@ paths:
           name: status
           schema:
             $ref: '#/components/schemas/PublishStatus'
+        - in: query
+          name: genre
+          schema:
+            type: string
+          description: Genre tag slug to filter public playlists by
       responses:
         '200':
           description: Playlist collection

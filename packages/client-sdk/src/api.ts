@@ -226,6 +226,7 @@ export interface PlaylistedApi {
   };
   library: {
     genres(): Promise<LibraryGenresResponse>;
+    playlistGenres(): Promise<LibraryGenresResponse>;
     songs(query?: { genre?: string; page?: number; pageSize?: number }): Promise<LibrarySongsResponse>;
     artists(): Promise<LibraryArtistsResponse>;
   };
@@ -897,6 +898,9 @@ export function createPlaylistedApi(options: PlaylistedClientOptions = {}): Play
     library: {
       genres() {
         return unwrap(raw.GET("/api/v1/library/genres"), "Failed to load genres.");
+      },
+      playlistGenres() {
+        return unwrap(raw.GET("/api/v1/library/playlist-genres"), "Failed to load playlist genres.");
       },
       songs(query = {}) {
         return unwrap(

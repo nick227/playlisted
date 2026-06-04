@@ -3,6 +3,7 @@ import request from "supertest";
 
 vi.mock("../lib/prisma.js", () => ({
   prisma: {
+    $queryRaw: vi.fn(),
     recording: { findMany: vi.fn() },
     playlist: { findMany: vi.fn() },
     user: { findMany: vi.fn() },
@@ -29,10 +30,10 @@ const SEARCHABLE_PLAYLIST = {
 
 describe("GET /api/v1/search/unified", () => {
   beforeEach(() => {
+    vi.mocked(prisma.$queryRaw).mockResolvedValue([]);
     vi.mocked(prisma.recording.findMany).mockResolvedValue([]);
     vi.mocked(prisma.playlist.findMany).mockResolvedValue([]);
     vi.mocked(prisma.user.findMany).mockResolvedValue([]);
-    vi.mocked(prisma.tag.findMany).mockResolvedValue([]);
   });
 
   it("returns 400 when q is missing", async () => {
@@ -47,14 +48,12 @@ describe("GET /api/v1/search/unified", () => {
   });
 
   it("returns grouped results with public-only genre counts", async () => {
-    vi.mocked(prisma.tag.findMany).mockResolvedValue([
+    vi.mocked(prisma.$queryRaw).mockResolvedValue([
       {
         id: "tag-jazz",
         name: "Jazz",
         slug: "jazz",
-        kind: "GENRE",
-        createdAt: new Date("2024-01-01"),
-        _count: { recordingTags: 42 },
+        songCount: BigInt(42),
       },
     ] as never);
 
@@ -118,22 +117,18 @@ describe("GET /api/v1/search/unified", () => {
   });
 
   it("orders genres by public song count descending", async () => {
-    vi.mocked(prisma.tag.findMany).mockResolvedValue([
+    vi.mocked(prisma.$queryRaw).mockResolvedValue([
       {
         id: "tag-rock",
         name: "Rock",
         slug: "rock",
-        kind: "GENRE",
-        createdAt: new Date("2024-01-01"),
-        _count: { recordingTags: 5 },
+        songCount: BigInt(5),
       },
       {
         id: "tag-jazz",
         name: "Jazz",
         slug: "jazz",
-        kind: "GENRE",
-        createdAt: new Date("2024-01-01"),
-        _count: { recordingTags: 42 },
+        songCount: BigInt(42),
       },
     ] as never);
 

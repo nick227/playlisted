@@ -535,6 +535,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/library/playlist-genres": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List genre tags that have public published playlists (library browse) */
+        get: operations["getLibraryPlaylistGenres"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/tags/genres": {
         parameters: {
             query?: never;
@@ -3619,6 +3636,26 @@ export interface operations {
             };
         };
     };
+    getLibraryPlaylistGenres: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Playlist genre list */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryGenresResponse"];
+                };
+            };
+        };
+    };
     getTagGenres: {
         parameters: {
             query?: never;
@@ -4037,6 +4074,8 @@ export interface operations {
                 ownerId?: string;
                 visibility?: components["schemas"]["Visibility"];
                 status?: components["schemas"]["PublishStatus"];
+                /** @description Genre tag slug to filter public playlists by */
+                genre?: string;
             };
             header?: never;
             path?: never;
