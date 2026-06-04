@@ -21,6 +21,18 @@ export function homeGridPlaylistOrigin(sectionKey: string, playlistId: string): 
   return playbackOriginKey("home", "grid", sectionKey, playlistId);
 }
 
+export function homeBentoSongOrigin(recordingId: string): string {
+  return playbackOriginKey("home", "bento", "songs", recordingId);
+}
+
+export function homeBentoPlaylistOrigin(playlistId: string): string {
+  return playbackOriginKey("home", "bento", "playlists", playlistId);
+}
+
+export function homeBentoArtistOrigin(userId: string): string {
+  return playbackOriginKey("home", "bento", "artists", userId);
+}
+
 export function homeSpotlightTrackOrigin(playlistId: string, recordingId: string): string {
   return playbackOriginKey("home", "spotlight", playlistId, recordingId);
 }

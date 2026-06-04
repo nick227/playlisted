@@ -478,7 +478,7 @@ export function HomePage() {
         artistLoading={greetingsArtistLoading}
       />
 
-      <HomeExploreBento username={user?.username} />
+      <HomeExploreBento />
 
       {/* ── CHARTS ────────────────────────────────────────────── */}
 
