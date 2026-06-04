@@ -21,6 +21,7 @@ export const HOME_BENTO_SLOTS: BentoSlot[] = [
   { kind: "playlist", index: 2, placement: "md:col-start-1 md:row-start-4", aspectClass: "aspect-[4/3]" },
   { kind: "playlist", index: 3, placement: "md:col-start-2 md:row-start-4", aspectClass: "aspect-square" },
   { kind: "song", index: 3, placement: "md:col-span-2 md:row-start-5", aspectClass: "aspect-[2/1]", meta: "overlay" },
+  { kind: "song", index: 4, placement: "md:col-span-2 md:row-start-6", aspectClass: "aspect-[4/3]" },
   { kind: "artist", index: 1, placement: "md:col-start-3 md:row-start-5", aspectClass: "aspect-square", shape: "circle" },
   { kind: "artist", index: 2, placement: "md:col-start-4 md:row-start-5", aspectClass: "aspect-square", shape: "circle" },
   {
