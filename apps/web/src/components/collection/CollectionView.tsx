@@ -1,5 +1,5 @@
 import type { PlaylistDetail } from "@playlisted/client-sdk";
-import { Check, ChevronDown, Library, Pause, Pencil, Play, Plus, Search, Share2, Shuffle, Upload, X } from "lucide-react";
+import { Check, ChevronDown, Library, Pause, Pencil, Play, Plus, Search, Share2, Upload, X } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { Link } from "react-router-dom";
 
