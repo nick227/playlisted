@@ -21,10 +21,59 @@ const BOT_MESSAGES: Record<string, BotMessage> = {
     title: "",
     body: "",
     choices: [
-      { label: "For artists", next: "artists" },
-      { label: "Site Charts", next: "charts" },
+      { label: "Artists", next: "artists" },
       { label: "Playlists", next: "playlists" },
       { label: "Radio", next: "radio" },
+    ],
+  },
+  artists: {
+    eyebrow: "Artists",
+    title: "Upload tracks and artwork.",
+    body: "Insights like number of plays and duration.",
+    choices: [
+      { label: "Studio", next: "studio" },
+      { label: "Radio", next: "radio" },
+      { label: "AI Music", next: "aimusic" },
+    ],
+  },
+  radio: {
+    eyebrow: "Radio",
+    title: "Streaming ad-free music all day.",
+    body: "And we have an API.",
+    choices: [
+      { label: "API", next: "dev" },
+      { label: "Pages", next: "pages" },
+      { label: "Charts", next: "charts" },
+    ],
+  },
+  charts: {
+    eyebrow: "Charts",
+    title: "Get your music on the charts.",
+    body: "Showcase your music and get seen.",
+    choices: [
+      { label: "Profiles", next: "pages" },
+      { label: "Playlists", next: "playlists" },
+      { label: "Restart", next: "welcome" },
+    ],
+  },
+  playlists: {
+    eyebrow: "Playlists",
+    title: "Heart and soul of the app.",
+    body: "Save favorites, follow artists and playlists.",
+    choices: [
+      { label: "Charts", next: "charts" },
+      { label: "Studio", next: "studio" },
+      { label: "API", next: "dev" },
+    ],
+  },
+  studio: {
+    eyebrow: "Studio",
+    title: "Check the studio's artist features.",
+    body: "Manage music, metrics, social links, and profile.",
+    choices: [
+      { label: "Profiles", next: "pages" },
+      { label: "API", next: "dev" },
+      { label: "Playlists", next: "playlists" },
     ],
   },
   aimusic: {
@@ -34,59 +83,7 @@ const BOT_MESSAGES: Record<string, BotMessage> = {
     choices: [
       { label: "Studio", next: "studio" },
       { label: "Pages", next: "pages" },
-      { label: "Start over", next: "welcome" },
-    ],
-  },
-  artists: {
-    eyebrow: "Artists",
-    title: "Upload tracks and artwork.",
-    body: "Insights like number of plays and duration.",
-    choices: [
-      { label: "Studio", next: "studio" },
-      { label: "Pages", next: "pages" },
-      { label: "AI Music", next: "aimusic" },
-      { label: "Start over", next: "welcome" },
-    ],
-  },
-  radio: {
-    eyebrow: "Radio",
-    title: "Streaming ad-free music all day.",
-    body: "And we have an API.",
-    choices: [
-      { label: "Developers", next: "dev" },
-      { label: "Studio", next: "studio" },
-      { label: "Pages", next: "pages" },
-      { label: "Start over", next: "welcome" },
-    ],
-  },
-  charts: {
-    eyebrow: "Charts",
-    title: "Get your music on the charts.",
-    body: "Showcase your music and get seen.",
-    choices: [
-      { label: "Playlists", next: "playlists" },
-      { label: "Radio", next: "radio" },
-      { label: "Start over", next: "welcome" },
-    ],
-  },
-  playlists: {
-    eyebrow: "Playlists",
-    title: "Heart and soul of the app.",
-    body: "Save favorites, follow artists and playlists.",
-    choices: [
-      { label: "Charts", next: "charts" },
-      { label: "Artist pages", next: "pages" },
-      { label: "Start over", next: "welcome" },
-    ],
-  },
-  studio: {
-    eyebrow: "Studio",
-    title: "Check the studio's artist features.",
-    body: "Manage music, metrics, social links, and profile.",
-    choices: [
-      { label: "Artist pages", next: "pages" },
-      { label: "Developers", next: "dev" },
-      { label: "Start over", next: "welcome" },
+      { label: "Restart", next: "welcome" },
     ],
   },
   pages: {
@@ -94,9 +91,9 @@ const BOT_MESSAGES: Record<string, BotMessage> = {
     title: "The platform is for artists.",
     body: "Tracks, playlists, profile links, and favorites.",
     choices: [
-      { label: "For artists", next: "artists" },
+      { label: "Artists", next: "artists" },
       { label: "Playlists", next: "playlists" },
-      { label: "Start over", next: "welcome" },
+      { label: "Restart", next: "welcome" },
     ],
   },
   dev: {
@@ -106,7 +103,7 @@ const BOT_MESSAGES: Record<string, BotMessage> = {
     choices: [
       { label: "Radio", next: "radio" },
       { label: "Studio", next: "studio" },
-      { label: "Start over", next: "welcome" },
+      { label: "Restart", next: "welcome" },
     ],
   },
 };
