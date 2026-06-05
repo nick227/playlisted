@@ -7,9 +7,27 @@ import { defaultHumanSkin } from './skins/defaultHumanSkin'
 import { DancePlayer } from './sequences/DancePlayer'
 import { dynamicRandomSequenceId, getDanceSequence, isDynamicDance, pickAutoDanceSequenceId } from './sequences'
 import { PuppetRenderer } from './render/PuppetRenderer'
+import type { SolvedJoint } from './rig/rigTypes'
+import type { ResolvedPose } from './poses/poseTypes'
 import type { Features } from '../../audio/AudioFeatureExtractor'
 import type { TriggerFrame } from '../../audio/VisualTriggers'
 import type { DynamicDanceAttributes } from './sequences/dynamicRandom.sequence'
+
+const ROOT_TO_STAGE_Y = 126
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value))
+}
+
+function getVerticalBounds(joints: Map<string, SolvedJoint>) {
+  let top = Infinity
+  let bottom = -Infinity
+  for (const joint of joints.values()) {
+    top = Math.min(top, joint.y - joint.radius)
+    bottom = Math.max(bottom, joint.y + joint.radius)
+  }
+  return { top, bottom, center: (top + bottom) * 0.5 }
+}
 
 export class PuppetDancerScene extends CanvasAnimation {
   private solver = new PuppetRigSolver(humanRig)
@@ -59,10 +77,11 @@ export class PuppetDancerScene extends CanvasAnimation {
 
     const bands = this.readBands(context)
     const energy = reducedMotion ? 0.08 : Math.min(1, triggers.energy + bands.bass * 0.4)
-    const stageY = Math.min(h - 34, h * 0.78 + Math.min(140, h * 0.18))
     const stageScale = Math.min(w, h) / 360 * pose.scale
     const rootX = w * 0.5 + pose.offset.x
-    const rootY = stageY - 126 * stageScale + pose.offset.y
+    const layout = this.resolveVerticalLayout(pose, rootX, h, stageScale)
+    const rootY = layout.rootY
+    const stageY = layout.stageY
     const joints = this.solver.solve(pose, rootX, rootY, stageScale)
 
     this.ctx.clearRect(0, 0, w, h)
@@ -120,6 +139,15 @@ export class PuppetDancerScene extends CanvasAnimation {
     this.player.setSequence(getDanceSequence(key, reducedMotion, attributes))
     this.loadedDanceKey = key
     this.loadedReducedMotion = reducedMotion
+  }
+
+  private resolveVerticalLayout(pose: ResolvedPose, rootX: number, height: number, scale: number) {
+    const neutralJoints = this.solver.solve(pose, rootX, 0, scale)
+    const bounds = getVerticalBounds(neutralJoints)
+    const rootY = height * 0.5 - bounds.center + pose.offset.y
+    const neutralRootY = rootY - pose.offset.y
+    const stageY = clamp(neutralRootY + ROOT_TO_STAGE_Y * scale, 34, Math.max(34, height - 34))
+    return { rootY, stageY }
   }
 }
 
