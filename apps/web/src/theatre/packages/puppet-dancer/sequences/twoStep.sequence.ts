@@ -1,4 +1,4 @@
-import { idlePose, leftStepPose, rightStepPose } from '../poses/basicPoses'
+import { balancedArmsPose, bothUpPose, idlePose, leftStepPose, rightLeadPose, rightStepPose } from '../poses/basicPoses'
 import type { DanceMap } from './sequenceTypes'
 
 export const twoStepSequence: DanceMap = {
@@ -15,6 +15,9 @@ export const twoStepSequence: DanceMap = {
     idle: idlePose,
     leftStep: leftStepPose,
     rightStep: rightStepPose,
+    bothUp: bothUpPose,
+    balanced: balancedArmsPose,
+    rightLead: rightLeadPose,
   },
   triggerAccents: {
     beat: ['hipBounce', 'headNod'],
@@ -24,9 +27,12 @@ export const twoStepSequence: DanceMap = {
     chaosHit: ['chaosStretch'],
   },
   steps: [
-    { pose: 'idle', durationMs: 240, holdMs: 60, ease: 'easeInOut' },
-    { pose: 'leftStep', durationMs: 340, holdMs: 80, ease: 'easeInOut', advanceOn: 'beat', beatSnap: true },
-    { pose: 'idle', durationMs: 180, holdMs: 40, ease: 'easeInOut' },
-    { pose: 'rightStep', durationMs: 340, holdMs: 80, ease: 'easeInOut', advanceOn: 'beat', beatSnap: true },
+    { pose: 'idle', durationMs: 280, holdMs: 70, ease: 'easeInOut' },
+    { pose: 'leftStep', durationMs: 380, holdMs: 90, ease: 'easeInOut', advanceOn: 'beat' },
+    { pose: 'bothUp', durationMs: 320, holdMs: 70, ease: 'easeInOut', advanceOn: 'highsHit' },
+    { pose: 'balanced', durationMs: 300, holdMs: 60, ease: 'easeInOut' },
+    { pose: 'rightStep', durationMs: 380, holdMs: 90, ease: 'easeInOut', advanceOn: 'beat' },
+    { pose: 'rightLead', durationMs: 340, holdMs: 80, ease: 'easeInOut', advanceOn: 'midsHit' },
+    { pose: 'idle', durationMs: 220, holdMs: 50, ease: 'easeInOut' },
   ],
 }

@@ -13,6 +13,14 @@ type ActiveAccent = {
 }
 
 const triggerKeys = ['beat', 'bassHit', 'midsHit', 'highsHit', 'chaosHit'] as const
+const ARM_JOINTS = new Set<PuppetJointId>([
+  'leftShoulder',
+  'leftElbow',
+  'leftWrist',
+  'rightShoulder',
+  'rightElbow',
+  'rightWrist',
+])
 
 function clamp01(value: number) {
   return Math.max(0, Math.min(1, value))
@@ -40,6 +48,11 @@ function ease(kind: MotionStep['ease'], value: number) {
 
 function lerp(a: number, b: number, t: number) {
   return a + (b - a) * t
+}
+
+function lerpAngle(from: number, to: number, t: number) {
+  const delta = ((((to - from) % 360) + 540) % 360) - 180
+  return from + delta * t
 }
 
 function addFace(base: FaceState, patch: Partial<FaceState> | undefined, amount: number) {
@@ -182,7 +195,9 @@ export class DancePlayer {
   private mixPoses(from: PuppetPoseMap, to: PuppetPoseMap, amount: number): ResolvedPose {
     const pose = this.resolvePose(from)
     const target = this.resolvePose(to)
-    for (const joint of this.rig.joints) pose.angles[joint.id] = lerp(pose.angles[joint.id], target.angles[joint.id], amount)
+    for (const joint of this.rig.joints) {
+      pose.angles[joint.id] = this.blendAngle(joint.id, pose.angles[joint.id], target.angles[joint.id], amount)
+    }
     pose.offset.x = lerp(pose.offset.x, target.offset.x, amount)
     pose.offset.y = lerp(pose.offset.y, target.offset.y, amount)
     pose.scale = lerp(pose.scale, target.scale, amount)
@@ -271,7 +286,12 @@ export class DancePlayer {
     for (const joint of this.rig.joints) {
       const lag = this.jointLag(joint.id) * loose
       const amount = Math.max(0.06, Math.min(1, base / Math.max(0.25, lag)))
-      this.loosePose.angles[joint.id] = lerp(this.loosePose.angles[joint.id], target.angles[joint.id], amount)
+      this.loosePose.angles[joint.id] = this.blendAngle(
+        joint.id,
+        this.loosePose.angles[joint.id],
+        target.angles[joint.id],
+        amount,
+      )
     }
     this.loosePose.offset.x = lerp(this.loosePose.offset.x, target.offset.x, Math.min(1, base * 1.8))
     this.loosePose.offset.y = lerp(this.loosePose.offset.y, target.offset.y, Math.min(1, base * 1.8))
@@ -355,6 +375,11 @@ export class DancePlayer {
     return pose
   }
 
+  private blendAngle(id: PuppetJointId, from: number, to: number, amount: number): number {
+    if (ARM_JOINTS.has(id)) return lerpAngle(from, to, amount)
+    return lerp(from, to, amount)
+  }
+
   private finalizePose(pose: ResolvedPose): ResolvedPose {
     for (const joint of this.rig.joints) {
       pose.angles[joint.id] = clampJointAngle(joint.id, pose.angles[joint.id])
@@ -363,12 +388,12 @@ export class DancePlayer {
   }
 
   private jointLag(id: PuppetJointId): number {
-    if (id.includes('Wrist')) return 2.4
-    if (id.includes('Elbow')) return 1.9
+    if (id.includes('Wrist')) return 3.2
+    if (id.includes('Elbow')) return 2.8
     if (id === 'head' || id === 'neck') return 1.5
     if (id.includes('Ankle')) return 1.8
     if (id.includes('Knee')) return 1.35
-    if (id.includes('Shoulder')) return 1.25
+    if (id.includes('Shoulder')) return 2.4
     if (id === 'chest' || id === 'spine') return 1.1
     return 0.8
   }

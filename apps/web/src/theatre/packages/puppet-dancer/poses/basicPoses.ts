@@ -1,4 +1,5 @@
 import type { PuppetPoseMap } from './poseTypes'
+import { ARM_POSTURES } from './armPostures'
 import { poseVariant } from './poseAuthoring'
 
 export const idlePose: PuppetPoseMap = {
@@ -126,6 +127,46 @@ export const shimmyRightPose = poseVariant(idlePose, 'shimmyRight', 'Shimmy Righ
   face: { mouth: 0.22, brows: 0.2 },
 })
 
+export const bothUpPose: PuppetPoseMap = {
+  id: 'bothUp',
+  label: 'Both Arms Up',
+  rotations: {
+    ...idlePose.rotations,
+    ...ARM_POSTURES.bothUp,
+  },
+  face: { eyes: 0.95, mouth: 0.55, brows: 0.65 },
+}
+
+export const bothDownPose: PuppetPoseMap = {
+  id: 'bothDown',
+  label: 'Both Arms Down',
+  rotations: {
+    ...idlePose.rotations,
+    ...ARM_POSTURES.bothDown,
+  },
+  face: { eyes: 0.8, mouth: 0.25, brows: 0.3 },
+}
+
+export const balancedArmsPose: PuppetPoseMap = {
+  id: 'balancedArms',
+  label: 'Balanced Arms',
+  rotations: {
+    ...idlePose.rotations,
+    ...ARM_POSTURES.balanced,
+  },
+  face: { eyes: 1, mouth: 0.28, brows: 0.4 },
+}
+
+export const rightLeadPose: PuppetPoseMap = {
+  id: 'rightLead',
+  label: 'Right Arm Lead',
+  rotations: {
+    ...idlePose.rotations,
+    ...ARM_POSTURES.rightUpLeftDown,
+  },
+  face: { eyes: 0.9, mouth: 0.42, brows: 0.5 },
+}
+
 export const panicLowPose = poseVariant(bouncePose, 'panicLow', 'Knees Too Low', {
   offset: { y: 28 },
   scale: 0.93,
@@ -150,6 +191,10 @@ export const basicPoses = [
   idlePose,
   leftStepPose,
   rightStepPose,
+  bothUpPose,
+  bothDownPose,
+  balancedArmsPose,
+  rightLeadPose,
   bouncePose,
   robotPose,
   noodleLeftPose,

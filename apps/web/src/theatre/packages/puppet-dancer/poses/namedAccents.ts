@@ -39,11 +39,11 @@ export const kneeDip: MotionAccentMap = {
 
 export const shoulderPop: MotionAccentMap = {
   rotations: {
-    chest: 7,
-    leftShoulder: 16,
-    rightShoulder: -16,
-    leftElbow: 8,
-    rightElbow: -8,
+    chest: 5,
+    leftShoulder: 9,
+    rightShoulder: 9,
+    leftElbow: 4,
+    rightElbow: 4,
   },
 }
 

@@ -1,4 +1,5 @@
 import { idlePose } from '../poses/basicPoses'
+import { ARM_POSTURES, jitterArmPosture, pickArmPosture } from '../poses/armPostures'
 import type { PuppetPoseMap } from '../poses/poseTypes'
 import { clampJointAngle } from '../rig/jointLimits'
 import type { PuppetJointId } from '../rig/rigTypes'
@@ -16,8 +17,6 @@ export type DynamicDanceAttributes = {
   highsFlux?: number
 }
 
-const leftArm: PuppetJointId[] = ['leftShoulder', 'leftElbow', 'leftWrist']
-const rightArm: PuppetJointId[] = ['rightShoulder', 'rightElbow', 'rightWrist']
 const leftLeg: PuppetJointId[] = ['leftHip', 'leftKnee', 'leftAnkle']
 const rightLeg: PuppetJointId[] = ['rightHip', 'rightKnee', 'rightAnkle']
 const body: PuppetJointId[] = ['hips', 'spine', 'chest', 'neck', 'head']
@@ -61,9 +60,9 @@ function mirroredRandomPose(prefix: string, index: number, wildness: number, att
   const crouch = rand(0, 1) < 0.24 + bass * 0.45
   const airy = rand(0, 1) < 0.2 + highs * 0.5
   const side = maybe(0.5) ? -1 : 1
-  const asymmetry = rand(0.65, 1.35)
-  const armSwing = rand(36, airy ? 140 : 96) * wildness
-  const legSwing = rand(28, crouch ? 88 : 64) * wildness
+  const legSwing = rand(16, crouch ? 62 : 42) * wildness
+  const armPosture = pickArmPosture({ bass, highs, energy: attributes.energy })
+  const arms = jitterArmPosture(ARM_POSTURES[armPosture], wildness, airy ? 14 : 10)
 
   const rotations: Partial<Record<PuppetJointId, number>> = {
     root: -90,
@@ -73,24 +72,24 @@ function mirroredRandomPose(prefix: string, index: number, wildness: number, att
     neck: spread(-90 - side * rand(0, 18), 16, wildness),
     head: spread(-90 + side * rand(8, 36), 28, wildness),
 
-    leftShoulder: clampJointAngle('leftShoulder', 188 + side * armSwing * asymmetry + rand(-48, 48)),
-    leftElbow: clampJointAngle('leftElbow', 124 + side * rand(-120, 120) * wildness),
-    leftWrist: clamp(88 + side * rand(-78, 88) * wildness, -20, 190),
-    rightShoulder: clampJointAngle('rightShoulder', -8 + side * armSwing * 0.9 + rand(-48, 48)),
-    rightElbow: clampJointAngle('rightElbow', -56 + side * rand(-120, 120) * wildness),
-    rightWrist: clamp(-88 + side * rand(-92, 82) * wildness, -200, 26),
+    leftShoulder: clampJointAngle('leftShoulder', arms.leftShoulder),
+    leftElbow: clampJointAngle('leftElbow', arms.leftElbow),
+    leftWrist: clamp(arms.leftWrist, -20, 190),
+    rightShoulder: clampJointAngle('rightShoulder', arms.rightShoulder),
+    rightElbow: clampJointAngle('rightElbow', arms.rightElbow),
+    rightWrist: clamp(arms.rightWrist, -200, 26),
 
-    leftHip: clampJointAngle('leftHip', (crouch ? 126 : 150) - side * legSwing + rand(-28, 28)),
-    leftKnee: clampJointAngle('leftKnee', (crouch ? 148 : 102) + rand(-72, 88) * wildness),
+    leftHip: clampJointAngle('leftHip', (crouch ? 126 : 150) - side * legSwing + rand(-16, 16)),
+    leftKnee: clampJointAngle('leftKnee', (crouch ? 132 : 102) + rand(-36, 44) * wildness),
     leftAnkle: clamp(88 + side * rand(-32, 36) * wildness, 42, 136),
-    rightHip: clampJointAngle('rightHip', (crouch ? 54 : 30) - side * legSwing * 0.8 + rand(-28, 28)),
-    rightKnee: clampJointAngle('rightKnee', (crouch ? 54 : 78) + rand(-78, 92) * wildness),
+    rightHip: clampJointAngle('rightHip', (crouch ? 54 : 30) - side * legSwing * 0.8 + rand(-16, 16)),
+    rightKnee: clampJointAngle('rightKnee', (crouch ? 54 : 78) + rand(-42, 38) * wildness),
     rightAnkle: clamp(92 + side * rand(-36, 32) * wildness, 44, 138),
   }
 
-  if (maybe(0.34)) {
-    for (const joint of sample([...leftArm, ...rightArm, ...leftLeg, ...rightLeg, ...body], rand(2, 6))) {
-      const next = (rotations[joint] ?? 0) + rand(-52, 52) * wildness
+  if (maybe(0.18)) {
+    for (const joint of sample([...leftLeg, ...rightLeg, ...body], rand(1, 3))) {
+      const next = (rotations[joint] ?? 0) + rand(-18, 18) * wildness
       rotations[joint] = clampJointAngle(joint, next)
     }
   }
@@ -124,17 +123,17 @@ function mirroredRandomPose(prefix: string, index: number, wildness: number, att
 function createStep(pose: string, index: number, wildness: number, attributes: DynamicDanceAttributes): MotionStep {
   const flux = attributes.flux ?? 0
   const bass = attributes.bass ?? 0
-  const fast = flux > 0.08 || attributes.highsFlux && attributes.highsFlux > 0.05
-  const durationBase = fast ? rand(135, 260) : rand(220, 430)
+  const fast = flux > 0.12 || (attributes.highsFlux && attributes.highsFlux > 0.08)
+  const durationBase = fast ? rand(240, 360) : rand(360, 560)
   return {
     pose,
-    durationMs: Math.round(clamp(durationBase / clamp(wildness, 0.85, 1.8), 90, 520)),
-    holdMs: maybe(0.28) ? Math.round(rand(10, 100)) : 0,
-    ease: index % 3 === 0 && wildness > 1.15 ? pick(eases) : 'easeInOut',
-    intensity: clamp(rand(0.82, 1.18) + bass * 0.18, 0.65, 1.45),
-    accents: sample(accents, maybe(0.32) ? 2 : 1),
-    advanceOn: maybe(0.45) ? 'beat' : undefined,
-    beatSnap: maybe(0.62),
+    durationMs: Math.round(clamp(durationBase / clamp(wildness, 0.9, 1.45), 220, 680)),
+    holdMs: maybe(0.42) ? Math.round(rand(50, 160)) : 0,
+    ease: index % 5 === 0 && wildness > 1.2 ? pick(eases) : 'easeInOut',
+    intensity: clamp(rand(0.72, 1.02) + bass * 0.14, 0.58, 1.15),
+    accents: sample(accents, maybe(0.22) ? 2 : 1),
+    advanceOn: maybe(0.22) ? 'beat' : undefined,
+    beatSnap: maybe(0.28),
   }
 }
 
@@ -146,11 +145,11 @@ export function createDynamicRandomSequence(attributes: DynamicDanceAttributes =
   const bass = attributes.bass ?? 0
   const highs = attributes.highs ?? 0
   const chaos = Math.max(attributes.bassFlux ?? 0, attributes.highsFlux ?? 0)
-  const wildness = clamp(0.88 + energy * 1.4 + flux * 2.2 + bass * 0.65 + highs * 0.65 + chaos * 2.4, 0.85, 1.85)
+  const wildness = clamp(0.82 + energy * 1.1 + flux * 1.6 + bass * 0.5 + highs * 0.5 + chaos * 1.8, 0.8, 1.45)
   const poseCount = Math.round(clamp(rand(4, 8) + wildness * 1.4, 5, 10))
   const poses: Record<string, PuppetPoseMap> = { idle: idlePose }
   const steps: MotionStep[] = [
-    { pose: 'idle', durationMs: Math.round(rand(90, 190)), holdMs: 0, ease: 'easeOutBack' },
+    { pose: 'idle', durationMs: Math.round(rand(180, 280)), holdMs: 40, ease: 'easeInOut' },
   ]
 
   for (let i = 0; i < poseCount; i += 1) {
@@ -169,7 +168,7 @@ export function createDynamicRandomSequence(attributes: DynamicDanceAttributes =
     loop: true,
     defaultBpm: Math.round(clamp(96 + wildness * 32 + flux * 180, 92, 168)),
     intensity: clamp(0.82 + wildness * 0.18, 0.8, 1.28),
-    loose: clamp(0.78 + wildness * 0.12, 0.72, 0.96),
+    loose: clamp(0.86 + wildness * 0.08, 0.84, 0.96),
     reducedMotion: { sequence: 'goofyTwoStep', intensity: 0.25, disableAccents: true },
     poses,
     triggerAccents: {
