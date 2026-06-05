@@ -8,6 +8,6 @@ export const puppetDancerPresets: ScenePresetDef[] = [
     weight: 2,
     reducedMotionPreset: 'quietPulse',
     layers: [{ animationId: 'puppetDancer', role: 'subject',
-      options: { opacity: 1, zIndex: 101, blendMode: 'normal', intensity: 0.8, sensitivity: 0.8, sequence: 'goofyTwoStep', preset: 'tame' } }],
+      options: { opacity: 1, zIndex: 101, blendMode: 'normal', intensity: 0.8, sensitivity: 0.8, sequence: 'dynamicRandom', preset: 'tame' } }],
   },
 ]

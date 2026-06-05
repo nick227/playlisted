@@ -1,3 +1,5 @@
+import { LEFT_ATTACH, RIGHT_ATTACH } from '../rig/armAttach'
+import { clampJointAngle } from '../rig/jointLimits'
 import type { PuppetJointId } from '../rig/rigTypes'
 
 export type ArmPostureId = 'leftUpRightDown' | 'rightUpLeftDown' | 'bothUp' | 'bothDown' | 'balanced'
@@ -12,8 +14,7 @@ export type ArmRotations = Pick<
  * Shoulders stay near 190° / -10° to attach on the correct side of the chest.
  * Negative elbow + wrist angles raise the hand; positive angles lower it.
  */
-export const LEFT_ATTACH = 190
-export const RIGHT_ATTACH = -10
+export { LEFT_ATTACH, RIGHT_ATTACH } from '../rig/armAttach'
 
 export const ARM_POSTURE_IDS: ArmPostureId[] = [
   'leftUpRightDown',
@@ -90,11 +91,11 @@ export function jitterArmPosture(
   const spread = amount * wildness
   const jitter = (value: number) => value + (Math.random() * 2 - 1) * spread
   return {
-    leftShoulder: jitter(posture.leftShoulder),
-    leftElbow: jitter(posture.leftElbow),
+    leftShoulder: clampJointAngle('leftShoulder', jitter(posture.leftShoulder)),
+    leftElbow: clampJointAngle('leftElbow', jitter(posture.leftElbow)),
     leftWrist: jitter(posture.leftWrist),
-    rightShoulder: jitter(posture.rightShoulder),
-    rightElbow: jitter(posture.rightElbow),
+    rightShoulder: clampJointAngle('rightShoulder', jitter(posture.rightShoulder)),
+    rightElbow: clampJointAngle('rightElbow', jitter(posture.rightElbow)),
     rightWrist: jitter(posture.rightWrist),
   }
 }

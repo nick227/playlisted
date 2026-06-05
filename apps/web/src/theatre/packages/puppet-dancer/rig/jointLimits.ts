@@ -1,3 +1,4 @@
+import { LEFT_ATTACH, RIGHT_ATTACH } from './armAttach'
 import type { PuppetJointId } from './rigTypes'
 
 export type JointLimit = {
@@ -5,14 +6,21 @@ export type JointLimit = {
   max: number
 }
 
-const FULL_ROTATION: JointLimit = { min: -360, max: 360 }
+/** Keep the upper arm on its side of the chest — prevents inward/double-folded shoulders. */
+export const SHOULDER_LATERAL_SPREAD = 52
 
 /** Authoritative rotation ranges for pose solving and procedural generation. */
 export const JOINT_LIMITS: Partial<Record<PuppetJointId, JointLimit>> = {
-  leftShoulder: FULL_ROTATION,
-  leftElbow: FULL_ROTATION,
-  rightShoulder: FULL_ROTATION,
-  rightElbow: FULL_ROTATION,
+  leftShoulder: {
+    min: LEFT_ATTACH - SHOULDER_LATERAL_SPREAD,
+    max: LEFT_ATTACH + SHOULDER_LATERAL_SPREAD,
+  },
+  rightShoulder: {
+    min: RIGHT_ATTACH - 80,
+    max: RIGHT_ATTACH + SHOULDER_LATERAL_SPREAD,
+  },
+  leftElbow: { min: -142, max: 168 },
+  rightElbow: { min: -182, max: 152 },
   leftHip: { min: 0, max: 240 },
   leftKnee: { min: -40, max: 220 },
   rightHip: { min: -90, max: 170 },

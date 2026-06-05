@@ -14,7 +14,7 @@ import type { DynamicDanceAttributes } from './sequences/dynamicRandom.sequence'
 
 export class PuppetDancerScene extends CanvasAnimation {
   private solver = new PuppetRigSolver(humanRig)
-  private player = new DancePlayer(getDanceSequence('twoStep'), humanRig)
+  private player = new DancePlayer(getDanceSequence(dynamicRandomSequenceId), humanRig)
   private renderer: PuppetRenderer | null = null
   private lastElapsed = 0
   private selectedDanceId: string | null = null
@@ -22,8 +22,8 @@ export class PuppetDancerScene extends CanvasAnimation {
   private loadedReducedMotion = false
   private lastReducedMotion = false
   private danceOptions = listDanceOptions()
-  private autoDance = false
-  private autoSwitchCooldownMs = 0
+  private autoDance = true
+  private autoSwitchCooldownMs = 900
   private autoSwitchRestMs = 700
 
   constructor() {
@@ -33,7 +33,7 @@ export class PuppetDancerScene extends CanvasAnimation {
   async init(container: HTMLElement, context: AnimationContext) {
     await super.init(container, context)
     this.renderer = new PuppetRenderer(this.ctx, defaultHumanSkin)
-    this.selectedDanceId = typeof context.options?.sequence === 'string' ? context.options.sequence : 'twoStep'
+    this.selectedDanceId = typeof context.options?.sequence === 'string' ? context.options.sequence : dynamicRandomSequenceId
     this.activateDance(this.selectedDanceId, Boolean(context.shared?.reducedMotion || context.options?.reducedMotion), true)
     this.canvas.addEventListener('pointerdown', this.onPointerDown)
     this.canvas.addEventListener('click', this.onClick)
@@ -59,7 +59,7 @@ export class PuppetDancerScene extends CanvasAnimation {
     this.lastElapsed = elapsed
 
     const danceId = this.selectedDanceId ?? context.options?.sequence
-    this.activateDance(typeof danceId === 'string' ? danceId : 'twoStep', reducedMotion)
+    this.activateDance(typeof danceId === 'string' ? danceId : dynamicRandomSequenceId, reducedMotion)
     const triggerPreset = String(context.options?.preset ?? (reducedMotion ? 'tame' : 'vivid'))
     const triggers = shared?.getTriggers?.(triggerPreset) ?? getVisualTriggers(shared?.features, triggerPreset)
     this.updateAutoDance(delta, shared?.features, triggers, reducedMotion)
@@ -76,7 +76,7 @@ export class PuppetDancerScene extends CanvasAnimation {
     this.ctx.clearRect(0, 0, w, h)
     this.renderer.drawStage(w, h, energy, lowPower, stageY)
     this.renderer.drawPuppet(joints, pose, stageScale)
-    this.renderer.drawDanceSelector(w, h, this.danceOptions, String(this.selectedDanceId ?? 'twoStep'), this.autoDance)
+    this.renderer.drawDanceSelector(w, h, this.danceOptions, String(this.selectedDanceId ?? dynamicRandomSequenceId), this.autoDance)
     if (context.options?.debug || context.options?.theatreDev) {
       this.renderer.drawDebug(joints, this.player.getDebugState(), pose)
     }
@@ -166,7 +166,7 @@ export class PuppetDancerScene extends CanvasAnimation {
   }
 
   private activateDance(id: string, reducedMotion: boolean, forceNew = false, attributes?: DynamicDanceAttributes) {
-    const key = id || 'twoStep'
+    const key = id || dynamicRandomSequenceId
     if (!forceNew && this.loadedDanceKey === key && this.loadedReducedMotion === reducedMotion) return
     this.selectedDanceId = key
     this.player.setSequence(getDanceSequence(key, reducedMotion, attributes))
