@@ -88,7 +88,7 @@ export function jitterArmPosture(
   wildness: number,
   amount = 10,
 ): ArmRotations {
-  const spread = amount * wildness
+  const spread = amount * wildness * 0.65
   const jitter = (value: number) => value + (Math.random() * 2 - 1) * spread
   return {
     leftShoulder: clampJointAngle('leftShoulder', jitter(posture.leftShoulder)),

@@ -1,21 +1,28 @@
 import { describe, expect, it } from 'vitest'
 
-import { LEFT_ATTACH, RIGHT_ATTACH } from './armAttach'
-import { JOINT_LIMITS, SHOULDER_LATERAL_SPREAD, clampJointAngle } from './jointLimits'
+import {
+  LEFT_SHOULDER_FORWARD_MAX,
+  LEFT_SHOULDER_FORWARD_MIN,
+  RIGHT_SHOULDER_FORWARD_MAX,
+  RIGHT_SHOULDER_FORWARD_MIN,
+} from './armAttach'
+import { JOINT_LIMITS, clampJointAngle } from './jointLimits'
 
 describe('puppet joint limits', () => {
-  it('keeps shoulders near their lateral attach points', () => {
+  it('keeps shoulders in the forward arc away from the body', () => {
     expect(JOINT_LIMITS.leftShoulder).toEqual({
-      min: LEFT_ATTACH - SHOULDER_LATERAL_SPREAD,
-      max: LEFT_ATTACH + SHOULDER_LATERAL_SPREAD,
+      min: LEFT_SHOULDER_FORWARD_MIN,
+      max: LEFT_SHOULDER_FORWARD_MAX,
     })
-    expect(JOINT_LIMITS.rightShoulder?.min).toBe(RIGHT_ATTACH - 80)
-    expect(JOINT_LIMITS.rightShoulder?.max).toBe(RIGHT_ATTACH + SHOULDER_LATERAL_SPREAD)
+    expect(JOINT_LIMITS.rightShoulder).toEqual({
+      min: RIGHT_SHOULDER_FORWARD_MIN,
+      max: RIGHT_SHOULDER_FORWARD_MAX,
+    })
 
-    expect(clampJointAngle('leftShoulder', 90)).toBe(LEFT_ATTACH - SHOULDER_LATERAL_SPREAD)
-    expect(clampJointAngle('leftShoulder', 250)).toBe(LEFT_ATTACH + SHOULDER_LATERAL_SPREAD)
-    expect(clampJointAngle('rightShoulder', -120)).toBe(RIGHT_ATTACH - 80)
-    expect(clampJointAngle('rightShoulder', 80)).toBe(RIGHT_ATTACH + SHOULDER_LATERAL_SPREAD)
+    expect(clampJointAngle('leftShoulder', 40)).toBe(LEFT_SHOULDER_FORWARD_MIN)
+    expect(clampJointAngle('leftShoulder', 250)).toBe(LEFT_SHOULDER_FORWARD_MAX)
+    expect(clampJointAngle('rightShoulder', -90)).toBe(RIGHT_SHOULDER_FORWARD_MIN)
+    expect(clampJointAngle('rightShoulder', 140)).toBe(RIGHT_SHOULDER_FORWARD_MAX)
   })
 
   it('blocks extreme elbow folds while keeping authored arm postures valid', () => {

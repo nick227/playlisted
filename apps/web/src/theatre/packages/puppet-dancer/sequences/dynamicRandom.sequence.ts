@@ -17,6 +17,26 @@ export type DynamicDanceAttributes = {
   highsFlux?: number
 }
 
+export type DanceStyleVector = {
+  bounce: number
+  sway: number
+  stiffness: number
+  asymmetry: number
+  limbChaos: number
+  faceDrama: number
+  grounded: number
+  tempo: number
+}
+
+type PhraseEnvelopeShape = 'riseFall' | 'doublePeak' | 'lateSpike' | 'sawRamp' | 'sinePulse'
+
+type PhraseEnvelope = {
+  shape: PhraseEnvelopeShape
+  attack: number
+  release: number
+  pulse: number
+}
+
 const leftLeg: PuppetJointId[] = ['leftHip', 'leftKnee', 'leftAnkle']
 const rightLeg: PuppetJointId[] = ['rightHip', 'rightKnee', 'rightAnkle']
 const body: PuppetJointId[] = ['hips', 'spine', 'chest', 'neck', 'head']
@@ -31,6 +51,10 @@ function clamp(value: number, min: number, max: number) {
 
 function rand(min: number, max: number) {
   return min + Math.random() * (max - min)
+}
+
+function lerp(a: number, b: number, amount: number) {
+  return a + (b - a) * amount
 }
 
 function maybe(chance: number) {
@@ -54,23 +78,108 @@ function spread(value: number, amount: number, wildness: number) {
   return value + rand(-amount, amount) * wildness
 }
 
-function mirroredRandomPose(prefix: string, index: number, wildness: number, attributes: DynamicDanceAttributes): PuppetPoseMap {
+function smoothstep(value: number) {
+  const t = clamp(value, 0, 1)
+  return t * t * (3 - 2 * t)
+}
+
+function triangle(value: number) {
+  const t = value - Math.floor(value)
+  return 1 - Math.abs(t * 2 - 1)
+}
+
+function createStyleVector(attributes: DynamicDanceAttributes): DanceStyleVector {
+  const energy = attributes.energy ?? 0
   const bass = attributes.bass ?? 0
   const highs = attributes.highs ?? 0
-  const crouch = rand(0, 1) < 0.24 + bass * 0.45
-  const airy = rand(0, 1) < 0.2 + highs * 0.5
-  const side = maybe(0.5) ? -1 : 1
-  const legSwing = rand(16, crouch ? 62 : 42) * wildness
+  const flux = attributes.flux ?? 0
+  const chaos = Math.max(attributes.bassFlux ?? 0, attributes.highsFlux ?? 0)
+  const styleLean = rand(0, 1)
+  return {
+    bounce: clamp(rand(0.22, 0.8) + bass * 0.85 + energy * 0.25, 0, 1),
+    sway: clamp(rand(0.22, 0.9) + (styleLean < 0.33 ? 0.22 : 0) + flux * 0.45, 0, 1),
+    stiffness: clamp(rand(0.04, 0.46) + (styleLean > 0.78 ? 0.38 : 0) - flux * 0.16, 0, 1),
+    asymmetry: clamp(rand(0.12, 0.78) + chaos * 1.3, 0, 1),
+    limbChaos: clamp(rand(0.18, 0.76) + highs * 0.85 + chaos * 1.1, 0, 1),
+    faceDrama: clamp(rand(0.24, 0.9) + highs * 0.55 + energy * 0.25, 0, 1),
+    grounded: clamp(rand(0.2, 0.84) + bass * 0.55 - highs * 0.18, 0, 1),
+    tempo: clamp(rand(0.28, 0.88) + flux * 1.7 + energy * 0.45, 0, 1),
+  }
+}
+
+function createPhraseEnvelope(style: DanceStyleVector): PhraseEnvelope {
+  const shapes: PhraseEnvelopeShape[] = ['riseFall', 'doublePeak', 'lateSpike', 'sawRamp', 'sinePulse']
+  const shape = style.bounce > 0.72 && maybe(0.45)
+    ? 'sawRamp'
+    : style.limbChaos > 0.72 && maybe(0.5)
+      ? 'doublePeak'
+      : pick(shapes)
+  return {
+    shape,
+    attack: rand(0.18, 0.42),
+    release: rand(0.2, 0.52),
+    pulse: rand(1.4, 3.8),
+  }
+}
+
+function envelopeValue(envelope: PhraseEnvelope, t: number) {
+  const x = clamp(t, 0, 1)
+  if (envelope.shape === 'doublePeak') {
+    const first = Math.exp(-Math.pow((x - 0.28) / 0.18, 2))
+    const second = Math.exp(-Math.pow((x - 0.72) / 0.16, 2))
+    return clamp(Math.max(first, second) * 0.92 + triangle(x * envelope.pulse) * 0.18, 0, 1)
+  }
+  if (envelope.shape === 'lateSpike') {
+    return clamp(smoothstep((x - 0.42) / Math.max(0.08, envelope.attack)) * (1 - smoothstep((x - 0.88) / Math.max(0.08, envelope.release))), 0, 1)
+  }
+  if (envelope.shape === 'sawRamp') {
+    return clamp(0.18 + x * 0.82 + triangle(x * envelope.pulse) * 0.24, 0, 1)
+  }
+  if (envelope.shape === 'sinePulse') {
+    return clamp(0.28 + Math.sin(x * Math.PI) * 0.5 + triangle(x * envelope.pulse) * 0.28, 0, 1)
+  }
+  return clamp(smoothstep(x / envelope.attack) * (1 - smoothstep((x - (1 - envelope.release)) / envelope.release)), 0, 1)
+}
+
+function mirroredRandomPose(
+  prefix: string,
+  index: number,
+  poseCount: number,
+  wildness: number,
+  style: DanceStyleVector,
+  envelope: PhraseEnvelope,
+  phrasePhase: number,
+  attributes: DynamicDanceAttributes,
+): PuppetPoseMap {
+  const bass = attributes.bass ?? 0
+  const highs = attributes.highs ?? 0
+  const t = poseCount <= 1 ? 0 : index / (poseCount - 1)
+  const envelopeEnergy = envelopeValue(envelope, t)
+  const phrase = phrasePhase + t * Math.PI * 2
+  const motion = clamp(0.18 + envelopeEnergy * 0.92, 0.18, 1.12)
+  const side = maybe(style.asymmetry * 0.28) ? (maybe(0.5) ? -1 : 1) : (index % 2 === 0 ? -1 : 1)
+  const counter = Math.sin(phrase)
+  const bounceWave = triangle(t * (1.1 + style.bounce * 2.6))
+  const crouch = rand(0, 1) < 0.14 + bass * 0.36 + style.bounce * 0.28 + envelopeEnergy * 0.18
+  const airy = rand(0, 1) < 0.12 + highs * 0.45 + style.limbChaos * 0.22 - style.grounded * 0.12
+  const legSwing = lerp(10, crouch ? 64 : 46, motion * (0.35 + style.bounce * 0.85)) * wildness
   const armPosture = pickArmPosture({ bass, highs, energy: attributes.energy })
-  const arms = jitterArmPosture(ARM_POSTURES[armPosture], wildness, airy ? 14 : 10)
+  const arms = jitterArmPosture(
+    ARM_POSTURES[armPosture],
+    wildness * lerp(0.32, 1.35, motion * (0.4 + style.limbChaos * 0.8)),
+    lerp(4, airy ? 24 : 16, 1 - style.stiffness),
+  )
+  const swayRange = lerp(3, 28, style.sway) * motion
+  const torsoCounter = lerp(0.55, 1.45, 1 - style.stiffness)
+  const bounceDrop = bounceWave * lerp(2, 24, style.bounce) * motion
 
   const rotations: Partial<Record<PuppetJointId, number>> = {
     root: -90,
-    hips: spread(side * rand(2, 18), 10, wildness),
-    spine: spread(-90 - side * rand(0, 20), 18, wildness),
-    chest: spread(-90 + side * rand(8, 32), 24, wildness),
-    neck: spread(-90 - side * rand(0, 18), 16, wildness),
-    head: spread(-90 + side * rand(8, 36), 28, wildness),
+    hips: spread(side * swayRange * 0.55 + counter * swayRange * 0.4, 6, wildness * motion),
+    spine: spread(-90 - side * swayRange * 0.5, 9, wildness * motion),
+    chest: spread(-90 + side * swayRange * torsoCounter, 12, wildness * motion),
+    neck: spread(-90 - side * swayRange * 0.44, 8, wildness * motion),
+    head: spread(-90 + side * swayRange * lerp(0.7, 1.35, style.faceDrama), 15, wildness * motion),
 
     leftShoulder: clampJointAngle('leftShoulder', arms.leftShoulder),
     leftElbow: clampJointAngle('leftElbow', arms.leftElbow),
@@ -79,17 +188,17 @@ function mirroredRandomPose(prefix: string, index: number, wildness: number, att
     rightElbow: clampJointAngle('rightElbow', arms.rightElbow),
     rightWrist: clamp(arms.rightWrist, -200, 26),
 
-    leftHip: clampJointAngle('leftHip', (crouch ? 126 : 150) - side * legSwing + rand(-16, 16)),
-    leftKnee: clampJointAngle('leftKnee', (crouch ? 132 : 102) + rand(-36, 44) * wildness),
-    leftAnkle: clamp(88 + side * rand(-32, 36) * wildness, 42, 136),
-    rightHip: clampJointAngle('rightHip', (crouch ? 54 : 30) - side * legSwing * 0.8 + rand(-16, 16)),
-    rightKnee: clampJointAngle('rightKnee', (crouch ? 54 : 78) + rand(-42, 38) * wildness),
-    rightAnkle: clamp(92 + side * rand(-36, 32) * wildness, 44, 138),
+    leftHip: clampJointAngle('leftHip', (crouch ? 126 : 150) - side * legSwing + rand(-10, 10) * (1 - style.stiffness)),
+    leftKnee: clampJointAngle('leftKnee', (crouch ? 128 : 98) + bounceDrop + rand(-24, 34) * wildness * motion),
+    leftAnkle: clamp(88 + side * rand(-24, 32) * wildness * motion - bounceDrop * 0.35, 42, 136),
+    rightHip: clampJointAngle('rightHip', (crouch ? 54 : 30) - side * legSwing * 0.82 + rand(-10, 10) * (1 - style.stiffness)),
+    rightKnee: clampJointAngle('rightKnee', (crouch ? 54 : 78) - bounceDrop * 0.4 + rand(-30, 28) * wildness * motion),
+    rightAnkle: clamp(92 + side * rand(-32, 24) * wildness * motion + bounceDrop * 0.28, 44, 138),
   }
 
-  if (maybe(0.18)) {
+  if (maybe(0.08 + style.limbChaos * 0.24 + envelopeEnergy * 0.14)) {
     for (const joint of sample([...leftLeg, ...rightLeg, ...body], rand(1, 3))) {
-      const next = (rotations[joint] ?? 0) + rand(-18, 18) * wildness
+      const next = (rotations[joint] ?? 0) + rand(-18, 18) * wildness * motion * (0.45 + style.limbChaos)
       rotations[joint] = clampJointAngle(joint, next)
     }
   }
@@ -98,42 +207,53 @@ function mirroredRandomPose(prefix: string, index: number, wildness: number, att
     id: `${prefix}Pose${index}`,
     label: `Random ${index + 1}`,
     offset: {
-      x: side * rand(2, 28) * wildness,
-      y: (crouch ? rand(10, 34) : rand(-8, 18)) * clamp(wildness, 0.75, 1.4),
+      x: side * lerp(2, 28, style.sway) * motion + counter * lerp(0, 12, style.asymmetry),
+      y: (crouch ? rand(8, 24) : rand(-6, 12)) * clamp(wildness, 0.75, 1.35) + bounceDrop,
     },
     scale: clamp(rand(0.94, 1.06) + (airy ? 0.035 : 0) - (crouch ? 0.045 : 0), 0.88, 1.12),
     rotations,
     face: {
-      eyeOpen: clamp(rand(0.34, 1.08), 0, 1),
-      pupilX: rand(-0.72, 0.72),
-      pupilY: rand(-0.36, 0.36),
-      leftBrowLift: rand(-0.1, 0.95),
-      rightBrowLift: rand(-0.1, 0.95),
-      leftBrowRotate: rand(-0.42, 0.42),
-      rightBrowRotate: rand(-0.42, 0.42),
-      mouthOpen: clamp(rand(0.05, 0.86) + (bass * 0.25), 0, 1),
-      mouthSmile: rand(-0.45, 0.82),
-      topLipY: rand(-0.35, 0.22),
-      bottomLipY: rand(-0.16, 0.42),
-      tongue: maybe(0.1) ? rand(0.16, 0.48) : 0,
+      eyeOpen: clamp(lerp(0.84, 0.22, envelopeEnergy * style.faceDrama * 0.8) + rand(-0.12, 0.2), 0, 1),
+      pupilX: clamp(counter * style.faceDrama + rand(-0.22, 0.22), -1, 1),
+      pupilY: clamp(Math.cos(phrase * 0.7) * style.faceDrama * 0.32 + rand(-0.12, 0.12), -1, 1),
+      leftBrowLift: clamp(rand(-0.08, 0.35) + envelopeEnergy * style.faceDrama, -0.2, 1.1),
+      rightBrowLift: clamp(rand(-0.08, 0.35) + envelopeEnergy * style.faceDrama * lerp(0.5, 1.2, style.asymmetry), -0.2, 1.1),
+      leftBrowRotate: rand(-0.18, 0.18) + counter * 0.22 * style.faceDrama,
+      rightBrowRotate: rand(-0.18, 0.18) - counter * 0.22 * style.faceDrama,
+      mouthOpen: clamp(lerp(0.04, 0.88, envelopeEnergy * style.faceDrama) + bass * 0.22 + rand(-0.08, 0.08), 0, 1),
+      mouthSmile: clamp(lerp(-0.32, 0.82, style.faceDrama) + rand(-0.22, 0.22), -0.8, 1),
+      topLipY: rand(-0.16, 0.12) - envelopeEnergy * style.faceDrama * 0.18,
+      bottomLipY: rand(-0.08, 0.2) + envelopeEnergy * style.faceDrama * 0.28,
+      tongue: maybe(0.035 + envelopeEnergy * style.limbChaos * 0.11) ? rand(0.12, 0.5) : 0,
     },
   }
 }
 
-function createStep(pose: string, index: number, wildness: number, attributes: DynamicDanceAttributes): MotionStep {
+function createStep(
+  pose: string,
+  index: number,
+  poseCount: number,
+  wildness: number,
+  style: DanceStyleVector,
+  envelope: PhraseEnvelope,
+  attributes: DynamicDanceAttributes,
+): MotionStep {
   const flux = attributes.flux ?? 0
   const bass = attributes.bass ?? 0
-  const fast = flux > 0.12 || (attributes.highsFlux && attributes.highsFlux > 0.08)
-  const durationBase = fast ? rand(240, 360) : rand(360, 560)
+  const t = poseCount <= 1 ? 0 : index / (poseCount - 1)
+  const envelopeEnergy = envelopeValue(envelope, t)
+  const fast = flux > 0.12 || (attributes.highsFlux && attributes.highsFlux > 0.08) || style.tempo > 0.74
+  const durationBase = fast ? rand(230, 360) : rand(380, 620)
+  const durationScale = lerp(1.14, 0.54, envelopeEnergy * style.tempo) * lerp(0.84, 1.2, style.stiffness)
   return {
     pose,
-    durationMs: Math.round(clamp(durationBase / clamp(wildness, 0.9, 1.45), 220, 680)),
-    holdMs: maybe(0.42) ? Math.round(rand(50, 160)) : 0,
-    ease: index % 5 === 0 && wildness > 1.2 ? pick(eases) : 'easeInOut',
-    intensity: clamp(rand(0.72, 1.02) + bass * 0.14, 0.58, 1.15),
-    accents: sample(accents, maybe(0.22) ? 2 : 1),
-    advanceOn: maybe(0.22) ? 'beat' : undefined,
-    beatSnap: maybe(0.28),
+    durationMs: Math.round(clamp(durationBase * durationScale / clamp(wildness, 0.9, 1.45), 150, 720)),
+    holdMs: maybe(lerp(0.18, 0.54, style.stiffness)) ? Math.round(rand(40, 180) * lerp(0.7, 1.35, 1 - envelopeEnergy)) : 0,
+    ease: envelopeEnergy > 0.72 && wildness > 1.12 ? pick(eases) : 'easeInOut',
+    intensity: clamp(lerp(0.56, 1.24, envelopeEnergy) + bass * 0.14 + rand(-0.08, 0.08), 0.48, 1.35),
+    accents: sample(accents, maybe(0.12 + envelopeEnergy * 0.38 + style.limbChaos * 0.18) ? 2 : 1),
+    advanceOn: maybe(0.1 + envelopeEnergy * 0.26) ? 'beat' : undefined,
+    beatSnap: maybe(0.18 + style.bounce * 0.34 + envelopeEnergy * 0.2),
   }
 }
 
@@ -146,6 +266,9 @@ export function createDynamicRandomSequence(attributes: DynamicDanceAttributes =
   const highs = attributes.highs ?? 0
   const chaos = Math.max(attributes.bassFlux ?? 0, attributes.highsFlux ?? 0)
   const wildness = clamp(0.82 + energy * 1.1 + flux * 1.6 + bass * 0.5 + highs * 0.5 + chaos * 1.8, 0.8, 1.45)
+  const style = createStyleVector(attributes)
+  const envelope = createPhraseEnvelope(style)
+  const phrasePhase = rand(0, Math.PI * 2)
   const poseCount = Math.round(clamp(rand(4, 8) + wildness * 1.4, 5, 10))
   const poses: Record<string, PuppetPoseMap> = { idle: idlePose }
   const steps: MotionStep[] = [
@@ -153,10 +276,10 @@ export function createDynamicRandomSequence(attributes: DynamicDanceAttributes =
   ]
 
   for (let i = 0; i < poseCount; i += 1) {
-    const pose = mirroredRandomPose(posePrefix, i, wildness, attributes)
+    const pose = mirroredRandomPose(posePrefix, i, poseCount, wildness, style, envelope, phrasePhase, attributes)
     poses[pose.id] = pose
-    steps.push(createStep(pose.id, i, wildness, attributes))
-    if (maybe(0.22)) steps.push(createStep('idle', i, wildness * 0.8, attributes))
+    steps.push(createStep(pose.id, i, poseCount, wildness, style, envelope, attributes))
+    if (maybe(0.12 + style.stiffness * 0.16)) steps.push(createStep('idle', i, poseCount, wildness * 0.8, style, envelope, attributes))
   }
 
   return {
@@ -167,8 +290,8 @@ export function createDynamicRandomSequence(attributes: DynamicDanceAttributes =
     author: 'Playlisted dynamic map generator',
     loop: true,
     defaultBpm: Math.round(clamp(96 + wildness * 32 + flux * 180, 92, 168)),
-    intensity: clamp(0.82 + wildness * 0.18, 0.8, 1.28),
-    loose: clamp(0.86 + wildness * 0.08, 0.84, 0.96),
+    intensity: clamp(0.72 + wildness * 0.16 + style.bounce * 0.16 + style.limbChaos * 0.12, 0.72, 1.32),
+    loose: clamp(0.78 + (1 - style.stiffness) * 0.18 + style.limbChaos * 0.05, 0.78, 0.98),
     reducedMotion: { sequence: 'goofyTwoStep', intensity: 0.25, disableAccents: true },
     poses,
     triggerAccents: {
