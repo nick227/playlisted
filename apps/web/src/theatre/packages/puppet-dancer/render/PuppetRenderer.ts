@@ -16,9 +16,10 @@ type Segment = readonly [string, string]
 const TORSO_SEGMENTS: Segment[] = [
   ['hips', 'spine'], ['spine', 'chest'], ['chest', 'neck'], ['neck', 'head'],
 ]
+/** Upper-arm stubs (chest→shoulder) stay in the rig but are not drawn — they looked like fixed bars on the chest. */
 const ARM_SEGMENTS: Segment[] = [
-  ['chest', 'leftShoulder'], ['leftShoulder', 'leftElbow'], ['leftElbow', 'leftWrist'],
-  ['chest', 'rightShoulder'], ['rightShoulder', 'rightElbow'], ['rightElbow', 'rightWrist'],
+  ['leftShoulder', 'leftElbow'], ['leftElbow', 'leftWrist'],
+  ['rightShoulder', 'rightElbow'], ['rightElbow', 'rightWrist'],
 ]
 const LEG_SEGMENTS: Segment[] = [
   ['hips', 'leftHip'], ['leftHip', 'leftKnee'], ['leftKnee', 'leftAnkle'],
