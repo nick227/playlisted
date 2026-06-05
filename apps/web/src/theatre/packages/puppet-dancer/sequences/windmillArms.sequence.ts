@@ -3,7 +3,7 @@ import { poseVariant } from '../poses/poseAuthoring'
 import type { DanceMap } from './sequenceTypes'
 
 const windmillTopPose = poseVariant(leftStepPose, 'windmillTop', 'Windmill Top', {
-  rotations: { leftShoulder: 250, leftElbow: 210, leftWrist: 190, rightShoulder: -90, rightElbow: -132, rightWrist: -148, chest: -8 },
+  rotations: { leftShoulder: 120, leftElbow: -95, leftWrist: -70, rightShoulder: 60, rightElbow: -95, rightWrist: -70, chest: -8 },
 })
 
 const windmillBottomPose = poseVariant(rightStepPose, 'windmillBottom', 'Windmill Bottom', {

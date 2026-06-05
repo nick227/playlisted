@@ -4,13 +4,13 @@ import type { DanceMap } from './sequenceTypes'
 
 const sleepyLeftPose = poseVariant(leftStepPose, 'sleepyLeft', 'Sleepy Left', {
   offset: { x: -4, y: 4 },
-  rotations: { chest: 14, neck: 22, head: 26, leftShoulder: -20, rightShoulder: 20 },
+  rotations: { chest: 14, neck: 22, head: 26, leftShoulder: 170, rightShoulder: 20 },
   face: { eyes: -0.6, mouth: -0.1, brows: -0.25 },
 })
 
 const sleepyRightPose = poseVariant(rightStepPose, 'sleepyRight', 'Sleepy Right', {
   offset: { x: 4, y: 4 },
-  rotations: { chest: -14, neck: -22, head: -26, leftShoulder: -20, rightShoulder: 20 },
+  rotations: { chest: -14, neck: -22, head: -26, leftShoulder: 170, rightShoulder: 20 },
   face: { eyes: -0.6, mouth: -0.1, brows: -0.25 },
 })
 

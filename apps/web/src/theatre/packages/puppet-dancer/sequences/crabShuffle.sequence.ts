@@ -5,7 +5,7 @@ import type { DanceMap } from './sequenceTypes'
 const crabLeftPose = poseVariant(leftStepPose, 'crabLeft', 'Crab Left', {
   offset: { x: -20, y: 18 },
   scale: 0.95,
-  rotations: { hips: -18, chest: 12, leftKnee: 34, rightKnee: -28, leftShoulder: 246, rightShoulder: -66, leftWrist: -38, rightWrist: 38 },
+  rotations: { hips: -18, chest: 12, leftKnee: 34, rightKnee: -28, leftShoulder: 190, rightShoulder: -10, leftWrist: -38, rightWrist: 38 },
   face: { mouth: 0.25, brows: 0.3 },
 })
 

@@ -3,12 +3,12 @@ import { poseVariant } from '../poses/poseAuthoring'
 import type { DanceMap } from './sequenceTypes'
 
 const salsaLeftPose = poseVariant(leftStepPose, 'salsaLeft', 'Salsa Left', {
-  rotations: { hips: -18, chest: 18, leftShoulder: 206, rightShoulder: 10, leftElbow: 126, rightElbow: -42, head: 8 },
+  rotations: { hips: -18, chest: 18, leftShoulder: 190, rightShoulder: 10, leftElbow: 100, rightElbow: -42, head: 8 },
   face: { mouth: 0.18 },
 })
 
 const salsaRightPose = poseVariant(rightStepPose, 'salsaRight', 'Salsa Right', {
-  rotations: { hips: 18, chest: -18, leftShoulder: 170, rightShoulder: -34, leftElbow: 104, rightElbow: -82, head: -8 },
+  rotations: { hips: 18, chest: -18, leftShoulder: 170, rightShoulder: -10, leftElbow: 104, rightElbow: -82, head: -8 },
   face: { mouth: 0.18 },
 })
 

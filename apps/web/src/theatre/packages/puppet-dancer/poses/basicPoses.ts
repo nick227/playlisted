@@ -61,8 +61,8 @@ export const robotPose: PuppetPoseMap = {
   label: 'Robot',
   rotations: {
     hips: 0, spine: -90, chest: -76, neck: -76, head: -76,
-    leftShoulder: 180, leftElbow: 180, leftWrist: 90,
-    rightShoulder: 0, rightElbow: 0, rightWrist: -90,
+    leftShoulder: 180, leftElbow: 105, leftWrist: 90,
+    rightShoulder: -10, rightElbow: 0, rightWrist: -90,
     leftHip: 155, leftKnee: 88, leftAnkle: 88,
     rightHip: 25, rightKnee: 92, rightAnkle: 92,
   },

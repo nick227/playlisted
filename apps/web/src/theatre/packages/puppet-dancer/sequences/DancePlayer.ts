@@ -1,7 +1,7 @@
 import type { TriggerFrame } from '../../../audio/VisualTriggers'
 import { getNamedAccent } from '../poses/namedAccents'
 import type { FaceState, MotionAccentMap, PuppetPoseMap, ResolvedPose } from '../poses/poseTypes'
-import { clampJointAngle } from '../rig/jointLimits'
+import { clampJointAngle, lerpJointAngle } from '../rig/jointLimits'
 import type { PuppetJointId, PuppetRig } from '../rig/rigTypes'
 import type { DanceMap, MotionStep } from './sequenceTypes'
 
@@ -48,11 +48,6 @@ function ease(kind: MotionStep['ease'], value: number) {
 
 function lerp(a: number, b: number, t: number) {
   return a + (b - a) * t
-}
-
-function lerpAngle(from: number, to: number, t: number) {
-  const delta = ((((to - from) % 360) + 540) % 360) - 180
-  return from + delta * t
 }
 
 function addFace(base: FaceState, patch: Partial<FaceState> | undefined, amount: number) {
@@ -376,7 +371,7 @@ export class DancePlayer {
   }
 
   private blendAngle(id: PuppetJointId, from: number, to: number, amount: number): number {
-    if (ARM_JOINTS.has(id)) return lerpAngle(from, to, amount)
+    if (ARM_JOINTS.has(id)) return lerpJointAngle(id, from, to, amount)
     return lerp(from, to, amount)
   }
 

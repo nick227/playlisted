@@ -5,7 +5,7 @@ import type { DanceMap } from './sequenceTypes'
 const jumpPose = poseVariant(bouncePose, 'jump', 'Jump', {
   offset: { y: -30 },
   scale: 1.04,
-  rotations: { leftKnee: -42, rightKnee: 42, leftAnkle: 22, rightAnkle: -22, leftShoulder: 28, rightShoulder: -28, head: -10 },
+  rotations: { leftKnee: -42, rightKnee: 42, leftAnkle: 22, rightAnkle: -22, leftShoulder: 80, rightShoulder: -10, head: -10 },
   face: { mouth: 0.28, brows: 0.24 },
 })
 

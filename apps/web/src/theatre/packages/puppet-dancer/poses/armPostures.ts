@@ -31,12 +31,12 @@ export const ARM_POSTURES: Record<ArmPostureId, ArmRotations> = {
     leftElbow: -56,
     leftWrist: -88,
     rightShoulder: RIGHT_ATTACH,
-    rightElbow: 124,
+    rightElbow: 100,
     rightWrist: 88,
   },
   rightUpLeftDown: {
     leftShoulder: LEFT_ATTACH,
-    leftElbow: 124,
+    leftElbow: 100,
     leftWrist: 88,
     rightShoulder: RIGHT_ATTACH,
     rightElbow: -56,
@@ -52,10 +52,10 @@ export const ARM_POSTURES: Record<ArmPostureId, ArmRotations> = {
   },
   bothDown: {
     leftShoulder: LEFT_ATTACH,
-    leftElbow: 124,
+    leftElbow: 100,
     leftWrist: 88,
     rightShoulder: RIGHT_ATTACH,
-    rightElbow: 124,
+    rightElbow: 100,
     rightWrist: 88,
   },
   balanced: {
@@ -63,8 +63,8 @@ export const ARM_POSTURES: Record<ArmPostureId, ArmRotations> = {
     leftElbow: -12,
     leftWrist: -24,
     rightShoulder: RIGHT_ATTACH,
-    rightElbow: -168,
-    rightWrist: -156,
+    rightElbow: -88,
+    rightWrist: -76,
   },
 }
 

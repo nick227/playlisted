@@ -3,11 +3,11 @@ import { poseVariant } from '../poses/poseAuthoring'
 import type { DanceMap } from './sequenceTypes'
 
 const waveLeftPose = poseVariant(leftStepPose, 'waveLeft', 'Wave Left', {
-  rotations: { leftShoulder: 242, leftElbow: 98, leftWrist: 34, rightShoulder: -22, rightElbow: -92, rightWrist: -150, head: -10 },
+  rotations: { leftShoulder: 170, leftElbow: 98, leftWrist: 34, rightShoulder: -10, rightElbow: -92, rightWrist: -150, head: -10 },
 })
 
 const waveRightPose = poseVariant(rightStepPose, 'waveRight', 'Wave Right', {
-  rotations: { leftShoulder: 146, leftElbow: 82, leftWrist: 140, rightShoulder: -74, rightElbow: -20, rightWrist: -26, head: 10 },
+  rotations: { leftShoulder: 146, leftElbow: 82, leftWrist: 140, rightShoulder: -10, rightElbow: -20, rightWrist: -26, head: 10 },
 })
 
 export const wavePopSequence: DanceMap = {

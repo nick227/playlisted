@@ -3,12 +3,12 @@ import { poseVariant } from '../poses/poseAuthoring'
 import type { DanceMap } from './sequenceTypes'
 
 const pointUpPose = poseVariant(rightStepPose, 'pointUp', 'Point Up', {
-  rotations: { rightShoulder: -104, rightElbow: -104, rightWrist: -96, leftShoulder: 196, leftElbow: 142, chest: -14, head: -16 },
+  rotations: { rightShoulder: -10, rightElbow: -95, rightWrist: -88, leftShoulder: 190, leftElbow: 100, chest: -14, head: -16 },
   face: { mouth: 0.28, brows: 0.2 },
 })
 
 const pointDownPose = poseVariant(leftStepPose, 'pointDown', 'Point Down', {
-  rotations: { rightShoulder: 34, rightElbow: 18, rightWrist: 32, leftShoulder: 238, leftElbow: 170, chest: 18, head: 14 },
+  rotations: { rightShoulder: 34, rightElbow: 18, rightWrist: 32, leftShoulder: 190, leftElbow: 105, chest: 18, head: 14 },
   face: { mouth: 0.22, brows: 0.18 },
 })
 
