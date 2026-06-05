@@ -7,6 +7,14 @@ export type ArmRotations = Pick<
   'leftShoulder' | 'leftElbow' | 'leftWrist' | 'rightShoulder' | 'rightElbow' | 'rightWrist'
 >
 
+/**
+ * The rig solver uses absolute canvas angles (y grows downward).
+ * Shoulders stay near 190° / -10° to attach on the correct side of the chest.
+ * Negative elbow + wrist angles raise the hand; positive angles lower it.
+ */
+export const LEFT_ATTACH = 190
+export const RIGHT_ATTACH = -10
+
 export const ARM_POSTURE_IDS: ArmPostureId[] = [
   'leftUpRightDown',
   'rightUpLeftDown',
@@ -15,47 +23,47 @@ export const ARM_POSTURE_IDS: ArmPostureId[] = [
   'balanced',
 ]
 
-/** Canonical arm configurations — angle values match the rig's left-high / right-low convention. */
+/** Visual left raised, right lowered. */
 export const ARM_POSTURES: Record<ArmPostureId, ArmRotations> = {
   leftUpRightDown: {
-    leftShoulder: 188,
+    leftShoulder: LEFT_ATTACH,
+    leftElbow: -56,
+    leftWrist: -88,
+    rightShoulder: RIGHT_ATTACH,
+    rightElbow: 124,
+    rightWrist: 88,
+  },
+  rightUpLeftDown: {
+    leftShoulder: LEFT_ATTACH,
     leftElbow: 124,
     leftWrist: 88,
-    rightShoulder: -8,
+    rightShoulder: RIGHT_ATTACH,
     rightElbow: -56,
     rightWrist: -88,
   },
-  rightUpLeftDown: {
-    leftShoulder: 34,
-    leftElbow: -42,
-    leftWrist: -62,
-    rightShoulder: 214,
-    rightElbow: 148,
-    rightWrist: 112,
-  },
   bothUp: {
-    leftShoulder: 228,
-    leftElbow: 156,
-    leftWrist: 122,
-    rightShoulder: -92,
-    rightElbow: -88,
-    rightWrist: -68,
+    leftShoulder: LEFT_ATTACH,
+    leftElbow: -56,
+    leftWrist: -88,
+    rightShoulder: RIGHT_ATTACH,
+    rightElbow: -56,
+    rightWrist: -88,
   },
   bothDown: {
-    leftShoulder: 54,
-    leftElbow: 98,
-    leftWrist: 74,
-    rightShoulder: -54,
-    rightElbow: -98,
-    rightWrist: -74,
+    leftShoulder: LEFT_ATTACH,
+    leftElbow: 124,
+    leftWrist: 88,
+    rightShoulder: RIGHT_ATTACH,
+    rightElbow: 124,
+    rightWrist: 88,
   },
   balanced: {
-    leftShoulder: 162,
-    leftElbow: 108,
-    leftWrist: 76,
-    rightShoulder: 18,
-    rightElbow: -40,
-    rightWrist: -66,
+    leftShoulder: LEFT_ATTACH,
+    leftElbow: -12,
+    leftWrist: -24,
+    rightShoulder: RIGHT_ATTACH,
+    rightElbow: -168,
+    rightWrist: -156,
   },
 }
 
@@ -66,12 +74,12 @@ export function pickArmPosture(audio: { bass?: number; highs?: number; energy?: 
 
   if (highs > 0.42 && roll < 0.42) return 'bothUp'
   if (bass > 0.4 && roll < 0.36) return 'bothDown'
-  if (roll < 0.18) return 'rightUpLeftDown'
-  if (roll < 0.38) return 'balanced'
-  if (roll < 0.56) return 'bothUp'
-  if (roll < 0.72) return 'bothDown'
-  if (roll < 0.86) return 'leftUpRightDown'
-  return 'rightUpLeftDown'
+  if (roll < 0.2) return 'leftUpRightDown'
+  if (roll < 0.4) return 'balanced'
+  if (roll < 0.58) return 'bothUp'
+  if (roll < 0.74) return 'bothDown'
+  if (roll < 0.87) return 'rightUpLeftDown'
+  return 'leftUpRightDown'
 }
 
 export function jitterArmPosture(

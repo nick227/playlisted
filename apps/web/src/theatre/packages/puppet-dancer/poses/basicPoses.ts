@@ -7,8 +7,7 @@ export const idlePose: PuppetPoseMap = {
   label: 'Idle',
   rotations: {
     root: -90, hips: 0, spine: -90, chest: -90, neck: -92, head: -88,
-    leftShoulder: 188, leftElbow: 124, leftWrist: 88,
-    rightShoulder: -8, rightElbow: -56, rightWrist: -88,
+    ...ARM_POSTURES.balanced,
     leftHip: 150, leftKnee: 102, leftAnkle: 88,
     rightHip: 30, rightKnee: 78, rightAnkle: 92,
   },
@@ -22,8 +21,7 @@ export const leftStepPose: PuppetPoseMap = {
   scale: 1.02,
   rotations: {
     hips: -6, spine: -94, chest: -100, neck: -98, head: -104,
-    leftShoulder: 218, leftElbow: 156, leftWrist: 120,
-    rightShoulder: 18, rightElbow: -38, rightWrist: -56,
+    ...ARM_POSTURES.rightUpLeftDown,
     leftHip: 128, leftKnee: 76, leftAnkle: 102,
     rightHip: 48, rightKnee: 102, rightAnkle: 84,
   },
@@ -37,8 +35,7 @@ export const rightStepPose: PuppetPoseMap = {
   scale: 1.02,
   rotations: {
     hips: 6, spine: -86, chest: -80, neck: -82, head: -76,
-    leftShoulder: 162, leftElbow: 108, leftWrist: 70,
-    rightShoulder: -38, rightElbow: -78, rightWrist: -120,
+    ...ARM_POSTURES.leftUpRightDown,
     leftHip: 132, leftKnee: 96, leftAnkle: 88,
     rightHip: 68, rightKnee: 126, rightAnkle: 76,
   },
@@ -52,8 +49,7 @@ export const bouncePose: PuppetPoseMap = {
   scale: 0.98,
   rotations: {
     hips: 0, spine: -88, chest: -92, neck: -90, head: -90,
-    leftShoulder: 210, leftElbow: 138, leftWrist: 122,
-    rightShoulder: -30, rightElbow: -72, rightWrist: -118,
+    ...ARM_POSTURES.bothUp,
     leftHip: 138, leftKnee: 122, leftAnkle: 74,
     rightHip: 42, rightKnee: 58, rightAnkle: 106,
   },
@@ -75,12 +71,10 @@ export const robotPose: PuppetPoseMap = {
 
 export const noodleLeftPose = poseVariant(leftStepPose, 'noodleLeft', 'Noodle Left', {
   rotations: {
-    leftShoulder: 32,
-    leftElbow: -44,
-    leftWrist: 62,
-    rightShoulder: -18,
-    rightElbow: 38,
-    rightWrist: -58,
+    leftElbow: -24,
+    leftWrist: -18,
+    rightElbow: 18,
+    rightWrist: 14,
     chest: 8,
     head: -7,
   },
@@ -89,12 +83,10 @@ export const noodleLeftPose = poseVariant(leftStepPose, 'noodleLeft', 'Noodle Le
 
 export const noodleRightPose = poseVariant(rightStepPose, 'noodleRight', 'Noodle Right', {
   rotations: {
-    leftShoulder: 18,
-    leftElbow: -36,
-    leftWrist: 58,
-    rightShoulder: -34,
-    rightElbow: 46,
-    rightWrist: -64,
+    leftElbow: -16,
+    leftWrist: -12,
+    rightElbow: 20,
+    rightWrist: 16,
     chest: -8,
     head: 7,
   },
@@ -105,10 +97,7 @@ export const shimmyLeftPose = poseVariant(idlePose, 'shimmyLeft', 'Shimmy Left',
   offset: { x: -6, y: 2 },
   rotations: {
     chest: -74,
-    leftShoulder: 236,
-    leftElbow: 152,
-    rightShoulder: 28,
-    rightElbow: -36,
+    ...ARM_POSTURES.leftUpRightDown,
     hips: -4,
   },
   face: { mouth: 0.25, brows: 0.25 },
@@ -118,10 +107,7 @@ export const shimmyRightPose = poseVariant(idlePose, 'shimmyRight', 'Shimmy Righ
   offset: { x: 6, y: 2 },
   rotations: {
     chest: -106,
-    leftShoulder: 154,
-    leftElbow: 108,
-    rightShoulder: -56,
-    rightElbow: -82,
+    ...ARM_POSTURES.rightUpLeftDown,
     hips: 4,
   },
   face: { mouth: 0.22, brows: 0.2 },
@@ -157,6 +143,16 @@ export const balancedArmsPose: PuppetPoseMap = {
   face: { eyes: 1, mouth: 0.28, brows: 0.4 },
 }
 
+export const leftLeadPose: PuppetPoseMap = {
+  id: 'leftLead',
+  label: 'Left Arm Lead',
+  rotations: {
+    ...idlePose.rotations,
+    ...ARM_POSTURES.leftUpRightDown,
+  },
+  face: { eyes: 0.9, mouth: 0.42, brows: 0.5 },
+}
+
 export const rightLeadPose: PuppetPoseMap = {
   id: 'rightLead',
   label: 'Right Arm Lead',
@@ -178,10 +174,7 @@ export const panicLowPose = poseVariant(bouncePose, 'panicLow', 'Knees Too Low',
     rightKnee: -38,
     leftAnkle: -22,
     rightAnkle: 22,
-    leftShoulder: 42,
-    rightShoulder: -42,
-    leftWrist: -46,
-    rightWrist: 46,
+    ...ARM_POSTURES.bothDown,
     head: -18,
   },
   face: { eyes: -0.35, mouth: 0.55, brows: 0.55 },
@@ -194,6 +187,7 @@ export const basicPoses = [
   bothUpPose,
   bothDownPose,
   balancedArmsPose,
+  leftLeadPose,
   rightLeadPose,
   bouncePose,
   robotPose,
