@@ -10,12 +10,26 @@ export type PuppetDebugSnapshot = ReturnType<DancePlayer['getDebugState']> & {
   triggers: TriggerFrame | null
 }
 
-const limbs = [
+type Segment = readonly [string, string]
+
+/** Canvas has no per-limb z-index — paint order controls depth. Arms are drawn in front of the torso. */
+const TORSO_SEGMENTS: Segment[] = [
   ['hips', 'spine'], ['spine', 'chest'], ['chest', 'neck'], ['neck', 'head'],
+]
+const ARM_SEGMENTS: Segment[] = [
   ['chest', 'leftShoulder'], ['leftShoulder', 'leftElbow'], ['leftElbow', 'leftWrist'],
   ['chest', 'rightShoulder'], ['rightShoulder', 'rightElbow'], ['rightElbow', 'rightWrist'],
+]
+const LEG_SEGMENTS: Segment[] = [
   ['hips', 'leftHip'], ['leftHip', 'leftKnee'], ['leftKnee', 'leftAnkle'],
   ['hips', 'rightHip'], ['rightHip', 'rightKnee'], ['rightKnee', 'rightAnkle'],
+]
+const JOINTS_BEHIND_ARMS = [
+  'hips', 'spine', 'chest', 'neck',
+  'leftHip', 'rightHip', 'leftKnee', 'rightKnee', 'leftAnkle', 'rightAnkle',
+] as const
+const JOINTS_ARMS = [
+  'leftShoulder', 'leftElbow', 'leftWrist', 'rightShoulder', 'rightElbow', 'rightWrist',
 ] as const
 
 function line(ctx: CanvasRenderingContext2D, from: SolvedJoint, to: SolvedJoint, width: number) {
@@ -25,6 +39,32 @@ function line(ctx: CanvasRenderingContext2D, from: SolvedJoint, to: SolvedJoint,
   ctx.moveTo(from.x, from.y)
   ctx.lineTo(to.x, to.y)
   ctx.stroke()
+}
+
+function drawSegments(
+  ctx: CanvasRenderingContext2D,
+  get: (id: string) => SolvedJoint,
+  segments: Segment[],
+  width: number,
+) {
+  for (const [a, b] of segments) line(ctx, get(a), get(b), width)
+}
+
+function drawJoints(
+  ctx: CanvasRenderingContext2D,
+  joints: Map<string, SolvedJoint>,
+  ids: readonly string[],
+  jointColor: string,
+  faceColor: string,
+) {
+  for (const id of ids) {
+    const joint = joints.get(id)
+    if (!joint) continue
+    ctx.fillStyle = joint.id === 'head' ? faceColor : jointColor
+    ctx.beginPath()
+    ctx.arc(joint.x, joint.y, joint.radius, 0, Math.PI * 2)
+    ctx.fill()
+  }
 }
 
 export class PuppetRenderer {
@@ -60,22 +100,19 @@ export class PuppetRenderer {
     const get = (id: string) => joints.get(id) as SolvedJoint
     const strokeWidth = Math.max(3, 7 * scale)
 
+    const shadowWidth = strokeWidth + 8
+
     this.ctx.strokeStyle = p.shadow
-    line(this.ctx, get('hips'), get('leftAnkle'), strokeWidth + 8)
-    line(this.ctx, get('hips'), get('rightAnkle'), strokeWidth + 8)
-    line(this.ctx, get('chest'), get('leftWrist'), strokeWidth + 8)
-    line(this.ctx, get('chest'), get('rightWrist'), strokeWidth + 8)
+    line(this.ctx, get('hips'), get('leftAnkle'), shadowWidth)
+    line(this.ctx, get('hips'), get('rightAnkle'), shadowWidth)
 
     this.ctx.strokeStyle = p.line
-    for (const [a, b] of limbs) line(this.ctx, get(a), get(b), strokeWidth)
-
-    for (const joint of joints.values()) {
-      if (joint.id === 'eyes' || joint.id === 'mouth' || joint.id === 'brows') continue
-      this.ctx.fillStyle = joint.id === 'head' ? p.face : p.joint
-      this.ctx.beginPath()
-      this.ctx.arc(joint.x, joint.y, joint.radius, 0, Math.PI * 2)
-      this.ctx.fill()
-    }
+    drawSegments(this.ctx, get, TORSO_SEGMENTS, strokeWidth)
+    drawSegments(this.ctx, get, LEG_SEGMENTS, strokeWidth)
+    drawJoints(this.ctx, joints, JOINTS_BEHIND_ARMS, p.joint, p.face)
+    drawSegments(this.ctx, get, ARM_SEGMENTS, strokeWidth)
+    drawJoints(this.ctx, joints, JOINTS_ARMS, p.joint, p.face)
+    drawJoints(this.ctx, joints, ['head'], p.joint, p.face)
 
     this.drawFace(get('head'), pose, scale)
   }
