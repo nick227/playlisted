@@ -18,6 +18,7 @@ class TheatreController extends EventTarget {
   private extractor: AudioFeatureExtractor | null = null
   private featureLoopId: number | null = null
   private frameContext: AnimationContext | null = null
+  private overlayBoundsCleanup: (() => void) | null = null
   private transitioning = false
   private transitionToken = 0
   private readonly onVisibilityChange = () => {
@@ -51,6 +52,7 @@ class TheatreController extends EventTarget {
     this.stopFeatureLoop()
     this.extractor = null
     this.frameContext = null
+    this.clearOverlayBoundsTracking()
     this.overlay?.remove()
     this.overlay = null
     document.body.classList.remove('theatre-active')
@@ -127,9 +129,58 @@ class TheatreController extends EventTarget {
   }
 
   private discardOverlay(el: HTMLElement) {
+    this.clearOverlayBoundsTracking()
     if (el.parentElement) el.parentElement.removeChild(el)
     if (this.overlay === el) this.overlay = null
     document.body.classList.remove('theatre-active')
+  }
+
+  private clearOverlayBoundsTracking() {
+    this.overlayBoundsCleanup?.()
+    this.overlayBoundsCleanup = null
+  }
+
+  private measurePlayerInset() {
+    const playerEl = document.querySelector('[data-bottom-player]') as HTMLElement | null
+    if (playerEl) return Math.max(0, Math.ceil(playerEl.getBoundingClientRect().height))
+
+    const playerSurface = document.querySelector('.bottom-player__surface') as HTMLElement | null
+    if (playerSurface) return Math.max(0, Math.ceil(playerSurface.getBoundingClientRect().height))
+
+    return 0
+  }
+
+  private updateOverlayBounds = () => {
+    if (!this.overlay) return
+
+    const playerInset = this.measurePlayerInset()
+    this.overlay.style.bottom = `${playerInset}px`
+    this.overlay.style.height = 'auto'
+    this.overlay.style.maxHeight = `calc(100dvh - ${playerInset}px)`
+  }
+
+  private trackOverlayBounds() {
+    this.clearOverlayBoundsTracking()
+
+    const playerEl = document.querySelector('[data-bottom-player]') as HTMLElement | null
+    const resizeObserver =
+      typeof ResizeObserver === 'undefined'
+        ? null
+        : new ResizeObserver(() => this.updateOverlayBounds())
+
+    if (playerEl) resizeObserver?.observe(playerEl)
+    window.addEventListener('resize', this.updateOverlayBounds)
+    window.visualViewport?.addEventListener('resize', this.updateOverlayBounds)
+    window.visualViewport?.addEventListener('scroll', this.updateOverlayBounds)
+
+    this.overlayBoundsCleanup = () => {
+      resizeObserver?.disconnect()
+      window.removeEventListener('resize', this.updateOverlayBounds)
+      window.visualViewport?.removeEventListener('resize', this.updateOverlayBounds)
+      window.visualViewport?.removeEventListener('scroll', this.updateOverlayBounds)
+    }
+
+    this.updateOverlayBounds()
   }
 
   private async abortStaleTransition(token: number, overlay: HTMLElement | null) {
@@ -240,23 +291,12 @@ class TheatreController extends EventTarget {
     const overlay = document.createElement('div')
     this.overlay = overlay
     overlay.className = 'theatre-overlay fixed inset-x-0 top-0 z-[9998] flex items-center justify-center'
-    let playerHeight = 0
-    try {
-      const playerEl = document.querySelector('.bottom-player__surface') as HTMLElement | null
-      if (playerEl) playerHeight = Math.round(playerEl.getBoundingClientRect().height)
-    } catch { /* ignore */ }
-    if (!playerHeight) {
-      const spacingToken = getComputedStyle(document.documentElement).getPropertyValue('--spacing-player')
-      const parsed = parseFloat(spacingToken)
-      if (!Number.isNaN(parsed)) playerHeight = Math.round(parsed)
-    }
-    overlay.style.bottom = `${playerHeight}px`
-    overlay.style.height = `${Math.max(0, window.innerHeight - playerHeight)}px`
     overlay.style.pointerEvents = 'auto'
     // Start transparent — animations render one frame before we reveal.
     overlay.style.opacity = '0'
     overlay.style.transition = 'opacity 0.45s cubic-bezier(0.4, 0, 0.2, 1)'
     document.body.appendChild(overlay)
+    this.trackOverlayBounds()
     document.body.classList.add('theatre-active')
 
     const analyser = this.getOrCreateAnalyser()
@@ -375,6 +415,7 @@ class TheatreController extends EventTarget {
       await this.bridge.exit()
       if (!this.stillCurrent(token)) return
 
+      this.clearOverlayBoundsTracking()
       if (this.overlay?.parentElement) this.overlay.parentElement.removeChild(this.overlay)
       this.overlay = null
       document.body.classList.remove('theatre-active')
