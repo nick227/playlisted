@@ -1,7 +1,7 @@
-import type { TriggerFrame } from '../VisualTriggers'
-import { AnimationContext, IAnimation } from '../IAnimation'
-import CanvasAnimation from '../CanvasAnimation'
-import { loadAnimationProgress, saveAnimationProgress } from '../animationProgressStorage'
+import type { TriggerFrame } from '../audio/VisualTriggers'
+import { AnimationContext, IAnimation } from '../core/IAnimation'
+import CanvasAnimation from '../core/CanvasAnimation'
+import { loadAnimationProgress, saveAnimationProgress } from '../controller/animationProgressStorage'
 
 const PROGRESS_ID = 'impossibleAquarium'
 const PROGRESS_VERSION = 1

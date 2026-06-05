@@ -1,4 +1,4 @@
-import { AnimationContext, IAnimation } from '../IAnimation'
+import { AnimationContext, IAnimation } from '../core/IAnimation'
 import jellyBellFactory from './jellyBell'
 import eyeCloudFactory from './eyeCloud'
 import circuitBotFactory from './circuitBot'

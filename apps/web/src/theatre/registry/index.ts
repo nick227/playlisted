@@ -1,9 +1,13 @@
-import type { AnimationMood, AnimationRole, RegistryEntry } from '../IAnimation'
+import type { AnimationMood, AnimationRole, RegistryEntry } from '../core/IAnimation'
 
 const registry = new Map<string, RegistryEntry>()
 
 export function register(entry: RegistryEntry) {
   registry.set(entry.id, entry)
+}
+
+export function has(id: string) {
+  return registry.has(id)
 }
 
 export function get(id: string) {
@@ -64,4 +68,4 @@ export function pickStack(count = 3, preferMood?: AnimationMood, roles: Animatio
   return chosen
 }
 
-export default { register, get, list, pickRandom, pickStack }
+export default { register, has, get, list, pickRandom, pickStack }

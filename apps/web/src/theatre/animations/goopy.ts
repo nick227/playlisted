@@ -1,5 +1,5 @@
-import { AnimationContext, IAnimation } from '../IAnimation'
-import CanvasAnimation from '../CanvasAnimation'
+import { AnimationContext, IAnimation } from '../core/IAnimation'
+import CanvasAnimation from '../core/CanvasAnimation'
 
 const N = 8  // blob anchor points
 

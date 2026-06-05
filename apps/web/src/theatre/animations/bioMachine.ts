@@ -1,6 +1,6 @@
-import { AnimationContext, IAnimation } from '../IAnimation'
-import CanvasAnimation from '../CanvasAnimation'
-import { stepped, frameHold } from '../stopMotion'
+import { AnimationContext, IAnimation } from '../core/IAnimation'
+import CanvasAnimation from '../core/CanvasAnimation'
+import { stepped, frameHold } from '../stopMotion/stopMotion'
 
 export function bioMachineFactory(): IAnimation {
   class BioMachine extends CanvasAnimation {

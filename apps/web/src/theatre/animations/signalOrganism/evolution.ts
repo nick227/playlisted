@@ -1,4 +1,4 @@
-import type { TriggerFrame } from '../../VisualTriggers'
+import type { TriggerFrame } from '../../audio/VisualTriggers'
 import type { OrganismStateMachine } from './state'
 import { clamp, lerp } from './types'
 import { randSigned } from './random'

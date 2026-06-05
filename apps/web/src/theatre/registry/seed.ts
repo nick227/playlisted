@@ -1,113 +1,47 @@
 import registry from './index'
-import { registerPreset } from '../scenePresets'
+import { registerAnimationPackage } from './registerAnimationPackage'
 
-import speakerFactory from '../animations/speaker'
-import spinAmpFactory from '../animations/spinAmp'
-import bioMachineFactory from '../animations/bioMachine'
-import weatherSpeakerFactory from '../animations/weatherSpeaker'
-import stopMotionFlowerStormFactory from '../animations/stopMotionFlowerStorm'
-import impossibleAquariumFactory from '../animations/impossibleAquarium'
-import signalOrganismFactory from '../animations/signalOrganism'
-import monsterCrewFactory from '../animations/monsterCrew'
-import liminalDoomFactory from '../animations/liminalDoom'
-import eqBarsFactory from '../animations/eqBars'
-import rainFactory from '../animations/rain'
+import { speakerPackage } from '../packages/speaker'
+import { bioMachinePackage } from '../packages/bio-machine'
+import { spinAmpPackage } from '../packages/spin-amp'
+import { weatherSpeakerPackage } from '../packages/weather-speaker'
+import { stopMotionFlowerStormPackage } from '../packages/stop-motion-flower-storm'
+import { impossibleAquariumPackage } from '../packages/impossible-aquarium'
+import { signalOrganismPackage } from '../packages/signal-organism'
+import { monsterCrewPackage } from '../packages/monster-crew'
+import { liminalDoomPackage } from '../packages/liminal-doom'
+import { eqBarsPackage } from '../packages/eq-bars'
+import { rainPackage } from '../packages/rain'
+import { puppetDancerPackage } from '../packages/puppet-dancer'
+import { goopyPackage } from '../packages/goopy'
+import { circuitBotPackage } from '../packages/circuit-bot'
+import { eyeCloudPackage } from '../packages/eye-cloud'
+import { jellyBellPackage } from '../packages/jelly-bell'
+import { cuteMonstroPackage } from '../packages/cute-monstro'
+import { monsterWavePackage } from '../packages/monster-wave'
 
-// ─── Animation registry ──────────────────────────────────────────────────────
-
-registry.register({ id: 'speaker',               label: 'Speaker Pulse',          factory: speakerFactory,               visualType: 'canvas', mood: 'calm',    role: 'subject',     weight: 3 })
-registry.register({ id: 'spinAmp',               label: 'Spin Amp',               factory: spinAmpFactory,               visualType: 'canvas', mood: 'calm',    role: 'foreground',  weight: 2 })
-registry.register({ id: 'bioMachine',            label: 'Bio Machine',            factory: bioMachineFactory,            visualType: 'canvas', mood: 'dynamic', role: 'subject',     weight: 1 })
-registry.register({ id: 'weatherSpeaker',        label: 'Weather Speaker',        factory: weatherSpeakerFactory,        visualType: 'canvas', mood: 'dynamic', role: 'background',  weight: 2 })
-registry.register({ id: 'stopMotionFlowerStorm', label: 'Stop-Motion Flower Storm', factory: stopMotionFlowerStormFactory, visualType: 'canvas', mood: 'dynamic', role: 'subject',   weight: 2 })
-registry.register({ id: 'impossibleAquarium',  label: 'Impossible Aquarium',    factory: impossibleAquariumFactory,    visualType: 'canvas', mood: 'dynamic', role: 'subject',   weight: 3 })
-registry.register({ id: 'signalOrganismScene',  label: 'Signal Organism',        factory: signalOrganismFactory,        visualType: 'canvas', mood: 'dynamic', role: 'subject',   weight: 2 })
-registry.register({ id: 'monsterCrew',         label: 'Monster Cycle',          factory: monsterCrewFactory,           visualType: 'canvas', mood: 'dynamic', role: 'subject',   weight: 4 })
-registry.register({ id: 'liminalDoom',         label: 'Liminal Doom',           factory: liminalDoomFactory,           visualType: 'canvas', mood: 'dynamic', role: 'subject',   weight: 1 })
-registry.register({ id: 'eqBars',             label: 'EQ Bars',                factory: eqBarsFactory,                visualType: 'canvas', mood: 'dynamic', role: 'subject',     weight: 3 })
-registry.register({ id: 'rain',              label: 'Rain',                   factory: rainFactory,                  visualType: 'canvas', mood: 'calm',    role: 'background',  weight: 3 })
-
-// ─── Scene presets ────────────────────────────────────────────────────────────
-
-// Reduced-motion base: single calm speaker at low intensity
-registerPreset({
-  id: 'quietPulse', label: 'Quiet Pulse', category: 'production', weight: 1,
-  layers: [
-    { animationId: 'speaker', role: 'subject',
-      options: { opacity: 0.75, zIndex: 101, blendMode: 'normal', intensity: 0.25, sensitivity: 0.4 } },
-  ],
-})
-
-
-// Unified organism: cells, veins, tendrils, core, rings, gear — phase-driven
-registerPreset({
-  id: 'signalOrganism', label: 'Signal Organism', category: 'production', weight: 3,
-  reducedMotionPreset: 'quietPulse',
-  layers: [
-    { animationId: 'signalOrganismScene', role: 'subject',
-      options: { opacity: 0.98, zIndex: 101, blendMode: 'normal', intensity: 1.0, sensitivity: 1.0 } },
-  ],
-})
-
-// Geometric tunnel: spin rings dominate with bio layers blended underneath
-registerPreset({
-  id: 'geometryTunnel', label: 'Geometry Tunnel', category: 'production', weight: 2,
-  reducedMotionPreset: 'quietPulse',
-  layers: [
-    { animationId: 'spinAmp', role: 'background',
-      options: { opacity: 0.70, zIndex: 100, blendMode: 'normal', intensity: 1.2, sensitivity: 1.3 } },
-    { animationId: 'bioMachine', role: 'subject',
-      options: { opacity: 0.60, zIndex: 101, blendMode: 'screen', intensity: 0.8, sensitivity: 0.9 } },
-  ],
-})
-
-// Stop-motion flower narrative — full-canvas, single layer
-registerPreset({
-  id: 'stormFlower', label: 'Storm Flower', category: 'lab', weight: 2,
-  reducedMotionPreset: 'quietPulse',
-  layers: [
-    { animationId: 'stopMotionFlowerStorm', role: 'subject',
-      options: { opacity: 0.98, zIndex: 101 } },
-  ],
-})
-
-// One persistent hero fish grows until the rest of the aquarium becomes scale reference
-registerPreset({
-  id: 'impossibleAquarium', label: 'Impossible Aquarium', category: 'production', weight: 3,
-  reducedMotionPreset: 'quietPulse',
-  layers: [
-    { animationId: 'impossibleAquarium', role: 'subject',
-      options: { opacity: 0.98, zIndex: 101, blendMode: 'normal', intensity: 1.0, sensitivity: 1.0 } },
-  ],
-})
-
-// Single monster animation: cycles through the full crew at a brisk showcase pace
-registerPreset({
-  id: 'monsterCrewScene', label: 'Monster Cycle', category: 'production', weight: 3,
-  reducedMotionPreset: 'quietPulse',
-  layers: [{ animationId: 'monsterCrew', role: 'subject', options: { opacity: 1.0, zIndex: 101, blendMode: 'normal', intensity: 1.0, sensitivity: 1.0, switchMs: 15000, fadeMs: 650 } }],
-})
-
-registerPreset({
-  id: 'liminal-doom-demo', label: 'Liminal Doom', category: 'lab', weight: 1,
-  reducedMotionPreset: 'quietPulse',
-  layers: [{ animationId: 'liminalDoom', role: 'subject',
-    options: { opacity: 1.0, zIndex: 101, blendMode: 'normal', intensity: 1.0, sensitivity: 1.0 } }],
-})
-
-registerPreset({
-  id: 'eqBars', label: 'EQ Bars', category: 'production', weight: 3,
-  reducedMotionPreset: 'quietPulse',
-  layers: [{ animationId: 'eqBars', role: 'subject',
-    options: { opacity: 1.0, zIndex: 101, blendMode: 'normal', intensity: 1.0, sensitivity: 1.0 } }],
-})
-
-// Atmospheric rain: audio-reactive intensity/speed, time-driven sky, bass lightning
-registerPreset({
-  id: 'rainstorm', label: 'Rainstorm', category: 'production', weight: 3,
-  reducedMotionPreset: 'quietPulse',
-  layers: [{ animationId: 'rain', role: 'background',
-    options: { opacity: 1.0, zIndex: 100, blendMode: 'normal', intensity: 1.0, sensitivity: 1.0 } }],
-})
+// Package order matters only when presets reference animations owned by an
+// earlier package. Keep quietPulse first so reduced-motion fallbacks can point
+// at it, then register composite dependencies before their presets.
+[
+  speakerPackage,
+  bioMachinePackage,
+  spinAmpPackage,
+  weatherSpeakerPackage,
+  stopMotionFlowerStormPackage,
+  impossibleAquariumPackage,
+  signalOrganismPackage,
+  monsterCrewPackage,
+  liminalDoomPackage,
+  eqBarsPackage,
+  rainPackage,
+  puppetDancerPackage,
+  goopyPackage,
+  circuitBotPackage,
+  eyeCloudPackage,
+  jellyBellPackage,
+  cuteMonstroPackage,
+  monsterWavePackage,
+].forEach(registerAnimationPackage)
 
 export default registry

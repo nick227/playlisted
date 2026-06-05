@@ -1,6 +1,6 @@
-import { AnimationContext, IAnimation } from '../IAnimation'
-import CanvasAnimation from '../CanvasAnimation'
-import { frameHold, stepped } from '../stopMotion'
+import { AnimationContext, IAnimation } from '../core/IAnimation'
+import CanvasAnimation from '../core/CanvasAnimation'
+import { frameHold, stepped } from '../stopMotion/stopMotion'
 import { OrganismStateMachine } from './signalOrganism/state'
 import {
   buildCells, layoutCells, updateCells, drawVeins, drawCells,

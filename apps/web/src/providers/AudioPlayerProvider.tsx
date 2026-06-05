@@ -11,7 +11,7 @@ import {
   type ReactNode,
 } from "react";
 
-import theatreController from "@/theatre/lazyController";
+import theatreController from "@/theatre/controller/lazyController";
 import {
   buildAutoplayAvoidance,
   buildRelaxedAutoplayAvoidance,

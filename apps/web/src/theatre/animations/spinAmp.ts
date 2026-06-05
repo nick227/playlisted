@@ -1,5 +1,5 @@
-import { AnimationContext, IAnimation } from '../IAnimation'
-import CanvasAnimation from '../CanvasAnimation'
+import { AnimationContext, IAnimation } from '../core/IAnimation'
+import CanvasAnimation from '../core/CanvasAnimation'
 
 const RINGS = 10
 const Z_NEAR = 0.18

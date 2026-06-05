@@ -1,6 +1,6 @@
-import { AnimationContext, IAnimation } from '../IAnimation'
-import CanvasAnimation from '../CanvasAnimation'
-import { quantize, stepped } from '../stopMotion'
+import { AnimationContext, IAnimation } from '../core/IAnimation'
+import CanvasAnimation from '../core/CanvasAnimation'
+import { quantize, stepped } from '../stopMotion/stopMotion'
 
 export function monsterWaveFactory(): IAnimation {
   class MonsterWave extends CanvasAnimation {

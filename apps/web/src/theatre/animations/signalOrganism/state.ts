@@ -1,4 +1,4 @@
-import type { TriggerFrame } from '../../VisualTriggers'
+import type { TriggerFrame } from '../../audio/VisualTriggers'
 import type { OrganismPhase } from './types'
 import type { RitualId } from './evolution'
 import { tickEvolution } from './evolution'

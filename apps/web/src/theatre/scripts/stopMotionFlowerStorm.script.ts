@@ -1,4 +1,4 @@
-import type { Script } from '../stopMotionScript'
+import type { Script } from '../stopMotion/stopMotionScript'
 
 const script: Script = {
   id: 'flowerStorm_v1',

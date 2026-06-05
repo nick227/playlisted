@@ -1,7 +1,7 @@
-import { AnimationContext, IAnimation } from '../IAnimation'
-import CanvasAnimation from '../CanvasAnimation'
-import { loadAnimationProgress, saveAnimationProgress } from '../animationProgressStorage'
-import { ScriptRunner, type ScriptRunnerSnapshot } from '../stopMotionScript'
+import { AnimationContext, IAnimation } from '../core/IAnimation'
+import CanvasAnimation from '../core/CanvasAnimation'
+import { loadAnimationProgress, saveAnimationProgress } from '../controller/animationProgressStorage'
+import { ScriptRunner, type ScriptRunnerSnapshot } from '../stopMotion/stopMotionScript'
 import flowerScript from '../scripts/stopMotionFlowerStorm.script'
 
 const flowerPoses = [
@@ -192,7 +192,7 @@ export function stopMotionFlowerStormFactory(): IAnimation {
       this.lastEnvironmentShiftAt = 0
     }
 
-    setScriptOverrides(overrides: Partial<Pick<import('../stopMotionScript').Script, 'poseHoldMs' | 'stemHoldMs'>>) {
+    setScriptOverrides(overrides: Partial<Pick<import('../stopMotion/stopMotionScript').Script, 'poseHoldMs' | 'stemHoldMs'>>) {
       this.runner.setOverrides(overrides)
     }
 

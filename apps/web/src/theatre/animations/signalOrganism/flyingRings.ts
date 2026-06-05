@@ -1,4 +1,4 @@
-import type { TriggerFrame } from '../../VisualTriggers'
+import type { TriggerFrame } from '../../audio/VisualTriggers'
 import type { EvolveCtx } from './evolution'
 import { extremeRoll } from './evolution'
 import { rand01 } from './random'

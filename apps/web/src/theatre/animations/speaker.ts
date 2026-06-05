@@ -1,7 +1,7 @@
-import { AnimationContext, IAnimation } from '../IAnimation'
-import CanvasAnimation from '../CanvasAnimation'
-import { frameHold, stepped } from '../stopMotion'
-import { generateShapeDescriptor, renderShape } from '../shapeGenerator'
+import { AnimationContext, IAnimation } from '../core/IAnimation'
+import CanvasAnimation from '../core/CanvasAnimation'
+import { frameHold, stepped } from '../stopMotion/stopMotion'
+import { generateShapeDescriptor, renderShape } from '../stopMotion/shapeGenerator'
 
 export function speakerFactory(): IAnimation {
   class SpeakerAnim extends CanvasAnimation {

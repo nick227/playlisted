@@ -1,4 +1,4 @@
-import type { AnimationContext } from '../../../IAnimation'
+import type { AnimationContext } from '../../../core/IAnimation'
 import type { AudioReact } from '../core/types'
 import { clamp } from '../core/math'
 

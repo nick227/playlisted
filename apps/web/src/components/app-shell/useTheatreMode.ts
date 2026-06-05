@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import theatreController from "@/theatre/lazyController";
+import theatreController from "@/theatre/controller/lazyController";
 
 export function useTheatreMode() {
   const [canEnterTheatre, setCanEnterTheatre] = useState(theatreController.state.canEnter);

@@ -11,7 +11,7 @@ import { coverFallback, playlistPath } from "@/lib/routes";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { useAuth } from "@/providers/AuthProvider";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
-import theatreController from "@/theatre/lazyController";
+import theatreController from "@/theatre/controller/lazyController";
 
 const LISTENER_ID_KEY = "playlisted.radio.listenerId";
 const MAX_MSG_LENGTH = 300;

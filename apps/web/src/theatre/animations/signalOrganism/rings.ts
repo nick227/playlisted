@@ -1,4 +1,4 @@
-import { frameHold, stepped } from '../../stopMotion'
+import { frameHold, stepped } from '../../stopMotion/stopMotion'
 import { clamp } from './types'
 
 const RING_COUNT = 6

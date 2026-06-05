@@ -1,7 +1,7 @@
 import type { CellNode } from './types'
 import type { EvolveCtx } from './evolution'
 import { clamp, lerp } from './types'
-import { frameHold } from '../../stopMotion'
+import { frameHold } from '../../stopMotion/stopMotion'
 import { extremeRoll } from './evolution'
 import { randSigned } from './random'
 

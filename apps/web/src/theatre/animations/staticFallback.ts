@@ -1,5 +1,5 @@
-import { IAnimation, AnimationContext } from '../IAnimation'
-import CanvasAnimation from '../CanvasAnimation'
+import { IAnimation, AnimationContext } from '../core/IAnimation'
+import CanvasAnimation from '../core/CanvasAnimation'
 
 /** Minimal fallback: dark gradient with a single slow-breathing glow. No audio dependency. */
 export class StaticFallback extends CanvasAnimation {
