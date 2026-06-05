@@ -224,6 +224,25 @@ class TheatreController extends EventTarget {
     }
   }
 
+  private async togglePlayback() {
+    if (!this.audioEl) this.rebindAudio()
+    const audio = this.audioEl
+    if (!audio) return
+
+    if (audio.paused) {
+      try {
+        await audio.play()
+        this.bridge.resume()
+      } catch {
+        this.bridge.pause()
+      }
+      return
+    }
+
+    audio.pause()
+    this.bridge.pause()
+  }
+
   public async changePreset(presetId: string) {
     if (this.transitioning || !this.overlay || !this.state.active) return
 
@@ -320,37 +339,78 @@ class TheatreController extends EventTarget {
     const selectedPreset = pickPreset({ preferCategory, reducedMotion })
     const initialPresetId = selectedPreset?.id ?? null
 
-    const controlPanel = document.createElement('div')
-    controlPanel.className = 'theatre-control-panel absolute top-4 right-4 flex items-center gap-2 rounded-xl bg-black/75 p-2 shadow-2xl ring-1 ring-white/10'
-    controlPanel.style.pointerEvents = 'auto'
-    controlPanel.style.zIndex = '9999'
+    const controls = document.createElement('div')
+    controls.className = 'theatre-controls absolute top-4 right-4 flex items-center gap-2'
+    controls.style.pointerEvents = 'auto'
+    controls.style.zIndex = '9999'
 
-    const presetSelect = document.createElement('select')
-    presetSelect.className = 'rounded border border-white/15 bg-black/80 px-2 py-1 text-xs text-white outline-none'
-    presetSelect.title = 'Change theatre animation preset'
+    const menuWrap = document.createElement('div')
+    menuWrap.className = 'theatre-visualization-menu-wrap relative'
+
+    const menuButton = document.createElement('button')
+    menuButton.type = 'button'
+    menuButton.className = 'theatre-round-button'
+    menuButton.title = 'Change theatre visualization'
+    menuButton.setAttribute('aria-label', 'Change theatre visualization')
+    menuButton.setAttribute('aria-haspopup', 'menu')
+    menuButton.setAttribute('aria-expanded', 'false')
+    menuButton.innerHTML = '<span class="theatre-menu-icon" aria-hidden="true"><span></span><span></span><span></span></span>'
+
+    const presetMenu = document.createElement('div')
+    presetMenu.className = 'theatre-visualization-menu hidden'
+    presetMenu.setAttribute('role', 'menu')
+    presetMenu.setAttribute('aria-label', 'Theatre visualizations')
+
+    const setMenuOpen = (open: boolean) => {
+      presetMenu.classList.toggle('hidden', !open)
+      menuButton.setAttribute('aria-expanded', String(open))
+    }
+
     listPresets().forEach(preset => {
-      const option = document.createElement('option')
+      const option = document.createElement('button')
+      option.type = 'button'
+      option.className = 'theatre-visualization-option'
       option.value = preset.id
       option.textContent = `${preset.label}${preset.category ? ` (${preset.category})` : ''}`
-      if (preset.id === initialPresetId) option.selected = true
-      presetSelect.appendChild(option)
-    })
-    presetSelect.addEventListener('change', event => {
-      const value = (event.target as HTMLSelectElement).value
-      void this.changePreset(value)
+      option.setAttribute('role', 'menuitemradio')
+      option.setAttribute('aria-checked', String(preset.id === initialPresetId))
+      option.addEventListener('click', event => {
+        event.stopPropagation()
+        presetMenu.querySelectorAll<HTMLButtonElement>('.theatre-visualization-option').forEach(item => {
+          item.setAttribute('aria-checked', String(item.value === preset.id))
+        })
+        setMenuOpen(false)
+        void this.changePreset(preset.id)
+      })
+      presetMenu.appendChild(option)
     })
 
-    const exitLink = document.createElement('a')
-    exitLink.href = '#'
-    exitLink.textContent = 'Exit'
-    exitLink.className = 'rounded border border-white/15 bg-white/10 px-3 py-1 text-xs text-white transition hover:bg-white/20'
-    exitLink.addEventListener('click', event => {
-      event.preventDefault()
+    menuButton.addEventListener('click', event => {
+      event.stopPropagation()
+      setMenuOpen(presetMenu.classList.contains('hidden'))
+    })
+
+    const exitButton = document.createElement('button')
+    exitButton.type = 'button'
+    exitButton.className = 'theatre-round-button theatre-exit'
+    exitButton.title = 'Exit theatre'
+    exitButton.setAttribute('aria-label', 'Exit theatre')
+    exitButton.innerHTML = '<span class="theatre-x-icon" aria-hidden="true"></span>'
+    exitButton.addEventListener('click', event => {
+      event.stopPropagation()
       void this.exit()
     })
 
-    controlPanel.append(presetSelect, exitLink)
-    overlay.appendChild(controlPanel)
+    menuWrap.append(menuButton, presetMenu)
+    controls.append(menuWrap, exitButton)
+    overlay.appendChild(controls)
+
+    overlay.addEventListener('click', event => {
+      const target = event.target as HTMLElement | null
+      if (target?.closest('.theatre-controls, .theatre-dev-panel, button, a, select, input, textarea')) return
+      setMenuOpen(false)
+      void this.togglePlayback()
+    })
 
     if (!this.stillCurrent(token)) {
       await this.abortStaleTransition(token, overlay)
