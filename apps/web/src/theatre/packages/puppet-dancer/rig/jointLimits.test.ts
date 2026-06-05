@@ -19,7 +19,7 @@ import {
 } from './jointLimits'
 
 describe('puppet joint limits', () => {
-  it('keeps shoulders in the forward arc away from the body', () => {
+  it('allows wide shoulder rotation arcs', () => {
     expect(JOINT_LIMITS.leftShoulder).toEqual({
       min: LEFT_SHOULDER_FORWARD_MIN,
       max: LEFT_SHOULDER_FORWARD_MAX,
@@ -29,10 +29,14 @@ describe('puppet joint limits', () => {
       max: RIGHT_SHOULDER_FORWARD_MAX,
     })
 
-    expect(clampJointAngle('leftShoulder', 40)).toBe(LEFT_SHOULDER_FORWARD_MIN)
-    expect(clampJointAngle('leftShoulder', 250)).toBe(LEFT_SHOULDER_FORWARD_MAX)
-    expect(clampJointAngle('rightShoulder', -90)).toBe(RIGHT_SHOULDER_FORWARD_MIN)
-    expect(clampJointAngle('rightShoulder', 140)).toBe(RIGHT_SHOULDER_FORWARD_MAX)
+    expect(clampJointAngle('leftShoulder', 40)).toBe(40)
+    expect(clampJointAngle('leftShoulder', 250)).toBe(250)
+    expect(clampJointAngle('rightShoulder', -90)).toBe(-90)
+    expect(clampJointAngle('rightShoulder', 140)).toBe(140)
+    expect(clampJointAngle('leftShoulder', -20)).toBe(LEFT_SHOULDER_FORWARD_MIN)
+    expect(clampJointAngle('leftShoulder', 330)).toBe(LEFT_SHOULDER_FORWARD_MAX)
+    expect(clampJointAngle('rightShoulder', -140)).toBe(RIGHT_SHOULDER_FORWARD_MIN)
+    expect(clampJointAngle('rightShoulder', 220)).toBe(RIGHT_SHOULDER_FORWARD_MAX)
   })
 
   it('keeps arm segment directions on their own side of the body', () => {
@@ -50,9 +54,9 @@ describe('puppet joint limits', () => {
     expect(clampJointAngle('rightWrist', -220)).toBe(RIGHT_WRIST_MIN)
   })
 
-  it('lerps shoulders inside the forward arc without wrapping through the body', () => {
-    expect(lerpJointAngle('leftShoulder', 250, 94, 0.5)).toBe(142)
-    expect(lerpJointAngle('rightShoulder', -90, 42, 0.5)).toBe(16)
+  it('lerps shoulders inside the wide arc without wrapping through the body', () => {
+    expect(lerpJointAngle('leftShoulder', 250, 94, 0.5)).toBe(172)
+    expect(lerpJointAngle('rightShoulder', -90, 42, 0.5)).toBe(-24)
     expect(lerpJointAngle('leftShoulder', 250, 94, 0.5)).toBeGreaterThanOrEqual(LEFT_SHOULDER_FORWARD_MIN)
     expect(lerpJointAngle('leftShoulder', 250, 94, 0.5)).toBeLessThanOrEqual(LEFT_SHOULDER_FORWARD_MAX)
   })

@@ -5,9 +5,8 @@ import { humanRig } from './rig/humanRig'
 import { PuppetRigSolver } from './rig/PuppetRigSolver'
 import { defaultHumanSkin } from './skins/defaultHumanSkin'
 import { DancePlayer } from './sequences/DancePlayer'
-import { dynamicRandomSequenceId, getDanceSequence, isDynamicDance, listDanceOptions, pickAutoDanceSequenceId } from './sequences'
+import { dynamicRandomSequenceId, getDanceSequence, isDynamicDance, pickAutoDanceSequenceId } from './sequences'
 import { PuppetRenderer } from './render/PuppetRenderer'
-import { hitAutoDanceCheckbox, hitDanceSelector } from './render/danceSelector'
 import type { Features } from '../../audio/AudioFeatureExtractor'
 import type { TriggerFrame } from '../../audio/VisualTriggers'
 import type { DynamicDanceAttributes } from './sequences/dynamicRandom.sequence'
@@ -20,8 +19,6 @@ export class PuppetDancerScene extends CanvasAnimation {
   private selectedDanceId: string | null = null
   private loadedDanceKey: string | null = null
   private loadedReducedMotion = false
-  private lastReducedMotion = false
-  private danceOptions = listDanceOptions()
   private autoDance = true
   private autoSwitchCooldownMs = 900
   private autoSwitchRestMs = 700
@@ -35,13 +32,9 @@ export class PuppetDancerScene extends CanvasAnimation {
     this.renderer = new PuppetRenderer(this.ctx, defaultHumanSkin)
     this.selectedDanceId = typeof context.options?.sequence === 'string' ? context.options.sequence : dynamicRandomSequenceId
     this.activateDance(this.selectedDanceId, Boolean(context.shared?.reducedMotion || context.options?.reducedMotion), true)
-    this.canvas.addEventListener('pointerdown', this.onPointerDown)
-    this.canvas.addEventListener('click', this.onClick)
   }
 
   destroy() {
-    this.canvas?.removeEventListener('pointerdown', this.onPointerDown)
-    this.canvas?.removeEventListener('click', this.onClick)
     super.destroy()
   }
 
@@ -52,7 +45,6 @@ export class PuppetDancerScene extends CanvasAnimation {
 
     const shared = context.shared
     const reducedMotion = Boolean(shared?.reducedMotion || context.options?.reducedMotion)
-    this.lastReducedMotion = reducedMotion
     const lowPower = Boolean(shared?.lowPower)
     const elapsed = shared?.time?.elapsed ?? performance.now()
     const delta = Math.min(80, shared?.time?.delta ?? Math.max(16, elapsed - this.lastElapsed))
@@ -76,7 +68,6 @@ export class PuppetDancerScene extends CanvasAnimation {
     this.ctx.clearRect(0, 0, w, h)
     this.renderer.drawStage(w, h, energy, lowPower, stageY)
     this.renderer.drawPuppet(joints, pose, stageScale)
-    this.renderer.drawDanceSelector(w, h, this.danceOptions, String(this.selectedDanceId ?? dynamicRandomSequenceId), this.autoDance)
     if (context.options?.debug || context.options?.theatreDev) {
       this.renderer.drawDebug(joints, this.player.getDebugState(), pose)
     }
@@ -84,51 +75,6 @@ export class PuppetDancerScene extends CanvasAnimation {
 
   getDebugState() {
     return this.player.getDebugState()
-  }
-
-  private onPointerDown = (event: PointerEvent) => {
-    const rect = this.canvas.getBoundingClientRect()
-    const x = event.clientX - rect.left
-    const y = event.clientY - rect.top
-    if (hitAutoDanceCheckbox(this.cssWidth, this.cssHeight, this.danceOptions, x, y)) {
-      event.stopPropagation()
-      event.preventDefault()
-      this.autoDance = !this.autoDance
-      this.autoSwitchCooldownMs = this.autoDance ? 250 : 0
-      this.autoSwitchRestMs = this.autoDance ? 150 : 0
-      return
-    }
-    const hit = hitDanceSelector(
-      this.cssWidth,
-      this.cssHeight,
-      this.danceOptions,
-      x,
-      y,
-    )
-    if (!hit) return
-    event.stopPropagation()
-    event.preventDefault()
-    this.activateDance(hit.id, this.lastReducedMotion, hit.id === dynamicRandomSequenceId)
-  }
-
-  private onClick = (event: MouseEvent) => {
-    if (!this.hitSelectorControl(event.clientX, event.clientY)) return
-    event.stopPropagation()
-    event.preventDefault()
-  }
-
-  private hitSelectorControl(clientX: number, clientY: number) {
-    const rect = this.canvas.getBoundingClientRect()
-    const x = clientX - rect.left
-    const y = clientY - rect.top
-    if (hitAutoDanceCheckbox(this.cssWidth, this.cssHeight, this.danceOptions, x, y)) return true
-    return hitDanceSelector(
-      this.cssWidth,
-      this.cssHeight,
-      this.danceOptions,
-      x,
-      y,
-    )
   }
 
   private updateAutoDance(deltaMs: number, features: Features | undefined, triggers: TriggerFrame, reducedMotion: boolean) {

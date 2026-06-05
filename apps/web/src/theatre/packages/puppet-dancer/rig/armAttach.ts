@@ -3,10 +3,10 @@ export const LEFT_ATTACH = 190
 export const RIGHT_ATTACH = -10
 
 /**
- * Forward arc for upper arms — keeps shoulders out in front/side of the torso.
- * Right shoulder uses this range directly; left is the mirror across 180°.
+ * Wide shoulder-placement arcs for the hidden chest→shoulder stubs.
+ * The arm renderer starts at these shoulder points, so this range gives each arm a real root sweep.
  */
-export const RIGHT_SHOULDER_FORWARD_MIN = -10
-export const RIGHT_SHOULDER_FORWARD_MAX = 100
-export const LEFT_SHOULDER_FORWARD_MIN = 80
-export const LEFT_SHOULDER_FORWARD_MAX = 190
+export const RIGHT_SHOULDER_FORWARD_MIN = -105
+export const RIGHT_SHOULDER_FORWARD_MAX = 165
+export const LEFT_SHOULDER_FORWARD_MIN = 35
+export const LEFT_SHOULDER_FORWARD_MAX = 285

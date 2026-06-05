@@ -3,8 +3,6 @@ import type { SolvedJoint } from '../rig/rigTypes'
 import type { PuppetSkin } from '../skins/skinTypes'
 import type { DancePlayer } from '../sequences/DancePlayer'
 import type { TriggerFrame } from '../../../audio/VisualTriggers'
-import type { DanceOption } from '../sequences'
-import { layoutAutoDanceCheckbox, layoutDanceSelector } from './danceSelector'
 
 export type PuppetDebugSnapshot = ReturnType<DancePlayer['getDebugState']> & {
   triggers: TriggerFrame | null
@@ -157,46 +155,6 @@ export class PuppetRenderer {
     this.ctx.fillRect(x - 8, y - 9, width, height)
     this.ctx.fillStyle = '#f8fafc'
     lines.forEach((lineText, index) => this.ctx.fillText(lineText, x, y + index * 18))
-    this.ctx.restore()
-  }
-
-  drawDanceSelector(width: number, height: number, options: DanceOption[], activeId: string, autoDance: boolean) {
-    this.ctx.save()
-    this.ctx.font = '10px ui-monospace, SFMono-Regular, Menlo, monospace'
-    this.ctx.textAlign = 'center'
-    this.ctx.textBaseline = 'middle'
-
-    const box = layoutAutoDanceCheckbox(width, height, options)
-    this.ctx.beginPath()
-    this.ctx.rect(box.x - box.size * 0.5, box.y - box.size * 0.5, box.size, box.size)
-    this.ctx.fillStyle = autoDance ? 'rgba(34, 211, 238, 0.9)' : 'rgba(15, 23, 42, 0.78)'
-    this.ctx.fill()
-    this.ctx.lineWidth = 1.5
-    this.ctx.strokeStyle = autoDance ? 'rgba(255, 255, 255, 0.95)' : 'rgba(255, 255, 255, 0.42)'
-    this.ctx.stroke()
-    if (autoDance) {
-      this.ctx.strokeStyle = '#0f172a'
-      this.ctx.lineWidth = 2
-      this.ctx.beginPath()
-      this.ctx.moveTo(box.x - box.size * 0.22, box.y)
-      this.ctx.lineTo(box.x - box.size * 0.03, box.y + box.size * 0.22)
-      this.ctx.lineTo(box.x + box.size * 0.3, box.y - box.size * 0.25)
-      this.ctx.stroke()
-    }
-
-    for (const circle of layoutDanceSelector(width, height, options)) {
-      const active = circle.id === activeId
-      this.ctx.beginPath()
-      this.ctx.arc(circle.x, circle.y, circle.radius, 0, Math.PI * 2)
-      this.ctx.fillStyle = active ? 'rgba(250, 204, 21, 0.95)' : 'rgba(15, 23, 42, 0.78)'
-      this.ctx.fill()
-      this.ctx.lineWidth = active ? 2 : 1
-      this.ctx.strokeStyle = active ? 'rgba(255, 255, 255, 0.95)' : 'rgba(255, 255, 255, 0.36)'
-      this.ctx.stroke()
-      this.ctx.fillStyle = active ? '#0f172a' : '#f8fafc'
-      this.ctx.fillText(circle.label.trim().charAt(0).toUpperCase(), circle.x, circle.y + 0.5)
-    }
-
     this.ctx.restore()
   }
 
