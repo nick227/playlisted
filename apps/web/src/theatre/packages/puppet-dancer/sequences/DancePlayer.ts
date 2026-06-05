@@ -1,6 +1,7 @@
 import type { TriggerFrame } from '../../../audio/VisualTriggers'
 import { getNamedAccent } from '../poses/namedAccents'
 import type { FaceState, MotionAccentMap, PuppetPoseMap, ResolvedPose } from '../poses/poseTypes'
+import { clampJointAngle } from '../rig/jointLimits'
 import type { PuppetJointId, PuppetRig } from '../rig/rigTypes'
 import type { DanceMap, MotionStep } from './sequenceTypes'
 
@@ -99,7 +100,7 @@ export class DancePlayer {
     const accented = reducedMotion
       ? this.applyReducedMotion(pose, danceIntensity * stepIntensity)
       : this.applyAccents(pose, danceIntensity * stepIntensity)
-    return this.applyLooseLag(accented, deltaMs, reducedMotion)
+    return this.finalizePose(this.applyLooseLag(accented, deltaMs, reducedMotion))
   }
 
   getDebugState() {
@@ -351,6 +352,13 @@ export class DancePlayer {
     pose.face.topLipY = clamp(pose.face.topLipY, -1, 1)
     pose.face.bottomLipY = clamp(pose.face.bottomLipY, -1, 1)
     pose.face.tongue = clamp(pose.face.tongue, 0, 0.55)
+    return pose
+  }
+
+  private finalizePose(pose: ResolvedPose): ResolvedPose {
+    for (const joint of this.rig.joints) {
+      pose.angles[joint.id] = clampJointAngle(joint.id, pose.angles[joint.id])
+    }
     return pose
   }
 

@@ -1,5 +1,6 @@
 import { idlePose } from '../poses/basicPoses'
 import type { PuppetPoseMap } from '../poses/poseTypes'
+import { clampJointAngle } from '../rig/jointLimits'
 import type { PuppetJointId } from '../rig/rigTypes'
 import type { DanceMap, DanceEase, MotionStep } from './sequenceTypes'
 
@@ -61,8 +62,8 @@ function mirroredRandomPose(prefix: string, index: number, wildness: number, att
   const airy = rand(0, 1) < 0.2 + highs * 0.5
   const side = maybe(0.5) ? -1 : 1
   const asymmetry = rand(0.65, 1.35)
-  const armSwing = rand(28, airy ? 88 : 62) * wildness
-  const legSwing = rand(16, crouch ? 62 : 42) * wildness
+  const armSwing = rand(36, airy ? 140 : 96) * wildness
+  const legSwing = rand(28, crouch ? 88 : 64) * wildness
 
   const rotations: Partial<Record<PuppetJointId, number>> = {
     root: -90,
@@ -72,24 +73,25 @@ function mirroredRandomPose(prefix: string, index: number, wildness: number, att
     neck: spread(-90 - side * rand(0, 18), 16, wildness),
     head: spread(-90 + side * rand(8, 36), 28, wildness),
 
-    leftShoulder: clamp(188 + side * armSwing * asymmetry + rand(-22, 22), 92, 278),
-    leftElbow: clamp(124 + side * rand(-48, 58) * wildness, 18, 210),
+    leftShoulder: clampJointAngle('leftShoulder', 188 + side * armSwing * asymmetry + rand(-48, 48)),
+    leftElbow: clampJointAngle('leftElbow', 124 + side * rand(-120, 120) * wildness),
     leftWrist: clamp(88 + side * rand(-78, 88) * wildness, -20, 190),
-    rightShoulder: clamp(-8 + side * armSwing * 0.9 + rand(-24, 24), -98, 96),
-    rightElbow: clamp(-56 + side * rand(-58, 52) * wildness, -180, 56),
+    rightShoulder: clampJointAngle('rightShoulder', -8 + side * armSwing * 0.9 + rand(-48, 48)),
+    rightElbow: clampJointAngle('rightElbow', -56 + side * rand(-120, 120) * wildness),
     rightWrist: clamp(-88 + side * rand(-92, 82) * wildness, -200, 26),
 
-    leftHip: clamp((crouch ? 126 : 150) - side * legSwing + rand(-16, 16), 48, 184),
-    leftKnee: clamp((crouch ? 132 : 102) + rand(-36, 44) * wildness, 38, 166),
+    leftHip: clampJointAngle('leftHip', (crouch ? 126 : 150) - side * legSwing + rand(-28, 28)),
+    leftKnee: clampJointAngle('leftKnee', (crouch ? 148 : 102) + rand(-72, 88) * wildness),
     leftAnkle: clamp(88 + side * rand(-32, 36) * wildness, 42, 136),
-    rightHip: clamp((crouch ? 54 : 30) - side * legSwing * 0.8 + rand(-16, 16), -16, 112),
-    rightKnee: clamp((crouch ? 54 : 78) + rand(-42, 38) * wildness, 8, 144),
+    rightHip: clampJointAngle('rightHip', (crouch ? 54 : 30) - side * legSwing * 0.8 + rand(-28, 28)),
+    rightKnee: clampJointAngle('rightKnee', (crouch ? 54 : 78) + rand(-78, 92) * wildness),
     rightAnkle: clamp(92 + side * rand(-36, 32) * wildness, 44, 138),
   }
 
   if (maybe(0.34)) {
     for (const joint of sample([...leftArm, ...rightArm, ...leftLeg, ...rightLeg, ...body], rand(2, 6))) {
-      rotations[joint] = (rotations[joint] ?? 0) + rand(-34, 34) * wildness
+      const next = (rotations[joint] ?? 0) + rand(-52, 52) * wildness
+      rotations[joint] = clampJointAngle(joint, next)
     }
   }
 
