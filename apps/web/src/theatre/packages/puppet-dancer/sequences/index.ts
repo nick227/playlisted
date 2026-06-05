@@ -46,6 +46,16 @@ export type DanceOption = {
   label: string
 }
 
+export type AutoDanceAttributes = DynamicDanceAttributes
+
+const staticAutoDancePools = {
+  calm: ['sleepySway', 'moonwalk', 'twoStep', 'salsaSide'],
+  bassy: ['bounce', 'jumpJive', 'panicKnees', 'crabShuffle', 'twist', 'chickenWalk'],
+  bright: ['discoPoint', 'wavePop', 'windmillArms', 'noodleArms', 'shoulderShimmy'],
+  busy: ['salsaSide', 'shoulderShimmy', 'chickenWalk', 'tinyMarch', 'windmillArms', 'crabShuffle'],
+  wild: ['panicKnees', 'noodleArms', 'windmillArms', 'jumpJive', 'wavePop', 'crabShuffle'],
+}
+
 export function listDanceOptions(): DanceOption[] {
   const seen = new Set<string>()
   const options: DanceOption[] = []
@@ -55,6 +65,34 @@ export function listDanceOptions(): DanceOption[] {
     options.push({ id, label: dance.label })
   }
   return options
+}
+
+export function isDynamicDance(id: unknown): boolean {
+  return id === dynamicRandomSequenceId
+}
+
+export function pickAutoDanceSequenceId(attributes: AutoDanceAttributes = {}, currentId?: string | null): string {
+  const energy = attributes.energy ?? 0
+  const bass = attributes.bass ?? 0
+  const highs = attributes.highs ?? 0
+  const centroid = attributes.centroid ?? 0
+  const flux = attributes.flux ?? 0
+  const bassFlux = attributes.bassFlux ?? 0
+  const highsFlux = attributes.highsFlux ?? 0
+  const accidentEnergy = Math.max(flux, bassFlux, highsFlux, energy * 0.75)
+  const staticSlotChance = Math.min(0.42, 0.12 + accidentEnergy * 1.45)
+
+  if (Math.random() > staticSlotChance) return dynamicRandomSequenceId
+
+  let pool = staticAutoDancePools.calm
+  if (bass > 0.28 || bassFlux > 0.055) pool = staticAutoDancePools.bassy
+  else if (centroid > 0.32 || highs > 0.14 || highsFlux > 0.04) pool = staticAutoDancePools.bright
+  else if (flux > 0.055 || energy > 0.075) pool = staticAutoDancePools.busy
+  if (accidentEnergy > 0.13 && Math.random() < 0.34) pool = staticAutoDancePools.wild
+
+  const available = pool.filter(id => id !== currentId && danceSequences[id])
+  if (available.length === 0) return dynamicRandomSequenceId
+  return available[Math.floor(Math.random() * available.length)]
 }
 
 export function getDanceSequence(id: unknown, reducedMotion = false, attributes?: DynamicDanceAttributes): DanceMap {

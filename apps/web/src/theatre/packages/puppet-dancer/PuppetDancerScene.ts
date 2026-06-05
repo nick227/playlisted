@@ -5,7 +5,7 @@ import { humanRig } from './rig/humanRig'
 import { PuppetRigSolver } from './rig/PuppetRigSolver'
 import { defaultHumanSkin } from './skins/defaultHumanSkin'
 import { DancePlayer } from './sequences/DancePlayer'
-import { dynamicRandomSequenceId, getDanceSequence, listDanceOptions } from './sequences'
+import { dynamicRandomSequenceId, getDanceSequence, isDynamicDance, listDanceOptions, pickAutoDanceSequenceId } from './sequences'
 import { PuppetRenderer } from './render/PuppetRenderer'
 import { hitAutoDanceCheckbox, hitDanceSelector } from './render/danceSelector'
 import type { Features } from '../../audio/AudioFeatureExtractor'
@@ -152,7 +152,7 @@ export class PuppetDancerScene extends CanvasAnimation {
       (energy > 0.09 && Math.random() < 0.014)
     if (!shouldSwitch) return
 
-    this.activateDance(dynamicRandomSequenceId, reducedMotion, true, {
+    const attributes = {
       energy,
       bass,
       highs,
@@ -160,7 +160,9 @@ export class PuppetDancerScene extends CanvasAnimation {
       flux,
       bassFlux,
       highsFlux,
-    })
+    }
+    const next = pickAutoDanceSequenceId(attributes, this.selectedDanceId)
+    this.activateDance(next, reducedMotion, isDynamicDance(next), attributes)
     this.autoSwitchCooldownMs = 1250 + Math.random() * 2600
     this.autoSwitchRestMs = 180 + Math.random() * 360
   }

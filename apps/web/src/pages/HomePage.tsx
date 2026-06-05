@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import type {
   components,
@@ -104,7 +104,7 @@ function HomeSection({
   subtitle?: string;
   viewAllHref?: string;
   cols?: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <section className="mb-10">

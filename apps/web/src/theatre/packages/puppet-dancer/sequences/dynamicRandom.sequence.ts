@@ -55,7 +55,7 @@ type FamilyConfig = {
 const familyConfigs: Record<MotionFamily, FamilyConfig> = {
   stomp: {
     label: 'Stomp',
-    armPostures: ['bothDown', 'balanced', 'leftUpRightDown'],
+    armPostures: ['bothDown', 'balanced', 'leftBottomRightOut', 'rightBottomLeftOut', 'leftUpRightDown'],
     poseCountBias: -1,
     rootTravel: 0.6,
     crouchBias: 0.48,
@@ -67,7 +67,7 @@ const familyConfigs: Record<MotionFamily, FamilyConfig> = {
   },
   float: {
     label: 'Float',
-    armPostures: ['bothUp', 'balanced', 'leftUpRightDown', 'rightUpLeftDown'],
+    armPostures: ['bothUp', 'balanced', 'leftTopRightOut', 'rightTopLeftOut', 'leftUpRightDown', 'rightUpLeftDown'],
     poseCountBias: -1,
     rootTravel: 1.1,
     crouchBias: -0.2,
@@ -79,7 +79,7 @@ const familyConfigs: Record<MotionFamily, FamilyConfig> = {
   },
   robot: {
     label: 'Robot',
-    armPostures: ['balanced', 'bothUp', 'bothDown'],
+    armPostures: ['balanced', 'bothUp', 'bothDown', 'leftTopRightOut', 'rightBottomLeftOut'],
     poseCountBias: 0,
     rootTravel: 0.34,
     crouchBias: 0.08,
@@ -91,7 +91,7 @@ const familyConfigs: Record<MotionFamily, FamilyConfig> = {
   },
   panic: {
     label: 'Panic',
-    armPostures: ['bothUp', 'leftUpRightDown', 'rightUpLeftDown', 'balanced'],
+    armPostures: ['bothUp', 'leftTopRightOut', 'rightTopLeftOut', 'leftBottomRightOut', 'rightBottomLeftOut', 'leftUpRightDown', 'rightUpLeftDown', 'balanced'],
     poseCountBias: 2,
     rootTravel: 1.18,
     crouchBias: 0.44,
@@ -103,7 +103,7 @@ const familyConfigs: Record<MotionFamily, FamilyConfig> = {
   },
   disco: {
     label: 'Disco',
-    armPostures: ['leftUpRightDown', 'rightUpLeftDown', 'bothUp'],
+    armPostures: ['leftTopRightOut', 'rightTopLeftOut', 'leftUpRightDown', 'rightUpLeftDown', 'bothUp'],
     poseCountBias: 0,
     rootTravel: 0.78,
     crouchBias: -0.02,
@@ -115,7 +115,7 @@ const familyConfigs: Record<MotionFamily, FamilyConfig> = {
   },
   noodle: {
     label: 'Noodle',
-    armPostures: ['balanced', 'bothUp', 'leftUpRightDown', 'rightUpLeftDown'],
+    armPostures: ['balanced', 'bothUp', 'bothDown', 'leftTopRightOut', 'rightTopLeftOut', 'leftBottomRightOut', 'rightBottomLeftOut', 'leftUpRightDown', 'rightUpLeftDown'],
     poseCountBias: 1,
     rootTravel: 0.82,
     crouchBias: -0.08,
@@ -127,7 +127,7 @@ const familyConfigs: Record<MotionFamily, FamilyConfig> = {
   },
   shuffle: {
     label: 'Shuffle',
-    armPostures: ['bothDown', 'balanced', 'rightUpLeftDown'],
+    armPostures: ['bothDown', 'balanced', 'leftBottomRightOut', 'rightBottomLeftOut', 'rightUpLeftDown'],
     poseCountBias: 1,
     rootTravel: 1.38,
     crouchBias: 0.12,
@@ -139,7 +139,7 @@ const familyConfigs: Record<MotionFamily, FamilyConfig> = {
   },
   tiny: {
     label: 'Tiny',
-    armPostures: ['bothDown', 'balanced'],
+    armPostures: ['bothDown', 'balanced', 'leftBottomRightOut', 'rightBottomLeftOut'],
     poseCountBias: 2,
     rootTravel: 0.26,
     crouchBias: -0.08,
@@ -316,9 +316,9 @@ function applyFamilyStyle(style: DanceStyleVector, family: MotionFamily): DanceS
 
 function pickFamilyArmPosture(family: MotionFamily, index: number): ArmPostureId {
   const config = familyConfigs[family]
-  if (family === 'disco') return index % 2 === 0 ? 'leftUpRightDown' : 'rightUpLeftDown'
-  if (family === 'robot') return index % 2 === 0 ? 'balanced' : 'bothDown'
-  if (family === 'stomp' && index % 3 === 0) return 'bothDown'
+  if (family === 'disco') return index % 2 === 0 ? 'leftTopRightOut' : 'rightTopLeftOut'
+  if (family === 'robot') return index % 2 === 0 ? 'balanced' : (index % 4 === 0 ? 'leftTopRightOut' : 'rightBottomLeftOut')
+  if (family === 'stomp' && index % 3 === 0) return index % 2 === 0 ? 'leftBottomRightOut' : 'rightBottomLeftOut'
   return pick(config.armPostures)
 }
 
@@ -402,10 +402,10 @@ function mirroredRandomPose(
 
     leftShoulder: clampJointAngle('leftShoulder', arms.leftShoulder),
     leftElbow: clampJointAngle('leftElbow', arms.leftElbow),
-    leftWrist: clamp(arms.leftWrist, -20, 190),
+    leftWrist: clampJointAngle('leftWrist', arms.leftWrist),
     rightShoulder: clampJointAngle('rightShoulder', arms.rightShoulder),
     rightElbow: clampJointAngle('rightElbow', arms.rightElbow),
-    rightWrist: clamp(arms.rightWrist, -200, 26),
+    rightWrist: clampJointAngle('rightWrist', arms.rightWrist),
 
     leftHip: clampJointAngle('leftHip', (crouch ? 126 : 150) - side * legSwing + rand(-10, 10) * (1 - style.stiffness) * tinyScale),
     leftKnee: clampJointAngle('leftKnee', (crouch ? 128 : 98) + bounceDrop + rand(-24, 34) * wildness * motion * tinyScale),
@@ -423,10 +423,12 @@ function mirroredRandomPose(
     rotations.head = (rotations.head ?? -90) + side * 20
     rotations.chest = (rotations.chest ?? -90) + side * 18
   } else if (family === 'noodle') {
-    rotations.leftElbow = clampJointAngle('leftElbow', (rotations.leftElbow ?? 0) + Math.sin(phrase * 1.7) * 72 * motion)
-    rotations.rightElbow = clampJointAngle('rightElbow', (rotations.rightElbow ?? 0) - Math.cos(phrase * 1.6) * 72 * motion)
-    rotations.leftWrist = clamp((rotations.leftWrist ?? 0) + Math.cos(phrase * 2.4) * 70 * motion, -20, 190)
-    rotations.rightWrist = clamp((rotations.rightWrist ?? 0) - Math.sin(phrase * 2.2) * 70 * motion, -200, 26)
+    const elbowWave = Math.sin(phrase * 1.7) * 72 * motion
+    const wristWave = Math.cos(phrase * 2.4) * 70 * motion
+    rotations.leftElbow = clampJointAngle('leftElbow', (rotations.leftElbow ?? 0) + elbowWave)
+    rotations.rightElbow = clampJointAngle('rightElbow', (rotations.rightElbow ?? 0) - elbowWave)
+    rotations.leftWrist = clampJointAngle('leftWrist', (rotations.leftWrist ?? 0) + wristWave)
+    rotations.rightWrist = clampJointAngle('rightWrist', (rotations.rightWrist ?? 0) - wristWave)
   }
 
   if (maybe(0.08 + style.limbChaos * 0.24 + envelopeEnergy * 0.14)) {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { danceSequences, dynamicRandomSequenceId, getDanceSequence } from './sequences'
+import { danceSequences, dynamicRandomSequenceId, getDanceSequence, isDynamicDance, pickAutoDanceSequenceId } from './sequences'
 
 describe('puppet dancer DanceMap v1', () => {
   it('keeps every dance on schemaVersion 1 with string pose references', () => {
@@ -29,6 +29,25 @@ describe('puppet dancer DanceMap v1', () => {
     for (const step of second.steps) {
       expect(second.poses[step.pose], `dynamic random step references missing pose ${step.pose}`).toBeDefined()
     }
+  })
+
+  it('lets auto switching slot static sequence ids around the dynamic mainline', () => {
+    const seen = new Set<string>()
+    for (let i = 0; i < 80; i += 1) {
+      const id = pickAutoDanceSequenceId({
+        energy: 0.22,
+        bass: 0.5,
+        highs: 0.18,
+        centroid: 0.3,
+        flux: 0.2,
+        bassFlux: 0.18,
+        highsFlux: 0.12,
+      })
+      expect(danceSequences[id]).toBeDefined()
+      seen.add(id)
+    }
+    expect(seen.has(dynamicRandomSequenceId)).toBe(true)
+    expect(Array.from(seen).some(id => !isDynamicDance(id))).toBe(true)
   })
 
   it('uses reduced-motion fallback maps when declared', () => {

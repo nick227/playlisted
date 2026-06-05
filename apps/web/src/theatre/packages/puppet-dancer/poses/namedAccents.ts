@@ -41,9 +41,9 @@ export const shoulderPop: MotionAccentMap = {
   rotations: {
     chest: 5,
     leftShoulder: 9,
-    rightShoulder: 9,
+    rightShoulder: -9,
     leftElbow: 4,
-    rightElbow: 4,
+    rightElbow: -4,
   },
 }
 
@@ -55,9 +55,9 @@ export const chaosStretch: MotionAccentMap = {
     chest: -18,
     head: 24,
     leftShoulder: 10,
-    rightShoulder: 10,
+    rightShoulder: -10,
     leftElbow: -12,
-    rightElbow: -12,
+    rightElbow: 12,
     leftWrist: 28,
     rightWrist: -28,
   },

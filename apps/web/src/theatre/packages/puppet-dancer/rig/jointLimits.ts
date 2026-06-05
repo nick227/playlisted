@@ -11,11 +11,15 @@ export type JointLimit = {
   max: number
 }
 
-/** Positive left / negative right elbow bends fold the forearm back across the torso. */
-export const LEFT_ELBOW_MIN = -120
-export const LEFT_ELBOW_MAX = 105
-export const RIGHT_ELBOW_MIN = -105
-export const RIGHT_ELBOW_MAX = 128
+/** Arm joints are absolute segment directions in canvas space, not anatomical bend deltas. */
+export const LEFT_ELBOW_MIN = 65
+export const LEFT_ELBOW_MAX = 295
+export const RIGHT_ELBOW_MIN = -115
+export const RIGHT_ELBOW_MAX = 125
+export const LEFT_WRIST_MIN = 55
+export const LEFT_WRIST_MAX = 305
+export const RIGHT_WRIST_MIN = -125
+export const RIGHT_WRIST_MAX = 135
 
 /** Authoritative rotation ranges for pose solving and procedural generation. */
 export const JOINT_LIMITS: Partial<Record<PuppetJointId, JointLimit>> = {
@@ -23,6 +27,8 @@ export const JOINT_LIMITS: Partial<Record<PuppetJointId, JointLimit>> = {
   rightShoulder: { min: RIGHT_SHOULDER_FORWARD_MIN, max: RIGHT_SHOULDER_FORWARD_MAX },
   leftElbow: { min: LEFT_ELBOW_MIN, max: LEFT_ELBOW_MAX },
   rightElbow: { min: RIGHT_ELBOW_MIN, max: RIGHT_ELBOW_MAX },
+  leftWrist: { min: LEFT_WRIST_MIN, max: LEFT_WRIST_MAX },
+  rightWrist: { min: RIGHT_WRIST_MIN, max: RIGHT_WRIST_MAX },
   leftHip: { min: 0, max: 240 },
   leftKnee: { min: -40, max: 220 },
   rightHip: { min: -90, max: 170 },

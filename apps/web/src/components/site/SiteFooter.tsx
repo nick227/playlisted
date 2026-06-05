@@ -60,6 +60,7 @@ export function SiteFooter() {
           </nav>
           </div>
 
+
         <div className="flex justify-end items-center gap-2">
           
             <p className="text-sm">digital music project</p>

@@ -10,8 +10,10 @@ import {
   JOINT_LIMITS,
   LEFT_ELBOW_MAX,
   LEFT_ELBOW_MIN,
+  LEFT_WRIST_MAX,
   RIGHT_ELBOW_MAX,
   RIGHT_ELBOW_MIN,
+  RIGHT_WRIST_MIN,
   clampJointAngle,
   lerpJointAngle,
 } from './jointLimits'
@@ -33,14 +35,19 @@ describe('puppet joint limits', () => {
     expect(clampJointAngle('rightShoulder', 140)).toBe(RIGHT_SHOULDER_FORWARD_MAX)
   })
 
-  it('blocks elbow folds that pull the forearm across the torso', () => {
-    expect(clampJointAngle('leftElbow', -56)).toBe(-56)
-    expect(clampJointAngle('leftElbow', 100)).toBe(100)
-    expect(clampJointAngle('rightElbow', -88)).toBe(-88)
-    expect(clampJointAngle('leftElbow', 124)).toBe(LEFT_ELBOW_MAX)
-    expect(clampJointAngle('rightElbow', -168)).toBe(RIGHT_ELBOW_MIN)
-    expect(clampJointAngle('leftElbow', 220)).toBe(LEFT_ELBOW_MAX)
+  it('keeps arm segment directions on their own side of the body', () => {
+    expect(clampJointAngle('leftElbow', 130)).toBe(130)
+    expect(clampJointAngle('leftElbow', 235)).toBe(235)
+    expect(clampJointAngle('leftElbow', 285)).toBe(285)
+    expect(clampJointAngle('rightElbow', 50)).toBe(50)
+    expect(clampJointAngle('rightElbow', -55)).toBe(-55)
+    expect(clampJointAngle('rightElbow', -105)).toBe(-105)
+    expect(clampJointAngle('leftElbow', -56)).toBe(LEFT_ELBOW_MIN)
+    expect(clampJointAngle('rightElbow', 140)).toBe(RIGHT_ELBOW_MAX)
+    expect(clampJointAngle('leftElbow', 320)).toBe(LEFT_ELBOW_MAX)
     expect(clampJointAngle('rightElbow', -220)).toBe(RIGHT_ELBOW_MIN)
+    expect(clampJointAngle('leftWrist', 320)).toBe(LEFT_WRIST_MAX)
+    expect(clampJointAngle('rightWrist', -220)).toBe(RIGHT_WRIST_MIN)
   })
 
   it('lerps shoulders inside the forward arc without wrapping through the body', () => {

@@ -45,6 +45,8 @@ function solveArms(posture: (typeof ARM_POSTURES)[keyof typeof ARM_POSTURES]) {
   return {
     leftRaised: leftWrist.y < chest.y,
     rightRaised: rightWrist.y < chest.y,
+    leftOutside: leftWrist.x < chest.x,
+    rightOutside: rightWrist.x > chest.x,
   }
 }
 
@@ -53,19 +55,39 @@ describe('puppet arm postures', () => {
     const pose = solveArms(ARM_POSTURES.leftUpRightDown)
     expect(pose.leftRaised).toBe(true)
     expect(pose.rightRaised).toBe(false)
+    expect(pose.leftOutside).toBe(true)
+    expect(pose.rightOutside).toBe(true)
   })
 
   it('maps visual right-up/left-down correctly on canvas', () => {
     const pose = solveArms(ARM_POSTURES.rightUpLeftDown)
     expect(pose.leftRaised).toBe(false)
     expect(pose.rightRaised).toBe(true)
+    expect(pose.leftOutside).toBe(true)
+    expect(pose.rightOutside).toBe(true)
   })
 
   it('raises both wrists for bothUp and lowers both for bothDown', () => {
     const up = solveArms(ARM_POSTURES.bothUp)
     const down = solveArms(ARM_POSTURES.bothDown)
     expect(up.leftRaised && up.rightRaised).toBe(true)
+    expect(up.leftOutside && up.rightOutside).toBe(true)
     expect(down.leftRaised || down.rightRaised).toBe(false)
+    expect(down.leftOutside && down.rightOutside).toBe(true)
+  })
+
+  it('supports single-side top and bottom arm directions', () => {
+    const leftTop = solveArms(ARM_POSTURES.leftTopRightOut)
+    const rightTop = solveArms(ARM_POSTURES.rightTopLeftOut)
+    const leftBottom = solveArms(ARM_POSTURES.leftBottomRightOut)
+    const rightBottom = solveArms(ARM_POSTURES.rightBottomLeftOut)
+
+    expect(leftTop.leftRaised && leftTop.leftOutside && leftTop.rightOutside).toBe(true)
+    expect(rightTop.rightRaised && rightTop.rightOutside && rightTop.leftOutside).toBe(true)
+    expect(leftBottom.leftRaised).toBe(false)
+    expect(leftBottom.leftOutside && leftBottom.rightOutside).toBe(true)
+    expect(rightBottom.rightRaised).toBe(false)
+    expect(rightBottom.leftOutside && rightBottom.rightOutside).toBe(true)
   })
 
   it('can pick music-biased postures without throwing', () => {
