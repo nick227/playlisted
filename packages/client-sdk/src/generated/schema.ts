@@ -331,6 +331,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/follows/artists": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the current user's followed artists */
+        get: operations["listFollowedArtists"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/follows/artists/{artistId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Follow an artist */
+        post: operations["followArtist"];
+        /** Unfollow an artist */
+        delete: operations["unfollowArtist"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me/most-played": {
         parameters: {
             query?: never;
@@ -2121,6 +2156,20 @@ export interface components {
             /** Format: date-time */
             savedAt: string;
         };
+        FollowedArtistItem: components["schemas"]["UserSummary"] & {
+            /** Format: date-time */
+            followedAt: string;
+        };
+        FollowedArtistsResponse: {
+            data: components["schemas"]["FollowedArtistItem"][];
+            meta: components["schemas"]["PaginationMeta"];
+        };
+        FollowedArtistSavedResponse: {
+            id: string;
+            artistId: string;
+            /** Format: date-time */
+            followedAt: string;
+        };
         MostPlayedItem: components["schemas"]["PersonalTrackItem"] & {
             userPlayCount: number;
         };
@@ -3387,6 +3436,116 @@ export interface operations {
         };
     };
     removeFavoriteArtist: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artistId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Removed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listFollowedArtists: {
+        parameters: {
+            query?: {
+                page?: components["parameters"]["Page"];
+                pageSize?: components["parameters"]["PageSize"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Followed artists */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FollowedArtistsResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    followArtist: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artistId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Followed */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FollowedArtistSavedResponse"];
+                };
+            };
+            /** @description Invalid follow request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Artist not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    unfollowArtist: {
         parameters: {
             query?: never;
             header?: never;

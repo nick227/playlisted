@@ -91,12 +91,21 @@ const RECORDING_WITH_UPLOADER_INCLUDE = {
   publishedPlaylist: { select: { id: true, slug: true, title: true, coverArtUrl: true } },
 } as const;
 
-function mapFavoriteArtist(follow: any) {
+function mapFavoriteArtist(favorite: any) {
+  return {
+    ...favorite.artist,
+    createdAt: favorite.artist.createdAt.toISOString(),
+    updatedAt: favorite.artist.updatedAt.toISOString(),
+    savedAt: favorite.createdAt.toISOString(),
+  };
+}
+
+function mapFollowedArtist(follow: any) {
   return {
     ...follow.following,
     createdAt: follow.following.createdAt.toISOString(),
     updatedAt: follow.following.updatedAt.toISOString(),
-    savedAt: follow.createdAt.toISOString(),
+    followedAt: follow.createdAt.toISOString(),
   };
 }
 
@@ -552,23 +561,23 @@ meRouter.get("/favorites/artists", async (req, res, next) => {
 
     const page = Number(req.query.page ?? DEFAULT_PAGE);
     const pageSize = Number(req.query.pageSize ?? DEFAULT_PAGE_SIZE);
-    const where = { followerId: auth.user.id };
+    const where = { userId: auth.user.id };
 
-    const [follows, total] = await Promise.all([
-      prisma.userFollow.findMany({
+    const [favorites, total] = await Promise.all([
+      prisma.artistFavorite.findMany({
         where,
         orderBy: { createdAt: "desc" },
         skip: (page - 1) * pageSize,
         take: pageSize,
         include: {
-          following: { select: ARTIST_SELECT },
+          artist: { select: ARTIST_SELECT },
         },
       }),
-      prisma.userFollow.count({ where }),
+      prisma.artistFavorite.count({ where }),
     ]);
 
     return res.json({
-      data: follows.map(mapFavoriteArtist),
+      data: favorites.map(mapFavoriteArtist),
       meta: { page, pageSize, total },
     });
   } catch (error) {
@@ -598,6 +607,90 @@ meRouter.post("/favorites/artists/:artistId", async (req, res, next) => {
       return res.status(404).json({ error: "artist_not_found", message: "Artist not found." });
     }
 
+    const favorite = await prisma.artistFavorite.upsert({
+      where: { userId_artistId: { userId: auth.user.id, artistId } },
+      create: { userId: auth.user.id, artistId },
+      update: {},
+    });
+
+    return res.status(201).json({
+      id: favorite.id,
+      artistId: favorite.artistId,
+      savedAt: favorite.createdAt.toISOString(),
+    });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+meRouter.delete("/favorites/artists/:artistId", async (req, res, next) => {
+  try {
+    const auth = await requireAuth(req, res);
+    if (!auth) return;
+
+    await prisma.artistFavorite.deleteMany({
+      where: { userId: auth.user.id, artistId: req.params.artistId },
+    });
+
+    return res.status(204).send();
+  } catch (error) {
+    return next(error);
+  }
+});
+
+meRouter.get("/follows/artists", async (req, res, next) => {
+  try {
+    const auth = await requireAuth(req, res);
+    if (!auth) return;
+
+    const page = Number(req.query.page ?? DEFAULT_PAGE);
+    const pageSize = Number(req.query.pageSize ?? DEFAULT_PAGE_SIZE);
+    const where = { followerId: auth.user.id };
+
+    const [follows, total] = await Promise.all([
+      prisma.userFollow.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        include: {
+          following: { select: ARTIST_SELECT },
+        },
+      }),
+      prisma.userFollow.count({ where }),
+    ]);
+
+    return res.json({
+      data: follows.map(mapFollowedArtist),
+      meta: { page, pageSize, total },
+    });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+meRouter.post("/follows/artists/:artistId", async (req, res, next) => {
+  try {
+    const auth = await requireAuth(req, res);
+    if (!auth) return;
+
+    const { artistId } = req.params;
+    if (artistId === auth.user.id) {
+      return res.status(400).json({
+        error: "cannot_follow_self",
+        message: "You cannot follow yourself.",
+      });
+    }
+
+    const artist = await prisma.user.findUnique({
+      where: { id: artistId },
+      select: { id: true },
+    });
+
+    if (!artist) {
+      return res.status(404).json({ error: "artist_not_found", message: "Artist not found." });
+    }
+
     const follow = await prisma.userFollow.upsert({
       where: { followerId_followingId: { followerId: auth.user.id, followingId: artistId } },
       create: { followerId: auth.user.id, followingId: artistId },
@@ -607,14 +700,14 @@ meRouter.post("/favorites/artists/:artistId", async (req, res, next) => {
     return res.status(201).json({
       id: follow.id,
       artistId: follow.followingId,
-      savedAt: follow.createdAt.toISOString(),
+      followedAt: follow.createdAt.toISOString(),
     });
   } catch (error) {
     return next(error);
   }
 });
 
-meRouter.delete("/favorites/artists/:artistId", async (req, res, next) => {
+meRouter.delete("/follows/artists/:artistId", async (req, res, next) => {
   try {
     const auth = await requireAuth(req, res);
     if (!auth) return;

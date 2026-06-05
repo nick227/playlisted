@@ -585,6 +585,90 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /api/v1/me/follows/artists:
+    get:
+      tags: [Me]
+      operationId: listFollowedArtists
+      summary: List the current user's followed artists
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Followed artists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FollowedArtistsResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/me/follows/artists/{artistId}:
+    post:
+      tags: [Me]
+      operationId: followArtist
+      summary: Follow an artist
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: artistId
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Followed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FollowedArtistSavedResponse'
+        '400':
+          description: Invalid follow request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Artist not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags: [Me]
+      operationId: unfollowArtist
+      summary: Unfollow an artist
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: artistId
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Removed
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /api/v1/me/most-played:
     get:
       tags: [Me]
@@ -4950,6 +5034,41 @@ components:
         artistId:
           type: string
         savedAt:
+          type: string
+          format: date-time
+
+    FollowedArtistItem:
+      allOf:
+        - $ref: '#/components/schemas/UserSummary'
+        - type: object
+          required: [followedAt]
+          properties:
+            followedAt:
+              type: string
+              format: date-time
+
+    FollowedArtistsResponse:
+      type: object
+      additionalProperties: false
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/FollowedArtistItem'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    FollowedArtistSavedResponse:
+      type: object
+      additionalProperties: false
+      required: [id, artistId, followedAt]
+      properties:
+        id:
+          type: string
+        artistId:
+          type: string
+        followedAt:
           type: string
           format: date-time
 

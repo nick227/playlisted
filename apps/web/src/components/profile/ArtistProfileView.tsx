@@ -8,7 +8,10 @@ import { BrowseBreadcrumbs } from "@/components/library/BrowseBreadcrumbs";
 import { useArtistTracks } from "@/hooks/useArtistTracks";
 import { useTopArtists } from "@/hooks/useCharts";
 import { genresFromSongs } from "@/components/library/libraryFilterUtils";
+import { librarySongToQueueTrack } from "@/lib/queueTrack";
 import { artistDetailCrumbs, ARTIST_PROFILE_LAYOUT_CLASS } from "@/lib/browsePaths";
+import { artistProfileArtistOrigin } from "@/lib/playbackOrigin";
+import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 import { useAuth } from "@/providers/AuthProvider";
 
 import { ArtistProfileCollectionPanel } from "./ArtistProfileCollectionPanel";
@@ -26,6 +29,7 @@ export function ArtistProfileView({ user, preview }: ArtistProfileViewProps) {
   const relatedArtistLimit = 6;
   const { data: related } = useTopArtists("7d", relatedArtistLimit + 1);
   const { user: authUser } = useAuth();
+  const { setQueue, togglePlay, activeOriginKey, state } = useAudioPlayer();
   const { tracks, isLoading: tracksLoading } = useArtistTracks(user.id);
 
   const isOwner = authUser?.id === user.id;
@@ -36,6 +40,14 @@ export function ArtistProfileView({ user, preview }: ArtistProfileViewProps) {
   );
   const displayName = preview?.displayName ?? user.displayName;
   const browseCrumbs = artistDetailCrumbs(displayName);
+  const playbackOrigin = artistProfileArtistOrigin(user.id);
+  const artistHasCurrent = activeOriginKey === playbackOrigin;
+  const artistIsPlaying = artistHasCurrent && state === "playing";
+  const artistIsPaused = artistHasCurrent && state === "paused";
+  const queueTracks = useMemo(
+    () => tracks.map((track) => librarySongToQueueTrack(track, displayName)),
+    [displayName, tracks],
+  );
   const relatedArtists = useMemo(() => {
     return (related?.data ?? [])
       .filter((item: TopArtistItem) => item.userId !== user.id)
@@ -51,6 +63,32 @@ export function ArtistProfileView({ user, preview }: ArtistProfileViewProps) {
     });
   }, [user.publicPlaylists]);
 
+  function playArtist() {
+    if (artistHasCurrent) {
+      togglePlay();
+      return;
+    }
+
+    if (queueTracks.length === 0) return;
+
+    const firstTrack = queueTracks[0];
+    setQueue(
+      queueTracks,
+      0,
+      {
+        playlistId: firstTrack.publishedPlaylistId,
+        playlistOwnerUsername: user.username,
+        playlistSlug: firstTrack.playlistSlug ?? undefined,
+        sourceContext: "artist-profile",
+      },
+      {
+        segmentLabel: displayName,
+        playbackOrigin,
+        originScope: "artist",
+      },
+    );
+  }
+
   return (
     <div className="pb-16">
       <div className={ARTIST_PROFILE_LAYOUT_CLASS}>
@@ -64,6 +102,9 @@ export function ArtistProfileView({ user, preview }: ArtistProfileViewProps) {
           totalStreams={totalStreams}
           isOwner={isOwner}
           preview={preview}
+          onPlay={queueTracks.length > 0 ? playArtist : undefined}
+          isPlaying={artistIsPlaying}
+          isPaused={artistIsPaused}
         />
 
         {sortedPlaylists.length > 0 ? (

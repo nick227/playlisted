@@ -1,7 +1,10 @@
 import type { UserDetail } from "@playlisted/client-sdk";
-import { ExternalLink, Share2 } from "lucide-react";
+import { Check, ExternalLink, Pause, Play, Plus, Share2 } from "lucide-react";
+import { useEffect, useState } from "react";
 
 import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
+import { useAuthAction } from "@/hooks/useAuthAction";
+import { useFollowedArtistIds, useToggleFollowArtist } from "@/hooks/useFavorites";
 import { formatPlayCount } from "@/lib/format";
 import { coverFallback } from "@/lib/routes";
 import { shareContent } from "@/lib/shareContent";
@@ -13,9 +16,65 @@ type ArtistProfileHeroProps = {
   totalStreams: number;
   isOwner: boolean;
   preview?: Partial<Pick<UserDetail, "displayName" | "username" | "bio" | "profileLinks">>;
+  onPlay?: () => void;
+  isPlaying?: boolean;
+  isPaused?: boolean;
 };
 
-export function ArtistProfileHero({ user, genreNames, totalStreams, isOwner, preview }: ArtistProfileHeroProps) {
+function ArtistFollowButton({ artistId }: { artistId: string }) {
+  const requireAuth = useAuthAction();
+  const { ids: followedArtistIds } = useFollowedArtistIds();
+  const { add, remove } = useToggleFollowArtist();
+  const serverFollowing = followedArtistIds.has(artistId);
+  const pending = add.isPending || remove.isPending;
+  const [optimisticFollowing, setOptimisticFollowing] = useState<boolean | null>(null);
+  const isFollowing = optimisticFollowing ?? serverFollowing;
+
+  useEffect(() => {
+    if (!pending && optimisticFollowing === serverFollowing) {
+      setOptimisticFollowing(null);
+    }
+  }, [optimisticFollowing, pending, serverFollowing]);
+
+  function handleClick() {
+    requireAuth(() => {
+      const nextFollowing = !isFollowing;
+      setOptimisticFollowing(nextFollowing);
+      const reset = () => setOptimisticFollowing(serverFollowing);
+
+      if (isFollowing) remove.mutate(artistId, { onError: reset });
+      else add.mutate(artistId, { onError: reset });
+    });
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      disabled={pending}
+      aria-label={isFollowing ? "Unfollow artist" : "Follow artist"}
+      aria-pressed={isFollowing}
+      className={[
+        "inline-flex h-10 items-center justify-center gap-2 rounded-full border border-white/20 px-4 text-sm font-semibold text-white transition hover:bg-white/10",
+        isFollowing ? "bg-white/10" : "",
+      ].join(" ")}
+    >
+      {isFollowing ? <Check size={18} /> : <Plus size={18} />}
+      <span>{isFollowing ? "Following" : "Follow"}</span>
+    </button>
+  );
+}
+
+export function ArtistProfileHero({
+  user,
+  genreNames,
+  totalStreams,
+  isOwner,
+  preview,
+  onPlay,
+  isPlaying,
+  isPaused,
+}: ArtistProfileHeroProps) {
   const displayName = preview?.displayName ?? user.displayName;
   const username = preview?.username ?? user.username;
   const bio = preview?.bio ?? user.bio;
@@ -44,14 +103,6 @@ export function ArtistProfileHero({ user, genreNames, totalStreams, isOwner, pre
         <div className="min-w-0 space-y-5">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <p className="text-sm text-[var(--color-text-muted)]">@{username}</p>
-            <button
-              type="button"
-              onClick={() => void handleShare()}
-              className="inline-flex items-center gap-1.5 text-sm text-[var(--color-text-muted)] transition hover:text-white"
-            >
-              <Share2 size={14} />
-              Share
-            </button>
           </div>
 
           <h1 className="max-w-3xl text-4xl font-light leading-tight tracking-tight text-white md:text-5xl">
@@ -74,22 +125,6 @@ export function ArtistProfileHero({ user, genreNames, totalStreams, isOwner, pre
             <span className="shrink-0 whitespace-nowrap">
               {formatPlayCount(totalStreams) || "0"} streams
             </span>
-            {!isOwner ? (
-              <>
-                <span aria-hidden className="mx-1.5 shrink-0 text-white/20">
-                  ·
-                </span>
-                <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap">
-                  Like
-                  <FavoriteHeartButton
-                    target="artist"
-                    id={user.id}
-                    variant="inline"
-                    className="!relative !opacity-100 !p-0"
-                  />
-                </span>
-              </>
-            ) : null}
           </p>
 
           {profileLinks.length > 0 ? (
@@ -114,6 +149,42 @@ export function ArtistProfileHero({ user, genreNames, totalStreams, isOwner, pre
               })}
             </nav>
           ) : null}
+
+          <div className="mt-6 flex flex-nowrap items-center gap-3 overflow-x-auto collection-controls">
+            {onPlay ? (
+              <button
+                type="button"
+                onClick={onPlay}
+                className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-black"
+              >
+                {isPlaying ? (
+                  <Pause size={18} fill="currentColor" />
+                ) : (
+                  <Play size={18} fill="currentColor" />
+                )}
+                {isPlaying ? "Playing" : isPaused ? "Resume" : "Play"}
+              </button>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => void handleShare()}
+              className="inline-flex h-10 w-20 items-center justify-center rounded-full border border-white/20 text-white hover:bg-white/10"
+              aria-label="Share"
+            >
+              <Share2 size={18} />
+            </button>
+            {!isOwner ? (
+              <>
+                <FavoriteHeartButton
+                  target="artist"
+                  id={user.id}
+                  variant="inline"
+                  className="!h-10 !w-10 !rounded-full !border !border-white/20 !bg-transparent !opacity-100"
+                />
+                <ArtistFollowButton artistId={user.id} />
+              </>
+            ) : null}
+          </div>
         </div>
       </div>
 

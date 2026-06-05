@@ -105,6 +105,8 @@ model User {
   createdHomepageFeature HomepageFeature[]  @relation("HomepageFeatureCreator")
   following              UserFollow[]       @relation("UserFollowing")
   followers              UserFollow[]       @relation("UserFollowers")
+  artistFavorites        ArtistFavorite[]   @relation("ArtistFavorites")
+  favoritedBy            ArtistFavorite[]   @relation("ArtistFavoritedBy")
   sessions               Session[]
   apiKeys                ApiKey[]
   uploadAssets           UploadAsset[]
@@ -358,6 +360,19 @@ model UserFollow {
 
   @@unique([followerId, followingId])
   @@index([followingId])
+}
+
+model ArtistFavorite {
+  id        String   @id @default(cuid()) @db.VarChar(191)
+  userId    String   @db.VarChar(191)
+  artistId  String   @db.VarChar(191)
+  createdAt DateTime @default(now())
+
+  user   User @relation("ArtistFavorites", fields: [userId], references: [id], onDelete: Cascade)
+  artist User @relation("ArtistFavoritedBy", fields: [artistId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, artistId])
+  @@index([artistId])
 }
 
 model ProfileViewEvent {

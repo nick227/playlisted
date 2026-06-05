@@ -56,6 +56,8 @@ export type CollectionPlaylistItem = components["schemas"]["CollectionPlaylistIt
 export type CollectionPlaylistsResponse = components["schemas"]["CollectionPlaylistsResponse"];
 export type FavoriteArtistItem = components["schemas"]["FavoriteArtistItem"];
 export type FavoriteArtistsResponse = components["schemas"]["FavoriteArtistsResponse"];
+export type FollowedArtistItem = components["schemas"]["FollowedArtistItem"];
+export type FollowedArtistsResponse = components["schemas"]["FollowedArtistsResponse"];
 export type MostPlayedItem = components["schemas"]["MostPlayedItem"];
 export type MostPlayedResponse = components["schemas"]["MostPlayedResponse"];
 export type RecentlyPlayedItem = components["schemas"]["RecentlyPlayedItem"];
@@ -200,6 +202,9 @@ export interface PlaylistedApi {
     favoriteArtists(query?: { page?: number; pageSize?: number }): Promise<FavoriteArtistsResponse>;
     addFavoriteArtist(artistId: string): Promise<{ id: string; artistId: string; savedAt: string }>;
     removeFavoriteArtist(artistId: string): Promise<void>;
+    followedArtists(query?: { page?: number; pageSize?: number }): Promise<FollowedArtistsResponse>;
+    followArtist(artistId: string): Promise<{ id: string; artistId: string; followedAt: string }>;
+    unfollowArtist(artistId: string): Promise<void>;
     mostPlayed(query?: { limit?: number }): Promise<MostPlayedResponse>;
     recentlyPlayed(query?: { limit?: number }): Promise<RecentlyPlayedResponse>;
   };
@@ -685,6 +690,28 @@ export function createPlaylistedApi(options: PlaylistedClientOptions = {}): Play
             params: { path: { artistId } },
           }),
           "Failed to remove favorite artist.",
+        ).then(() => undefined);
+      },
+      followedArtists(query = {}) {
+        return unwrap(
+          raw.GET("/api/v1/me/follows/artists", { params: { query } }),
+          "Failed to load followed artists.",
+        );
+      },
+      followArtist(artistId) {
+        return unwrap(
+          raw.POST("/api/v1/me/follows/artists/{artistId}", {
+            params: { path: { artistId } },
+          }),
+          "Failed to follow artist.",
+        );
+      },
+      unfollowArtist(artistId) {
+        return unwrap(
+          raw.DELETE("/api/v1/me/follows/artists/{artistId}", {
+            params: { path: { artistId } },
+          }),
+          "Failed to unfollow artist.",
         ).then(() => undefined);
       },
       mostPlayed(query = {}) {

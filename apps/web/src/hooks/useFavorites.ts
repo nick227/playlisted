@@ -30,6 +30,15 @@ export function useFavoriteArtists() {
   });
 }
 
+export function useFollowedArtists() {
+  const { accessToken } = useAuth();
+  return useQuery({
+    queryKey: ["me", "follows", "artists"],
+    queryFn: () => authedApi(accessToken).me.followedArtists({ pageSize: 100 }),
+    enabled: Boolean(accessToken),
+  });
+}
+
 export function useFavoriteIds() {
   const query = useFavoriteRecordings();
   const ids = new Set(query.data?.data.map((r) => r.id) ?? []);
@@ -44,6 +53,12 @@ export function useFavoritePlaylistIds() {
 
 export function useFavoriteArtistIds() {
   const query = useFavoriteArtists();
+  const ids = new Set(query.data?.data.map((artist) => artist.id) ?? []);
+  return { ids, isLoading: query.isLoading };
+}
+
+export function useFollowedArtistIds() {
+  const query = useFollowedArtists();
   const ids = new Set(query.data?.data.map((artist) => artist.id) ?? []);
   return { ids, isLoading: query.isLoading };
 }
@@ -105,6 +120,27 @@ export function useToggleFavoriteArtist() {
 
   const remove = useMutation({
     mutationFn: (artistId: string) => client.me.removeFavoriteArtist(artistId),
+    onSuccess: invalidate,
+  });
+
+  return { add, remove };
+}
+
+export function useToggleFollowArtist() {
+  const { accessToken } = useAuth();
+  const client = authedApi(accessToken);
+  const queryClient = useQueryClient();
+
+  const invalidate = () =>
+    queryClient.invalidateQueries({ queryKey: ["me", "follows", "artists"] });
+
+  const add = useMutation({
+    mutationFn: (artistId: string) => client.me.followArtist(artistId),
+    onSuccess: invalidate,
+  });
+
+  const remove = useMutation({
+    mutationFn: (artistId: string) => client.me.unfollowArtist(artistId),
     onSuccess: invalidate,
   });
 
