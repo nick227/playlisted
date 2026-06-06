@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -16,6 +16,8 @@ import theatreController from "@/theatre/controller/lazyController";
 const LISTENER_ID_KEY = "playlisted.radio.listenerId";
 const MAX_MSG_LENGTH = 300;
 const TEXTAREA_MAX_H = 96;
+const RADIO_TRANSITION_RETRY_MS = 1000;
+const RADIO_TRANSITION_MAX_RETRIES = 8;
 
 function getListenerId() {
   const existing = window.localStorage.getItem(LISTENER_ID_KEY);
@@ -37,6 +39,26 @@ function timeAgo(isoString: string) {
   return `${Math.floor(diffMin / 60)}h`;
 }
 
+function getAudioHref(audioUrl: string) {
+  return new URL(audioUrl, window.location.origin).href;
+}
+
+function getRadioSeekTime(elapsedSeconds: number | null | undefined, durationSeconds: number | null | undefined) {
+  const elapsed = Number.isFinite(elapsedSeconds) ? Math.max(0, elapsedSeconds ?? 0) : 0;
+  if (!Number.isFinite(durationSeconds) || !durationSeconds || durationSeconds <= 0) return elapsed;
+  return Math.min(elapsed, Math.max(0, durationSeconds - 0.25));
+}
+
+function isRadioElapsedAtEnd(elapsedSeconds: number | null | undefined, durationSeconds: number | null | undefined) {
+  return (
+    Number.isFinite(elapsedSeconds) &&
+    Number.isFinite(durationSeconds) &&
+    durationSeconds != null &&
+    durationSeconds > 0 &&
+    (elapsedSeconds ?? 0) >= durationSeconds - 0.1
+  );
+}
+
 export function RadioPage() {
   const { user, accessToken } = useAuth();
   const { releasePlayback } = useAudioPlayer();
@@ -45,6 +67,7 @@ export function RadioPage() {
   const chatBottomRef = useRef<HTMLDivElement | null>(null);
   const chatScrollRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const transitionRetryTimerRef = useRef<number | null>(null);
   const queryClient = useQueryClient();
 
   const [playing, setPlaying] = useState(false);
@@ -71,6 +94,7 @@ export function RadioPage() {
     queryFn: () => api.radio.get(),
     refetchInterval: 10_000,
   });
+  const refetchRadio = radioQuery.refetch;
 
   const station = radioQuery.data;
   const nowPlaying = station?.nowPlaying;
@@ -105,13 +129,6 @@ export function RadioPage() {
   }, [releasePlayback]);
 
   useEffect(() => {
-    return () => {
-      theatreController.registerPlaybackSource(null);
-      theatreController.setCanEnter(false);
-    };
-  }, []);
-
-  useEffect(() => {
     theatreController.setCanEnter(playing);
   }, [playing]);
 
@@ -128,6 +145,73 @@ export function RadioPage() {
     theatreController.registerPlaybackSource(null);
   }
 
+  const clearTransitionRetry = useCallback(() => {
+    if (transitionRetryTimerRef.current == null) return;
+    window.clearTimeout(transitionRetryTimerRef.current);
+    transitionRetryTimerRef.current = null;
+  }, []);
+
+  const syncAndPlayRadio = useCallback(async (track: NonNullable<typeof nowPlaying>) => {
+    const audio = audioRef.current;
+    if (!audio || !track.audioUrl) return false;
+
+    const nextSrc = getAudioHref(track.audioUrl);
+    const needsSource = audio.src !== nextSrc;
+    if (!needsSource && audio.ended && isRadioElapsedAtEnd(track.elapsedSeconds, track.durationSeconds)) {
+      return false;
+    }
+
+    if (needsSource) {
+      audio.src = track.audioUrl;
+      audio.load();
+    }
+
+    const target = getRadioSeekTime(track.elapsedSeconds, track.durationSeconds);
+    if (needsSource || audio.ended || Math.abs(audio.currentTime - target) > 3) {
+      audio.currentTime = target;
+    }
+
+    try {
+      await audio.play();
+      setPlaying(true);
+      return true;
+    } catch {
+      setPlaying(false);
+      unbindTheatreFromRadio();
+      return false;
+    }
+  }, []);
+
+  const scheduleTransitionRefetch = useCallback((attempt = 0) => {
+    clearTransitionRetry();
+    transitionRetryTimerRef.current = window.setTimeout(() => {
+      void refetchRadio().then(async ({ data }) => {
+        const nextTrack = data?.status === "LIVE" ? data.nowPlaying : null;
+        if (!nextTrack?.audioUrl) {
+          setPlaying(false);
+          unbindTheatreFromRadio();
+          return;
+        }
+
+        const audio = audioRef.current;
+        const stillWaitingForNextTrack =
+          audio?.ended &&
+          audio.src === getAudioHref(nextTrack.audioUrl) &&
+          isRadioElapsedAtEnd(nextTrack.elapsedSeconds, nextTrack.durationSeconds);
+
+        if (stillWaitingForNextTrack && attempt < RADIO_TRANSITION_MAX_RETRIES) {
+          scheduleTransitionRefetch(attempt + 1);
+          return;
+        }
+
+        const played = await syncAndPlayRadio(nextTrack);
+        if (played && audioRef.current?.ended && attempt < RADIO_TRANSITION_MAX_RETRIES) {
+          scheduleTransitionRefetch(attempt + 1);
+        }
+      });
+    }, attempt === 0 ? 0 : RADIO_TRANSITION_RETRY_MS);
+  }, [clearTransitionRetry, refetchRadio, syncAndPlayRadio]);
+
   function handleRadioPlay(el: HTMLAudioElement) {
     setPlaying(true);
     bindTheatreToRadio(el);
@@ -138,6 +222,19 @@ export function RadioPage() {
     setPlaying(false);
     unbindTheatreFromRadio();
   }
+
+  function handleRadioEnded() {
+    if (!playing) return;
+    scheduleTransitionRefetch();
+  }
+
+  useEffect(() => {
+    return () => {
+      clearTransitionRetry();
+      theatreController.registerPlaybackSource(null);
+      theatreController.setCanEnter(false);
+    };
+  }, [clearTransitionRetry]);
 
   // Mark messages as seen while chat is open
   useEffect(() => {
@@ -194,25 +291,35 @@ export function RadioPage() {
 
   // Audio sync
   useEffect(() => {
-    if (!playing || !audioRef.current || !nowPlaying?.audioUrl) return;
-    const audio = audioRef.current;
-    const needsSource = audio.src !== new URL(nowPlaying.audioUrl, window.location.origin).href;
-    if (needsSource) { audio.src = nowPlaying.audioUrl; audio.load(); }
-    const target = nowPlaying.elapsedSeconds ?? 0;
-    if (Number.isFinite(target) && Math.abs(audio.currentTime - target) > 3) {
-      audio.currentTime = target;
+    if (!playing) return;
+    if (!isLive || !nowPlaying?.audioUrl) {
+      clearTransitionRetry();
+      audioRef.current?.pause();
+      setPlaying(false);
+      unbindTheatreFromRadio();
+      return;
     }
-    void audio.play().catch(() => setPlaying(false));
-  }, [nowPlaying?.audioUrl, nowPlaying?.elapsedSeconds, playing]);
+    clearTransitionRetry();
+    if (
+      audioRef.current?.ended &&
+      audioRef.current.src === getAudioHref(nowPlaying.audioUrl) &&
+      isRadioElapsedAtEnd(nowPlaying.elapsedSeconds, nowPlaying.durationSeconds)
+    ) {
+      scheduleTransitionRefetch();
+      return;
+    }
+    void syncAndPlayRadio(nowPlaying);
+  }, [clearTransitionRetry, isLive, nowPlaying, playing, scheduleTransitionRefetch, syncAndPlayRadio]);
 
   async function togglePlayback() {
-    const audio = audioRef.current;
-    if (!audio || !nowPlaying?.audioUrl) return;
-    if (playing) { audio.pause(); setPlaying(false); return; }
-    audio.src = nowPlaying.audioUrl;
-    audio.load();
-    audio.currentTime = nowPlaying.elapsedSeconds ?? 0;
-    try { await audio.play(); setPlaying(true); } catch { setPlaying(false); }
+    if (!nowPlaying?.audioUrl) return;
+    if (playing) {
+      clearTransitionRetry();
+      audioRef.current?.pause();
+      setPlaying(false);
+      return;
+    }
+    await syncAndPlayRadio(nowPlaying);
   }
 
   function handleMessageChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
@@ -466,7 +573,7 @@ export function RadioPage() {
         data-radio-player
         crossOrigin="anonymous"
         onPlay={(e) => handleRadioPlay(e.currentTarget)}
-        onEnded={() => { setPlaying(false); void radioQuery.refetch(); }}
+        onEnded={handleRadioEnded}
         onPause={handleRadioPause}
       />
     </>
