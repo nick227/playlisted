@@ -8,14 +8,13 @@ import {
   SEARCH_DEBOUNCE_MS,
   SUGGESTION_PAGE_SIZE,
   buildRecentGroups,
-  buildResultGroups,
+  buildSuggestionGroups,
   flattenGroups,
 } from "@/components/search/searchAutocompleteModel";
 import type { SearchSuggestionOption } from "@/components/search/searchAutocompleteModel";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useIsSmUp } from "@/hooks/useIsSmUp";
 import { api } from "@/lib/api";
-import { normalizeSearchResponse } from "@/lib/searchResults";
 import { pushRecentSearch, readRecentSearches } from "@/lib/recentSearches";
 
 interface SearchAutocompleteProps {
@@ -96,21 +95,17 @@ export function SearchAutocomplete({
     isFetching,
   } = useQuery({
     queryKey: ["search", "suggest", trimmedQuery],
-    queryFn: () => api.search.unified({ q: trimmedQuery, pageSize: SUGGESTION_PAGE_SIZE }),
+    queryFn: () => api.search.suggestions({ q: trimmedQuery, limit: SUGGESTION_PAGE_SIZE }),
     enabled: open && hasQuery,
     staleTime: 30_000,
-    select: normalizeSearchResponse,
+    gcTime: 60_000,
   });
 
   const recentGroups = buildRecentGroups(recentSearches);
-  const resultGroups = hasQuery && data ? buildResultGroups(trimmedQuery, data) : [];
+  const resultGroups = hasQuery && data ? buildSuggestionGroups(trimmedQuery, data) : [];
   const groups = hasQuery ? resultGroups : recentGroups;
   const flatOptions = flattenGroups(groups);
-  const resultCount =
-    (data?.songs.length ?? 0) +
-    (data?.artists.length ?? 0) +
-    (data?.playlists.length ?? 0) +
-    (data?.genres.length ?? 0);
+  const resultCount = data?.groups.reduce((sum, group) => sum + group.options.length, 0) ?? 0;
 
   const hasInput = query.trim().length > 0;
   const hasSuggestions = hasInput || hasQuery || recentSearches.length > 0;

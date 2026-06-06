@@ -1,6 +1,7 @@
 import { TagKind } from "@prisma/client";
 import { Router } from "express";
 
+import { clearPublicCatalogCaches } from "../../lib/publicCatalogCache.js";
 import { prisma } from "../../lib/prisma.js";
 import { requireAdmin } from "../../lib/requireAdmin.js";
 import { slugify } from "../../utils/slug.js";
@@ -39,6 +40,7 @@ adminTagsRouter.post("/", async (req, res, next) => {
       data: { name: name.trim(), slug, kind: (kind as TagKind) ?? "GENRE" },
     });
 
+    clearPublicCatalogCaches();
     return res.status(201).json({ id: tag.id, name: tag.name, slug: tag.slug, kind: tag.kind, createdAt: tag.createdAt.toISOString() });
   } catch (error) {
     if (error && typeof error === "object" && "code" in error && (error as any).code === "P2002") {
@@ -64,6 +66,7 @@ adminTagsRouter.patch("/:tagId", async (req, res, next) => {
     if (kind !== undefined) data.kind = kind as TagKind;
 
     const tag = await prisma.tag.update({ where: { id: req.params.tagId }, data });
+    clearPublicCatalogCaches();
     return res.json({ id: tag.id, name: tag.name, slug: tag.slug, kind: tag.kind, createdAt: tag.createdAt.toISOString() });
   } catch (error) {
     if (error && typeof error === "object" && "code" in error && (error as any).code === "P2025") {
@@ -112,6 +115,7 @@ adminTagsRouter.post("/bulk", async (req, res, next) => {
       await prisma.tag.createMany({ data: toCreate });
     }
 
+    if (toCreate.length > 0) clearPublicCatalogCaches();
     return res.status(201).json({ created: toCreate.length, skipped: skipped.length, skippedNames: skipped });
   } catch (error) {
     return next(error);
@@ -122,6 +126,7 @@ adminTagsRouter.delete("/:tagId", async (req, res, next) => {
   try {
     if (!(await requireAdmin(req, res))) return;
     await prisma.tag.delete({ where: { id: req.params.tagId } });
+    clearPublicCatalogCaches();
     res.status(204).send();
   } catch (error) {
     if (error && typeof error === "object" && "code" in error && (error as any).code === "P2025") {

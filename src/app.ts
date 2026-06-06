@@ -1,11 +1,13 @@
 import "dotenv/config";
 
+import compression from "compression";
 import cors from "cors";
 import express from "express";
 import { isApiDocsEnabled } from "./lib/apiDocs.js";
 import { getCorsOptions } from "./lib/corsOptions.js";
 import { installWebApp } from "./lib/serveWeb.js";
 import { trafficInstrumentation } from "./lib/trafficInstrumentation.js";
+import { publicApiTiming } from "./lib/publicApiTiming.js";
 import OpenApiValidator from "express-openapi-validator";
 import fs from "node:fs";
 import path from "node:path";
@@ -42,6 +44,22 @@ import { usersRouter } from "./routes/users.js";
 
 const openApiPath = path.resolve(process.cwd(), "openapi/openapi.yaml");
 const openApiDocument = YAML.parse(fs.readFileSync(openApiPath, "utf8"));
+const uploadsCacheMaxAge = process.env.UPLOADS_CACHE_MAX_AGE ?? "7d";
+const uploadsCacheMaxAgeSeconds = parseCacheMaxAgeSeconds(uploadsCacheMaxAge);
+
+function parseCacheMaxAgeSeconds(value: string): number {
+  const trimmed = value.trim().toLowerCase();
+  const match = /^(\d+)(ms|s|m|h|d)?$/.exec(trimmed);
+  if (!match) return 604_800;
+
+  const amount = Number(match[1]);
+  const unit = match[2] ?? "ms";
+  if (unit === "ms") return Math.max(0, Math.floor(amount / 1000));
+  if (unit === "s") return amount;
+  if (unit === "m") return amount * 60;
+  if (unit === "h") return amount * 60 * 60;
+  return amount * 24 * 60 * 60;
+}
 
 export function createApp() {
   const app = express();
@@ -51,10 +69,19 @@ export function createApp() {
     app.set("trust proxy", 1);
   }
 
+  app.use(compression());
   app.use(cors(getCorsOptions()));
-  app.use(express.json());
+  app.use(express.json({ limit: process.env.JSON_BODY_LIMIT ?? "100kb" }));
   app.use(trafficInstrumentation);
-  app.use("/uploads", express.static(uploadsDir));
+  app.use(
+    "/uploads",
+    express.static(uploadsDir, {
+      maxAge: uploadsCacheMaxAge,
+      setHeaders(res) {
+        res.setHeader("Cache-Control", `public, max-age=${uploadsCacheMaxAgeSeconds}`);
+      },
+    }),
+  );
   app.use("/api/v1/uploads", studioUploadLimiter, uploadsRouter);
   // Ingest upload: multipart — mounted before OpenAPI validator
   app.use("/api/v1/ingest/uploads", ingestUploadLimiter, ingestUploadsRouter);
@@ -74,6 +101,7 @@ export function createApp() {
       validateResponses: false,
     }),
   );
+  app.use(publicApiTiming);
 
   app.use("/api/v1/health", healthRouter);
   app.use("/api/v1/auth", authRouter);

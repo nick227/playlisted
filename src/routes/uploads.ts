@@ -1,9 +1,11 @@
 import path from "node:path";
+import fs from "node:fs/promises";
 
 import { Router } from "express";
 
 import { prisma } from "../lib/prisma.js";
 import { requireAuth } from "../lib/requireAuth.js";
+import { optimizeImageFile, OPTIMIZED_IMAGE_MAX_BYTES } from "../lib/imageOptimize.js";
 import { BULK_REGISTER_MAX_FILES } from "../lib/uploadPolicy.js";
 import {
   handleMulterSingleError,
@@ -65,11 +67,28 @@ uploadsRouter.post("/images", (req, res, next) => {
       }
 
       if (await rejectDisallowedUpload("image", file, res)) return;
+      let optimized;
+      try {
+        optimized = await optimizeImageFile(file.path);
+      } catch {
+        await fs.unlink(file.path).catch(() => undefined);
+        return res.status(415).json({
+          error: "unsupported_media_type",
+          message: "Image could not be decoded. Upload a valid JPG, PNG, or WebP image.",
+        });
+      }
+      if (optimized.bytes > OPTIMIZED_IMAGE_MAX_BYTES) {
+        await fs.unlink(file.path).catch(() => undefined);
+        return res.status(413).json({
+          error: "file_too_large",
+          message: `Optimized image exceeds the ${Math.round(OPTIMIZED_IMAGE_MAX_BYTES / (1024 * 1024))} MB limit.`,
+        });
+      }
 
       res.status(201).json({
         url: storedUploadUrlFromRequest(req, "images", file.filename),
         mimeType: file.mimetype,
-        bytes: file.size,
+        bytes: optimized.bytes,
       });
     } catch (error) {
       next(error);

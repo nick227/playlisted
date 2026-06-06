@@ -336,6 +336,7 @@ export function FakeAiChat({
 }) {
   const [messageId, setMessageId] = useState("welcome");
   const botMessage = BOT_MESSAGES[messageId] ?? BOT_MESSAGES.welcome;
+  const [canvasReady, setCanvasReady] = useState(false);
   const isWelcome = messageId === "welcome";
   const displayTitle = isWelcome ? headline : botMessage.title;
   const displayBody = isWelcome ? message : botMessage.body;
@@ -357,9 +358,18 @@ export function FakeAiChat({
     [botMessage.choices, messageId],
   );
 
+  useEffect(() => {
+    const timer = window.setTimeout(() => setCanvasReady(true), 300);
+    return () => window.clearTimeout(timer);
+  }, []);
+
   return (
     <div className="relative z-10 mx-auto flex min-h-[340px] w-full max-w-3xl flex-col items-center justify-center gap-3">
-      <CuteCompileBotCanvas />
+      {canvasReady ? (
+        <CuteCompileBotCanvas />
+      ) : (
+        <div className="mx-auto aspect-square w-full max-w-[180px] sm:max-w-[210px] md:max-w-[240px]" aria-hidden />
+      )}
 
       <div className="w-full max-w-xl text-center">
         <p className="mb-2 text-[0.68rem] font-semibold uppercase tracking-widest text-[var(--color-brand)]">

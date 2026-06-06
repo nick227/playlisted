@@ -639,6 +639,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/search/suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Search lightweight suggestions for autocomplete */
+        get: operations["searchSuggestions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/search/unified": {
         parameters: {
             query?: never;
@@ -2046,6 +2063,23 @@ export interface components {
             playlists: components["schemas"]["PlaylistSummary"][];
             artists: components["schemas"]["UserSummary"][];
             genres: components["schemas"]["LibraryGenre"][];
+        };
+        SearchSuggestionOption: {
+            id: string;
+            /** @enum {string} */
+            kind: "song" | "playlist" | "artist" | "genre";
+            label: string;
+            meta?: string;
+            href: string;
+            /** Format: uri-reference */
+            imageUrl?: string | null;
+        };
+        SearchSuggestionGroup: {
+            label: string;
+            options: components["schemas"]["SearchSuggestionOption"][];
+        };
+        SearchSuggestionsResponse: {
+            groups: components["schemas"]["SearchSuggestionGroup"][];
         };
         LibraryArtistGenre: {
             id: string;
@@ -4054,6 +4088,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LibraryArtistsResponse"];
+                };
+            };
+        };
+    };
+    searchSuggestions: {
+        parameters: {
+            query: {
+                /** @description Search query */
+                q: string;
+                /** @description Maximum suggestions to return per group */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Grouped lightweight search suggestions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SearchSuggestionsResponse"];
+                };
+            };
+            /** @description Missing or empty search query */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };

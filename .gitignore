@@ -27,6 +27,7 @@ temp/
 
 # Test & coverage
 coverage/
+reports/image-optimization-backups/
 
 # Logs
 logs/

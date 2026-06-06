@@ -9,6 +9,9 @@ interface MediaCoverProps {
   shape?: "square" | "circle";
   /** Tailwind aspect class, e.g. aspect-[2/1]. Defaults to aspect-square. */
   aspectClass?: string;
+  loading?: "eager" | "lazy";
+  decoding?: "async" | "auto" | "sync";
+  fetchPriority?: "high" | "low" | "auto";
   onPlay?: () => void;
   isPlaying?: boolean;
   isActive?: boolean;
@@ -20,6 +23,9 @@ export function MediaCover({
   imageUrl,
   shape = "square",
   aspectClass = "aspect-square",
+  loading = "lazy",
+  decoding = "async",
+  fetchPriority,
   onPlay,
   isPlaying = false,
   isActive = false,
@@ -31,7 +37,14 @@ export function MediaCover({
   return (
     <div className={`group relative w-full overflow-hidden ${aspectClass} ${rounded}`}>
       {imageUrl ? (
-        <img src={imageUrl} alt="" className={`h-full w-full object-cover ${rounded}`} />
+        <img
+          src={imageUrl}
+          alt=""
+          loading={loading}
+          decoding={decoding}
+          fetchPriority={fetchPriority}
+          className={`h-full w-full object-cover ${rounded}`}
+        />
       ) : (
         <div
           className={`h-full w-full ${rounded}`}

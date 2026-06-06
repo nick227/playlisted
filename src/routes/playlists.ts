@@ -12,6 +12,8 @@ import {
   PUBLIC_PUBLISHED_PLAYLIST,
 } from "../lib/publicPlaylistFilter.js";
 import { prisma } from "../lib/prisma.js";
+import { parsePageSize, parsePositivePage } from "../lib/pagination.js";
+import { sendCachedPublicJson } from "../lib/publicJsonCache.js";
 import { getAuthContextFromRequest } from "../lib/auth.js";
 import { requireAuth } from "../lib/requireAuth.js";
 import { deleteRecordingMedia } from "../lib/deleteMediaFile.js";
@@ -89,8 +91,8 @@ function mapRandomPlaylistItem(
 
 playlistsRouter.get("/", async (req, res, next) => {
   try {
-    const page = Number(req.query.page ?? DEFAULT_PAGE);
-    const pageSize = Number(req.query.pageSize ?? DEFAULT_PAGE_SIZE);
+    const page = parsePositivePage(req.query.page, DEFAULT_PAGE);
+    const pageSize = parsePageSize(req.query.pageSize, DEFAULT_PAGE_SIZE, 100);
     const ownerId = typeof req.query.ownerId === "string" ? req.query.ownerId : undefined;
     const visibility = typeof req.query.visibility === "string" ? req.query.visibility : undefined;
     const status = typeof req.query.status === "string" ? req.query.status : undefined;
@@ -132,38 +134,34 @@ playlistsRouter.get("/", async (req, res, next) => {
 
 playlistsRouter.get("/random", async (req, res, next) => {
   try {
-    const limit = parseRandomPlaylistLimit(req.query.limit);
-    const ids = await prisma.$queryRaw<{ id: string }[]>`
-      SELECT id
-      FROM \`Playlist\`
-      WHERE visibility = ${PUBLIC_PUBLISHED_PLAYLIST.visibility}
-        AND status = ${PUBLIC_PUBLISHED_PLAYLIST.status}
-      ORDER BY RAND()
-      LIMIT ${limit}
-    `;
+    return await sendCachedPublicJson(req, res, {
+      namespace: "random-playlists",
+      ttlSeconds: 45,
+      staleWhileRevalidateSeconds: 120,
+      maxEntries: 20,
+    }, async () => {
+      const limit = parseRandomPlaylistLimit(req.query.limit);
+      const total = await prisma.playlist.count({ where: PUBLIC_PUBLISHED_PLAYLIST });
+      const maxSkip = Math.max(0, total - limit);
+      const skip = maxSkip > 0 ? Math.floor(Math.random() * (maxSkip + 1)) : 0;
 
-    const playlistIds = ids.map((row) => row.id);
-    const playlists = await prisma.playlist.findMany({
-      where: { id: { in: playlistIds }, ...PUBLIC_PUBLISHED_PLAYLIST },
-      include: {
-        owner: { select: { id: true, username: true, displayName: true, avatarUrl: true, role: true } },
-        tags: {
-          take: 1,
-          where: { tag: { kind: "GENRE" } },
-          include: { tag: { select: { id: true, name: true, slug: true } } },
+      const playlists = await prisma.playlist.findMany({
+        where: PUBLIC_PUBLISHED_PLAYLIST,
+        include: {
+          owner: { select: { id: true, username: true, displayName: true, avatarUrl: true, role: true } },
+          tags: {
+            take: 1,
+            where: { tag: { kind: "GENRE" } },
+            include: { tag: { select: { id: true, name: true, slug: true } } },
+          },
         },
-      },
+        orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }, { id: "asc" }],
+        skip,
+        take: limit,
+      });
+
+      return { data: playlists.map((playlist, index) => mapRandomPlaylistItem(playlist, index + 1)) };
     });
-
-    const playlistMap = new Map(playlists.map((playlist) => [playlist.id, playlist]));
-    const data = [];
-    for (const playlistId of playlistIds) {
-      const playlist = playlistMap.get(playlistId);
-      if (!playlist) continue;
-      data.push(mapRandomPlaylistItem(playlist, data.length + 1));
-    }
-
-    return res.json({ data });
   } catch (error) {
     return next(error);
   }

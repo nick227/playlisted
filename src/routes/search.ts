@@ -5,6 +5,7 @@ import {
   listEffectiveLibraryGenres,
   mergeGenreRefs,
 } from "../lib/effectiveGenres.js";
+import { getPlaylistHref } from "../lib/playlistHref.js";
 import { mapPlaylistSummary } from "../lib/playlistMaps.js";
 import { resolveRecordingArtworkUrl } from "../lib/mediaUrls.js";
 import { prisma } from "../lib/prisma.js";
@@ -20,8 +21,37 @@ import {
 
 const DEFAULT_PAGE_SIZE = 20;
 const MAX_PAGE_SIZE = 50;
+const DEFAULT_SUGGESTION_LIMIT = 5;
+const MAX_SUGGESTION_LIMIT = 8;
 
 export const searchRouter = Router();
+
+type SearchSuggestionOption = {
+  id: string;
+  kind: "song" | "playlist" | "artist" | "genre";
+  label: string;
+  href: string;
+  meta?: string;
+  imageUrl?: string | null;
+};
+
+function parseSuggestionLimit(raw: unknown): number {
+  const parsed = Number(raw ?? DEFAULT_SUGGESTION_LIMIT);
+  if (!Number.isFinite(parsed)) return DEFAULT_SUGGESTION_LIMIT;
+  return Math.min(MAX_SUGGESTION_LIMIT, Math.max(1, Math.floor(parsed)));
+}
+
+function formatDuration(seconds: number | null | undefined): string | null {
+  if (seconds == null || !Number.isFinite(seconds)) return null;
+  const total = Math.max(0, Math.floor(seconds));
+  const minutes = Math.floor(total / 60);
+  const remainder = total % 60;
+  return `${minutes}:${remainder.toString().padStart(2, "0")}`;
+}
+
+function group(label: string, options: SearchSuggestionOption[]) {
+  return options.length > 0 ? { label, options } : null;
+}
 
 function mapUserSummary(user: {
   id: string;
@@ -52,6 +82,153 @@ function mapUserSummary(user: {
     updatedAt: user.updatedAt.toISOString(),
   };
 }
+
+searchRouter.get("/suggestions", async (req, res, next) => {
+  try {
+    const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
+    const limit = parseSuggestionLimit(req.query.limit);
+
+    if (!q) {
+      return res.status(400).json({
+        error: "search_query_required",
+        message: "Query parameter q is required.",
+      });
+    }
+
+    const tagMatch = tagContainsMatch(q);
+
+    const [songs, playlists, artists, genres] = await Promise.all([
+      prisma.recording.findMany({
+        where: {
+          AND: [
+            BROWSABLE_RECORDING,
+            {
+              OR: [
+                ...textContainsMatch(q),
+                { uploader: { OR: [{ displayName: { contains: q } }, { username: { contains: q } }] } },
+                songPublishedPlaylistTitleMatch(q),
+                songInPublicPlaylistTitleMatch(q),
+                { tags: { some: tagMatch } },
+                { publishedPlaylist: { tags: { some: tagMatch } } },
+              ],
+            },
+          ],
+        },
+        select: {
+          id: true,
+          title: true,
+          artworkUrl: true,
+          durationSeconds: true,
+          uploader: { select: { displayName: true, username: true } },
+          publishedPlaylist: {
+            select: {
+              id: true,
+              title: true,
+              slug: true,
+              coverArtUrl: true,
+              owner: { select: { username: true } },
+            },
+          },
+        },
+        orderBy: [{ playCount: "desc" }, { publishedAt: "desc" }, { createdAt: "desc" }, { id: "asc" }],
+        take: limit,
+      }),
+      prisma.playlist.findMany({
+        where: searchablePlaylistWhereWithTextMatch(q),
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          coverArtUrl: true,
+          itemCount: true,
+          owner: { select: { displayName: true, username: true } },
+        },
+        orderBy: [{ featured: "desc" }, { publishedAt: "desc" }, { createdAt: "desc" }, { id: "asc" }],
+        take: limit,
+      }),
+      prisma.user.findMany({
+        where: {
+          ...ACTIVE_USER,
+          uploadedRecordings: { some: BROWSABLE_RECORDING },
+          OR: [
+            { displayName: { contains: q } },
+            { username: { contains: q } },
+            {
+              uploadedRecordings: {
+                some: {
+                  ...BROWSABLE_RECORDING,
+                  OR: [
+                    { tags: { some: tagMatch } },
+                    { publishedPlaylist: { tags: { some: tagMatch } } },
+                  ],
+                },
+              },
+            },
+          ],
+        },
+        select: { id: true, username: true, displayName: true, avatarUrl: true },
+        orderBy: [{ isFeaturedArtist: "desc" }, { createdAt: "desc" }, { id: "asc" }],
+        take: limit,
+      }),
+      listEffectiveLibraryGenres(),
+    ]);
+
+    const rankedGenres = genres
+      .filter((genre) =>
+        genre.name.toLowerCase().includes(q.toLowerCase())
+        || genre.slug.toLowerCase().includes(q.toLowerCase()),
+      )
+      .sort((a, b) => b.songCount - a.songCount || a.name.localeCompare(b.name))
+      .slice(0, limit);
+
+    const groups = [
+      group("Songs", songs.map((song) => {
+        const duration = formatDuration(song.durationSeconds);
+        const meta = [song.uploader.displayName, song.publishedPlaylist.title, duration]
+          .filter(Boolean)
+          .join(" · ");
+        return {
+          id: `song-${song.id}`,
+          kind: "song" as const,
+          label: song.title,
+          meta,
+          href: `${getPlaylistHref(song.publishedPlaylist)}#track-${song.id}`,
+          imageUrl: resolveRecordingArtworkUrl(song, song.publishedPlaylist),
+        };
+      })),
+      group("Artists", artists.map((artist) => ({
+        id: `artist-${artist.id}`,
+        kind: "artist" as const,
+        label: artist.displayName,
+        meta: `@${artist.username}`,
+        href: `/@/${encodeURIComponent(artist.username)}`,
+        imageUrl: artist.avatarUrl,
+      }))),
+      group("Playlists", playlists.map((playlist) => ({
+        id: `playlist-${playlist.id}`,
+        kind: "playlist" as const,
+        label: playlist.title,
+        meta: `${playlist.owner.displayName} · ${playlist.itemCount} tracks`,
+        href: getPlaylistHref(playlist),
+        imageUrl: playlist.coverArtUrl,
+      }))),
+      group("Genres", rankedGenres.map((genre) => {
+        const trackLabel = genre.songCount === 1 ? "track" : "tracks";
+        return {
+          id: `genre-${genre.id}`,
+          kind: "genre" as const,
+          label: genre.name,
+          meta: `${genre.songCount.toLocaleString()} ${trackLabel}`,
+          href: `/genres/${encodeURIComponent(genre.slug)}`,
+        };
+      })),
+    ].filter((item): item is { label: string; options: SearchSuggestionOption[] } => Boolean(item));
+
+    return res.json({ groups });
+  } catch (error) {
+    return next(error);
+  }
+});
 
 searchRouter.get("/unified", async (req, res, next) => {
   try {

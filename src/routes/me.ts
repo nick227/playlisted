@@ -3,6 +3,7 @@ import { Router } from "express";
 import { mapPlaybackHistoryItem } from "../lib/playbackMaps.js";
 import { resolveRecordingArtworkUrl } from "../lib/mediaUrls.js";
 import { mapPlaylistSummary } from "../lib/playlistMaps.js";
+import { parsePageSize, parsePositivePage } from "../lib/pagination.js";
 import { requireAuth } from "../lib/requireAuth.js";
 import { prisma } from "../lib/prisma.js";
 
@@ -116,8 +117,8 @@ meRouter.get("/playlists", async (req, res, next) => {
     const auth = await requireAuth(req, res);
     if (!auth) return;
 
-    const page = Number(req.query.page ?? DEFAULT_PAGE);
-    const pageSize = Number(req.query.pageSize ?? DEFAULT_PAGE_SIZE);
+    const page = parsePositivePage(req.query.page, DEFAULT_PAGE);
+    const pageSize = parsePageSize(req.query.pageSize, DEFAULT_PAGE_SIZE, 100);
 
     const where = { ownerId: auth.user.id };
 
@@ -149,8 +150,8 @@ meRouter.get("/recordings", async (req, res, next) => {
     const auth = await requireAuth(req, res);
     if (!auth) return;
 
-    const page = Number(req.query.page ?? DEFAULT_PAGE);
-    const pageSize = Number(req.query.pageSize ?? DEFAULT_PAGE_SIZE);
+    const page = parsePositivePage(req.query.page, DEFAULT_PAGE);
+    const pageSize = parsePageSize(req.query.pageSize, DEFAULT_PAGE_SIZE, 100);
 
     const where = { uploaderId: auth.user.id };
 
@@ -281,8 +282,8 @@ meRouter.get("/playback-history", async (req, res, next) => {
     const auth = await requireAuth(req, res);
     if (!auth) return;
 
-    const page = Number(req.query.page ?? DEFAULT_PAGE);
-    const pageSize = Number(req.query.pageSize ?? DEFAULT_PAGE_SIZE);
+    const page = parsePositivePage(req.query.page, DEFAULT_PAGE);
+    const pageSize = parsePageSize(req.query.pageSize, DEFAULT_PAGE_SIZE, 100);
 
     const where = { userId: auth.user.id };
 
@@ -316,8 +317,8 @@ meRouter.get("/favorites/recordings", async (req, res, next) => {
     const auth = await requireAuth(req, res);
     if (!auth) return;
 
-    const page = Number(req.query.page ?? DEFAULT_PAGE);
-    const pageSize = Number(req.query.pageSize ?? DEFAULT_PAGE_SIZE);
+    const page = parsePositivePage(req.query.page, DEFAULT_PAGE);
+    const pageSize = parsePageSize(req.query.pageSize, DEFAULT_PAGE_SIZE, 100);
     const where = { userId: auth.user.id, kind: "FAVORITE" as const };
 
     const [saves, total] = await Promise.all([
@@ -399,8 +400,8 @@ meRouter.get("/collections/playlists", async (req, res, next) => {
     const auth = await requireAuth(req, res);
     if (!auth) return;
 
-    const page = Number(req.query.page ?? DEFAULT_PAGE);
-    const pageSize = Number(req.query.pageSize ?? DEFAULT_PAGE_SIZE);
+    const page = parsePositivePage(req.query.page, DEFAULT_PAGE);
+    const pageSize = parsePageSize(req.query.pageSize, DEFAULT_PAGE_SIZE, 100);
     const where = { userId: auth.user.id, kind: "LIBRARY" as const };
 
     const [saves, total] = await Promise.all([
@@ -483,8 +484,8 @@ meRouter.get("/favorites/playlists", async (req, res, next) => {
     const auth = await requireAuth(req, res);
     if (!auth) return;
 
-    const page = Number(req.query.page ?? DEFAULT_PAGE);
-    const pageSize = Number(req.query.pageSize ?? DEFAULT_PAGE_SIZE);
+    const page = parsePositivePage(req.query.page, DEFAULT_PAGE);
+    const pageSize = parsePageSize(req.query.pageSize, DEFAULT_PAGE_SIZE, 100);
     const where = { userId: auth.user.id, kind: "FAVORITE" as const };
 
     const [saves, total] = await Promise.all([
@@ -559,8 +560,8 @@ meRouter.get("/favorites/artists", async (req, res, next) => {
     const auth = await requireAuth(req, res);
     if (!auth) return;
 
-    const page = Number(req.query.page ?? DEFAULT_PAGE);
-    const pageSize = Number(req.query.pageSize ?? DEFAULT_PAGE_SIZE);
+    const page = parsePositivePage(req.query.page, DEFAULT_PAGE);
+    const pageSize = parsePageSize(req.query.pageSize, DEFAULT_PAGE_SIZE, 100);
     const where = { userId: auth.user.id };
 
     const [favorites, total] = await Promise.all([
@@ -643,8 +644,8 @@ meRouter.get("/follows/artists", async (req, res, next) => {
     const auth = await requireAuth(req, res);
     if (!auth) return;
 
-    const page = Number(req.query.page ?? DEFAULT_PAGE);
-    const pageSize = Number(req.query.pageSize ?? DEFAULT_PAGE_SIZE);
+    const page = parsePositivePage(req.query.page, DEFAULT_PAGE);
+    const pageSize = parsePageSize(req.query.pageSize, DEFAULT_PAGE_SIZE, 100);
     const where = { followerId: auth.user.id };
 
     const [follows, total] = await Promise.all([

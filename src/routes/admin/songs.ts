@@ -2,6 +2,7 @@ import { PublishStatus, RecordingType, Visibility } from "@prisma/client";
 import { Router } from "express";
 
 import { resolveRecordingArtworkUrl } from "../../lib/mediaUrls.js";
+import { clearPublicCatalogCaches } from "../../lib/publicCatalogCache.js";
 import { prisma } from "../../lib/prisma.js";
 import { requireAdmin } from "../../lib/requireAdmin.js";
 
@@ -185,6 +186,7 @@ adminSongsRouter.put("/:songId/tags", async (req, res, next) => {
       return res.status(404).json({ error: "song_not_found", message: "Song not found." });
     }
 
+    clearPublicCatalogCaches();
     return res.json(mapSong(recording));
   } catch (error) {
     return next(error);
@@ -243,6 +245,7 @@ adminSongsRouter.patch("/:songId", async (req, res, next) => {
       include: adminSongInclude,
     });
 
+    clearPublicCatalogCaches();
     return res.json(mapSong(recording));
   } catch (error) {
     if (error && typeof error === "object" && "code" in error && (error as any).code === "P2025") {
@@ -257,6 +260,7 @@ adminSongsRouter.delete("/:songId", async (req, res, next) => {
     if (!(await requireAdmin(req, res))) return;
 
     await prisma.recording.delete({ where: { id: req.params.songId } });
+    clearPublicCatalogCaches();
     return res.status(204).send();
   } catch (error) {
     if (error && typeof error === "object" && "code" in error && (error as any).code === "P2025") {

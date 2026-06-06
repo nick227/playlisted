@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { MessageCircle, Pause, Play, Send, Users, X } from "lucide-react";
 
+import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
 import { PlaybackBars } from "@/features/playback-indicators/PlaybackBars";
 import { api } from "@/lib/api";
 import { authedApi } from "@/lib/authedApi";
@@ -501,6 +502,15 @@ export function RadioPage() {
               <Users size={11} />
               {station.listenerCount}
             </span>
+          ) : null}
+          {isLive && nowPlaying ? (
+            <FavoriteHeartButton
+              target="recording"
+              id={nowPlaying.id}
+              variant="inline"
+              inlineAlwaysVisible
+              className="-my-1 p-1 text-white/70 hover:text-rose-400"
+            />
           ) : null}
         </div>
 

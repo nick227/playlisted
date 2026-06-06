@@ -1,0 +1,789 @@
+{
+  "baseUrl": "http://127.0.0.1:4000",
+  "startedAt": "2026-06-06T10:44:50.030Z",
+  "strict": false,
+  "thresholds": {
+    "homepageUsableBudgetMs": 2500,
+    "massiveTransferBytes": 5242880
+  },
+  "skipped": [],
+  "failures": [],
+  "warnings": [
+    "home: massive transfer 9980.2k; largest 2640.7k http://127.0.0.1:4000/uploads/images/machine-and-soul-cover.png",
+    "artist detail: massive transfer 5441.1k; largest 2640.7k http://127.0.0.1:4000/uploads/images/pulse-drift-avatar.png"
+  ],
+  "results": [
+    {
+      "name": "home",
+      "path": "/",
+      "url": "http://127.0.0.1:4000/",
+      "required": true,
+      "totalLoadMs": 1580,
+      "networkIdleReached": true,
+      "navigationError": null,
+      "domContentLoadedMs": 79.69999998807907,
+      "loadEventMs": 81,
+      "firstContentfulPaintMs": 440,
+      "largestContentfulPaintMs": 440,
+      "topResources": [
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/machine-and-soul-cover.png",
+          "initiatorType": "img",
+          "transferBytes": 2704044,
+          "durationMs": 262.69999998807907
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/pulse-drift-avatar.png",
+          "initiatorType": "img",
+          "transferBytes": 2704044,
+          "durationMs": 123.80000001192093
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/leave-it-up-to-you-art.png",
+          "initiatorType": "img",
+          "transferBytes": 1166370,
+          "durationMs": 26.5
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/neon-delay-art.png",
+          "initiatorType": "img",
+          "transferBytes": 535602,
+          "durationMs": 21.100000023841858
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/super-admin-avatar.jpg",
+          "initiatorType": "img",
+          "transferBytes": 200679,
+          "durationMs": 91
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/static-bloom-avatar.jpg",
+          "initiatorType": "img",
+          "transferBytes": 156530,
+          "durationMs": 97.09999996423721
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/nova-singles-cover.jpg",
+          "initiatorType": "img",
+          "transferBytes": 145024,
+          "durationMs": 207.5
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/late-night-commute-cover.jpg",
+          "initiatorType": "img",
+          "transferBytes": 145024,
+          "durationMs": 216.69999998807907
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/harbor-lights-art.jpg",
+          "initiatorType": "img",
+          "transferBytes": 124138,
+          "durationMs": 29.5
+        },
+        {
+          "url": "http://127.0.0.1:4000/assets/index-Ctx6wkfc.js",
+          "initiatorType": "script",
+          "transferBytes": 117870,
+          "durationMs": 16.299999952316284
+        }
+      ],
+      "topImageResources": [
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/machine-and-soul-cover.png",
+          "initiatorType": "img",
+          "transferBytes": 2704044,
+          "durationMs": 262.69999998807907
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/pulse-drift-avatar.png",
+          "initiatorType": "img",
+          "transferBytes": 2704044,
+          "durationMs": 123.80000001192093
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/leave-it-up-to-you-art.png",
+          "initiatorType": "img",
+          "transferBytes": 1166370,
+          "durationMs": 26.5
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/neon-delay-art.png",
+          "initiatorType": "img",
+          "transferBytes": 535602,
+          "durationMs": 21.100000023841858
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/super-admin-avatar.jpg",
+          "initiatorType": "img",
+          "transferBytes": 200679,
+          "durationMs": 91
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/static-bloom-avatar.jpg",
+          "initiatorType": "img",
+          "transferBytes": 156530,
+          "durationMs": 97.09999996423721
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/nova-singles-cover.jpg",
+          "initiatorType": "img",
+          "transferBytes": 145024,
+          "durationMs": 207.5
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/late-night-commute-cover.jpg",
+          "initiatorType": "img",
+          "transferBytes": 145024,
+          "durationMs": 216.69999998807907
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/harbor-lights-art.jpg",
+          "initiatorType": "img",
+          "transferBytes": 124138,
+          "durationMs": 29.5
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/machine-sleep-ep-cover.jpg",
+          "initiatorType": "img",
+          "transferBytes": 117451,
+          "durationMs": 206
+        }
+      ],
+      "jsTransferBytes": 154379,
+      "cssTransferBytes": 16424,
+      "imageTransferBytes": 10003215,
+      "totalTransferBytes": 10219703,
+      "apiRequestCount": 30,
+      "slowestApiRequest": {
+        "url": "http://127.0.0.1:4000/api/v1/playlists/cmpunlutf0001utp46mhgbmvi",
+        "path": "/api/v1/playlists/cmpunlutf0001utp46mhgbmvi",
+        "method": "GET",
+        "status": 200,
+        "durationMs": 174,
+        "serverTiming": null
+      },
+      "failedRequests": []
+    },
+    {
+      "name": "library",
+      "path": "/library",
+      "url": "http://127.0.0.1:4000/library",
+      "required": true,
+      "totalLoadMs": 1247,
+      "networkIdleReached": true,
+      "navigationError": null,
+      "domContentLoadedMs": 65.20000004768372,
+      "loadEventMs": 66.20000004768372,
+      "firstContentfulPaintMs": 424,
+      "largestContentfulPaintMs": 424,
+      "topResources": [
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/pulse-drift-avatar.png",
+          "initiatorType": "img",
+          "transferBytes": 2704044,
+          "durationMs": 40.40000003576279
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/static-bloom-avatar.jpg",
+          "initiatorType": "img",
+          "transferBytes": 156530,
+          "durationMs": 12.800000011920929
+        },
+        {
+          "url": "http://127.0.0.1:4000/assets/index-Ctx6wkfc.js",
+          "initiatorType": "script",
+          "transferBytes": 117870,
+          "durationMs": 27.80000001192093
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/machine-sleep-ep-cover.jpg",
+          "initiatorType": "img",
+          "transferBytes": 117451,
+          "durationMs": 13.199999988079071
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/dark-matter-vol1-cover.jpg",
+          "initiatorType": "img",
+          "transferBytes": 114581,
+          "durationMs": 13.899999976158142
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/nova-lane-avatar.jpg",
+          "initiatorType": "img",
+          "transferBytes": 113467,
+          "durationMs": 11.5
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/mirror-hour-ep-cover.jpg",
+          "initiatorType": "img",
+          "transferBytes": 84211,
+          "durationMs": 15.900000035762787
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/night-signal-avatar.jpg",
+          "initiatorType": "img",
+          "transferBytes": 74915,
+          "durationMs": 12.100000023841858
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/jade-mirror-avatar.jpg",
+          "initiatorType": "img",
+          "transferBytes": 69014,
+          "durationMs": 11.300000011920929
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/half-life-art.jpg",
+          "initiatorType": "img",
+          "transferBytes": 69014,
+          "durationMs": 11.899999976158142
+        }
+      ],
+      "topImageResources": [
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/pulse-drift-avatar.png",
+          "initiatorType": "img",
+          "transferBytes": 2704044,
+          "durationMs": 40.40000003576279
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/static-bloom-avatar.jpg",
+          "initiatorType": "img",
+          "transferBytes": 156530,
+          "durationMs": 12.800000011920929
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/machine-sleep-ep-cover.jpg",
+          "initiatorType": "img",
+          "transferBytes": 117451,
+          "durationMs": 13.199999988079071
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/dark-matter-vol1-cover.jpg",
+          "initiatorType": "img",
+          "transferBytes": 114581,
+          "durationMs": 13.899999976158142
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/nova-lane-avatar.jpg",
+          "initiatorType": "img",
+          "transferBytes": 113467,
+          "durationMs": 11.5
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/mirror-hour-ep-cover.jpg",
+          "initiatorType": "img",
+          "transferBytes": 84211,
+          "durationMs": 15.900000035762787
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/night-signal-avatar.jpg",
+          "initiatorType": "img",
+          "transferBytes": 74915,
+          "durationMs": 12.100000023841858
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/jade-mirror-avatar.jpg",
+          "initiatorType": "img",
+          "transferBytes": 69014,
+          "durationMs": 11.300000011920929
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/half-life-art.jpg",
+          "initiatorType": "img",
+          "transferBytes": 69014,
+          "durationMs": 11.899999976158142
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/hex-wave-avatar.jpg",
+          "initiatorType": "img",
+          "transferBytes": 58666,
+          "durationMs": 10.800000011920929
+        }
+      ],
+      "jsTransferBytes": 137438,
+      "cssTransferBytes": 16424,
+      "imageTransferBytes": 3596042,
+      "totalTransferBytes": 3764397,
+      "apiRequestCount": 4,
+      "slowestApiRequest": {
+        "url": "http://127.0.0.1:4000/api/v1/library/songs?pageSize=50",
+        "path": "/api/v1/library/songs",
+        "method": "GET",
+        "status": 200,
+        "durationMs": 43,
+        "serverTiming": "library_songs;dur=18.6"
+      },
+      "failedRequests": []
+    },
+    {
+      "name": "artists",
+      "path": "/artists",
+      "url": "http://127.0.0.1:4000/artists",
+      "required": true,
+      "totalLoadMs": 1246,
+      "networkIdleReached": true,
+      "navigationError": null,
+      "domContentLoadedMs": 66.79999995231628,
+      "loadEventMs": 67.79999995231628,
+      "firstContentfulPaintMs": 436,
+      "largestContentfulPaintMs": 456,
+      "topResources": [
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/pulse-drift-avatar.png",
+          "initiatorType": "img",
+          "transferBytes": 2704044,
+          "durationMs": 30.19999998807907
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/super-admin-avatar.jpg",
+          "initiatorType": "img",
+          "transferBytes": 200679,
+          "durationMs": 14.699999988079071
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/static-bloom-avatar.jpg",
+          "initiatorType": "img",
+          "transferBytes": 156530,
+          "durationMs": 19.5
+        },
+        {
+          "url": "http://127.0.0.1:4000/assets/index-Ctx6wkfc.js",
+          "initiatorType": "script",
+          "transferBytes": 117870,
+          "durationMs": 23.700000047683716
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/nova-lane-avatar.jpg",
+          "initiatorType": "img",
+          "transferBytes": 113467,
+          "durationMs": 8
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/night-signal-avatar.jpg",
+          "initiatorType": "img",
+          "transferBytes": 74915,
+          "durationMs": 11.899999976158142
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/river-ghost-avatar.jpg",
+          "initiatorType": "img",
+          "transferBytes": 71098,
+          "durationMs": 17.599999964237213
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/jade-mirror-avatar.jpg",
+          "initiatorType": "img",
+          "transferBytes": 69014,
+          "durationMs": 11.600000023841858
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/hex-wave-avatar.jpg",
+          "initiatorType": "img",
+          "transferBytes": 58666,
+          "durationMs": 6.299999952316284
+        },
+        {
+          "url": "http://127.0.0.1:4000/assets/index-BMifR3VU.css",
+          "initiatorType": "link",
+          "transferBytes": 16424,
+          "durationMs": 5.899999976158142
+        }
+      ],
+      "topImageResources": [
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/pulse-drift-avatar.png",
+          "initiatorType": "img",
+          "transferBytes": 2704044,
+          "durationMs": 30.19999998807907
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/super-admin-avatar.jpg",
+          "initiatorType": "img",
+          "transferBytes": 200679,
+          "durationMs": 14.699999988079071
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/static-bloom-avatar.jpg",
+          "initiatorType": "img",
+          "transferBytes": 156530,
+          "durationMs": 19.5
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/nova-lane-avatar.jpg",
+          "initiatorType": "img",
+          "transferBytes": 113467,
+          "durationMs": 8
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/night-signal-avatar.jpg",
+          "initiatorType": "img",
+          "transferBytes": 74915,
+          "durationMs": 11.899999976158142
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/river-ghost-avatar.jpg",
+          "initiatorType": "img",
+          "transferBytes": 71098,
+          "durationMs": 17.599999964237213
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/jade-mirror-avatar.jpg",
+          "initiatorType": "img",
+          "transferBytes": 69014,
+          "durationMs": 11.600000023841858
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/hex-wave-avatar.jpg",
+          "initiatorType": "img",
+          "transferBytes": 58666,
+          "durationMs": 6.299999952316284
+        }
+      ],
+      "jsTransferBytes": 140173,
+      "cssTransferBytes": 16424,
+      "imageTransferBytes": 3448413,
+      "totalTransferBytes": 3607190,
+      "apiRequestCount": 1,
+      "slowestApiRequest": {
+        "url": "http://127.0.0.1:4000/api/v1/library/artists",
+        "path": "/api/v1/library/artists",
+        "method": "GET",
+        "status": 200,
+        "durationMs": 3,
+        "serverTiming": "library_artists;dur=0.2"
+      },
+      "failedRequests": []
+    },
+    {
+      "name": "search rock",
+      "path": "/search?q=rock",
+      "url": "http://127.0.0.1:4000/search?q=rock",
+      "required": true,
+      "totalLoadMs": 1230,
+      "networkIdleReached": true,
+      "navigationError": null,
+      "domContentLoadedMs": 60,
+      "loadEventMs": 61,
+      "firstContentfulPaintMs": 432,
+      "largestContentfulPaintMs": 432,
+      "topResources": [
+        {
+          "url": "http://127.0.0.1:4000/assets/index-Ctx6wkfc.js",
+          "initiatorType": "script",
+          "transferBytes": 117870,
+          "durationMs": 13.300000011920929
+        },
+        {
+          "url": "http://127.0.0.1:4000/assets/index-BMifR3VU.css",
+          "initiatorType": "link",
+          "transferBytes": 16424,
+          "durationMs": 5.099999964237213
+        },
+        {
+          "url": "http://127.0.0.1:4000/assets/SmartPlaylistCard-BDDJNAR5.js",
+          "initiatorType": "script",
+          "transferBytes": 2971,
+          "durationMs": 9.300000011920929
+        },
+        {
+          "url": "http://127.0.0.1:4000/assets/queueTrack-CDHwA9l-.js",
+          "initiatorType": "script",
+          "transferBytes": 2690,
+          "durationMs": 16.899999976158142
+        },
+        {
+          "url": "http://127.0.0.1:4000/assets/playbackSurface-BaH3m4PV.js",
+          "initiatorType": "script",
+          "transferBytes": 2093,
+          "durationMs": 9.699999988079071
+        },
+        {
+          "url": "http://127.0.0.1:4000/assets/SearchPage-CixLwc5n.js",
+          "initiatorType": "script",
+          "transferBytes": 1790,
+          "durationMs": 5.5
+        },
+        {
+          "url": "http://127.0.0.1:4000/assets/LibraryTrackRow-Cbfe376x.js",
+          "initiatorType": "script",
+          "transferBytes": 1400,
+          "durationMs": 16.5
+        },
+        {
+          "url": "http://127.0.0.1:4000/assets/ArtistCard-Cn-G_Czj.js",
+          "initiatorType": "script",
+          "transferBytes": 1111,
+          "durationMs": 3.100000023841858
+        },
+        {
+          "url": "http://127.0.0.1:4000/assets/MediaCover-BGAH6Ph7.js",
+          "initiatorType": "script",
+          "transferBytes": 1065,
+          "durationMs": 8.399999976158142
+        },
+        {
+          "url": "http://127.0.0.1:4000/assets/ContentRow-D7nbxeEs.js",
+          "initiatorType": "script",
+          "transferBytes": 1064,
+          "durationMs": 12.900000035762787
+        }
+      ],
+      "topImageResources": [],
+      "jsTransferBytes": 136824,
+      "cssTransferBytes": 16424,
+      "imageTransferBytes": 0,
+      "totalTransferBytes": 154642,
+      "apiRequestCount": 1,
+      "slowestApiRequest": {
+        "url": "http://127.0.0.1:4000/api/v1/search/unified?q=rock&pageSize=20",
+        "path": "/api/v1/search/unified",
+        "method": "GET",
+        "status": 200,
+        "durationMs": 39,
+        "serverTiming": "search_unified;dur=24.5"
+      },
+      "failedRequests": []
+    },
+    {
+      "name": "playlist detail",
+      "path": "/@/super-admin/f",
+      "url": "http://127.0.0.1:4000/@/super-admin/f",
+      "required": false,
+      "totalLoadMs": 1239,
+      "networkIdleReached": true,
+      "navigationError": null,
+      "domContentLoadedMs": 65.39999997615814,
+      "loadEventMs": 66.30000001192093,
+      "firstContentfulPaintMs": 412,
+      "largestContentfulPaintMs": 412,
+      "topResources": [
+        {
+          "url": "http://127.0.0.1:4000/assets/index-Ctx6wkfc.js",
+          "initiatorType": "script",
+          "transferBytes": 117870,
+          "durationMs": 15.699999988079071
+        },
+        {
+          "url": "http://127.0.0.1:4000/assets/index-BMifR3VU.css",
+          "initiatorType": "link",
+          "transferBytes": 16424,
+          "durationMs": 5.399999976158142
+        },
+        {
+          "url": "http://127.0.0.1:4000/assets/CollectionView-DgqzayPk.js",
+          "initiatorType": "script",
+          "transferBytes": 4580,
+          "durationMs": 14.699999988079071
+        },
+        {
+          "url": "http://127.0.0.1:4000/assets/SmartPlaylistCard-BDDJNAR5.js",
+          "initiatorType": "script",
+          "transferBytes": 2971,
+          "durationMs": 9.100000023841858
+        },
+        {
+          "url": "http://127.0.0.1:4000/assets/TrackRow--JNWtw_v.js",
+          "initiatorType": "script",
+          "transferBytes": 2832,
+          "durationMs": 16
+        },
+        {
+          "url": "http://127.0.0.1:4000/assets/queueTrack-CDHwA9l-.js",
+          "initiatorType": "script",
+          "transferBytes": 2690,
+          "durationMs": 15.299999952316284
+        },
+        {
+          "url": "http://127.0.0.1:4000/assets/usePlaylistPageMeta-5IcB7paE.js",
+          "initiatorType": "script",
+          "transferBytes": 2302,
+          "durationMs": 5.399999976158142
+        },
+        {
+          "url": "http://127.0.0.1:4000/assets/playbackSurface-BaH3m4PV.js",
+          "initiatorType": "script",
+          "transferBytes": 2093,
+          "durationMs": 9.300000011920929
+        },
+        {
+          "url": "http://127.0.0.1:4000/assets/BrowseBreadcrumbs-Fb31F5XA.js",
+          "initiatorType": "script",
+          "transferBytes": 1321,
+          "durationMs": 21.399999976158142
+        },
+        {
+          "url": "http://127.0.0.1:4000/assets/studioCollectionUtils-Cljlbfu-.js",
+          "initiatorType": "script",
+          "transferBytes": 1130,
+          "durationMs": 18.69999998807907
+        }
+      ],
+      "topImageResources": [],
+      "jsTransferBytes": 150137,
+      "cssTransferBytes": 16424,
+      "imageTransferBytes": 0,
+      "totalTransferBytes": 173432,
+      "apiRequestCount": 6,
+      "slowestApiRequest": {
+        "url": "http://127.0.0.1:4000/api/v1/users/by-username/super-admin/playlists/f",
+        "path": "/api/v1/users/by-username/super-admin/playlists/f",
+        "method": "GET",
+        "status": 200,
+        "durationMs": 20,
+        "serverTiming": null
+      },
+      "failedRequests": []
+    },
+    {
+      "name": "artist detail",
+      "path": "/@/hex-wave",
+      "url": "http://127.0.0.1:4000/@/hex-wave",
+      "required": false,
+      "totalLoadMs": 1288,
+      "networkIdleReached": true,
+      "navigationError": null,
+      "domContentLoadedMs": 64.69999998807907,
+      "loadEventMs": 65.69999998807907,
+      "firstContentfulPaintMs": 432,
+      "largestContentfulPaintMs": 504,
+      "topResources": [
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/pulse-drift-avatar.png",
+          "initiatorType": "img",
+          "transferBytes": 2704044,
+          "durationMs": 29.899999976158142
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/midnight-circuit-art.png",
+          "initiatorType": "img",
+          "transferBytes": 535602,
+          "durationMs": 21.900000035762787
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/neon-delay-art.png",
+          "initiatorType": "img",
+          "transferBytes": 535602,
+          "durationMs": 23.80000001192093
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/super-admin-avatar.jpg",
+          "initiatorType": "img",
+          "transferBytes": 200679,
+          "durationMs": 8.600000023841858
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/static-bloom-avatar.jpg",
+          "initiatorType": "img",
+          "transferBytes": 156530,
+          "durationMs": 8.899999976158142
+        },
+        {
+          "url": "http://127.0.0.1:4000/assets/index-Ctx6wkfc.js",
+          "initiatorType": "script",
+          "transferBytes": 117870,
+          "durationMs": 14
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/zero-crossing-art.jpg",
+          "initiatorType": "img",
+          "transferBytes": 117451,
+          "durationMs": 18.100000023841858
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/hex-wave-hero.jpg",
+          "initiatorType": "img",
+          "transferBytes": 114581,
+          "durationMs": 8.399999976158142
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/dark-matter-vol1-cover.jpg",
+          "initiatorType": "img",
+          "transferBytes": 114581,
+          "durationMs": 15.599999964237213
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/frequency-check-cover.jpg",
+          "initiatorType": "img",
+          "transferBytes": 113467,
+          "durationMs": 16.099999964237213
+        }
+      ],
+      "topImageResources": [
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/pulse-drift-avatar.png",
+          "initiatorType": "img",
+          "transferBytes": 2704044,
+          "durationMs": 29.899999976158142
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/midnight-circuit-art.png",
+          "initiatorType": "img",
+          "transferBytes": 535602,
+          "durationMs": 21.900000035762787
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/neon-delay-art.png",
+          "initiatorType": "img",
+          "transferBytes": 535602,
+          "durationMs": 23.80000001192093
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/super-admin-avatar.jpg",
+          "initiatorType": "img",
+          "transferBytes": 200679,
+          "durationMs": 8.600000023841858
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/static-bloom-avatar.jpg",
+          "initiatorType": "img",
+          "transferBytes": 156530,
+          "durationMs": 8.899999976158142
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/zero-crossing-art.jpg",
+          "initiatorType": "img",
+          "transferBytes": 117451,
+          "durationMs": 18.100000023841858
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/hex-wave-hero.jpg",
+          "initiatorType": "img",
+          "transferBytes": 114581,
+          "durationMs": 8.399999976158142
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/dark-matter-vol1-cover.jpg",
+          "initiatorType": "img",
+          "transferBytes": 114581,
+          "durationMs": 15.599999964237213
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/frequency-check-cover.jpg",
+          "initiatorType": "img",
+          "transferBytes": 113467,
+          "durationMs": 16.099999964237213
+        },
+        {
+          "url": "http://127.0.0.1:4000/uploads/images/nova-lane-avatar.jpg",
+          "initiatorType": "img",
+          "transferBytes": 113467,
+          "durationMs": 5.100000023841858
+        }
+      ],
+      "jsTransferBytes": 149244,
+      "cssTransferBytes": 16424,
+      "imageTransferBytes": 5393010,
+      "totalTransferBytes": 5571736,
+      "apiRequestCount": 5,
+      "slowestApiRequest": {
+        "url": "http://127.0.0.1:4000/api/v1/library/songs?pageSize=50",
+        "path": "/api/v1/library/songs",
+        "method": "GET",
+        "status": 200,
+        "durationMs": 35,
+        "serverTiming": "library_songs;dur=15.7"
+      },
+      "failedRequests": []
+    }
+  ]
+}

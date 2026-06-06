@@ -8,6 +8,7 @@ import { canViewerAccessRecording } from "../lib/publicRecordingFilter.js";
 import { canViewerAccessPlaylist } from "../lib/publicPlaylistFilter.js";
 import { requireAuth } from "../lib/requireAuth.js";
 import { prisma } from "../lib/prisma.js";
+import { parsePageSize, parsePositivePage } from "../lib/pagination.js";
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_PAGE_SIZE = 20;
@@ -84,8 +85,8 @@ async function syncPlaylistStats(playlistId: string) {
 
 recordingsRouter.get("/", async (req, res, next) => {
   try {
-    const page = Number(req.query.page ?? DEFAULT_PAGE);
-    const pageSize = Number(req.query.pageSize ?? DEFAULT_PAGE_SIZE);
+    const page = parsePositivePage(req.query.page, DEFAULT_PAGE);
+    const pageSize = parsePageSize(req.query.pageSize, DEFAULT_PAGE_SIZE, 100);
     const uploaderId = typeof req.query.uploaderId === "string" ? req.query.uploaderId : undefined;
     const playlistId = typeof req.query.playlistId === "string" ? req.query.playlistId : undefined;
     const recordingType = typeof req.query.recordingType === "string" ? req.query.recordingType : undefined;

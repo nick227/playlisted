@@ -2,6 +2,7 @@ import { HomepageSection } from "@prisma/client";
 import { Router } from "express";
 
 import { prisma } from "../../lib/prisma.js";
+import { clearPublicJsonCache } from "../../lib/publicJsonCache.js";
 import { requireAdmin } from "../../lib/requireAdmin.js";
 import { slugify } from "../../utils/slug.js";
 
@@ -308,6 +309,7 @@ adminHomepageRouter.post("/", async (req, res, next) => {
       include: featureInclude,
     });
 
+    clearPublicJsonCache("homepage");
     return res.status(201).json(mapFeature(feature));
   } catch (error) {
     if (error && typeof error === "object" && "status" in error) {
@@ -403,6 +405,7 @@ adminHomepageRouter.patch("/:featureId", async (req, res, next) => {
 
     const feature = await updateFeature(req.params.featureId, data);
 
+    clearPublicJsonCache("homepage");
     return res.json(mapFeature(feature));
   } catch (error) {
     if (error && typeof error === "object" && "status" in error) {
@@ -429,6 +432,7 @@ adminHomepageRouter.delete("/:featureId", async (req, res, next) => {
   try {
     if (!(await requireAdmin(req, res))) return;
     await prisma.homepageFeature.delete({ where: { id: req.params.featureId } });
+    clearPublicJsonCache("homepage");
     res.status(204).send();
   } catch (error) {
     if (error && typeof error === "object" && "code" in error && (error as any).code === "P2025") {

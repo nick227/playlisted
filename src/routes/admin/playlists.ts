@@ -1,6 +1,7 @@
 import { PlaylistType, PublishStatus, Visibility } from "@prisma/client";
 import { Router } from "express";
 
+import { clearPublicCatalogCaches } from "../../lib/publicCatalogCache.js";
 import { prisma } from "../../lib/prisma.js";
 import { requireAdmin } from "../../lib/requireAdmin.js";
 
@@ -183,6 +184,7 @@ adminPlaylistsRouter.patch("/:playlistId", async (req, res, next) => {
       include: adminPlaylistInclude,
     });
 
+    clearPublicCatalogCaches();
     return res.json(mapPlaylist(playlist));
   } catch (error) {
     if (error && typeof error === "object" && "code" in error && (error as any).code === "P2025") {
@@ -224,6 +226,7 @@ adminPlaylistsRouter.put("/:playlistId/tags", async (req, res, next) => {
       return res.status(404).json({ error: "playlist_not_found", message: "Playlist not found." });
     }
 
+    clearPublicCatalogCaches();
     return res.json(mapPlaylist(playlist));
   } catch (error) {
     return next(error);

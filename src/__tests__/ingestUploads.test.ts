@@ -49,6 +49,10 @@ const MOCK_USER = {
 };
 
 const RAW_KEY = generateApiKey();
+const TINY_PNG = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=",
+  "base64",
+);
 const MOCK_KEY_ROW = {
   id: "key-1",
   userId: MOCK_USER.id,
@@ -87,7 +91,7 @@ function uploadImage(filename = "cover.jpg", mimeType = "image/jpeg") {
   return request(app)
     .post("/api/v1/ingest/uploads?kind=image")
     .set("Authorization", `Bearer ${RAW_KEY}`)
-    .attach("file", Buffer.from("fake-image-data"), { filename, contentType: mimeType });
+    .attach("file", TINY_PNG, { filename, contentType: mimeType });
 }
 
 // ── auth ──────────────────────────────────────────────────────────────────────

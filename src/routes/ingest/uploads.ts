@@ -4,6 +4,7 @@ import fs from "node:fs/promises";
 import { Router } from "express";
 
 import { requireApiKeyAuth } from "../../lib/apiKeyAuth.js";
+import { optimizeImageFile, OPTIMIZED_IMAGE_MAX_BYTES } from "../../lib/imageOptimize.js";
 import { prisma } from "../../lib/prisma.js";
 import {
   handleMulterSingleError,
@@ -104,6 +105,25 @@ ingestUploadsRouter.post("/", async (req, res, next) => {
       }
 
       if (await rejectDisallowedUpload(mediaKind, file, res)) return;
+      let optimized = null;
+      if (mediaKind === "image") {
+        try {
+          optimized = await optimizeImageFile(file.path);
+        } catch {
+          await fs.unlink(file.path).catch(() => undefined);
+          return res.status(415).json({
+            error: "unsupported_media_type",
+            message: "Image could not be decoded. Upload a valid JPG, PNG, or WebP image.",
+          });
+        }
+      }
+      if (optimized && optimized.bytes > OPTIMIZED_IMAGE_MAX_BYTES) {
+        await fs.unlink(file.path).catch(() => undefined);
+        return res.status(413).json({
+          error: "file_too_large",
+          message: `Optimized image exceeds the ${Math.round(OPTIMIZED_IMAGE_MAX_BYTES / (1024 * 1024))} MB limit.`,
+        });
+      }
 
       const url = storedUploadUrl(subdir, file.filename);
       const storageKey = `${subdir}/${file.filename}`;
@@ -119,7 +139,7 @@ ingestUploadsRouter.post("/", async (req, res, next) => {
             url,
             storageKey,
             mimeType: file.mimetype,
-            bytes: file.size,
+            bytes: optimized?.bytes ?? file.size,
             originalName,
             status: "READY",
           },
@@ -134,7 +154,7 @@ ingestUploadsRouter.post("/", async (req, res, next) => {
         url,
         kind,
         mimeType: file.mimetype,
-        bytes: file.size,
+        bytes: optimized?.bytes ?? file.size,
         originalName,
       });
     });

@@ -72,7 +72,13 @@ export function ChartPanelRow({
           className={`h-10 w-10 shrink-0 cursor-pointer overflow-hidden ${rounded}`}
         >
           {imageUrl ? (
-            <img src={imageUrl} alt="" className={`h-full w-full object-cover ${rounded}`} />
+            <img
+              src={imageUrl}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              className={`h-full w-full object-cover ${rounded}`}
+            />
           ) : (
             <div
               className={`h-full w-full ${rounded}`}

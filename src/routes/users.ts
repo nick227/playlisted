@@ -17,6 +17,7 @@ import { assertProfileLinks, normalizeProfileLinks } from "../lib/profileLinks.j
 import { requireAdmin } from "../lib/requireAdmin.js";
 import { requireAuth } from "../lib/requireAuth.js";
 import { slugify } from "../utils/slug.js";
+import { parsePageSize, parsePositivePage } from "../lib/pagination.js";
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_PAGE_SIZE = 20;
@@ -68,8 +69,8 @@ function mapUserDetail(user: any) {
 
 usersRouter.get("/", async (req, res, next) => {
   try {
-    const page = Number(req.query.page ?? DEFAULT_PAGE);
-    const pageSize = Number(req.query.pageSize ?? DEFAULT_PAGE_SIZE);
+    const page = parsePositivePage(req.query.page, DEFAULT_PAGE);
+    const pageSize = parsePageSize(req.query.pageSize, DEFAULT_PAGE_SIZE, 100);
     const role = typeof req.query.role === "string" ? req.query.role : undefined;
     const status = typeof req.query.status === "string" ? req.query.status : undefined;
     const featuredOnly = req.query.featured === "true";

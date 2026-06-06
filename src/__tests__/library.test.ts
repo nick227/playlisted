@@ -11,6 +11,7 @@ vi.mock("../lib/prisma.js", () => ({
 }));
 
 import { prisma } from "../lib/prisma.js";
+import { clearPublicJsonCache } from "../lib/publicJsonCache.js";
 import { createApp } from "../app.js";
 
 const app = createApp();
@@ -23,6 +24,7 @@ const BROWSABLE_RECORDING = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  clearPublicJsonCache();
 });
 
 describe("GET /api/v1/library/genres", () => {
@@ -88,6 +90,26 @@ describe("GET /api/v1/library/genres", () => {
     expect(prisma.tag.findMany).not.toHaveBeenCalled();
     expect(prisma.playlist.findMany).not.toHaveBeenCalled();
     expect(prisma.recording.findMany).not.toHaveBeenCalled();
+  });
+
+  it("serves repeated genre requests from the short public cache", async () => {
+    vi.mocked(prisma.$queryRaw).mockResolvedValue([
+      {
+        id: "tag-jazz",
+        name: "Jazz",
+        slug: "jazz",
+        songCount: BigInt(1),
+      },
+    ] as never);
+
+    const first = await request(app).get("/api/v1/library/genres");
+    const second = await request(app).get("/api/v1/library/genres");
+
+    expect(first.status).toBe(200);
+    expect(second.status).toBe(200);
+    expect(first.headers["x-playlisted-cache"]).toBe("MISS");
+    expect(second.headers["x-playlisted-cache"]).toBe("HIT");
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -176,5 +198,49 @@ describe("GET /api/v1/library/songs", () => {
       { id: "tag-ambient", name: "Ambient", slug: "ambient" },
       { id: "tag-vaporwave", name: "Vaporwave", slug: "vaporwave" },
     ]);
+  });
+});
+
+describe("GET /api/v1/library/artists", () => {
+  beforeEach(() => {
+    vi.mocked(prisma.$queryRaw)
+      .mockResolvedValueOnce([
+        {
+          id: "user-1",
+          username: "artist",
+          displayName: "Artist",
+          avatarUrl: null,
+          songCount: BigInt(3),
+          earliestYear: 2022,
+          latestYear: 2024,
+        },
+      ] as never)
+      .mockResolvedValueOnce([
+        { uploaderId: "user-1", id: "tag-ambient", name: "Ambient", slug: "ambient" },
+        { uploaderId: "user-1", id: "tag-jazz", name: "Jazz", slug: "jazz" },
+      ] as never);
+  });
+
+  it("aggregates artist summaries in SQL instead of loading all recordings", async () => {
+    const res = await request(app).get("/api/v1/library/artists");
+
+    expect(res.status).toBe(200);
+    expect(res.headers["x-playlisted-cache"]).toBe("MISS");
+    expect(res.body.data).toEqual([
+      {
+        id: "user-1",
+        username: "artist",
+        displayName: "Artist",
+        avatarUrl: null,
+        songCount: 3,
+        genres: [
+          { id: "tag-ambient", name: "Ambient", slug: "ambient" },
+          { id: "tag-jazz", name: "Jazz", slug: "jazz" },
+        ],
+        yearRange: { earliest: 2022, latest: 2024 },
+      },
+    ]);
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(2);
+    expect(prisma.recording.findMany).not.toHaveBeenCalled();
   });
 });

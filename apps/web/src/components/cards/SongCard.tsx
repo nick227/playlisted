@@ -25,7 +25,13 @@ export function SongCard({ song, isPlaying, isActive = isPlaying, onPlay }: Song
         onClick={onPlay}
       >
         {song.artworkUrl ? (
-          <img src={song.artworkUrl} alt="" className="h-full w-full object-cover" />
+          <img
+            src={song.artworkUrl}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            className="h-full w-full object-cover"
+          />
         ) : (
           <div
             className="h-full w-full"

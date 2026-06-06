@@ -35,11 +35,12 @@ export function useLibrarySongs(genreSlug?: string | null, enabled = true) {
     queryKey: ["library", "songs", genre ?? "all"],
     queryFn: () =>
       api.library.songs({
-        pageSize: 200,
+        pageSize: 50,
         ...(genre ? { genre } : {}),
-      }),
+    }),
     enabled,
     staleTime: 2 * 60_000,
+    gcTime: 2 * 60_000,
   });
 }
 
@@ -48,6 +49,7 @@ export function useLibraryArtists() {
     queryKey: ["library", "artists"],
     queryFn: () => api.library.artists(),
     staleTime: 5 * 60_000,
+    gcTime: 2 * 60_000,
   });
 }
 
@@ -57,5 +59,6 @@ export function useLibraryPlaylists(genreSlug?: string | null) {
     queryKey: ["library", "playlists", genre ?? "all"],
     queryFn: () => api.playlists.list({ pageSize: 50, ...(genre ? { genre } : {}) }),
     staleTime: 2 * 60_000,
+    gcTime: 2 * 60_000,
   });
 }

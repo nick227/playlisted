@@ -89,7 +89,13 @@ export function SearchAutocompleteDropdown({
               ) : (
                 <span className="relative h-9 w-9 shrink-0 overflow-hidden rounded-md">
                   {option.imageUrl ? (
-                    <img src={option.imageUrl} alt="" className="h-full w-full object-cover" />
+                    <img
+                      src={option.imageUrl}
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                      className="h-full w-full object-cover"
+                    />
                   ) : (
                     <span
                       className="block h-full w-full"

@@ -199,6 +199,8 @@ export function SmartPlaylistCard({
           <img
             src={displaySrc}
             alt=""
+            loading="lazy"
+            decoding="async"
             className={[
               "h-full w-full object-cover transition-opacity duration-150",
               fadeIn ? "opacity-100" : "opacity-0",

@@ -10,46 +10,79 @@ import { prisma } from "../lib/prisma.js";
 import { resolveRecordingArtworkUrl } from "../lib/mediaUrls.js";
 import { BROWSABLE_RECORDING } from "../lib/publicRecordingFilter.js";
 import { PUBLIC_PUBLISHED_PLAYLIST } from "../lib/publicPlaylistFilter.js";
+import { parsePageSize, parsePositivePage } from "../lib/pagination.js";
+import { sendCachedPublicJson } from "../lib/publicJsonCache.js";
 
 export const libraryRouter = Router();
 
+type ArtistSummaryRow = {
+  id: string;
+  username: string;
+  displayName: string;
+  avatarUrl: string | null;
+  songCount: bigint | number;
+  earliestYear: number | null;
+  latestYear: number | null;
+};
+
+type ArtistGenreRow = {
+  uploaderId: string;
+  id: string;
+  name: string;
+  slug: string;
+};
+
 libraryRouter.get("/genres", async (req, res, next) => {
   try {
-    const requestedMinSongCount = Number(req.query.minSongCount ?? 1);
-    const minSongCount = Number.isFinite(requestedMinSongCount)
-      ? Math.max(1, requestedMinSongCount)
-      : 1;
+    return await sendCachedPublicJson(req, res, {
+      namespace: "library-genres",
+      ttlSeconds: 60,
+      staleWhileRevalidateSeconds: 120,
+      maxEntries: 25,
+    }, async () => {
+      const requestedMinSongCount = Number(req.query.minSongCount ?? 1);
+      const minSongCount = Number.isFinite(requestedMinSongCount)
+        ? Math.max(1, requestedMinSongCount)
+        : 1;
 
-    return res.json({ data: await listEffectiveLibraryGenres(minSongCount) });
+      return { data: await listEffectiveLibraryGenres(minSongCount) };
+    });
   } catch (error) {
     return next(error);
   }
 });
 
-libraryRouter.get("/playlist-genres", async (_req, res, next) => {
+libraryRouter.get("/playlist-genres", async (req, res, next) => {
   try {
-    const genres = await prisma.tag.findMany({
-      where: {
-        kind: "GENRE",
-        playlistTags: { some: { playlist: PUBLIC_PUBLISHED_PLAYLIST } },
-      },
-      include: {
-        _count: {
-          select: {
-            playlistTags: { where: { playlist: PUBLIC_PUBLISHED_PLAYLIST } },
+    return await sendCachedPublicJson(req, res, {
+      namespace: "library-playlist-genres",
+      ttlSeconds: 60,
+      staleWhileRevalidateSeconds: 120,
+      maxEntries: 10,
+    }, async () => {
+      const genres = await prisma.tag.findMany({
+        where: {
+          kind: "GENRE",
+          playlistTags: { some: { playlist: PUBLIC_PUBLISHED_PLAYLIST } },
+        },
+        include: {
+          _count: {
+            select: {
+              playlistTags: { where: { playlist: PUBLIC_PUBLISHED_PLAYLIST } },
+            },
           },
         },
-      },
-      orderBy: { name: "asc" },
-    });
+        orderBy: { name: "asc" },
+      });
 
-    return res.json({
-      data: genres.map((g) => ({
-        id: g.id,
-        name: g.name,
-        slug: g.slug,
-        songCount: g._count.playlistTags,
-      })),
+      return {
+        data: genres.map((g) => ({
+          id: g.id,
+          name: g.name,
+          slug: g.slug,
+          songCount: g._count.playlistTags,
+        })),
+      };
     });
   } catch (error) {
     return next(error);
@@ -58,8 +91,8 @@ libraryRouter.get("/playlist-genres", async (_req, res, next) => {
 
 libraryRouter.get("/songs", async (req, res, next) => {
   try {
-    const page = Math.max(1, Number(req.query.page ?? 1));
-    const pageSize = Math.min(200, Math.max(1, Number(req.query.pageSize ?? 200)));
+    const page = parsePositivePage(req.query.page);
+    const pageSize = parsePageSize(req.query.pageSize, 50, 100);
     const genreSlug = typeof req.query.genre === "string" ? req.query.genre : undefined;
 
     const where = {
@@ -134,61 +167,94 @@ libraryRouter.get("/songs", async (req, res, next) => {
   }
 });
 
-libraryRouter.get("/artists", async (_req, res, next) => {
+libraryRouter.get("/artists", async (req, res, next) => {
   try {
-    const recordings = await prisma.recording.findMany({
-      where: BROWSABLE_RECORDING,
-      select: {
-        uploaderId: true,
-        releaseDate: true,
-        publishedAt: true,
-        uploader: {
-          select: { id: true, username: true, displayName: true, avatarUrl: true },
+    return await sendCachedPublicJson(req, res, {
+      namespace: "library-artists",
+      ttlSeconds: 60,
+      staleWhileRevalidateSeconds: 180,
+      maxEntries: 10,
+    }, async () => {
+      const [artistRows, genreRows] = await Promise.all([
+        prisma.$queryRaw<ArtistSummaryRow[]>`
+          SELECT
+            u.id,
+            u.username,
+            u.displayName,
+            u.avatarUrl,
+            COUNT(r.id) AS songCount,
+            MIN(YEAR(COALESCE(r.releaseDate, r.publishedAt))) AS earliestYear,
+            MAX(YEAR(COALESCE(r.releaseDate, r.publishedAt))) AS latestYear
+          FROM Recording r
+          INNER JOIN Playlist p ON p.id = r.publishedPlaylistId
+          INNER JOIN User u ON u.id = r.uploaderId
+          WHERE r.visibility = 'PUBLIC'
+            AND r.status = 'PUBLISHED'
+            AND p.visibility = 'PUBLIC'
+            AND p.status = 'PUBLISHED'
+            AND u.status = 'ACTIVE'
+          GROUP BY u.id, u.username, u.displayName, u.avatarUrl
+          ORDER BY u.displayName ASC
+        `,
+        prisma.$queryRaw<ArtistGenreRow[]>`
+          SELECT DISTINCT genreRows.uploaderId, genreRows.id, genreRows.name, genreRows.slug
+          FROM (
+            SELECT r.uploaderId, t.id, t.name, t.slug
+            FROM Recording r
+            INNER JOIN Playlist p ON p.id = r.publishedPlaylistId
+            INNER JOIN RecordingTag rt ON rt.recordingId = r.id
+            INNER JOIN Tag t ON t.id = rt.tagId
+            INNER JOIN User u ON u.id = r.uploaderId
+            WHERE r.visibility = 'PUBLIC'
+              AND r.status = 'PUBLISHED'
+              AND p.visibility = 'PUBLIC'
+              AND p.status = 'PUBLISHED'
+              AND u.status = 'ACTIVE'
+              AND t.kind = 'GENRE'
+            UNION
+            SELECT r.uploaderId, t.id, t.name, t.slug
+            FROM Recording r
+            INNER JOIN Playlist p ON p.id = r.publishedPlaylistId
+            INNER JOIN PlaylistTag pt ON pt.playlistId = p.id
+            INNER JOIN Tag t ON t.id = pt.tagId
+            INNER JOIN User u ON u.id = r.uploaderId
+            WHERE r.visibility = 'PUBLIC'
+              AND r.status = 'PUBLISHED'
+              AND p.visibility = 'PUBLIC'
+              AND p.status = 'PUBLISHED'
+              AND u.status = 'ACTIVE'
+              AND t.kind = 'GENRE'
+          ) AS genreRows
+          ORDER BY genreRows.name ASC
+        `,
+      ]);
+
+      const genresByArtist = new Map<string, ArtistGenreRow[]>();
+      for (const genre of genreRows) {
+        const artistGenres = genresByArtist.get(genre.uploaderId) ?? [];
+        artistGenres.push(genre);
+        genresByArtist.set(genre.uploaderId, artistGenres);
+      }
+
+      const artists = artistRows.map((artist) => ({
+        id: artist.id,
+        username: artist.username,
+        displayName: artist.displayName,
+        avatarUrl: artist.avatarUrl,
+        songCount: Number(artist.songCount),
+        genres: (genresByArtist.get(artist.id) ?? []).map((genre) => ({
+          id: genre.id,
+          name: genre.name,
+          slug: genre.slug,
+        })),
+        yearRange: {
+          earliest: artist.earliestYear == null ? null : Number(artist.earliestYear),
+          latest: artist.latestYear == null ? null : Number(artist.latestYear),
         },
-        ...effectiveGenreSelect,
-      },
+      }));
+
+      return { data: artists };
     });
-
-    const artistMap = new Map<string, {
-      user: { id: string; username: string; displayName: string; avatarUrl: string | null };
-      songCount: number;
-      genres: Map<string, { id: string; name: string; slug: string }>;
-      years: number[];
-    }>();
-
-    for (const r of recordings) {
-      if (!artistMap.has(r.uploaderId)) {
-        artistMap.set(r.uploaderId, {
-          user: r.uploader,
-          songCount: 0,
-          genres: new Map(),
-          years: [],
-        });
-      }
-      const entry = artistMap.get(r.uploaderId)!;
-      entry.songCount++;
-      for (const genre of mergeGenreRefs(r.tags, r.publishedPlaylist.tags)) {
-        entry.genres.set(genre.id, genre);
-      }
-      const year = r.releaseDate?.getFullYear() ?? r.publishedAt?.getFullYear();
-      if (year) entry.years.push(year);
-    }
-
-    const artists = Array.from(artistMap.values())
-      .map(({ user, songCount, genres, years }) => ({
-        id: user.id,
-        username: user.username,
-        displayName: user.displayName,
-        avatarUrl: user.avatarUrl,
-        songCount,
-        genres: Array.from(genres.values()),
-        yearRange: years.length > 0
-          ? { earliest: Math.min(...years), latest: Math.max(...years) }
-          : { earliest: null, latest: null },
-      }))
-      .sort((a, b) => a.displayName.localeCompare(b.displayName));
-
-    return res.json({ data: artists });
   } catch (error) {
     return next(error);
   }

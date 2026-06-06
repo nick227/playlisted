@@ -1,4 +1,4 @@
-import { useMemo, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import type {
   components,
@@ -9,8 +9,6 @@ import type {
 import { ArtistCard } from "@/components/cards/ArtistCard";
 import { MediaCover } from "@/components/cards/MediaCover";
 import { SmartPlaylistCard } from "@/components/cards/SmartPlaylistCard";
-import { HomeChartsSection } from "@/components/charts/HomeChartsSection";
-import { HomeGenreSongsSection } from "@/components/charts/HomeGenreSongsSection";
 import {
   GreetingsBanner,
   pickGreetingsFeaturedArtist,
@@ -28,6 +26,13 @@ import { useAuth } from "@/providers/AuthProvider";
 import { useAudioPlayer, type QueueTrack } from "@/providers/AudioPlayerProvider";
 import { homeGridPlaylistOrigin } from "@/lib/playbackOrigin";
 import { coverFallback, resolveItemPath } from "@/lib/routes";
+
+const HomeChartsSection = lazy(() =>
+  import("@/components/charts/HomeChartsSection").then((mod) => ({ default: mod.HomeChartsSection })),
+);
+const HomeGenreSongsSection = lazy(() =>
+  import("@/components/charts/HomeGenreSongsSection").then((mod) => ({ default: mod.HomeGenreSongsSection })),
+);
 
 type HomepageItem = components["schemas"]["HomepageItem"];
 type HomepageRecordingItem = HomepageItem & {
@@ -165,6 +170,8 @@ function SiteNewsCard({ item }: { item: HomepageItem }) {
         <img
           src={item.imageUrl}
           alt=""
+          loading="lazy"
+          decoding="async"
           className="h-16 w-16 shrink-0 rounded-lg object-cover"
         />
       )}
@@ -196,6 +203,8 @@ function EditorialPickCard({ item }: { item: HomepageItem }) {
           <img
             src={item.imageUrl}
             alt=""
+            loading="lazy"
+            decoding="async"
             className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
           />
         ) : (
@@ -341,6 +350,212 @@ function NewReleaseSongCard({
   );
 }
 
+function DeferredHomeSection({
+  children,
+  minHeight = 260,
+  rootMargin = "160px 0px",
+}: {
+  children: ReactNode;
+  minHeight?: number;
+  rootMargin?: string;
+}) {
+  const [shouldMount, setShouldMount] = useState(false);
+  const ref = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (shouldMount) return;
+    const node = ref.current;
+    if (!node || !("IntersectionObserver" in window)) {
+      const timer = window.setTimeout(() => setShouldMount(true), 1200);
+      return () => window.clearTimeout(timer);
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) {
+          setShouldMount(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin },
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [rootMargin, shouldMount]);
+
+  return (
+    <div ref={ref} style={shouldMount ? undefined : { minHeight }}>
+      {shouldMount ? children : null}
+    </div>
+  );
+}
+
+function HomeDiscoverSection({
+  isGuest,
+  discoverLimit,
+}: {
+  isGuest: boolean;
+  discoverLimit: number;
+}) {
+  const userRandom = useUserRandomPlaylists(HOME_LIMITS.discoverPoolFetch);
+  const discovered = (userRandom.data?.data ?? []).slice(0, discoverLimit);
+
+  if (discovered.length === 0) return null;
+
+  return (
+    <HomeSection
+      title={!isGuest ? "Picked for you" : "Discover Something New"}
+      subtitle={!isGuest ? "Updated daily based on your taste" : "Fresh picks — updated daily"}
+      cols={HOME_SECTION_COLS.discover}
+    >
+      {discovered.map((item) => (
+        <SmartPlaylistCard
+          key={item.playlistId}
+          id={item.playlistId}
+          title={item.title}
+          creatorName={item.owner.displayName}
+          coverArtUrl={item.coverArtUrl}
+          ownerUsername={item.owner.username}
+          slug={item.slug}
+          genre={item.genre}
+          className="w-full"
+          playbackOrigin={homeGridPlaylistOrigin("discover", item.playlistId)}
+        />
+      ))}
+    </HomeSection>
+  );
+}
+
+function HomeFeaturedPlaylistsSection({
+  editorialFeaturedPlaylists,
+  isMdUp,
+}: {
+  editorialFeaturedPlaylists: HomepageItem[];
+  isMdUp: boolean;
+}) {
+  const allTimeFeatured = useTopPlaylists(
+    "all",
+    HOME_LIMITS.featuredPlaylistsFetch,
+    editorialFeaturedPlaylists.length === 0,
+  );
+
+  const featuredPlaylistsSection = useMemo((): {
+    editorial: HomepageItem[];
+    fallback: TopPlaylistItem[];
+  } => {
+    if (editorialFeaturedPlaylists.length > 0) {
+      const limit = homeGridItemLimit(editorialFeaturedPlaylists.length, isMdUp);
+      return {
+        editorial: editorialFeaturedPlaylists.slice(0, limit),
+        fallback: [],
+      };
+    }
+    const pool = stableShuffleByDay<TopPlaylistItem>(allTimeFeatured.data?.data ?? []);
+    const limit = homeGridItemLimit(pool.length, isMdUp);
+    return { editorial: [], fallback: pool.slice(0, limit) };
+  }, [editorialFeaturedPlaylists, allTimeFeatured.data, isMdUp]);
+
+  if (
+    featuredPlaylistsSection.editorial.length === 0 &&
+    featuredPlaylistsSection.fallback.length === 0
+  ) {
+    return null;
+  }
+
+  return (
+    <HomeSection
+      title="Featured Playlists"
+      subtitle="Handpicked by the team"
+      cols={HOME_SECTION_COLS.featuredPlaylists}
+    >
+      {featuredPlaylistsSection.editorial.length > 0
+        ? featuredPlaylistsSection.editorial.map((item) => (
+            <HomepageEditorialCard key={item.id} item={item} sectionKey="featured-playlists" />
+          ))
+        : featuredPlaylistsSection.fallback.map((item) => (
+            <SmartPlaylistCard
+              key={item.playlistId}
+              id={item.playlistId}
+              title={item.title}
+              creatorName={item.owner.displayName}
+              coverArtUrl={item.coverArtUrl}
+              ownerUsername={item.owner.username}
+              slug={item.slug}
+              genre={item.genre}
+              className="w-full"
+              playbackOrigin={homeGridPlaylistOrigin("featured-playlists", item.playlistId)}
+            />
+          ))}
+    </HomeSection>
+  );
+}
+
+function HomeFeaturedArtistsSection({
+  editorialFeaturedArtists,
+}: {
+  editorialFeaturedArtists: HomepageItem[];
+}) {
+  const pinnedArtists = useTopArtists(
+    "30d",
+    HOME_LIMITS.pinnedArtistsFetch,
+    editorialFeaturedArtists.length === 0,
+  );
+
+  const featuredArtistsSection = useMemo((): {
+    editorial: HomepageItem[];
+    fallback: TopArtistItem[];
+  } => {
+    const cap = HOME_LIMITS.featuredArtists;
+    if (editorialFeaturedArtists.length > 0) {
+      return { editorial: editorialFeaturedArtists.slice(0, cap), fallback: [] };
+    }
+    return {
+      editorial: [],
+      fallback: (pinnedArtists.data?.data ?? []).slice(0, cap),
+    };
+  }, [editorialFeaturedArtists, pinnedArtists.data]);
+
+  if (
+    featuredArtistsSection.editorial.length === 0 &&
+    featuredArtistsSection.fallback.length === 0
+  ) {
+    return null;
+  }
+
+  return (
+    <HomeSection
+      title="Featured Artists"
+      subtitle="Artists to know right now"
+      cols={HOME_SECTION_COLS.featuredArtists}
+    >
+      {featuredArtistsSection.editorial.length > 0
+        ? featuredArtistsSection.editorial.map((item) => (
+            <ArtistCard
+              key={item.id}
+              id={item.id}
+              username={usernameFromHomepageUser(item)}
+              displayName={item.title}
+              avatarUrl={item.imageUrl}
+              subtitle={item.subtitle}
+              className="w-full"
+            />
+          ))
+        : featuredArtistsSection.fallback.map((item: TopArtistItem) => (
+            <ArtistCard
+              key={item.userId}
+              id={item.userId}
+              username={item.username}
+              displayName={item.displayName}
+              avatarUrl={item.avatarUrl}
+              subtitle={`${item.playCount.toLocaleString()} plays`}
+              className="w-full"
+            />
+          ))}
+    </HomeSection>
+  );
+}
+
 // ── page ──────────────────────────────────────────────────────────────────────
 
 export function HomePage() {
@@ -360,10 +575,6 @@ export function HomePage() {
   );
 
   const editorial = useHomepage();
-  const topArtists = useTopArtists("7d", 6);
-  const userRandom = useUserRandomPlaylists(HOME_LIMITS.discoverPoolFetch);
-  const allTimeFeatured = useTopPlaylists("all", HOME_LIMITS.featuredPlaylistsFetch);
-  const pinnedArtists = useTopArtists("30d", HOME_LIMITS.pinnedArtistsFetch);
 
   // Parse editorial sections into a keyed map
   const sectionMap = useMemo(() => {
@@ -410,21 +621,6 @@ export function HomePage() {
 
   // Featured playlists — same 4/8 cap as editor picks grid
   const editorialFeaturedPlaylists = sectionMap["FEATURED_PLAYLIST"] ?? [];
-  const featuredPlaylistsSection = useMemo((): {
-    editorial: HomepageItem[];
-    fallback: TopPlaylistItem[];
-  } => {
-    if (editorialFeaturedPlaylists.length > 0) {
-      const limit = homeGridItemLimit(editorialFeaturedPlaylists.length, isMdUp);
-      return {
-        editorial: editorialFeaturedPlaylists.slice(0, limit),
-        fallback: [],
-      };
-    }
-    const pool = stableShuffleByDay<TopPlaylistItem>(allTimeFeatured.data?.data ?? []);
-    const limit = homeGridItemLimit(pool.length, isMdUp);
-    return { editorial: [], fallback: pool.slice(0, limit) };
-  }, [editorialFeaturedPlaylists, allTimeFeatured.data, isMdUp]);
 
   // Featured artists grid (NEW_ARTIST) vs greetings banner slot (FEATURED_ARTIST)
   const editorialFeaturedArtists = sectionMap["NEW_ARTIST"] ?? [];
@@ -434,35 +630,10 @@ export function HomePage() {
     () =>
       pickGreetingsFeaturedArtist(
         greetingsCuratedArtists,
-        pinnedArtists.data?.data ?? topArtists.data?.data ?? [],
+        [],
       ),
-    [greetingsCuratedArtists, pinnedArtists.data, topArtists.data],
+    [greetingsCuratedArtists],
   );
-
-  const greetingsArtistLoading =
-    greetingsCuratedArtists.length === 0 &&
-    pinnedArtists.isLoading &&
-    !greetingsFeaturedArtist;
-
-  const featuredArtistsSection = useMemo((): {
-    editorial: HomepageItem[];
-    fallback: TopArtistItem[];
-  } => {
-    const cap = HOME_LIMITS.featuredArtists;
-    if (editorialFeaturedArtists.length > 0) {
-      return { editorial: editorialFeaturedArtists.slice(0, cap), fallback: [] };
-    }
-    return {
-      editorial: [],
-      fallback: (pinnedArtists.data?.data ?? []).slice(0, cap),
-    };
-  }, [editorialFeaturedArtists, pinnedArtists.data]);
-
-  // For You / Discover
-  const discovered = useMemo((): TopPlaylistItem[] => {
-    const pool: TopPlaylistItem[] = userRandom.data?.data ?? [];
-    return pool.slice(0, discoverLimit);
-  }, [userRandom.data, discoverLimit]);
 
   const firstName = user?.displayName?.split(" ")[0];
 
@@ -475,137 +646,82 @@ export function HomePage() {
         firstName={firstName}
         isGuest={isGuest}
         featuredArtist={greetingsFeaturedArtist}
-        artistLoading={greetingsArtistLoading}
+        artistLoading={false}
       />
 
       {/* ── CHARTS ────────────────────────────────────────────── */}
 
-      <HomeChartsSection />
+      <DeferredHomeSection minHeight={340}>
+        <Suspense fallback={null}>
+          <HomeChartsSection />
+        </Suspense>
+      </DeferredHomeSection>
 
       {/* ── GENRE SONGS ────────────────────────────────────────────── */}
 
-      <HomeGenreSongsSection />
+      <DeferredHomeSection minHeight={340}>
+        <Suspense fallback={null}>
+          <HomeGenreSongsSection />
+        </Suspense>
+      </DeferredHomeSection>
 
 {/* ── FOR YOU / DISCOVER ───────────────────────────────── */}
 
-{discovered.length > 0 && (
-  <HomeSection
-    title={!isGuest ? "Picked for you" : "Discover Something New"}
-    subtitle={!isGuest ? "Updated daily based on your taste" : "Fresh picks — updated daily"}
-    cols={HOME_SECTION_COLS.discover}
-  >
-    {discovered.map((item) => (
-      <SmartPlaylistCard
-        key={item.playlistId}
-        id={item.playlistId}
-        title={item.title}
-        creatorName={item.owner.displayName}
-        coverArtUrl={item.coverArtUrl}
-        ownerUsername={item.owner.username}
-        slug={item.slug}
-        genre={item.genre}
-        className="w-full"
-        playbackOrigin={homeGridPlaylistOrigin("discover", item.playlistId)}
-      />
-    ))}
-  </HomeSection>
-)}
+      <DeferredHomeSection minHeight={320}>
+        <HomeDiscoverSection isGuest={isGuest} discoverLimit={discoverLimit} />
+      </DeferredHomeSection>
 
       {/* ── NEW RELEASES ────────────────────────────────────────────── */}
 
-      {newReleasesSection.length > 0 && (
-        <HomeSection title="New Releases" cols={HOME_SECTION_COLS.newReleases}>
-          {newReleasesSection.map((item) => (
-            isHomepageRecordingItem(item) ? (
-              <NewReleaseSongCard key={item.id} item={item} queueTracks={newReleaseQueueTracks} />
-            ) : (
-              <HomepageEditorialCard key={item.id} item={item} sectionKey="new-releases" />
-            )
-          ))}
-        </HomeSection>
-      )}
+      <DeferredHomeSection minHeight={320}>
+        {newReleasesSection.length > 0 && (
+          <HomeSection title="New Releases" cols={HOME_SECTION_COLS.newReleases}>
+            {newReleasesSection.map((item) => (
+              isHomepageRecordingItem(item) ? (
+                <NewReleaseSongCard key={item.id} item={item} queueTracks={newReleaseQueueTracks} />
+              ) : (
+                <HomepageEditorialCard key={item.id} item={item} sectionKey="new-releases" />
+              )
+            ))}
+          </HomeSection>
+        )}
+      </DeferredHomeSection>
 
       {/* ── SITE NEWS ────────────────────────────────────────────── */}
 
-      {siteNews.length > 0 && (
-        <HomeSection
-          title="Site News"
-          subtitle="Updates from the team"
-          cols={HOME_SECTION_COLS.siteNews}
-        >
-          {siteNews.map((item) => (
-            <SiteNewsCard key={item.id} item={item} />
-          ))}
-        </HomeSection>
-      )}
+      <DeferredHomeSection minHeight={180}>
+        {siteNews.length > 0 && (
+          <HomeSection
+            title="Site News"
+            subtitle="Updates from the team"
+            cols={HOME_SECTION_COLS.siteNews}
+          >
+            {siteNews.map((item) => (
+              <SiteNewsCard key={item.id} item={item} />
+            ))}
+          </HomeSection>
+        )}
+      </DeferredHomeSection>
 
       {/* Spotlight — admin-curated full-width hero, shown before everything */}
-      {spotlightItem && <SpotlightBanner item={spotlightItem} />}
+      <DeferredHomeSection minHeight={360}>
+        {spotlightItem && <SpotlightBanner item={spotlightItem} />}
+      </DeferredHomeSection>
 
       {/* ── FEATURED PLAYLISTS ───────────────────────────────── */}
 
-      {(featuredPlaylistsSection.editorial.length > 0 ||
-        featuredPlaylistsSection.fallback.length > 0) && (
-        <HomeSection
-          title="Featured Playlists"
-          subtitle="Handpicked by the team"
-          cols={HOME_SECTION_COLS.featuredPlaylists}
-        >
-          {featuredPlaylistsSection.editorial.length > 0
-            ? featuredPlaylistsSection.editorial.map((item) => (
-                <HomepageEditorialCard key={item.id} item={item} sectionKey="featured-playlists" />
-              ))
-            : featuredPlaylistsSection.fallback.map((item) => (
-                <SmartPlaylistCard
-                  key={item.playlistId}
-                  id={item.playlistId}
-                  title={item.title}
-                  creatorName={item.owner.displayName}
-                  coverArtUrl={item.coverArtUrl}
-                  ownerUsername={item.owner.username}
-                  slug={item.slug}
-                  genre={item.genre}
-                  className="w-full"
-                  playbackOrigin={homeGridPlaylistOrigin("featured-playlists", item.playlistId)}
-                />
-              ))}
-        </HomeSection>
-      )}
+      <DeferredHomeSection minHeight={300}>
+        <HomeFeaturedPlaylistsSection
+          editorialFeaturedPlaylists={editorialFeaturedPlaylists}
+          isMdUp={isMdUp}
+        />
+      </DeferredHomeSection>
 
       {/* ── FEATURED ARTISTS ────────────────────────────────── */}
 
-      {(featuredArtistsSection.editorial.length > 0 ||
-        featuredArtistsSection.fallback.length > 0) && (
-        <HomeSection
-          title="Featured Artists"
-          subtitle="Artists to know right now"
-          cols={HOME_SECTION_COLS.featuredArtists}
-        >
-          {featuredArtistsSection.editorial.length > 0
-            ? featuredArtistsSection.editorial.map((item) => (
-                <ArtistCard
-                  key={item.id}
-                  id={item.id}
-                  username={usernameFromHomepageUser(item)}
-                  displayName={item.title}
-                  avatarUrl={item.imageUrl}
-                  subtitle={item.subtitle}
-                  className="w-full"
-                />
-              ))
-            : featuredArtistsSection.fallback.map((item: TopArtistItem) => (
-                <ArtistCard
-                  key={item.userId}
-                  id={item.userId}
-                  username={item.username}
-                  displayName={item.displayName}
-                  avatarUrl={item.avatarUrl}
-                  subtitle={`${item.playCount.toLocaleString()} plays`}
-                  className="w-full"
-                />
-              ))}
-        </HomeSection>
-      )}
+      <DeferredHomeSection minHeight={260}>
+        <HomeFeaturedArtistsSection editorialFeaturedArtists={editorialFeaturedArtists} />
+      </DeferredHomeSection>
 
       {/* ── EDITOR PICKS (homepage_features.section = EDITOR_PICK) ── */}
 

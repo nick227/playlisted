@@ -1,53 +1,102 @@
+import { lazy, Suspense } from "react";
 import { BrowserRouter, Navigate, Route, Routes, useParams } from "react-router-dom";
 
-import { AuthLayout } from "@/components/auth/AuthLayout";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AppShell } from "@/components/app-shell/AppShell";
-import { AdminPage } from "@/pages/AdminPage";
-import { AdminDashboardPage } from "@/pages/admin/AdminDashboardPage";
-import { AdminHomepagePage } from "@/pages/admin/AdminHomepagePage";
-import { AdminPlaylistsPage } from "@/pages/admin/AdminPlaylistsPage";
-import { AdminSongsPage } from "@/pages/admin/AdminSongsPage";
-import { AdminTagsPage } from "@/pages/admin/AdminTagsPage";
-import { AdminTrafficPage } from "@/pages/admin/AdminTrafficPage";
-import { AdminUsersPage } from "@/pages/admin/AdminUsersPage";
-import { AdminApiKeysPage } from "@/pages/admin/AdminApiKeysPage";
-import { AdminRadioPage } from "@/pages/admin/AdminRadioPage";
-import { HomePage } from "@/pages/HomePage";
-import { FavoritesPage } from "@/pages/FavoritesPage";
-import { LibraryPage } from "@/pages/LibraryPage";
-import {
-  LibraryArtistRedirect,
-  LibraryArtistsPage,
-  LibraryGenrePage,
-  LibraryGenresPage,
-  LibraryPlaylistsPage,
-  LibrarySongsPage,
-} from "@/pages/library/LibraryBrowsePages";
-import { LoginPage } from "@/pages/LoginPage";
-import { MemberPage } from "@/pages/MemberPage";
-import { PlaylistPage } from "@/pages/PlaylistPage";
-import { RegisterPage } from "@/pages/RegisterPage";
-import { SearchPage } from "@/pages/SearchPage";
-import { CanonicalPlaylistPage } from "@/pages/CanonicalPlaylistPage";
-import { StudioPage } from "@/pages/StudioPage";
-import { StudioCollectionEditPage } from "@/pages/studio/StudioCollectionEditPage";
-import { StudioCollectionsPage } from "@/pages/studio/StudioCollectionsPage";
-import { StudioProfilePage } from "@/pages/studio/StudioProfilePage";
-import { StudioLinksPage } from "@/pages/studio/StudioLinksPage";
-import { StudioAnalyticsPage } from "@/pages/studio/StudioAnalyticsPage";
-import { StudioHistoryPage } from "@/pages/studio/StudioHistoryPage";
-import { StudioDeveloperPage } from "@/pages/studio/StudioDeveloperPage";
-import { RadioPage } from "@/pages/RadioPage";
-import {
-  AdvertisingPage,
-  CompanyPage,
-  DevelopersPage,
-  JobsPage,
-  MediaPage,
-  MusiciansPage,
-} from "@/pages/site/SitePages";
-import { PrivacyPage } from "@/pages/site/PrivacyPage";
+
+const AuthLayout = lazy(() => import("@/components/auth/AuthLayout").then((mod) => ({ default: mod.AuthLayout })));
+const LoginPage = lazy(() => import("@/pages/LoginPage").then((mod) => ({ default: mod.LoginPage })));
+const RegisterPage = lazy(() => import("@/pages/RegisterPage").then((mod) => ({ default: mod.RegisterPage })));
+
+const HomePage = lazy(() => import("@/pages/HomePage").then((mod) => ({ default: mod.HomePage })));
+const SearchPage = lazy(() => import("@/pages/SearchPage").then((mod) => ({ default: mod.SearchPage })));
+const RadioPage = lazy(() => import("@/pages/RadioPage").then((mod) => ({ default: mod.RadioPage })));
+const CanonicalPlaylistPage = lazy(() =>
+  import("@/pages/CanonicalPlaylistPage").then((mod) => ({ default: mod.CanonicalPlaylistPage })),
+);
+const PlaylistPage = lazy(() => import("@/pages/PlaylistPage").then((mod) => ({ default: mod.PlaylistPage })));
+const MemberPage = lazy(() => import("@/pages/MemberPage").then((mod) => ({ default: mod.MemberPage })));
+const LibraryPage = lazy(() => import("@/pages/LibraryPage").then((mod) => ({ default: mod.LibraryPage })));
+const FavoritesPage = lazy(() => import("@/pages/FavoritesPage").then((mod) => ({ default: mod.FavoritesPage })));
+
+const LibraryPlaylistsPage = lazy(() =>
+  import("@/pages/library/LibraryBrowsePages").then((mod) => ({ default: mod.LibraryPlaylistsPage })),
+);
+const LibrarySongsPage = lazy(() =>
+  import("@/pages/library/LibraryBrowsePages").then((mod) => ({ default: mod.LibrarySongsPage })),
+);
+const LibraryGenresPage = lazy(() =>
+  import("@/pages/library/LibraryBrowsePages").then((mod) => ({ default: mod.LibraryGenresPage })),
+);
+const LibraryGenrePage = lazy(() =>
+  import("@/pages/library/LibraryBrowsePages").then((mod) => ({ default: mod.LibraryGenrePage })),
+);
+const LibraryArtistsPage = lazy(() =>
+  import("@/pages/library/LibraryBrowsePages").then((mod) => ({ default: mod.LibraryArtistsPage })),
+);
+const LibraryArtistRedirect = lazy(() =>
+  import("@/pages/library/LibraryBrowsePages").then((mod) => ({ default: mod.LibraryArtistRedirect })),
+);
+
+const MusiciansPage = lazy(() => import("@/pages/site/SitePages").then((mod) => ({ default: mod.MusiciansPage })));
+const DevelopersPage = lazy(() => import("@/pages/site/SitePages").then((mod) => ({ default: mod.DevelopersPage })));
+const AdvertisingPage = lazy(() => import("@/pages/site/SitePages").then((mod) => ({ default: mod.AdvertisingPage })));
+const CompanyPage = lazy(() => import("@/pages/site/SitePages").then((mod) => ({ default: mod.CompanyPage })));
+const JobsPage = lazy(() => import("@/pages/site/SitePages").then((mod) => ({ default: mod.JobsPage })));
+const MediaPage = lazy(() => import("@/pages/site/SitePages").then((mod) => ({ default: mod.MediaPage })));
+const PrivacyPage = lazy(() => import("@/pages/site/PrivacyPage").then((mod) => ({ default: mod.PrivacyPage })));
+
+const StudioPage = lazy(() => import("@/pages/StudioPage").then((mod) => ({ default: mod.StudioPage })));
+const StudioCollectionsPage = lazy(() =>
+  import("@/pages/studio/StudioCollectionsPage").then((mod) => ({ default: mod.StudioCollectionsPage })),
+);
+const StudioCollectionEditPage = lazy(() =>
+  import("@/pages/studio/StudioCollectionEditPage").then((mod) => ({ default: mod.StudioCollectionEditPage })),
+);
+const StudioAnalyticsPage = lazy(() =>
+  import("@/pages/studio/StudioAnalyticsPage").then((mod) => ({ default: mod.StudioAnalyticsPage })),
+);
+const StudioHistoryPage = lazy(() =>
+  import("@/pages/studio/StudioHistoryPage").then((mod) => ({ default: mod.StudioHistoryPage })),
+);
+const StudioProfilePage = lazy(() =>
+  import("@/pages/studio/StudioProfilePage").then((mod) => ({ default: mod.StudioProfilePage })),
+);
+const StudioLinksPage = lazy(() =>
+  import("@/pages/studio/StudioLinksPage").then((mod) => ({ default: mod.StudioLinksPage })),
+);
+const StudioDeveloperPage = lazy(() =>
+  import("@/pages/studio/StudioDeveloperPage").then((mod) => ({ default: mod.StudioDeveloperPage })),
+);
+
+const AdminPage = lazy(() => import("@/pages/AdminPage").then((mod) => ({ default: mod.AdminPage })));
+const AdminDashboardPage = lazy(() =>
+  import("@/pages/admin/AdminDashboardPage").then((mod) => ({ default: mod.AdminDashboardPage })),
+);
+const AdminTrafficPage = lazy(() =>
+  import("@/pages/admin/AdminTrafficPage").then((mod) => ({ default: mod.AdminTrafficPage })),
+);
+const AdminSongsPage = lazy(() =>
+  import("@/pages/admin/AdminSongsPage").then((mod) => ({ default: mod.AdminSongsPage })),
+);
+const AdminPlaylistsPage = lazy(() =>
+  import("@/pages/admin/AdminPlaylistsPage").then((mod) => ({ default: mod.AdminPlaylistsPage })),
+);
+const AdminUsersPage = lazy(() =>
+  import("@/pages/admin/AdminUsersPage").then((mod) => ({ default: mod.AdminUsersPage })),
+);
+const AdminHomepagePage = lazy(() =>
+  import("@/pages/admin/AdminHomepagePage").then((mod) => ({ default: mod.AdminHomepagePage })),
+);
+const AdminTagsPage = lazy(() =>
+  import("@/pages/admin/AdminTagsPage").then((mod) => ({ default: mod.AdminTagsPage })),
+);
+const AdminApiKeysPage = lazy(() =>
+  import("@/pages/admin/AdminApiKeysPage").then((mod) => ({ default: mod.AdminApiKeysPage })),
+);
+const AdminRadioPage = lazy(() =>
+  import("@/pages/admin/AdminRadioPage").then((mod) => ({ default: mod.AdminRadioPage })),
+);
 
 function LegacyProfileRedirect() {
   const { username } = useParams<{ username?: string }>();
@@ -186,13 +235,15 @@ function MainRoutes() {
 export function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route element={<AuthLayout />}>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-        </Route>
-        <Route path="/*" element={<MainRoutes />} />
-      </Routes>
+      <Suspense fallback={null}>
+        <Routes>
+          <Route element={<AuthLayout />}>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+          </Route>
+          <Route path="/*" element={<MainRoutes />} />
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }

@@ -67,6 +67,7 @@ export type LibrarySong = components["schemas"]["LibrarySong"];
 export type LibraryGenresResponse = components["schemas"]["LibraryGenresResponse"];
 export type LibrarySongsResponse = components["schemas"]["LibrarySongsResponse"];
 export type SearchResponse = components["schemas"]["SearchResponse"];
+export type SearchSuggestionsResponse = components["schemas"]["SearchSuggestionsResponse"];
 
 export type AdminTag = components["schemas"]["AdminTag"];
 export type AdminTagListResponse = components["schemas"]["AdminTagListResponse"];
@@ -245,6 +246,7 @@ export interface PlaylistedApi {
     genres(): Promise<LibraryGenresResponse>;
   };
   search: {
+    suggestions(query: { q: string; limit?: number }): Promise<SearchSuggestionsResponse>;
     unified(query: { q: string; pageSize?: number }): Promise<SearchResponse>;
   };
   developer: {
@@ -527,6 +529,12 @@ export function createPlaylistedApi(options: PlaylistedClientOptions = {}): Play
       },
     },
     search: {
+      suggestions(query) {
+        return unwrap(
+          raw.GET("/api/v1/search/suggestions", { params: { query } }),
+          "Failed to load search suggestions.",
+        );
+      },
       unified(query) {
         return unwrap(
           raw.GET("/api/v1/search/unified", { params: { query } }),

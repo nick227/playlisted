@@ -114,6 +114,8 @@ export function GreetingsBanner({
                 <img
                   src={heroBg}
                   alt=""
+                  loading="lazy"
+                  decoding="async"
                   className="absolute inset-0 h-full w-full object-cover"
                 />
               ) : (

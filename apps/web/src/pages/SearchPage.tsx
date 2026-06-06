@@ -31,6 +31,7 @@ export function SearchPage() {
     queryKey: ["search", "unified", q],
     queryFn: () => api.search.unified({ q, pageSize: 20 }),
     enabled: hasQuery,
+    gcTime: 2 * 60_000,
     select: normalizeSearchResponse,
   });
 
