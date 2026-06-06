@@ -2,7 +2,7 @@ import { Pause, Play, X } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import { formatDuration } from "@/lib/format";
-import { coverFallback, playlistIdPath, profilePath } from "@/lib/routes";
+import { coverFallback, playlistRecordingPath, profilePath } from "@/lib/routes";
 import { useAudioPlayer, type QueueTrack } from "@/providers/AudioPlayerProvider";
 
 function QueueItem({
@@ -20,10 +20,14 @@ function QueueItem({
 }) {
   const artStyle = track.artworkUrl ? undefined : { background: coverFallback(track.title) };
 
-  const songHref =
-    track.ownerUsername && track.playlistSlug
-      ? `/@/${encodeURIComponent(track.ownerUsername)}/${encodeURIComponent(track.playlistSlug)}#track-${track.id}`
-      : `${playlistIdPath(track.publishedPlaylistId)}#track-${track.id}`;
+  const songHref = playlistRecordingPath(
+    {
+      id: track.publishedPlaylistId,
+      username: track.ownerUsername,
+      slug: track.playlistSlug,
+    },
+    track,
+  );
 
   const artistHref = track.ownerUsername ? profilePath(track.ownerUsername) : null;
   const artistLabel = track.ownerName ?? track.playlistTitle ?? "";

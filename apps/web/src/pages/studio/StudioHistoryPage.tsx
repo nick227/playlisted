@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/feedback/Skeleton";
 import { TrackRow } from "@/components/tracks/TrackRow";
 import { authedApi } from "@/lib/authedApi";
 import { recordingSummaryToQueueTrack } from "@/lib/queueTrack";
+import { playlistRecordingPath } from "@/lib/routes";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { recordingShareUrl } from "@/lib/shareContent";
 import { useAuth } from "@/providers/AuthProvider";
@@ -91,7 +92,17 @@ export function StudioHistoryPage() {
                 title={item.recording.title}
                 durationSeconds={item.recording.durationSeconds}
                 artworkUrl={item.recording.artworkUrl}
-                recordingHref={item.playlist ? `${item.playlist.href}#track-${item.recording.id}` : undefined}
+                recordingHref={
+                  item.playlist
+                    ? playlistRecordingPath(
+                        {
+                          id: item.playlist.id,
+                          href: item.playlist.href,
+                        },
+                        item.recording,
+                      )
+                    : undefined
+                }
                 playlistHref={item.playlist?.href}
                 playlistTitle={item.playlist?.title}
                 meta={
@@ -108,6 +119,7 @@ export function StudioHistoryPage() {
                     ? recordingShareUrl({
                         playlistId: item.playlist.id,
                         recordingId: item.recording.id,
+                        title: item.recording.title,
                       })
                     : undefined
                 }

@@ -26,6 +26,7 @@ export function LibraryTrackRow({ song, onPlay, queueTrack }: LibraryTrackRowPro
   const shareUrl = recordingShareUrl({
     playlistId: song.playlist.id,
     recordingId: song.id,
+    title: song.title,
     username: song.uploader.username,
     slug: song.playlist.slug,
   });

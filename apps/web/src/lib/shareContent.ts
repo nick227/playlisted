@@ -1,4 +1,4 @@
-import { playlistPath } from "@/lib/routes";
+import { playlistPath, playlistRecordingPath } from "@/lib/routes";
 
 export function absoluteUrl(path: string): string {
   if (path.startsWith("http://") || path.startsWith("https://")) return path;
@@ -9,15 +9,20 @@ export function absoluteUrl(path: string): string {
 export function recordingShareUrl(params: {
   playlistId: string;
   recordingId: string;
+  title: string;
   username?: string | null;
   slug?: string | null;
 }): string {
-  const path = playlistPath({
-    id: params.playlistId,
-    username: params.username,
-    slug: params.slug,
-  });
-  return absoluteUrl(`${path}#track-${params.recordingId}`);
+  return absoluteUrl(
+    playlistRecordingPath(
+      {
+        id: params.playlistId,
+        username: params.username,
+        slug: params.slug,
+      },
+      { title: params.title },
+    ),
+  );
 }
 
 export function playlistShareUrl(params: {

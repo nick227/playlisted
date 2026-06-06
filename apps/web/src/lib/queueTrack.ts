@@ -80,12 +80,13 @@ export type PlaylistTrackContext = {
 };
 
 export function recordingShareUrlForContext(
-  recordingId: string,
+  recording: { id: string; title: string },
   playlist: Pick<PlaylistTrackContext, "playlistId" | "ownerUsername" | "slug">,
 ): string {
   return recordingShareUrl({
     playlistId: playlist.playlistId,
-    recordingId,
+    recordingId: recording.id,
+    title: recording.title,
     username: playlist.ownerUsername,
     slug: playlist.slug,
   });

@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 
 import { PlaylistAccessEmptyState } from "@/components/feedback/PlaylistAccessEmptyState";
 import { PlaylistDetailView, PlaylistPageSkeleton } from "@/components/playlists/PlaylistDetailView";
@@ -12,19 +12,20 @@ export function PlaylistPage() {
   const { data: playlist, isLoading, isError, error } = usePlaylist(playlistId);
   usePlaylistPageMeta(playlist);
   const navigate = useNavigate();
+  const { hash } = useLocation();
 
   useEffect(() => {
     if (!playlist?.owner?.username || !playlist.slug) return;
     navigate(
-      playlistPath({
+      `${playlistPath({
         id: playlist.id,
         href: playlist.href,
         username: playlist.owner.username,
         slug: playlist.slug,
-      }),
+      })}${hash}`,
       { replace: true },
     );
-  }, [navigate, playlist?.id, playlist?.href, playlist?.owner?.username, playlist?.slug]);
+  }, [hash, navigate, playlist?.id, playlist?.href, playlist?.owner?.username, playlist?.slug]);
 
   if (isLoading) {
     return <PlaylistPageSkeleton />;

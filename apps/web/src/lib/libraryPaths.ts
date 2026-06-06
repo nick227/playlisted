@@ -9,7 +9,7 @@ import {
   SONGS_PATH,
   ARTISTS_PATH,
 } from "@/lib/browsePaths";
-import { playlistPath } from "@/lib/routes";
+import { playlistRecordingPath } from "@/lib/routes";
 
 export { artistPath, genrePath, ARTISTS_PATH, FAVORITES_PATH, GENRES_PATH, PLAYLISTS_PATH, SONGS_PATH };
 
@@ -18,12 +18,14 @@ export function libraryGenrePath(slug: string): string {
 }
 
 export function libraryRecordingPath(song: LibrarySong): string {
-  const base = playlistPath({
-    id: song.playlist.id,
-    username: song.uploader.username,
-    slug: song.playlist.slug,
-  });
-  return `${base}#track-${song.id}`;
+  return playlistRecordingPath(
+    {
+      id: song.playlist.id,
+      username: song.uploader.username,
+      slug: song.playlist.slug,
+    },
+    song,
+  );
 }
 
 export function libraryArtistPath(song: LibrarySong): string {

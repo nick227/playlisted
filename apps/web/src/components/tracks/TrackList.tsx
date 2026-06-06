@@ -7,7 +7,7 @@ import {
   recordingShareUrlForContext,
   recordingSummaryToQueueTrack,
 } from "@/lib/queueTrack";
-import { playlistPath } from "@/lib/routes";
+import { playlistPath, playlistRecordingPath } from "@/lib/routes";
 
 import { TrackRow } from "./TrackRow";
 
@@ -93,7 +93,18 @@ export function TrackList({
             artworkUrl={recording.artworkUrl ?? fallbackArtworkUrl}
             onPlay={() => onPlay(recording, index)}
             playbackOrigin={playbackOriginForTrack?.(recording, index)}
-            recordingHref={playlistHref ? `${playlistHref}#track-${recording.id}` : undefined}
+            recordingHref={
+              playlistContext
+                ? playlistRecordingPath(
+                    {
+                      id: playlistContext.playlistId,
+                      username: playlistContext.ownerUsername,
+                      slug: playlistContext.slug,
+                    },
+                    recording,
+                  )
+                : undefined
+            }
             playlistHref={playlistHref}
             playlistTitle={playlistContext?.playlistTitle}
             editMode={editMode}
@@ -119,7 +130,7 @@ export function TrackList({
             shareUrl={
               editMode || !playlistContext
                 ? undefined
-                : recordingShareUrlForContext(recording.id, playlistContext)
+                : recordingShareUrlForContext(recording, playlistContext)
             }
           />
         );

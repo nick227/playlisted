@@ -1,3 +1,4 @@
+import { useCallback, useMemo } from "react";
 import type { PlaylistDetail } from "@playlisted/client-sdk";
 
 import { SmartPlaylistCard } from "@/components/cards/SmartPlaylistCard";
@@ -29,11 +30,17 @@ export function PlaylistDetailView({ playlist }: PlaylistDetailViewProps) {
 
   const recordings = playlist.recordings as CollectionRecording[];
 
-  const queueTracks: QueueTrack[] = recordings.map((recording) => ({
-    ...recording,
-    playlistTitle: playlist.title,
-    ownerName: playlist.owner.displayName,
-  }));
+  const queueTracks: QueueTrack[] = useMemo(
+    () =>
+      recordings.map((recording) => ({
+        ...recording,
+        playlistTitle: playlist.title,
+        ownerName: playlist.owner.displayName,
+        ownerUsername: playlist.owner.username,
+        playlistSlug: playlist.slug,
+      })),
+    [playlist.owner.displayName, playlist.owner.username, playlist.slug, playlist.title, recordings],
+  );
 
   const playlistHasCurrent = playbackContext.playlistId === playlist.id;
   const playlistIsPlaying = playlistHasCurrent && state === "playing";
@@ -42,7 +49,7 @@ export function PlaylistDetailView({ playlist }: PlaylistDetailViewProps) {
     user?.id === playlist.ownerId ||
     (savedCollections.data?.data.some((item) => item.id === playlist.id) ?? false);
 
-  function playAll(shuffle = false) {
+  const playAll = useCallback((shuffle = false) => {
     if (playlistHasCurrent) {
       togglePlay();
       return;
@@ -62,9 +69,18 @@ export function PlaylistDetailView({ playlist }: PlaylistDetailViewProps) {
         { segmentLabel: playlist.title },
       );
     }
-  }
+  }, [
+    playlist.id,
+    playlist.owner.username,
+    playlist.slug,
+    playlist.title,
+    playlistHasCurrent,
+    queueTracks,
+    setQueue,
+    togglePlay,
+  ]);
 
-  function playRecording(recording: CollectionRecording, index: number) {
+  const playRecording = useCallback((recording: CollectionRecording, index: number) => {
     if (currentTrack?.id === recording.id) {
       togglePlay();
       return;
@@ -81,14 +97,23 @@ export function PlaylistDetailView({ playlist }: PlaylistDetailViewProps) {
       },
       { segmentLabel: playlist.title },
     );
-  }
+  }, [
+    currentTrack?.id,
+    playlist.id,
+    playlist.owner.username,
+    playlist.slug,
+    playlist.title,
+    queueTracks,
+    setQueue,
+    togglePlay,
+  ]);
 
   const browseCrumbs = playlistBrowseCrumbs(
     { displayName: playlist.owner.displayName, username: playlist.owner.username },
     playlist.title,
   );
 
-  usePlaylistHashTrack(recordings.length > 0);
+  usePlaylistHashTrack(recordings, playRecording);
 
   return (
     <>

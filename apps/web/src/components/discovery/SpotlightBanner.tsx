@@ -12,7 +12,7 @@ import { usePlaylist } from "@/hooks/usePlaylist";
 import { useUser } from "@/hooks/useUser";
 import { formatPlayCount } from "@/lib/format";
 import { libraryGenrePath } from "@/lib/libraryPaths";
-import { coverFallback, playlistPath, profilePath } from "@/lib/routes";
+import { coverFallback, playlistRecordingPath, playlistPath, profilePath } from "@/lib/routes";
 import { homeSpotlightTrackOrigin } from "@/lib/playbackOrigin";
 import { useAuth } from "@/providers/AuthProvider";
 import { useAudioPlayer, type QueueTrack } from "@/providers/AudioPlayerProvider";
@@ -45,12 +45,15 @@ function CompactSongRow({
 }) {
   const { isActive, isPlaying } = useTrackPlayback(recording.id, playbackOrigin);
 
-  const songHref = `${playlistPath({
-    id: playlist.id,
-    href: playlist.href,
-    username: playlist.owner.username,
-    slug: playlist.slug,
-  })}#track-${recording.id}`;
+  const songHref = playlistRecordingPath(
+    {
+      id: playlist.id,
+      href: playlist.href,
+      username: playlist.owner.username,
+      slug: playlist.slug,
+    },
+    recording,
+  );
 
   return (
     <div

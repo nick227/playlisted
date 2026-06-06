@@ -28,6 +28,33 @@ export function playlistPath(playlist: {
   return playlistIdPath(playlist.id);
 }
 
+export function recordingSlug(title: string): string {
+  const slug = title
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  return slug || "song";
+}
+
+export function recordingHash(title: string): string {
+  return `#${encodeURIComponent(recordingSlug(title))}`;
+}
+
+export function playlistRecordingPath(
+  playlist: {
+    id: string;
+    href?: string | null;
+    slug?: string | null;
+    username?: string | null;
+  },
+  recording: { title: string },
+): string {
+  return `${playlistPath(playlist)}${recordingHash(recording.title)}`;
+}
+
 export function memberPath(userId: string): string {
   return `/members/${userId}`;
 }

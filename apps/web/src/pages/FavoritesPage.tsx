@@ -11,7 +11,7 @@ import { EmptyState } from "@/components/feedback/EmptyState";
 import { Skeleton } from "@/components/feedback/Skeleton";
 import { ContentRow } from "@/components/discovery/ContentRow";
 import { PlaybackBars } from "@/features/playback-indicators/PlaybackBars";
-import { coverFallback, playlistPath, profilePath } from "@/lib/routes";
+import { coverFallback, playlistPath, playlistRecordingPath, profilePath } from "@/lib/routes";
 import { formatDuration, formatPlayCount } from "@/lib/format";
 import { personalTrackToQueueTrack } from "@/lib/queueTrack";
 import { recordingShareUrl } from "@/lib/shareContent";
@@ -50,7 +50,10 @@ function PersonalTrackRow({
   const { playTrack, togglePlay } = useAudioPlayer();
   const { isActive, isPlaying } = useTrackPlayback(track.id);
 
-  const songHref = `${playlistPath({ id: track.playlist.id, username: track.uploader.username, slug: track.playlist.slug })}#track-${track.id}`;
+  const songHref = playlistRecordingPath(
+    { id: track.playlist.id, username: track.uploader.username, slug: track.playlist.slug },
+    track,
+  );
   const artistHref = profilePath(track.uploader.username);
   const playlistHref = playlistPath({
     id: track.playlist.id,
@@ -136,6 +139,7 @@ function PersonalTrackRow({
         shareUrl={recordingShareUrl({
           playlistId: track.playlist.id,
           recordingId: track.id,
+          title: track.title,
           username: track.uploader.username,
           slug: track.playlist.slug,
         })}

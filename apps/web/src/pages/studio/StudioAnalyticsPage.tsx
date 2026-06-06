@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import { Skeleton } from "@/components/feedback/Skeleton";
 import { EmptyState } from "@/components/feedback/EmptyState";
 import { useAnalyticsSummary, useAnalyticsRecordings, useAnalyticsPlaylists } from "@/hooks/useAnalytics";
-import { coverFallback, playlistIdPath } from "@/lib/routes";
+import { coverFallback, playlistIdPath, playlistRecordingPath } from "@/lib/routes";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import type { ChartRange } from "@playlisted/client-sdk";
 
@@ -362,7 +362,10 @@ export function StudioAnalyticsPage() {
               const barWidth = maxPlays > 0 ? Math.round((track.totalPlays / maxPlays) * 100) : 0;
               const completion = clampPercent(track.completionRate);
               const playlistHref = playlistIdPath(track.playlistId);
-              const trackHref = `${playlistHref}#track-${track.recordingId}`;
+              const trackHref = playlistRecordingPath(
+                { id: track.playlistId },
+                { title: track.title },
+              );
 
               return (
                 <div
@@ -473,7 +476,10 @@ export function StudioAnalyticsPage() {
               const completion = clampPercent(playlist.completionRate);
               const playlistHref = playlistIdPath(playlist.playlistId);
               const topTrackHref = playlist.topRecordingId
-                ? `${playlistHref}#track-${playlist.topRecordingId}`
+                ? playlistRecordingPath(
+                    { id: playlist.playlistId },
+                    { title: playlist.topRecordingTitle ?? "" },
+                  )
                 : null;
 
               return (

@@ -15,7 +15,7 @@ import { Link } from "react-router-dom";
 
 import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
 import { formatDuration } from "@/lib/format";
-import { coverFallback, playlistIdPath, playlistPath, profilePath } from "@/lib/routes";
+import { coverFallback, playlistPath, playlistRecordingPath, profilePath } from "@/lib/routes";
 import { usePlaybackTransport } from "@/hooks/usePlaybackTransport";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 
@@ -95,12 +95,16 @@ export function BottomPlayer() {
       })
     : null;
 
-  const songHref =
-    ownerUsername && playlistSlug
-      ? `/@/${encodeURIComponent(ownerUsername)}/${encodeURIComponent(playlistSlug)}#track-${displayTrack.id}`
-      : playlistId
-        ? `${playlistIdPath(playlistId)}#track-${displayTrack.id}`
-        : null;
+  const songHref = playlistId
+    ? playlistRecordingPath(
+        {
+          id: playlistId,
+          username: ownerUsername ?? undefined,
+          slug: playlistSlug ?? undefined,
+        },
+        displayTrack,
+      )
+    : null;
 
   const artistHref = ownerUsername ? profilePath(ownerUsername) : null;
 
