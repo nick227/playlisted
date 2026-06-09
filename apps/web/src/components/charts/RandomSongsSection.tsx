@@ -6,7 +6,6 @@ import { useTopSongs } from "@/hooks/useCharts";
 import { homeChartSongOrigin } from "@/lib/playbackOrigin";
 import { topSongToQueueTrack } from "@/lib/queueTrack";
 
-import { CHART_PANELS_GRID_CLASS } from "./chartConfig";
 import { ChartPanelContainer } from "./ChartPanelContainer";
 import { SkeletonRow } from "./ChartPanelSkeleton";
 import { ChartSongPanelRow } from "./ChartSongPanelRow";
