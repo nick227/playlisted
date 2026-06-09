@@ -375,7 +375,7 @@ export function FakeAiChat({
         <p className="mb-2 text-[0.68rem] font-semibold uppercase tracking-widest text-[var(--color-brand)]">
           {eyebrow}
         </p>
-        <h1 className="mx-auto max-w-xl text-2xl font-extrabold leading-tight tracking-tight text-white md:text-3xl">
+        <h1 className="mx-auto max-w-xl text-3xl font-extrabold leading-tight tracking-tight text-white md:text-3xl">
           {displayTitle}
         </h1>
         <p

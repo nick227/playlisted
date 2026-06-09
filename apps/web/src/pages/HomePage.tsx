@@ -27,11 +27,17 @@ import { useAudioPlayer, type QueueTrack } from "@/providers/AudioPlayerProvider
 import { homeGridPlaylistOrigin } from "@/lib/playbackOrigin";
 import { coverFallback, resolveItemPath } from "@/lib/routes";
 
+const RadioPage = lazy(() =>
+  import("@/pages/RadioPage").then((mod) => ({ default: mod.RadioPage })),
+);
 const HomeChartsSection = lazy(() =>
   import("@/components/charts/HomeChartsSection").then((mod) => ({ default: mod.HomeChartsSection })),
 );
 const HomeGenreSongsSection = lazy(() =>
   import("@/components/charts/HomeGenreSongsSection").then((mod) => ({ default: mod.HomeGenreSongsSection })),
+);
+const RandomSongsSection = lazy(() =>
+  import("@/components/charts/RandomSongsSection").then((mod) => ({ default: mod.RandomSongsSection })),
 );
 
 type HomepageItem = components["schemas"]["HomepageItem"];
@@ -640,6 +646,19 @@ export function HomePage() {
   return (
     <div className="mx-auto max-w-[var(--size-container-max,90rem)]">
 
+      {/* Radio */}
+      <Suspense fallback={null}>
+      <RadioPage />
+      </Suspense>
+
+      {/* Random songs */}
+      <Suspense fallback={null}>
+        <div className="w-full grid grid-cols-3 gap-4 mb-10">
+          <RandomSongsSection />
+          <RandomSongsSection />
+          <RandomSongsSection />
+        </div>
+      </Suspense>
 
       {/* Greeting / banner */}
       <GreetingsBanner
