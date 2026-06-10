@@ -648,7 +648,9 @@ export function HomePage() {
 
       {/* Radio */}
       <Suspense fallback={null}>
+        <div className="mb-10">
       <RadioPage isEmbedded />
+      </div>
       </Suspense>
 
       {/* Random songs */}

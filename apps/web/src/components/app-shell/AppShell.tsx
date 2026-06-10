@@ -36,7 +36,7 @@ export function AppShell({ children }: AppShellProps) {
         <main
           ref={mainRef}
           key={location.pathname}
-          className={`player-shell-transition flex-1 min-w-0 max-w-full overflow-x-clip overflow-y-auto px-4 pt-[calc(var(--spacing-topbar))] md:px-8 ${
+          className={`player-shell-transition flex-1 min-w-0 max-w-full overflow-x-clip overflow-y-auto px-4 pt-0 md:px-8 ${
             playerShellActive
               ? "pb-[calc(var(--spacing-player-safe-mobile)+1.5rem)] md:pb-[calc(var(--spacing-player)+1.5rem)]"
               : "pb-6"
