@@ -13,7 +13,6 @@ import {
   GreetingsBanner,
   pickGreetingsFeaturedArtist,
 } from "@/components/discovery/GreetingsBanner";
-import { FeaturedArtist } from "@/components/discovery/FeaturedArtist";
 import { SpotlightBanner } from "@/components/discovery/SpotlightBanner";
 import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
 import { SiteFooter } from "@/components/site/SiteFooter";
