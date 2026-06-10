@@ -5,8 +5,6 @@ import { ArtistCard } from "@/components/cards/ArtistCard";
 import { Skeleton } from "@/components/feedback/Skeleton";
 import { coverFallback, profilePath } from "@/lib/routes";
 
-import { getTimeTheme } from "./greeting/getTimeTheme";
-
 type HomepageItem = components["schemas"]["HomepageItem"];
 
 export type BannerFeaturedArtist = {
