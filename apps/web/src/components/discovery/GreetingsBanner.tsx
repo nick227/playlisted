@@ -1,10 +1,5 @@
 import { useMemo } from "react";
-import { Link } from "react-router-dom";
 import type { components, TopArtistItem } from "@playlisted/client-sdk";
-
-import { ArtistCard } from "@/components/cards/ArtistCard";
-import { Skeleton } from "@/components/feedback/Skeleton";
-import { coverFallback, profilePath } from "@/lib/routes";
 
 import { FakeAiChat } from "./FakeAiChat";
 import { GreetingSky } from "./greeting/GreetingSky";
@@ -72,8 +67,6 @@ export function pickGreetingsFeaturedArtist(
 export function GreetingsBanner({
   firstName,
   isGuest,
-  featuredArtist,
-  artistLoading,
 }: {
   firstName?: string;
   isGuest: boolean;
@@ -83,11 +76,9 @@ export function GreetingsBanner({
   const theme = useMemo(() => getTimeTheme(), []);
   const headline =
     !isGuest && firstName ? `${theme.greeting}, ${firstName}` : theme.greeting;
-  const showArtistPanel = Boolean(featuredArtist || artistLoading);
-  const heroBg = featuredArtist?.heroImageUrl ?? featuredArtist?.avatarUrl;
 
   return (
-    <div className={`mb-10 grid items-stretch gap-4 ${showArtistPanel ? "lg:grid-cols-2" : ""}`}>
+    <div className={`mb-10 grid items-stretch gap-4`}>
       <section className="relative min-h-[340px] overflow-hidden rounded-2xl px-6 py-8 md:px-10 md:py-10">
         <GreetingSky theme={theme} />
 
@@ -104,51 +95,6 @@ export function GreetingsBanner({
 
       </section>
 
-      {showArtistPanel ? (
-        <section className="relative min-h-[320px] overflow-hidden rounded-2xl">
-          {artistLoading && !featuredArtist ? (
-            <Skeleton className="absolute inset-0 h-full w-full rounded-2xl" />
-          ) : featuredArtist ? (
-            <>
-              {heroBg ? (
-                <img
-                  src={heroBg}
-                  alt=""
-                  loading="lazy"
-                  decoding="async"
-                  className="absolute inset-0 h-full w-full object-cover"
-                />
-              ) : (
-                <div
-                  className="absolute inset-0"
-                  style={{ background: coverFallback(featuredArtist.displayName) }}
-                  aria-hidden
-                />
-              )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/55 to-black/25" />
-              <div className="relative z-10 flex h-full min-h-[320px] flex-col justify-end px-6 py-8 md:px-10 md:py-10">
-                <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-[var(--color-brand)]">
-                  Featured artist
-                </p>
-                <ArtistCard
-                  id={featuredArtist.id}
-                  username={featuredArtist.username}
-                  displayName={featuredArtist.displayName}
-                  avatarUrl={featuredArtist.avatarUrl}
-                  subtitle={featuredArtist.subtitle}
-                  className="w-full max-w-xs"
-                />
-                <Link
-                  to={profilePath(featuredArtist.username)}
-                  className="mt-5 inline-flex text-sm font-medium text-white/80 transition hover:text-white"
-                >
-                  View profile →
-                </Link>
-              </div>
-            </>
-          ) : null}
-        </section>
-      ) : null}
     </div>
   );
 }

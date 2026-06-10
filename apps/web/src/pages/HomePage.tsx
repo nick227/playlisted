@@ -13,6 +13,7 @@ import {
   GreetingsBanner,
   pickGreetingsFeaturedArtist,
 } from "@/components/discovery/GreetingsBanner";
+import { FeaturedArtist } from "@/components/discovery/FeaturedArtist";
 import { SpotlightBanner } from "@/components/discovery/SpotlightBanner";
 import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
 import { SiteFooter } from "@/components/site/SiteFooter";
@@ -648,12 +649,12 @@ export function HomePage() {
 
       {/* Radio */}
       <Suspense fallback={null}>
-      <RadioPage />
+      <RadioPage isEmbedded />
       </Suspense>
 
       {/* Random songs */}
       <Suspense fallback={null}>
-        <div className="w-full grid grid-cols-3 gap-4 mb-10">
+        <div className="w-full grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
           <RandomSongsSection />
           <RandomSongsSection />
           <RandomSongsSection />

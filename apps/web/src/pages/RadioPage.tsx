@@ -60,9 +60,13 @@ function isRadioElapsedAtEnd(elapsedSeconds: number | null | undefined, duration
   );
 }
 
-export function RadioPage() {
+export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
   const { user, accessToken } = useAuth();
-  const { releasePlayback } = useAudioPlayer();
+  const {
+    releasePlayback,
+    isPlaying: sitePlayerPlaying,
+    currentTrack: siteCurrentTrack,
+  } = useAudioPlayer();
   const listenerIdRef = useRef<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const chatBottomRef = useRef<HTMLDivElement | null>(null);
@@ -77,6 +81,8 @@ export function RadioPage() {
   const [chatMessage, setChatMessage] = useState("");
 
   usePageMeta({ title: "Radio" });
+
+  const suppressNextSitePauseRef = useRef(false);
 
   // Resolve persistent listener id and display name
   const listenerId = useMemo(() => {
@@ -125,9 +131,10 @@ export function RadioPage() {
     : null;
 
   useEffect(() => {
+    if (isEmbedded) return;
     releasePlayback();
     if (theatreController.state.active) void theatreController.exit();
-  }, [releasePlayback]);
+  }, [isEmbedded, releasePlayback]);
 
   useEffect(() => {
     theatreController.setCanEnter(playing);
@@ -151,6 +158,24 @@ export function RadioPage() {
     window.clearTimeout(transitionRetryTimerRef.current);
     transitionRetryTimerRef.current = null;
   }, []);
+
+  useEffect(() => {
+    if (!isEmbedded) return;
+    if (!playing) return;
+    if (!sitePlayerPlaying || !siteCurrentTrack) return;
+    if (suppressNextSitePauseRef.current) return;
+
+    clearTransitionRetry();
+    audioRef.current?.pause();
+    setPlaying(false);
+    unbindTheatreFromRadio();
+  }, [
+    isEmbedded,
+    playing,
+    sitePlayerPlaying,
+    siteCurrentTrack?.id,
+    clearTransitionRetry,
+  ]);
 
   const syncAndPlayRadio = useCallback(async (track: NonNullable<typeof nowPlaying>) => {
     const audio = audioRef.current;
@@ -314,13 +339,24 @@ export function RadioPage() {
 
   async function togglePlayback() {
     if (!nowPlaying?.audioUrl) return;
+
     if (playing) {
       clearTransitionRetry();
       audioRef.current?.pause();
       setPlaying(false);
       return;
     }
-    await syncAndPlayRadio(nowPlaying);
+
+    suppressNextSitePauseRef.current = true;
+
+    try {
+      releasePlayback();
+      await syncAndPlayRadio(nowPlaying);
+    } finally {
+      window.setTimeout(() => {
+        suppressNextSitePauseRef.current = false;
+      }, 0);
+    }
   }
 
   function handleMessageChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
@@ -340,124 +376,123 @@ export function RadioPage() {
 
   const chatPanel = chatOpen
     ? createPortal(
-        <aside
-          className="fixed bottom-0 right-0 top-[var(--spacing-topbar)] z-[52] flex w-full flex-col border-l border-[var(--color-border)] bg-[var(--color-canvas-alt)] shadow-2xl shadow-black/60 sm:w-[360px]"
+      <aside
+        className="fixed bottom-0 right-0 top-[var(--spacing-topbar)] z-[52] flex w-full flex-col border-l border-[var(--color-border)] bg-[var(--color-canvas-alt)] shadow-2xl shadow-black/60 sm:w-[360px]"
+      >
+        {/* Header */}
+        <div className="flex shrink-0 items-center justify-between border-b border-white/[0.06] bg-[var(--color-surface)] px-4 py-3">
+          <div className="flex items-center gap-2 text-sm font-bold text-white">
+            <MessageCircle size={15} className="text-[var(--color-brand)]" />
+            Radio chat
+          </div>
+          <div className="flex items-center gap-3">
+            {station?.listenerCount != null ? (
+              <span className="flex items-center gap-1.5 text-xs text-[var(--color-text-subtle)]">
+                <Users size={11} />
+                {station.listenerCount}
+              </span>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => setChatOpen(false)}
+              className="rounded p-1 text-[var(--color-text-subtle)] transition hover:bg-white/5 hover:text-white"
+              aria-label="Close chat"
+            >
+              <X size={15} />
+            </button>
+          </div>
+        </div>
+
+        {/* Messages */}
+        <div
+          ref={chatScrollRef}
+          className="flex min-h-0 flex-1 flex-col gap-px overflow-y-auto bg-[var(--color-canvas)] py-2"
         >
-          {/* Header */}
-          <div className="flex shrink-0 items-center justify-between border-b border-white/[0.06] bg-[var(--color-surface)] px-4 py-3">
-            <div className="flex items-center gap-2 text-sm font-bold text-white">
-              <MessageCircle size={15} className="text-[var(--color-brand)]" />
-              Radio chat
-            </div>
-            <div className="flex items-center gap-3">
-              {station?.listenerCount != null ? (
-                <span className="flex items-center gap-1.5 text-xs text-[var(--color-text-subtle)]">
-                  <Users size={11} />
-                  {station.listenerCount}
+          {chatMessages.length === 0 ? (
+            <p className="m-auto text-sm text-[var(--color-text-subtle)]">No messages yet — say hi!</p>
+          ) : (
+            chatMessages.map((item) => (
+              <div
+                key={item.id}
+                className="group px-4 py-2 transition-colors hover:bg-white/[0.03]"
+              >
+                <div className="flex items-baseline gap-2">
+                  <span className="text-xs font-semibold text-white">{item.displayName}</span>
+                  <span className="text-[10px] text-[var(--color-text-subtle)] opacity-0 transition-opacity group-hover:opacity-100">
+                    {timeAgo(item.createdAt)}
+                  </span>
+                </div>
+                <p className="mt-0.5 break-words text-sm leading-5 text-[var(--color-text-muted)]">
+                  {item.message}
+                </p>
+              </div>
+            ))
+          )}
+          <div ref={chatBottomRef} />
+        </div>
+
+        {/* Composer */}
+        <div className="shrink-0 border-t border-white/[0.06] bg-[var(--color-surface)] px-4 py-3">
+          {/* Identity row */}
+          <div className="mb-2.5 flex items-center gap-1.5 text-[11px] text-[var(--color-text-subtle)]">
+            <span>Posting as</span>
+            <span className="font-semibold text-white">{displayName}</span>
+            {user ? (
+              <span className="rounded-full bg-[var(--color-brand)]/15 px-1.5 py-px text-[10px] font-medium text-[var(--color-brand)]">
+                member
+              </span>
+            ) : (
+              <span className="rounded-full bg-white/5 px-1.5 py-px text-[10px] text-[var(--color-text-subtle)]">
+                guest
+              </span>
+            )}
+          </div>
+
+          <form
+            onSubmit={(e) => { e.preventDefault(); submitMessage(); }}
+            className="flex items-end gap-2"
+          >
+            <div className="relative min-w-0 flex-1">
+              <textarea
+                ref={textareaRef}
+                value={chatMessage}
+                onChange={handleMessageChange}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitMessage(); }
+                }}
+                placeholder="Say something…"
+                rows={1}
+                className="block w-full resize-none rounded-xl border border-[var(--color-border)] bg-black/30 px-3 py-2.5 text-sm leading-5 text-white outline-none placeholder:text-[var(--color-text-subtle)] focus:border-[var(--color-brand)] focus:bg-black/40"
+                style={{ minHeight: "40px", maxHeight: `${TEXTAREA_MAX_H}px` }}
+              />
+              {showCharCount ? (
+                <span
+                  className={`pointer-events-none absolute bottom-2 right-2.5 text-[10px] tabular-nums ${charsLeft <= 0 ? "text-red-400" : "text-[var(--color-text-subtle)]"
+                    }`}
+                >
+                  {charsLeft}
                 </span>
               ) : null}
-              <button
-                type="button"
-                onClick={() => setChatOpen(false)}
-                className="rounded p-1 text-[var(--color-text-subtle)] transition hover:bg-white/5 hover:text-white"
-                aria-label="Close chat"
-              >
-                <X size={15} />
-              </button>
             </div>
-          </div>
-
-          {/* Messages */}
-          <div
-            ref={chatScrollRef}
-            className="flex min-h-0 flex-1 flex-col gap-px overflow-y-auto bg-[var(--color-canvas)] py-2"
-          >
-            {chatMessages.length === 0 ? (
-              <p className="m-auto text-sm text-[var(--color-text-subtle)]">No messages yet — say hi!</p>
-            ) : (
-              chatMessages.map((item) => (
-                <div
-                  key={item.id}
-                  className="group px-4 py-2 transition-colors hover:bg-white/[0.03]"
-                >
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-xs font-semibold text-white">{item.displayName}</span>
-                    <span className="text-[10px] text-[var(--color-text-subtle)] opacity-0 transition-opacity group-hover:opacity-100">
-                      {timeAgo(item.createdAt)}
-                    </span>
-                  </div>
-                  <p className="mt-0.5 break-words text-sm leading-5 text-[var(--color-text-muted)]">
-                    {item.message}
-                  </p>
-                </div>
-              ))
-            )}
-            <div ref={chatBottomRef} />
-          </div>
-
-          {/* Composer */}
-          <div className="shrink-0 border-t border-white/[0.06] bg-[var(--color-surface)] px-4 py-3">
-            {/* Identity row */}
-            <div className="mb-2.5 flex items-center gap-1.5 text-[11px] text-[var(--color-text-subtle)]">
-              <span>Posting as</span>
-              <span className="font-semibold text-white">{displayName}</span>
-              {user ? (
-                <span className="rounded-full bg-[var(--color-brand)]/15 px-1.5 py-px text-[10px] font-medium text-[var(--color-brand)]">
-                  member
-                </span>
-              ) : (
-                <span className="rounded-full bg-white/5 px-1.5 py-px text-[10px] text-[var(--color-text-subtle)]">
-                  guest
-                </span>
-              )}
-            </div>
-
-            <form
-              onSubmit={(e) => { e.preventDefault(); submitMessage(); }}
-              className="flex items-end gap-2"
+            <button
+              type="submit"
+              disabled={!chatMessage.trim() || chatMutation.isPending}
+              className="mb-px grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[var(--color-brand)] text-white transition hover:brightness-110 disabled:opacity-40"
+              aria-label="Send message"
             >
-              <div className="relative min-w-0 flex-1">
-                <textarea
-                  ref={textareaRef}
-                  value={chatMessage}
-                  onChange={handleMessageChange}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitMessage(); }
-                  }}
-                  placeholder="Say something…"
-                  rows={1}
-                  className="block w-full resize-none rounded-xl border border-[var(--color-border)] bg-black/30 px-3 py-2.5 text-sm leading-5 text-white outline-none placeholder:text-[var(--color-text-subtle)] focus:border-[var(--color-brand)] focus:bg-black/40"
-                  style={{ minHeight: "40px", maxHeight: `${TEXTAREA_MAX_H}px` }}
-                />
-                {showCharCount ? (
-                  <span
-                    className={`pointer-events-none absolute bottom-2 right-2.5 text-[10px] tabular-nums ${
-                      charsLeft <= 0 ? "text-red-400" : "text-[var(--color-text-subtle)]"
-                    }`}
-                  >
-                    {charsLeft}
-                  </span>
-                ) : null}
-              </div>
-              <button
-                type="submit"
-                disabled={!chatMessage.trim() || chatMutation.isPending}
-                className="mb-px grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[var(--color-brand)] text-white transition hover:brightness-110 disabled:opacity-40"
-                aria-label="Send message"
-              >
-                <Send size={14} />
-              </button>
-            </form>
-            <p className="mt-1.5 text-[10px] text-[var(--color-text-subtle)]">
-              Enter to send · Shift+Enter for new line
-            </p>
-            {chatMutation.isError ? (
-              <p className="mt-2 text-xs text-red-400">Message didn&apos;t send. Try again.</p>
-            ) : null}
-          </div>
-        </aside>,
-        document.body,
-      )
+              <Send size={14} />
+            </button>
+          </form>
+          <p className="mt-1.5 text-[10px] text-[var(--color-text-subtle)]">
+            Enter to send · Shift+Enter for new line
+          </p>
+          {chatMutation.isError ? (
+            <p className="mt-2 text-xs text-red-400">Message didn&apos;t send. Try again.</p>
+          ) : null}
+        </div>
+      </aside>,
+      document.body,
+    )
     : null;
 
   return (
