@@ -571,7 +571,7 @@ export function CollectionView({
         ) : null}
       </div>
 
-      <div className="mt-10 max-w-3xl">
+      <div className="mt-10 max-w-4xl">
         {isEdit ? (
           <div className="min-h-[16px]">
             {uploadProgress ? <div className="py-2">{uploadProgress}</div> : null}
