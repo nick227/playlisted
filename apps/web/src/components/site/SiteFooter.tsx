@@ -1,12 +1,8 @@
 import { Link } from "react-router-dom";
 
 const footerLinks = [
-  { label: "Musicians", href: "/musicians" },
-  { label: "Developers", href: "/developers" },
-  { label: "Advertising", href: "/advertising" },
   { label: "Company", href: "/company" },
   { label: "Jobs", href: "/jobs" },
-  { label: "Media", href: "/media" },
   { label: "Privacy", href: "/privacy" },
 ] as const;
 
