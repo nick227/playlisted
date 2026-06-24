@@ -61,7 +61,11 @@ function parseCacheMaxAgeSeconds(value: string): number {
   return amount * 24 * 60 * 60;
 }
 
-export function createApp() {
+type CreateAppOptions = {
+  skipWeb?: boolean;
+};
+
+export function createApp(options: CreateAppOptions = {}) {
   const app = express();
   const uploadsDir = path.resolve(process.cwd(), process.env.UPLOADS_DIR ?? "uploads");
 
@@ -128,8 +132,15 @@ export function createApp() {
   app.use("/api/v1/ingest/playlists", ingestPlaylistsRouter);
   app.use("/api/v1/ingest/recordings", ingestRecordingsRouter);
 
-  installWebApp(app);
+  if (!options.skipWeb) {
+    installWebApp(app);
+    installAppErrorHandlers(app);
+  }
 
+  return app;
+}
+
+export function installAppErrorHandlers(app: express.Application) {
   app.use((req, res) => {
     res.status(404).json({
       error: "not_found",
