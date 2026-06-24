@@ -9,9 +9,6 @@ import type {
 import { ArtistCard } from "@/components/cards/ArtistCard";
 import { MediaCover } from "@/components/cards/MediaCover";
 import { SmartPlaylistCard } from "@/components/cards/SmartPlaylistCard";
-import {
-  pickGreetingsFeaturedArtist,
-} from "@/components/discovery/GreetingsBanner";
 import { SpotlightBanner } from "@/components/discovery/SpotlightBanner";
 import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
 import { SiteFooter } from "@/components/site/SiteFooter";
