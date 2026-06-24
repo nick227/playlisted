@@ -10,7 +10,6 @@ import { ArtistCard } from "@/components/cards/ArtistCard";
 import { MediaCover } from "@/components/cards/MediaCover";
 import { SmartPlaylistCard } from "@/components/cards/SmartPlaylistCard";
 import {
-  GreetingsBanner,
   pickGreetingsFeaturedArtist,
 } from "@/components/discovery/GreetingsBanner";
 import { SpotlightBanner } from "@/components/discovery/SpotlightBanner";
@@ -658,6 +657,78 @@ export function HomePage() {
     <HomeChartsSection />
   </Suspense>
 </DeferredHomeSection>
+
+      {/* ── NEW RELEASES ────────────────────────────────────────────── */}
+
+      <DeferredHomeSection minHeight={320}>
+        {newReleasesSection.length > 0 && (
+          <HomeSection title="New Releases" cols={HOME_SECTION_COLS.newReleases}>
+            {newReleasesSection.map((item) => (
+              isHomepageRecordingItem(item) ? (
+                <NewReleaseSongCard key={item.id} item={item} queueTracks={newReleaseQueueTracks} />
+              ) : (
+                <HomepageEditorialCard key={item.id} item={item} sectionKey="new-releases" />
+              )
+            ))}
+          </HomeSection>
+        )}
+      </DeferredHomeSection>
+
+      {/* Spotlight — admin-curated full-width hero, shown before everything */}
+      <DeferredHomeSection minHeight={360}>
+        {spotlightItem && <SpotlightBanner item={spotlightItem} />}
+      </DeferredHomeSection>
+
+      {/* ── FEATURED PLAYLISTS ───────────────────────────────── */}
+
+      <DeferredHomeSection minHeight={300}>
+        <HomeFeaturedPlaylistsSection
+          editorialFeaturedPlaylists={editorialFeaturedPlaylists}
+          isMdUp={isMdUp}
+        />
+      </DeferredHomeSection>
+
+{/* ── GENRE SONGS ────────────────────────────────────────────── */}
+
+<DeferredHomeSection minHeight={340}>
+  <Suspense fallback={null}>
+    <HomeGenreSongsSection />
+  </Suspense>
+</DeferredHomeSection>
+
+{/* ── FOR YOU / DISCOVER ───────────────────────────────── */}
+
+<DeferredHomeSection minHeight={320}>
+  <HomeDiscoverSection isGuest={isGuest} discoverLimit={discoverLimit} />
+</DeferredHomeSection>
+
+      {/* ── EDITOR PICKS (homepage_features.section = EDITOR_PICK) ── */}
+
+      {editorPicksGrid.length > 0 && (
+        <HomeSection
+          title="Editor Picks"
+          cols={HOME_SECTION_COLS.editorPicks}
+        >
+          {editorPicksGrid.map((item) => (
+            <HomepageEditorialCard key={item.id} item={item} sectionKey="editor-picks" />
+          ))}
+        </HomeSection>
+      )}
+
+      {/* ── FEATURED ARTISTS ────────────────────────────────── */}
+
+      <DeferredHomeSection minHeight={260}>
+        <HomeFeaturedArtistsSection editorialFeaturedArtists={editorialFeaturedArtists} />
+      </DeferredHomeSection>
+
+      {/* Random songs */}
+      <Suspense fallback={null}>
+        <div className="w-full grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
+          <RandomSongsSection />
+          <RandomSongsSection />
+          <RandomSongsSection />
+        </div>
+      </Suspense>
 
       <SiteFooter />
     </div>

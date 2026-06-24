@@ -8,7 +8,6 @@ import {
   Mic2,
   PanelsTopLeft,
   Plus,
-  Radio,
   Settings,
   Tags,
   type LucideIcon,
