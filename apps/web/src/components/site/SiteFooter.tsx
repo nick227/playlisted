@@ -1,11 +1,5 @@
 import { Link } from "react-router-dom";
 
-const footerLinks = [
-  { label: "Company", href: "/company" },
-  { label: "Jobs", href: "/jobs" },
-  { label: "Privacy", href: "/privacy" },
-] as const;
-
 export function SiteFooter() {
   const scrollToTop = () => {
     window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
@@ -13,10 +7,10 @@ export function SiteFooter() {
 
   return (
     <footer className="mt-16 border-t border-[var(--color-border)] py-8">
-      <div className="flex justify-between w-full items-end">
+      <div className="flex justify-between w-full items-start">
         
           <div>
-            <div className="flex items-center mb-4">
+            <div className="flex items-center">
               <Link
                 to={"/"}
                 onClick={scrollToTop}
@@ -40,23 +34,6 @@ export function SiteFooter() {
             </p>
               </Link>
           </div>
-          <nav
-            aria-label="Footer"
-            className="flex flex-col items-start gap-3"
-          >
-
-  {footerLinks.map((link) => (
-    <Link
-      key={link.href}
-      to={link.href}
-      onClick={scrollToTop}
-      className="text-sm font-medium text-[var(--color-text-muted)] transition hover:text-white"
-    >
-      {link.label}
-    </Link>
-  ))}
-
-          </nav>
           </div>
 
 

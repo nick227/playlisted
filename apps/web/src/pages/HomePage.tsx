@@ -411,11 +411,11 @@ function HomeDiscoverSection({
 
   return (
     <HomeSection
-      title={!isGuest ? "Picked for you" : "Discover Something New"}
+      title={!isGuest ? "Chosen for you" : "Discover Something New"}
       subtitle={!isGuest ? "Updated daily based on your taste" : "Fresh picks — updated daily"}
       cols={HOME_SECTION_COLS.discover}
     >
-      {discovered.map((item) => (
+      {discovered.map((item: TopPlaylistItem) => (
         <SmartPlaylistCard
           key={item.playlistId}
           id={item.playlistId}
@@ -641,8 +641,6 @@ export function HomePage() {
     [greetingsCuratedArtists],
   );
 
-  const firstName = user?.displayName?.split(" ")[0];
-
   return (
     <div className="mx-auto max-w-[var(--size-container-max,90rem)]">
 
@@ -653,109 +651,13 @@ export function HomePage() {
       </div>
       </Suspense>
 
-      {/* Random songs */}
-      <Suspense fallback={null}>
-        <div className="w-full grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
-          <RandomSongsSection />
-          <RandomSongsSection />
-          <RandomSongsSection />
-        </div>
-      </Suspense>
+{/* ── CHARTS ────────────────────────────────────────────── */}
 
-      {/* Greeting / banner */}
-      <GreetingsBanner
-        firstName={firstName}
-        isGuest={isGuest}
-        featuredArtist={greetingsFeaturedArtist}
-        artistLoading={false}
-      />
-
-      {/* ── CHARTS ────────────────────────────────────────────── */}
-
-      <DeferredHomeSection minHeight={340}>
-        <Suspense fallback={null}>
-          <HomeChartsSection />
-        </Suspense>
-      </DeferredHomeSection>
-
-      {/* ── GENRE SONGS ────────────────────────────────────────────── */}
-
-      <DeferredHomeSection minHeight={340}>
-        <Suspense fallback={null}>
-          <HomeGenreSongsSection />
-        </Suspense>
-      </DeferredHomeSection>
-
-{/* ── FOR YOU / DISCOVER ───────────────────────────────── */}
-
-      <DeferredHomeSection minHeight={320}>
-        <HomeDiscoverSection isGuest={isGuest} discoverLimit={discoverLimit} />
-      </DeferredHomeSection>
-
-      {/* ── NEW RELEASES ────────────────────────────────────────────── */}
-
-      <DeferredHomeSection minHeight={320}>
-        {newReleasesSection.length > 0 && (
-          <HomeSection title="New Releases" cols={HOME_SECTION_COLS.newReleases}>
-            {newReleasesSection.map((item) => (
-              isHomepageRecordingItem(item) ? (
-                <NewReleaseSongCard key={item.id} item={item} queueTracks={newReleaseQueueTracks} />
-              ) : (
-                <HomepageEditorialCard key={item.id} item={item} sectionKey="new-releases" />
-              )
-            ))}
-          </HomeSection>
-        )}
-      </DeferredHomeSection>
-
-      {/* ── SITE NEWS ────────────────────────────────────────────── */}
-
-      <DeferredHomeSection minHeight={180}>
-        {siteNews.length > 0 && (
-          <HomeSection
-            title="Site News"
-            subtitle="Updates from the team"
-            cols={HOME_SECTION_COLS.siteNews}
-          >
-            {siteNews.map((item) => (
-              <SiteNewsCard key={item.id} item={item} />
-            ))}
-          </HomeSection>
-        )}
-      </DeferredHomeSection>
-
-      {/* Spotlight — admin-curated full-width hero, shown before everything */}
-      <DeferredHomeSection minHeight={360}>
-        {spotlightItem && <SpotlightBanner item={spotlightItem} />}
-      </DeferredHomeSection>
-
-      {/* ── FEATURED PLAYLISTS ───────────────────────────────── */}
-
-      <DeferredHomeSection minHeight={300}>
-        <HomeFeaturedPlaylistsSection
-          editorialFeaturedPlaylists={editorialFeaturedPlaylists}
-          isMdUp={isMdUp}
-        />
-      </DeferredHomeSection>
-
-      {/* ── FEATURED ARTISTS ────────────────────────────────── */}
-
-      <DeferredHomeSection minHeight={260}>
-        <HomeFeaturedArtistsSection editorialFeaturedArtists={editorialFeaturedArtists} />
-      </DeferredHomeSection>
-
-      {/* ── EDITOR PICKS (homepage_features.section = EDITOR_PICK) ── */}
-
-      {editorPicksGrid.length > 0 && (
-        <HomeSection
-          title="Editor Picks"
-          cols={HOME_SECTION_COLS.editorPicks}
-        >
-          {editorPicksGrid.map((item) => (
-            <HomepageEditorialCard key={item.id} item={item} sectionKey="editor-picks" />
-          ))}
-        </HomeSection>
-      )}
+<DeferredHomeSection minHeight={340}>
+  <Suspense fallback={null}>
+    <HomeChartsSection />
+  </Suspense>
+</DeferredHomeSection>
 
       <SiteFooter />
     </div>

@@ -38,7 +38,6 @@ interface SidebarProps {
 
 const discoverLinks = [
   { to: "/", label: "Home", icon: Home },
-  { to: "/radio", label: "Radio", icon: Radio },
 ];
 
 const libraryBrowseLinks = [
@@ -165,23 +164,7 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
               {discoverLinks.map((link) => (
                 <NavItem key={link.to} {...link} onClick={onClose} />
               ))}
-            </div>
-          </div>
-          <div>
-            <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-[var(--color-text-subtle)]">
-              Library
-            </p>
-            <div className="flex flex-col gap-0.5">
-              <NavItem to={LIBRARY_PATH} label="Library" icon={BookOpen} onClick={onClose} end />
-              {libraryBrowseLinks.map((link) => (
-                <SubNavItem key={link.to} {...link} onClick={onClose} />
-              ))}
-            </div>
-          </div>
-          <div>
-              <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-[var(--color-text-subtle)]">
-                Manage
-              </p>
+              
           {panelPath === ADMIN_PATH ? (
               <NavLink
                 to={panelPath}
@@ -204,8 +187,79 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
               </NavLink>
           ) : null}
               <NavItem to={FAVORITES_PATH} label="Favorites" icon={Heart} onClick={onClose} />
+              
+            <div className="flex flex-col gap-0.5">
+              <button
+                type="button"
+                onClick={() => {
+                  if (!isAuthenticated) {
+                    setShowCollectionsSignIn(true);
+                    return;
+                  }
+                  if (createCollectionMutation.isPending) return;
+                  createCollectionMutation.mutate();
+                }}
+                disabled={createCollectionMutation.isPending}
+                className={navClass(false, "text-left disabled:opacity-60 cursor-pointer")}
+              >
+                <Plus size={20} />
+                {createCollectionMutation.isPending ? "Creating..." : "Add Collection"}
+              </button>
+              {!isAuthenticated && showCollectionsSignIn ? (
+                <div className="mx-3 mt-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-3">
+                  <p className="text-sm font-semibold text-white">Sign in to see your collections</p>
+                  <p className="mt-1 text-xs leading-relaxed text-[var(--color-text-muted)]">
+                    Collections you create and playlists you save are saved to your account.
+                  </p>
+                </div>
+              ) : null}
+              {collections.map((playlist) => (
+                <NavLink
+                  key={playlist.id}
+                  to={playlistPath({
+                    id: playlist.id,
+                    href: playlist.href,
+                    username: playlist.owner.username,
+                    slug: playlist.slug,
+                  })}
+                  onClick={onClose}
+                  className={({ isActive }) =>
+                    [
+                      "rounded-lg px-3 py-1.5 text-sm transition",
+                      isActive
+                        ? "bg-white/10 text-white shadow-inner"
+                        : "text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)] hover:text-white",
+                    ].join(" ")
+                  }
+                >
+                  <span className="flex items-center gap-2 truncate">
+                    {playlist.visibility === "PRIVATE" ? <Lock size={14} className="shrink-0 opacity-70" /> : null}
+                    <span className="truncate">{playlist.title}</span>
+                  </span>
+                </NavLink>
+              ))}
+            </div>
+            
+            </div>
           </div>
-          <div>
+          <div className="hidden">
+            <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-[var(--color-text-subtle)]">
+              Library
+            </p>
+            <div className="flex flex-col gap-0.5">
+              <NavItem to={LIBRARY_PATH} label="Library" icon={BookOpen} onClick={onClose} end />
+              {libraryBrowseLinks.map((link) => (
+                <SubNavItem key={link.to} {...link} onClick={onClose} />
+              ))}
+              
+            </div>
+          </div>
+          <div className="hidden">
+              <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-[var(--color-text-subtle)]">
+                Manage
+              </p>
+          </div>
+          <div className="hidden">
             <p className="mb-2 flex items-center gap-2 px-3 text-xs font-semibold uppercase tracking-wider text-[var(--color-text-subtle)]">
               <ListMusic size={14} />
               Collections

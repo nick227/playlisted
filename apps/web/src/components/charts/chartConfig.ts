@@ -10,7 +10,7 @@ export const HOME_CHART_RANGE_LABEL: Record<ChartRange, string> = {
 };
 
 export const HOME_CHART_SONG_SECTION = "top-songs";
-export const HOME_CHART_ITEM_LIMIT = 6;
+export const HOME_CHART_ITEM_LIMIT = 10;
 export const HOME_CHART_PLAYLIST_LIMIT = { mobile: 4, desktop: 6 } as const;
 
 export const CHART_PANELS_GRID_CLASS = "mb-10 grid gap-4 lg:grid-cols-3";

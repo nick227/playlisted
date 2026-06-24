@@ -526,3 +526,7 @@ body.theatre-active > #root {
 .theatre-exit {
   cursor: pointer;
 }
+
+.hidden {
+  display: none;
+}
