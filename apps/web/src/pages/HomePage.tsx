@@ -79,7 +79,6 @@ const HOME_SECTION_COLS = {
   featuredArtists: "grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6",
   editorPicks: "grid-cols-2 sm:grid-cols-3 md:grid-cols-4",
   newReleases: "grid-cols-2 sm:grid-cols-3 md:grid-cols-4",
-  siteNews: "grid-cols-1 sm:grid-cols-2",
 } as const;
 
 function viewportLimit(mobile: number, desktop: number, isMdUp: boolean): number {
@@ -166,35 +165,6 @@ function mergeUniqueHomepageItems(...lists: HomepageItem[][]): HomepageItem[] {
     }
   }
   return merged;
-}
-
-function SiteNewsCard({ item }: { item: HomepageItem }) {
-  return (
-    <div className="group flex gap-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 transition hover:bg-white/[0.04] ">
-      {item.imageUrl && (
-        <img
-          src={item.imageUrl}
-          alt=""
-          loading="lazy"
-          decoding="async"
-          className="h-16 w-16 shrink-0 rounded-lg object-cover"
-        />
-      )}
-      <div className="min-w-0 flex-1">
-        <p className="truncate font-semibold text-white transition group-hover:text-[var(--color-brand)]">
-          {item.title}
-        </p>
-        {item.subtitle && (
-          <p className="mt-0.5 text-xs text-[var(--color-text-muted)]">{item.subtitle}</p>
-        )}
-        {item.description && (
-          <p className="mt-1 line-clamp-2 text-sm text-[var(--color-text-muted)]">
-            {item.description}
-          </p>
-        )}
-      </div>
-    </div>
-  );
 }
 
 function EditorialPickCard({ item }: { item: HomepageItem }) {
@@ -564,7 +534,7 @@ function HomeFeaturedArtistsSection({
 // ── page ──────────────────────────────────────────────────────────────────────
 
 export function HomePage() {
-  const { status, user } = useAuth();
+  const { status } = useAuth();
   const isGuest = status === "guest";
   const isMdUp = useIsMdUp();
 
@@ -594,7 +564,6 @@ export function HomePage() {
   // Editor picks: homepage_features where section = EDITOR_PICK (API order = position)
   const editorPicks = sectionMap["EDITOR_PICK"] ?? [];
 
-  const siteNews = sectionMap["SITE_NEWS"] ?? [];
   const newReleases = sectionMap["NEW_RELEASE"] ?? [];
   const customMixes = sectionMap["CUSTOM_MIX"] ?? [];
 
@@ -629,16 +598,6 @@ export function HomePage() {
 
   // Featured artists grid (NEW_ARTIST) vs greetings banner slot (FEATURED_ARTIST)
   const editorialFeaturedArtists = sectionMap["NEW_ARTIST"] ?? [];
-  const greetingsCuratedArtists = sectionMap["FEATURED_ARTIST"] ?? [];
-
-  const greetingsFeaturedArtist = useMemo(
-    () =>
-      pickGreetingsFeaturedArtist(
-        greetingsCuratedArtists,
-        [],
-      ),
-    [greetingsCuratedArtists],
-  );
 
   return (
     <div className="mx-auto max-w-[var(--size-container-max,90rem)]">
