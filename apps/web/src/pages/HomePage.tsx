@@ -194,7 +194,7 @@ export function HomePage() {
   return (
     <div className="mx-auto max-w-[var(--size-container-max,90rem)]">
       <Suspense fallback={null}>
-        <div className="mb-10">
+        <div className="">
           <RadioPage isEmbedded />
         </div>
       </Suspense>
@@ -203,7 +203,9 @@ export function HomePage() {
         <HomeFeaturedArtistsSection editorialFeaturedArtists={editorialFeaturedArtists} />
       </DeferredHomeSection>
 
-      <SiteFooter />
+      <div className="mt-20 mb-4">
+        <SiteFooter />
+      </div>
     </div>
   );
 }

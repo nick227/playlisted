@@ -208,12 +208,14 @@ export function FavoritesPage() {
 
   if (!isAuthed) {
     return (
-      <div className="mx-auto max-w-4xl">
-        <h1 className="mb-8 text-4xl font-extrabold tracking-tight text-white">Your music</h1>
+      <div className="mx-auto max-w-4xl h-screen flex items-center justify-center">
+        <div className="text-center">
         <EmptyState
           title="Sign in to see your music"
           description="Favorites, play history, and recommendations are saved to your account."
         />
+        <Link to="/login" className="text-sm text-white hover:underline">Sign in</Link>
+        </div>
       </div>
     );
   }
@@ -226,7 +228,6 @@ export function FavoritesPage() {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <h1 className="mb-8 text-4xl font-extrabold tracking-tight text-white">Your music</h1>
 
       <Section
         title="Favorite playlists"

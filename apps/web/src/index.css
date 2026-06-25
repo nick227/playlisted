@@ -8,6 +8,8 @@
   --color-surface: #151a22;
   --color-surface-elevated: #1d232d;
   --color-surface-hover: rgba(255, 255, 255, 0.04);
+  --color-surface-light-transparent: rgba(255, 255, 255, 0.04);
+  --color-surface-dark-transparent: rgba(0, 0, 0, 0.05);
   --color-border: rgba(255, 255, 255, 0.08);
   --color-text: #ffffff;
   --color-text-muted: #929dad;
@@ -554,4 +556,29 @@ body {
 
 .hidden {
   display: none;
+}
+
+.fade-out-sidebar {
+  animation: fade-out-sidebar 0.3s ease-in-out;
+  animation-delay: 6s;
+  animation-fill-mode: forwards;
+  animation-iteration-count: 1;
+  animation-direction: normal;
+  animation-timing-function: ease-in-out;
+  animation-duration: 3s;
+  background-color: var(--color-surface-light-transparent) !important;
+}
+
+.fade-out-sidebar:hover {
+  animation: none;
+  opacity: 1 !important;
+}
+
+@keyframes fade-out-sidebar {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
 }

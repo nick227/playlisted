@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate, Link } from "react-router-dom";
 
 import { useCollectionPlaylists } from "@/hooks/useCollections";
 import { usePlaylists } from "@/hooks/usePlaylists";
@@ -110,7 +110,7 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
   const client = authedApi(accessToken);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [showCollectionsSignIn, setShowCollectionsSignIn] = useState(false);
+  const [setShowCollectionsSignIn] = useState(false);
   const isAuthenticated = status === "authenticated" && Boolean(user);
   const { data: ownedCollections } = usePlaylists(12, user?.id, isAuthenticated);
   const { data: savedCollections } = useCollectionPlaylists(12);
@@ -160,7 +160,7 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
             <NavLink to="/" onClick={onClose} className="flex items-center gap-2 text-4xl font-bold tracking-tight text-white">
               Play<span className="text-[var(--color-brand)]">listed</span> <RadioIcon size={20} />
             </NavLink>
-            <div className="flex flex-col gap-0.5 mt-4">
+            <div className="flex flex-col gap-0.5 mt-4 fade-out-sidebar">
               {discoverLinks.map((link) => (
                 <NavItem key={link.to} {...link} onClick={onClose} />
               ))}
@@ -205,12 +205,15 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
                 <Plus size={20} />
                 {createCollectionMutation.isPending ? "Creating..." : "Add Collection"}
               </button>
-              {!isAuthenticated && showCollectionsSignIn ? (
-                <div className="mx-3 mt-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-3">
-                  <p className="text-sm font-semibold text-white">Sign in to see your collections</p>
-                  <p className="mt-1 text-xs leading-relaxed text-[var(--color-text-muted)]">
-                    Collections you create and playlists you save are saved to your account.
+              {!isAuthenticated ? (
+                <div className="mx-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-3">
+                  <p className="text-sm font-semibold text-white">Sign in to create collections</p>
+                  <p className="my-1 text-xs leading-relaxed text-[var(--color-text-muted)]">
+                    Collections and playlists are saved to your profile.
                   </p>
+                  <Link to="/login" className="mt-4 text-sm text-white hover:underline">Sign in</Link> 
+                  <span className="text-xs text-[var(--color-text-muted)] mx-2">or</span>
+                  <Link to="/register" className="mt-4 text-sm text-white hover:underline">Register</Link>
                 </div>
               ) : null}
               {collections.map((playlist) => (
@@ -281,7 +284,7 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
                 <Plus size={20} />
                 {createCollectionMutation.isPending ? "Creating..." : "Add Collection"}
               </button>
-              {!isAuthenticated && showCollectionsSignIn ? (
+              {!isAuthenticated ? (
                 <div className="mx-3 mt-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-3">
                   <p className="text-sm font-semibold text-white">Sign in to see your collections</p>
                   <p className="mt-1 text-xs leading-relaxed text-[var(--color-text-muted)]">
