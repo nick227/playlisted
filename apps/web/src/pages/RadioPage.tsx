@@ -13,6 +13,7 @@ import { usePageMeta } from "@/hooks/usePageMeta";
 import { useAuth } from "@/providers/AuthProvider";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 import theatreController from "@/theatre/controller/lazyController";
+import { setRadioPlaybackActive } from "@/theatre/radioPlaybackBridge";
 
 const LISTENER_ID_KEY = "playlisted.radio.listenerId";
 const MAX_MSG_LENGTH = 300;
@@ -137,7 +138,8 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
   }, [isEmbedded, releasePlayback]);
 
   useEffect(() => {
-    theatreController.setCanEnter(playing);
+    setRadioPlaybackActive(playing);
+    return () => setRadioPlaybackActive(false);
   }, [playing]);
 
   useEffect(() => {
@@ -258,7 +260,6 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
     return () => {
       clearTransitionRetry();
       theatreController.registerPlaybackSource(null);
-      theatreController.setCanEnter(false);
     };
   }, [clearTransitionRetry]);
 

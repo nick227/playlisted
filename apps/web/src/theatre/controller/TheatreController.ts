@@ -328,8 +328,17 @@ class TheatreController extends EventTarget {
   }
 
   private getBackgroundMount(): HTMLElement {
+    const mount = document.querySelector('[data-theatre-mount]')
+    if (mount instanceof HTMLElement) return mount
+
     const layer = document.querySelector('[data-background-layer]')
     return layer instanceof HTMLElement ? layer : document.body
+  }
+
+  private ensureBackgroundOverlayConnected() {
+    if (!this.overlay || this.state.mode !== 'background') return
+    if (this.overlay.isConnected) return
+    this.getBackgroundMount().appendChild(this.overlay)
   }
 
   private mountImmersiveControls(overlay: HTMLElement, initialPresetId: string | null) {
@@ -494,6 +503,7 @@ class TheatreController extends EventTarget {
     let lastTime = startTime
     const loop = () => {
       if (!this.state.active) return
+      this.ensureBackgroundOverlayConnected()
       const frameCtx = this.frameContext || ctx
       const now = performance.now()
       const delta = now - lastTime

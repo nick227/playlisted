@@ -13,6 +13,10 @@ import {
 
 import theatreController from "@/theatre/controller/lazyController";
 import {
+  getRadioPlaybackActive,
+  subscribeRadioPlayback,
+} from "@/theatre/radioPlaybackBridge";
+import {
   buildAutoplayAvoidance,
   buildRelaxedAutoplayAvoidance,
   recordAutoplayPlaylistCompleted,
@@ -178,6 +182,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   const [volume, setVolumeState] = useState(() => readPlayerVolume());
   const [playerDismissSnapshot, setPlayerDismissSnapshot] = useState<PlayerDismissSnapshot | null>(null);
   const [playerBarExiting, setPlayerBarExiting] = useState(false);
+  const [radioPlaying, setRadioPlaying] = useState(getRadioPlaybackActive);
 
   upNextPipelineRef.current = upNextPipeline;
   volumeRef.current = volume;
@@ -194,10 +199,13 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
 
   const playerShellActive = playerBarVisible || playerDismissSnapshot !== null;
   const isPlaying = currentTrack !== null && (state === "playing" || state === "loading");
+  const playbackActive = isPlaying || radioPlaying;
+
+  useEffect(() => subscribeRadioPlayback(setRadioPlaying), []);
 
   useEffect(() => {
-    theatreController.setCanEnter(isPlaying);
-  }, [isPlaying]);
+    theatreController.setCanEnter(playbackActive);
+  }, [playbackActive]);
 
   const queueRef = useRef(queue);
   const queueIndexRef = useRef(queueIndex);
