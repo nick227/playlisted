@@ -26,7 +26,7 @@ export function UserAccountMenu({
       <button
         type="button"
         onClick={onToggle}
-        className="flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-elevated)] py-1.5 pl-1.5 pr-3 text-sm font-medium text-white"
+        className="flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-1.5 text-sm font-medium text-white"
         aria-expanded={open}
         aria-haspopup="menu"
       >
