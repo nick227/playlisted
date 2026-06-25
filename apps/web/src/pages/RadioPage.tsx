@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { MessageCircle, Pause, Play, Send, Users, X } from "lucide-react";
 
 import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
+import { useTheatreMode } from "@/components/app-shell/useTheatreMode";
 import { PlaybackBars } from "@/features/playback-indicators/PlaybackBars";
 import { api } from "@/lib/api";
 import { authedApi } from "@/lib/authedApi";
@@ -80,6 +81,7 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
   const [chatOpen, setChatOpen] = useState(false);
   const [seenCount, setSeenCount] = useState(0);
   const [chatMessage, setChatMessage] = useState("");
+  const { theatreActive } = useTheatreMode();
 
   usePageMeta({ title: "Radio" });
 
@@ -375,6 +377,11 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
   const charsLeft = MAX_MSG_LENGTH - chatMessage.length;
   const showCharCount = chatMessage.length > MAX_MSG_LENGTH * 0.75;
 
+  const artworkClassName = [
+    "radio-artwork aspect-square w-full max-w-[min(68vw,360px)] rounded-xl bg-white/5 bg-cover bg-center shadow-2xl shadow-black/30",
+    theatreActive ? "is-theatre-active" : "",
+  ].join(" ");
+
   const chatPanel = chatOpen
     ? createPortal(
       <aside
@@ -516,13 +523,13 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
         {playlistUrl ? (
           <Link
             to={playlistUrl}
-            className="aspect-square w-full max-w-[min(68vw,360px)] rounded-xl bg-white/5 bg-cover bg-center shadow-2xl shadow-black/30 transition hover:brightness-90"
+            className={`${artworkClassName} transition hover:brightness-90`}
             style={artStyle}
             aria-label={`Go to playlist: ${nowPlaying?.playlist.title}`}
           />
         ) : (
           <div
-            className="aspect-square w-full max-w-[min(68vw,360px)] rounded-xl bg-white/5 bg-cover bg-center shadow-2xl shadow-black/30"
+            className={artworkClassName}
             style={artStyle}
           />
         )}

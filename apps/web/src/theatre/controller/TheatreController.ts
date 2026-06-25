@@ -98,6 +98,40 @@ class TheatreController extends EventTarget {
     }
   }
 
+  private prefersReducedMotion(): boolean {
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  }
+
+  private revealOverlay(overlay: HTMLElement, token: number) {
+    const show = () => {
+      if (this.stillCurrent(token) && this.overlay === overlay) {
+        overlay.classList.add('is-visible')
+      }
+    }
+    if (this.prefersReducedMotion()) {
+      show()
+      return
+    }
+    requestAnimationFrame(() => {
+      requestAnimationFrame(show)
+    })
+  }
+
+  private waitForOverlayHidden(overlay: HTMLElement): Promise<void> {
+    if (this.prefersReducedMotion()) return Promise.resolve()
+    return new Promise(resolve => {
+      const timeout = window.setTimeout(resolve, 530)
+      const onEnd = (event: TransitionEvent) => {
+        if (event.target !== overlay || event.propertyName !== 'opacity') return
+        overlay.removeEventListener('transitionend', onEnd)
+        window.clearTimeout(timeout)
+        resolve()
+      }
+      overlay.addEventListener('transitionend', onEnd)
+      overlay.classList.remove('is-visible')
+    })
+  }
+
   private buildFactoriesForPreset(preset: ScenePresetDef | null, maxLayers = Number.POSITIVE_INFINITY) {
     const factories: AnimationFactory[] = []
     if (!preset) return factories
@@ -432,9 +466,6 @@ class TheatreController extends EventTarget {
       ? 'theatre-overlay theatre-overlay--background fixed inset-0 flex items-center justify-center'
       : 'theatre-overlay theatre-overlay--immersive fixed inset-x-0 top-0 flex items-center justify-center'
     overlay.style.pointerEvents = isBackground ? 'none' : 'auto'
-    // Start transparent — animations render one frame before we reveal.
-    overlay.style.opacity = '0'
-    overlay.style.transition = 'opacity 0.45s cubic-bezier(0.4, 0, 0.2, 1)'
 
     if (isBackground) {
       this.getBackgroundMount().appendChild(overlay)
@@ -488,13 +519,7 @@ class TheatreController extends EventTarget {
     this.dispatchEvent(new Event('enter'))
     this.dispatchEvent(new Event('change'))
 
-    // Fade in: double-RAF ensures the browser has committed the opacity:0
-    // frame before we transition, so the animation is always visible.
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        if (this.stillCurrent(token) && this.overlay === overlay) overlay.style.opacity = '1'
-      })
-    })
+    this.revealOverlay(overlay, token)
 
     // Single RAF loop owns all frame work:
     // 1. advance shared time  2. update audio features  3. drive all externally-driven animations
@@ -525,10 +550,17 @@ class TheatreController extends EventTarget {
 
     const token = this.bumpTransitionToken()
     this.transitioning = true
+    const overlay = this.overlay
     try {
+      this.stopFeatureLoop()
+
+      if (overlay?.classList.contains('is-visible')) {
+        await this.waitForOverlayHidden(overlay)
+        if (!this.stillCurrent(token)) return
+      }
+
       this.state.active = false
       this.state.mode = null
-      this.stopFeatureLoop()
       this.extractor = null
       this.frameContext = null
 
@@ -536,8 +568,8 @@ class TheatreController extends EventTarget {
       if (!this.stillCurrent(token)) return
 
       this.clearOverlayBoundsTracking()
-      if (this.overlay?.parentElement) this.overlay.parentElement.removeChild(this.overlay)
-      this.overlay = null
+      if (overlay?.parentElement) overlay.parentElement.removeChild(overlay)
+      if (this.overlay === overlay) this.overlay = null
       document.body.classList.remove('theatre-active')
       this.state.presetId = null
 

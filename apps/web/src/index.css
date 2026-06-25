@@ -26,6 +26,9 @@
   --delay-player-section-track: 48ms;
   --delay-player-section-controls: 96ms;
   --delay-player-section-actions: 144ms;
+
+  --duration-theatre-fade: 450ms;
+  --ease-theatre-fade: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 * {
@@ -61,6 +64,21 @@ body {
 
 .theatre-overlay {
   z-index: 0;
+  opacity: 0;
+  transition: opacity var(--duration-theatre-fade) var(--ease-theatre-fade);
+}
+
+.theatre-overlay.is-visible {
+  opacity: 1;
+}
+
+.radio-artwork {
+  transition: opacity var(--duration-theatre-fade) var(--ease-theatre-fade);
+}
+
+.radio-artwork.is-theatre-active {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .theatre-overlay--background {
@@ -398,6 +416,11 @@ body {
     animation: none;
     opacity: 1;
     transform: none;
+  }
+
+  .theatre-overlay,
+  .radio-artwork {
+    transition: none;
   }
 }
 
