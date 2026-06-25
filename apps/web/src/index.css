@@ -72,11 +72,11 @@ body {
   opacity: 1;
 }
 
-.radio-artwork {
+.theatre-crossfade {
   transition: opacity var(--duration-theatre-fade) var(--ease-theatre-fade);
 }
 
-.radio-artwork.is-theatre-active {
+.theatre-crossfade.is-theatre-active {
   opacity: 0;
   pointer-events: none;
 }
@@ -419,7 +419,7 @@ body {
   }
 
   .theatre-overlay,
-  .radio-artwork {
+  .theatre-crossfade {
     transition: none;
   }
 }

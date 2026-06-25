@@ -378,7 +378,7 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
   const showCharCount = chatMessage.length > MAX_MSG_LENGTH * 0.75;
 
   const artworkClassName = [
-    "radio-artwork aspect-square w-full max-w-[min(68vw,360px)] rounded-xl bg-white/5 bg-cover bg-center shadow-2xl shadow-black/30",
+    "theatre-crossfade aspect-square w-full max-w-[min(68vw,360px)] rounded-xl bg-white/5 bg-cover bg-center shadow-2xl shadow-black/30",
     theatreActive ? "is-theatre-active" : "",
   ].join(" ");
 

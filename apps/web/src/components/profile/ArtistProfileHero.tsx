@@ -3,6 +3,7 @@ import { Check, ExternalLink, Pause, Play, Plus, Share2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
+import { useTheatreMode } from "@/components/app-shell/useTheatreMode";
 import { useAuthAction } from "@/hooks/useAuthAction";
 import { useFollowedArtistIds, useToggleFollowArtist } from "@/hooks/useFavorites";
 import { formatPlayCount } from "@/lib/format";
@@ -79,6 +80,7 @@ export function ArtistProfileHero({
   const username = preview?.username ?? user.username;
   const bio = preview?.bio ?? user.bio;
   const profileLinks = preview?.profileLinks ?? user.profileLinks ?? [];
+  const { theatreActive } = useTheatreMode();
 
   async function handleShare() {
     await shareContent(`${window.location.origin}/@/${encodeURIComponent(username)}`, displayName);
@@ -190,7 +192,14 @@ export function ArtistProfileHero({
 
       {user.heroImageUrl ? (
         <figure className="mt-10 overflow-hidden rounded-lg">
-          <img src={user.heroImageUrl} alt="" className="aspect-[21/9] w-full object-cover" />
+          <img
+            src={user.heroImageUrl}
+            alt=""
+            className={[
+              "theatre-crossfade aspect-[21/9] w-full object-cover",
+              theatreActive ? "is-theatre-active" : "",
+            ].join(" ")}
+          />
         </figure>
       ) : null}
     </section>
