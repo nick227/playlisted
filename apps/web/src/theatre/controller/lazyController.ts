@@ -144,13 +144,14 @@ class LazyTheatreController extends EventTarget {
   }
 
   public setCanEnter(canEnter: boolean) {
-    if (this.state.canEnter === canEnter) return
-    this.state.canEnter = canEnter
-    this.dispatchEvent(new Event('change'))
     if (this._real) {
       this._real.setCanEnter(canEnter)
       return
     }
+
+    if (this.state.canEnter === canEnter) return
+    this.state.canEnter = canEnter
+    this.dispatchEvent(new Event('change'))
     if (canEnter) {
       void this._load().then(real => {
         if (this.state.canEnter) real.setCanEnter(true)

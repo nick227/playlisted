@@ -80,14 +80,22 @@ class TheatreController extends EventTarget {
 
   /** Called by React whenever playback readiness changes. Single source of truth for canEnter. */
   public setCanEnter(canEnter: boolean) {
-    if (this.state.canEnter === canEnter) return
-    this.state.canEnter = canEnter
-    if (canEnter && !this.state.active && !this.transitioning) {
-      void this.enterBackground()
-    } else if (!canEnter && this.state.active && this.state.mode === 'background') {
+    const changed = this.state.canEnter !== canEnter
+    if (changed) this.state.canEnter = canEnter
+
+    if (canEnter) {
+      this.ensureBackgroundIfNeeded()
+    } else if (this.state.active && this.state.mode === 'background') {
       void this.exit()
     }
-    this.dispatchEvent(new Event('change'))
+
+    if (changed) this.dispatchEvent(new Event('change'))
+  }
+
+  private ensureBackgroundIfNeeded() {
+    if (this.state.canEnter && !this.state.active && !this.transitioning) {
+      void this.enterBackground()
+    }
   }
 
   private buildFactoriesForPreset(preset: ScenePresetDef | null, maxLayers = Number.POSITIVE_INFINITY) {
@@ -526,7 +534,10 @@ class TheatreController extends EventTarget {
       this.dispatchEvent(new Event('exit'))
       this.dispatchEvent(new Event('change'))
     } finally {
-      if (this.stillCurrent(token)) this.transitioning = false
+      if (this.stillCurrent(token)) {
+        this.transitioning = false
+        this.ensureBackgroundIfNeeded()
+      }
     }
   }
 }
