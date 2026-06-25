@@ -79,6 +79,7 @@ body {
 .theatre-crossfade.is-theatre-active {
   opacity: 0;
   pointer-events: none;
+  display: none;
 }
 
 .theatre-overlay--background {

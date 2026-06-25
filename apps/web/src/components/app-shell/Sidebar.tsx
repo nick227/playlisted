@@ -10,6 +10,7 @@ import {
   Plus,
   Settings,
   Tags,
+  RadioIcon,
   type LucideIcon,
 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -148,16 +149,16 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
         />
       ) : null}
       <aside
-        className={`fixed left-0 top-0 z-50 flex h-full w-[var(--spacing-sidebar)] max-w-[85vw] shrink-0 flex-col border-r border-[var(--color-border)] bg-[var(--color-canvas)] transition-transform lg:z-40 lg:translate-x-0 ${
+        className={`bg-transparent fixed left-0 top-0 z-50 flex h-full w-[var(--spacing-sidebar)] max-w-[85vw] shrink-0 flex-col transition-transform lg:z-40 lg:translate-x-0 ${
           mobileOpen
             ? "translate-x-0"
             : "-translate-x-full max-lg:invisible max-lg:pointer-events-none lg:translate-x-0"
         }`}
       >
-        <nav className="flex flex-1 flex-col gap-6 overflow-y-auto px-3 py-4">
+        <nav className="flex flex-1 flex-col gap-6 overflow-y-auto px-3 py-4 bg-transparent">
           <div>
-            <NavLink to="/" onClick={onClose} className="text-4xl font-bold tracking-tight text-white">
-              Play<span className="text-[var(--color-brand)]">listed</span>
+            <NavLink to="/" onClick={onClose} className="flex items-center gap-2 text-4xl font-bold tracking-tight text-white">
+              Play<span className="text-[var(--color-brand)]">listed</span> <RadioIcon size={20} />
             </NavLink>
             <div className="flex flex-col gap-0.5 mt-4">
               {discoverLinks.map((link) => (

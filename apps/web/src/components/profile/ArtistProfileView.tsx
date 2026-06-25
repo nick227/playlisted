@@ -27,7 +27,7 @@ type ArtistProfileViewProps = {
 
 export function ArtistProfileView({ user, preview }: ArtistProfileViewProps) {
   const relatedArtistLimit = 6;
-  const { data: related } = useTopArtists("7d", relatedArtistLimit + 1);
+  const { data: related } = useTopArtists("30d", relatedArtistLimit + 1);
   const { user: authUser } = useAuth();
   const { setQueue, togglePlay, activeOriginKey, state } = useAudioPlayer();
   const { tracks, isLoading: tracksLoading } = useArtistTracks(user.id);

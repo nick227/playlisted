@@ -7,7 +7,7 @@ export function SiteFooter() {
 
   return (
     <footer className="mt-16 border-t border-[var(--color-border)] py-8">
-      <div className="flex justify-between w-full items-start">
+      <div className="items-start">
         
           <div>
             <div className="flex items-center">
@@ -37,7 +37,7 @@ export function SiteFooter() {
           </div>
 
 
-        <div className="flex justify-end items-center gap-2">
+        <div className="flex items-center gap-2">
           
             <p className="text-sm">digital music project</p>
             <h6 className="text-sm font-bold text-[var(--color-text-muted)]">© 2026</h6>
