@@ -110,7 +110,7 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
   const client = authedApi(accessToken);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [setShowCollectionsSignIn] = useState(false);
+  const [showCollectionsSignIn, setShowCollectionsSignIn] = useState(false);
   const isAuthenticated = status === "authenticated" && Boolean(user);
   const { data: ownedCollections } = usePlaylists(12, user?.id, isAuthenticated);
   const { data: savedCollections } = useCollectionPlaylists(12);
@@ -205,7 +205,7 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
                 <Plus size={20} />
                 {createCollectionMutation.isPending ? "Creating..." : "Add Collection"}
               </button>
-              {!isAuthenticated ? (
+              {showCollectionsSignIn && !isAuthenticated ? (
                 <div className="mx-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-3">
                   <p className="text-sm font-semibold text-white">Sign in to create collections</p>
                   <p className="my-1 text-xs leading-relaxed text-[var(--color-text-muted)]">
@@ -284,7 +284,7 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
                 <Plus size={20} />
                 {createCollectionMutation.isPending ? "Creating..." : "Add Collection"}
               </button>
-              {!isAuthenticated ? (
+              {showCollectionsSignIn && !isAuthenticated ? (
                 <div className="mx-3 mt-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-3">
                   <p className="text-sm font-semibold text-white">Sign in to see your collections</p>
                   <p className="mt-1 text-xs leading-relaxed text-[var(--color-text-muted)]">
