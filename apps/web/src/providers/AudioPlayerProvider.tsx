@@ -16,6 +16,7 @@ import {
   getRadioPlaybackActive,
   subscribeRadioPlayback,
 } from "@/theatre/radioPlaybackBridge";
+import { useTheatreTrackRotation } from "@/theatre/useTheatreTrackRotation";
 import {
   buildAutoplayAvoidance,
   buildRelaxedAutoplayAvoidance,
@@ -206,6 +207,8 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     theatreController.setCanEnter(playbackActive);
   }, [playbackActive]);
+
+  useTheatreTrackRotation(currentTrack?.id, playbackActive);
 
   const queueRef = useRef(queue);
   const queueIndexRef = useRef(queueIndex);

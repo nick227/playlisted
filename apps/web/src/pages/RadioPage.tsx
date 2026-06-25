@@ -15,6 +15,7 @@ import { useAuth } from "@/providers/AuthProvider";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 import theatreController from "@/theatre/controller/lazyController";
 import { setRadioPlaybackActive } from "@/theatre/radioPlaybackBridge";
+import { useTheatreTrackRotation } from "@/theatre/useTheatreTrackRotation";
 
 const LISTENER_ID_KEY = "playlisted.radio.listenerId";
 const MAX_MSG_LENGTH = 300;
@@ -108,6 +109,7 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
 
   const station = radioQuery.data;
   const nowPlaying = station?.nowPlaying;
+  useTheatreTrackRotation(nowPlaying?.id, playing);
   const chatMessages = station?.chatMessages ?? [];
   const isLive = station?.status === "LIVE" && Boolean(nowPlaying);
   const statusLabel = radioQuery.isError ? "Unavailable" : isLive ? "Live" : "Offline";

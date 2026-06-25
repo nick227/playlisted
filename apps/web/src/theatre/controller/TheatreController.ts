@@ -294,6 +294,23 @@ class TheatreController extends EventTarget {
     this.bridge.pause()
   }
 
+  private pickRandomPreset(excludeCurrent = true): ScenePresetDef | null {
+    const reducedMotion = this.prefersReducedMotion()
+    const preferCategory: SceneCategory = import.meta.env.DEV ? 'lab' : 'production'
+    return pickPreset({
+      preferCategory,
+      reducedMotion,
+      excludeIds: excludeCurrent && this.state.presetId ? [this.state.presetId] : [],
+    })
+  }
+
+  public async rotateRandomPreset() {
+    if (!this.state.active || this.transitioning) return
+    const selectedPreset = this.pickRandomPreset()
+    if (!selectedPreset || selectedPreset.id === this.state.presetId) return
+    await this.changePreset(selectedPreset.id)
+  }
+
   public async changePreset(presetId: string) {
     if (this.transitioning || !this.overlay || !this.state.active) return
 
@@ -491,9 +508,7 @@ class TheatreController extends EventTarget {
       featuresRef,
     })
 
-    const reducedMotion = ctx.shared?.reducedMotion ?? false
-    const preferCategory: SceneCategory = import.meta.env.DEV ? 'lab' : 'production'
-    const selectedPreset = pickPreset({ preferCategory, reducedMotion })
+    const selectedPreset = this.pickRandomPreset(false)
     const initialPresetId = selectedPreset?.id ?? null
 
     if (!isBackground) {

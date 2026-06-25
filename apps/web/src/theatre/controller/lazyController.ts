@@ -26,6 +26,7 @@ interface RealTheatreController extends EventTarget {
   enterBackground(): Promise<void>
   exit(): Promise<void>
   changePreset(id: string): Promise<void>
+  rotateRandomPreset(): Promise<void>
 }
 
 const THEATRE_RELOAD_KEY = 'playlisted:theatre:chunk-reload-attempted'
@@ -180,6 +181,12 @@ class LazyTheatreController extends EventTarget {
 
   public async changePreset(id: string) {
     return (await this._load()).changePreset(id)
+  }
+
+  public async rotateRandomPreset() {
+    if (this._real) return this._real.rotateRandomPreset()
+    if (!this.state.active) return
+    return (await this._load()).rotateRandomPreset()
   }
 }
 
