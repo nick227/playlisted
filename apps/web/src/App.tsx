@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes, useParams } from "react-router-
 
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AppShell } from "@/components/app-shell/AppShell";
+import { RadioPlayerProvider } from "@/providers/RadioPlayerProvider";
 
 const AuthLayout = lazy(() => import("@/components/auth/AuthLayout").then((mod) => ({ default: mod.AuthLayout })));
 const LoginPage = lazy(() => import("@/pages/LoginPage").then((mod) => ({ default: mod.LoginPage })));
@@ -235,15 +236,17 @@ function MainRoutes() {
 export function App() {
   return (
     <BrowserRouter>
-      <Suspense fallback={null}>
-        <Routes>
-          <Route element={<AuthLayout />}>
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-          </Route>
-          <Route path="/*" element={<MainRoutes />} />
-        </Routes>
-      </Suspense>
+      <RadioPlayerProvider>
+        <Suspense fallback={null}>
+          <Routes>
+            <Route element={<AuthLayout />}>
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
+            </Route>
+            <Route path="/*" element={<MainRoutes />} />
+          </Routes>
+        </Suspense>
+      </RadioPlayerProvider>
     </BrowserRouter>
   );
 }

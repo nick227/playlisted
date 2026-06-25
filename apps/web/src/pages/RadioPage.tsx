@@ -1,39 +1,22 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { MessageCircle, Pause, Play, Send, Users, X } from "lucide-react";
 
 import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
 import { useTheatreMode } from "@/components/app-shell/useTheatreMode";
 import { PlaybackBars } from "@/features/playback-indicators/PlaybackBars";
-import { api } from "@/lib/api";
 import { authedApi } from "@/lib/authedApi";
+import { getAnonName } from "@/lib/radio/radioPlayback";
 import { coverFallback, playlistPath } from "@/lib/routes";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { useAuth } from "@/providers/AuthProvider";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
-import theatreController from "@/theatre/controller/lazyController";
-import { setRadioPlaybackActive } from "@/theatre/radioPlaybackBridge";
-import { useTheatreTrackRotation } from "@/theatre/useTheatreTrackRotation";
+import { useRadioPlayer } from "@/providers/RadioPlayerProvider";
 
-const LISTENER_ID_KEY = "playlisted.radio.listenerId";
 const MAX_MSG_LENGTH = 300;
 const TEXTAREA_MAX_H = 96;
-const RADIO_TRANSITION_RETRY_MS = 1000;
-const RADIO_TRANSITION_MAX_RETRIES = 8;
-
-function getListenerId() {
-  const existing = window.localStorage.getItem(LISTENER_ID_KEY);
-  if (existing) return existing;
-  const next = crypto.randomUUID();
-  window.localStorage.setItem(LISTENER_ID_KEY, next);
-  return next;
-}
-
-function getAnonName(listenerId: string) {
-  return `anon-${listenerId.slice(0, 4)}`;
-}
 
 function timeAgo(isoString: string) {
   const diffSec = Math.floor((Date.now() - new Date(isoString).getTime()) / 1000);
@@ -43,42 +26,26 @@ function timeAgo(isoString: string) {
   return `${Math.floor(diffMin / 60)}h`;
 }
 
-function getAudioHref(audioUrl: string) {
-  return new URL(audioUrl, window.location.origin).href;
-}
-
-function getRadioSeekTime(elapsedSeconds: number | null | undefined, durationSeconds: number | null | undefined) {
-  const elapsed = Number.isFinite(elapsedSeconds) ? Math.max(0, elapsedSeconds ?? 0) : 0;
-  if (!Number.isFinite(durationSeconds) || !durationSeconds || durationSeconds <= 0) return elapsed;
-  return Math.min(elapsed, Math.max(0, durationSeconds - 0.25));
-}
-
-function isRadioElapsedAtEnd(elapsedSeconds: number | null | undefined, durationSeconds: number | null | undefined) {
-  return (
-    Number.isFinite(elapsedSeconds) &&
-    Number.isFinite(durationSeconds) &&
-    durationSeconds != null &&
-    durationSeconds > 0 &&
-    (elapsedSeconds ?? 0) >= durationSeconds - 0.1
-  );
-}
-
 export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
   const { user, accessToken } = useAuth();
+  const { releasePlayback } = useAudioPlayer();
   const {
-    releasePlayback,
-    isPlaying: sitePlayerPlaying,
-    currentTrack: siteCurrentTrack,
-  } = useAudioPlayer();
-  const listenerIdRef = useRef<string | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+    playing,
+    togglePlayback,
+    listenerId,
+    radioQuery,
+    station,
+    nowPlaying,
+    isLive,
+    registerRadioUi,
+    unregisterRadioUi,
+  } = useRadioPlayer();
+
   const chatBottomRef = useRef<HTMLDivElement | null>(null);
   const chatScrollRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-  const transitionRetryTimerRef = useRef<number | null>(null);
   const queryClient = useQueryClient();
 
-  const [playing, setPlaying] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [seenCount, setSeenCount] = useState(0);
   const [chatMessage, setChatMessage] = useState("");
@@ -86,32 +53,13 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
 
   usePageMeta({ title: "Radio" });
 
-  const suppressNextSitePauseRef = useRef(false);
-
-  // Resolve persistent listener id and display name
-  const listenerId = useMemo(() => {
-    if (!listenerIdRef.current) listenerIdRef.current = getListenerId();
-    return listenerIdRef.current;
-  }, []);
-
   const displayName = user
     ? (user.displayName || user.username)
     : getAnonName(listenerId);
 
   const radioClient = useMemo(() => authedApi(accessToken), [accessToken]);
 
-  const radioQuery = useQuery({
-    queryKey: ["radio", "public"],
-    queryFn: () => api.radio.get(),
-    refetchInterval: 10_000,
-  });
-  const refetchRadio = radioQuery.refetch;
-
-  const station = radioQuery.data;
-  const nowPlaying = station?.nowPlaying;
-  useTheatreTrackRotation(nowPlaying?.id, playing);
   const chatMessages = station?.chatMessages ?? [];
-  const isLive = station?.status === "LIVE" && Boolean(nowPlaying);
   const statusLabel = radioQuery.isError ? "Unavailable" : isLive ? "Live" : "Offline";
   const unreadCount = Math.max(0, chatMessages.length - seenCount);
 
@@ -129,150 +77,24 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
       ? Math.min(100, ((nowPlaying.elapsedSeconds ?? 0) / nowPlaying.durationSeconds) * 100)
       : null;
 
-  const radioArtworkUrl = nowPlaying?.artworkUrl ?? null;
-
   const playlistUrl = nowPlaying
     ? playlistPath({ id: nowPlaying.playlist.id, slug: nowPlaying.playlist.slug, username: nowPlaying.uploader.username })
     : null;
 
   useEffect(() => {
+    registerRadioUi();
+    return unregisterRadioUi;
+  }, [registerRadioUi, unregisterRadioUi]);
+
+  useEffect(() => {
     if (isEmbedded) return;
     releasePlayback();
-    if (theatreController.state.active) void theatreController.exit();
   }, [isEmbedded, releasePlayback]);
 
-  useEffect(() => {
-    setRadioPlaybackActive(playing);
-    return () => setRadioPlaybackActive(false);
-  }, [playing]);
-
-  useEffect(() => {
-    if (!playing) return;
-    theatreController.setArtwork(radioArtworkUrl);
-  }, [playing, radioArtworkUrl]);
-
-  function bindTheatreToRadio(el: HTMLAudioElement) {
-    theatreController.registerPlaybackSource(el, { artworkUrl: radioArtworkUrl });
-  }
-
-  function unbindTheatreFromRadio() {
-    theatreController.registerPlaybackSource(null);
-  }
-
-  const clearTransitionRetry = useCallback(() => {
-    if (transitionRetryTimerRef.current == null) return;
-    window.clearTimeout(transitionRetryTimerRef.current);
-    transitionRetryTimerRef.current = null;
-  }, []);
-
-  useEffect(() => {
-    if (!isEmbedded) return;
-    if (!playing) return;
-    if (!sitePlayerPlaying || !siteCurrentTrack) return;
-    if (suppressNextSitePauseRef.current) return;
-
-    clearTransitionRetry();
-    audioRef.current?.pause();
-    setPlaying(false);
-    unbindTheatreFromRadio();
-  }, [
-    isEmbedded,
-    playing,
-    sitePlayerPlaying,
-    siteCurrentTrack?.id,
-    clearTransitionRetry,
-  ]);
-
-  const syncAndPlayRadio = useCallback(async (track: NonNullable<typeof nowPlaying>) => {
-    const audio = audioRef.current;
-    if (!audio || !track.audioUrl) return false;
-
-    const nextSrc = getAudioHref(track.audioUrl);
-    const needsSource = audio.src !== nextSrc;
-    if (!needsSource && audio.ended && isRadioElapsedAtEnd(track.elapsedSeconds, track.durationSeconds)) {
-      return false;
-    }
-
-    if (needsSource) {
-      audio.src = track.audioUrl;
-      audio.load();
-    }
-
-    const target = getRadioSeekTime(track.elapsedSeconds, track.durationSeconds);
-    if (needsSource || audio.ended || Math.abs(audio.currentTime - target) > 3) {
-      audio.currentTime = target;
-    }
-
-    try {
-      await audio.play();
-      setPlaying(true);
-      return true;
-    } catch {
-      setPlaying(false);
-      unbindTheatreFromRadio();
-      return false;
-    }
-  }, []);
-
-  const scheduleTransitionRefetch = useCallback((attempt = 0) => {
-    clearTransitionRetry();
-    transitionRetryTimerRef.current = window.setTimeout(() => {
-      void refetchRadio().then(async ({ data }) => {
-        const nextTrack = data?.status === "LIVE" ? data.nowPlaying : null;
-        if (!nextTrack?.audioUrl) {
-          setPlaying(false);
-          unbindTheatreFromRadio();
-          return;
-        }
-
-        const audio = audioRef.current;
-        const stillWaitingForNextTrack =
-          audio?.ended &&
-          audio.src === getAudioHref(nextTrack.audioUrl) &&
-          isRadioElapsedAtEnd(nextTrack.elapsedSeconds, nextTrack.durationSeconds);
-
-        if (stillWaitingForNextTrack && attempt < RADIO_TRANSITION_MAX_RETRIES) {
-          scheduleTransitionRefetch(attempt + 1);
-          return;
-        }
-
-        const played = await syncAndPlayRadio(nextTrack);
-        if (played && audioRef.current?.ended && attempt < RADIO_TRANSITION_MAX_RETRIES) {
-          scheduleTransitionRefetch(attempt + 1);
-        }
-      });
-    }, attempt === 0 ? 0 : RADIO_TRANSITION_RETRY_MS);
-  }, [clearTransitionRetry, refetchRadio, syncAndPlayRadio]);
-
-  function handleRadioPlay(el: HTMLAudioElement) {
-    setPlaying(true);
-    bindTheatreToRadio(el);
-  }
-
-  function handleRadioPause(e: React.SyntheticEvent<HTMLAudioElement>) {
-    if (e.currentTarget.ended) return;
-    setPlaying(false);
-    unbindTheatreFromRadio();
-  }
-
-  function handleRadioEnded() {
-    if (!playing) return;
-    scheduleTransitionRefetch();
-  }
-
-  useEffect(() => {
-    return () => {
-      clearTransitionRetry();
-      theatreController.registerPlaybackSource(null);
-    };
-  }, [clearTransitionRetry]);
-
-  // Mark messages as seen while chat is open
   useEffect(() => {
     if (chatOpen) setSeenCount(chatMessages.length);
   }, [chatOpen, chatMessages.length]);
 
-  // Jump to bottom when chat first opens
   useEffect(() => {
     if (chatOpen) {
       requestAnimationFrame(() =>
@@ -281,7 +103,6 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
     }
   }, [chatOpen]);
 
-  // Soft auto-scroll on new messages only if near bottom
   const prevMsgCountRef = useRef(chatMessages.length);
   useEffect(() => {
     if (!chatOpen || chatMessages.length === prevMsgCountRef.current) return;
@@ -309,61 +130,6 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
     },
   });
 
-  // Heartbeat
-  useEffect(() => {
-    if (!isLive) return;
-    const sendHeartbeat = () => {
-      void api.radio.heartbeat({ listenerId, station: station?.slug ?? "main" });
-    };
-    sendHeartbeat();
-    const interval = window.setInterval(sendHeartbeat, 25_000);
-    return () => window.clearInterval(interval);
-  }, [isLive, listenerId, station?.slug]);
-
-  // Audio sync
-  useEffect(() => {
-    if (!playing) return;
-    if (!isLive || !nowPlaying?.audioUrl) {
-      clearTransitionRetry();
-      audioRef.current?.pause();
-      setPlaying(false);
-      unbindTheatreFromRadio();
-      return;
-    }
-    clearTransitionRetry();
-    if (
-      audioRef.current?.ended &&
-      audioRef.current.src === getAudioHref(nowPlaying.audioUrl) &&
-      isRadioElapsedAtEnd(nowPlaying.elapsedSeconds, nowPlaying.durationSeconds)
-    ) {
-      scheduleTransitionRefetch();
-      return;
-    }
-    void syncAndPlayRadio(nowPlaying);
-  }, [clearTransitionRetry, isLive, nowPlaying, playing, scheduleTransitionRefetch, syncAndPlayRadio]);
-
-  async function togglePlayback() {
-    if (!nowPlaying?.audioUrl) return;
-
-    if (playing) {
-      clearTransitionRetry();
-      audioRef.current?.pause();
-      setPlaying(false);
-      return;
-    }
-
-    suppressNextSitePauseRef.current = true;
-
-    try {
-      releasePlayback();
-      await syncAndPlayRadio(nowPlaying);
-    } finally {
-      window.setTimeout(() => {
-        suppressNextSitePauseRef.current = false;
-      }, 0);
-    }
-  }
-
   function handleMessageChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
     setChatMessage(e.target.value.slice(0, MAX_MSG_LENGTH));
     const ta = textareaRef.current;
@@ -389,7 +155,6 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
       <aside
         className="fixed bottom-0 right-0 top-[var(--spacing-topbar)] z-[52] flex w-full flex-col border-l border-[var(--color-border)] bg-[var(--color-canvas-alt)] shadow-2xl shadow-black/60 sm:w-[360px]"
       >
-        {/* Header */}
         <div className="flex shrink-0 items-center justify-between border-b border-white/[0.06] bg-[var(--color-surface)] px-4 py-3">
           <div className="flex items-center gap-2 text-sm font-bold text-white">
             <MessageCircle size={15} className="text-[var(--color-brand)]" />
@@ -413,7 +178,6 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
           </div>
         </div>
 
-        {/* Messages */}
         <div
           ref={chatScrollRef}
           className="flex min-h-0 flex-1 flex-col gap-px overflow-y-auto bg-[var(--color-canvas)] py-2"
@@ -441,9 +205,7 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
           <div ref={chatBottomRef} />
         </div>
 
-        {/* Composer */}
         <div className="shrink-0 border-t border-white/[0.06] bg-[var(--color-surface)] px-4 py-3">
-          {/* Identity row */}
           <div className="mb-2.5 flex items-center gap-1.5 text-[11px] text-[var(--color-text-subtle)]">
             <span>Posting as</span>
             <span className="font-semibold text-white">{displayName}</span>
@@ -521,7 +283,6 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
           </div>
         ) : null}
 
-        {/* Artwork */}
         {playlistUrl ? (
           <Link
             to={playlistUrl}
@@ -536,7 +297,6 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
           />
         )}
 
-        {/* Status */}
         <div className="mt-8 flex items-center justify-center gap-3">
           <PlaybackBars active={isLive} playing={playing} variant="thumb" barCount={7} />
           <span className="text-xs font-semibold uppercase tracking-wider text-[var(--color-brand)]">
@@ -575,7 +335,6 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
           </p>
         ) : null}
 
-        {/* Progress bar */}
         {progressPct !== null ? (
           <div className="mt-6 w-full max-w-[min(68vw,360px)]">
             <div className="h-1 overflow-hidden rounded-full bg-white/10">
@@ -587,7 +346,6 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
           </div>
         ) : null}
 
-        {/* Play/pause */}
         <button
           type="button"
           onClick={() => void togglePlayback()}
@@ -603,7 +361,6 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
         </button>
       </div>
 
-      {/* Chat toggle button (minimized) */}
       {!chatOpen ? (
         <button
           type="button"
@@ -622,15 +379,6 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
       ) : null}
 
       {chatPanel}
-
-      <audio
-        ref={audioRef}
-        data-radio-player
-        crossOrigin="anonymous"
-        onPlay={(e) => handleRadioPlay(e.currentTarget)}
-        onEnded={handleRadioEnded}
-        onPause={handleRadioPause}
-      />
     </>
   );
 }
