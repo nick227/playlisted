@@ -8,6 +8,7 @@ import { buildAnimationFrameContext } from './theatreFrameContext'
 
 
 type PlaybackSourceMeta = { artworkUrl?: string | null }
+type TheatreMode = 'background' | 'immersive'
 
 class TheatreController extends EventTarget {
   private bridge = new AnimationBridge()
@@ -29,6 +30,7 @@ class TheatreController extends EventTarget {
   public state = {
     active: false,
     canEnter: false,
+    mode: null as TheatreMode | null,
     presetId: null as string | null,
     mediaSrc: null as string | null,
     artworkUrl: null as string | null,
@@ -45,6 +47,7 @@ class TheatreController extends EventTarget {
     this.bumpTransitionToken()
     this.transitioning = false
     this.state.active = false
+    this.state.mode = null
     this.state.presetId = null
 
     window.removeEventListener('visibilitychange', this.onVisibilityChange)
@@ -79,6 +82,11 @@ class TheatreController extends EventTarget {
   public setCanEnter(canEnter: boolean) {
     if (this.state.canEnter === canEnter) return
     this.state.canEnter = canEnter
+    if (canEnter && !this.state.active && !this.transitioning) {
+      void this.enterBackground()
+    } else if (!canEnter && this.state.active && this.state.mode === 'background') {
+      void this.exit()
+    }
     this.dispatchEvent(new Event('change'))
   }
 
@@ -192,6 +200,7 @@ class TheatreController extends EventTarget {
     if (overlay) this.discardOverlay(overlay)
     if (!this.state.active) {
       this.state.presetId = null
+      this.state.mode = null
       this.dispatchEvent(new Event('change'))
     }
   }
@@ -286,59 +295,36 @@ class TheatreController extends EventTarget {
     return this.enter()
   }
 
+  public async enterBackground() {
+    if (this.state.active || this.transitioning) return
+
+    const token = this.bumpTransitionToken()
+    this.transitioning = true
+    try {
+      await this.enterInner(token, 'background')
+    } finally {
+      if (this.stillCurrent(token)) this.transitioning = false
+    }
+  }
+
   public async enter() {
     if (this.state.active || this.transitioning) return
 
     const token = this.bumpTransitionToken()
     this.transitioning = true
     try {
-      await this.enterInner(token)
+      await this.enterInner(token, 'immersive')
     } finally {
       if (this.stillCurrent(token)) this.transitioning = false
     }
   }
 
-  private async enterInner(token: number) {
-    // Load animation factories on first enter — keeps them out of the initial
-    // bundle even if TheatreController itself is somehow imported early.
-    await import('../registry/seed')
-    if (!this.stillCurrent(token)) return
-    if (!this.audioEl) this.rebindAudio()
-    if (!this.hasPlayableAudio()) return
-    if (!this.stillCurrent(token)) return
+  private getBackgroundMount(): HTMLElement {
+    const layer = document.querySelector('[data-background-layer]')
+    return layer instanceof HTMLElement ? layer : document.body
+  }
 
-    const overlay = document.createElement('div')
-    this.overlay = overlay
-    overlay.className = 'theatre-overlay fixed inset-x-0 top-0 z-[9998] flex items-center justify-center'
-    overlay.style.pointerEvents = 'auto'
-    // Start transparent — animations render one frame before we reveal.
-    overlay.style.opacity = '0'
-    overlay.style.transition = 'opacity 0.45s cubic-bezier(0.4, 0, 0.2, 1)'
-    document.body.appendChild(overlay)
-    this.trackOverlayBounds()
-    document.body.classList.add('theatre-active')
-
-    const analyser = this.getOrCreateAnalyser()
-
-    let featuresRef: ReturnType<AudioFeatureExtractor['getFeatures']> | undefined
-    if (analyser) {
-      this.extractor = new AudioFeatureExtractor(analyser)
-      featuresRef = this.extractor.getFeatures()
-    }
-
-    const { ctx, policy } = buildAnimationFrameContext({
-      audioEl: this.audioEl,
-      analyser,
-      mediaSrc: this.audioEl?.currentSrc || null,
-      artworkUrl: this.state.artworkUrl,
-      featuresRef,
-    })
-
-    const reducedMotion = ctx.shared?.reducedMotion ?? false
-    const preferCategory: SceneCategory = import.meta.env.DEV ? 'lab' : 'production'
-    const selectedPreset = pickPreset({ preferCategory, reducedMotion })
-    const initialPresetId = selectedPreset?.id ?? null
-
+  private mountImmersiveControls(overlay: HTMLElement, initialPresetId: string | null) {
     const controls = document.createElement('div')
     controls.className = 'theatre-controls absolute top-4 right-4 flex items-center gap-2'
     controls.style.pointerEvents = 'auto'
@@ -411,6 +397,60 @@ class TheatreController extends EventTarget {
       setMenuOpen(false)
       void this.togglePlayback()
     })
+  }
+
+  private async enterInner(token: number, mode: TheatreMode) {
+    // Load animation factories on first enter — keeps them out of the initial
+    // bundle even if TheatreController itself is somehow imported early.
+    await import('../registry/seed')
+    if (!this.stillCurrent(token)) return
+    if (!this.audioEl) this.rebindAudio()
+    if (!this.hasPlayableAudio()) return
+    if (!this.stillCurrent(token)) return
+
+    const isBackground = mode === 'background'
+    const overlay = document.createElement('div')
+    this.overlay = overlay
+    overlay.className = isBackground
+      ? 'theatre-overlay theatre-overlay--background fixed inset-0 flex items-center justify-center'
+      : 'theatre-overlay theatre-overlay--immersive fixed inset-x-0 top-0 flex items-center justify-center'
+    overlay.style.pointerEvents = isBackground ? 'none' : 'auto'
+    // Start transparent — animations render one frame before we reveal.
+    overlay.style.opacity = '0'
+    overlay.style.transition = 'opacity 0.45s cubic-bezier(0.4, 0, 0.2, 1)'
+
+    if (isBackground) {
+      this.getBackgroundMount().appendChild(overlay)
+    } else {
+      document.body.appendChild(overlay)
+      this.trackOverlayBounds()
+      document.body.classList.add('theatre-active')
+    }
+
+    const analyser = this.getOrCreateAnalyser()
+
+    let featuresRef: ReturnType<AudioFeatureExtractor['getFeatures']> | undefined
+    if (analyser) {
+      this.extractor = new AudioFeatureExtractor(analyser)
+      featuresRef = this.extractor.getFeatures()
+    }
+
+    const { ctx, policy } = buildAnimationFrameContext({
+      audioEl: this.audioEl,
+      analyser,
+      mediaSrc: this.audioEl?.currentSrc || null,
+      artworkUrl: this.state.artworkUrl,
+      featuresRef,
+    })
+
+    const reducedMotion = ctx.shared?.reducedMotion ?? false
+    const preferCategory: SceneCategory = import.meta.env.DEV ? 'lab' : 'production'
+    const selectedPreset = pickPreset({ preferCategory, reducedMotion })
+    const initialPresetId = selectedPreset?.id ?? null
+
+    if (!isBackground) {
+      this.mountImmersiveControls(overlay, initialPresetId)
+    }
 
     if (!this.stillCurrent(token)) {
       await this.abortStaleTransition(token, overlay)
@@ -426,6 +466,7 @@ class TheatreController extends EventTarget {
     }
 
     this.state.presetId = initialPresetId
+    this.state.mode = mode
     this.state.active = true
     this.dispatchEvent(new Event('enter'))
     this.dispatchEvent(new Event('change'))
@@ -468,6 +509,7 @@ class TheatreController extends EventTarget {
     this.transitioning = true
     try {
       this.state.active = false
+      this.state.mode = null
       this.stopFeatureLoop()
       this.extractor = null
       this.frameContext = null

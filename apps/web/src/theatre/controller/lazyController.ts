@@ -13,6 +13,7 @@ interface RealTheatreController extends EventTarget {
   state: {
     active: boolean
     canEnter: boolean
+    mode: 'background' | 'immersive' | null
     presetId: string | null
     mediaSrc: string | null
     artworkUrl: string | null
@@ -22,6 +23,7 @@ interface RealTheatreController extends EventTarget {
   setCanEnter(canEnter: boolean): void
   toggle(): Promise<void>
   enter(): Promise<void>
+  enterBackground(): Promise<void>
   exit(): Promise<void>
   changePreset(id: string): Promise<void>
 }
@@ -56,6 +58,7 @@ class LazyTheatreController extends EventTarget {
   public state = {
     active:     false,
     canEnter:   false,
+    mode:       null as 'background' | 'immersive' | null,
     presetId:   null as string | null,
     mediaSrc:   null as string | null,
     artworkUrl: null as string | null,
@@ -144,7 +147,15 @@ class LazyTheatreController extends EventTarget {
     if (this.state.canEnter === canEnter) return
     this.state.canEnter = canEnter
     this.dispatchEvent(new Event('change'))
-    this._real?.setCanEnter(canEnter)
+    if (this._real) {
+      this._real.setCanEnter(canEnter)
+      return
+    }
+    if (canEnter) {
+      void this._load().then(real => {
+        if (this.state.canEnter) real.setCanEnter(true)
+      })
+    }
   }
 
   public async exit() {
@@ -160,6 +171,10 @@ class LazyTheatreController extends EventTarget {
 
   public async enter() {
     return (await this._load()).enter()
+  }
+
+  public async enterBackground() {
+    return (await this._load()).enterBackground()
   }
 
   public async changePreset(id: string) {
