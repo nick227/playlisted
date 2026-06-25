@@ -15,5 +15,7 @@ export function setRadioPlaybackActive(playing: boolean) {
 
 export function subscribeRadioPlayback(listener: RadioPlaybackListener) {
   listeners.add(listener)
-  return () => listeners.delete(listener)
+  return () => {
+    listeners.delete(listener)
+  }
 }
