@@ -24,7 +24,7 @@
     "prisma:migrate": "prisma migrate dev --skip-generate",
     "prisma:migrate:deploy": "node scripts/railway-predeploy.mjs",
     "prisma:push": "prisma db push",
-    "prisma:seed": "prisma db seed",
+    "prisma:seed": "tsx prisma/seed.ts",
     "prisma:seed:file": "tsx prisma/seed.ts",
     "prisma:backfill-duration": "tsx prisma/seed/backfillDuration.ts",
     "prisma:cleanup-orphan-recordings": "tsx prisma/seed/cleanupOrphanRecordings.ts",
@@ -46,6 +46,7 @@
     "uploads:images:optimize": "node scripts/optimize-upload-images.mjs --write",
     "ports:free": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/free-ports.ps1",
     "dev:full": "npm run ports:free && npx concurrently -k -n api,web -c blue,green \"npm run dev\" \"npm run web:dev\"",
+    "dev:wsl": "npx concurrently -k -n api,web -c blue,green \"npm run dev\" \"npm run web:dev\"",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:api": "vitest run src/__tests__/apiKeys.test.ts src/__tests__/ingestUploads.test.ts src/__tests__/ingestPlaylists.test.ts src/__tests__/ingestRecordings.test.ts"

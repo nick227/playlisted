@@ -557,28 +557,3 @@ body {
 .hidden {
   display: none;
 }
-
-.fade-out-sidebar {
-  animation: fade-out-sidebar 0.3s ease-in-out;
-  animation-delay: 6s;
-  animation-fill-mode: forwards;
-  animation-iteration-count: 1;
-  animation-direction: normal;
-  animation-timing-function: ease-in-out;
-  animation-duration: 3s;
-  background-color: var(--color-surface-light-transparent) !important;
-}
-
-.fade-out-sidebar:hover {
-  animation: none;
-  opacity: 1 !important;
-}
-
-@keyframes fade-out-sidebar {
-  from {
-    opacity: 1;
-  }
-  to {
-    opacity: 0;
-  }
-}

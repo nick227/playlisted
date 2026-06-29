@@ -113,71 +113,6 @@ function DeferredHomeSection({
   );
 }
 
-function HomeFeaturedArtistsSection({
-  editorialFeaturedArtists,
-}: {
-  editorialFeaturedArtists: HomepageItem[];
-}) {
-  const pinnedArtists = useTopArtists(
-    "30d",
-    HOME_LIMITS.pinnedArtistsFetch,
-    editorialFeaturedArtists.length === 0,
-  );
-
-  const featuredArtistsSection = useMemo((): {
-    editorial: HomepageItem[];
-    fallback: TopArtistItem[];
-  } => {
-    const cap = HOME_LIMITS.featuredArtists;
-    if (editorialFeaturedArtists.length > 0) {
-      return { editorial: editorialFeaturedArtists.slice(0, cap), fallback: [] };
-    }
-    return {
-      editorial: [],
-      fallback: (pinnedArtists.data?.data ?? []).slice(0, cap),
-    };
-  }, [editorialFeaturedArtists, pinnedArtists.data]);
-
-  if (
-    featuredArtistsSection.editorial.length === 0 &&
-    featuredArtistsSection.fallback.length === 0
-  ) {
-    return null;
-  }
-
-  return (
-    <HomeSection
-      title=""
-      subtitle=""
-      cols={HOME_SECTION_COLS.featuredArtists}
-    >
-      {featuredArtistsSection.editorial.length > 0
-        ? featuredArtistsSection.editorial.map((item) => (
-            <ArtistCard
-              key={item.id}
-              id={item.id}
-              username={usernameFromHomepageUser(item)}
-              displayName={item.title}
-              avatarUrl={item.imageUrl}
-              subtitle={item.subtitle}
-              className="w-full"
-            />
-          ))
-        : featuredArtistsSection.fallback.map((item: TopArtistItem) => (
-            <ArtistCard
-              key={item.userId}
-              id={item.userId}
-              username={item.username}
-              displayName={item.displayName}
-              avatarUrl={item.avatarUrl}
-              subtitle={`${item.playCount.toLocaleString()} plays`}
-              className="w-full"
-            />
-          ))}
-    </HomeSection>
-  );
-}
-
 export function HomePage() {
   usePageMeta({
     title: "Home",
@@ -199,13 +134,6 @@ export function HomePage() {
         </div>
       </Suspense>
 
-      <DeferredHomeSection minHeight={260}>
-        <HomeFeaturedArtistsSection editorialFeaturedArtists={editorialFeaturedArtists} />
-      </DeferredHomeSection>
-
-      <div className="mt-20 mb-4">
-        <SiteFooter />
-      </div>
     </div>
   );
 }

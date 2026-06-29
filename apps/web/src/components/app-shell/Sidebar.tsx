@@ -149,18 +149,18 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
         />
       ) : null}
       <aside
-        className={`bg-transparent fixed left-0 top-0 z-50 flex h-full w-[var(--spacing-sidebar)] max-w-[85vw] shrink-0 flex-col transition-transform lg:z-40 lg:translate-x-0 ${
+        className={`fixed left-0 top-0 z-50 flex h-full w-[var(--spacing-sidebar)] max-w-[85vw] shrink-0 flex-col border-r border-[var(--color-border)] bg-[var(--color-canvas-alt)]/98 shadow-2xl shadow-black/50 backdrop-blur-xl transition-transform lg:z-40 lg:translate-x-0 lg:bg-transparent lg:shadow-none lg:backdrop-blur-none ${
           mobileOpen
             ? "translate-x-0"
             : "-translate-x-full max-lg:invisible max-lg:pointer-events-none lg:translate-x-0"
         }`}
       >
-        <nav className="flex flex-1 flex-col gap-6 overflow-y-auto px-3 py-4 bg-transparent">
+        <nav className="flex flex-1 flex-col gap-6 overflow-y-auto px-3 py-4">
           <div>
             <NavLink to="/" onClick={onClose} className="flex items-center gap-2 text-4xl font-bold tracking-tight text-white">
               Play<span className="text-[var(--color-brand)]">listed</span> <RadioIcon size={20} />
             </NavLink>
-            <div className="flex flex-col gap-0.5 mt-4 fade-out-sidebar">
+            <div className="flex flex-col gap-0.5 mt-4">
               {discoverLinks.map((link) => (
                 <NavItem key={link.to} {...link} onClick={onClose} />
               ))}

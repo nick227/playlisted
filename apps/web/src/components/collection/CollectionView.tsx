@@ -355,7 +355,7 @@ export function CollectionView({
   const isEdit = mode === "edit";
   const isOwner = Boolean(user?.id && user.id === playlist.ownerId);
   const coverArtClassName =
-    "aspect-square w-full min-w-0 max-w-[180px] overflow-hidden rounded-lg object-cover sm:h-[180px] sm:w-[180px] sm:max-w-[180px]";
+    "h-[min(70vw,180px)] w-[min(70vw,180px)] min-w-0 overflow-hidden rounded-lg object-cover sm:h-[180px] sm:w-[180px]";
   const recordings = playlist.recordings as CollectionRecording[];
 
   const coverStyle = playlist.coverArtUrl
@@ -397,7 +397,7 @@ export function CollectionView({
           <button
             type="button"
             onClick={isEdit ? onCoverClick : undefined}
-            className={`block text-left ${isEdit ? "cursor-pointer ring-offset-2 hover:ring-2 hover:ring-[var(--color-brand)]" : ""}`}
+            className={`block h-[min(70vw,180px)] w-[min(70vw,180px)] text-left sm:h-[180px] sm:w-[180px] ${isEdit ? "cursor-pointer ring-offset-2 hover:ring-2 hover:ring-[var(--color-brand)]" : ""}`}
             disabled={!isEdit}
             title="Change cover art"
           >

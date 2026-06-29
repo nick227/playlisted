@@ -1,15 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { MessageCircle, Pause, Play, Send, Users, X } from "lucide-react";
+import { MessageCircle, Pause, Play, Send, Users, X, Upload } from "lucide-react";
 
 import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
 import { useTheatreMode } from "@/components/app-shell/useTheatreMode";
 import { PlaybackBars } from "@/features/playback-indicators/PlaybackBars";
 import { authedApi } from "@/lib/authedApi";
 import { getAnonName } from "@/lib/radio/radioPlayback";
-import { coverFallback, playlistPath } from "@/lib/routes";
+import { coverFallback, playlistPath, studioCollectionEditPath } from "@/lib/routes";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { useAuth } from "@/providers/AuthProvider";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
@@ -27,7 +27,7 @@ function timeAgo(isoString: string) {
 }
 
 export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
-  const { user, accessToken } = useAuth();
+  const { status, user, accessToken } = useAuth();
   const { releasePlayback } = useAudioPlayer();
   const {
     playing,
@@ -45,6 +45,8 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
   const chatScrollRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const [chatOpen, setChatOpen] = useState(false);
   const [seenCount, setSeenCount] = useState(0);
@@ -129,6 +131,31 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
       queryClient.invalidateQueries({ queryKey: ["radio", "public"] });
     },
   });
+
+  const submissionCollectionMutation = useMutation({
+    mutationFn: () =>
+      radioClient.playlists.create({
+        ownerId: user!.id,
+        title: "Untitled collection",
+        type: "PLAYLIST",
+        status: "PUBLISHED",
+        visibility: "PUBLIC",
+      }),
+    onSuccess: (created) => {
+      queryClient.invalidateQueries({ queryKey: ["me", "playlists"] });
+      navigate(studioCollectionEditPath(created.id));
+    },
+  });
+
+  function handleSubmitSong() {
+    if (status !== "authenticated" || !user) {
+      navigate("/login", { state: { from: location.pathname }, replace: false });
+      return;
+    }
+
+    if (submissionCollectionMutation.isPending) return;
+    submissionCollectionMutation.mutate();
+  }
 
   function handleMessageChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
     setChatMessage(e.target.value.slice(0, MAX_MSG_LENGTH));
@@ -362,20 +389,32 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
       </div>
 
       {!chatOpen ? (
-        <button
-          type="button"
-          onClick={() => { setChatOpen(true); setSeenCount(chatMessages.length); }}
-          className="fixed bottom-6 right-6 z-[56] flex h-11 items-center gap-2 rounded-full border border-white/[0.08] bg-[var(--color-surface-elevated)] pl-3 pr-4 text-white shadow-lg shadow-black/40 transition hover:border-[var(--color-brand)]/40 hover:bg-[var(--color-surface)]"
-          aria-label="Open radio chat"
-        >
-          <MessageCircle size={17} className="text-[var(--color-brand)]" />
-          <span className="text-sm font-semibold">Chat</span>
-          {unreadCount > 0 ? (
-            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--color-brand)] px-1 text-[10px] font-bold leading-none text-white">
-              {unreadCount > 9 ? "9+" : unreadCount}
-            </span>
-          ) : null}
-        </button>
+        <div className="fixed bottom-6 right-6 z-[56] flex items-end gap-2">
+          <button
+            type="button"
+            onClick={handleSubmitSong}
+            disabled={status === "loading" || submissionCollectionMutation.isPending}
+            className="flex h-11 items-center gap-2 rounded-full border border-white/[0.08] bg-[var(--color-surface-elevated)] pl-3 pr-4 text-white shadow-lg shadow-black/40 transition hover:border-[var(--color-brand)]/40 hover:bg-[var(--color-surface)] disabled:cursor-not-allowed disabled:opacity-60"
+            aria-label="Submit a song"
+          >
+            <Upload size={17} className="text-[var(--color-brand)]" />
+            {submissionCollectionMutation.isPending ? "Starting..." : "Submit Song"}
+          </button>
+          <button
+            type="button"
+            onClick={() => { setChatOpen(true); setSeenCount(chatMessages.length); }}
+            className="z-[56] flex h-11 items-center gap-2 rounded-full border border-white/[0.08] bg-[var(--color-surface-elevated)] pl-3 pr-4 text-white shadow-lg shadow-black/40 transition hover:border-[var(--color-brand)]/40 hover:bg-[var(--color-surface)]"
+            aria-label="Open radio chat"
+          >
+            <MessageCircle size={17} className="text-[var(--color-brand)]" />
+            <span className="text-sm font-semibold">Chat</span>
+            {unreadCount > 0 ? (
+              <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--color-brand)] px-1 text-[10px] font-bold leading-none text-white">
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            ) : null}
+          </button>
+        </div>
       ) : null}
 
       {chatPanel}
