@@ -100,11 +100,13 @@ export function AppShell({ children }: AppShellProps) {
       setBodyFocusHidden(true);
       bodyFocusTimerRef.current = null;
     }, playbackFocusTiming.body.delayMs);
-    miniViewTimerRef.current = window.setTimeout(() => {
-      setMiniViewVisible(true);
-      miniViewTimerRef.current = null;
-    }, playbackFocusTiming.miniView.delayMs);
-  }, [clearFocusTimer, playFocusActive]);
+    if (focusTrack?.sourceLabel === "Radio") {
+      miniViewTimerRef.current = window.setTimeout(() => {
+        setMiniViewVisible(true);
+        miniViewTimerRef.current = null;
+      }, playbackFocusTiming.miniView.delayMs);
+    }
+  }, [clearFocusTimer, playFocusActive, focusTrack?.sourceLabel]);
 
   useEffect(() => {
     armPlayFocus();

@@ -61,7 +61,7 @@ export function TrackList({
   }
 
   return (
-    <div className="flex flex-col gap-0.5">
+    <div className="flex flex-col gap-0.5 bg-[var(--color-surface)]/80 rounded-2xl">
       {recordings.map((recording, index) => {
         const displayOwner = ownerName ?? recording.uploader?.displayName ?? playlistContext?.ownerDisplayName;
         const playlistHref = playlistContext

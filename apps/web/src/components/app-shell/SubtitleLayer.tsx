@@ -112,14 +112,18 @@ export function SubtitleLayer({ visible }: SubtitleLayerProps) {
   if (!currentTrack?.id) return null;
   if (!activeSubtitleText && !renderedSubtitleText) return null;
 
-  return createPortal(
-    <div
-      data-subtitle-layer
-      className={`subtitle-layer${layerVisible ? " is-visible" : ""}`}
-      aria-hidden={!activeSubtitleText}
-    >
-      <p className="subtitle-layer__text">{renderedSubtitleText}</p>
-    </div>,
-    document.body,
+  return (
+    <>
+      {createPortal(
+        <div
+          data-subtitle-layer
+          className={`subtitle-layer${layerVisible ? " is-visible" : ""}`}
+          aria-hidden={!activeSubtitleText}
+        >
+          <p className="subtitle-layer__text">{renderedSubtitleText}</p>
+        </div>,
+        document.body,
+      )}
+    </>
   );
 }
