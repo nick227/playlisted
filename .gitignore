@@ -6,6 +6,10 @@ dist/
 packages/*/dist/
 apps/web/dist/
 
+# Static testing
+.fallow/
+.fallowrc.json
+
 # TypeScript
 *.tsbuildinfo
 

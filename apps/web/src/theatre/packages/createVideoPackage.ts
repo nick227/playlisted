@@ -1,5 +1,4 @@
 import type { AnimationPackage } from '../registry/packages'
-import type { AnimationContext } from '../core/IAnimation'
 import type { SceneCategory } from '../registry/scenePresets'
 import VideoAnimation from '../core/VideoAnimation'
 
@@ -24,7 +23,7 @@ export function createVideoPackage(opts: CreateVideoPackageOptions): AnimationPa
 
   const animationId = `${id}Animation`
 
-  const factory = (ctx: AnimationContext) => {
+  const factory = () => {
     return new VideoAnimation({
       defaultVideoUrl: videoUrl,
       defaultZIndex: 0,
