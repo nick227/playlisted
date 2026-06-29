@@ -7,6 +7,7 @@ vi.mock("../lib/prisma.js", () => ({
     uploadAsset: { findUnique: vi.fn() },
     playlist: { findFirst: vi.fn(), update: vi.fn() },
     recording: { findFirst: vi.fn(), create: vi.fn(), update: vi.fn() },
+    recordingSubtitle: { create: vi.fn(), upsert: vi.fn() },
     playlistItem: { aggregate: vi.fn(), create: vi.fn(), findMany: vi.fn() },
     $transaction: vi.fn(),
   },
@@ -67,8 +68,10 @@ function mockSuccessfulCreate() {
     vi.mocked(prisma.playlistItem.aggregate).mockResolvedValue({ _max: { position: 0 } } as any);
     vi.mocked(prisma.playlistItem.create).mockResolvedValue({} as any);
     vi.mocked(prisma.recording.create).mockResolvedValue(MOCK_RECORDING_ROW as any);
+    vi.mocked(prisma.recordingSubtitle.create).mockResolvedValue({} as any);
     return fn({
       recording: { create: vi.mocked(prisma.recording.create) },
+      recordingSubtitle: { create: vi.mocked(prisma.recordingSubtitle.create) },
       playlistItem: {
         aggregate: vi.mocked(prisma.playlistItem.aggregate),
         create: vi.mocked(prisma.playlistItem.create),
@@ -107,6 +110,9 @@ describe("POST /api/v1/ingest/recordings", () => {
     expect(res.status).toBe(201);
     expect(res.body.created).toBe(true);
     expect(res.body.recording.id).toBe("rec-1");
+    expect(vi.mocked(prisma.recordingSubtitle.create)).toHaveBeenCalledWith({
+      data: { recordingId: "rec-1", status: "QUEUED" },
+    });
   });
 
   it("uploaderId in the response is always the authenticated user's ID", async () => {

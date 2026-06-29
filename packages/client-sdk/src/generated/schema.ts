@@ -934,6 +934,23 @@ export interface paths {
         patch: operations["updateRecording"];
         trace?: never;
     };
+    "/api/v1/recordings/{recordingId}/subtitles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get generated subtitles for a recording */
+        get: operations["getRecordingSubtitles"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/tags": {
         parameters: {
             query?: never;
@@ -1498,6 +1515,26 @@ export interface components {
             total: number;
         };
         /** @enum {string} */
+        SubtitleStatus: "QUEUED" | "PROCESSING" | "READY" | "FAILED";
+        RecordingSubtitleSummary: {
+            status: components["schemas"]["SubtitleStatus"];
+            language?: string | null;
+            /** Format: date-time */
+            generatedAt?: string | null;
+        };
+        SubtitleSegment: {
+            start: number;
+            end: number;
+            text: string;
+        };
+        RecordingSubtitlesResponse: {
+            status: components["schemas"]["SubtitleStatus"];
+            language?: string | null;
+            segments?: components["schemas"]["SubtitleSegment"][];
+            vttText?: string;
+            errorMessage?: string;
+        };
+        /** @enum {string} */
         HomepageTargetType: "PLAYLIST" | "USER" | "EDITORIAL_POST" | "RECORDING";
         HomepageItem: {
             id: string;
@@ -1640,6 +1677,7 @@ export interface components {
             /** Format: date-time */
             publishedAt?: string | null;
             playCount: number;
+            subtitle?: components["schemas"]["RecordingSubtitleSummary"] | null;
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
@@ -1816,6 +1854,7 @@ export interface components {
             /** Format: date-time */
             publishedAt?: string | null;
             playCount: number;
+            subtitle?: components["schemas"]["RecordingSubtitleSummary"] | null;
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
@@ -2045,6 +2084,7 @@ export interface components {
             /** Format: date-time */
             publishedAt?: string | null;
             playCount: number;
+            subtitle?: components["schemas"]["RecordingSubtitleSummary"] | null;
             favoriteCount: number;
             /** Format: date-time */
             createdAt: string;
@@ -2391,6 +2431,7 @@ export interface components {
             status: components["schemas"]["PublishStatus"];
             explicit: boolean;
             playCount: number;
+            subtitle?: components["schemas"]["RecordingSubtitleSummary"] | null;
             savesCount: number;
             /** Format: date-time */
             publishedAt?: string | null;
@@ -5031,6 +5072,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Recording not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getRecordingSubtitles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recordingId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Subtitle status or ready subtitle content */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordingSubtitlesResponse"];
                 };
             };
             /** @description Recording not found */

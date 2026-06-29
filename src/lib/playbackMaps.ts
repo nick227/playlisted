@@ -1,4 +1,5 @@
 import { resolveRecordingArtworkUrl } from "./mediaUrls.js";
+import { mapSubtitleSummary } from "./subtitles/summary.js";
 
 export function mapPlaybackHistoryItem(event: {
   id: bigint;
@@ -26,6 +27,11 @@ export function mapPlaybackHistoryItem(event: {
     playCount: number;
     createdAt: Date;
     updatedAt: Date;
+    subtitle?: {
+      status: "QUEUED" | "PROCESSING" | "READY" | "FAILED";
+      language: string | null;
+      generatedAt: Date | null;
+    } | null;
   };
   playlist: { id: string; title: string; coverArtUrl?: string | null; owner?: { username?: string | null } | null; slug?: string | null } | null;
 }) {
@@ -53,6 +59,7 @@ export function mapPlaybackHistoryItem(event: {
       status: event.recording.status,
       explicit: event.recording.explicit,
       playCount: event.recording.playCount,
+      subtitle: mapSubtitleSummary(event.recording.subtitle),
       createdAt: event.recording.createdAt.toISOString(),
       updatedAt: event.recording.updatedAt.toISOString(),
     },

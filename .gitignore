@@ -50,3 +50,11 @@ Desktop.ini
 # Pi local agent messenger runtime logs/state
 .pi/messenger/
 .antigravitycli/
+
+# Modal local runtime
+.modal-venv/
+__pycache__/
+*.pyc
+.modal.toml
+modal/test-audio/
+modal/output/

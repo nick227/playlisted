@@ -6,6 +6,7 @@ import { mapPlaylistSummary } from "../lib/playlistMaps.js";
 import { parsePageSize, parsePositivePage } from "../lib/pagination.js";
 import { requireAuth } from "../lib/requireAuth.js";
 import { prisma } from "../lib/prisma.js";
+import { mapSubtitleSummary, subtitleInclude } from "../lib/subtitles/summary.js";
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_PAGE_SIZE = 50;
@@ -54,6 +55,11 @@ function mapRecordingWithUploader(r: {
   updatedAt: Date;
   uploader: { id: string; username: string; displayName: string; avatarUrl: string | null; role: string };
   publishedPlaylist: { id: string; slug: string; title: string; coverArtUrl: string | null };
+  subtitle?: {
+    status: "QUEUED" | "PROCESSING" | "READY" | "FAILED";
+    language: string | null;
+    generatedAt: Date | null;
+  } | null;
 }) {
   return {
     id: r.id,
@@ -75,6 +81,7 @@ function mapRecordingWithUploader(r: {
     releaseDate: r.releaseDate?.toISOString() ?? null,
     publishedAt: r.publishedAt?.toISOString() ?? null,
     playCount: r.playCount,
+    subtitle: mapSubtitleSummary(r.subtitle),
     createdAt: r.createdAt.toISOString(),
     updatedAt: r.updatedAt.toISOString(),
     uploader: r.uploader,
@@ -90,6 +97,7 @@ function mapRecordingWithUploader(r: {
 const RECORDING_WITH_UPLOADER_INCLUDE = {
   uploader: { select: UPLOADER_SELECT },
   publishedPlaylist: { select: { id: true, slug: true, title: true, coverArtUrl: true } },
+  subtitle: subtitleInclude(),
 } as const;
 
 function mapFavoriteArtist(favorite: any) {
@@ -291,7 +299,7 @@ meRouter.get("/playback-history", async (req, res, next) => {
       prisma.playbackEvent.findMany({
         where,
         include: {
-          recording: true,
+          recording: { include: { subtitle: subtitleInclude() } },
           playlist: { select: { id: true, title: true, slug: true, coverArtUrl: true, owner: { select: { username: true } } } },
         },
         orderBy: { createdAt: "desc" },

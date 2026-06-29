@@ -120,6 +120,7 @@ export function LibraryTrackRow({ song, onPlay, queueTrack }: LibraryTrackRowPro
         title={song.title}
         queueTrack={queueTrack}
         shareUrl={shareUrl}
+        transcriptAvailable={song.subtitle?.status === "READY"}
       />
     </div>
   );

@@ -9,11 +9,11 @@ import { optimizeImageFile, OPTIMIZED_IMAGE_MAX_BYTES } from "../lib/imageOptimi
 import { BULK_REGISTER_MAX_FILES } from "../lib/uploadPolicy.js";
 import {
   handleMulterSingleError,
-  storedUploadUrlFromRequest,
   studioAudioUpload,
   studioImageUpload,
 } from "../lib/uploadMulter.js";
 import { rejectDisallowedUpload } from "../lib/uploadValidate.js";
+import { persistUploadedFile } from "../lib/storage/uploadStorage.js";
 
 export const uploadsRouter = Router();
 
@@ -35,11 +35,22 @@ uploadsRouter.post("/audio", (req, res, next) => {
 
       if (await rejectDisallowedUpload("audio", file, res)) return;
 
-      const url = storedUploadUrlFromRequest(req, "audio", file.filename);
+      let stored;
+      try {
+        stored = await persistUploadedFile({
+          subdir: "audio",
+          filename: file.filename,
+          filePath: file.path,
+          mimeType: file.mimetype,
+        });
+      } catch (storageErr) {
+        await fs.unlink(file.path).catch(() => undefined);
+        return next(storageErr);
+      }
       const title = path.basename(file.originalname, path.extname(file.originalname));
 
       res.status(201).json({
-        url,
+        url: stored.url,
         mimeType: file.mimetype,
         bytes: file.size,
         title,
@@ -85,8 +96,21 @@ uploadsRouter.post("/images", (req, res, next) => {
         });
       }
 
+      let stored;
+      try {
+        stored = await persistUploadedFile({
+          subdir: "images",
+          filename: file.filename,
+          filePath: file.path,
+          mimeType: file.mimetype,
+        });
+      } catch (storageErr) {
+        await fs.unlink(file.path).catch(() => undefined);
+        return next(storageErr);
+      }
+
       res.status(201).json({
-        url: storedUploadUrlFromRequest(req, "images", file.filename),
+        url: stored.url,
         mimeType: file.mimetype,
         bytes: optimized.bytes,
       });
@@ -168,6 +192,13 @@ uploadsRouter.post("/audio/bulk-register", async (req, res, next) => {
             status: playlist.status,
             visibility: playlist.visibility,
             publishedAt: playlist.status === "PUBLISHED" ? new Date() : null,
+          },
+        });
+
+        await tx.recordingSubtitle.create({
+          data: {
+            recordingId: createdRecording.id,
+            status: "QUEUED",
           },
         });
 

@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { Router } from "express";
 
 import { requireApiKeyAuth } from "../../lib/apiKeyAuth.js";
@@ -126,6 +127,7 @@ ingestRecordingsRouter.post("/", async (req, res, next) => {
     });
 
     if (existing) {
+      const audioChanged = existing.audioUrl !== audioAsset.url;
       const updated = await prisma.recording.update({
         where: { id: existing.id },
         data: {
@@ -142,6 +144,25 @@ ingestRecordingsRouter.post("/", async (req, res, next) => {
         },
         select: RECORDING_SELECT,
       });
+
+      if (audioChanged) {
+        await prisma.recordingSubtitle.upsert({
+          where: { recordingId: existing.id },
+          create: {
+            recordingId: existing.id,
+            status: "QUEUED",
+          },
+          update: {
+            status: "QUEUED",
+            language: null,
+            segments: Prisma.JsonNull,
+            vttText: null,
+            errorMessage: null,
+            generatedAt: null,
+          },
+        });
+      }
+
       await syncPlaylistStats(updated.publishedPlaylistId);
       return res.status(200).json({ created: false, recording: mapRecording(updated) });
     }
@@ -170,6 +191,13 @@ ingestRecordingsRouter.post("/", async (req, res, next) => {
               externalId: body.externalId,
             },
             select: RECORDING_SELECT,
+          });
+
+          await tx.recordingSubtitle.create({
+            data: {
+              recordingId: created.id,
+              status: "QUEUED",
+            },
           });
 
           const maxPos = await tx.playlistItem.aggregate({

@@ -9,6 +9,7 @@ import { canViewerAccessPlaylist } from "../lib/publicPlaylistFilter.js";
 import { requireAuth } from "../lib/requireAuth.js";
 import { prisma } from "../lib/prisma.js";
 import { parsePageSize, parsePositivePage } from "../lib/pagination.js";
+import { mapSubtitleSummary, subtitleInclude } from "../lib/subtitles/summary.js";
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_PAGE_SIZE = 20;
@@ -36,6 +37,7 @@ function mapRecordingSummary(recording: any) {
     releaseDate: recording.releaseDate?.toISOString() ?? null,
     publishedAt: recording.publishedAt?.toISOString() ?? null,
     playCount: recording.playCount,
+    subtitle: mapSubtitleSummary(recording.subtitle),
     createdAt: recording.createdAt.toISOString(),
     updatedAt: recording.updatedAt.toISOString(),
   };
@@ -104,7 +106,7 @@ recordingsRouter.get("/", async (req, res, next) => {
     const [items, total] = await Promise.all([
       prisma.recording.findMany({
         where,
-        include: { publishedPlaylist: { select: { coverArtUrl: true } } },
+        include: { publishedPlaylist: { select: { coverArtUrl: true } }, subtitle: subtitleInclude() },
         orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
         skip: (page - 1) * pageSize,
         take: pageSize,
@@ -128,6 +130,7 @@ recordingsRouter.get("/:recordingId", async (req, res, next) => {
       include: {
         uploader: true,
         publishedPlaylist: true,
+        subtitle: subtitleInclude(),
       },
     });
 
@@ -206,6 +209,7 @@ recordingsRouter.patch("/:recordingId", async (req, res, next) => {
       include: {
         uploader: true,
         publishedPlaylist: true,
+        subtitle: subtitleInclude(),
       },
     });
 
@@ -283,6 +287,13 @@ recordingsRouter.post("/", async (req, res, next) => {
         },
       });
 
+      await tx.recordingSubtitle.create({
+        data: {
+          recordingId: recording.id,
+          status: "QUEUED",
+        },
+      });
+
       await tx.playlistItem.create({
         data: {
           playlistId: body.publishedPlaylistId,
@@ -297,6 +308,7 @@ recordingsRouter.post("/", async (req, res, next) => {
         include: {
           uploader: true,
           publishedPlaylist: true,
+          subtitle: subtitleInclude(),
         },
       });
     });
@@ -312,6 +324,62 @@ recordingsRouter.post("/", async (req, res, next) => {
       });
     }
 
+    return next(error);
+  }
+});
+
+recordingsRouter.get("/:recordingId/subtitles", async (req, res, next) => {
+  try {
+    const recording = await prisma.recording.findUnique({
+      where: { id: req.params.recordingId },
+      include: {
+        uploader: { select: { id: true } },
+        publishedPlaylist: true,
+        subtitle: true,
+      },
+    });
+
+    if (!recording) {
+      return res.status(404).json({
+        error: "recording_not_found",
+        message: `Recording ${req.params.recordingId} was not found.`,
+      });
+    }
+
+    const auth = await getAuthContextFromRequest(req);
+    const viewer = { userId: auth?.user.id, role: auth?.user.role };
+    if (!canViewerAccessRecording(recording, viewer, recording.uploaderId)
+      || !canViewerAccessPlaylist(recording.publishedPlaylist, viewer, recording.publishedPlaylist.ownerId)) {
+      return res.status(404).json({
+        error: "recording_not_found",
+        message: `Recording ${req.params.recordingId} was not found.`,
+      });
+    }
+
+    if (!recording.subtitle) {
+      return res.json({ status: "QUEUED" });
+    }
+
+    if (recording.subtitle.status !== "READY") {
+      const canSeeRawError =
+        recording.subtitle.status === "FAILED" &&
+        (auth?.user.role === "ADMIN" || auth?.user.id === recording.uploaderId);
+
+      return res.json({
+        status: recording.subtitle.status,
+        ...(recording.subtitle.status === "FAILED"
+          ? { errorMessage: canSeeRawError ? recording.subtitle.errorMessage ?? "Subtitles unavailable" : "Subtitles unavailable" }
+          : {}),
+      });
+    }
+
+    return res.json({
+      status: recording.subtitle.status,
+      language: recording.subtitle.language,
+      segments: recording.subtitle.segments ?? [],
+      vttText: recording.subtitle.vttText ?? "",
+    });
+  } catch (error) {
     return next(error);
   }
 });

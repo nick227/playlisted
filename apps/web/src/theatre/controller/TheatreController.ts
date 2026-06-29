@@ -5,7 +5,8 @@ import AudioFeatureExtractor from '../audio/AudioFeatureExtractor'
 import { getOrCreateAudioAnalyserConnection, type AudioAnalyserConnection } from '@/features/playback-indicators/audioAnalyser'
 import { getPreset, listPresets, pickPreset, type SceneCategory, type ScenePresetDef } from '../registry/scenePresets'
 import { buildAnimationFrameContext } from './theatreFrameContext'
-
+import { playbackFocusTiming } from '@/lib/playbackFocusTiming'
+import { createTheatreDevPanel, destroyTheatreDevPanel } from '../dev/TheatreDevPanel'
 
 type PlaybackSourceMeta = { artworkUrl?: string | null }
 type TheatreMode = 'background' | 'immersive'
@@ -18,6 +19,7 @@ class TheatreController extends EventTarget {
   private analyserConnection: AudioAnalyserConnection | null = null
   private extractor: AudioFeatureExtractor | null = null
   private featureLoopId: number | null = null
+  private backgroundEnterTimerId: number | null = null
   private frameContext: AnimationContext | null = null
   private overlayBoundsCleanup: (() => void) | null = null
   private transitioning = false
@@ -52,6 +54,7 @@ class TheatreController extends EventTarget {
 
     window.removeEventListener('visibilitychange', this.onVisibilityChange)
     this.analyserConnection = null
+    this.clearBackgroundEnterTimer()
     this.stopFeatureLoop()
     this.extractor = null
     this.frameContext = null
@@ -86,16 +89,27 @@ class TheatreController extends EventTarget {
     if (canEnter) {
       this.ensureBackgroundIfNeeded()
     } else if (this.state.active && this.state.mode === 'background') {
+      this.clearBackgroundEnterTimer()
       void this.exit()
+    } else {
+      this.clearBackgroundEnterTimer()
     }
 
     if (changed) this.dispatchEvent(new Event('change'))
   }
 
   private ensureBackgroundIfNeeded() {
-    if (this.state.canEnter && !this.state.active && !this.transitioning) {
+    if (!this.state.canEnter || this.state.active || this.transitioning || this.backgroundEnterTimerId !== null) return
+
+    if (playbackFocusTiming.theatre.delayMs <= 0) {
       void this.enterBackground()
+      return
     }
+
+    this.backgroundEnterTimerId = window.setTimeout(() => {
+      this.backgroundEnterTimerId = null
+      if (this.state.canEnter && !this.state.active && !this.transitioning) void this.enterBackground()
+    }, playbackFocusTiming.theatre.delayMs)
   }
 
   private prefersReducedMotion(): boolean {
@@ -120,7 +134,10 @@ class TheatreController extends EventTarget {
   private waitForOverlayHidden(overlay: HTMLElement): Promise<void> {
     if (this.prefersReducedMotion()) return Promise.resolve()
     return new Promise(resolve => {
-      const timeout = window.setTimeout(resolve, 530)
+      const timeout = window.setTimeout(
+        resolve,
+        playbackFocusTiming.theatre.fadeOutMs + playbackFocusTiming.theatre.exitBufferMs,
+      )
       const onEnd = (event: TransitionEvent) => {
         if (event.target !== overlay || event.propertyName !== 'opacity') return
         overlay.removeEventListener('transitionend', onEnd)
@@ -167,6 +184,12 @@ class TheatreController extends EventTarget {
       cancelAnimationFrame(this.featureLoopId)
       this.featureLoopId = null
     }
+  }
+
+  private clearBackgroundEnterTimer() {
+    if (this.backgroundEnterTimerId === null) return
+    window.clearTimeout(this.backgroundEnterTimerId)
+    this.backgroundEnterTimerId = null
   }
 
   /** Only enter/exit/changePreset/dispose may bump — each must own `transitioning` except dispose. */
@@ -513,6 +536,7 @@ class TheatreController extends EventTarget {
 
     if (!isBackground) {
       this.mountImmersiveControls(overlay, initialPresetId)
+      createTheatreDevPanel(overlay, this.bridge)
     }
 
     if (!this.stillCurrent(token)) {
@@ -578,6 +602,8 @@ class TheatreController extends EventTarget {
       this.state.mode = null
       this.extractor = null
       this.frameContext = null
+      
+      destroyTheatreDevPanel()
 
       await this.bridge.exit()
       if (!this.stillCurrent(token)) return

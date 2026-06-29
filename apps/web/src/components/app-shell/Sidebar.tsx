@@ -14,12 +14,13 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { NavLink, useNavigate, Link } from "react-router-dom";
 
 import { useCollectionPlaylists } from "@/hooks/useCollections";
 import { usePlaylists } from "@/hooks/usePlaylists";
 import { authedApi } from "@/lib/authedApi";
+import { playbackFocusTiming } from "@/lib/playbackFocusTiming";
 import {
   ARTISTS_PATH,
   FAVORITES_PATH,
@@ -106,11 +107,13 @@ function SubNavItem({
 }
 
 export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
+  const blurTimerRef = useRef<number | null>(null);
   const { status, user, accessToken } = useAuth();
   const client = authedApi(accessToken);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [showCollectionsSignIn, setShowCollectionsSignIn] = useState(false);
+  const [navDimmed, setNavDimmed] = useState(false);
   const isAuthenticated = status === "authenticated" && Boolean(user);
   const { data: ownedCollections } = usePlaylists(12, user?.id, isAuthenticated);
   const { data: savedCollections } = useCollectionPlaylists(12);
@@ -138,6 +141,36 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
     },
   });
 
+  const clearBlurTimer = useCallback(() => {
+    if (blurTimerRef.current === null) return;
+    window.clearTimeout(blurTimerRef.current);
+    blurTimerRef.current = null;
+  }, []);
+
+  const showNav = useCallback(() => {
+    clearBlurTimer();
+    setNavDimmed(false);
+  }, [clearBlurTimer]);
+
+  const scheduleNavFade = useCallback(() => {
+    clearBlurTimer();
+    if (mobileOpen) return;
+    blurTimerRef.current = window.setTimeout(() => {
+      setNavDimmed(true);
+      blurTimerRef.current = null;
+    }, playbackFocusTiming.sidebarNav.blurDelayMs);
+  }, [clearBlurTimer, mobileOpen]);
+
+  useEffect(() => {
+    if (mobileOpen) {
+      showNav();
+      return;
+    }
+
+    scheduleNavFade();
+    return clearBlurTimer;
+  }, [clearBlurTimer, mobileOpen, scheduleNavFade, showNav]);
+
   return (
     <>
       {mobileOpen ? (
@@ -149,18 +182,25 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
         />
       ) : null}
       <aside
+        onMouseEnter={showNav}
+        onMouseLeave={scheduleNavFade}
+        onFocus={showNav}
+        onBlur={(event) => {
+          if (event.currentTarget.contains(event.relatedTarget)) return;
+          scheduleNavFade();
+        }}
         className={`fixed left-0 top-0 z-50 flex h-full w-[var(--spacing-sidebar)] max-w-[85vw] shrink-0 flex-col border-r border-[var(--color-border)] bg-[var(--color-canvas-alt)]/98 shadow-2xl shadow-black/50 backdrop-blur-xl transition-transform lg:z-40 lg:translate-x-0 lg:bg-transparent lg:shadow-none lg:backdrop-blur-none ${
           mobileOpen
             ? "translate-x-0"
             : "-translate-x-full max-lg:invisible max-lg:pointer-events-none lg:translate-x-0"
         }`}
       >
-        <nav className="flex flex-1 flex-col gap-6 overflow-y-auto px-3 py-4">
+        <nav className={`sidebar-nav-content flex flex-1 flex-col gap-6 overflow-y-auto px-3 py-4`}>
           <div>
             <NavLink to="/" onClick={onClose} className="flex items-center gap-2 text-4xl font-bold tracking-tight text-white">
               Play<span className="text-[var(--color-brand)]">listed</span> <RadioIcon size={20} />
             </NavLink>
-            <div className="flex flex-col gap-0.5 mt-4">
+            <div className={`flex flex-col gap-0.5 bg-[var(--color-canvas)]/90 rounded-lg p-2 ${navDimmed ? "opacity-0" : "opacity-100"} transition-opacity`}>
               {discoverLinks.map((link) => (
                 <NavItem key={link.to} {...link} onClick={onClose} />
               ))}

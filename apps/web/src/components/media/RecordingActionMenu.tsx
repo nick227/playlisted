@@ -1,4 +1,4 @@
-import { Heart, ListPlus, ListMusic, Share2 } from "lucide-react";
+import { Captions, Heart, ListPlus, ListMusic, Share2 } from "lucide-react";
 import { useState } from "react";
 
 import { MediaActionMenu } from "@/components/media/MediaActionMenu";
@@ -7,13 +7,16 @@ import { useAppendToQueue } from "@/hooks/useAppendToQueue";
 import { useAuthAction } from "@/hooks/useAuthAction";
 import { useFavoriteIds, useToggleFavorite } from "@/hooks/useFavorites";
 import { shareContent } from "@/lib/shareContent";
+import { downloadRecordingTranscript } from "@/lib/subtitles";
 import type { QueueTrack } from "@/providers/AudioPlayerProvider";
+import { useAuth } from "@/providers/AuthProvider";
 
 type RecordingActionMenuProps = {
   recordingId: string;
   title: string;
   queueTrack: QueueTrack;
   shareUrl: string;
+  transcriptAvailable?: boolean;
   className?: string;
 };
 
@@ -22,8 +25,10 @@ export function RecordingActionMenu({
   title,
   queueTrack,
   shareUrl,
+  transcriptAvailable,
   className,
 }: RecordingActionMenuProps) {
+  const { accessToken } = useAuth();
   const { appendTrack } = useAppendToQueue();
   const requireAuth = useAuthAction();
   const { ids: favoriteIds } = useFavoriteIds();
@@ -66,6 +71,17 @@ export function RecordingActionMenu({
           if (result === "copied") flash("Link copied");
           else if (result === "shared") flash("Shared");
         });
+      },
+    },
+    {
+      id: "transcript",
+      label: "Transcript",
+      icon: <Captions size={16} />,
+      disabled: transcriptAvailable === false,
+      onClick: () => {
+        void downloadRecordingTranscript({ recordingId, title, accessToken })
+          .then(() => flash("Transcript downloaded"))
+          .catch(() => flash("Transcript unavailable"));
       },
     },
     {

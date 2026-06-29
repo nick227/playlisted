@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronUp, ImagePlus, Pause, Play, X } from "lucide-react";
+import { Captions, ChevronDown, ChevronUp, CircleSlash, ImagePlus, Loader2, Pause, Play, TriangleAlert, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { RecordingActionMenu } from "@/components/media/RecordingActionMenu";
@@ -14,6 +14,7 @@ import type { GenreOption } from "@/components/studio/studioCollectionUtils";
 import { recordingGenreSlug } from "@/components/studio/studioCollectionUtils";
 
 type TrackTag = { id: string; name: string; slug: string; kind: string };
+type SubtitleSummary = QueueTrack["subtitle"];
 
 interface TrackRowProps {
   recordingId: string;
@@ -45,7 +46,48 @@ interface TrackRowProps {
   onMoveUp?: () => void;
   onMoveDown?: () => void;
   queueTrack?: QueueTrack;
+  subtitle?: SubtitleSummary | null;
   shareUrl?: string;
+}
+
+function SubtitleStatusBadge({ subtitle }: { subtitle?: SubtitleSummary | null }) {
+  const status = subtitle?.status ?? "NOT_SET";
+  const baseClass =
+    "inline-flex h-6 min-w-6 shrink-0 items-center justify-center rounded border px-1.5 text-[10px] font-semibold uppercase leading-none";
+
+  if (status === "READY") {
+    return (
+      <span className={`${baseClass} border-emerald-400/30 bg-emerald-400/10 text-emerald-200`} title="Transcript ready">
+        <Captions size={13} />
+        <span className="ml-1 hidden sm:inline">CC</span>
+      </span>
+    );
+  }
+
+  if (status === "QUEUED" || status === "PROCESSING") {
+    return (
+      <span className={`${baseClass} border-amber-300/30 bg-amber-300/10 text-amber-200`} title="Transcript processing">
+        <Loader2 size={13} className="animate-spin" />
+        <span className="ml-1 hidden sm:inline">CC</span>
+      </span>
+    );
+  }
+
+  if (status === "FAILED") {
+    return (
+      <span className={`${baseClass} border-red-400/30 bg-red-400/10 text-red-200`} title="Transcript failed">
+        <TriangleAlert size={13} />
+        <span className="ml-1 hidden sm:inline">CC</span>
+      </span>
+    );
+  }
+
+  return (
+    <span className={`${baseClass} border-white/10 bg-white/[0.03] text-[var(--color-text-subtle)]`} title="Transcript not set">
+      <CircleSlash size={13} />
+      <span className="ml-1 hidden sm:inline">CC</span>
+    </span>
+  );
 }
 
 export function TrackRow({
@@ -77,6 +119,7 @@ export function TrackRow({
   onMoveUp,
   onMoveDown,
   queueTrack,
+  subtitle,
   shareUrl,
 }: TrackRowProps) {
   const { isActive, isPlaying } = useTrackPlayback(recordingId, playbackOrigin);
@@ -119,7 +162,7 @@ export function TrackRow({
       className={`group/card grid w-full ${
         editMode && onPlay ? "grid-cols-[auto_auto_minmax(0,1fr)_auto]" : "grid-cols-[auto_minmax(0,1fr)_auto]"
       } items-center gap-2 rounded-lg px-2 py-1.5 transition ${
-        isActive ? "bg-white/10" : "hover:bg-[var(--color-surface-hover)]"
+        isActive ? "bg-[var(--color-surface)]/80" : "hover:bg-[var(--color-surface-hover)]"
       }${onPlay && !editMode ? " cursor-pointer" : ""}`}
       onClick={(e) => {
         if (!onPlay || editMode) return;
@@ -264,6 +307,7 @@ export function TrackRow({
             {formatPlayCount(playCount)} plays
           </span>
         )}
+        {editMode ? <SubtitleStatusBadge subtitle={subtitle ?? queueTrack?.subtitle} /> : null}
         <span className="text-xs text-[var(--color-text-muted)]">{formatDuration(durationSeconds)}</span>
         {editMode ? (
           <>

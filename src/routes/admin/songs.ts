@@ -5,6 +5,7 @@ import { resolveRecordingArtworkUrl } from "../../lib/mediaUrls.js";
 import { clearPublicCatalogCaches } from "../../lib/publicCatalogCache.js";
 import { prisma } from "../../lib/prisma.js";
 import { requireAdmin } from "../../lib/requireAdmin.js";
+import { mapSubtitleSummary, subtitleInclude } from "../../lib/subtitles/summary.js";
 
 const VALID_VISIBILITY = new Set<string>(["PUBLIC", "UNLISTED", "PRIVATE"]);
 const VALID_STATUS = new Set<string>(["DRAFT", "PUBLISHED", "ARCHIVED"]);
@@ -30,6 +31,7 @@ const adminSongInclude = {
   },
   tags: { include: { tag: { select: { id: true, name: true, slug: true, kind: true } } } },
   _count: { select: { saves: true } },
+  subtitle: subtitleInclude(),
 } as const;
 
 function mapTagRef(t: { tag: { id: string; name: string; slug: string; kind: string } }) {
@@ -81,6 +83,7 @@ function mapSong(r: any) {
     status: r.status,
     explicit: r.explicit,
     playCount: r.playCount,
+    subtitle: mapSubtitleSummary(r.subtitle),
     publishedAt: r.publishedAt?.toISOString() ?? null,
     createdAt: r.createdAt.toISOString(),
     updatedAt: r.updatedAt.toISOString(),

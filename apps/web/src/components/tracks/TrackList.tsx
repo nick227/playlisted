@@ -122,6 +122,7 @@ export function TrackList({
             genreLoading={genreLoading}
             saving={savingById?.[recording.id]}
             error={errorById?.[recording.id]}
+            subtitle={recording.subtitle}
             queueTrack={
               editMode || !playlistContext
                 ? undefined

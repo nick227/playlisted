@@ -29,8 +29,13 @@
   --delay-player-section-controls: 96ms;
   --delay-player-section-actions: 144ms;
 
-  --duration-theatre-fade: 450ms;
   --ease-theatre-fade: cubic-bezier(0.4, 0, 0.2, 1);
+
+  --ease-play-focus-fade: cubic-bezier(0.22, 1, 0.36, 1);
+  --play-focus-content-opacity: 0;
+  --sidebar-nav-dimmed-opacity: 0;
+  --play-focus-layer-bottom-mobile: calc(var(--spacing-player-safe-mobile) + 1rem);
+  --play-focus-layer-bottom: calc(var(--spacing-player) + 1rem);
 }
 
 * {
@@ -67,21 +72,62 @@ body {
 .theatre-overlay {
   z-index: 0;
   opacity: 0;
-  transition: opacity var(--duration-theatre-fade) var(--ease-theatre-fade);
+  transition: opacity var(--duration-theatre-fade-out) var(--ease-theatre-fade);
 }
 
 .theatre-overlay.is-visible {
   opacity: 1;
+  transition-duration: var(--duration-theatre-fade-in);
+}
+
+.subtitle-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 10050;
+  display: grid;
+  place-items: center;
+  padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
+    calc(var(--spacing-player-safe-mobile) + 1.25rem) max(1rem, env(safe-area-inset-left));
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(0.35rem);
+  transition:
+    opacity var(--duration-subtitle-fade-out) var(--ease-theatre-fade),
+    transform var(--duration-subtitle-fade-out) var(--ease-theatre-fade);
+}
+
+.subtitle-layer.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+  transition-duration: var(--duration-subtitle-fade-in);
+  transition-delay: var(--delay-subtitle);
+}
+
+.subtitle-layer__text {
+  width: min(58rem, 100%);
+  margin: 0;
+  padding: 0.65rem 1rem;
+  border-radius: 0.5rem;
+  background: rgba(0, 0, 0, 0.72);
+  box-shadow: 0 18px 52px rgba(0, 0, 0, 0.35);
+  color: #fff;
+  font-size: clamp(1.6rem, 4.6vw, 3.4rem);
+  font-weight: 800;
+  line-height: 1.28;
+  text-align: center;
+  text-wrap: balance;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(10px) saturate(120%);
 }
 
 .theatre-crossfade {
-  transition: opacity var(--duration-theatre-fade) var(--ease-theatre-fade);
+  transition: opacity var(--duration-theatre-fade-out) var(--ease-theatre-fade);
 }
 
 .theatre-crossfade.is-theatre-active {
   opacity: 0;
   pointer-events: none;
-  display: none;
+  transition-duration: var(--duration-theatre-fade-in);
 }
 
 .theatre-overlay--background {
@@ -223,6 +269,121 @@ body {
     bottom var(--duration-player-enter) var(--ease-player-enter);
 }
 
+.play-focus-content {
+  transition:
+    opacity var(--duration-play-focus-body-fade) var(--ease-play-focus-fade),
+    filter var(--duration-play-focus-body-fade) var(--ease-play-focus-fade),
+    padding-bottom var(--duration-player-enter) var(--ease-player-enter),
+    bottom var(--duration-player-enter) var(--ease-player-enter);
+}
+
+.play-focus-content.is-play-focus-hidden {
+  opacity: var(--play-focus-content-opacity);
+  filter: blur(8px);
+  pointer-events: none;
+}
+
+.play-focus-content.is-play-focus-revealing {
+  transition: none;
+}
+
+.play-focus-theatre-hit-area {
+  position: fixed;
+  inset: var(--spacing-topbar) 0 var(--spacing-player-safe-mobile) 0;
+  z-index: 20;
+  cursor: default;
+  border: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.sidebar-nav-content {
+  transition:
+    opacity var(--duration-sidebar-nav-fade) var(--ease-play-focus-fade),
+    filter var(--duration-sidebar-nav-fade) var(--ease-play-focus-fade);
+}
+
+.sidebar-nav-content.is-sidebar-nav-dimmed {
+  opacity: var(--sidebar-nav-dimmed-opacity);
+  filter: blur(8px);
+}
+
+.play-focus-theatre-hit-area--no-player {
+  bottom: 0;
+}
+
+.play-focus-layer {
+  position: fixed;
+  left: max(1rem, env(safe-area-inset-left));
+  right: max(1rem, env(safe-area-inset-right));
+  bottom: var(--play-focus-layer-bottom-mobile);
+  z-index: 30;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(10px);
+  transition:
+    opacity var(--duration-play-focus-miniview-fade) var(--ease-play-focus-fade),
+    transform var(--duration-play-focus-miniview-fade) var(--ease-play-focus-fade);
+}
+
+.play-focus-layer--no-player {
+  bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+.play-focus-layer.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.play-focus-layer.is-play-focus-revealing {
+  transition: none;
+}
+
+.play-focus-now-playing {
+  display: flex;
+  width: min(30rem, 100%);
+  min-width: 0;
+  align-items: center;
+  gap: 0.75rem;
+  border-left: 2px solid color-mix(in srgb, var(--color-brand) 78%, white 8%);
+  border-radius: 0.625rem;
+  background: linear-gradient(135deg, rgba(12, 16, 22, 0.82), rgba(18, 23, 31, 0.62));
+  padding: 0.625rem 0.75rem;
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.34);
+  backdrop-filter: blur(16px) saturate(130%);
+}
+
+@media (min-width: 768px) {
+  .play-focus-theatre-hit-area {
+    bottom: var(--spacing-player);
+  }
+
+  .play-focus-theatre-hit-area--no-player {
+    bottom: 0;
+  }
+
+  .play-focus-layer {
+    bottom: var(--play-focus-layer-bottom);
+  }
+
+  .play-focus-layer--no-player {
+    bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+
+  .subtitle-layer {
+    padding-bottom: calc(var(--spacing-player) + 1.25rem);
+  }
+}
+
+@media (min-width: 1024px) {
+  .play-focus-theatre-hit-area {
+    left: var(--spacing-sidebar);
+  }
+}
+
 .bottom-player__surface {
   position: relative;
   animation: bottom-player-fade-in var(--duration-player-enter) var(--ease-player-enter) both;
@@ -244,6 +405,32 @@ body {
 
 .bottom-player__section--actions {
   animation-delay: var(--delay-player-section-actions);
+}
+
+.bottom-player__actions-mobile {
+  position: absolute;
+  right: 1rem;
+  bottom: 0.625rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.bottom-player__actions-desktop {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .bottom-player__actions-mobile {
+    display: none;
+  }
+
+  .bottom-player__actions-desktop {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem;
+  }
 }
 
 @keyframes bottom-player-fade-in {
@@ -422,7 +609,8 @@ body {
   }
 
   .theatre-overlay,
-  .theatre-crossfade {
+  .theatre-crossfade,
+  .subtitle-layer {
     transition: none;
   }
 }

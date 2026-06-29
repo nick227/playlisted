@@ -8,7 +8,7 @@ export const PLAYLISTS_PATH = "/playlists";
 export const FAVORITES_PATH = "/favorites";
 
 /** Shared max-width for browse breadcrumbs and collection content. */
-export const BROWSE_LAYOUT_CLASS = "mx-auto max-w-4xl";
+export const BROWSE_LAYOUT_CLASS = "mx-auto max-w-3xl";
 
 /** Artist profile breadcrumbs align with the wider profile layout below. */
 export const ARTIST_PROFILE_LAYOUT_CLASS = "mx-auto max-w-7xl";

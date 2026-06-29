@@ -42,7 +42,7 @@ flowchart LR
 
 **Contract-first:** `openapi/openapi.yaml` is the source of truth. Change the spec → regenerate the SDK → TypeScript yells if the UI lies. Beautiful.
 
-**Production shape:** a single Node process serves the API, static uploads, and the built SPA (monolith mode). Railway-ready via `railway.toml`.
+**Production shape:** one Railway web service serves the API, static uploads, and built SPA; a separate Railway worker service drains queued subtitle jobs through Modal. Railway-ready via `railway.toml` for web and `railway.worker.toml` for the subtitle worker.
 
 ---
 
@@ -55,7 +55,8 @@ musicpop/                    # you are here
 ├── src/                     # Express API routes & libs
 ├── prisma/                  # Schema, migrations, seed data
 ├── openapi/openapi.yaml     # The sacred contract
-└── railway.toml             # Deploy config (build → migrate → start)
+├── railway.toml             # Web deploy config (build → migrate → start API)
+└── railway.worker.toml      # Subtitle worker deploy config (build → start worker)
 ```
 
 ---
@@ -101,12 +102,14 @@ npm run dev:full
 | `npm run build:prod` | Prisma generate + API compile + web production build |
 | `npm run openapi:types` | Regenerate SDK types from OpenAPI |
 | `npm run prisma:seed` | Load demo artists, playlists, and drama |
+| `npm run prisma:backfill-subtitles` | Dry-run manual subtitle queue backfill |
+| `SUBTITLES_BACKFILL_CONFIRM=QUEUE_SUBTITLES npm run prisma:backfill-subtitles -- --apply` | Explicitly enqueue existing uploaded songs for subtitle work |
 
 ---
 
 ## Production (Railway)
 
-We ship as one service: API + SPA + uploads.
+We ship as two app services plus MySQL: web/API and subtitle worker.
 
 1. Connect this repo to [Railway](https://railway.app).
 2. Add the **MySQL** plugin and link `DATABASE_URL`.
@@ -118,9 +121,16 @@ We ship as one service: API + SPA + uploads.
    | `TRUST_PROXY` | `1` |
    | `VITE_API_BASE_URL` | *(leave empty for same-origin)* |
 
-4. **Mount a volume** at `uploads` if you care about audio surviving redeploys. (Ephemeral disk is a vibe until it isn’t.)
+4. **Mount a volume** at `/app/uploads` on the web service if you care about audio surviving redeploys. (Ephemeral disk is a vibe until it isn’t.)
+5. Add a second Railway service from the same repo for subtitles. Use `railway.worker.toml` or set its start command to `npm run subtitles:worker:prod`.
 
-Deploy pipeline: `build:prod` → `prisma migrate deploy` (release) → `node dist/server.js`. Health check: `/api/v1/health`.
+Web deploy pipeline: `build:prod` → `prisma migrate deploy` (release) → `node dist/server.js`. Health check: `/api/v1/health`.
+
+Subtitle worker pipeline: `build:prod` → `node dist/workers/subtitleWorker.js`. It does not run migrations, does not backfill on startup, and does not expose an HTTP API. In production it requires `SUBTITLES_PROVIDER=modal` unless explicitly overridden.
+
+For split Railway services, set `STORAGE_PROVIDER=r2` on the web/API service so new uploads are stored as public R2 URLs. The subtitle worker can then download those URLs from its own service container before posting audio to Modal.
+
+Backfill is manual only. Startup may reset stale `PROCESSING` rows and process existing `QUEUED` rows; upload/create paths are responsible for creating new `QUEUED` subtitle rows.
 
 `/docs` and `/openapi.yaml` are **off in production** unless you set `ENABLE_API_DOCS=1`. Security is also a feature.
 

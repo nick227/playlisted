@@ -66,6 +66,13 @@ enum EditorialKind {
   SPOTLIGHT
 }
 
+enum SubtitleStatus {
+  QUEUED
+  PROCESSING
+  READY
+  FAILED
+}
+
 enum HomepageSection {
   SPOTLIGHT
   FEATURED_ARTIST
@@ -178,12 +185,13 @@ model Recording {
   createdAt           DateTime      @default(now())
   updatedAt           DateTime      @updatedAt
 
-  uploader          User            @relation("RecordingUploader", fields: [uploaderId], references: [id], onDelete: Cascade)
-  publishedPlaylist Playlist        @relation("RecordingPrimaryPlaylist", fields: [publishedPlaylistId], references: [id], onDelete: Cascade)
+  uploader          User               @relation("RecordingUploader", fields: [uploaderId], references: [id], onDelete: Cascade)
+  publishedPlaylist Playlist           @relation("RecordingPrimaryPlaylist", fields: [publishedPlaylistId], references: [id], onDelete: Cascade)
   playlistItems     PlaylistItem[]
   saves             RecordingSave[]
   playbackEvents    PlaybackEvent[]
   tags              RecordingTag[]
+  subtitle          RecordingSubtitle?
 
   @@unique([uploaderId, externalSource, externalId])
   @@index([uploaderId])
@@ -257,6 +265,49 @@ model PlaybackEvent {
   @@index([userId, createdAt])
   @@index([recordingId, createdAt])
   @@index([playlistId, createdAt])
+}
+
+model RecordingSubtitle {
+  id           String         @id @default(cuid()) @db.VarChar(191)
+  recordingId  String         @unique @db.VarChar(191)
+  status       SubtitleStatus @default(QUEUED)
+  language     String?        @db.VarChar(16)
+  segments     Json?
+  vttText      String?        @db.LongText
+  errorMessage String?        @db.Text
+  generatedAt  DateTime?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  recording Recording                  @relation(fields: [recordingId], references: [id], onDelete: Cascade)
+  attempts  RecordingSubtitleAttempt[]
+
+  @@index([status, createdAt])
+  @@index([status, updatedAt])
+}
+
+model RecordingSubtitleAttempt {
+  id                   String    @id @default(cuid()) @db.VarChar(191)
+  subtitleId           String    @db.VarChar(191)
+  provider             String    @db.VarChar(32)
+  status               String    @db.VarChar(32)
+  modelName            String?   @db.VarChar(64)
+  language             String?   @db.VarChar(16)
+  segmentCount         Int?      @db.UnsignedInt
+  inputBytes           BigInt?   @db.UnsignedBigInt
+  inputDurationSeconds Int?      @db.UnsignedInt
+  durationMs           Int?      @db.UnsignedInt
+  costCents            Int?      @db.UnsignedInt
+  providerJobId        String?   @db.VarChar(191)
+  error                String?   @db.Text
+  metadata             Json?
+  startedAt            DateTime  @default(now())
+  endedAt              DateTime?
+
+  subtitle RecordingSubtitle @relation(fields: [subtitleId], references: [id], onDelete: Cascade)
+
+  @@index([subtitleId])
+  @@index([provider, startedAt])
 }
 
 model Tag {
@@ -438,23 +489,23 @@ model ApiKey {
 }
 
 model TrafficEvent {
-  id          BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
-  eventType   String   @default("REQUEST") @db.VarChar(40)
-  visitorId   String?  @db.VarChar(64)
-  userId      String?  @db.VarChar(191)
-  sessionId   String?  @db.VarChar(191)
-  path        String   @db.VarChar(2048)
-  method      String?  @db.VarChar(10)
-  status      Int?     @db.UnsignedSmallInt
-  latencyMs   Int?     @db.UnsignedInt
-  ipHash      String?  @db.VarChar(64)
-  userAgent   String?  @db.VarChar(512)
-  referrer    String?  @db.VarChar(2048)
-  isBot       Boolean  @default(false)
-  botReason   String?  @db.VarChar(100)
-  bytesSent   BigInt?  @db.UnsignedBigInt
-  metadata    Json?
-  createdAt   DateTime @default(now())
+  id        BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  eventType String   @default("REQUEST") @db.VarChar(40)
+  visitorId String?  @db.VarChar(64)
+  userId    String?  @db.VarChar(191)
+  sessionId String?  @db.VarChar(191)
+  path      String   @db.VarChar(2048)
+  method    String?  @db.VarChar(10)
+  status    Int?     @db.UnsignedSmallInt
+  latencyMs Int?     @db.UnsignedInt
+  ipHash    String?  @db.VarChar(64)
+  userAgent String?  @db.VarChar(512)
+  referrer  String?  @db.VarChar(2048)
+  isBot     Boolean  @default(false)
+  botReason String?  @db.VarChar(100)
+  bytesSent BigInt?  @db.UnsignedBigInt
+  metadata  Json?
+  createdAt DateTime @default(now())
 
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 

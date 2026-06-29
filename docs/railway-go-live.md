@@ -6,13 +6,14 @@ Production URL:
 https://playlisted.up.railway.app
 ```
 
-This project deploys as one Railway web service plus one Railway MySQL service. The web service runs the Express API, serves the built React app, serves `/uploads`, and has the persistent volume mounted at `/app/uploads`.
+This project deploys as one Railway web service, one Railway subtitle worker service, and one Railway MySQL service. The web service runs the Express API, serves the built React app, serves `/uploads`, and has the persistent volume mounted at `/app/uploads`. The subtitle worker is a separate service from the same repo and drains existing `RecordingSubtitle` rows through Modal.
 
 ## Railway Services
 
 | Service | Purpose | Notes |
 | --- | --- | --- |
-| Web service | Node/Express API, React app, uploaded media | Attach the volume here. Public domain points here. |
+| Web service | Node/Express API, React app, uploaded media | Attach the uploads volume here. Public domain points here. Does not run transcription. |
+| Subtitle worker service | Processes queued subtitle rows with Modal | Separate Railway service from the same repo. Use `railway.worker.toml` or override the start command to `npm run subtitles:worker:prod`. |
 | MySQL service | Prisma database | `DATABASE_URL` in the web service should reference this service. |
 
 ## Web Service Settings
@@ -28,6 +29,18 @@ This project deploys as one Railway web service plus one Railway MySQL service. 
 | Healthcheck path | `/api/v1/health` |
 
 These commands are already defined in `railway.toml`.
+
+## Subtitle Worker Service Settings
+
+| Setting | Value |
+| --- | --- |
+| Public domain | none |
+| Build command | `npm run build:prod` |
+| Start command | `npm run subtitles:worker:prod` |
+| Pre-deploy command | none |
+| Healthcheck path | none |
+
+The worker config is defined in `railway.worker.toml`. The web service owns Prisma migrations; the worker must not run migration or backfill commands during deploy.
 
 ## Required Environment Variables
 
@@ -46,9 +59,22 @@ DATABASE_URL=${{MySQL.MYSQL_URL}}
 # Leave blank/unset unless the frontend is split into a separate service.
 VITE_API_BASE_URL=
 
-# Persistent uploads volume.
+# Persistent uploads volume for local fallback/static legacy uploads.
 UPLOADS_DIR=/app/uploads
 MEDIA_BASE_URL=/uploads
+
+# Shared object storage for uploads used by the separate subtitle worker.
+STORAGE_PROVIDER=r2
+R2_ACCOUNT_ID=...
+R2_ACCESS_KEY_ID=...
+R2_SECRET_ACCESS_KEY=...
+R2_BUCKET_NAME=cloudflarestorage
+R2_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com
+R2_PUBLIC_BASE_URL=https://<public-bucket-host>
+UPLOADS_PUBLIC_BASE_URL=https://<public-bucket-host>
+
+# Web/API must not run transcription.
+SUBTITLES_PROVIDER=disabled
 ```
 
 Do not set `PORT` manually on Railway unless you have a specific reason. Railway injects the runtime `PORT`; the current deploy log shows the app listening on `8080`.
@@ -67,6 +93,37 @@ Do not set `PORT` manually on Railway unless you have a specific reason. Railway
 # SHUTDOWN_TIMEOUT_MS=10000
 ```
 
+## Subtitle Worker Environment Variables
+
+Set these on the Railway subtitle worker service.
+
+```env
+NODE_ENV=production
+DATABASE_URL=${{MySQL.MYSQL_URL}}
+
+# The worker should fail closed unless Modal is explicitly configured.
+SUBTITLES_ENABLED=true
+SUBTITLES_PROVIDER=modal
+SUBTITLES_WORKER_REQUIRE_MODAL=true
+SUBTITLES_MODAL_ENABLED=true
+SUBTITLES_MODAL_DAILY_MAX_JOBS=3
+SUBTITLES_MODAL_MONTHLY_BUDGET_CENTS=300
+SUBTITLES_MODAL_MAX_AUDIO_SECONDS=900
+SUBTITLES_MAX_AUDIO_SECONDS=900
+SUBTITLES_WORKER_SLEEP_MS=5000
+SUBTITLES_WHISPER_MODEL=small
+
+MODAL_SUBTITLES_URL=https://your-modal-endpoint.example
+MODAL_SUBTITLES_TOKEN=replace-with-shared-secret
+
+# Lets manual backfill include existing R2-backed audio URLs.
+UPLOADS_PUBLIC_BASE_URL=https://<public-bucket-host>
+```
+
+The worker only processes rows that already exist with `status=QUEUED`. On boot it may reset stale `PROCESSING` rows back to `QUEUED`, then drain the queue. It never creates backfill rows during startup.
+
+The worker resolves local `/uploads/...` paths for dev and downloads HTTPS audio URLs, including R2 public URLs, to a temp file before sending work to Modal. If local audio is missing, remote download fails, or the downloaded file is empty, the job fails closed and records a failed attempt.
+
 ## Do Not Set In Production
 
 ```env
@@ -74,6 +131,30 @@ SEED_DATA_PATH=prisma/seed-data.json
 ```
 
 Do not run the seed script against production unless it is intentional. The seed media helper can remove and recreate the uploads directory, which would destroy real uploaded media on the mounted volume.
+
+Do not set `SUBTITLES_BACKFILL_CONFIRM` globally on any Railway service. It exists only for a one-off manual command.
+
+## Manual Subtitle Backfill
+
+Backfill is never part of startup or deploy. Upload/create paths create new `QUEUED` subtitle rows automatically; this command is only for already-existing uploaded songs missing subtitle rows. It only queues local `/uploads/...` URLs and URLs under `UPLOADS_PUBLIC_BASE_URL`/`R2_PUBLIC_BASE_URL`.
+
+Dry run:
+
+```bash
+npm run prisma:backfill-subtitles
+```
+
+Apply:
+
+```bash
+SUBTITLES_BACKFILL_CONFIRM=QUEUE_SUBTITLES npm run prisma:backfill-subtitles -- --apply
+```
+
+Retry failed rows only when intentional:
+
+```bash
+SUBTITLES_BACKFILL_CONFIRM=QUEUE_SUBTITLES npm run prisma:backfill-subtitles -- --failed --apply
+```
 
 ## Database Notes
 

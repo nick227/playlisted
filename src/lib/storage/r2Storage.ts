@@ -1,0 +1,68 @@
+import fs from "node:fs/promises";
+
+import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+
+function requireEnv(name: string) {
+  const value = process.env[name];
+  if (!value) throw new Error(`${name} is required when STORAGE_PROVIDER=r2.`);
+  return value;
+}
+
+function publicBaseUrl() {
+  return (process.env.UPLOADS_PUBLIC_BASE_URL ?? process.env.R2_PUBLIC_BASE_URL ?? "").replace(/\/$/, "");
+}
+
+let client: S3Client | null = null;
+
+function endpointUrl() {
+  if (process.env.R2_ENDPOINT) return process.env.R2_ENDPOINT;
+  const accountId = process.env.R2_ACCOUNT_ID;
+  if (accountId) return `https://${accountId}.r2.cloudflarestorage.com`;
+  throw new Error("R2_ENDPOINT or R2_ACCOUNT_ID is required when STORAGE_PROVIDER=r2.");
+}
+
+function getClient() {
+  client ??= new S3Client({
+    region: "auto",
+    endpoint: endpointUrl(),
+    credentials: {
+      accessKeyId: requireEnv("R2_ACCESS_KEY_ID"),
+      secretAccessKey: requireEnv("R2_SECRET_ACCESS_KEY"),
+    },
+  });
+  return client;
+}
+
+export function isR2StorageEnabled() {
+  if (process.env.NODE_ENV === "test" && process.env.STORAGE_PROVIDER_TEST_REMOTE !== "true") {
+    return false;
+  }
+  return process.env.STORAGE_PROVIDER === "r2";
+}
+
+export function r2PublicUrlForKey(key: string) {
+  const baseUrl = publicBaseUrl();
+  if (!baseUrl) throw new Error("R2_PUBLIC_BASE_URL or UPLOADS_PUBLIC_BASE_URL is required when STORAGE_PROVIDER=r2.");
+  return `${baseUrl}/${key.split("/").map(encodeURIComponent).join("/")}`;
+}
+
+export async function uploadFileToR2(input: {
+  key: string;
+  filePath: string;
+  contentType: string;
+}) {
+  const body = await fs.readFile(input.filePath);
+  await getClient().send(
+    new PutObjectCommand({
+      Bucket: requireEnv("R2_BUCKET_NAME"),
+      Key: input.key,
+      Body: body,
+      ContentType: input.contentType,
+    }),
+  );
+
+  return {
+    key: input.key,
+    url: r2PublicUrlForKey(input.key),
+  };
+}

@@ -206,7 +206,7 @@ export function StudioPage() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-10">
-      <header className="flex flex-wrap items-end justify-between gap-4">
+      <header className="flex flex-wrap items-end justify-between gap-4 bg-[var(--color-surface)] p-6">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wider text-[var(--color-brand)]">
             Artist studio
@@ -269,7 +269,7 @@ export function StudioPage() {
 
       <section className="grid gap-6 lg:grid-cols-[minmax(280px,380px)_1fr]">
         <form
-          className="space-y-5 rounded-2xl border border-white/6 bg-[var(--color-surface)]/80 p-6"
+          className="space-y-5 rounded-2xl border border-white/6 bg-[var(--color-surface)] p-6"
           onSubmit={(e) => {
             e.preventDefault();
             saveMutation.mutate();
@@ -349,7 +349,7 @@ export function StudioPage() {
           </button>
         </form>
 
-        <div className="rounded-2xl border border-white/6 bg-[var(--color-surface)]/60 p-6">
+        <div className="rounded-2xl border border-white/6 bg-[var(--color-surface)] p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <p className="text-xs font-semibold tracking-[0.18em] text-[var(--color-text-subtle)] uppercase">

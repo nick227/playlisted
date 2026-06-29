@@ -10,7 +10,7 @@ export function TheatreModeButton() {
       type="button"
       onClick={toggleTheatreMode}
       disabled={theatreLoading || (!theatreActive && !canEnterTheatre)}
-      className={`inline-flex rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-1.5 transition disabled:cursor-not-allowed disabled:opacity-40 sm:p-2 ${
+      className={`inline-flex shrink-0 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-1.5 transition disabled:cursor-not-allowed disabled:opacity-40 sm:p-2 ${
         theatreActive
           ? "text-[var(--color-brand)]"
           : "text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)] hover:text-white"

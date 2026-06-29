@@ -18,6 +18,9 @@ import { playlistPath } from "@/lib/routes";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { useAuth } from "@/providers/AuthProvider";
 
+const SUBTITLE_REFRESH_MS = 5_000;
+const ACTIVE_SUBTITLE_STATUSES = new Set(["QUEUED", "PROCESSING"]);
+
 export function StudioCollectionEditPage() {
   const { playlistId } = useParams<{ playlistId: string }>();
   const { user, accessToken } = useAuth();
@@ -141,6 +144,31 @@ export function StudioCollectionEditPage() {
       visibilityMutation.mutate("PUBLIC");
     }
   }, [playlist?.recordings.length]);
+
+  useEffect(() => {
+    if (!playlistId || !playlist) return;
+    const shouldRefresh = playlist.recordings.some((recording) =>
+      ACTIVE_SUBTITLE_STATUSES.has(recording.subtitle?.status ?? ""),
+    );
+    if (!shouldRefresh) return;
+
+    const timer = window.setInterval(() => {
+      void client.playlists.getById(playlistId).then((updated) => {
+        const next = updated as PlaylistDetailWithTags;
+        queryClient.setQueryData(["playlist", playlistId, "edit"], next);
+        setDraft((current) => {
+          const base = current ?? playlist;
+          if (!base || base.id !== next.id) return next;
+          return {
+            ...base,
+            recordings: next.recordings,
+          };
+        });
+      }).catch(() => undefined);
+    }, SUBTITLE_REFRESH_MS);
+
+    return () => window.clearInterval(timer);
+  }, [client, playlist, playlistId, queryClient, setDraft]);
 
   if (isError) {
     if (loadError instanceof PlaylistedApiError && loadError.status === 403) {

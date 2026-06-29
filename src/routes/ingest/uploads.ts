@@ -10,10 +10,10 @@ import {
   handleMulterSingleError,
   ingestAudioUpload,
   ingestImageUpload,
-  storedUploadUrl,
 } from "../../lib/uploadMulter.js";
 import type { UploadMediaKind } from "../../lib/uploadPolicy.js";
 import { rejectDisallowedUpload } from "../../lib/uploadValidate.js";
+import { persistUploadedFile } from "../../lib/storage/uploadStorage.js";
 
 const UPLOAD_SELECT = {
   id: true,
@@ -125,8 +125,21 @@ ingestUploadsRouter.post("/", async (req, res, next) => {
         });
       }
 
-      const url = storedUploadUrl(subdir, file.filename);
-      const storageKey = `${subdir}/${file.filename}`;
+      let stored;
+      try {
+        stored = await persistUploadedFile({
+          subdir,
+          filename: file.filename,
+          filePath: file.path,
+          mimeType: file.mimetype,
+        });
+      } catch (storageErr) {
+        await fs.unlink(file.path).catch(() => undefined);
+        return next(storageErr);
+      }
+
+      const url = stored.url;
+      const storageKey = stored.storageKey;
       const originalName = file.originalname;
       const uploadId = generateUploadId();
 

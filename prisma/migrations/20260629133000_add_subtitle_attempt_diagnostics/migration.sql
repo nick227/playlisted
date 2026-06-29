@@ -1,0 +1,7 @@
+ALTER TABLE `RecordingSubtitleAttempt`
+  ADD COLUMN `modelName` VARCHAR(64) NULL,
+  ADD COLUMN `language` VARCHAR(16) NULL,
+  ADD COLUMN `segmentCount` INTEGER UNSIGNED NULL,
+  ADD COLUMN `inputBytes` BIGINT UNSIGNED NULL,
+  ADD COLUMN `inputDurationSeconds` INTEGER UNSIGNED NULL,
+  ADD COLUMN `metadata` JSON NULL;

@@ -16,6 +16,7 @@ import { prisma } from "../lib/prisma.js";
 import { assertProfileLinks, normalizeProfileLinks } from "../lib/profileLinks.js";
 import { requireAdmin } from "../lib/requireAdmin.js";
 import { requireAuth } from "../lib/requireAuth.js";
+import { subtitleInclude } from "../lib/subtitles/summary.js";
 import { slugify } from "../utils/slug.js";
 import { parsePageSize, parsePositivePage } from "../lib/pagination.js";
 
@@ -152,6 +153,7 @@ usersRouter.get("/by-username/:username/playlists/:slug", async (req, res, next)
             recording: {
               include: {
                 uploader: { select: { id: true, username: true, displayName: true, avatarUrl: true, role: true } },
+                subtitle: subtitleInclude(),
               },
             },
           },

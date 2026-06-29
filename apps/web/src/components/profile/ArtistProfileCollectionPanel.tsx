@@ -128,7 +128,7 @@ export function ArtistProfileCollectionPanel({ playlist, owner }: ArtistProfileC
   });
 
   return (
-    <article className="border-b border-white/8 py-6 last:border-b-0">
+    <article className="border-b border-white/8 py-6 last:border-b-0 bg-[var(--color-canvas)]/50 rounded-lg p-4">
       <div className="flex gap-4 flex-row items-start justify-start">
         <button
           type="button"

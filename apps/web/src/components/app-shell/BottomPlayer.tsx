@@ -1,4 +1,5 @@
 import {
+  Captions,
   ListMusic,
   Pause,
   Play,
@@ -17,6 +18,7 @@ import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
 import { formatDuration } from "@/lib/format";
 import { coverFallback, playlistPath, playlistRecordingPath, profilePath } from "@/lib/routes";
 import { usePlaybackTransport } from "@/hooks/usePlaybackTransport";
+import { useSubtitleDisplay } from "@/lib/subtitleDisplay";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 
 const playerFooterClass =
@@ -51,6 +53,7 @@ export function BottomPlayer() {
     setVolume,
   } = useAudioPlayer();
   const { currentTime, duration, seek } = usePlaybackTransport();
+  const { subtitlesEnabled, toggleSubtitlesEnabled } = useSubtitleDisplay();
 
   const prevVolumeRef = useRef(1);
 
@@ -62,6 +65,7 @@ export function BottomPlayer() {
   const shellDuration = dismiss && !currentTrack ? dismiss.duration : duration;
   const shellIsPlaying = dismiss && !currentTrack ? false : isPlaying;
   const progress = shellDuration > 0 ? (shellCurrentTime / shellDuration) * 100 : 0;
+  const canShowCaptions = currentTrack?.subtitle?.status === "READY";
 
   function handleVolumeMute() {
     if (volume > 0) {
@@ -244,7 +248,18 @@ export function BottomPlayer() {
               <span>{formatDuration(shellDuration)}</span>
             </div>
           </div>
-          <div className="bottom-player__section bottom-player__section--actions absolute right-4 bottom-2.5 flex items-center gap-2 md:hidden">
+          <div className="bottom-player__section bottom-player__section--actions bottom-player__actions-mobile">
+            {canShowCaptions ? (
+              <button
+                type="button"
+                onClick={toggleSubtitlesEnabled}
+                aria-pressed={subtitlesEnabled}
+                aria-label={subtitlesEnabled ? "Hide subtitles" : "Show subtitles"}
+                className={`${mobileActionButtonClass} ${subtitlesEnabled ? "!text-[var(--color-brand)]" : ""}`}
+              >
+                <Captions size={18} />
+              </button>
+            ) : null}
             <button
               type="button"
               onClick={toggleShuffle}
@@ -263,7 +278,7 @@ export function BottomPlayer() {
               <ListMusic size={18} />
             </button>
           </div>
-          <div className="bottom-player__section bottom-player__section--actions hidden items-center justify-end gap-2 md:flex">
+          <div className="bottom-player__section bottom-player__section--actions bottom-player__actions-desktop">
             <button
               type="button"
               onClick={handleVolumeMute}
@@ -284,6 +299,18 @@ export function BottomPlayer() {
             />
 
             <div className="mx-1 h-4 w-px bg-white/10" />
+
+            {canShowCaptions ? (
+              <button
+                type="button"
+                onClick={toggleSubtitlesEnabled}
+                aria-pressed={subtitlesEnabled}
+                aria-label={subtitlesEnabled ? "Hide subtitles" : "Show subtitles"}
+                className={`transition ${subtitlesEnabled ? "text-[var(--color-brand)]" : "text-[var(--color-text-muted)] hover:text-white"}`}
+              >
+                <Captions size={20} />
+              </button>
+            ) : null}
 
             <button
               type="button"

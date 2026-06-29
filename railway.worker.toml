@@ -1,0 +1,7 @@
+[build]
+builder = "nixpacks"
+buildCommand = "npm run build:prod"
+
+[deploy]
+startCommand = "npm run subtitles:worker:prod"
+restartPolicyType = "on_failure"

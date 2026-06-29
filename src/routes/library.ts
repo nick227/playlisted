@@ -7,6 +7,7 @@ import {
   mergeGenreRefs,
 } from "../lib/effectiveGenres.js";
 import { prisma } from "../lib/prisma.js";
+import { mapSubtitleSummary, subtitleInclude } from "../lib/subtitles/summary.js";
 import { resolveRecordingArtworkUrl } from "../lib/mediaUrls.js";
 import { BROWSABLE_RECORDING } from "../lib/publicRecordingFilter.js";
 import { PUBLIC_PUBLISHED_PLAYLIST } from "../lib/publicPlaylistFilter.js";
@@ -120,6 +121,7 @@ libraryRouter.get("/songs", async (req, res, next) => {
           _count: {
             select: { saves: { where: { kind: "FAVORITE" } } },
           },
+          subtitle: subtitleInclude(),
         },
         orderBy: { title: "asc" },
         skip: (page - 1) * pageSize,
@@ -150,6 +152,7 @@ libraryRouter.get("/songs", async (req, res, next) => {
         publishedAt: r.publishedAt?.toISOString() ?? null,
         playCount: r.playCount,
         favoriteCount: r._count.saves,
+        subtitle: mapSubtitleSummary(r.subtitle),
         createdAt: r.createdAt.toISOString(),
         updatedAt: r.updatedAt.toISOString(),
         uploader: r.uploader,

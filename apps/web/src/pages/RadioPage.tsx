@@ -5,7 +5,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { MessageCircle, Pause, Play, Send, Users, X, Upload } from "lucide-react";
 
 import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
-import { useTheatreMode } from "@/components/app-shell/useTheatreMode";
 import { PlaybackBars } from "@/features/playback-indicators/PlaybackBars";
 import { authedApi } from "@/lib/authedApi";
 import { getAnonName } from "@/lib/radio/radioPlayback";
@@ -51,7 +50,6 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
   const [chatOpen, setChatOpen] = useState(false);
   const [seenCount, setSeenCount] = useState(0);
   const [chatMessage, setChatMessage] = useState("");
-  const { theatreActive } = useTheatreMode();
 
   usePageMeta({ title: "Radio" });
 
@@ -173,8 +171,7 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
   const showCharCount = chatMessage.length > MAX_MSG_LENGTH * 0.75;
 
   const artworkClassName = [
-    "theatre-crossfade aspect-square w-full max-w-[min(68vw,360px)] rounded-xl bg-white/5 bg-cover bg-center shadow-2xl shadow-black/30",
-    theatreActive ? "is-theatre-active" : "",
+    "aspect-square w-full max-w-[min(68vw,360px)] rounded-xl bg-white/5 bg-cover bg-center shadow-2xl shadow-black/30",
   ].join(" ");
 
   const chatPanel = chatOpen
@@ -346,7 +343,7 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
           ) : null}
         </div>
 
-        <h1 className="mt-4 max-w-full text-balance text-4xl font-extrabold tracking-tight text-white md:text-6xl">
+        <h1 className="mt-4 max-w-full text-balance text-4xl font-extrabold tracking-tight text-white md:text-6xl bg-[var(--color-canvas)]/50 rounded-lg p-4">
           {playlistUrl ? (
             <Link to={playlistUrl} className="transition hover:text-[var(--color-brand)]">
               {nowPlaying?.title ?? "Radio"}

@@ -1911,6 +1911,31 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /api/v1/recordings/{recordingId}/subtitles:
+    get:
+      tags: [Recordings]
+      operationId: getRecordingSubtitles
+      summary: Get generated subtitles for a recording
+      parameters:
+        - in: path
+          name: recordingId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Subtitle status or ready subtitle content
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecordingSubtitlesResponse'
+        '404':
+          description: Recording not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /api/v1/admin/tags:
     get:
       tags: [Admin]
@@ -3545,6 +3570,53 @@ components:
         total:
           type: integer
 
+    SubtitleStatus:
+      type: string
+      enum: [QUEUED, PROCESSING, READY, FAILED]
+
+    RecordingSubtitleSummary:
+      type: object
+      additionalProperties: false
+      required: [status]
+      properties:
+        status:
+          $ref: '#/components/schemas/SubtitleStatus'
+        language:
+          type: [string, 'null']
+        generatedAt:
+          type: [string, 'null']
+          format: date-time
+
+    SubtitleSegment:
+      type: object
+      additionalProperties: false
+      required: [start, end, text]
+      properties:
+        start:
+          type: number
+        end:
+          type: number
+        text:
+          type: string
+
+    RecordingSubtitlesResponse:
+      type: object
+      additionalProperties: false
+      required: [status]
+      properties:
+        status:
+          $ref: '#/components/schemas/SubtitleStatus'
+        language:
+          type: [string, 'null']
+        segments:
+          type: array
+          items:
+            $ref: '#/components/schemas/SubtitleSegment'
+        vttText:
+          type: string
+        errorMessage:
+          type: string
+
     HomepageTargetType:
       type: string
       enum: [PLAYLIST, USER, EDITORIAL_POST, RECORDING]
@@ -3849,6 +3921,10 @@ components:
           format: date-time
         playCount:
           type: integer
+        subtitle:
+          oneOf:
+            - $ref: '#/components/schemas/RecordingSubtitleSummary'
+            - type: 'null'
         createdAt:
           type: string
           format: date-time
@@ -4236,6 +4312,10 @@ components:
           format: date-time
         playCount:
           type: integer
+        subtitle:
+          oneOf:
+            - $ref: '#/components/schemas/RecordingSubtitleSummary'
+            - type: 'null'
         createdAt:
           type: string
           format: date-time
@@ -4769,6 +4849,10 @@ components:
           format: date-time
         playCount:
           type: integer
+        subtitle:
+          oneOf:
+            - $ref: '#/components/schemas/RecordingSubtitleSummary'
+            - type: 'null'
         favoriteCount:
           type: integer
         createdAt:
@@ -5573,6 +5657,10 @@ components:
           type: boolean
         playCount:
           type: integer
+        subtitle:
+          oneOf:
+            - $ref: '#/components/schemas/RecordingSubtitleSummary'
+            - type: 'null'
         savesCount:
           type: integer
         publishedAt:

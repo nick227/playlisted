@@ -9,6 +9,7 @@ import { PUBLIC_PUBLISHED_PLAYLIST } from "../lib/publicPlaylistFilter.js";
 import { ACTIVE_USER } from "../lib/publicUserFilter.js";
 import { prisma } from "../lib/prisma.js";
 import { sendCachedPublicJson } from "../lib/publicJsonCache.js";
+import { mapSubtitleSummary, subtitleInclude } from "../lib/subtitles/summary.js";
 
 export const chartsRouter = Router();
 
@@ -51,6 +52,11 @@ function mapTopSongItem(
       tags: { tag: { id: string; name: string; slug: string } }[];
     };
     tags?: { tag: { id: string; name: string; slug: string } }[];
+    subtitle?: {
+      status: "QUEUED" | "PROCESSING" | "READY" | "FAILED";
+      language: string | null;
+      generatedAt: Date | null;
+    } | null;
   },
   rank: number,
   playCount: number,
@@ -72,6 +78,7 @@ function mapTopSongItem(
     status: r.status,
     explicit: r.explicit,
     playCount,
+    subtitle: mapSubtitleSummary(r.subtitle),
     createdAt: r.createdAt.toISOString(),
     updatedAt: r.updatedAt.toISOString(),
     uploader: r.uploader,
@@ -122,6 +129,7 @@ chartsRouter.get("/top-songs", async (req, res, next) => {
               },
             },
             ...songTagInclude,
+            subtitle: subtitleInclude(),
           },
         });
         return {
@@ -154,6 +162,7 @@ chartsRouter.get("/top-songs", async (req, res, next) => {
             },
           },
           ...songTagInclude,
+          subtitle: subtitleInclude(),
         },
       });
 

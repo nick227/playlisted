@@ -26,9 +26,10 @@ export function UserAccountMenu({
       <button
         type="button"
         onClick={onToggle}
-        className="flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-1.5 text-sm font-medium text-white"
+        className="flex shrink-0 items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-1.5 text-sm font-medium text-white"
         aria-expanded={open}
         aria-haspopup="menu"
+        aria-label="Open user menu"
       >
         {user.avatarUrl ? (
           <img src={user.avatarUrl} alt="" className="h-8 w-8 rounded-full object-cover" />
