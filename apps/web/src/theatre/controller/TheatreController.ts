@@ -20,17 +20,17 @@ export type TheatreRotationPolicy = {
 }
 
 export const DEFAULT_ROTATION_POLICY: TheatreRotationPolicy = {
-  minSceneMs: 12000,
-  maxSceneMs: 60000,
+  minSceneMs: 6000,
+  maxSceneMs: 30000,
   clipLengthBias: 'minimum',
   varianceMs: 8000,
   requireAudioPop: true,
 }
 
 const AUTO_ROTATE_POP_THRESHOLD = 0.02
-const MANUAL_PRESET_THROTTLE_MS = 1800
+const MANUAL_PRESET_THROTTLE_MS = 100
 const MANUAL_PRESET_COOLDOWN_MS = 3000
-const PRESET_CHANGE_TIMEOUT_MS = 12_000
+const PRESET_CHANGE_TIMEOUT_MS = 6_000
 
 type PresetChangeSource = 'manual' | 'auto'
 

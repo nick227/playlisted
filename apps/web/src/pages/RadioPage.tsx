@@ -395,7 +395,6 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
             aria-label="Submit a song"
           >
             <Upload size={17} className="text-[var(--color-brand)]" />
-            {submissionCollectionMutation.isPending ? "Starting..." : "Submit Song"}
           </button>
           <button
             type="button"
@@ -404,7 +403,6 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
             aria-label="Open radio chat"
           >
             <MessageCircle size={17} className="text-[var(--color-brand)]" />
-            <span className="text-sm font-semibold">Chat</span>
             {unreadCount > 0 ? (
               <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--color-brand)] px-1 text-[10px] font-bold leading-none text-white">
                 {unreadCount > 9 ? "9+" : unreadCount}
