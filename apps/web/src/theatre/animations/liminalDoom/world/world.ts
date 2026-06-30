@@ -58,8 +58,18 @@ export function advanceWorld(
   cameraZ: number,
   options: WorldAdvanceOptions = {},
 ): LiminalWorld {
-  const withFutureRooms = ensureRoomsAhead(world, cameraZ, options)
-  return cullRoomsBehind(withFutureRooms, cameraZ, options.behindDistance)
+  const aheadDistance = options.aheadDistance ?? DEFAULT_AHEAD_DISTANCE
+  const behindDistance = options.behindDistance ?? DEFAULT_BEHIND_DISTANCE
+
+  const needsAhead = world.nextZ < cameraZ + aheadDistance
+  const needsCull =
+    world.rooms.length > 0 &&
+    world.rooms[0].zEnd + world.rooms[0].shell.transitionLength < cameraZ - behindDistance
+
+  if (!needsAhead && !needsCull) return world
+
+  const withFutureRooms = needsAhead ? ensureRoomsAhead(world, cameraZ, options) : world
+  return needsCull ? cullRoomsBehind(withFutureRooms, cameraZ, behindDistance) : withFutureRooms
 }
 
 export function getRoomAtZ(world: LiminalWorld, z: number): LiminalRoom | null {

@@ -9,6 +9,7 @@ export type FrameContextInput = {
   mediaSrc: string | null
   artworkUrl: string | null
   featuresRef?: ReturnType<AudioFeatureExtractor['getFeatures']>
+  existingTimeRef?: { elapsed: number; delta: number; frame: number }
 }
 
 export function buildAnimationFrameContext(input: FrameContextInput): {
@@ -18,7 +19,7 @@ export function buildAnimationFrameContext(input: FrameContextInput): {
   const reducedMotion =
     typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
   const policy = detectPolicy(reducedMotion)
-  const timeRef = { elapsed: 0, delta: 0, frame: 0 }
+  const timeRef = input.existingTimeRef || { elapsed: 0, delta: 0, frame: 0 }
   const triggerCache: Record<string, { frame: number; triggers: ReturnType<typeof getVisualTriggers> }> = {}
   const { featuresRef } = input
 

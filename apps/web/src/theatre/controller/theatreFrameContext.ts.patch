@@ -1,0 +1,10 @@
+--- a/apps/web/src/theatre/controller/theatreFrameContext.ts
++++ b/apps/web/src/theatre/controller/theatreFrameContext.ts
+@@ -21,7 +21,7 @@
+   const reducedMotion =
+     typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+   const policy = detectPolicy(reducedMotion)
+-  const timeRef = { elapsed: 0, delta: 0, frame: 0 }
++  const timeRef = input.existingTimeRef || { elapsed: 0, delta: 0, frame: 0 }
+   const triggerCache: Record<string, { frame: number; triggers: ReturnType<typeof getVisualTriggers> }> = {}
+   const { featuresRef } = input

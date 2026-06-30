@@ -15,10 +15,9 @@ import { ensureLiminalScenesRegistered } from '../scenes/register'
 import { createWorld, getRoomAtZ } from '../world/world'
 import { advanceWorld } from '../world/world'
 import { createAutopilotState, updateAutopilotCamera } from '../world/autopilotCamera'
-import { createAudioReact } from './audio'
 import { CameraBobbing } from './bobbing'
-import type { AudioReact, RoomPhase, SceneType } from '../core/types'
-import { backWallBounds } from '../core/math'
+import type { AudioMotionInput, AudioReact, RoomPhase, SceneType } from '../core/types'
+import { backWallBounds, clamp } from '../core/math'
 import type { WallDecalSet } from '../room/decals'
 
 export function liminalDoomFactory(): IAnimation {
@@ -39,6 +38,8 @@ export function liminalDoomFactory(): IAnimation {
     private inhabitedUntilMs = 0
 
     private bobbing = new CameraBobbing()
+    private _audioReact: AudioReact = { bass: 0, mids: 0, highs: 0, beat: 0, chaos: 0 }
+    private _audioMotion: AudioMotionInput = { bass: 0, mids: 0, highs: 0, chaos: 0, beat: false }
 
     constructor() {
       super({ defaultOpacity: 1, defaultZIndex: 101, defaultBlendMode: 'normal', useEffects: true })
@@ -48,7 +49,17 @@ export function liminalDoomFactory(): IAnimation {
     // ── Audio ───────────────────────────────────────────────────────────────
 
     private readAudio(context: AnimationContext): AudioReact {
-      return createAudioReact(context, this.readBands(context))
+      const bands = this.readBands(context)
+      const features = context.shared?.features
+      const triggers = context.shared?.getTriggers?.('vivid')
+      const sensitivity = context.options?.sensitivity ?? 1
+      const intensity = context.options?.intensity ?? 1
+      this._audioReact.bass = clamp(bands.bass * sensitivity * intensity, 0, 1)
+      this._audioReact.mids = clamp(bands.mids * sensitivity * intensity * 0.85, 0, 1)
+      this._audioReact.highs = clamp(bands.highs * sensitivity * intensity * 0.65, 0, 1)
+      this._audioReact.beat = triggers?.beat ? 1 : clamp((features?.flux.overall ?? 0) * 2, 0, 0.6)
+      this._audioReact.chaos = triggers?.chaosHit ? 1 : clamp(triggers?.energy ?? 0, 0, 1)
+      return this._audioReact
     }
 
     private syncCast(sceneType: SceneType, extraCast: ReturnType<typeof resolveCastIds>, seed: number) {
@@ -76,13 +87,12 @@ export function liminalDoomFactory(): IAnimation {
 
       const dtSec = dtMs / 1000
       this.world = advanceWorld(this.world, this.autopilot.camera.position.z)
-      this.autopilot = updateAutopilotCamera(this.autopilot, this.world, dtSec, {
-        bass: audio.bass,
-        mids: audio.mids,
-        highs: audio.highs,
-        chaos: audio.chaos,
-        beat: audio.beat > 0.6,
-      })
+      this._audioMotion.bass = audio.bass
+      this._audioMotion.mids = audio.mids
+      this._audioMotion.highs = audio.highs
+      this._audioMotion.chaos = audio.chaos
+      this._audioMotion.beat = audio.beat > 0.6
+      updateAutopilotCamera(this.autopilot, this.world, dtSec, this._audioMotion)
 
       const room = getRoomAtZ(this.world, this.autopilot.camera.position.z)
       // venueType drives background geometry; castType drives which characters appear.
@@ -110,8 +120,8 @@ export function liminalDoomFactory(): IAnimation {
         this.inhabitedUntilMs = 0
       }
 
-      const pfBase = this.phaseCtrl.tick(nowMs, audio, rm)
-      const pf = { ...pfBase, phase }
+      const pf = this.phaseCtrl.tick(nowMs, audio, rm)
+      pf.phase = phase
       this.postFx.tick(audio, pf.phase, rm, dtMs)
 
       if (!rm && audio.chaos > 0.7) this.postFx.triggerShake(audio.chaos - 0.5)

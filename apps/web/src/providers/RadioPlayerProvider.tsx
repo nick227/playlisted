@@ -73,7 +73,11 @@ export function RadioPlayerProvider({ children }: { children: ReactNode }) {
   const isLive = station?.status === "LIVE" && Boolean(nowPlaying);
   const radioArtworkUrl = nowPlaying?.artworkUrl ?? null;
 
-  useTheatreTrackRotation(nowPlaying?.id, playing);
+  useTheatreTrackRotation(
+    nowPlaying?.id,
+    playing,
+    nowPlaying?.durationSeconds ? nowPlaying.durationSeconds * 1000 : null
+  );
 
   const clearTransitionRetry = useCallback(() => {
     if (transitionRetryTimerRef.current == null) return;

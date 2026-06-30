@@ -6,6 +6,7 @@ import theatreController from "@/theatre/controller/lazyController";
 export function useTheatreTrackRotation(
   segmentId: string | null | undefined,
   enabled: boolean,
+  durationMs?: number | null,
 ) {
   const prevSegmentIdRef = useRef<string | null>(null);
 
@@ -21,4 +22,13 @@ export function useTheatreTrackRotation(
     prevSegmentIdRef.current = segmentId;
     if (isSegmentChange) void theatreController.rotateRandomPreset();
   }, [segmentId, enabled]);
+
+  useEffect(() => {
+    theatreController.setAutoRotation(enabled);
+    return () => theatreController.setAutoRotation(false);
+  }, [enabled]);
+
+  useEffect(() => {
+    theatreController.setClipDuration(durationMs ?? null);
+  }, [durationMs]);
 }

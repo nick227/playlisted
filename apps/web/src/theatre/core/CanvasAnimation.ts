@@ -23,6 +23,7 @@ export abstract class CanvasAnimation implements IAnimation {
   protected pixelRatio = 1
   protected externallyDriven = false
   private initOptions: CanvasAnimationInitOptions
+  private initResizeRaf = 0
 
   constructor(initOptions: CanvasAnimationInitOptions = {}) {
     this.initOptions = initOptions
@@ -44,7 +45,7 @@ export abstract class CanvasAnimation implements IAnimation {
     if (zIndex !== undefined) this.canvas.style.zIndex = String(zIndex)
     container.appendChild(this.canvas)
     this.ctx = this.canvas.getContext('2d') as CanvasRenderingContext2D
-    requestAnimationFrame(() => this.resize())
+    this.initResizeRaf = requestAnimationFrame(() => { this.initResizeRaf = 0; this.resize() })
     window.addEventListener('resize', this.resize)
 
     if (this.initOptions.useEffects === true) {
@@ -88,6 +89,12 @@ export abstract class CanvasAnimation implements IAnimation {
   async start() {
     this.running = true
     if (this.externallyDriven) return
+    // Cancel any stale queued frame before creating a new loop.
+    // Without this, a pending frame from a previous loop cycle (e.g. queued just
+    // before pause() set running=false, then never delivered while the tab was
+    // hidden) fires after resume() sets running=true, re-entering the old closure
+    // concurrently with the new one — doubling draw work each pause/resume cycle.
+    cancelAnimationFrame(this.raf)
     const loop = () => {
       if (!this.running) return
       if (this.context) this.draw(this.context)
@@ -110,6 +117,8 @@ export abstract class CanvasAnimation implements IAnimation {
   async stop() {
     this.running = false
     cancelAnimationFrame(this.raf)
+    cancelAnimationFrame(this.initResizeRaf)
+    this.initResizeRaf = 0
     return Promise.resolve()
   }
 

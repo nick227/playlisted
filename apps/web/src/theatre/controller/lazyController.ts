@@ -27,6 +27,8 @@ interface RealTheatreController extends EventTarget {
   exit(): Promise<void>
   changePreset(id: string): Promise<void>
   rotateRandomPreset(): Promise<void>
+  setAutoRotation(enabled: boolean): void
+  setClipDuration(durationMs: number | null): void
 }
 
 const THEATRE_RELOAD_KEY = 'playlisted:theatre:chunk-reload-attempted'
@@ -70,7 +72,9 @@ class LazyTheatreController extends EventTarget {
 
   // Buffered calls replayed when the real controller loads.
   private _pendingSource: { el: HTMLMediaElement | null; meta?: { artworkUrl?: string | null } } | null = null
+  private _pendingClipDuration: number | null = null
   private _pendingArtwork: { url: string | null } | null = null
+  private _pendingAutoRotate: boolean = false
 
   // ── Private load ──────────────────────────────────────────────────────────
 
@@ -89,9 +93,14 @@ class LazyTheatreController extends EventTarget {
         if (this._pendingSource !== null) {
           real.registerPlaybackSource(this._pendingSource.el, this._pendingSource.meta)
         }
+        if (this._pendingClipDuration !== null) {
+          real.setClipDuration(this._pendingClipDuration)
+        }
         if (this._pendingArtwork !== null) {
           real.setArtwork(this._pendingArtwork.url)
         }
+        real.setAutoRotation(this._pendingAutoRotate)
+        
         // Push current canEnter so the real controller starts in sync.
         real.setCanEnter(this.state.canEnter)
 
@@ -141,6 +150,20 @@ class LazyTheatreController extends EventTarget {
       this._real.setArtwork(url)
     } else {
       this.dispatchEvent(new Event('change'))
+    }
+  }
+
+  public setAutoRotation(enabled: boolean) {
+    this._pendingAutoRotate = enabled
+    if (this._real) {
+      this._real.setAutoRotation(enabled)
+    }
+  }
+
+  public setClipDuration(durationMs: number | null) {
+    this._pendingClipDuration = durationMs
+    if (this._real) {
+      this._real.setClipDuration(durationMs)
     }
   }
 

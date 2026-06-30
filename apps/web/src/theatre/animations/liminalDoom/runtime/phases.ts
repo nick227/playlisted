@@ -70,6 +70,10 @@ export class PhaseController {
   private lastVoidBloom = -VOID_MIN_INTERVAL_MS
   private voidBloomStart = -1
   private voidBloomDuration = 2800
+  private readonly _frame: PhaseFrame = {
+    phase: 'approach', phaseT: 0, intensity: 0,
+    chaosLevel: 0, voidBloomTriggered: false, inVoidBloom: false, voidBloomT: 0,
+  }
 
   reset(sceneType: SceneType, nowMs: number, seed = 0) {
     this.phase = 'approach'
@@ -112,30 +116,28 @@ export class PhaseController {
       if (vt >= 1) {
         this.advance(nowMs)
       }
-      return {
-        phase: 'voidBloom',
-        phaseT: vt,
-        intensity: 1,
-        chaosLevel: clamp(this.chaosAccum / CHAOS_SUSTAIN_MS, 0, 1),
-        voidBloomTriggered,
-        inVoidBloom: true,
-        voidBloomT: vt,
-      }
+      this._frame.phase = 'voidBloom'
+      this._frame.phaseT = vt
+      this._frame.intensity = 1
+      this._frame.chaosLevel = clamp(this.chaosAccum / CHAOS_SUSTAIN_MS, 0, 1)
+      this._frame.voidBloomTriggered = voidBloomTriggered
+      this._frame.inVoidBloom = true
+      this._frame.voidBloomT = vt
+      return this._frame
     }
 
     // Normal phase progression
     const phaseT = this.normalizedT(elapsed)
     if (this.shouldAdvance(elapsed)) this.advance(nowMs)
 
-    return {
-      phase: this.phase,
-      phaseT,
-      intensity: intensityForPhase(this.phase, phaseT, audio),
-      chaosLevel: clamp(this.chaosAccum / CHAOS_SUSTAIN_MS, 0, 1),
-      voidBloomTriggered,
-      inVoidBloom: false,
-      voidBloomT: 0,
-    }
+    this._frame.phase = this.phase
+    this._frame.phaseT = phaseT
+    this._frame.intensity = intensityForPhase(this.phase, phaseT, audio)
+    this._frame.chaosLevel = clamp(this.chaosAccum / CHAOS_SUSTAIN_MS, 0, 1)
+    this._frame.voidBloomTriggered = voidBloomTriggered
+    this._frame.inVoidBloom = false
+    this._frame.voidBloomT = 0
+    return this._frame
   }
 
   private normalizedT(elapsed: number): number {

@@ -1,4 +1,4 @@
-import type AnimationBridge from '../controller/AnimationBridge'
+// AnimationBridge imported for reference below
 
 const DEV_ENABLED = Boolean(
   (typeof import.meta !== 'undefined' && 'env' in import.meta && import.meta.env.DEV) ||
@@ -32,7 +32,7 @@ function formatDebugValue(value: any) {
   }
 }
 
-export function createTheatreDevPanel(overlay: HTMLElement, bridge: AnimationBridge) {
+export function createTheatreDevPanel(overlay: HTMLElement, bridge: { getInstances(): any[] }) {
   if (!DEV_ENABLED || panelElement) return
 
   panelElement = document.createElement('aside')

@@ -208,7 +208,11 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     theatreController.setCanEnter(playbackActive);
   }, [playbackActive]);
 
-  useTheatreTrackRotation(currentTrack?.id, playbackActive);
+  useTheatreTrackRotation(
+    currentTrack?.id,
+    playbackActive,
+    transportDuration ? transportDuration * 1000 : null
+  );
 
   const queueRef = useRef(queue);
   const queueIndexRef = useRef(queueIndex);

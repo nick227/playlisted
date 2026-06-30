@@ -1,18 +1,37 @@
-import AnimationBridge from './AnimationBridge'
 import registry from '../registry'
 import { AnimationContext, AnimationFactory } from '../core/IAnimation'
 import AudioFeatureExtractor from '../audio/AudioFeatureExtractor'
 import { getOrCreateAudioAnalyserConnection, type AudioAnalyserConnection } from '@/features/playback-indicators/audioAnalyser'
-import { getPreset, listPresets, pickPreset, type SceneCategory, type ScenePresetDef } from '../registry/scenePresets'
+import { getPreset, listPresets, pickPreset, type SceneCategory, type ScenePresetDef, type TheatreTransitionKind } from '../registry/scenePresets'
 import { buildAnimationFrameContext } from './theatreFrameContext'
+import { detectPolicy } from '../runtime/PerformancePolicy'
 import { playbackFocusTiming } from '@/lib/playbackFocusTiming'
 import { createTheatreDevPanel, destroyTheatreDevPanel } from '../dev/TheatreDevPanel'
+import { TheatreSceneDeck } from './TheatreSceneDeck'
+
+export type TheatreRotationPolicy = {
+  minSceneMs: number
+  maxSceneMs: number
+  clipLengthBias: 'minimum' | 'preferred' | 'ignore'
+  varianceMs: number
+  requireAudioPop: boolean
+}
+
+export const DEFAULT_ROTATION_POLICY: TheatreRotationPolicy = {
+  minSceneMs: 12000,
+  maxSceneMs: 60000,
+  clipLengthBias: 'minimum',
+  varianceMs: 8000,
+  requireAudioPop: true,
+}
+
+const AUTO_ROTATE_POP_THRESHOLD = 0.02
 
 type PlaybackSourceMeta = { artworkUrl?: string | null }
 type TheatreMode = 'background' | 'immersive'
 
 class TheatreController extends EventTarget {
-  private bridge = new AnimationBridge()
+  private deck: TheatreSceneDeck | null = null
   private overlay: HTMLElement | null = null
   private overrideEl: HTMLMediaElement | null = null
   private audioEl: HTMLMediaElement | null = null
@@ -24,9 +43,13 @@ class TheatreController extends EventTarget {
   private overlayBoundsCleanup: (() => void) | null = null
   private transitioning = false
   private transitionToken = 0
+  private autoRotateEnabled = false
+  private nextAutoRotateTime = 0
+  private autoRotateArmed = false
+
   private readonly onVisibilityChange = () => {
-    if (document.hidden && this.state.active) this.bridge.pause()
-    else if (!document.hidden && this.state.active) this.bridge.resume()
+    if (document.hidden && this.state.active) this.deck?.pause()
+    else if (!document.hidden && this.state.active) this.deck?.resume()
   }
 
   public state = {
@@ -37,6 +60,8 @@ class TheatreController extends EventTarget {
     mediaSrc: null as string | null,
     artworkUrl: null as string | null,
   }
+
+  private _clipDurationMs: number | null = null
 
   constructor() {
     super()
@@ -62,7 +87,8 @@ class TheatreController extends EventTarget {
     this.overlay?.remove()
     this.overlay = null
     document.body.classList.remove('theatre-active')
-    void this.bridge.exit()
+    void this.deck?.exit()
+    this.deck = null
   }
 
   /** Radio (or other page-local player) overrides the site player while mounted. */
@@ -96,6 +122,46 @@ class TheatreController extends EventTarget {
     }
 
     if (changed) this.dispatchEvent(new Event('change'))
+  }
+
+  public setAutoRotation(enabled: boolean) {
+    this.autoRotateEnabled = enabled
+    if (enabled) {
+      this.resetAutoRotateTimer()
+    }
+  }
+
+  public setClipDuration(durationMs: number | null) {
+    this._clipDurationMs = durationMs
+  }
+
+  private resetAutoRotateTimer() {
+    const policy = DEFAULT_ROTATION_POLICY
+    let baseMin = policy.minSceneMs
+
+    // Determine the most accurate duration for the next rotation
+    let durationMs: number | null = null
+    
+    // 1. Explicit clip duration passed via React (e.g. from segment or track metadata)
+    if (this._clipDurationMs !== null && this._clipDurationMs > 0 && Number.isFinite(this._clipDurationMs)) {
+      durationMs = this._clipDurationMs
+    } 
+    // 2. Fallback to audioEl.duration if reasonable
+    else if (this.audioEl?.duration && Number.isFinite(this.audioEl.duration) && this.audioEl.duration > 0) {
+      // Treat duration as stream (like icecast) if it's unreasonably large (e.g., > 1 hour)
+      const sec = this.audioEl.duration
+      if (sec < 3600) durationMs = sec * 1000
+    }
+
+    if (durationMs === null) {
+      durationMs = policy.maxSceneMs // Default fallback
+    }
+
+    // Formula: nextSwitchAt = now + max(clipDurationMs, minSceneMs) + randomVariance
+    const nextWaitMs = Math.max(durationMs, baseMin) + (Math.random() * policy.varianceMs)
+    
+    this.nextAutoRotateTime = performance.now() + nextWaitMs
+    this.autoRotateArmed = false
   }
 
   private ensureBackgroundIfNeeded() {
@@ -261,7 +327,7 @@ class TheatreController extends EventTarget {
     this.stopFeatureLoop()
     this.extractor = null
     this.frameContext = null
-    if (this.bridge.getInstances().length > 0) await this.bridge.exit()
+    if (this.deck && this.deck.getInstances().length > 0) await this.deck.exit()
     if (overlay) this.discardOverlay(overlay)
     if (!this.state.active) {
       this.state.presetId = null
@@ -306,15 +372,15 @@ class TheatreController extends EventTarget {
     if (audio.paused) {
       try {
         await audio.play()
-        this.bridge.resume()
+        this.deck?.resume()
       } catch {
-        this.bridge.pause()
+        this.deck?.pause()
       }
       return
     }
 
     audio.pause()
-    this.bridge.pause()
+    this.deck?.pause()
   }
 
   private pickRandomPreset(excludeCurrent = true): ScenePresetDef | null {
@@ -329,9 +395,20 @@ class TheatreController extends EventTarget {
 
   public async rotateRandomPreset() {
     if (!this.state.active || this.transitioning) return
-    const selectedPreset = this.pickRandomPreset()
-    if (!selectedPreset || selectedPreset.id === this.state.presetId) return
-    await this.changePreset(selectedPreset.id)
+    
+    if (this.deck?.getNextPresetId()) {
+      const token = this.bumpTransitionToken()
+      this.transitioning = true
+      try {
+        await this.changeToPreloadedInner(token)
+      } finally {
+        if (this.stillCurrent(token)) this.transitioning = false
+      }
+    } else {
+      const selectedPreset = this.pickRandomPreset()
+      if (!selectedPreset || selectedPreset.id === this.state.presetId) return
+      await this.changePreset(selectedPreset.id)
+    }
   }
 
   public async changePreset(presetId: string) {
@@ -359,16 +436,89 @@ class TheatreController extends EventTarget {
       featuresRef: this.extractor?.getFeatures(),
     })
 
-    await this.bridge.exit()
-    if (!this.stillCurrent(token) || !this.overlay || !this.state.active) return
+    if (!this.deck) return
 
     this.state.presetId = selectedPreset.id
     this.frameContext = ctx
     const factories = this.buildFactoriesForPreset(selectedPreset, policy.maxLayers)
-    await this.bridge.enter(this.overlay, factories, ctx)
+
+    const features = this.extractor?.getFeatures()
+    let kind: TheatreTransitionKind = selectedPreset.timing?.transitionPreference ?? 'crossfade'
+    
+    if (features) {
+      if (features.flux.overall > AUTO_ROTATE_POP_THRESHOLD * 1.5) kind = 'cut'
+      else if (features.flux.overall > AUTO_ROTATE_POP_THRESHOLD * 0.8) kind = 'fastFade'
+      else if (features.flux.overall < 0.005) kind = 'slowFade'
+    }
+
+    await this.deck.transitionTo(selectedPreset.id, factories, ctx, kind)
+
     if (!this.stillCurrent(token) || !this.overlay || !this.state.active) return
 
+    this.resetAutoRotateTimer()
     this.dispatchEvent(new Event('change'))
+    
+    this.schedulePreloadNext()
+  }
+
+  private async changeToPreloadedInner(token: number) {
+    const presetId = this.deck?.getNextPresetId()
+    const selectedPreset = presetId ? getPreset(presetId) : null
+    
+    if (!selectedPreset || !this.stillCurrent(token) || !this.deck) return
+
+    this.state.presetId = selectedPreset.id
+    
+    const features = this.extractor?.getFeatures()
+    const reducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const policy = detectPolicy(reducedMotion)
+
+    let kind: TheatreTransitionKind = selectedPreset.timing?.transitionPreference ?? 'crossfade'
+    
+    // Disable crossfade on reduced-motion or low-tier devices
+    if (kind === 'crossfade' && (policy.lowPower || reducedMotion || policy.dprClamp <= 1)) {
+      kind = 'fastFade'
+    }
+    
+    if (features) {
+      if (features.flux.overall > AUTO_ROTATE_POP_THRESHOLD * 1.5) kind = 'cut'
+      else if (features.flux.overall > AUTO_ROTATE_POP_THRESHOLD * 0.8) kind = 'fastFade'
+      else if (features.flux.overall < 0.005 && kind !== 'crossfade') kind = 'slowFade'
+    }
+
+    await this.deck.transitionToPreloaded(kind)
+
+    if (!this.stillCurrent(token) || !this.overlay || !this.state.active) return
+
+    this.resetAutoRotateTimer()
+    this.dispatchEvent(new Event('change'))
+
+    this.schedulePreloadNext()
+  }
+
+  private schedulePreloadNext() {
+    if (!this.state.active || !this.deck) return
+
+    const scheduleIdle = window.requestIdleCallback ?? ((cb) => window.setTimeout(cb, 1000))
+    scheduleIdle(async () => {
+      if (!this.state.active || !this.deck || this.deck.getNextPresetId() || this.transitioning) return
+      
+      const nextPreset = this.pickRandomPreset()
+      if (!nextPreset) return
+
+      const analyser = this.getOrCreateAnalyser()
+      const { ctx, policy } = buildAnimationFrameContext({
+        audioEl: this.audioEl,
+        analyser,
+        mediaSrc: this.audioEl?.currentSrc || null,
+        artworkUrl: this.state.artworkUrl,
+        featuresRef: this.extractor?.getFeatures(),
+        existingTimeRef: this.frameContext?.shared?.time,
+      })
+
+      const factories = this.buildFactoriesForPreset(nextPreset, policy.maxLayers)
+      await this.deck.preload(nextPreset.id, factories, ctx)
+    })
   }
 
   public async toggle() {
@@ -534,9 +684,11 @@ class TheatreController extends EventTarget {
     const selectedPreset = this.pickRandomPreset(false)
     const initialPresetId = selectedPreset?.id ?? null
 
+    this.deck = new TheatreSceneDeck(overlay)
+
     if (!isBackground) {
       this.mountImmersiveControls(overlay, initialPresetId)
-      createTheatreDevPanel(overlay, this.bridge)
+      createTheatreDevPanel(overlay, this.deck)
     }
 
     if (!this.stillCurrent(token)) {
@@ -546,7 +698,10 @@ class TheatreController extends EventTarget {
 
     this.frameContext = ctx
     const factories = this.buildFactoriesForPreset(selectedPreset, policy.maxLayers)
-    await this.bridge.enter(overlay, factories, ctx)
+    if (initialPresetId) {
+      await this.deck.enterInitial(initialPresetId, factories, ctx)
+    }
+    
     if (!this.stillCurrent(token)) {
       await this.abortStaleTransition(token, overlay)
       return
@@ -557,6 +712,8 @@ class TheatreController extends EventTarget {
     this.state.active = true
     this.dispatchEvent(new Event('enter'))
     this.dispatchEvent(new Event('change'))
+    
+    this.schedulePreloadNext()
 
     this.revealOverlay(overlay, token)
 
@@ -578,7 +735,21 @@ class TheatreController extends EventTarget {
         frameCtx.shared.time.frame += 1
       }
       try { this.extractor?.update() } catch { /* ignore */ }
-      this.bridge.renderFrame(frameCtx)
+      
+      if (this.autoRotateEnabled && this.state.active && !this.transitioning) {
+        if (!this.autoRotateArmed && now >= this.nextAutoRotateTime) {
+          this.autoRotateArmed = true
+        }
+        if (this.autoRotateArmed && this.extractor) {
+          const features = this.extractor.getFeatures()
+          if (features.flux.overall > AUTO_ROTATE_POP_THRESHOLD) {
+            this.resetAutoRotateTimer()
+            void this.rotateRandomPreset()
+          }
+        }
+      }
+
+      this.deck?.renderFrame(frameCtx)
       this.featureLoopId = requestAnimationFrame(loop)
     }
     this.featureLoopId = requestAnimationFrame(loop)
@@ -605,7 +776,7 @@ class TheatreController extends EventTarget {
       
       destroyTheatreDevPanel()
 
-      await this.bridge.exit()
+      if (this.deck) await this.deck.exit()
       if (!this.stillCurrent(token)) return
 
       this.clearOverlayBoundsTracking()

@@ -8,6 +8,13 @@ export type PresetLayer = {
   options?: Partial<AnimationOptions>
 }
 
+export type TheatreTransitionKind =
+  | 'cut'
+  | 'fastFade'
+  | 'slowFade'
+  | 'crossfade'
+  | 'dipToBlack'
+
 export type ScenePresetDef = {
   id: string
   label: string
@@ -16,6 +23,12 @@ export type ScenePresetDef = {
   /** Preset to use instead when prefers-reduced-motion is active. */
   reducedMotionPreset?: string
   weight?: number
+  timing?: {
+    minDurationMs?: number
+    preferredDurationMs?: number
+    maxDurationMs?: number
+    transitionPreference?: TheatreTransitionKind
+  }
 }
 
 const presets = new Map<string, ScenePresetDef>()

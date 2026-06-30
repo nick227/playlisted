@@ -46,7 +46,7 @@ export function updateAutopilotCamera(
   audio: AudioMotionInput = {},
 ): AutopilotState {
   const dt = Math.max(0, Math.min(deltaSeconds, 0.1))
-  const elapsed = state.elapsed + dt
+  const elapsed = (state.elapsed += dt)
   const currentZ = state.camera.position.z
   const currentRoom = getRoomAtZ(world, currentZ)
   const upcomingRoom = getUpcomingRoom(world, currentZ)
@@ -54,7 +54,7 @@ export function updateAutopilotCamera(
   const bass = clamp01(audio.bass ?? 0)
   const mids = clamp01(audio.mids ?? 0)
   const chaos = clamp01(audio.chaos ?? 0)
-  const completedRoomIds = new Set(state.completedRoomIds)
+
   let phase = state.phase
   let watchRoomId = state.watchRoomId
   let watchElapsed = state.watchElapsed
@@ -64,7 +64,7 @@ export function updateAutopilotCamera(
   if (!room) {
     z += getApproachSpeed(elapsed, bass, chaos) * dt
     phase = 'approach'
-  } else if (shouldWatchRoom(room, completedRoomIds, z, watchRoomId)) {
+  } else if (shouldWatchRoom(room, state.completedRoomIds, z, watchRoomId)) {
     phase = 'watch'
     watchRoomId = room.id
     watchElapsed = watchRoomId === state.watchRoomId ? watchElapsed + dt : dt
@@ -72,7 +72,7 @@ export function updateAutopilotCamera(
 
     const targetWatch = getTargetWatchDuration(room, audio)
     if (watchElapsed >= targetWatch || audio.onset || (audio.beat && watchElapsed >= room.watchBudget.min)) {
-      completedRoomIds.add(room.id)
+      state.completedRoomIds.add(room.id)
       phase = 'threshold'
       watchRoomId = null
       watchElapsed = 0
@@ -90,32 +90,42 @@ export function updateAutopilotCamera(
     }
   }
 
-  const drift = getSyntheticDrift(elapsed, state.seed, bass, mids, chaos, passagePulse)
+  const a = state.seed * 0.001
+  const driftAmp = 1 + bass * 0.45 + chaos * 0.8
+  const lurch = passagePulse * (0.18 + chaos * 0.14)
+  const driftX =
+    driftAmp *
+    (Math.sin(elapsed * 0.19 + a) * 0.55 +
+      Math.sin(elapsed * 0.071 + a * 2.7) * 0.35 +
+      Math.sin(elapsed * 0.031 + a * 7.1) * 0.24)
+  const driftY = Math.sin(elapsed * 0.83 + a) * (0.045 + bass * 0.08) + Math.sin(elapsed * 0.21) * 0.035
+  const driftYaw =
+    Math.sin(elapsed * 0.13 + a * 3.1) * 0.055 +
+    Math.sin(elapsed * 0.047 + a) * 0.04 +
+    lurch
+  const driftPitch = Math.sin(elapsed * 0.17 + a * 5.3) * 0.025 + mids * 0.012 - passagePulse * 0.025
+  const driftRoll =
+    Math.sin(elapsed * 0.11 + a * 4.4) * 0.035 +
+    Math.sin(elapsed * 0.29 + a) * 0.018 +
+    passagePulse * 0.06
+
   const shellWidth = room?.shell.width ?? 10
   const shellHeight = room?.shell.height ?? 6.5
   const maxX = shellWidth * 0.18
 
-  return {
-    ...state,
-    elapsed,
-    phase,
-    currentRoomId: room?.id ?? null,
-    watchRoomId,
-    watchElapsed,
-    completedRoomIds,
-    passagePulse,
-    camera: {
-      ...state.camera,
-      position: {
-        x: clamp(drift.x, -maxX, maxX),
-        y: clamp(DEFAULT_EYE_HEIGHT + drift.y, 1.4, shellHeight - 1),
-        z,
-      },
-      yaw: drift.yaw,
-      pitch: drift.pitch,
-      roll: drift.roll,
-    },
-  }
+  state.phase = phase
+  state.currentRoomId = room?.id ?? null
+  state.watchRoomId = watchRoomId
+  state.watchElapsed = watchElapsed
+  state.passagePulse = passagePulse
+  state.camera.position.x = clamp(driftX, -maxX, maxX)
+  state.camera.position.y = clamp(DEFAULT_EYE_HEIGHT + driftY, 1.4, shellHeight - 1)
+  state.camera.position.z = z
+  state.camera.yaw = driftYaw
+  state.camera.pitch = driftPitch
+  state.camera.roll = driftRoll
+
+  return state
 }
 
 export function getTargetWatchDuration(room: LiminalRoom, audio: AudioMotionInput = {}) {
@@ -146,36 +156,6 @@ function getPassageSpeed(elapsed: number, bass: number, chaos: number) {
   return getApproachSpeed(elapsed, bass, chaos) + 1.8 + chaos * 3
 }
 
-function getSyntheticDrift(
-  elapsed: number,
-  seed: number,
-  bass: number,
-  mids: number,
-  chaos: number,
-  passagePulse: number,
-) {
-  const a = seed * 0.001
-  const driftAmp = 1 + bass * 0.45 + chaos * 0.8
-  const lurch = passagePulse * (0.18 + chaos * 0.14)
-
-  return {
-    x:
-      driftAmp *
-      (Math.sin(elapsed * 0.19 + a) * 0.55 +
-        Math.sin(elapsed * 0.071 + a * 2.7) * 0.35 +
-        Math.sin(elapsed * 0.031 + a * 7.1) * 0.24),
-    y: Math.sin(elapsed * 0.83 + a) * (0.045 + bass * 0.08) + Math.sin(elapsed * 0.21) * 0.035,
-    yaw:
-      Math.sin(elapsed * 0.13 + a * 3.1) * 0.055 +
-      Math.sin(elapsed * 0.047 + a) * 0.04 +
-      lurch,
-    pitch: Math.sin(elapsed * 0.17 + a * 5.3) * 0.025 + mids * 0.012 - passagePulse * 0.025,
-    roll:
-      Math.sin(elapsed * 0.11 + a * 4.4) * 0.035 +
-      Math.sin(elapsed * 0.29 + a) * 0.018 +
-      passagePulse * 0.06,
-  }
-}
 
 function approachValue(current: number, target: number, maxStep: number) {
   if (Math.abs(target - current) <= maxStep) {

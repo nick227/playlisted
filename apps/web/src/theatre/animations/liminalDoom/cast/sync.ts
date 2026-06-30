@@ -11,5 +11,10 @@ export function collectSceneCast(
 }
 
 export function castSignature(members: readonly CastMemberDef[]): string {
-  return members.map((m) => m.id).join('|')
+  let sig = ''
+  for (let i = 0; i < members.length; i++) {
+    if (i > 0) sig += '|'
+    sig += members[i].id
+  }
+  return sig
 }
