@@ -2,7 +2,7 @@ import registry from '../registry'
 import { AnimationContext, AnimationFactory } from '../core/IAnimation'
 import AudioFeatureExtractor from '../audio/AudioFeatureExtractor'
 import { getOrCreateAudioAnalyserConnection, type AudioAnalyserConnection } from '@/features/playback-indicators/audioAnalyser'
-import { getPreset, listPresets, pickPreset, type SceneCategory, type ScenePresetDef, type TheatreTransitionKind } from '../registry/scenePresets'
+import { getPreset, listPresets, pickPreset, type ScenePresetDef, type TheatreTransitionKind } from '../registry/scenePresets'
 import { buildAnimationFrameContext, withTheatreInitContext } from './theatreFrameContext'
 import { detectPolicy } from '../runtime/PerformancePolicy'
 import { playbackFocusTiming } from '@/lib/playbackFocusTiming'
@@ -31,8 +31,9 @@ function resolvePresetChoice(reducedMotion: boolean, excludeIds: string[] = []):
     }
   }
 
-  const preferCategory: SceneCategory = import.meta.env.DEV ? 'lab' : 'production'
-  return pickPreset({ preferCategory, reducedMotion, excludeIds })
+  // Auto-enter and auto-rotate use production pool only. Lab presets (e.g. cheechChongFarm)
+  // stay available via ?theatrePreset= or the manual preset menu.
+  return pickPreset({ preferCategory: 'production', reducedMotion, excludeIds })
 }
 
 export type TheatreRotationPolicy = {
