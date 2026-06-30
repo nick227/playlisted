@@ -1,12 +1,12 @@
 export const playbackFocusTiming = {
   theatre: {
-    delayMs: 0,
+    delayMs: 2900,
     fadeInMs: 1200,
     fadeOutMs: 1450,
     exitBufferMs: 380,
   },
   subtitle: {
-    delayMs: 0,
+    delayMs: 3000,
     fadeInMs: 1200,
     fadeOutMs: 450,
     exitBufferMs: 180,
@@ -16,11 +16,11 @@ export const playbackFocusTiming = {
     fadeInMs: 620,
   },
   body: {
-    delayMs: 1000,
+    delayMs: 3000,
     fadeOutMs: 2000,
   },
   sidebarNav: {
-    blurDelayMs: 3000,
+    blurDelayMs: 3500,
     fadeMs: 620,
   },
   snapRevealMs: 120,
