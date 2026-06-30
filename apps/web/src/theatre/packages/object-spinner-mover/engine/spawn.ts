@@ -2,7 +2,7 @@ import type { SpawnStyle } from './types'
 import type { TheatreObject } from './types'
 import { seededRandom } from './rng'
 
-type SpawnCtx = { w: number; h: number; cx: number; cy: number; index: number; total: number; beat: boolean }
+type SpawnCtx = { w: number; h: number; cx: number; cy: number; index: number; total: number; beat: boolean; initial?: boolean }
 
 export function positionForSpawn(obj: TheatreObject, style: SpawnStyle, ctx: SpawnCtx) {
   const { w, h, cx, cy, index, total, beat } = ctx
@@ -41,9 +41,10 @@ export function positionForSpawn(obj: TheatreObject, style: SpawnStyle, ctx: Spa
       obj.y = seededRandom(seed + 5) * h
       break
     case 'beatBurst':
-      if (!beat) { obj.alive = false; obj.spawnDelay = 0.3; return }
-      obj.x = cx + (seededRandom(seed) - 0.5) * w * 0.3
-      obj.y = cy + (seededRandom(seed + 1) - 0.5) * h * 0.3
+      if (!beat && !ctx.initial) { obj.alive = false; obj.spawnDelay = 0.3; return }
+      obj.alive = true
+      obj.x = cx + (seededRandom(seed) - 0.5) * w * 0.35
+      obj.y = cy + (seededRandom(seed + 1) - 0.5) * h * 0.35
       break
     case 'fountain':
       obj.x = cx + (seededRandom(seed) - 0.5) * w * 0.4

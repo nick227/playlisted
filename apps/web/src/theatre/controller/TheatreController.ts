@@ -10,6 +10,30 @@ import { createTheatreDevPanel, destroyTheatreDevPanel } from '../dev/TheatreDev
 import { TheatreSceneDeck } from './TheatreSceneDeck'
 import { theatreBreadcrumb } from './theatreBreadcrumbs'
 import { isPresetQuarantined, quarantinePreset } from './presetQuarantine'
+import { isObjectTheatrePreset } from '../packages/object-spinner-mover/presetEntries'
+
+function presetIdFromUrl(): string | null {
+  if (typeof window === 'undefined') return null
+  const id = new URLSearchParams(window.location.search).get('theatrePreset')?.trim()
+  if (!id || !getPreset(id)) return null
+  return id
+}
+
+function resolvePresetChoice(reducedMotion: boolean, excludeIds: string[] = []): ScenePresetDef | null {
+  const fromUrl = presetIdFromUrl()
+  if (fromUrl) {
+    const preset = getPreset(fromUrl)
+    if (preset) {
+      if (reducedMotion && preset.reducedMotionPreset) {
+        return getPreset(preset.reducedMotionPreset) ?? preset
+      }
+      return preset
+    }
+  }
+
+  const preferCategory: SceneCategory = import.meta.env.DEV ? 'lab' : 'production'
+  return pickPreset({ preferCategory, reducedMotion, excludeIds })
+}
 
 export type TheatreRotationPolicy = {
   minSceneMs: number
@@ -435,13 +459,10 @@ class TheatreController extends EventTarget {
   }
 
   private pickRandomPreset(excludeCurrent = true): ScenePresetDef | null {
-    const reducedMotion = this.prefersReducedMotion()
-    const preferCategory: SceneCategory = import.meta.env.DEV ? 'lab' : 'production'
-    return pickPreset({
-      preferCategory,
-      reducedMotion,
-      excludeIds: excludeCurrent && this.state.presetId ? [this.state.presetId] : [],
-    })
+    return resolvePresetChoice(
+      this.prefersReducedMotion(),
+      excludeCurrent && this.state.presetId ? [this.state.presetId] : [],
+    )
   }
 
   public async rotateRandomPreset() {
@@ -790,13 +811,12 @@ class TheatreController extends EventTarget {
       menuButton.setAttribute('aria-expanded', String(open))
     }
 
-    listPresets().forEach(preset => {
-      if (isPresetQuarantined(preset.id)) return
+    const appendPresetOption = (preset: ScenePresetDef) => {
       const option = document.createElement('button')
       option.type = 'button'
       option.className = 'theatre-visualization-option'
       option.value = preset.id
-      option.textContent = `${preset.label}${preset.category ? ` (${preset.category})` : ''}`
+      option.textContent = preset.label
       option.setAttribute('role', 'menuitemradio')
       option.setAttribute('aria-checked', String(preset.id === initialPresetId))
       option.addEventListener('click', event => {
@@ -808,7 +828,23 @@ class TheatreController extends EventTarget {
         this.changePreset(preset.id)
       })
       presetMenu.appendChild(option)
-    })
+    }
+
+    const appendSection = (title: string, presets: ScenePresetDef[]) => {
+      if (presets.length === 0) return
+      const heading = document.createElement('div')
+      heading.className = 'theatre-visualization-menu-heading'
+      heading.textContent = title
+      presetMenu.appendChild(heading)
+      presets
+        .slice()
+        .sort((a, b) => a.label.localeCompare(b.label))
+        .forEach(appendPresetOption)
+    }
+
+    const available = listPresets().filter(preset => !isPresetQuarantined(preset.id))
+    appendSection('Sticker FX', available.filter(isObjectTheatrePreset))
+    appendSection('Other visualizations', available.filter(preset => !isObjectTheatrePreset(preset)))
 
     menuButton.addEventListener('click', event => {
       event.stopPropagation()
@@ -880,7 +916,7 @@ class TheatreController extends EventTarget {
       featuresRef,
     })
 
-    const selectedPreset = this.pickRandomPreset(false)
+    const selectedPreset = resolvePresetChoice(this.prefersReducedMotion())
     const initialPresetId = selectedPreset?.id ?? null
 
     this.deck = new TheatreSceneDeck(overlay)

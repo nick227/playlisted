@@ -16,7 +16,7 @@ export function createObjectPool(preset: ObjectTheatrePreset, w: number, h: numb
   for (let i = 0; i < count; i++) {
     const shape = shapes[Math.floor(seededRandom(i * 2.1) * shapes.length)]!
     const obj = makeObject(i, shape, preset, bandCount)
-    positionForSpawn(obj, preset.spawnStyle, { w, h, cx, cy, index: i, total: count, beat: false })
+    positionForSpawn(obj, preset.spawnStyle, { w, h, cx, cy, index: i, total: count, beat: false, initial: true })
     objects.push(obj)
   }
 

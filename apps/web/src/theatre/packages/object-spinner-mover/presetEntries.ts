@@ -23,7 +23,7 @@ export function buildObjectTheatrePreset(seed: ObjectTheatreSeed): ScenePresetDe
   return {
     id: seed.id,
     label: seed.label,
-    category: seed.category ?? 'lab',
+    category: seed.category ?? 'production',
     weight: seed.weight ?? 1,
     reducedMotionPreset: seed.reducedMotionPreset ?? 'osm-calm-float',
     layers: [{
@@ -169,3 +169,13 @@ export const OBJECT_THEATRE_SEEDS: ObjectTheatreSeed[] = [
 ]
 
 export const objectSpinnerMoverPresets = OBJECT_THEATRE_SEEDS.map(buildObjectTheatrePreset)
+
+export const OBJECT_SPINNER_MOVER_ID = 'objectSpinnerMover'
+
+export function isObjectTheatrePreset(preset: ScenePresetDef): boolean {
+  return preset.layers.some(layer => layer.animationId === OBJECT_SPINNER_MOVER_ID)
+}
+
+export function listObjectTheatreSeedIds(): string[] {
+  return OBJECT_THEATRE_SEEDS.map(seed => seed.id)
+}

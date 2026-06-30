@@ -706,6 +706,15 @@ body {
   padding: 0.35rem;
 }
 
+.theatre-visualization-menu-heading {
+  padding: 0.45rem 0.65rem 0.25rem;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(248, 250, 252, 0.45);
+}
+
 .theatre-visualization-option {
   display: flex;
   width: 100%;

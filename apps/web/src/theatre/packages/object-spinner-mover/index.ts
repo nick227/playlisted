@@ -21,4 +21,4 @@ export const objectSpinnerMoverPackage: AnimationPackage = {
 
 export type { ObjectTheatrePreset } from './engine/types'
 export type { ObjectTheatreSeed } from './presetEntries'
-export { OBJECT_THEATRE_SEEDS, buildObjectTheatrePreset } from './presetEntries'
+export { OBJECT_THEATRE_SEEDS, buildObjectTheatrePreset, isObjectTheatrePreset, listObjectTheatreSeedIds } from './presetEntries'

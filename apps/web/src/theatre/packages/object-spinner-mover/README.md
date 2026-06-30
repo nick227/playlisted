@@ -23,6 +23,29 @@ Composable sticker theatre engine. One canvas scene (`objectSpinnerMover`) drive
 
 Add new FX by appending to `presetEntries.ts` — no engine changes needed.
 
+## Picking a preset
+
+**URL (works in background + immersive):**
+
+```
+?theatrePreset=burger-bounce-carnival
+```
+
+All ids: `listObjectTheatreSeedIds()` or see `OBJECT_THEATRE_SEEDS` in `presetEntries.ts`.
+
+**Immersive menu:** enter full-screen theatre, tap the **☰ button** top-right → **Sticker FX** section lists every preset.
+
+**Console:**
+
+```js
+import theatreController from '@/theatre/controller/lazyController'
+theatreController.changePreset('ghost-orbit-midnight')
+```
+
+**Auto-rotation:** on track change / audio pop, theatre randomly picks another production preset.
+
+Note: with `prefers-reduced-motion` enabled, all presets fall back to `osm-calm-float` (pastel smileys).
+
 ## v0 composables
 
 | Key | Options |
