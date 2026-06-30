@@ -852,6 +852,17 @@ async function deleteLegacyOne(recording: Prisma.RecordingGetPayload<{ include: 
   return { status: deleted.deleted ? "deleted" as const : "already_absent" as const, recordingId: recording.id };
 }
 
+async function legacyFileExistsForRecording(recording: { id: string; audioUrl: string }) {
+  try {
+    if (!isR2Url(recording.audioUrl)) return false;
+    const relative = inferLegacyRelativePath(recording.id, recording.audioUrl);
+    const legacy = await resolveLegacyDeleteCandidate(relative);
+    return legacy.exists;
+  } catch {
+    return false;
+  }
+}
+
 async function deleteLegacy(args: Args) {
   requireApplyConfirmation(args.apply);
   if (!process.env.LEGACY_DELETE_UPLOADS_DIR) {
@@ -864,19 +875,37 @@ async function deleteLegacy(args: Args) {
         where: { id: args.id },
         include: { subtitle: true },
       })
-    : await prisma.recording.findMany({
+    : [];
+
+  if (!args.id) {
+    const pageSize = Math.max(args.limit * 5, 25);
+    let cursor: string | undefined;
+    while (recordings.length < args.limit) {
+      const candidates = await prisma.recording.findMany({
         where: {
           recordingType: "SONG",
           audioUrl: { startsWith: `${r2BaseUrl}/audio/legacy/` },
         },
-        orderBy: { updatedAt: "asc" },
-        take: args.limit,
+        orderBy: { id: "asc" },
+        ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+        take: pageSize,
         include: { subtitle: true },
       });
+      if (candidates.length === 0) break;
+      cursor = candidates[candidates.length - 1]?.id;
+
+      for (const candidate of candidates) {
+        if (await legacyFileExistsForRecording(candidate)) {
+          recordings.push(candidate);
+          if (recordings.length >= args.limit) break;
+        }
+      }
+    }
+  }
 
   if (args.id && recordings.length === 0) throw new Error(`Recording not found: ${args.id}`);
   if (recordings.length === 0) {
-    console.log("No R2 legacy-backed recordings found for delete-legacy.");
+    console.log("No R2 legacy-backed recordings with mounted legacy files found for delete-legacy.");
     return;
   }
 
