@@ -41,9 +41,9 @@ function makeObject(
   h: number,
 ): TheatreObject {
   return {
-    x: 0, y: 0, vx: (seededRandom(index) - 0.5) * 3, vy: (seededRandom(index + 1) - 0.5) * 3,
+    x: 0, y: 0, vx: (seededRandom(index) - 0.5) * 0.8, vy: (seededRandom(index + 1) - 0.5) * 0.8,
     rot: seededRandom(index + 2) * Math.PI * 2,
-    rotSpeed: (seededRandom(index + 3) - 0.5) * 5.5,
+    rotSpeed: (seededRandom(index + 3) - 0.5) * 0.7,
     baseScale: 1.05 + seededRandom(index + 4) * 0.95,
     scalePulse: 1,
     shape,
@@ -51,12 +51,12 @@ function makeObject(
     personality: pickPersonality(preset.personality, index),
     colorIndex: index,
     orbitAngle: seededRandom(index + 5) * Math.PI * 2,
-    orbitRadius: Math.min(w, h) * (0.12 + seededRandom(index + 6) * 0.28),
+    orbitRadius: Math.min(w, h) * (0.28 + seededRandom(index + 6) * 0.26),
     wavePhase: seededRandom(index + 7) * 10,
-    patternRadius: 0.25 + seededRandom(index + 8) * 0.75,
-    patternSpeed: 0.2 + seededRandom(index + 9) * 0.75,
-    lissajousA: 1.1 + seededRandom(index + 10) * 2.8,
-    lissajousB: 0.7 + seededRandom(index + 11) * 2.4,
+    patternRadius: 0.4 + seededRandom(index + 8) * 0.5,
+    patternSpeed: 0.08 + seededRandom(index + 9) * 0.1,
+    lissajousA: 0.6 + seededRandom(index + 10) * 0.4,
+    lissajousB: 0.5 + seededRandom(index + 11) * 0.35,
     spawnDelay: 0,
     alive: true,
     isHero: false,
@@ -68,7 +68,7 @@ function makeHero(hero: HeroObjectConfig, preset: ObjectTheatrePreset, bandCount
   obj.isHero = true
   obj.baseScale = hero.scale
   obj.zBand = bandCount - 1
-  obj.personality = 'magnetic'
+  obj.personality = 'lazy'
   return obj
 }
 

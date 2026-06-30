@@ -40,10 +40,10 @@ export function applyBeatToObject(
 
   switch (behavior) {
     case 'scaleOnBeat':
-      if (frame.beat) obj.scalePulse = 1.4
+      if (frame.beat) obj.scalePulse = 1.12
       break
     case 'spinKick':
-      if (frame.beat) obj.rotSpeed += (Math.random() > 0.5 ? 1 : -1) * 4
+      if (frame.beat) obj.rotSpeed = 0.28
       break
     case 'burstSpawn':
     case 'spawnMore':
@@ -53,8 +53,8 @@ export function applyBeatToObject(
       break
     case 'snareShuffle':
       if (frame.midsHit) {
-        obj.vx = (Math.random() - 0.5) * 6
-        obj.vy = (Math.random() - 0.5) * 6
+        obj.vx += Math.sin(frame.time * 0.002 + obj.wavePhase) * 0.4
+        obj.vy += Math.cos(frame.time * 0.002 + obj.wavePhase) * 0.4
       }
       break
     case 'colorFlash':

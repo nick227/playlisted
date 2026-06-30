@@ -6,7 +6,7 @@ import { drawBackground } from './engine/backgrounds'
 import { drawShape } from './engine/shapes'
 import { applyMotion, usesDirectPositionMotion } from './engine/motion'
 import { applyPersonality } from './engine/personality'
-import { applyPatternDrift } from './engine/patterns'
+import { applyFormationPattern, applySyncedSpin } from './engine/patterns'
 import { applyBeatToObject, beatSpawnCount, createBeatState, updateBeatState } from './engine/beat'
 import { triggerBeatEffects } from './engine/beatEffects'
 import { objectRenderAlpha, objectRenderScale } from './engine/depth'
@@ -20,7 +20,6 @@ import {
 import { resolveObjectTheatrePerf, type ObjectTheatrePerf } from './engine/performance'
 import {
   collectiveEqPulse,
-  collectiveEqSpinBoost,
   createEqWaveState,
   drawEqWave,
   updateEqWave,
@@ -122,21 +121,21 @@ export function objectSpinnerMoverFactory(ctx?: AnimationContext): IAnimation {
       palette: ReturnType<typeof getPalette>,
       delta: number,
       eqPulse: number,
-      eqSpin: number,
     ) {
       const { w, h } = frame
 
       if (obj.isHero && this.preset.heroObject) {
         updateHero(obj, this.preset.heroObject, { w, h, cx: frame.cx, cy: frame.cy, time: frame.time })
-        obj.rot += obj.rotSpeed * (delta / 1000) * 0.8
+        obj.rot += obj.rotSpeed * (delta / 1000) * 0.15
       } else {
         applyMotion(obj, motion, frame)
-        if (!directMotion && perf.usePatternDrift) {
-          applyPatternDrift(obj, liveSlot, liveCount, frame)
-        }
         applyPersonality(obj, frame)
         applyBeatToObject(obj, this.preset.beatBehavior, frame, this.beatState)
-        obj.rot += obj.rotSpeed * (delta / 1000) * (eqSpin - 1) * 0.35
+        if (!directMotion && perf.usePatternDrift) {
+          applyFormationPattern(obj, liveSlot, liveCount, frame, perf.depthBands)
+        } else {
+          applySyncedSpin(obj, frame, perf.depthBands)
+        }
       }
 
       const size = Math.min(w, h) * perf.sizeMul * eqPulse * objectRenderScale(obj, perf.depthBands) * frame.particleScale
@@ -216,7 +215,6 @@ export function objectSpinnerMoverFactory(ctx?: AnimationContext): IAnimation {
       })
 
       let eqPulse = 1
-      let eqSpin = 1
       if (perf.useEqWave) {
         this.ensureFreqBuf(context)
         updateEqWave(this.eqWave, context.analyser, this.freqBuf, {
@@ -227,7 +225,6 @@ export function objectSpinnerMoverFactory(ctx?: AnimationContext): IAnimation {
           bassHit: frame.bassHit,
         })
         eqPulse = collectiveEqPulse(this.eqWave)
-        eqSpin = collectiveEqSpinBoost(this.eqWave, frame.beat)
         drawEqWave(this.ctx, w, h, this.eqWave, palette, {
           alpha: frame.reducedMotion ? 0.35 : 0.68,
           reducedMotion: frame.reducedMotion,
@@ -253,7 +250,7 @@ export function objectSpinnerMoverFactory(ctx?: AnimationContext): IAnimation {
         for (let i = 0; i < this.objects.length; i++) {
           const obj = this.objects[i]!
           if (!obj.alive || obj.isHero || obj.zBand !== band) continue
-          this.drawObject(obj, frame, perf, motion, directMotion, liveSlot, liveCount, palette, delta, eqPulse, eqSpin)
+          this.drawObject(obj, frame, perf, motion, directMotion, liveSlot, liveCount, palette, delta, eqPulse)
           if (!obj.isHero) liveSlot++
         }
       }
@@ -261,7 +258,7 @@ export function objectSpinnerMoverFactory(ctx?: AnimationContext): IAnimation {
       for (let i = 0; i < this.objects.length; i++) {
         const obj = this.objects[i]!
         if (!obj.alive || !obj.isHero) continue
-        this.drawObject(obj, frame, perf, motion, directMotion, liveSlot, liveCount, palette, delta, eqPulse, eqSpin)
+        this.drawObject(obj, frame, perf, motion, directMotion, liveSlot, liveCount, palette, delta, eqPulse)
       }
 
       if (perf.useMacroFx) {

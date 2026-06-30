@@ -135,11 +135,11 @@ export function updateEqWave(
 
 /** Shared breathe multiplier for all stickers on the scene. */
 export function collectiveEqPulse(state: EqWaveState): number {
-  return 1 + state.bassEnv * 0.28 + state.midsEnv * 0.1 + state.ringPulse * 0.14
+  return 1 + state.bassEnv * 0.1 + state.midsEnv * 0.04 + state.ringPulse * 0.06
 }
 
-export function collectiveEqSpinBoost(state: EqWaveState, beat: boolean): number {
-  return beat ? 1.8 + state.ringPulse * 2.2 : 1 + state.bassEnv * 0.6
+export function collectiveEqSpinBoost(_state: EqWaveState, _beat: boolean): number {
+  return 1
 }
 
 type EqDrawOpts = { alpha?: number; reducedMotion?: boolean }

@@ -55,8 +55,8 @@ export const dicePanicCasinoSeed: ObjectTheatreSeed = {
   id: 'dice-panic-casino',
   label: 'Dice Panic Casino',
   config: {
-    backgroundPreset: 'neonCity', shapePack: 'gambling', motionPreset: 'panic',
-    beatBehavior: 'spinKick', spawnStyle: 'centerBurst', palette: 'chrome', depthBands: 2,
+    backgroundPreset: 'neonCity', shapePack: 'gambling', motionPreset: 'orbit',
+    beatBehavior: 'spinKick', spawnStyle: 'orbitRing', palette: 'chrome', depthBands: 2,
     objectCount: 10,
   },
 }
