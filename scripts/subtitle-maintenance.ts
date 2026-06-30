@@ -172,6 +172,7 @@ Commands:
   status
   inspect --id=<recordingId>
   delete-legacy --id=<recordingId> [--apply]
+  delete-legacy --limit=5 [--apply]
 
 Apply guard:
   SUBTITLE_MAINTENANCE_CONFIRM=${requiredConfirm} npm run subtitles:maintenance -- migrate --id=... --apply
@@ -400,13 +401,13 @@ async function sha256FromPublicUrl(url: string) {
   };
 }
 
-async function verifyPublicUrl(url: string, expectedBytes: number) {
+async function verifyPublicUrl(url: string, expectedBytes?: number | null) {
   const head = await fetch(url, { method: "HEAD" }).catch(() => null);
   if (head?.ok) {
     const length = Number(head.headers.get("content-length"));
     return {
       method: "HEAD",
-      ok: !Number.isFinite(length) || length === expectedBytes,
+      ok: expectedBytes == null || !Number.isFinite(length) || length === expectedBytes,
       status: head.status,
       bytes: Number.isFinite(length) ? length : null,
     };
@@ -421,7 +422,7 @@ async function verifyPublicUrl(url: string, expectedBytes: number) {
   const bytes = match ? Number(match[1]) : Number(response.headers.get("content-length"));
   return {
     method: "GET",
-    ok: !Number.isFinite(bytes) || bytes === expectedBytes,
+    ok: expectedBytes == null || !Number.isFinite(bytes) || bytes === expectedBytes,
     status: response.status,
     bytes: Number.isFinite(bytes) ? bytes : null,
   };
@@ -768,21 +769,7 @@ async function inspect(args: Args) {
   }
 }
 
-async function deleteLegacy(args: Args) {
-  requireApplyConfirmation(args.apply);
-  if (!args.id) throw new Error("delete-legacy requires --id=<recordingId>.");
-  if (!process.env.LEGACY_DELETE_UPLOADS_DIR) {
-    throw new Error("LEGACY_DELETE_UPLOADS_DIR is required for delete-legacy.");
-  }
-  requireR2PublicBase();
-
-  const recording = await prisma.recording.findUnique({
-    where: { id: args.id },
-    include: {
-      subtitle: true,
-    },
-  });
-  if (!recording) throw new Error(`Recording not found: ${args.id}`);
+async function deleteLegacyOne(recording: Prisma.RecordingGetPayload<{ include: { subtitle: true } }>, apply: boolean) {
   if (!isR2Url(recording.audioUrl)) {
     throw new Error(`Refusing to delete legacy file because DB audioUrl is not on configured R2 base: ${recording.audioUrl}`);
   }
@@ -797,9 +784,9 @@ async function deleteLegacy(args: Args) {
   console.log(`Current DB audioUrl: ${recording.audioUrl}`);
   console.log(`Inferred legacy relative path: ${relative}`);
   console.log(`Subtitle status: ${recording.subtitle?.status ?? "NOT_QUEUED"}`);
-  console.log(`Mode: ${args.apply ? "apply" : "dry-run"}`);
+  console.log(`Mode: ${apply ? "apply" : "dry-run"}`);
 
-  const r2Verification = await verifyPublicUrl(recording.audioUrl, expectedBytes ?? 0);
+  const r2Verification = await verifyPublicUrl(recording.audioUrl, expectedBytes);
   const r2Hash = await sha256FromPublicUrl(recording.audioUrl);
   const legacy = await resolveLegacyDeleteCandidate(relative);
 
@@ -811,11 +798,26 @@ async function deleteLegacy(args: Args) {
     `Legacy file: exists=${legacy.exists} path=${legacy.filePath} bytes=${legacy.bytes ?? "?"} sha256=${legacy.sha256 ?? "?"}`,
   );
 
+  if (!legacy.exists) {
+    console.log("Legacy file is already absent. Nothing to delete.");
+    await appendAudit("legacy_delete_already_absent", {
+      recordingId: recording.id,
+      title: recording.title,
+      currentAudioUrl: recording.audioUrl,
+      subtitleStatus: recording.subtitle?.status ?? null,
+      relative,
+      legacy,
+      r2Verification,
+      r2Hash,
+      apply,
+    });
+    return { status: "already_absent" as const, recordingId: recording.id };
+  }
+
   const bytesMatch =
-    legacy.exists &&
     r2Hash.bytes === legacy.bytes &&
     (expectedBytes == null || expectedBytes === legacy.bytes);
-  const hashMatches = legacy.exists && r2Hash.sha256 === legacy.sha256;
+  const hashMatches = r2Hash.sha256 === legacy.sha256;
   if (!r2Verification.ok || !bytesMatch || !hashMatches) {
     throw new Error("Refusing to delete: R2 verification and mounted legacy file do not match.");
   }
@@ -829,12 +831,12 @@ async function deleteLegacy(args: Args) {
     legacy,
     r2Verification,
     r2Hash,
-    apply: args.apply,
+    apply,
   });
 
-  if (!args.apply) {
+  if (!apply) {
     console.log("Dry run complete. Legacy file was not deleted.");
-    return;
+    return { status: "verified_dry_run" as const, recordingId: recording.id };
   }
 
   const deleted = await deleteLegacyRelativePath(relative);
@@ -847,6 +849,50 @@ async function deleteLegacy(args: Args) {
     currentAudioUrl: recording.audioUrl,
     ...deleted,
   });
+  return { status: deleted.deleted ? "deleted" as const : "already_absent" as const, recordingId: recording.id };
+}
+
+async function deleteLegacy(args: Args) {
+  requireApplyConfirmation(args.apply);
+  if (!process.env.LEGACY_DELETE_UPLOADS_DIR) {
+    throw new Error("LEGACY_DELETE_UPLOADS_DIR is required for delete-legacy.");
+  }
+  requireR2PublicBase();
+
+  const recordings = args.id
+    ? await prisma.recording.findMany({
+        where: { id: args.id },
+        include: { subtitle: true },
+      })
+    : await prisma.recording.findMany({
+        where: {
+          recordingType: "SONG",
+          audioUrl: { startsWith: `${r2BaseUrl}/audio/legacy/` },
+        },
+        orderBy: { updatedAt: "asc" },
+        take: args.limit,
+        include: { subtitle: true },
+      });
+
+  if (args.id && recordings.length === 0) throw new Error(`Recording not found: ${args.id}`);
+  if (recordings.length === 0) {
+    console.log("No R2 legacy-backed recordings found for delete-legacy.");
+    return;
+  }
+
+  console.log(
+    `Delete legacy ${args.id ? "single recording" : `batch limit=${args.limit}`} mode=${args.apply ? "apply" : "dry-run"}`,
+  );
+  const summary: Record<string, number> = {};
+  for (const recording of recordings) {
+    const result = await deleteLegacyOne(recording, args.apply);
+    summary[result.status] = (summary[result.status] ?? 0) + 1;
+  }
+
+  console.log("Delete legacy summary:");
+  for (const [status, count] of Object.entries(summary)) {
+    console.log(`  ${status}: ${count}`);
+  }
 }
 
 async function main() {
