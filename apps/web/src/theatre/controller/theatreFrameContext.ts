@@ -1,4 +1,4 @@
-import type { AnimationContext } from '../core/IAnimation'
+import type { AnimationContext, IAnimation } from '../core/IAnimation'
 import type AudioFeatureExtractor from '../audio/AudioFeatureExtractor'
 import { getVisualTriggers } from '../audio/VisualTriggers'
 import { detectPolicy, type PerformancePolicy } from '../runtime/PerformancePolicy'
@@ -48,4 +48,23 @@ export function buildAnimationFrameContext(input: FrameContextInput): {
   }
 
   return { ctx, policy }
+}
+
+const theatreInitContextKey = Symbol('theatreInitContext')
+
+export function withTheatreInitContext(instance: IAnimation, ctx: AnimationContext): IAnimation {
+  Object.defineProperty(instance, theatreInitContextKey, {
+    value: ctx,
+    enumerable: false,
+    writable: true,
+    configurable: true,
+  })
+  return instance
+}
+
+export function resolveTheatreInitContext(instance: IAnimation, fallback: AnimationContext): AnimationContext {
+  const bag = instance as IAnimation & { [theatreInitContextKey]?: AnimationContext }
+  const ctx = bag[theatreInitContextKey] ?? fallback
+  delete bag[theatreInitContextKey]
+  return ctx
 }
