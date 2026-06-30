@@ -124,7 +124,17 @@ export abstract class CanvasAnimation implements IAnimation {
 
   destroy() {
     window.removeEventListener('resize', this.resize)
-    if (this.canvas.parentElement) this.canvas.parentElement.removeChild(this.canvas)
+    cancelAnimationFrame(this.raf)
+    cancelAnimationFrame(this.initResizeRaf)
+    this.initResizeRaf = 0
+    this.running = false
+    if (this.canvas) {
+      this.canvas.width = 0
+      this.canvas.height = 0
+      if (this.canvas.parentElement) {
+        this.canvas.parentElement.removeChild(this.canvas)
+      }
+    }
   }
 
   protected syncEffectsPolicy(context: AnimationContext) {

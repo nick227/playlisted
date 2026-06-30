@@ -39,11 +39,11 @@ export class VideoAnimation implements IAnimation {
     const zIndex = context.options?.zIndex ?? this.initOptions.defaultZIndex
     if (zIndex !== undefined) this.video.style.zIndex = String(zIndex)
 
-    // Configuration to ensure inline looping playback
     this.video.muted = true
     this.video.loop = true
     this.video.playsInline = true
     this.video.crossOrigin = 'anonymous'
+    this.video.preload = 'metadata'
 
     const videoUrl = context.options?.videoUrl ?? this.initOptions.defaultVideoUrl
     if (videoUrl) {
@@ -55,8 +55,7 @@ export class VideoAnimation implements IAnimation {
 
   async start() {
     this.running = true
-    // No internal RAF loop — theatre controller drives renderFrame when opted in.
-    if (this.video && this.video.src) {
+    if (this.video?.src) {
       try {
         await this.video.play()
       } catch (e) {
@@ -91,6 +90,7 @@ export class VideoAnimation implements IAnimation {
   }
 
   destroy() {
+    this.running = false
     if (this.video) {
       this.video.pause()
       this.video.removeAttribute('src')

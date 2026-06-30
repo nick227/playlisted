@@ -15,7 +15,7 @@ export const THEATRE_TRANSITIONS: Record<TheatreTransitionKind, { outMs: number,
 export class TheatreSceneDeck {
   private activeBridge: AnimationBridge | null = null
   private nextBridge: AnimationBridge | null = null
-  
+
   private activeLayer: HTMLElement | null = null
   private nextLayer: HTMLElement | null = null
 
@@ -36,7 +36,6 @@ export class TheatreSceneDeck {
   private clearPendingTimeouts() {
     for (const id of this.pendingTimeouts) window.clearTimeout(id)
     this.pendingTimeouts = []
-    // Resolve any in-flight transition Promise so its caller doesn't hang.
     const res = this.transitionResolve
     this.transitionResolve = null
     res?.()
@@ -45,7 +44,7 @@ export class TheatreSceneDeck {
   public getInstances() {
     return [
       ...(this.activeBridge ? this.activeBridge.getInstances() : []),
-      ...(this.nextBridge ? this.nextBridge.getInstances() : [])
+      ...(this.nextBridge ? this.nextBridge.getInstances() : []),
     ]
   }
 
@@ -74,10 +73,10 @@ export class TheatreSceneDeck {
   }
 
   /** Abort preload and in-flight transition timers without tearing down the active scene. */
-  public cancelInFlight() {
+  public async cancelInFlight() {
     this.clearPendingTimeouts()
     if (this.nextBridge) {
-      this.destroyLayer(this.nextLayer, this.nextBridge, this.nextPresetId)
+      await this.destroyLayer(this.nextLayer, this.nextBridge, this.nextPresetId)
       this.nextLayer = null
       this.nextBridge = null
       this.nextPresetId = null
@@ -88,7 +87,10 @@ export class TheatreSceneDeck {
 
   public renderFrame(ctx: AnimationContext) {
     this.activeBridge?.renderFrame(ctx)
-    this.nextBridge?.renderFrame(ctx)
+    // Preloaded scenes stay paused until transition — avoid double draw/decode load.
+    if (this.transitioning) {
+      this.nextBridge?.renderFrame(ctx)
+    }
   }
 
   public pause() {
@@ -98,7 +100,9 @@ export class TheatreSceneDeck {
 
   public resume() {
     this.activeBridge?.resume()
-    this.nextBridge?.resume()
+    if (this.transitioning) {
+      this.nextBridge?.resume()
+    }
   }
 
   private createLayer(): HTMLElement {
@@ -107,34 +111,34 @@ export class TheatreSceneDeck {
     layer.style.opacity = '1'
     layer.style.transitionProperty = 'opacity'
     layer.style.transitionTimingFunction = 'linear'
-    layer.style.pointerEvents = 'none' 
+    layer.style.pointerEvents = 'none'
     this.container.appendChild(layer)
     return layer
   }
 
-  private destroyLayer(
+  private async destroyLayer(
     layer: HTMLElement | null,
     bridge: AnimationBridge | null,
     presetId?: string | null,
   ) {
     if (bridge) {
       theatreBreadcrumb('deck:destroyLayer:before-exit', { presetId: presetId ?? undefined })
-      void bridge.exit({ presetId: presetId ?? undefined })
+      await bridge.exit({ presetId: presetId ?? undefined })
     }
-    if (layer && layer.parentElement) {
+    if (layer?.parentElement) {
       layer.parentElement.removeChild(layer)
     }
   }
 
   public async enterInitial(
-    presetId: string, 
-    factories: AnimationFactory[], 
-    ctx: AnimationContext
+    presetId: string,
+    factories: AnimationFactory[],
+    ctx: AnimationContext,
   ) {
     if (this.activeBridge) {
-      this.destroyLayer(this.activeLayer, this.activeBridge, this.activePresetId)
+      await this.destroyLayer(this.activeLayer, this.activeBridge, this.activePresetId)
     }
-    
+
     this.activePresetId = presetId
     this.activeLayer = this.createLayer()
     this.activeBridge = new AnimationBridge()
@@ -146,12 +150,12 @@ export class TheatreSceneDeck {
   public async preload(
     presetId: string,
     factories: AnimationFactory[],
-    ctx: AnimationContext
+    ctx: AnimationContext,
   ) {
     if (this.transitioning) return
     if (this.nextBridge) {
       if (this.nextPresetId === presetId) return
-      this.destroyLayer(this.nextLayer, this.nextBridge, this.nextPresetId)
+      await this.destroyLayer(this.nextLayer, this.nextBridge, this.nextPresetId)
       this.nextLayer = null
       this.nextBridge = null
     }
@@ -160,12 +164,13 @@ export class TheatreSceneDeck {
     this.nextLayer.style.opacity = '0'
     this.nextBridge = new AnimationBridge()
     this.nextPresetId = presetId
-    
+
     theatreBreadcrumb('deck:preload:before-enter', { presetId })
     await this.nextBridge.enter(this.nextLayer, factories, ctx, { presetId })
-    
+    this.nextBridge.pause()
+
     if (this.nextLayer) {
-      this.nextLayer.offsetHeight // Force reflow
+      this.nextLayer.offsetHeight
     }
     this.assertInvariants('preload')
   }
@@ -176,7 +181,7 @@ export class TheatreSceneDeck {
     factories: AnimationFactory[],
     ctx: AnimationContext,
   ) {
-    this.cancelInFlight()
+    await this.cancelInFlight()
     theatreBreadcrumb('deck:transitionToDirect:start', { presetId })
 
     const nextLayer = this.createLayer()
@@ -188,7 +193,7 @@ export class TheatreSceneDeck {
       presetId,
       detail: `replacing=${this.activePresetId ?? 'none'}`,
     })
-    this.destroyLayer(this.activeLayer, this.activeBridge, this.activePresetId)
+    await this.destroyLayer(this.activeLayer, this.activeBridge, this.activePresetId)
 
     this.activeLayer = nextLayer
     this.activeBridge = nextBridge
@@ -201,30 +206,28 @@ export class TheatreSceneDeck {
   public async transitionToPreloaded(kind: TheatreTransitionKind) {
     if (this.transitioning || !this.nextBridge || !this.nextLayer || !this.nextPresetId) return
     this.transitioning = true
+    this.nextBridge.resume()
     theatreBreadcrumb('deck:transitionToPreloaded:start', { presetId: this.nextPresetId ?? undefined })
 
     const timings = THEATRE_TRANSITIONS[kind]
     const presetId = this.nextPresetId
     const nextLayer = this.nextLayer
     const nextBridge = this.nextBridge
-    
-    // Health logging
-    console.debug(`[Theatre] Transitioning to ${presetId} via ${kind}. Active: ${this.activePresetId}`)
-    
+
     return new Promise<void>((resolve) => {
       this.transitionResolve = resolve
-      // Watchdog fallback (in case timeouts fail to fire or tab is suspended for too long)
       let watchdogFired = false
       const watchdog = this.trackTimeout(window.setTimeout(() => {
         watchdogFired = true
         console.warn(`[Theatre] Watchdog fired for transition to ${presetId}. Forcing cleanup.`)
-        this.destroyLayer(this.nextLayer, this.nextBridge, this.nextPresetId)
-        this.nextLayer = null
-        this.nextBridge = null
-        this.nextPresetId = null
-        this.transitioning = false
-        this.transitionResolve = null
-        resolve()
+        void this.destroyLayer(this.nextLayer, this.nextBridge, this.nextPresetId).then(() => {
+          this.nextLayer = null
+          this.nextBridge = null
+          this.nextPresetId = null
+          this.transitioning = false
+          this.transitionResolve = null
+          resolve()
+        })
       }, timings.outMs + timings.inMs + 5000))
 
       if (this.activeLayer) {
@@ -245,44 +248,39 @@ export class TheatreSceneDeck {
         }
 
         if (this.activeLayer && kind === 'crossfade') {
-           this.activeLayer.style.transitionDuration = `${timings.outMs}ms`
-           this.activeLayer.style.opacity = '0'
+          this.activeLayer.style.transitionDuration = `${timings.outMs}ms`
+          this.activeLayer.style.opacity = '0'
         }
 
         this.trackTimeout(window.setTimeout(() => {
           if (watchdogFired) return
           window.clearTimeout(watchdog)
-          
-          this.destroyLayer(this.activeLayer, this.activeBridge, this.activePresetId)
-          
-          this.activeLayer = nextLayer
-          this.activeBridge = nextBridge
-          this.activePresetId = presetId
-          
-          this.nextLayer = null
-          this.nextBridge = null
-          this.nextPresetId = null
-          
-          this.transitioning = false
-          this.transitionResolve = null
 
-          // Health log on completion
-          console.debug(`[Theatre] Transition complete. Active layers: ${this.container.children.length}`)
+          void this.destroyLayer(this.activeLayer, this.activeBridge, this.activePresetId).then(() => {
+            this.activeLayer = nextLayer
+            this.activeBridge = nextBridge
+            this.activePresetId = presetId
 
-          this.assertInvariants('transitionToPreloaded:complete')
-          resolve()
+            this.nextLayer = null
+            this.nextBridge = null
+            this.nextPresetId = null
+
+            this.transitioning = false
+            this.transitionResolve = null
+
+            this.assertInvariants('transitionToPreloaded:complete')
+            resolve()
+          })
         }, timings.inMs))
-
       }, waitBeforeIn))
     })
   }
 
-  // Backward compatibility if called directly
   public async transitionTo(
     presetId: string,
     factories: AnimationFactory[],
     ctx: AnimationContext,
-    kind: TheatreTransitionKind
+    kind: TheatreTransitionKind,
   ) {
     await this.preload(presetId, factories, ctx)
     await this.transitionToPreloaded(kind)
@@ -290,8 +288,8 @@ export class TheatreSceneDeck {
 
   public async exit() {
     this.clearPendingTimeouts()
-    this.destroyLayer(this.activeLayer, this.activeBridge, this.activePresetId)
-    this.destroyLayer(this.nextLayer, this.nextBridge, this.nextPresetId)
+    await this.destroyLayer(this.activeLayer, this.activeBridge, this.activePresetId)
+    await this.destroyLayer(this.nextLayer, this.nextBridge, this.nextPresetId)
     this.activeLayer = null
     this.activeBridge = null
     this.nextLayer = null

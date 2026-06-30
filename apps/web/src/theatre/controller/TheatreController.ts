@@ -3,7 +3,7 @@ import { AnimationContext, AnimationFactory } from '../core/IAnimation'
 import AudioFeatureExtractor from '../audio/AudioFeatureExtractor'
 import { getOrCreateAudioAnalyserConnection, type AudioAnalyserConnection } from '@/features/playback-indicators/audioAnalyser'
 import { getPreset, listPresets, type ScenePresetDef, type TheatreTransitionKind } from '../registry/scenePresets'
-import { pickPackagePreset } from '../registry/packageRotation'
+import { getPackageIdForPreset, pickPackagePreset } from '../registry/packageRotation'
 import { buildAnimationFrameContext, withTheatreInitContext } from './theatreFrameContext'
 import { detectPolicy } from '../runtime/PerformancePolicy'
 import { playbackFocusTiming } from '@/lib/playbackFocusTiming'
@@ -45,22 +45,30 @@ export type TheatreRotationPolicy = {
 }
 
 export const DEFAULT_ROTATION_POLICY: TheatreRotationPolicy = {
-  minSceneMs: 1000,
-  maxSceneMs: 16000,
+  minSceneMs: 12_000,
+  maxSceneMs: 45_000,
   clipLengthBias: 'minimum',
-  varianceMs: 2000,
+  varianceMs: 4_000,
   requireAudioPop: true,
 }
 
 const AUTO_ROTATE_POP_THRESHOLD = 0.02
+const MIN_ROTATION_GAP_MS = 12_000
+const PRELOAD_LEAD_MS = 4_000
+const PRELOAD_MIN_DELAY_MS = 2_000
 const MANUAL_PRESET_THROTTLE_MS = 100
 const MANUAL_PRESET_COOLDOWN_MS = 3000
 const PRESET_CHANGE_TIMEOUT_MS = 6_000
+const VIDEO_PACKAGE_ID = 'videos'
 
 type PresetChangeSource = 'manual' | 'auto'
 
 type PlaybackSourceMeta = { artworkUrl?: string | null }
 type TheatreMode = 'background' | 'immersive'
+
+function isVideoPresetId(presetId: string | null | undefined): boolean {
+  return presetId ? getPackageIdForPreset(presetId) === VIDEO_PACKAGE_ID : false
+}
 
 class TheatreController extends EventTarget {
   private deck: TheatreSceneDeck | null = null
@@ -82,6 +90,8 @@ class TheatreController extends EventTarget {
   private manualPresetTimerId: number | null = null
   private lastManualPresetStart = 0
   private manualChangeActiveUntil = 0
+  private lastRotationAt = 0
+  private preloadTimerId: number | null = null
 
   private readonly onVisibilityChange = () => {
     if (document.hidden && this.state.active) this.deck?.pause()
@@ -112,6 +122,7 @@ class TheatreController extends EventTarget {
     this.bumpTransitionToken()
     this.transitioning = false
     this.clearManualPresetTimer()
+    this.clearPreloadTimer()
     this.manualPresetLatest = null
     this.state.active = false
     this.state.mode = null
@@ -193,6 +204,22 @@ class TheatreController extends EventTarget {
 
   public setClipDuration(durationMs: number | null) {
     this._clipDurationMs = durationMs
+  }
+
+  private clearPreloadTimer() {
+    if (this.preloadTimerId !== null) {
+      window.clearTimeout(this.preloadTimerId)
+      this.preloadTimerId = null
+    }
+  }
+
+  private markRotationComplete() {
+    this.lastRotationAt = performance.now()
+  }
+
+  private canRotateNow(): boolean {
+    if (this.lastRotationAt <= 0) return true
+    return performance.now() - this.lastRotationAt >= MIN_ROTATION_GAP_MS
   }
 
   private resetAutoRotateTimer() {
@@ -475,7 +502,8 @@ class TheatreController extends EventTarget {
 
   public async rotateRandomPreset() {
     if (!this.state.active) return
-    if (this.transitioning && this.manualPresetLatest) return
+    if (this.transitioning) return
+    if (!this.canRotateNow()) return
 
     if (this.deck?.getNextPresetId()) {
       const token = this.bumpTransitionToken()
@@ -537,7 +565,8 @@ class TheatreController extends EventTarget {
 
     this.lastManualPresetStart = performance.now()
     this.manualChangeActiveUntil = performance.now() + MANUAL_PRESET_COOLDOWN_MS
-    this.deck?.cancelInFlight()
+    this.clearPreloadTimer()
+    await this.deck?.cancelInFlight()
 
     const token = this.bumpTransitionToken()
     this.transitioning = true
@@ -603,6 +632,7 @@ class TheatreController extends EventTarget {
   private async emergencyExitTheatre(reason: string) {
     theatreBreadcrumb('emergency-exit:start', { detail: reason })
     this.clearManualPresetTimer()
+    this.clearPreloadTimer()
     this.manualPresetLatest = null
 
     this.bumpTransitionToken()
@@ -617,7 +647,7 @@ class TheatreController extends EventTarget {
     this.frameContext = null
 
     destroyTheatreDevPanel()
-    this.deck?.cancelInFlight()
+    await this.deck?.cancelInFlight()
     if (this.deck) await this.deck.exit()
 
     this.clearOverlayBoundsTracking()
@@ -660,7 +690,9 @@ class TheatreController extends EventTarget {
       const features = this.extractor?.getFeatures()
       let kind: TheatreTransitionKind = selectedPreset.timing?.transitionPreference ?? 'crossfade'
 
-      if (features) {
+      if (isVideoPresetId(selectedPreset.id) || isVideoPresetId(this.deck.getActivePresetId())) {
+        kind = 'cut'
+      } else if (features) {
         if (features.flux.overall > AUTO_ROTATE_POP_THRESHOLD * 1.5) kind = 'cut'
         else if (features.flux.overall > AUTO_ROTATE_POP_THRESHOLD * 0.8) kind = 'fastFade'
         else if (features.flux.overall < 0.005) kind = 'slowFade'
@@ -672,6 +704,7 @@ class TheatreController extends EventTarget {
     if (!this.stillCurrent(token) || !this.overlay || !this.state.active) return
 
     this.resetAutoRotateTimer()
+    this.markRotationComplete()
     this.dispatchEvent(new Event('change'))
     theatreBreadcrumb(`${source}:preset-inner:complete`, { presetId })
 
@@ -695,8 +728,10 @@ class TheatreController extends EventTarget {
 
     let kind: TheatreTransitionKind = selectedPreset.timing?.transitionPreference ?? 'crossfade'
     
-    // Disable crossfade on reduced-motion or low-tier devices
-    if (kind === 'crossfade' && (policy.lowPower || reducedMotion || policy.dprClamp <= 1)) {
+    // Video-backed presets are expensive to overlap; cut to avoid stacked decoders.
+    if (isVideoPresetId(selectedPreset.id) || isVideoPresetId(this.deck.getActivePresetId())) {
+      kind = 'cut'
+    } else if (kind === 'crossfade' && (policy.lowPower || reducedMotion || policy.dprClamp <= 1)) {
       kind = 'fastFade'
     }
     
@@ -711,6 +746,7 @@ class TheatreController extends EventTarget {
     if (!this.stillCurrent(token) || !this.overlay || !this.state.active) return
 
     this.resetAutoRotateTimer()
+    this.markRotationComplete()
     this.dispatchEvent(new Event('change'))
     theatreBreadcrumb('auto:preloaded:complete', { presetId: selectedPreset.id })
     this.deck.assertInvariants('auto:preloaded:complete')
@@ -724,27 +760,36 @@ class TheatreController extends EventTarget {
     if (!this.state.active || !this.deck) return
     if (this.isManualChangeCooldownActive() || this.manualPresetLatest) return
 
-    const scheduleIdle = window.requestIdleCallback ?? ((cb) => window.setTimeout(cb, 1000))
-    scheduleIdle(async () => {
-      if (!this.state.active || !this.deck || this.deck.getNextPresetId() || this.transitioning) return
-      if (this.isManualChangeCooldownActive() || this.manualPresetLatest) return
-      
-      const nextPreset = this.pickRandomPreset()
-      if (!nextPreset) return
+    this.clearPreloadTimer()
 
-      const analyser = this.getOrCreateAnalyser()
-      const { ctx, policy } = buildAnimationFrameContext({
-        audioEl: this.audioEl,
-        analyser,
-        mediaSrc: this.audioEl?.currentSrc || null,
-        artworkUrl: this.state.artworkUrl,
-        featuresRef: this.extractor?.getFeatures(),
-        existingTimeRef: this.frameContext?.shared?.time,
-      })
+    const msUntilRotate = Math.max(0, this.nextAutoRotateTime - performance.now())
+    const delayMs = Math.max(PRELOAD_MIN_DELAY_MS, msUntilRotate - PRELOAD_LEAD_MS)
 
-      const factories = this.buildFactoriesForPreset(nextPreset, policy.maxLayers)
-      await this.deck.preload(nextPreset.id, factories, ctx)
+    this.preloadTimerId = window.setTimeout(() => {
+      this.preloadTimerId = null
+      void this.runPreloadNext()
+    }, delayMs)
+  }
+
+  private async runPreloadNext() {
+    if (!this.state.active || !this.deck || this.deck.getNextPresetId() || this.transitioning) return
+    if (this.isManualChangeCooldownActive() || this.manualPresetLatest) return
+
+    const nextPreset = this.pickRandomPreset()
+    if (!nextPreset) return
+
+    const analyser = this.getOrCreateAnalyser()
+    const { ctx, policy } = buildAnimationFrameContext({
+      audioEl: this.audioEl,
+      analyser,
+      mediaSrc: this.audioEl?.currentSrc || null,
+      artworkUrl: this.state.artworkUrl,
+      featuresRef: this.extractor?.getFeatures(),
+      existingTimeRef: this.frameContext?.shared?.time,
     })
+
+    const factories = this.buildFactoriesForPreset(nextPreset, policy.maxLayers)
+    await this.deck.preload(nextPreset.id, factories, ctx)
   }
 
   public async toggle() {
@@ -986,7 +1031,7 @@ class TheatreController extends EventTarget {
           console.log(`[TheatreController] autoRotate timer fired at ${now.toFixed(0)}. ARMING (waiting for pop).`)
           this.autoRotateArmed = true
         }
-        if (this.autoRotateArmed && this.extractor) {
+        if (this.autoRotateArmed && this.extractor && this.canRotateNow()) {
           const features = this.extractor.getFeatures()
           if (features.flux.overall > AUTO_ROTATE_POP_THRESHOLD) {
             console.log(`[TheatreController] autoRotate triggered on pop: flux=${features.flux.overall.toFixed(3)} > ${AUTO_ROTATE_POP_THRESHOLD}`)
@@ -1007,6 +1052,7 @@ class TheatreController extends EventTarget {
 
     theatreBreadcrumb('exit:start', { presetId: this.state.presetId ?? undefined })
     this.clearManualPresetTimer()
+    this.clearPreloadTimer()
     this.manualPresetLatest = null
 
     const token = this.bumpTransitionToken()
