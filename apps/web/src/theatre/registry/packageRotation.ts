@@ -1,5 +1,5 @@
 import type { AnimationPackageManifest } from './packages'
-import { getPreset, type ScenePresetDef } from './scenePresets'
+import { getPreset, type SceneCategory, type ScenePresetDef } from './scenePresets'
 
 export type RegisteredRotationPackage = {
   manifest: AnimationPackageManifest
@@ -51,8 +51,9 @@ function resolveReducedMotion(preset: ScenePresetDef, reducedMotion: boolean): S
 export function pickPackagePreset(opts: {
   reducedMotion?: boolean
   excludePresetIds?: string[]
+  preferCategory?: SceneCategory | 'all'
 }): ScenePresetDef | null {
-  const { reducedMotion = false, excludePresetIds = [] } = opts
+  const { reducedMotion = false, excludePresetIds = [], preferCategory = 'all' } = opts
   const exclude = new Set(excludePresetIds)
 
   const eligible = rotationPackages
@@ -60,7 +61,11 @@ export function pickPackagePreset(opts: {
       pkg,
       presets: pkg.presetIds
         .map(id => getPreset(id))
-        .filter((preset): preset is ScenePresetDef => preset !== null && !exclude.has(preset.id)),
+        .filter((preset): preset is ScenePresetDef =>
+          preset !== null &&
+          !exclude.has(preset.id) &&
+          (preferCategory === 'all' || preset.category === preferCategory),
+        ),
     }))
     .filter(entry => entry.presets.length > 0)
 

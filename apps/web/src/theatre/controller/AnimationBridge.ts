@@ -7,6 +7,10 @@ export type AnimationBridgeTrace = {
   presetId?: string
 }
 
+export type AnimationBridgeEnterOptions = {
+  start?: boolean
+}
+
 export class AnimationBridge {
   private instances: IAnimation[] = []
 
@@ -15,7 +19,9 @@ export class AnimationBridge {
     factories: AnimationFactory[],
     ctx: AnimationContext,
     trace?: AnimationBridgeTrace,
+    options: AnimationBridgeEnterOptions = {},
   ) {
+    const shouldStart = options.start ?? true
     theatreBreadcrumb('bridge:enter:start', {
       presetId: trace?.presetId,
       detail: `layers=${factories.length}`,
@@ -40,7 +46,9 @@ export class AnimationBridge {
           presetId: trace?.presetId,
           detail: `layer=${layerIndex}`,
         })
-        await instance.start()
+        if (shouldStart) {
+          await instance.start()
+        }
         this.instances.push(instance)
       } catch (e) {
         console.warn('[Theatre] Layer init failed, skipping:', e)
@@ -53,7 +61,9 @@ export class AnimationBridge {
         const fallback = staticFallbackFactory(ctx)
         await fallback.init(container, ctx)
         fallback.enableExternalDriving?.()
-        await fallback.start()
+        if (shouldStart) {
+          await fallback.start()
+        }
         this.instances.push(fallback)
       } catch (e) {
         console.error('[Theatre] Fallback also failed:', e)

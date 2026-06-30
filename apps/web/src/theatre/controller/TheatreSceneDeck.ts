@@ -166,7 +166,7 @@ export class TheatreSceneDeck {
     this.nextPresetId = presetId
 
     theatreBreadcrumb('deck:preload:before-enter', { presetId })
-    await this.nextBridge.enter(this.nextLayer, factories, ctx, { presetId })
+    await this.nextBridge.enter(this.nextLayer, factories, ctx, { presetId }, { start: false })
     this.nextBridge.pause()
 
     if (this.nextLayer) {

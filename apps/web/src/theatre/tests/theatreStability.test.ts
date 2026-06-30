@@ -7,7 +7,8 @@ import {
   quarantinePreset,
 } from '../controller/presetQuarantine'
 import { assertTheatreDeckInvariants } from '../controller/theatreDeckInvariants'
-import type AnimationBridge from '../controller/AnimationBridge'
+import AnimationBridge from '../controller/AnimationBridge'
+import type { AnimationContext, IAnimation } from '../core/IAnimation'
 
 describe('theatre stability utilities', () => {
   const storage = new Map<string, string>()
@@ -49,6 +50,29 @@ describe('theatre stability utilities', () => {
       expect(isPresetQuarantined('bioMachineTunnel')).toBe(true)
       expect(getQuarantinedPresetIds()).toContain('bioMachineTunnel')
     }
+  })
+
+  it('can initialize a bridge without starting hidden preload instances', async () => {
+    const animation: IAnimation = {
+      init: vi.fn(async () => {}),
+      start: vi.fn(async () => {}),
+      pause: vi.fn(),
+      resume: vi.fn(),
+      stop: vi.fn(async () => {}),
+      destroy: vi.fn(),
+    }
+    const bridge = new AnimationBridge()
+
+    await bridge.enter(
+      {} as HTMLElement,
+      [() => animation],
+      {} as AnimationContext,
+      { presetId: 'video17' },
+      { start: false },
+    )
+
+    expect(animation.init).toHaveBeenCalledOnce()
+    expect(animation.start).not.toHaveBeenCalled()
   })
 
   it('allows idle preloaded next scene without transitioning', () => {

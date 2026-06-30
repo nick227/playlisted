@@ -92,6 +92,11 @@ export class VideoAnimation implements IAnimation {
   destroy() {
     this.running = false
     if (this.video) {
+      console.info('[Theatre] video destroyed', {
+        presetId: this.context?.options?.preset ?? 'unknown',
+        currentSrc: this.video.currentSrc,
+        readyState: this.video.readyState,
+      })
       this.video.pause()
       this.video.src = ''
       this.video.removeAttribute('src')

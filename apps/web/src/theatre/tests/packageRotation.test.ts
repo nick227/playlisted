@@ -39,4 +39,12 @@ describe('package rotation', () => {
       expect(picked?.id).not.toBe('video1')
     }
   })
+
+  it('can limit automatic rotation to production presets', () => {
+    for (let i = 0; i < 100; i++) {
+      const picked = pickPackagePreset({ preferCategory: 'production' })
+      expect(picked?.category).toBe('production')
+      expect(getPackageIdForPreset(picked?.id ?? '')).not.toBe('videos')
+    }
+  })
 })

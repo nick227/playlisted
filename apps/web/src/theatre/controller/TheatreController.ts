@@ -32,8 +32,8 @@ function resolvePresetChoice(reducedMotion: boolean, excludeIds: string[] = []):
     }
   }
 
-  // Auto-enter and auto-rotate: pick package family first, then preset inside it.
-  return pickPackagePreset({ reducedMotion, excludePresetIds: excludeIds })
+  // Auto-enter and auto-rotate stay on production presets; lab/dev remain manual or URL-only.
+  return pickPackagePreset({ reducedMotion, excludePresetIds: excludeIds, preferCategory: 'production' })
 }
 
 export type TheatreRotationPolicy = {
@@ -53,7 +53,6 @@ export const DEFAULT_ROTATION_POLICY: TheatreRotationPolicy = {
 }
 
 const AUTO_ROTATE_POP_THRESHOLD = 0.02
-const MIN_ROTATION_GAP_MS = 12_000
 const PRELOAD_LEAD_MS = 4_000
 const PRELOAD_MIN_DELAY_MS = 2_000
 const MANUAL_PRESET_THROTTLE_MS = 100
@@ -219,7 +218,7 @@ class TheatreController extends EventTarget {
 
   private canRotateNow(): boolean {
     if (this.lastRotationAt <= 0) return true
-    return performance.now() - this.lastRotationAt >= MIN_ROTATION_GAP_MS
+    return performance.now() - this.lastRotationAt >= DEFAULT_ROTATION_POLICY.minSceneMs
   }
 
   private resetAutoRotateTimer() {
@@ -735,7 +734,7 @@ class TheatreController extends EventTarget {
       kind = 'fastFade'
     }
     
-    if (features) {
+    if (!isVideoPresetId(selectedPreset.id) && !isVideoPresetId(this.deck.getActivePresetId()) && features) {
       if (features.flux.overall > AUTO_ROTATE_POP_THRESHOLD * 1.5) kind = 'cut'
       else if (features.flux.overall > AUTO_ROTATE_POP_THRESHOLD * 0.8) kind = 'fastFade'
       else if (features.flux.overall < 0.005 && kind !== 'crossfade') kind = 'slowFade'
