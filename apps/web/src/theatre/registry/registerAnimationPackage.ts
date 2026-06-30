@@ -1,5 +1,6 @@
 import registry from './index'
 import { registerPreset, hasPreset } from './scenePresets'
+import { recordRotationPackage } from './packageRotation'
 import type { AnimationPackage } from './packages'
 
 const registeredPackageIds = new Set<string>()
@@ -86,6 +87,7 @@ export function registerAnimationPackage(pkg: AnimationPackage) {
   }
   if (hasPresets) {
     for (const preset of pkg.presets) registerPreset(preset)
+    recordRotationPackage(pkg.manifest, pkg.presets.map(preset => preset.id))
   }
 }
 

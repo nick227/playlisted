@@ -2,7 +2,8 @@ import registry from '../registry'
 import { AnimationContext, AnimationFactory } from '../core/IAnimation'
 import AudioFeatureExtractor from '../audio/AudioFeatureExtractor'
 import { getOrCreateAudioAnalyserConnection, type AudioAnalyserConnection } from '@/features/playback-indicators/audioAnalyser'
-import { getPreset, listPresets, pickPreset, type ScenePresetDef, type TheatreTransitionKind } from '../registry/scenePresets'
+import { getPreset, listPresets, type ScenePresetDef, type TheatreTransitionKind } from '../registry/scenePresets'
+import { pickPackagePreset } from '../registry/packageRotation'
 import { buildAnimationFrameContext, withTheatreInitContext } from './theatreFrameContext'
 import { detectPolicy } from '../runtime/PerformancePolicy'
 import { playbackFocusTiming } from '@/lib/playbackFocusTiming'
@@ -31,8 +32,8 @@ function resolvePresetChoice(reducedMotion: boolean, excludeIds: string[] = []):
     }
   }
 
-  // Auto-enter and auto-rotate: uniform pick across every seed-registered preset.
-  return pickPreset({ preferCategory: 'all', reducedMotion, excludeIds, equalWeight: true })
+  // Auto-enter and auto-rotate: pick package family first, then preset inside it.
+  return pickPackagePreset({ reducedMotion, excludePresetIds: excludeIds })
 }
 
 export type TheatreRotationPolicy = {

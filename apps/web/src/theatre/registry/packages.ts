@@ -30,6 +30,8 @@ export type AnimationPackageManifest = {
   description?: string
   capabilities?: AnimationPackageCapability[]
   reducedMotionSafe?: boolean
+  /** Family-level rotation weight. Defaults to 1 (equal chance among packages). */
+  weight?: number
 }
 
 export type PackageAnimationEntry = RegistryEntry
