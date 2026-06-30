@@ -24,7 +24,7 @@ import { monsterWavePackage } from '../packages/monster-wave'
 import { rampagePackage } from '../packages/rampage'
 import { cruisinPackage } from '../packages/cruisin'
 import {
-  registerObjectTheatreInSeed,
+  registerObjectTheatreInSeed,/*
   osmCalmFloatPackage,
   burgerBounceCarnivalPackage,
   ghostOrbitMidnightPackage,
@@ -32,14 +32,14 @@ import {
   beeSwarmSunsetPackage,
   dicePanicCasinoPackage,
   smileyFloatCandyPackage,
-  knifeSpiralHorrorPackage,
   ufoTunnelCosmicPackage,
   discoDuckRavePackage,
   poopWaveSillyPackage,
   pizzaPortalPosterPackage,
   hotdogFountainToxicPackage,
   heartSpotlightPastelPackage,
-  skullIdolGhostsPackage,
+  skullIdolGhostsPackage,*/
+  knifeSpiralHorrorPackage,
 } from '../packages/object-spinner-mover'
 
 // Package order matters only when presets reference animations owned by an

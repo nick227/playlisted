@@ -76,7 +76,6 @@ export function cruisinFactory(): IAnimation {
 
     private position = 0
     private speed = 0
-    private maxSpeed = 300
     private playerX = 0
 
     private backgroundOffset = 0
