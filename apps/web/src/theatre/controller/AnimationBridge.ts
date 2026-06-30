@@ -1,6 +1,7 @@
 import { AnimationFactory, IAnimation, AnimationContext } from '../core/IAnimation'
 import { staticFallbackFactory } from '../animations/staticFallback'
 import { theatreBreadcrumb } from './theatreBreadcrumbs'
+import { resolveTheatreInitContext } from './theatreInitContext'
 
 export type AnimationBridgeTrace = {
   presetId?: string
