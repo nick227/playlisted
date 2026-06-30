@@ -23,7 +23,7 @@ import { monsterWavePackage } from '../packages/monster-wave'
 import { rampagePackage } from '../packages/rampage'
 import { cruisinPackage } from '../packages/cruisin'
 import {
-  objectSpinnerMoverEnginePackage,
+  registerObjectTheatreInSeed,
   osmCalmFloatPackage,
   burgerBounceCarnivalPackage,
   ghostOrbitMidnightPackage,
@@ -44,9 +44,7 @@ import {
 // Package order matters only when presets reference animations owned by an
 // earlier package. Keep quietPulse first so reduced-motion fallbacks can point
 // at it, then register composite dependencies before their presets.
-[
-  // Object spinner mover: engine first, then cherry-pick preset packages.
-  objectSpinnerMoverEnginePackage,
+registerObjectTheatreInSeed([
   osmCalmFloatPackage,
   burgerBounceCarnivalPackage,
   ghostOrbitMidnightPackage,
@@ -62,9 +60,12 @@ import {
   hotdogFountainToxicPackage,
   heartSpotlightPastelPackage,
   skullIdolGhostsPackage,
+])
+
+;[
+  /*
   rampagePackage,
   cruisinPackage,
-  /*
   speakerPackage,
   bioMachinePackage,
   spinAmpPackage,

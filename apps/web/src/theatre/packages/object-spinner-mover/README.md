@@ -4,26 +4,24 @@ One shared canvas engine (`objectSpinnerMover`) + individually registerable pres
 
 ## Register in seed.ts
 
-Engine **must** be registered first. Then cherry-pick preset packages:
+Use `registerObjectTheatreInSeed` — it registers the shared engine automatically, then your preset packages:
 
 ```ts
 import {
-  objectSpinnerMoverEnginePackage,
+  registerObjectTheatreInSeed,
   osmCalmFloatPackage,
   burgerBounceCarnivalPackage,
-  ghostOrbitMidnightPackage,
-  // comment out any you don't want in rotation
+  knifeSpiralHorrorPackage,
 } from '../packages/object-spinner-mover'
 
-[
-  objectSpinnerMoverEnginePackage,
+registerObjectTheatreInSeed([
   osmCalmFloatPackage,
   burgerBounceCarnivalPackage,
-  ghostOrbitMidnightPackage,
-].forEach(registerAnimationPackage)
+  knifeSpiralHorrorPackage,
+])
 ```
 
-Theatre **randomly rotates** among registered presets — it does not generate configs at runtime. Each package is a fixed seed.
+Do **not** call `registerAnimationPackage` on preset packages alone — they need `objectSpinnerMover` registered first.
 
 ### All named preset packages
 

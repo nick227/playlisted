@@ -1,4 +1,6 @@
 import type { AnimationPackage } from '../../registry/packages'
+import registry from '../../registry'
+import { registerAnimationPackage } from '../../registry/registerAnimationPackage'
 import { objectSpinnerMoverManifest } from './manifest'
 import { objectSpinnerMoverFactory } from './ObjectSpinnerMoverScene'
 import { buildObjectTheatrePreset, type ObjectTheatreSeed } from './buildPreset'
@@ -76,3 +78,11 @@ export const skullIdolGhostsPackage = defineObjectTheatrePresetPackage(skullIdol
 
 /** All preset packages — use only if you want every seed registered. */
 export const objectSpinnerMoverPresetPackages = ALL_OBJECT_THEATRE_SEEDS.map(defineObjectTheatrePresetPackage)
+
+/** Registers engine once, then preset packages. Use this in seed.ts instead of bare registerAnimationPackage. */
+export function registerObjectTheatreInSeed(packages: AnimationPackage[]) {
+  if (!registry.has('objectSpinnerMover')) {
+    registerAnimationPackage(objectSpinnerMoverEnginePackage)
+  }
+  for (const pkg of packages) registerAnimationPackage(pkg)
+}

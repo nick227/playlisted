@@ -48,14 +48,17 @@ export function applyMotion(obj: TheatreObject, motion: MotionPreset, frame: Eng
       obj.y = cy + Math.sin(obj.orbitAngle) * obj.orbitRadius
       obj.rot += obj.rotSpeed * dt * 2
       return
-    case 'tunnel':
+    case 'tunnel': {
+      obj.orbitAngle += dt * 0.4 * speedMul
       obj.orbitRadius -= (30 + bass * 80) * dt * speedMul
-      if (obj.orbitRadius < 10) obj.orbitRadius = Math.min(w, h) * 0.5
+      const maxR = Math.max(40, Math.min(w, h) * 0.5)
+      if (obj.orbitRadius < 10) obj.orbitRadius = maxR
       obj.x = cx + Math.cos(obj.orbitAngle) * obj.orbitRadius
       obj.y = cy + Math.sin(obj.orbitAngle) * obj.orbitRadius
-      obj.baseScale = 0.3 + (1 - obj.orbitRadius / (Math.min(w, h) * 0.5)) * 1.2
+      obj.baseScale = 0.3 + (1 - obj.orbitRadius / maxR) * 1.2
       obj.rot += obj.rotSpeed * dt
       return
+    }
     case 'waveRows': {
       const row = Math.floor(obj.wavePhase * 5) % 5
       const rowY = (row + 0.5) * (h / 5)

@@ -25,6 +25,7 @@ export {
   defineObjectTheatrePresetPackage,
   objectSpinnerMoverEnginePackage,
   objectSpinnerMoverPresetPackages,
+  registerObjectTheatreInSeed,
   osmCalmFloatPackage,
   burgerBounceCarnivalPackage,
   ghostOrbitMidnightPackage,
