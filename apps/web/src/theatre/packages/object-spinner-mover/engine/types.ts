@@ -68,6 +68,10 @@ export type TheatreObject = {
   orbitAngle: number
   orbitRadius: number
   wavePhase: number
+  patternRadius: number
+  patternSpeed: number
+  lissajousA: number
+  lissajousB: number
   spawnDelay: number
   alive: boolean
   isHero: boolean

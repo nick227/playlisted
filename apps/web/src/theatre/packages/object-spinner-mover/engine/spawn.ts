@@ -34,6 +34,7 @@ export function positionForSpawn(obj: TheatreObject, style: SpawnStyle, ctx: Spa
       const row = Math.floor(index / cols)
       obj.x = (col + 0.5) * (w / cols)
       obj.y = (row + 0.5) * (h / Math.ceil(total / cols))
+      obj.rotSpeed = (seededRandom(seed + 4) - 0.5) * 4.5
       break
     }
     case 'randomPop':
@@ -59,9 +60,10 @@ export function positionForSpawn(obj: TheatreObject, style: SpawnStyle, ctx: Spa
       break
     case 'orbitRing': {
       obj.orbitAngle = (index / total) * Math.PI * 2
-      obj.orbitRadius = Math.min(w, h) * (0.25 + seededRandom(seed) * 0.2)
+      obj.orbitRadius = Math.min(w, h) * (0.2 + seededRandom(seed) * 0.32)
       obj.x = cx + Math.cos(obj.orbitAngle) * obj.orbitRadius
       obj.y = cy + Math.sin(obj.orbitAngle) * obj.orbitRadius
+      obj.rotSpeed = (seededRandom(seed + 4) - 0.5) * 4
       break
     }
   }

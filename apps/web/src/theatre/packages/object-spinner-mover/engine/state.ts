@@ -7,7 +7,7 @@ import { pickPersonality } from './personality'
 import { positionForSpawn } from './spawn'
 
 export function createObjectPool(preset: ObjectTheatrePreset, w: number, h: number): TheatreObject[] {
-  const count = preset.objectCount ?? 24
+  const count = preset.objectCount ?? 18
   const shapes = SHAPE_PACKS[preset.shapePack]
   const bandCount = preset.depthBands ?? 3
   const cx = w / 2; const cy = h / 2
@@ -15,13 +15,13 @@ export function createObjectPool(preset: ObjectTheatrePreset, w: number, h: numb
 
   for (let i = 0; i < count; i++) {
     const shape = shapes[Math.floor(seededRandom(i * 2.1) * shapes.length)]!
-    const obj = makeObject(i, shape, preset, bandCount)
+    const obj = makeObject(i, shape, preset, bandCount, w, h)
     positionForSpawn(obj, preset.spawnStyle, { w, h, cx, cy, index: i, total: count, beat: false, initial: true })
     objects.push(obj)
   }
 
   if (preset.heroObject) {
-    objects.push(makeHero(preset.heroObject, preset, bandCount))
+    objects.push(makeHero(preset.heroObject, preset, bandCount, w, h))
   }
 
   return objects
@@ -32,28 +32,34 @@ function makeObject(
   shape: ShapeKind,
   preset: ObjectTheatrePreset,
   bandCount: number,
+  w: number,
+  h: number,
 ): TheatreObject {
   return {
-    x: 0, y: 0, vx: (seededRandom(index) - 0.5) * 2, vy: (seededRandom(index + 1) - 0.5) * 2,
+    x: 0, y: 0, vx: (seededRandom(index) - 0.5) * 3, vy: (seededRandom(index + 1) - 0.5) * 3,
     rot: seededRandom(index + 2) * Math.PI * 2,
-    rotSpeed: (seededRandom(index + 3) - 0.5) * 2,
-    baseScale: 0.6 + seededRandom(index + 4) * 0.6,
+    rotSpeed: (seededRandom(index + 3) - 0.5) * 5.5,
+    baseScale: 1.05 + seededRandom(index + 4) * 0.95,
     scalePulse: 1,
     shape,
     zBand: assignDepthBand(index, bandCount),
     personality: pickPersonality(preset.personality, index),
     colorIndex: index,
     orbitAngle: seededRandom(index + 5) * Math.PI * 2,
-    orbitRadius: 80 + seededRandom(index + 6) * 120,
+    orbitRadius: Math.min(w, h) * (0.12 + seededRandom(index + 6) * 0.28),
     wavePhase: seededRandom(index + 7) * 10,
+    patternRadius: 0.25 + seededRandom(index + 8) * 0.75,
+    patternSpeed: 0.2 + seededRandom(index + 9) * 0.75,
+    lissajousA: 1.1 + seededRandom(index + 10) * 2.8,
+    lissajousB: 0.7 + seededRandom(index + 11) * 2.4,
     spawnDelay: 0,
     alive: true,
     isHero: false,
   }
 }
 
-function makeHero(hero: HeroObjectConfig, preset: ObjectTheatrePreset, bandCount: number): TheatreObject {
-  const obj = makeObject(9999, hero.shape, preset, bandCount)
+function makeHero(hero: HeroObjectConfig, preset: ObjectTheatrePreset, bandCount: number, w: number, h: number): TheatreObject {
+  const obj = makeObject(9999, hero.shape, preset, bandCount, w, h)
   obj.isHero = true
   obj.baseScale = hero.scale
   obj.zBand = bandCount - 1
@@ -73,7 +79,7 @@ export function respawnObject(
   obj.shape = shapes[Math.floor(seededRandom(index + performance.now()) * shapes.length)]!
   obj.alive = true
   obj.scalePulse = 1
-  positionForSpawn(obj, preset.spawnStyle, { w, h, cx: w / 2, cy: h / 2, index, total: preset.objectCount ?? 24, beat })
+  positionForSpawn(obj, preset.spawnStyle, { w, h, cx: w / 2, cy: h / 2, index, total: preset.objectCount ?? 18, beat })
 }
 
 export function updateHero(obj: TheatreObject, hero: HeroObjectConfig, frame: { w: number; h: number; cx: number; cy: number; time: number }) {

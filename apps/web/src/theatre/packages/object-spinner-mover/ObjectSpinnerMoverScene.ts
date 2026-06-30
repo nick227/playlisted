@@ -4,8 +4,9 @@ import type { ObjectTheatrePreset } from './engine/types'
 import { getPalette, pickObjectColor } from './engine/palettes'
 import { drawBackground } from './engine/backgrounds'
 import { drawShape } from './engine/shapes'
-import { applyMotion } from './engine/motion'
+import { applyMotion, usesDirectPositionMotion } from './engine/motion'
 import { applyPersonality } from './engine/personality'
+import { applyPatternDrift } from './engine/patterns'
 import { applyBeatToObject, beatSpawnCount, createBeatState, updateBeatState } from './engine/beat'
 import { triggerBeatEffects } from './engine/beatEffects'
 import { objectRenderAlpha, objectRenderBlur, objectRenderScale } from './engine/depth'
@@ -158,6 +159,9 @@ export function objectSpinnerMoverFactory(ctx?: AnimationContext): IAnimation {
       }
 
       const bandCount = this.preset.depthBands ?? 3
+      const motion = this.preset.motionPreset
+      const directMotion = usesDirectPositionMotion(motion)
+      const liveObjects = this.objects.filter(obj => obj.alive && !obj.isHero)
       const sorted = [...this.objects].sort((a, b) => a.zBand - b.zBand)
 
       for (let i = 0; i < sorted.length; i++) {
@@ -166,13 +170,19 @@ export function objectSpinnerMoverFactory(ctx?: AnimationContext): IAnimation {
 
         if (obj.isHero && this.preset.heroObject) {
           updateHero(obj, this.preset.heroObject, { w, h, cx: frame.cx, cy: frame.cy, time: now })
+          obj.rot += obj.rotSpeed * (delta / 1000) * 0.8
         } else {
-          applyMotion(obj, this.preset.motionPreset, frame)
+          applyMotion(obj, motion, frame)
+          if (!directMotion) {
+            const slot = liveObjects.indexOf(obj)
+            applyPatternDrift(obj, slot >= 0 ? slot : i, liveObjects.length, frame)
+          }
           applyPersonality(obj, frame)
           applyBeatToObject(obj, this.preset.beatBehavior, frame, this.beatState)
         }
 
-        const size = 18 * objectRenderScale(obj, bandCount) * frame.particleScale
+        const baseSize = Math.min(w, h) * 0.068
+        const size = baseSize * objectRenderScale(obj, bandCount) * frame.particleScale
         const alpha = objectRenderAlpha(obj, bandCount)
         const blur = objectRenderBlur(obj, bandCount)
 

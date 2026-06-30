@@ -13,8 +13,7 @@ export function pickPersonality(
 }
 
 export function applyPersonality(obj: TheatreObject, frame: EngineFrame) {
-  const { cx, cy, time, delta, beat, energy } = frame
-  const dt = delta / 1000
+  const { cx, cy, time, beat, energy } = frame
 
   switch (obj.personality) {
     case 'lazy':
@@ -55,10 +54,8 @@ export function applyPersonality(obj: TheatreObject, frame: EngineFrame) {
       obj.rotSpeed *= 0.99
       break
     case 'bouncy':
-      if (obj.vx > 3) obj.vx = 3
-      if (obj.vy > 3) obj.vy = 3
+      if (obj.vx > 4) obj.vx = 4
+      if (obj.vy > 4) obj.vy = 4
       break
   }
-
-  obj.rot += obj.rotSpeed * dt * 0.1
 }
