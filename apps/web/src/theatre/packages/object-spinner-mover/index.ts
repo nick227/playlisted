@@ -1,24 +1,43 @@
-import type { AnimationPackage } from '../../registry/packages'
-import { objectSpinnerMoverManifest } from './manifest'
-import { objectSpinnerMoverFactory } from './ObjectSpinnerMoverScene'
-import { objectSpinnerMoverPresets } from './presetEntries'
-
-export { objectSpinnerMoverFactory }
-
-export const objectSpinnerMoverPackage: AnimationPackage = {
-  manifest: objectSpinnerMoverManifest,
-  animations: [{
-    id: 'objectSpinnerMover',
-    label: 'Object Spinner Mover',
-    factory: objectSpinnerMoverFactory,
-    visualType: 'canvas',
-    mood: 'dynamic',
-    role: 'subject',
-    weight: 2,
-  }],
-  presets: objectSpinnerMoverPresets,
-}
-
+export { objectSpinnerMoverFactory } from './ObjectSpinnerMoverScene'
 export type { ObjectTheatrePreset } from './engine/types'
-export type { ObjectTheatreSeed } from './presetEntries'
-export { OBJECT_THEATRE_SEEDS, buildObjectTheatrePreset, isObjectTheatrePreset, listObjectTheatreSeedIds } from './presetEntries'
+export type { ObjectTheatreSeed } from './buildPreset'
+export { buildObjectTheatrePreset, isObjectTheatrePreset, OBJECT_SPINNER_MOVER_ID } from './buildPreset'
+export {
+  ALL_OBJECT_THEATRE_SEEDS,
+  listObjectTheatreSeedIds,
+  osmCalmFloatSeed,
+  burgerBounceCarnivalSeed,
+  ghostOrbitMidnightSeed,
+  tacoRainAcidSeed,
+  beeSwarmSunsetSeed,
+  dicePanicCasinoSeed,
+  smileyFloatCandySeed,
+  knifeSpiralHorrorSeed,
+  ufoTunnelCosmicSeed,
+  discoDuckRaveSeed,
+  poopWaveSillySeed,
+  pizzaPortalPosterSeed,
+  hotdogFountainToxicSeed,
+  heartSpotlightPastelSeed,
+  skullIdolGhostsSeed,
+} from './seeds'
+export {
+  defineObjectTheatrePresetPackage,
+  objectSpinnerMoverEnginePackage,
+  objectSpinnerMoverPresetPackages,
+  osmCalmFloatPackage,
+  burgerBounceCarnivalPackage,
+  ghostOrbitMidnightPackage,
+  tacoRainAcidPackage,
+  beeSwarmSunsetPackage,
+  dicePanicCasinoPackage,
+  smileyFloatCandyPackage,
+  knifeSpiralHorrorPackage,
+  ufoTunnelCosmicPackage,
+  discoDuckRavePackage,
+  poopWaveSillyPackage,
+  pizzaPortalPosterPackage,
+  hotdogFountainToxicPackage,
+  heartSpotlightPastelPackage,
+  skullIdolGhostsPackage,
+} from './packages'

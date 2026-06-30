@@ -10,7 +10,7 @@ import { createTheatreDevPanel, destroyTheatreDevPanel } from '../dev/TheatreDev
 import { TheatreSceneDeck } from './TheatreSceneDeck'
 import { theatreBreadcrumb } from './theatreBreadcrumbs'
 import { isPresetQuarantined, quarantinePreset } from './presetQuarantine'
-import { isObjectTheatrePreset } from '../packages/object-spinner-mover/presetEntries'
+import { isObjectTheatrePreset } from '../packages/object-spinner-mover'
 
 function presetIdFromUrl(): string | null {
   if (typeof window === 'undefined') return null

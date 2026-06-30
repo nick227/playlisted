@@ -1,66 +1,62 @@
 # Object Spinner Mover
 
-Composable sticker theatre engine. One canvas scene (`objectSpinnerMover`) driven by `objectTheatre` preset config on each scene preset layer.
+One shared canvas engine (`objectSpinnerMover`) + individually registerable preset packages.
 
-## Seed entry shape
+## Register in seed.ts
+
+Engine **must** be registered first. Then cherry-pick preset packages:
 
 ```ts
-{
-  id: 'burger-bounce-carnival',
-  label: 'Burger Bounce Carnival',
-  config: {
-    backgroundPreset: 'checkerboard',
-    shapePack: 'fastFood',
-    motionPreset: 'bounce',
-    beatBehavior: 'spinKick',
-    spawnStyle: 'edges',
-    palette: 'poster',
-    depthBands: 3,
-    heroObject: { shape: 'burger', behavior: 'centerWobble', scale: 2.5 },
-  },
-}
+import {
+  objectSpinnerMoverEnginePackage,
+  osmCalmFloatPackage,
+  burgerBounceCarnivalPackage,
+  ghostOrbitMidnightPackage,
+  // comment out any you don't want in rotation
+} from '../packages/object-spinner-mover'
+
+[
+  objectSpinnerMoverEnginePackage,
+  osmCalmFloatPackage,
+  burgerBounceCarnivalPackage,
+  ghostOrbitMidnightPackage,
+].forEach(registerAnimationPackage)
 ```
 
-Add new FX by appending to `presetEntries.ts` — no engine changes needed.
+Theatre **randomly rotates** among registered presets — it does not generate configs at runtime. Each package is a fixed seed.
 
-## Picking a preset
+### All named preset packages
 
-**URL (works in background + immersive):**
+| Export | Preset id |
+| --- | --- |
+| `osmCalmFloatPackage` | `osm-calm-float` |
+| `burgerBounceCarnivalPackage` | `burger-bounce-carnival` |
+| `ghostOrbitMidnightPackage` | `ghost-orbit-midnight` |
+| `tacoRainAcidPackage` | `taco-rain-acid` |
+| `beeSwarmSunsetPackage` | `bee-swarm-sunset` |
+| `dicePanicCasinoPackage` | `dice-panic-casino` |
+| `smileyFloatCandyPackage` | `smiley-float-candy` |
+| `knifeSpiralHorrorPackage` | `knife-spiral-horror` |
+| `ufoTunnelCosmicPackage` | `ufo-tunnel-cosmic` |
+| `discoDuckRavePackage` | `disco-duck-rave` |
+| `poopWaveSillyPackage` | `poop-wave-silly` |
+| `pizzaPortalPosterPackage` | `pizza-portal-poster` |
+| `hotdogFountainToxicPackage` | `hotdog-fountain-toxic` |
+| `heartSpotlightPastelPackage` | `heart-spotlight-pastel` |
+| `skullIdolGhostsPackage` | `skull-idol-ghosts` |
+
+Register everything: `objectSpinnerMoverPresetPackages` (array of all preset packages).
+
+## Add a new preset
+
+1. Add a named seed in `seeds.ts`
+2. Export a package in `packages.ts` via `defineObjectTheatrePresetPackage(yourSeed)`
+3. Import and register it in `seed.ts`
+
+## Force a preset at runtime
 
 ```
 ?theatrePreset=burger-bounce-carnival
 ```
 
-All ids: `listObjectTheatreSeedIds()` or see `OBJECT_THEATRE_SEEDS` in `presetEntries.ts`.
-
-**Immersive menu:** enter full-screen theatre, tap the **☰ button** top-right → **Sticker FX** section lists every preset.
-
-**Console:**
-
-```js
-import theatreController from '@/theatre/controller/lazyController'
-theatreController.changePreset('ghost-orbit-midnight')
-```
-
-**Auto-rotation:** on track change / audio pop, theatre randomly picks another production preset.
-
-Note: with `prefers-reduced-motion` enabled, all presets fall back to `osm-calm-float` (pastel smileys).
-
-## v0 composables
-
-| Key | Options |
-| --- | --- |
-| `shapePack` | fastFood, spooky, party, kitchen, nature, gambling, cosmic, silly, rave, horrorSnack |
-| `motionPreset` | float, swarm, orbit, falling, rising, bounce, spiral, tunnel, waveRows, panic |
-| `beatBehavior` | scaleOnBeat, spinKick, burstSpawn, backgroundFlash, bassGravity, snareShuffle, dropExplosion, colorFlash, spawnMore |
-| `backgroundPreset` | radialGradient, checkerboard, starfield, liquidLava, vhsGrid, comicBurst, spotlightStage, tunnelWarp, paperCollage, neonCity |
-| `palette` | candy, toxic, midnight, sunset, monoChrome, acid, pastel, poster, chrome, horror |
-| `spawnStyle` | edges, centerBurst, gridFill, randomPop, beatBurst, fountain, rain, orbitRing |
-| `depthBands` | 3 (back/mid/front layers) |
-| `heroObject` | optional giant centerpiece |
-
-High-motion presets use `osm-calm-float` as `reducedMotionPreset`.
-
-## Reduced motion
-
-`osm-calm-float` is the production-safe fallback: slow float, pastel palette, gentle beat scale.
+Keep `osmCalmFloatPackage` registered — other presets use it as `reducedMotionPreset`.

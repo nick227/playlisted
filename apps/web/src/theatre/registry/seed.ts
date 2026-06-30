@@ -21,14 +21,50 @@ import { jellyBellPackage } from '../packages/jelly-bell'
 import { cuteMonstroPackage } from '../packages/cute-monstro'
 import { monsterWavePackage } from '../packages/monster-wave'
 import { rampagePackage } from '../packages/rampage'
-import { objectSpinnerMoverPackage } from '../packages/object-spinner-mover'
+import { cruisinPackage } from '../packages/cruisin'
+import {
+  objectSpinnerMoverEnginePackage,
+  osmCalmFloatPackage,
+  burgerBounceCarnivalPackage,
+  ghostOrbitMidnightPackage,
+  tacoRainAcidPackage,
+  beeSwarmSunsetPackage,
+  dicePanicCasinoPackage,
+  smileyFloatCandyPackage,
+  knifeSpiralHorrorPackage,
+  ufoTunnelCosmicPackage,
+  discoDuckRavePackage,
+  poopWaveSillyPackage,
+  pizzaPortalPosterPackage,
+  hotdogFountainToxicPackage,
+  heartSpotlightPastelPackage,
+  skullIdolGhostsPackage,
+} from '../packages/object-spinner-mover'
 
 // Package order matters only when presets reference animations owned by an
 // earlier package. Keep quietPulse first so reduced-motion fallbacks can point
 // at it, then register composite dependencies before their presets.
 [
-  objectSpinnerMoverPackage,
-  rampagePackage,/*
+  // Object spinner mover: engine first, then cherry-pick preset packages.
+  objectSpinnerMoverEnginePackage,
+  osmCalmFloatPackage,
+  burgerBounceCarnivalPackage,
+  ghostOrbitMidnightPackage,
+  tacoRainAcidPackage,
+  beeSwarmSunsetPackage,
+  dicePanicCasinoPackage,
+  smileyFloatCandyPackage,
+  knifeSpiralHorrorPackage,
+  ufoTunnelCosmicPackage,
+  discoDuckRavePackage,
+  poopWaveSillyPackage,
+  pizzaPortalPosterPackage,
+  hotdogFountainToxicPackage,
+  heartSpotlightPastelPackage,
+  skullIdolGhostsPackage,
+  rampagePackage,
+  cruisinPackage,
+  /*
   speakerPackage,
   bioMachinePackage,
   spinAmpPackage,
