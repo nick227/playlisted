@@ -35,6 +35,7 @@
     "subtitles:worker:dev": "tsx src/workers/subtitleWorker.ts",
     "subtitles:worker:once": "tsx src/workers/subtitleWorker.ts --once",
     "subtitles:worker:prod-local-once": "tsx scripts/run-prod-local-subtitle-worker.ts",
+    "subtitles:worker:prod-local": "tsx scripts/run-prod-local-subtitle-worker.ts",
     "subtitles:status": "tsx scripts/subtitles-status.ts",
     "openapi:validate": "swagger-cli validate openapi/openapi.yaml",
     "openapi:types": "openapi-typescript openapi/openapi.yaml -o packages/client-sdk/src/generated/schema.ts",

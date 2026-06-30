@@ -35,7 +35,7 @@ export function PlaylistCard({
   const path = playlistPath({ id, href, username: ownerUsername ?? null, slug });
 
   return (
-    <div className={`group/card flex flex-col gap-2 ${className ?? "w-40 shrink-0"}`}>
+    <div className={`group/card flex flex-col ${className ?? "w-40 shrink-0"}`}>
       <div className="relative aspect-square max-h-[160px]">
         <Link to={path} className="block transition hover:opacity-90">
           <MediaCover title={title} imageUrl={coverArtUrl} onPlay={onPlay} />
@@ -56,7 +56,7 @@ export function PlaylistCard({
           </>
         ) : null}
       </div>
-      <Link to={path} className="min-w-0 transition-opacity hover:opacity-80 bg-[var(--color-canvas)]/50 rounded-lg p-2">
+      <Link to={path} className="min-w-0 transition-opacity hover:opacity-80 bg-[var(--color-canvas)]/90 rounded-lg p-2">
         <p className="truncate text-sm font-medium text-white">{title}</p>
         {creatorName ? (
           <p className="truncate text-xs text-[var(--color-text-muted)]">{creatorName}</p>

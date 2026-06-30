@@ -74,7 +74,8 @@ async function main() {
   }
   assertFasterWhisperInstalled(process.env.SUBTITLES_PYTHON_COMMAND);
 
-  if (!process.argv.includes("--once")) {
+  const hasLimit = process.argv.some((arg) => arg.startsWith("--limit="));
+  if (!process.argv.includes("--once") && !hasLimit) {
     process.argv.push("--once");
   }
 

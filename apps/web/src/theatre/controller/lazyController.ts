@@ -13,6 +13,7 @@ interface RealTheatreController extends EventTarget {
   state: {
     active: boolean
     canEnter: boolean
+    fxEnabled: boolean
     mode: 'background' | 'immersive' | null
     presetId: string | null
     mediaSrc: string | null
@@ -21,11 +22,12 @@ interface RealTheatreController extends EventTarget {
   registerPlaybackSource(el: HTMLMediaElement | null, meta?: { artworkUrl?: string | null }): void
   setArtwork(url: string | null): void
   setCanEnter(canEnter: boolean): void
+  setFxEnabled(enabled: boolean): void | Promise<void>
   toggle(): Promise<void>
   enter(): Promise<void>
   enterBackground(): Promise<void>
-  exit(): Promise<void>
-  changePreset(id: string): Promise<void>
+  exit(opts?: { rearmBackground?: boolean }): Promise<void>
+  changePreset(id: string): void
   rotateRandomPreset(): Promise<void>
   setAutoRotation(enabled: boolean): void
   setClipDuration(durationMs: number | null): void
@@ -61,6 +63,7 @@ class LazyTheatreController extends EventTarget {
   public state = {
     active:     false,
     canEnter:   false,
+    fxEnabled:  true,
     mode:       null as 'background' | 'immersive' | null,
     presetId:   null as string | null,
     mediaSrc:   null as string | null,
@@ -75,6 +78,7 @@ class LazyTheatreController extends EventTarget {
   private _pendingClipDuration: number | null = null
   private _pendingArtwork: { url: string | null } | null = null
   private _pendingAutoRotate: boolean = false
+  private _pendingFxEnabled: boolean | null = null
 
   // ── Private load ──────────────────────────────────────────────────────────
 
@@ -100,6 +104,9 @@ class LazyTheatreController extends EventTarget {
           real.setArtwork(this._pendingArtwork.url)
         }
         real.setAutoRotation(this._pendingAutoRotate)
+        if (this._pendingFxEnabled !== null) {
+          real.setFxEnabled(this._pendingFxEnabled)
+        }
         
         // Push current canEnter so the real controller starts in sync.
         real.setCanEnter(this.state.canEnter)
@@ -176,10 +183,29 @@ class LazyTheatreController extends EventTarget {
     if (this.state.canEnter === canEnter) return
     this.state.canEnter = canEnter
     this.dispatchEvent(new Event('change'))
-    if (canEnter) {
+    if (canEnter && this.state.fxEnabled) {
       void this._load().then(real => {
         if (this.state.canEnter) real.setCanEnter(true)
       })
+    }
+  }
+
+  public async setFxEnabled(enabled: boolean) {
+    this._pendingFxEnabled = enabled
+
+    if (this._real) {
+      this._real.setFxEnabled(enabled)
+      return
+    }
+
+    this.state.fxEnabled = enabled
+    this.dispatchEvent(new Event('change'))
+
+    if (!enabled) return
+
+    if (this.state.canEnter) {
+      const real = await this._load()
+      real.setFxEnabled(enabled)
     }
   }
 
@@ -202,8 +228,8 @@ class LazyTheatreController extends EventTarget {
     return (await this._load()).enterBackground()
   }
 
-  public async changePreset(id: string) {
-    return (await this._load()).changePreset(id)
+  public changePreset(id: string) {
+    void this._load().then(real => real.changePreset(id))
   }
 
   public async rotateRandomPreset() {

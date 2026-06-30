@@ -22,6 +22,17 @@ const requireModalProvider =
 
 let shuttingDown = false;
 
+function parseProcessLimit() {
+  if (process.argv.includes("--once")) return 1;
+  const limitArg = process.argv.find((arg) => arg.startsWith("--limit="));
+  if (!limitArg) return null;
+  const limit = Number(limitArg.slice("--limit=".length));
+  if (!Number.isInteger(limit) || limit <= 0) {
+    throw new Error("--limit must be a positive integer.");
+  }
+  return limit;
+}
+
 function log(event: string, details: Record<string, unknown> = {}) {
   console.log(JSON.stringify({ event, ...details, ts: new Date().toISOString() }));
 }
@@ -323,10 +334,16 @@ async function main() {
 
   await resetStaleProcessingRows();
 
-  if (process.argv.includes("--once")) {
-    await processNextSubtitle();
+  const processLimit = parseProcessLimit();
+  if (processLimit != null) {
+    let processedCount = 0;
+    for (let i = 0; i < processLimit && !shuttingDown; i++) {
+      const processed = await processNextSubtitle();
+      if (!processed) break;
+      processedCount += 1;
+    }
     await prisma.$disconnect();
-    log("subtitle.worker.exit", { mode: "once" });
+    log("subtitle.worker.exit", { mode: processLimit === 1 ? "once" : "limit", limit: processLimit, processedCount });
     return;
   }
 

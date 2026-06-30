@@ -1,6 +1,8 @@
 import AnimationBridge from './AnimationBridge'
 import { AnimationContext, AnimationFactory } from '../core/IAnimation'
 import { TheatreTransitionKind } from '../registry/scenePresets'
+import { assertTheatreDeckInvariants } from './theatreDeckInvariants'
+import { theatreBreadcrumb } from './theatreBreadcrumbs'
 
 export const THEATRE_TRANSITIONS: Record<TheatreTransitionKind, { outMs: number, inMs: number, overlapMs: number }> = {
   cut:        { outMs: 0,    inMs: 0,    overlapMs: 0 },
@@ -55,6 +57,35 @@ export class TheatreSceneDeck {
     return this.nextPresetId
   }
 
+  public isTransitioning() {
+    return this.transitioning
+  }
+
+  public assertInvariants(label: string) {
+    assertTheatreDeckInvariants(
+      label,
+      this.container,
+      this.activeBridge,
+      this.nextBridge,
+      this.activePresetId,
+      this.nextPresetId,
+      this.transitioning,
+    )
+  }
+
+  /** Abort preload and in-flight transition timers without tearing down the active scene. */
+  public cancelInFlight() {
+    this.clearPendingTimeouts()
+    if (this.nextBridge) {
+      this.destroyLayer(this.nextLayer, this.nextBridge, this.nextPresetId)
+      this.nextLayer = null
+      this.nextBridge = null
+      this.nextPresetId = null
+    }
+    this.transitioning = false
+    this.assertInvariants('cancelInFlight')
+  }
+
   public renderFrame(ctx: AnimationContext) {
     this.activeBridge?.renderFrame(ctx)
     this.nextBridge?.renderFrame(ctx)
@@ -81,9 +112,14 @@ export class TheatreSceneDeck {
     return layer
   }
 
-  private destroyLayer(layer: HTMLElement | null, bridge: AnimationBridge | null) {
+  private destroyLayer(
+    layer: HTMLElement | null,
+    bridge: AnimationBridge | null,
+    presetId?: string | null,
+  ) {
     if (bridge) {
-      void bridge.exit()
+      theatreBreadcrumb('deck:destroyLayer:before-exit', { presetId: presetId ?? undefined })
+      void bridge.exit({ presetId: presetId ?? undefined })
     }
     if (layer && layer.parentElement) {
       layer.parentElement.removeChild(layer)
@@ -96,13 +132,15 @@ export class TheatreSceneDeck {
     ctx: AnimationContext
   ) {
     if (this.activeBridge) {
-      this.destroyLayer(this.activeLayer, this.activeBridge)
+      this.destroyLayer(this.activeLayer, this.activeBridge, this.activePresetId)
     }
     
     this.activePresetId = presetId
     this.activeLayer = this.createLayer()
     this.activeBridge = new AnimationBridge()
-    await this.activeBridge.enter(this.activeLayer, factories, ctx)
+    theatreBreadcrumb('deck:enterInitial:before-enter', { presetId })
+    await this.activeBridge.enter(this.activeLayer, factories, ctx, { presetId })
+    this.assertInvariants('enterInitial')
   }
 
   public async preload(
@@ -113,7 +151,7 @@ export class TheatreSceneDeck {
     if (this.transitioning) return
     if (this.nextBridge) {
       if (this.nextPresetId === presetId) return
-      this.destroyLayer(this.nextLayer, this.nextBridge)
+      this.destroyLayer(this.nextLayer, this.nextBridge, this.nextPresetId)
       this.nextLayer = null
       this.nextBridge = null
     }
@@ -123,17 +161,47 @@ export class TheatreSceneDeck {
     this.nextBridge = new AnimationBridge()
     this.nextPresetId = presetId
     
-    // We do NOT await this in the main path, but we can await it here
-    await this.nextBridge.enter(this.nextLayer, factories, ctx)
+    theatreBreadcrumb('deck:preload:before-enter', { presetId })
+    await this.nextBridge.enter(this.nextLayer, factories, ctx, { presetId })
     
     if (this.nextLayer) {
       this.nextLayer.offsetHeight // Force reflow
     }
+    this.assertInvariants('preload')
+  }
+
+  /** Manual preset path: no preload slot, instant cut swap. */
+  public async transitionToDirect(
+    presetId: string,
+    factories: AnimationFactory[],
+    ctx: AnimationContext,
+  ) {
+    this.cancelInFlight()
+    theatreBreadcrumb('deck:transitionToDirect:start', { presetId })
+
+    const nextLayer = this.createLayer()
+    const nextBridge = new AnimationBridge()
+    theatreBreadcrumb('deck:transitionToDirect:before-enter', { presetId })
+    await nextBridge.enter(nextLayer, factories, ctx, { presetId })
+
+    theatreBreadcrumb('deck:transitionToDirect:before-destroy', {
+      presetId,
+      detail: `replacing=${this.activePresetId ?? 'none'}`,
+    })
+    this.destroyLayer(this.activeLayer, this.activeBridge, this.activePresetId)
+
+    this.activeLayer = nextLayer
+    this.activeBridge = nextBridge
+    this.activePresetId = presetId
+
+    this.assertInvariants('transitionToDirect')
+    theatreBreadcrumb('deck:transitionToDirect:complete', { presetId })
   }
 
   public async transitionToPreloaded(kind: TheatreTransitionKind) {
     if (this.transitioning || !this.nextBridge || !this.nextLayer || !this.nextPresetId) return
     this.transitioning = true
+    theatreBreadcrumb('deck:transitionToPreloaded:start', { presetId: this.nextPresetId ?? undefined })
 
     const timings = THEATRE_TRANSITIONS[kind]
     const presetId = this.nextPresetId
@@ -150,7 +218,7 @@ export class TheatreSceneDeck {
       const watchdog = this.trackTimeout(window.setTimeout(() => {
         watchdogFired = true
         console.warn(`[Theatre] Watchdog fired for transition to ${presetId}. Forcing cleanup.`)
-        this.destroyLayer(this.nextLayer, this.nextBridge)
+        this.destroyLayer(this.nextLayer, this.nextBridge, this.nextPresetId)
         this.nextLayer = null
         this.nextBridge = null
         this.nextPresetId = null
@@ -185,7 +253,7 @@ export class TheatreSceneDeck {
           if (watchdogFired) return
           window.clearTimeout(watchdog)
           
-          this.destroyLayer(this.activeLayer, this.activeBridge)
+          this.destroyLayer(this.activeLayer, this.activeBridge, this.activePresetId)
           
           this.activeLayer = nextLayer
           this.activeBridge = nextBridge
@@ -201,6 +269,7 @@ export class TheatreSceneDeck {
           // Health log on completion
           console.debug(`[Theatre] Transition complete. Active layers: ${this.container.children.length}`)
 
+          this.assertInvariants('transitionToPreloaded:complete')
           resolve()
         }, timings.inMs))
 
@@ -221,8 +290,8 @@ export class TheatreSceneDeck {
 
   public async exit() {
     this.clearPendingTimeouts()
-    this.destroyLayer(this.activeLayer, this.activeBridge)
-    this.destroyLayer(this.nextLayer, this.nextBridge)
+    this.destroyLayer(this.activeLayer, this.activeBridge, this.activePresetId)
+    this.destroyLayer(this.nextLayer, this.nextBridge, this.nextPresetId)
     this.activeLayer = null
     this.activeBridge = null
     this.nextLayer = null
@@ -230,5 +299,6 @@ export class TheatreSceneDeck {
     this.activePresetId = null
     this.nextPresetId = null
     this.transitioning = false
+    this.assertInvariants('exit')
   }
 }

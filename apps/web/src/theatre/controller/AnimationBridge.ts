@@ -1,19 +1,43 @@
 import { AnimationFactory, IAnimation, AnimationContext } from '../core/IAnimation'
 import { staticFallbackFactory } from '../animations/staticFallback'
+import { theatreBreadcrumb } from './theatreBreadcrumbs'
+
+export type AnimationBridgeTrace = {
+  presetId?: string
+}
 
 export class AnimationBridge {
   private instances: IAnimation[] = []
 
-  async enter(container: HTMLElement, factories: AnimationFactory[], ctx: AnimationContext) {
-    for (const factory of factories) {
+  async enter(
+    container: HTMLElement,
+    factories: AnimationFactory[],
+    ctx: AnimationContext,
+    trace?: AnimationBridgeTrace,
+  ) {
+    theatreBreadcrumb('bridge:enter:start', {
+      presetId: trace?.presetId,
+      detail: `layers=${factories.length}`,
+    })
+
+    for (let layerIndex = 0; layerIndex < factories.length; layerIndex++) {
+      const factory = factories[layerIndex]
       let instance: IAnimation | null = null
       try {
+        theatreBreadcrumb('bridge:enter:layer:before-init', {
+          presetId: trace?.presetId,
+          detail: `layer=${layerIndex}`,
+        })
         instance = factory(ctx)
         await instance.init(container, ctx)
         // Opt in to controller RAF loop before start() so the animation never
         // creates its own loop. Old-pattern animations without enableExternalDriving
         // are unaffected and continue self-driving (backward compat).
         instance.enableExternalDriving?.()
+        theatreBreadcrumb('bridge:enter:layer:before-start', {
+          presetId: trace?.presetId,
+          detail: `layer=${layerIndex}`,
+        })
         await instance.start()
         this.instances.push(instance)
       } catch (e) {
@@ -45,8 +69,12 @@ export class AnimationBridge {
   }
 
   /** Safe to call repeatedly — no-op when {@link instances} is already empty. */
-  async exit() {
+  async exit(trace?: AnimationBridgeTrace) {
     if (this.instances.length === 0) return
+    theatreBreadcrumb('bridge:exit:before-stop', {
+      presetId: trace?.presetId,
+      detail: `instances=${this.instances.length}`,
+    })
     await Promise.all(this.instances.map(i => i.stop().catch(() => {})))
     this.instances.forEach(i => { try { i.destroy() } catch { /* ignore */ } })
     this.instances = []

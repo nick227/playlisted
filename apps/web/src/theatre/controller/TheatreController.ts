@@ -8,6 +8,8 @@ import { detectPolicy } from '../runtime/PerformancePolicy'
 import { playbackFocusTiming } from '@/lib/playbackFocusTiming'
 import { createTheatreDevPanel, destroyTheatreDevPanel } from '../dev/TheatreDevPanel'
 import { TheatreSceneDeck } from './TheatreSceneDeck'
+import { theatreBreadcrumb } from './theatreBreadcrumbs'
+import { isPresetQuarantined, quarantinePreset } from './presetQuarantine'
 
 export type TheatreRotationPolicy = {
   minSceneMs: number
@@ -26,6 +28,11 @@ export const DEFAULT_ROTATION_POLICY: TheatreRotationPolicy = {
 }
 
 const AUTO_ROTATE_POP_THRESHOLD = 0.02
+const MANUAL_PRESET_THROTTLE_MS = 1800
+const MANUAL_PRESET_COOLDOWN_MS = 3000
+const PRESET_CHANGE_TIMEOUT_MS = 12_000
+
+type PresetChangeSource = 'manual' | 'auto'
 
 type PlaybackSourceMeta = { artworkUrl?: string | null }
 type TheatreMode = 'background' | 'immersive'
@@ -46,6 +53,10 @@ class TheatreController extends EventTarget {
   private autoRotateEnabled = false
   private nextAutoRotateTime = 0
   private autoRotateArmed = false
+  private manualPresetLatest: string | null = null
+  private manualPresetTimerId: number | null = null
+  private lastManualPresetStart = 0
+  private manualChangeActiveUntil = 0
 
   private readonly onVisibilityChange = () => {
     if (document.hidden && this.state.active) this.deck?.pause()
@@ -55,6 +66,8 @@ class TheatreController extends EventTarget {
   public state = {
     active: false,
     canEnter: false,
+    /** User preference: top-bar toggle. When false, no theatre FX run. */
+    fxEnabled: true,
     mode: null as TheatreMode | null,
     presetId: null as string | null,
     mediaSrc: null as string | null,
@@ -73,6 +86,8 @@ class TheatreController extends EventTarget {
   dispose() {
     this.bumpTransitionToken()
     this.transitioning = false
+    this.clearManualPresetTimer()
+    this.manualPresetLatest = null
     this.state.active = false
     this.state.mode = null
     this.state.presetId = null
@@ -112,7 +127,7 @@ class TheatreController extends EventTarget {
     const changed = this.state.canEnter !== canEnter
     if (changed) this.state.canEnter = canEnter
 
-    if (canEnter) {
+    if (canEnter && this.state.fxEnabled) {
       this.ensureBackgroundIfNeeded()
     } else if (this.state.active && this.state.mode === 'background') {
       this.clearBackgroundEnterTimer()
@@ -124,7 +139,27 @@ class TheatreController extends EventTarget {
     if (changed) this.dispatchEvent(new Event('change'))
   }
 
+  /** Top-bar theatre toggle: enable/disable visual FX without exit→re-enter fighting. */
+  public setFxEnabled(enabled: boolean) {
+    if (this.state.fxEnabled === enabled) return
+
+    this.state.fxEnabled = enabled
+    theatreBreadcrumb('fx-enabled:change', { detail: String(enabled) })
+
+    if (!enabled) {
+      this.clearBackgroundEnterTimer()
+      if (this.state.active) {
+        void this.exit({ rearmBackground: false })
+      }
+    } else if (this.state.canEnter) {
+      this.ensureBackgroundIfNeeded()
+    }
+
+    this.dispatchEvent(new Event('change'))
+  }
+
   public setAutoRotation(enabled: boolean) {
+    console.log('[TheatreController] setAutoRotation:', enabled)
     this.autoRotateEnabled = enabled
     if (enabled) {
       this.resetAutoRotateTimer()
@@ -157,15 +192,19 @@ class TheatreController extends EventTarget {
       durationMs = policy.maxSceneMs // Default fallback
     }
 
-    // Formula: nextSwitchAt = now + max(clipDurationMs, minSceneMs) + randomVariance
-    const nextWaitMs = Math.max(durationMs, baseMin) + (Math.random() * policy.varianceMs)
+    // Clamp duration between minSceneMs and maxSceneMs so we don't wait the full song length
+    let targetMs = Math.min(durationMs, policy.maxSceneMs)
+
+    // Formula: nextSwitchAt = now + max(targetMs, minSceneMs) + randomVariance
+    const nextWaitMs = Math.max(targetMs, baseMin) + (Math.random() * policy.varianceMs)
     
     this.nextAutoRotateTime = performance.now() + nextWaitMs
     this.autoRotateArmed = false
+    console.log(`[TheatreController] resetAutoRotateTimer: durationMs=${durationMs.toFixed(0)}, targetMs=${targetMs.toFixed(0)}, baseMin=${baseMin}, nextWaitMs=${nextWaitMs.toFixed(0)}, nextTime=${this.nextAutoRotateTime.toFixed(0)}`)
   }
 
   private ensureBackgroundIfNeeded() {
-    if (!this.state.canEnter || this.state.active || this.transitioning || this.backgroundEnterTimerId !== null) return
+    if (!this.state.canEnter || !this.state.fxEnabled || this.state.active || this.transitioning || this.backgroundEnterTimerId !== null) return
 
     if (playbackFocusTiming.theatre.delayMs <= 0) {
       void this.enterBackground()
@@ -174,7 +213,9 @@ class TheatreController extends EventTarget {
 
     this.backgroundEnterTimerId = window.setTimeout(() => {
       this.backgroundEnterTimerId = null
-      if (this.state.canEnter && !this.state.active && !this.transitioning) void this.enterBackground()
+      if (this.state.canEnter && this.state.fxEnabled && !this.state.active && !this.transitioning) {
+        void this.enterBackground()
+      }
     }, playbackFocusTiming.theatre.delayMs)
   }
 
@@ -256,6 +297,16 @@ class TheatreController extends EventTarget {
     if (this.backgroundEnterTimerId === null) return
     window.clearTimeout(this.backgroundEnterTimerId)
     this.backgroundEnterTimerId = null
+  }
+
+  private clearManualPresetTimer() {
+    if (this.manualPresetTimerId === null) return
+    window.clearTimeout(this.manualPresetTimerId)
+    this.manualPresetTimerId = null
+  }
+
+  private isManualChangeCooldownActive(): boolean {
+    return performance.now() < this.manualChangeActiveUntil
   }
 
   /** Only enter/exit/changePreset/dispose may bump — each must own `transitioning` except dispose. */
@@ -394,38 +445,169 @@ class TheatreController extends EventTarget {
   }
 
   public async rotateRandomPreset() {
-    if (!this.state.active || this.transitioning) return
-    
+    if (!this.state.active) return
+    if (this.transitioning && this.manualPresetLatest) return
+
     if (this.deck?.getNextPresetId()) {
       const token = this.bumpTransitionToken()
       this.transitioning = true
       try {
-        await this.changeToPreloadedInner(token)
+        await this.withPresetChangeTimeout('auto:preloaded', this.deck.getNextPresetId() ?? 'unknown', () =>
+          this.changeToPreloadedInner(token),
+        )
       } finally {
         if (this.stillCurrent(token)) this.transitioning = false
       }
     } else {
       const selectedPreset = this.pickRandomPreset()
       if (!selectedPreset || selectedPreset.id === this.state.presetId) return
-      await this.changePreset(selectedPreset.id)
+      await this.changePresetAuto(selectedPreset.id)
     }
   }
 
-  public async changePreset(presetId: string) {
-    if (this.transitioning || !this.overlay || !this.state.active) return
+  /** Manual FX menu: throttled, latest-request-wins, no preload/crossfade. */
+  public changePreset(presetId: string) {
+    this.requestManualPresetChange(presetId)
+  }
+
+  private requestManualPresetChange(presetId: string) {
+    if (!this.state.active || !this.overlay) return
+    if (isPresetQuarantined(presetId)) {
+      theatreBreadcrumb('manual:quarantined-skip', { presetId })
+      return
+    }
+
+    theatreBreadcrumb('manual:requested', { presetId })
+    this.manualPresetLatest = presetId
+
+    const run = () => {
+      const id = this.manualPresetLatest
+      this.manualPresetLatest = null
+      if (!id || !this.state.active || !this.overlay) return
+      void this.applyManualPresetChange(id)
+    }
+
+    const elapsed = performance.now() - this.lastManualPresetStart
+    if (elapsed >= MANUAL_PRESET_THROTTLE_MS && this.manualPresetTimerId === null) {
+      run()
+      return
+    }
+
+    if (this.manualPresetTimerId !== null) return
+
+    const delay = Math.max(0, MANUAL_PRESET_THROTTLE_MS - elapsed)
+    this.manualPresetTimerId = window.setTimeout(() => {
+      this.manualPresetTimerId = null
+      run()
+    }, delay)
+  }
+
+  private async applyManualPresetChange(presetId: string) {
+    if (!this.overlay || !this.state.active) return
+    if (presetId === this.state.presetId && !this.deck?.isTransitioning()) return
+
+    this.lastManualPresetStart = performance.now()
+    this.manualChangeActiveUntil = performance.now() + MANUAL_PRESET_COOLDOWN_MS
+    this.deck?.cancelInFlight()
 
     const token = this.bumpTransitionToken()
     this.transitioning = true
+
     try {
-      await this.changePresetInner(presetId, token)
+      await this.withPresetChangeTimeout('manual:change', presetId, () =>
+        this.changePresetInner(presetId, token, 'manual'),
+      )
+      this.deck?.assertInvariants('manual:change:post')
     } finally {
       if (this.stillCurrent(token)) this.transitioning = false
     }
   }
 
-  private async changePresetInner(presetId: string, token: number) {
+  private async changePresetAuto(presetId: string) {
+    if (!this.overlay || !this.state.active) return
+    if (this.transitioning) return
+
+    const token = this.bumpTransitionToken()
+    this.transitioning = true
+    try {
+      await this.withPresetChangeTimeout('auto:change', presetId, () =>
+        this.changePresetInner(presetId, token, 'auto'),
+      )
+      this.deck?.assertInvariants('auto:change:post')
+    } finally {
+      if (this.stillCurrent(token)) this.transitioning = false
+    }
+  }
+
+  private async withPresetChangeTimeout(
+    label: string,
+    presetId: string,
+    fn: () => Promise<void>,
+  ): Promise<void> {
+    // Sync breadcrumb before any await — if the main thread locks, timeout may never fire.
+    theatreBreadcrumb(`${label}:start`, { presetId })
+
+    let timeoutId = 0
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timeoutId = window.setTimeout(
+        () => reject(new Error('preset-change-timeout')),
+        PRESET_CHANGE_TIMEOUT_MS,
+      )
+    })
+
+    try {
+      await Promise.race([fn(), timeoutPromise])
+      theatreBreadcrumb(`${label}:complete`, { presetId })
+    } catch (error) {
+      if (error instanceof Error && error.message === 'preset-change-timeout') {
+        theatreBreadcrumb(`${label}:timeout`, { presetId })
+        quarantinePreset(presetId)
+        await this.emergencyExitTheatre(`${label}:timeout:${presetId}`)
+        return
+      }
+      throw error
+    } finally {
+      window.clearTimeout(timeoutId)
+    }
+  }
+
+  private async emergencyExitTheatre(reason: string) {
+    theatreBreadcrumb('emergency-exit:start', { detail: reason })
+    this.clearManualPresetTimer()
+    this.manualPresetLatest = null
+
+    this.bumpTransitionToken()
+    this.transitioning = true
+    const overlay = this.overlay
+
+    this.stopFeatureLoop()
+    this.state.active = false
+    this.state.mode = null
+    this.state.presetId = null
+    this.extractor = null
+    this.frameContext = null
+
+    destroyTheatreDevPanel()
+    this.deck?.cancelInFlight()
+    if (this.deck) await this.deck.exit()
+
+    this.clearOverlayBoundsTracking()
+    if (overlay?.parentElement) overlay.parentElement.removeChild(overlay)
+    if (this.overlay === overlay) this.overlay = null
+    document.body.classList.remove('theatre-active')
+
+    this.transitioning = false
+    theatreBreadcrumb('emergency-exit:complete', { detail: reason })
+    this.dispatchEvent(new Event('exit'))
+    this.dispatchEvent(new Event('change'))
+    this.ensureBackgroundIfNeeded()
+  }
+
+  private async changePresetInner(presetId: string, token: number, source: PresetChangeSource) {
     const selectedPreset = getPreset(presetId)
     if (!selectedPreset || !this.stillCurrent(token)) return
+
+    theatreBreadcrumb(`${source}:preset-inner:start`, { presetId })
 
     const analyser = this.getOrCreateAnalyser()
     const { ctx, policy } = buildAnimationFrameContext({
@@ -442,23 +624,31 @@ class TheatreController extends EventTarget {
     this.frameContext = ctx
     const factories = this.buildFactoriesForPreset(selectedPreset, policy.maxLayers)
 
-    const features = this.extractor?.getFeatures()
-    let kind: TheatreTransitionKind = selectedPreset.timing?.transitionPreference ?? 'crossfade'
-    
-    if (features) {
-      if (features.flux.overall > AUTO_ROTATE_POP_THRESHOLD * 1.5) kind = 'cut'
-      else if (features.flux.overall > AUTO_ROTATE_POP_THRESHOLD * 0.8) kind = 'fastFade'
-      else if (features.flux.overall < 0.005) kind = 'slowFade'
-    }
+    if (source === 'manual') {
+      theatreBreadcrumb(`${source}:before-transitionToDirect`, { presetId })
+      await this.deck.transitionToDirect(selectedPreset.id, factories, ctx)
+    } else {
+      const features = this.extractor?.getFeatures()
+      let kind: TheatreTransitionKind = selectedPreset.timing?.transitionPreference ?? 'crossfade'
 
-    await this.deck.transitionTo(selectedPreset.id, factories, ctx, kind)
+      if (features) {
+        if (features.flux.overall > AUTO_ROTATE_POP_THRESHOLD * 1.5) kind = 'cut'
+        else if (features.flux.overall > AUTO_ROTATE_POP_THRESHOLD * 0.8) kind = 'fastFade'
+        else if (features.flux.overall < 0.005) kind = 'slowFade'
+      }
+
+      await this.deck.transitionTo(selectedPreset.id, factories, ctx, kind)
+    }
 
     if (!this.stillCurrent(token) || !this.overlay || !this.state.active) return
 
     this.resetAutoRotateTimer()
     this.dispatchEvent(new Event('change'))
-    
-    this.schedulePreloadNext()
+    theatreBreadcrumb(`${source}:preset-inner:complete`, { presetId })
+
+    if (source === 'auto' && !this.isManualChangeCooldownActive()) {
+      this.schedulePreloadNext()
+    }
   }
 
   private async changeToPreloadedInner(token: number) {
@@ -467,6 +657,7 @@ class TheatreController extends EventTarget {
     
     if (!selectedPreset || !this.stillCurrent(token) || !this.deck) return
 
+    theatreBreadcrumb('auto:preloaded:start', { presetId: selectedPreset.id })
     this.state.presetId = selectedPreset.id
     
     const features = this.extractor?.getFeatures()
@@ -492,16 +683,22 @@ class TheatreController extends EventTarget {
 
     this.resetAutoRotateTimer()
     this.dispatchEvent(new Event('change'))
+    theatreBreadcrumb('auto:preloaded:complete', { presetId: selectedPreset.id })
+    this.deck.assertInvariants('auto:preloaded:complete')
 
-    this.schedulePreloadNext()
+    if (!this.isManualChangeCooldownActive()) {
+      this.schedulePreloadNext()
+    }
   }
 
   private schedulePreloadNext() {
     if (!this.state.active || !this.deck) return
+    if (this.isManualChangeCooldownActive() || this.manualPresetLatest) return
 
     const scheduleIdle = window.requestIdleCallback ?? ((cb) => window.setTimeout(cb, 1000))
     scheduleIdle(async () => {
       if (!this.state.active || !this.deck || this.deck.getNextPresetId() || this.transitioning) return
+      if (this.isManualChangeCooldownActive() || this.manualPresetLatest) return
       
       const nextPreset = this.pickRandomPreset()
       if (!nextPreset) return
@@ -528,7 +725,7 @@ class TheatreController extends EventTarget {
   }
 
   public async enterBackground() {
-    if (this.state.active || this.transitioning) return
+    if (!this.state.fxEnabled || this.state.active || this.transitioning) return
 
     const token = this.bumpTransitionToken()
     this.transitioning = true
@@ -594,6 +791,7 @@ class TheatreController extends EventTarget {
     }
 
     listPresets().forEach(preset => {
+      if (isPresetQuarantined(preset.id)) return
       const option = document.createElement('button')
       option.type = 'button'
       option.className = 'theatre-visualization-option'
@@ -607,7 +805,7 @@ class TheatreController extends EventTarget {
           item.setAttribute('aria-checked', String(item.value === preset.id))
         })
         setMenuOpen(false)
-        void this.changePreset(preset.id)
+        this.changePreset(preset.id)
       })
       presetMenu.appendChild(option)
     })
@@ -641,6 +839,7 @@ class TheatreController extends EventTarget {
   }
 
   private async enterInner(token: number, mode: TheatreMode) {
+    theatreBreadcrumb('enter:start', { detail: mode })
     // Load animation factories on first enter — keeps them out of the initial
     // bundle even if TheatreController itself is somehow imported early.
     await import('../registry/seed')
@@ -712,6 +911,8 @@ class TheatreController extends EventTarget {
     this.state.active = true
     this.dispatchEvent(new Event('enter'))
     this.dispatchEvent(new Event('change'))
+    theatreBreadcrumb('enter:complete', { presetId: initialPresetId ?? undefined, detail: mode })
+    this.deck?.assertInvariants('enter:complete')
     
     this.schedulePreloadNext()
 
@@ -738,11 +939,13 @@ class TheatreController extends EventTarget {
       
       if (this.autoRotateEnabled && this.state.active && !this.transitioning) {
         if (!this.autoRotateArmed && now >= this.nextAutoRotateTime) {
+          console.log(`[TheatreController] autoRotate timer fired at ${now.toFixed(0)}. ARMING (waiting for pop).`)
           this.autoRotateArmed = true
         }
         if (this.autoRotateArmed && this.extractor) {
           const features = this.extractor.getFeatures()
           if (features.flux.overall > AUTO_ROTATE_POP_THRESHOLD) {
+            console.log(`[TheatreController] autoRotate triggered on pop: flux=${features.flux.overall.toFixed(3)} > ${AUTO_ROTATE_POP_THRESHOLD}`)
             this.resetAutoRotateTimer()
             void this.rotateRandomPreset()
           }
@@ -755,8 +958,12 @@ class TheatreController extends EventTarget {
     this.featureLoopId = requestAnimationFrame(loop)
   }
 
-  public async exit() {
+  public async exit(opts?: { rearmBackground?: boolean }) {
     if (!this.state.active && !this.overlay && !this.transitioning) return
+
+    theatreBreadcrumb('exit:start', { presetId: this.state.presetId ?? undefined })
+    this.clearManualPresetTimer()
+    this.manualPresetLatest = null
 
     const token = this.bumpTransitionToken()
     this.transitioning = true
@@ -785,12 +992,20 @@ class TheatreController extends EventTarget {
       document.body.classList.remove('theatre-active')
       this.state.presetId = null
 
+      theatreBreadcrumb('exit:complete')
+      this.deck?.assertInvariants('exit:complete')
       this.dispatchEvent(new Event('exit'))
       this.dispatchEvent(new Event('change'))
     } finally {
       if (this.stillCurrent(token)) {
         this.transitioning = false
-        this.ensureBackgroundIfNeeded()
+        const shouldRearm =
+          opts?.rearmBackground !== false &&
+          this.state.fxEnabled &&
+          this.state.canEnter
+        if (shouldRearm) {
+          this.ensureBackgroundIfNeeded()
+        }
       }
     }
   }

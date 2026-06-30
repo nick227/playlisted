@@ -355,7 +355,7 @@ export function CollectionView({
   const isEdit = mode === "edit";
   const isOwner = Boolean(user?.id && user.id === playlist.ownerId);
   const coverArtClassName =
-    "h-[min(70vw,180px)] w-[min(70vw,180px)] min-w-0 overflow-hidden rounded-lg object-cover sm:h-[180px] sm:w-[180px]";
+    "h-[min(70vw,350px)] w-[min(70vw,100%)] min-w-0 overflow-hidden rounded-lg object-cover sm:h-[350px] sm:w-[100%]";
   const recordings = playlist.recordings as CollectionRecording[];
 
   const coverStyle = playlist.coverArtUrl
@@ -392,12 +392,12 @@ export function CollectionView({
         <div className="mb-6 flex flex-wrap items-center gap-3">{editToolbar}</div>
       ) : null}
 
-      <div className="flex flex-col gap-8 md:flex-row md:items-start bg-[var(--color-canvas)]/50 rounded-lg p-2 max-w-3xl">
+      <div className="flex flex-col gap-8 md:flex-row md:items-start bg-[var(--color-canvas)] rounded-lg p-2 max-w-3xl p-4">
         <div className="mx-auto shrink-0 md:mx-0">
           <button
             type="button"
             onClick={isEdit ? onCoverClick : undefined}
-            className={`block h-[min(70vw,180px)] w-[min(70vw,180px)] text-left sm:h-[180px] sm:w-[180px] ${isEdit ? "cursor-pointer ring-offset-2 hover:ring-2 hover:ring-[var(--color-brand)]" : ""}`}
+            className={`block ${isEdit ? "cursor-pointer ring-offset-2 hover:ring-2 hover:ring-[var(--color-brand)]" : ""}`}
             disabled={!isEdit}
             title="Change cover art"
           >
@@ -571,7 +571,7 @@ export function CollectionView({
         ) : null}
       </div>
 
-      <div className="mt-10 max-w-3xl">
+      <div className="mt-4 max-w-3xl">
         {isEdit ? (
           <div className="min-h-[16px]">
             {uploadProgress ? <div className="py-2">{uploadProgress}</div> : null}

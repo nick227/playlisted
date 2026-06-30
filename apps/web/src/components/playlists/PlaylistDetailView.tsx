@@ -151,7 +151,7 @@ export function PlaylistDetailView({ playlist }: PlaylistDetailViewProps) {
                   coverArtUrl={item.coverArtUrl}
                   ownerUsername={item.owner.username}
                   slug={item.slug}
-                  className="w-45 shrink-0"
+                  className="w-40 lg:w-45 shrink-0"
                 />
               ))}
           </ContentRow>

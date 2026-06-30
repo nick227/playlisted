@@ -184,7 +184,7 @@ export function SmartPlaylistCard({
   // ── render ───────────────────────────────────────────────────────────────────
 
   return (
-    <div className={`group/card flex flex-col gap-2 ${className ?? ""}`}>
+    <div className={`group/card flex flex-col ${className ?? ""}`}>
       <div className="relative">
         {/* Image — click plays, hover previews */}
         <button
@@ -269,7 +269,7 @@ export function SmartPlaylistCard({
       </div>
 
       {/* Text — navigates to the playlist page */}
-      <Link to={href} className="min-w-0 transition-opacity hover:opacity-80 bg-[var(--color-canvas)]/50 rounded-lg p-2">
+      <Link to={href} className="min-w-0 transition-opacity hover:opacity-80 bg-[var(--color-canvas)]/90 rounded-lg p-2">
         <p className="truncate text-sm font-medium text-white">{title}</p>
         {creatorName && (
           <p className="truncate text-xs text-[var(--color-text-muted)]">{creatorName}</p>

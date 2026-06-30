@@ -55,6 +55,7 @@ export class VideoAnimation implements IAnimation {
 
   async start() {
     this.running = true
+    // No internal RAF loop — theatre controller drives renderFrame when opted in.
     if (this.video && this.video.src) {
       try {
         await this.video.play()
