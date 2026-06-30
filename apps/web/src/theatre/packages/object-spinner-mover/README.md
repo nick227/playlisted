@@ -60,3 +60,14 @@ Register everything: `objectSpinnerMoverPresetPackages` (array of all preset pac
 ```
 
 Keep `osmCalmFloatPackage` registered — other presets use it as `reducedMotionPreset`.
+
+## Audio-reactive juice
+
+The engine uses shared `MicroEffects` + macro overlays:
+
+| Layer | On beat / bass / drop |
+| --- | --- |
+| **Micro** | Particle bursts at hero/center, shockwaves, screen punch shake |
+| **Macro** | Expanding pulse rings, vignette crush, zoom punch, color flash |
+
+Loudest combos: `dropExplosion`, `burstSpawn`, `spawnMore` + `panic` / `centerBurst`.

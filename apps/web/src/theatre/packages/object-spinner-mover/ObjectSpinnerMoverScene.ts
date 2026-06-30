@@ -7,7 +7,15 @@ import { drawShape } from './engine/shapes'
 import { applyMotion } from './engine/motion'
 import { applyPersonality } from './engine/personality'
 import { applyBeatToObject, beatSpawnCount, createBeatState, updateBeatState } from './engine/beat'
+import { triggerBeatEffects } from './engine/beatEffects'
 import { objectRenderAlpha, objectRenderBlur, objectRenderScale } from './engine/depth'
+import {
+  createMacroEffectState,
+  decayMacroState,
+  drawMacroFlash,
+  drawMacroPulseRing,
+  drawMacroVignette,
+} from './engine/macroEffects'
 import { createObjectPool, respawnObject, updateHero } from './engine/state'
 
 const DEFAULT_PRESET: ObjectTheatrePreset = {
@@ -31,16 +39,21 @@ export function objectSpinnerMoverFactory(): IAnimation {
     private preset: ObjectTheatrePreset = DEFAULT_PRESET
     private objects = createObjectPool(DEFAULT_PRESET, 800, 600)
     private beatState = createBeatState()
+    private macroState = createMacroEffectState()
+    private prevDropBurst = 0
     private lastTime = 0
     private initialized = false
 
     constructor() {
-      super({ useEffects: false, defaultZIndex: 101 })
+      super({ useEffects: true, defaultBlendMode: 'normal', defaultZIndex: 101 })
     }
 
-  override async init(container: HTMLElement, context: AnimationContext) {
+    override async init(container: HTMLElement, context: AnimationContext) {
       await super.init(container, context)
       this.preset = readPreset(context)
+      this.beatState = createBeatState()
+      this.macroState = createMacroEffectState()
+      this.prevDropBurst = 0
       this.initialized = false
     }
 
@@ -49,7 +62,6 @@ export function objectSpinnerMoverFactory(): IAnimation {
       if (w === 0 || h === 0) return
       if (this.initialized) return
       this.objects = createObjectPool(this.preset, w, h)
-      this.beatState = createBeatState()
       this.initialized = true
     }
 
@@ -63,6 +75,7 @@ export function objectSpinnerMoverFactory(): IAnimation {
       this.lastTime = now
 
       const bands = this.readBands(context)
+      const intensity = context.options?.intensity ?? 1
       const triggers = context.shared?.getTriggers?.(context.options?.preset as string) ?? {
         bassHit: false, midsHit: false, beat: false, chaosHit: false, energy: 0,
       }
@@ -83,12 +96,46 @@ export function objectSpinnerMoverFactory(): IAnimation {
       frame.bgFlash = this.beatState.bgFlash
       frame.dropBurst = this.beatState.dropBurst
 
+      this.macroState = decayMacroState(this.macroState, delta)
+      this.macroState = triggerBeatEffects({
+        effects: this.effects,
+        macro: this.macroState,
+        frame,
+        behavior: this.preset.beatBehavior,
+        beatState: this.beatState,
+        palette: getPalette(this.preset.palette),
+        objects: this.objects,
+        intensity,
+        prevDropBurst: this.prevDropBurst,
+      })
+      this.prevDropBurst = this.beatState.dropBurst
+
       const palette = getPalette(this.preset.palette)
       drawBackground(this.preset.backgroundPreset, {
         ctx: this.ctx, w, h, cx: frame.cx, cy: frame.cy, time: now,
-        flash: this.beatState.bgFlash + this.beatState.dropBurst * 0.5,
+        flash: this.beatState.bgFlash + this.beatState.dropBurst * 0.5 + this.macroState.pulse * 0.35,
         palette,
       })
+
+      drawMacroPulseRing(this.ctx, frame.cx, frame.cy, w, h, this.macroState, palette, now)
+
+      const shakeAllowed = this.allowsShake(context)
+      const shake = shakeAllowed && this.effects ? this.effects.getShake() : 0
+      const zoom = this.macroState.zoom
+
+      this.ctx.save()
+      if (zoom > 0.01) {
+        const s = 1 + zoom * 0.08 * intensity
+        this.ctx.translate(frame.cx, frame.cy)
+        this.ctx.scale(s, s)
+        this.ctx.translate(-frame.cx, -frame.cy)
+      }
+      if (shake > 0) {
+        this.ctx.translate(
+          (Math.random() - 0.5) * 14 * shake,
+          (Math.random() - 0.5) * 11 * shake,
+        )
+      }
 
       const bandCount = this.preset.depthBands ?? 3
       const sorted = [...this.objects].sort((a, b) => a.zBand - b.zBand)
@@ -125,6 +172,8 @@ export function objectSpinnerMoverFactory(): IAnimation {
         this.ctx.globalAlpha = 1
       }
 
+      this.ctx.restore()
+
       const spawnN = beatSpawnCount(this.preset.beatBehavior, frame, this.beatState)
       if (spawnN > 0) {
         let spawned = 0
@@ -136,6 +185,10 @@ export function objectSpinnerMoverFactory(): IAnimation {
           }
         }
       }
+
+      drawMacroFlash(this.ctx, w, h, this.macroState, palette)
+      drawMacroVignette(this.ctx, w, h, this.macroState, palette)
+      this.effects?.update(this.ctx, now, this.pixelRatio)
     }
   }
 
