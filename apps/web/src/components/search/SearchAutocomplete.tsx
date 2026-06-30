@@ -265,7 +265,7 @@ export function SearchAutocomplete({
         <Search
           size={18}
           className={`pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-[var(--color-text-subtle)] ${MOBILE_SEARCH_TRANSITION} ${
-            showCombobox ? "scale-100 opacity-100" : "scale-75 opacity-0"
+            showCombobox ? "scale-100 opacity-100" : "scale-75 opacity-0 sm:scale-100 sm:opacity-100"
           }`}
         />
         <input
@@ -282,7 +282,7 @@ export function SearchAutocomplete({
           placeholder="Search songs, playlists, artists..."
           tabIndex={showCombobox ? 0 : -1}
           className={`w-full rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] py-2.5 pl-11 pr-4 text-sm text-white placeholder:text-[var(--color-text-subtle)] outline-none focus:border-white/20 ${MOBILE_SEARCH_TRANSITION} ${
-            showCombobox ? "max-sm:opacity-100" : "max-sm:opacity-0"
+            showCombobox ? "max-sm:opacity-100" : "max-sm:opacity-0 sm:opacity-100"
           }`}
           onChange={(e) => {
             setQuery(e.target.value);

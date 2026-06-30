@@ -26,6 +26,7 @@ type Args = {
   includeNotReady: boolean;
   legacyOnly: boolean;
   includeReady: boolean;
+  includeFailed: boolean;
 };
 
 const args = parseArgs();
@@ -39,6 +40,7 @@ function parseArgs(): Args {
     includeNotReady: false,
     legacyOnly: false,
     includeReady: false,
+    includeFailed: false,
   };
 
   const [command, ...rest] = process.argv.slice(2);
@@ -62,6 +64,7 @@ function parseArgs(): Args {
     else if (arg === "--include-not-ready") args.includeNotReady = true;
     else if (arg === "--legacy-only") args.legacyOnly = true;
     else if (arg === "--include-ready") args.includeReady = true;
+    else if (arg === "--include-failed") args.includeFailed = true;
     else if (arg.startsWith("--id=")) args.id = arg.slice("--id=".length);
     else if (arg.startsWith("--limit=")) args.limit = Math.max(1, Math.min(25, Number(arg.slice("--limit=".length)) || 20));
     else throw new Error(`Unknown argument: ${arg}`);
@@ -171,7 +174,7 @@ Commands:
   migrate --id=<recordingId> [--apply] [--delete-legacy]
   migrate --limit=5 [--apply] [--delete-legacy]
   queue --id=<recordingId> [--apply] [--include-ready]
-  queue --limit=5 [--apply]
+  queue --limit=5 [--apply] [--include-failed]
   status
   inspect --id=<recordingId>
   delete-legacy --id=<recordingId> [--apply] [--include-not-ready]
@@ -682,10 +685,9 @@ async function queue(args: Args) {
   const rows = await prisma.recording.findMany({
     where: {
       recordingType: "SONG",
-      OR: [
-        { subtitle: null },
-        { subtitle: { status: "FAILED" as const } },
-      ],
+      OR: args.includeFailed
+        ? [{ subtitle: null }, { subtitle: { status: "FAILED" as const } }]
+        : [{ subtitle: null }],
       audioUrl: { startsWith: `${r2BaseUrl}/` },
     },
     orderBy: { createdAt: "asc" },

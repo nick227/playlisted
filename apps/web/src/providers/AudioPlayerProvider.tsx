@@ -109,6 +109,13 @@ interface AudioPlayerContextValue {
     context?: PlaybackContext,
     options?: BeginSegmentOptions,
   ) => void;
+  adoptExternalPlayback: (
+    audio: HTMLAudioElement,
+    tracks: QueueTrack[],
+    startIndex: number,
+    context?: PlaybackContext,
+    options?: BeginSegmentOptions,
+  ) => boolean;
   togglePlay: () => void;
   playNext: () => void;
   playPrevious: () => void;
@@ -146,11 +153,18 @@ function autopilotTail(context: PlaybackContext): UpNextSegment {
 export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   const { accessToken } = useAuth();
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const siteAudioRef = useRef<HTMLAudioElement | null>(null);
+  const adoptedAudioRef = useRef<HTMLAudioElement | null>(null);
   const volumeRef = useRef<number>(readPlayerVolume());
+  const [activeAudio, setActiveAudio] = useState<HTMLAudioElement | null>(null);
   const bindAudioElement = useCallback((audio: HTMLAudioElement | null) => {
-    audioRef.current = audio;
+    siteAudioRef.current = audio;
+    if (!adoptedAudioRef.current) {
+      audioRef.current = audio;
+      setActiveAudio(audio);
+      theatreController.registerPlaybackSource(audio);
+    }
     if (audio) audio.volume = volumeRef.current;
-    theatreController.registerPlaybackSource(audio);
   }, []);
   const playbackContextRef = useRef<PlaybackContext>({ sourceContext: "player" });
   const loggedTrackRef = useRef<string | null>(null);
@@ -275,6 +289,13 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   );
 
   const loadTrack = useCallback((track: QueueTrack) => {
+    if (adoptedAudioRef.current) {
+      adoptedAudioRef.current.pause();
+      adoptedAudioRef.current = null;
+      audioRef.current = siteAudioRef.current;
+      setActiveAudio(siteAudioRef.current);
+    }
+
     const audio = audioRef.current;
     if (!audio || !track.audioUrl) {
       setState("error");
@@ -284,9 +305,12 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     audio.src = track.audioUrl;
     audio.load();
     void audio.play().then(() => {
-      if (!audio.paused) setState("playing");
+      if (!audio.paused) {
+        setState("playing");
+        logPlaybackStart(track);
+      }
     }).catch(() => setState("paused"));
-  }, []);
+  }, [logPlaybackStart]);
 
   const completeAutoplaySegmentIfNeeded = useCallback(() => {
     const segment = currentSegmentRef.current;
@@ -327,6 +351,71 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       loadTrack(tracks[index]);
     },
     [loadTrack],
+  );
+
+  const adoptExternalPlayback = useCallback(
+    (
+      audio: HTMLAudioElement,
+      tracks: QueueTrack[],
+      startIndex: number,
+      context?: PlaybackContext,
+      options?: BeginSegmentOptions,
+    ) => {
+      if (tracks.length === 0) return false;
+      const index = Math.min(Math.max(startIndex, 0), tracks.length - 1);
+      const track = tracks[index];
+      if (!track?.audioUrl || audio.paused || audio.ended) return false;
+
+      const currentSrc = new URL(audio.src, window.location.origin).href;
+      const trackSrc = new URL(track.audioUrl, window.location.origin).href;
+      if (currentSrc !== trackSrc) return false;
+
+      if (currentTrack && currentTrack.id !== track.id) {
+        flushPlayback(currentTrack, audioRef.current?.currentTime ?? currentTimeRef.current, false);
+        loggedTrackRef.current = null;
+      }
+
+      if (dismissTimerRef.current !== null) {
+        window.clearTimeout(dismissTimerRef.current);
+        dismissTimerRef.current = null;
+      }
+
+      audio.volume = volumeRef.current;
+      adoptedAudioRef.current = audio;
+      audioRef.current = audio;
+      setActiveAudio(audio);
+      theatreController.registerPlaybackSource(audio);
+
+      if (context) {
+        playbackContextRef.current = context;
+        setPlaybackContext(context);
+        if (context.playlistId) {
+          playedPlaylistIdsRef.current.add(context.playlistId);
+        }
+      }
+
+      currentSegmentRef.current = {
+        playlistId: context?.playlistId,
+        autoplay: options?.seedAutoplay === true,
+      };
+      segmentEndIndexRef.current = tracks.length - 1;
+      setSegmentLabel(options?.segmentLabel ?? track.playlistTitle ?? null);
+      const scope = options?.originScope ?? null;
+      activeOriginScopeRef.current = scope;
+      setActiveOriginKey(options?.playbackOrigin ?? null);
+      currentTimeRef.current = audio.currentTime;
+      setTransportCurrentTime(audio.currentTime);
+      setTransportDuration(audio.duration || track.durationSeconds || 0);
+      setPlayerDismissSnapshot(null);
+      setPlayerBarExiting(false);
+      setQueueOpen(false);
+      setQueueState(tracks);
+      setQueueIndex(index);
+      setState(audio.paused ? "paused" : "playing");
+      logPlaybackStart(track);
+      return true;
+    },
+    [currentTrack, flushPlayback, logPlaybackStart],
   );
 
   const advanceProgram = useCallback(async () => {
@@ -630,7 +719,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   );
 
   useEffect(() => {
-    const audio = audioRef.current;
+    const audio = activeAudio;
     if (!audio) return;
 
     const onTime = () => {
@@ -694,7 +783,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       audio.removeEventListener("ended", onEnded);
       audio.removeEventListener("error", onError);
     };
-  }, [playNext, flushPlayback, logPlaybackStart, advanceProgram]);
+  }, [activeAudio, playNext, flushPlayback, logPlaybackStart, advanceProgram]);
 
   useEffect(() => {
     if (!autoplayEnabled || !playbackContext.playlistId) {
@@ -764,6 +853,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       setVolume,
       playTrack,
       setQueue,
+      adoptExternalPlayback,
       togglePlay,
       playNext,
       playPrevious,
@@ -802,6 +892,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       setVolume,
       playTrack,
       setQueue,
+      adoptExternalPlayback,
       togglePlay,
       playNext,
       playPrevious,

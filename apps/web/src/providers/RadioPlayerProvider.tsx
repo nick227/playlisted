@@ -20,6 +20,7 @@ import {
 } from "@/lib/radio/radioPlayback";
 import { api } from "@/lib/api";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
+import type { QueueTrack } from "@/providers/AudioPlayerProvider";
 import theatreController from "@/theatre/controller/lazyController";
 import { setRadioPlaybackActive } from "@/theatre/radioPlaybackBridge";
 import { useTheatreTrackRotation } from "@/theatre/useTheatreTrackRotation";
@@ -29,12 +30,13 @@ interface RadioPlayerContextValue {
   playing: boolean;
   togglePlayback: () => Promise<void>;
   pauseRadio: () => void;
+  transferToSitePlayer: () => Promise<boolean>;
   registerRadioUi: () => void;
   unregisterRadioUi: () => void;
   listenerId: string;
   radioQuery: ReturnType<typeof useQuery<Awaited<ReturnType<typeof api.radio.get>>>>;
   station: Awaited<ReturnType<typeof api.radio.get>> | undefined;
-  nowPlaying: Awaited<ReturnType<typeof api.radio.get>>["nowPlaying"] | undefined;
+  nowPlaying: Awaited<ReturnType<typeof api.radio.get>>["nowPlaying"] | null | undefined;
   isLive: boolean;
 }
 
@@ -43,6 +45,7 @@ const RadioPlayerContext = createContext<RadioPlayerContextValue | null>(null);
 export function RadioPlayerProvider({ children }: { children: ReactNode }) {
   const {
     releasePlayback,
+    adoptExternalPlayback,
     isPlaying: sitePlayerPlaying,
     currentTrack: siteCurrentTrack,
   } = useAudioPlayer();
@@ -51,6 +54,7 @@ export function RadioPlayerProvider({ children }: { children: ReactNode }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const transitionRetryTimerRef = useRef<number | null>(null);
   const suppressNextSitePauseRef = useRef(false);
+  const siteControlledRef = useRef(false);
   const uiMountCountRef = useRef(0);
 
   const [playing, setPlaying] = useState(false);
@@ -86,11 +90,13 @@ export function RadioPlayerProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const unbindTheatreFromRadio = useCallback(() => {
+    if (siteControlledRef.current) return;
     theatreController.registerPlaybackSource(null);
   }, []);
 
   const bindTheatreToRadio = useCallback(
     (el: HTMLAudioElement) => {
+      if (siteControlledRef.current) return;
       theatreController.registerPlaybackSource(el, { artworkUrl: radioArtworkUrl });
     },
     [radioArtworkUrl],
@@ -98,7 +104,9 @@ export function RadioPlayerProvider({ children }: { children: ReactNode }) {
 
   const pauseRadio = useCallback(() => {
     clearTransitionRetry();
-    audioRef.current?.pause();
+    if (!siteControlledRef.current) {
+      audioRef.current?.pause();
+    }
     setPlaying(false);
   }, [clearTransitionRetry]);
 
@@ -140,6 +148,7 @@ export function RadioPlayerProvider({ children }: { children: ReactNode }) {
 
   const syncAndPlayRadio = useCallback(
     async (track: NonNullable<typeof nowPlaying>) => {
+      if (siteControlledRef.current) return false;
       const audio = audioRef.current;
       if (!audio || !track.audioUrl) return false;
 
@@ -250,10 +259,12 @@ export function RadioPlayerProvider({ children }: { children: ReactNode }) {
     if (!nowPlaying?.audioUrl) return;
 
     if (playing) {
+      siteControlledRef.current = false;
       pauseRadio();
       return;
     }
 
+    siteControlledRef.current = false;
     suppressNextSitePauseRef.current = true;
     try {
       releasePlayback();
@@ -265,18 +276,67 @@ export function RadioPlayerProvider({ children }: { children: ReactNode }) {
     }
   }, [nowPlaying, pauseRadio, playing, releasePlayback, syncAndPlayRadio]);
 
+  const transferToSitePlayer = useCallback(async () => {
+    const track = nowPlaying;
+    const audio = audioRef.current;
+    if (!track?.audioUrl || !audio || audio.paused || audio.ended) return false;
+
+    const playlist = await api.playlists.getById(track.playlist.id);
+    const queue: QueueTrack[] = playlist.recordings.map((recording) => ({
+      ...recording,
+      playlistTitle: playlist.title,
+      ownerName: playlist.owner.displayName,
+      ownerUsername: playlist.owner.username,
+      playlistSlug: playlist.slug,
+    }));
+    const index = queue.findIndex((item) => item.id === track.id);
+    if (index < 0) return false;
+
+    siteControlledRef.current = true;
+    suppressNextSitePauseRef.current = true;
+    clearTransitionRetry();
+    const adopted = adoptExternalPlayback(
+      audio,
+      queue,
+      index,
+      {
+        playlistId: playlist.id,
+        playlistOwnerUsername: playlist.owner.username,
+        playlistSlug: playlist.slug,
+        sourceContext: "playlist",
+      },
+      { segmentLabel: playlist.title },
+    );
+
+    if (!adopted) {
+      siteControlledRef.current = false;
+      suppressNextSitePauseRef.current = false;
+      return false;
+    }
+
+    setPlaying(false);
+    setRadioPlaybackActive(false);
+    window.setTimeout(() => {
+      suppressNextSitePauseRef.current = false;
+    }, 0);
+    return true;
+  }, [adoptExternalPlayback, clearTransitionRetry, nowPlaying]);
+
   function handleRadioPlay(el: HTMLAudioElement) {
+    if (siteControlledRef.current) return;
     setPlaying(true);
     bindTheatreToRadio(el);
   }
 
   function handleRadioPause(e: React.SyntheticEvent<HTMLAudioElement>) {
+    if (siteControlledRef.current) return;
     if (e.currentTarget.ended) return;
     setPlaying(false);
     unbindTheatreFromRadio();
   }
 
   function handleRadioEnded() {
+    if (siteControlledRef.current) return;
     if (!playing) return;
     scheduleTransitionRefetch();
   }
@@ -287,6 +347,7 @@ export function RadioPlayerProvider({ children }: { children: ReactNode }) {
       playing,
       togglePlayback,
       pauseRadio,
+      transferToSitePlayer,
       registerRadioUi,
       unregisterRadioUi,
       listenerId,
@@ -295,7 +356,7 @@ export function RadioPlayerProvider({ children }: { children: ReactNode }) {
       nowPlaying,
       isLive,
     }),
-    [playing, togglePlayback, pauseRadio, registerRadioUi, unregisterRadioUi, listenerId, radioQuery, station, nowPlaying, isLive],
+    [playing, togglePlayback, pauseRadio, transferToSitePlayer, registerRadioUi, unregisterRadioUi, listenerId, radioQuery, station, nowPlaying, isLive],
   );
 
   return (

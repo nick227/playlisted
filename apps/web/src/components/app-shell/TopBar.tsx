@@ -30,12 +30,26 @@ export function TopBar({ onMenuClick }: TopBarProps) {
     <header className="sticky top-0 z-40 flex h-[var(--spacing-topbar)] w-full min-w-0 max-w-full shrink-0 items-center gap-1.5 sm:gap-3 overflow-x-clip border-b border-[var(--color-border)] bg-[var(--color-canvas)]/95 px-2 sm:px-4 backdrop-blur-md">
       <TopBarMenuButton onClick={onMenuClick} />
       <TopBarBrand mobileSearchOpen={mobileSearchOpen} />
-      {!mobileSearchOpen ? <div className="min-w-0 flex-1 sm:hidden" aria-hidden /> : null}
-      <TopBarSearch
-        mobileSearchOpen={mobileSearchOpen}
-        onMobileSearchOpenChange={setMobileSearchOpen}
-      />
-      <TopBarActions mobileSearchOpen={mobileSearchOpen} />
+      {mobileSearchOpen ? (
+        <>
+          <TopBarSearch
+            mobileSearchOpen={mobileSearchOpen}
+            onMobileSearchOpenChange={setMobileSearchOpen}
+          />
+          <TopBarActions mobileSearchOpen={mobileSearchOpen} />
+        </>
+      ) : (
+        <>
+          <div className="min-w-0 flex-1 sm:hidden" aria-hidden />
+          <div className="flex shrink-0 items-center gap-1.5 sm:contents sm:gap-3">
+            <TopBarSearch
+              mobileSearchOpen={mobileSearchOpen}
+              onMobileSearchOpenChange={setMobileSearchOpen}
+            />
+            <TopBarActions mobileSearchOpen={mobileSearchOpen} />
+          </div>
+        </>
+      )}
     </header>
   );
 }

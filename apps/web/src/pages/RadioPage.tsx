@@ -36,6 +36,7 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
     station,
     nowPlaying,
     isLive,
+    transferToSitePlayer,
     registerRadioUi,
     unregisterRadioUi,
   } = useRadioPlayer();
@@ -165,6 +166,19 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
     const trimmed = chatMessage.trim();
     if (!trimmed || chatMutation.isPending) return;
     chatMutation.mutate({ message: trimmed, stationSlug: station?.slug ?? "main" });
+  }
+
+  async function handlePlaylistNavigation(e: React.MouseEvent<HTMLAnchorElement>) {
+    if (!playlistUrl || e.defaultPrevented || e.button !== 0 || e.metaKey || e.altKey || e.ctrlKey || e.shiftKey) {
+      return;
+    }
+
+    e.preventDefault();
+    try {
+      await transferToSitePlayer();
+    } finally {
+      navigate(playlistUrl);
+    }
   }
 
   const charsLeft = MAX_MSG_LENGTH - chatMessage.length;
@@ -310,6 +324,7 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
         {playlistUrl ? (
           <Link
             to={playlistUrl}
+            onClick={(e) => void handlePlaylistNavigation(e)}
             className={`${artworkClassName} transition hover:brightness-90`}
             style={artStyle}
             aria-label={`Go to playlist: ${nowPlaying?.playlist.title}`}
@@ -323,11 +338,11 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
 
         <div className="mt-8 flex items-center justify-center gap-3">
           <PlaybackBars active={isLive} playing={playing} variant="thumb" barCount={7} />
-          <span className="text-xs font-semibold uppercase tracking-wider text-[var(--color-brand)]">
+          <span className="text-xs font-semibold uppercase tracking-wider text-[var(--color-brand)] bg-[var(--color-canvas)]/50 rounded-lg px-2 py-1">
             {statusLabel}
           </span>
           {isLive && station?.listenerCount != null ? (
-            <span className="flex items-center gap-1 text-xs text-[var(--color-text-subtle)]">
+            <span className="flex items-center gap-1 text-xs text-white bg-[var(--color-canvas)]/50 rounded-lg px-2 py-1">
               <Users size={11} />
               {station.listenerCount}
             </span>
@@ -338,14 +353,14 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
               id={nowPlaying.id}
               variant="inline"
               inlineAlwaysVisible
-              className="-my-1 p-1 text-white/70 hover:text-rose-400"
+              className="-my-1 p-1 text-white/70 hover:text-rose-400 bg-[var(--color-canvas)]/50 rounded-lg px-2 py-1"
             />
           ) : null}
         </div>
 
         <h1 className="mt-4 max-w-full text-balance text-4xl font-extrabold tracking-tight text-white md:text-6xl bg-[var(--color-canvas)]/50 rounded-lg p-4">
           {playlistUrl ? (
-            <Link to={playlistUrl} className="transition hover:text-[var(--color-brand)]">
+            <Link to={playlistUrl} onClick={(e) => void handlePlaylistNavigation(e)} className="transition hover:text-[var(--color-brand)]">
               {nowPlaying?.title ?? "Radio"}
             </Link>
           ) : (
@@ -354,7 +369,7 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
         </h1>
 
         {description ? (
-          <p className="mt-4 max-w-2xl text-balance text-base leading-7 text-[var(--color-text-muted)] md:text-lg">
+          <p className="mt-4 max-w-2xl text-balance text-base leading-7 text-[var(--color-text-muted)] md:text-lg bg-[var(--color-canvas)]/50 rounded-lg px-2">
             {description}
           </p>
         ) : null}
