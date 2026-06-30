@@ -79,11 +79,14 @@ export function applyMotion(obj: TheatreObject, motion: MotionPreset, frame: Eng
       obj.rot = Math.sin(time * 0.002 + obj.x * 0.015) * 0.5 + obj.rotSpeed * 0.15
       return
     }
-    case 'panic':
-      obj.vx += (Math.random() - 0.5) * 4.5 * speedMul * (1 + energy)
-      obj.vy += (Math.random() - 0.5) * 4.5 * speedMul * (1 + energy)
-      obj.rotSpeed += (Math.random() - 0.5) * 0.35
+    case 'panic': {
+      const wobble = Math.sin(time * 0.005 + obj.wavePhase) * (1 + energy)
+      const wobbleY = Math.cos(time * 0.004 + obj.wavePhase * 1.3) * (1 + energy)
+      obj.vx += wobble * 2.2 * speedMul
+      obj.vy += wobbleY * 2.2 * speedMul
+      obj.rotSpeed += wobble * 0.08 * speedMul
       break
+    }
   }
 
   obj.x += obj.vx * dt * 72 * speedMul

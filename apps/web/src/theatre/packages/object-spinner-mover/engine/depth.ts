@@ -3,9 +3,9 @@ import type { TheatreObject } from './types'
 export type DepthBandConfig = { scale: number; speed: number; alpha: number; blur: number }
 
 const BAND_CONFIGS: DepthBandConfig[] = [
-  { scale: 0.85, speed: 0.65, alpha: 0.6, blur: 0 },
-  { scale: 1.2, speed: 1.0, alpha: 0.88, blur: 0 },
-  { scale: 1.65, speed: 1.25, alpha: 1.0, blur: 1 },
+  { scale: 0.85, speed: 0.65, alpha: 0.65, blur: 0 },
+  { scale: 1.15, speed: 1.0, alpha: 0.9, blur: 0 },
+  { scale: 1.45, speed: 1.2, alpha: 1.0, blur: 0 },
 ]
 
 export function getDepthConfig(zBand: number, bandCount: number): DepthBandConfig {
@@ -16,7 +16,7 @@ export function getDepthConfig(zBand: number, bandCount: number): DepthBandConfi
     scale: 0.5 + t * 0.85,
     speed: 0.6 + t * 0.7,
     alpha: 0.5 + t * 0.5,
-    blur: t > 0.66 ? 1.5 : 0,
+    blur: t > 0.66 ? 0 : 0,
   }
 }
 

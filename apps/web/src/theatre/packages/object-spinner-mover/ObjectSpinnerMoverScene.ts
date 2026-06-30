@@ -1,6 +1,6 @@
 import { AnimationContext, IAnimation } from '../../core/IAnimation'
 import CanvasAnimation from '../../core/CanvasAnimation'
-import type { ObjectTheatrePreset } from './engine/types'
+import type { ObjectTheatrePreset, EngineFrame } from './engine/types'
 import { getPalette, pickObjectColor } from './engine/palettes'
 import { drawBackground } from './engine/backgrounds'
 import { drawShape } from './engine/shapes'
@@ -9,7 +9,7 @@ import { applyPersonality } from './engine/personality'
 import { applyPatternDrift } from './engine/patterns'
 import { applyBeatToObject, beatSpawnCount, createBeatState, updateBeatState } from './engine/beat'
 import { triggerBeatEffects } from './engine/beatEffects'
-import { objectRenderAlpha, objectRenderBlur, objectRenderScale } from './engine/depth'
+import { objectRenderAlpha, objectRenderScale } from './engine/depth'
 import {
   createMacroEffectState,
   decayMacroState,
@@ -17,6 +17,7 @@ import {
   drawMacroPulseRing,
   drawMacroVignette,
 } from './engine/macroEffects'
+import { resolveObjectTheatrePerf, type ObjectTheatrePerf } from './engine/performance'
 import { createObjectPool, respawnObject, updateHero } from './engine/state'
 import { getObjectTheatreSeedConfig } from './seeds'
 
@@ -27,7 +28,7 @@ const DEFAULT_PRESET: ObjectTheatrePreset = {
   beatBehavior: 'scaleOnBeat',
   spawnStyle: 'randomPop',
   palette: 'candy',
-  depthBands: 3,
+  depthBands: 2,
 }
 
 function readPreset(context: AnimationContext, fallback?: ObjectTheatrePreset): ObjectTheatrePreset {
@@ -48,15 +49,16 @@ export function objectSpinnerMoverFactory(ctx?: AnimationContext): IAnimation {
 
   class ObjectSpinnerMoverScene extends CanvasAnimation {
     private preset: ObjectTheatrePreset = boundPreset
-    private objects = createObjectPool(boundPreset, 800, 600)
+    private objects: ReturnType<typeof createObjectPool> = []
     private beatState = createBeatState()
     private macroState = createMacroEffectState()
     private prevDropBurst = 0
     private lastTime = 0
-    private initialized = false
+    private poolCount = -1
+    private perf: ObjectTheatrePerf = resolveObjectTheatrePerf(boundPreset, { options: {} })
 
     constructor() {
-      super({ useEffects: true, defaultBlendMode: 'normal', defaultZIndex: 101 })
+      super({ useEffects: false, defaultBlendMode: 'normal', defaultZIndex: 101 })
     }
 
     override async init(container: HTMLElement, context: AnimationContext) {
@@ -65,15 +67,17 @@ export function objectSpinnerMoverFactory(ctx?: AnimationContext): IAnimation {
       this.beatState = createBeatState()
       this.macroState = createMacroEffectState()
       this.prevDropBurst = 0
-      this.initialized = false
+      this.poolCount = -1
+      this.objects = []
     }
 
-    private ensurePool() {
+    private ensurePool(context: AnimationContext) {
       const w = this.cssWidth; const h = this.cssHeight
       if (w === 0 || h === 0) return
-      if (this.initialized) return
-      this.objects = createObjectPool(this.preset, w, h)
-      this.initialized = true
+      this.perf = resolveObjectTheatrePerf(this.preset, context)
+      if (this.poolCount === this.perf.objectCount) return
+      this.objects = createObjectPool(this.preset, w, h, this.perf.objectCount)
+      this.poolCount = this.perf.objectCount
     }
 
     getObjectTheatreDebugState() {
@@ -82,26 +86,60 @@ export function objectSpinnerMoverFactory(ctx?: AnimationContext): IAnimation {
         motionPreset: this.preset.motionPreset,
         palette: this.preset.palette,
         backgroundPreset: this.preset.backgroundPreset,
+        objectCount: this.objects.length,
         sampleShapes: this.objects.filter(obj => !obj.isHero).slice(0, 8).map(obj => obj.shape),
       }
     }
 
-    protected draw(context: AnimationContext) {
+    private drawObject(
+      obj: ReturnType<typeof createObjectPool>[number],
+      frame: EngineFrame,
+      perf: ObjectTheatrePerf,
+      motion: ObjectTheatrePreset['motionPreset'],
+      directMotion: boolean,
+      liveSlot: number,
+      liveCount: number,
+      palette: ReturnType<typeof getPalette>,
+      delta: number,
+    ) {
+      const { w, h } = frame
+
+      if (obj.isHero && this.preset.heroObject) {
+        updateHero(obj, this.preset.heroObject, { w, h, cx: frame.cx, cy: frame.cy, time: frame.time })
+        obj.rot += obj.rotSpeed * (delta / 1000) * 0.8
+      } else {
+        applyMotion(obj, motion, frame)
+        if (!directMotion && perf.usePatternDrift) {
+          applyPatternDrift(obj, liveSlot, liveCount, frame)
+        }
+        applyPersonality(obj, frame)
+        applyBeatToObject(obj, this.preset.beatBehavior, frame, this.beatState)
+      }
+
+      const size = Math.min(w, h) * perf.sizeMul * objectRenderScale(obj, perf.depthBands) * frame.particleScale
+      const alpha = objectRenderAlpha(obj, perf.depthBands)
+
+      this.ctx.save()
+      this.ctx.translate(obj.x, obj.y)
+      this.ctx.rotate(obj.rot)
+      this.ctx.globalAlpha = alpha
+      drawShape(obj.shape, {
+        ctx: this.ctx, size,
+        fill: pickObjectColor(palette, obj.colorIndex),
+        stroke: palette.stroke,
+        time: frame.time,
+      })
+      this.ctx.restore()
+    }
+
+    private buildFrame(context: AnimationContext, now: number, delta: number) {
       const w = this.cssWidth; const h = this.cssHeight
-      if (w === 0 || h === 0) return
-      this.ensurePool()
-
-      const now = context.shared?.time?.elapsed ?? performance.now()
-      const delta = this.lastTime === 0 ? 16 : Math.min(now - this.lastTime, 50)
-      this.lastTime = now
-
       const bands = this.readBands(context)
-      const intensity = context.options?.intensity ?? 1
       const triggers = context.shared?.getTriggers?.(context.options?.preset as string) ?? {
         bassHit: false, midsHit: false, beat: false, chaosHit: false, energy: 0,
       }
 
-      const frame = {
+      return {
         w, h, cx: w / 2, cy: h / 2, time: now, delta,
         energy: triggers.energy ?? bands.bass,
         bass: bands.bass, mids: bands.mids,
@@ -112,6 +150,20 @@ export function objectSpinnerMoverFactory(ctx?: AnimationContext): IAnimation {
         particleScale: context.shared?.particleScale ?? 1,
         reducedMotion: Boolean(context.shared?.reducedMotion),
       }
+    }
+
+    protected draw(context: AnimationContext) {
+      const w = this.cssWidth; const h = this.cssHeight
+      if (w === 0 || h === 0) return
+      this.ensurePool(context)
+
+      const now = context.shared?.time?.elapsed ?? performance.now()
+      const delta = this.lastTime === 0 ? 16 : Math.min(now - this.lastTime, 50)
+      this.lastTime = now
+
+      const intensity = context.options?.intensity ?? 1
+      const perf = this.perf
+      const frame = this.buildFrame(context, now, delta)
 
       this.beatState = updateBeatState(this.beatState, frame, this.preset.beatBehavior)
       frame.bgFlash = this.beatState.bgFlash
@@ -128,81 +180,52 @@ export function objectSpinnerMoverFactory(ctx?: AnimationContext): IAnimation {
         objects: this.objects,
         intensity,
         prevDropBurst: this.prevDropBurst,
+        useMacroFx: perf.useMacroFx,
       })
       this.prevDropBurst = this.beatState.dropBurst
 
       const palette = getPalette(this.preset.palette)
+      this.ctx.clearRect(0, 0, w, h)
       drawBackground(this.preset.backgroundPreset, {
         ctx: this.ctx, w, h, cx: frame.cx, cy: frame.cy, time: now,
         flash: this.beatState.bgFlash + this.beatState.dropBurst * 0.5 + this.macroState.pulse * 0.35,
         palette,
       })
 
-      drawMacroPulseRing(this.ctx, frame.cx, frame.cy, w, h, this.macroState, palette, now)
-
-      const shakeAllowed = this.allowsShake(context)
-      const shake = shakeAllowed && this.effects ? this.effects.getShake() : 0
-      const zoom = this.macroState.zoom
-
-      this.ctx.save()
-      if (zoom > 0.01) {
-        const s = 1 + zoom * 0.08 * intensity
-        this.ctx.translate(frame.cx, frame.cy)
-        this.ctx.scale(s, s)
-        this.ctx.translate(-frame.cx, -frame.cy)
-      }
-      if (shake > 0) {
-        this.ctx.translate(
-          (Math.random() - 0.5) * 14 * shake,
-          (Math.random() - 0.5) * 11 * shake,
-        )
+      if (perf.useMacroFx) {
+        drawMacroPulseRing(this.ctx, frame.cx, frame.cy, w, h, this.macroState, palette, now)
       }
 
-      const bandCount = this.preset.depthBands ?? 3
       const motion = this.preset.motionPreset
       const directMotion = usesDirectPositionMotion(motion)
-      const liveObjects = this.objects.filter(obj => obj.alive && !obj.isHero)
-      const sorted = [...this.objects].sort((a, b) => a.zBand - b.zBand)
+      const bandCount = perf.depthBands
 
-      for (let i = 0; i < sorted.length; i++) {
-        const obj = sorted[i]!
-        if (!obj.alive) continue
-
-        if (obj.isHero && this.preset.heroObject) {
-          updateHero(obj, this.preset.heroObject, { w, h, cx: frame.cx, cy: frame.cy, time: now })
-          obj.rot += obj.rotSpeed * (delta / 1000) * 0.8
-        } else {
-          applyMotion(obj, motion, frame)
-          if (!directMotion) {
-            const slot = liveObjects.indexOf(obj)
-            applyPatternDrift(obj, slot >= 0 ? slot : i, liveObjects.length, frame)
-          }
-          applyPersonality(obj, frame)
-          applyBeatToObject(obj, this.preset.beatBehavior, frame, this.beatState)
-        }
-
-        const baseSize = Math.min(w, h) * 0.068
-        const size = baseSize * objectRenderScale(obj, bandCount) * frame.particleScale
-        const alpha = objectRenderAlpha(obj, bandCount)
-        const blur = objectRenderBlur(obj, bandCount)
-
-        this.ctx.save()
-        this.ctx.translate(obj.x, obj.y)
-        this.ctx.rotate(obj.rot)
-        this.ctx.globalAlpha = alpha
-        if (blur > 0) this.ctx.filter = `blur(${blur}px)`
-        drawShape(obj.shape, {
-          ctx: this.ctx, size,
-          fill: pickObjectColor(palette, obj.colorIndex),
-          stroke: palette.stroke,
-          time: now,
-        })
-        this.ctx.restore()
-        this.ctx.filter = 'none'
-        this.ctx.globalAlpha = 1
+      let liveCount = 0
+      for (let i = 0; i < this.objects.length; i++) {
+        const obj = this.objects[i]!
+        if (obj.alive && !obj.isHero) liveCount++
       }
 
-      this.ctx.restore()
+      let liveSlot = 0
+      for (let band = 0; band < bandCount; band++) {
+        for (let i = 0; i < this.objects.length; i++) {
+          const obj = this.objects[i]!
+          if (!obj.alive || obj.isHero || obj.zBand !== band) continue
+          this.drawObject(obj, frame, perf, motion, directMotion, liveSlot, liveCount, palette, delta)
+          if (!obj.isHero) liveSlot++
+        }
+      }
+
+      for (let i = 0; i < this.objects.length; i++) {
+        const obj = this.objects[i]!
+        if (!obj.alive || !obj.isHero) continue
+        this.drawObject(obj, frame, perf, motion, directMotion, liveSlot, liveCount, palette, delta)
+      }
+
+      if (perf.useMacroFx) {
+        drawMacroFlash(this.ctx, w, h, this.macroState, palette)
+        drawMacroVignette(this.ctx, w, h, this.macroState, palette)
+      }
 
       const spawnN = beatSpawnCount(this.preset.beatBehavior, frame, this.beatState)
       if (spawnN > 0) {
@@ -215,10 +238,6 @@ export function objectSpinnerMoverFactory(ctx?: AnimationContext): IAnimation {
           }
         }
       }
-
-      drawMacroFlash(this.ctx, w, h, this.macroState, palette)
-      drawMacroVignette(this.ctx, w, h, this.macroState, palette)
-      this.effects?.update(this.ctx, now, this.pixelRatio)
     }
   }
 

@@ -6,8 +6,13 @@ import { assignDepthBand } from './depth'
 import { pickPersonality } from './personality'
 import { positionForSpawn } from './spawn'
 
-export function createObjectPool(preset: ObjectTheatrePreset, w: number, h: number): TheatreObject[] {
-  const count = preset.objectCount ?? 18
+export function createObjectPool(
+  preset: ObjectTheatrePreset,
+  w: number,
+  h: number,
+  countOverride?: number,
+): TheatreObject[] {
+  const count = countOverride ?? preset.objectCount ?? 12
   const shapes = SHAPE_PACKS[preset.shapePack]
   const bandCount = preset.depthBands ?? 3
   const cx = w / 2; const cy = h / 2
@@ -79,7 +84,7 @@ export function respawnObject(
   obj.shape = shapes[Math.floor(seededRandom(index + performance.now()) * shapes.length)]!
   obj.alive = true
   obj.scalePulse = 1
-  positionForSpawn(obj, preset.spawnStyle, { w, h, cx: w / 2, cy: h / 2, index, total: preset.objectCount ?? 18, beat })
+  positionForSpawn(obj, preset.spawnStyle, { w, h, cx: w / 2, cy: h / 2, index, total: preset.objectCount ?? 12, beat })
 }
 
 export function updateHero(obj: TheatreObject, hero: HeroObjectConfig, frame: { w: number; h: number; cx: number; cy: number; time: number }) {

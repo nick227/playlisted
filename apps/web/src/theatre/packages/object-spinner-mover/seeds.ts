@@ -9,7 +9,7 @@ export const osmCalmFloatSeed: ObjectTheatreSeed = {
   config: {
     backgroundPreset: 'radialGradient', shapePack: 'nature', motionPreset: 'float',
     beatBehavior: 'scaleOnBeat', spawnStyle: 'randomPop', palette: 'pastel', depthBands: 3,
-    objectCount: 16,
+    objectCount: 12,
   },
 }
 
@@ -56,7 +56,8 @@ export const dicePanicCasinoSeed: ObjectTheatreSeed = {
   label: 'Dice Panic Casino',
   config: {
     backgroundPreset: 'neonCity', shapePack: 'gambling', motionPreset: 'panic',
-    beatBehavior: 'dropExplosion', spawnStyle: 'centerBurst', palette: 'chrome', depthBands: 3,
+    beatBehavior: 'spinKick', spawnStyle: 'centerBurst', palette: 'chrome', depthBands: 2,
+    objectCount: 10,
   },
 }
 
@@ -143,7 +144,7 @@ export const skullIdolGhostsSeed: ObjectTheatreSeed = {
     backgroundPreset: 'radialGradient', shapePack: 'spooky', motionPreset: 'orbit',
     beatBehavior: 'spinKick', spawnStyle: 'orbitRing', palette: 'horror', depthBands: 3,
     heroObject: { shape: 'skull', behavior: 'centerWobble', scale: 3 },
-    objectCount: 18,
+    objectCount: 12,
   },
 }
 

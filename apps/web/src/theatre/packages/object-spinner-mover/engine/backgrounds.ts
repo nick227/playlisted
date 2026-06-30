@@ -19,7 +19,7 @@ export function drawBackground(preset: BackgroundPreset, bg: BgCtx) {
       break
     }
     case 'checkerboard': {
-      const size = 32
+      const size = 64
       for (let y = 0; y < h; y += size) {
         for (let x = 0; x < w; x += size) {
           const idx = ((x / size) + (y / size)) % 2
@@ -32,7 +32,7 @@ export function drawBackground(preset: BackgroundPreset, bg: BgCtx) {
     case 'starfield': {
       ctx.fillStyle = palette.bg[0]!
       ctx.fillRect(0, 0, w, h)
-      for (let i = 0; i < 80; i++) {
+      for (let i = 0; i < 48; i++) {
         const sx = seededRandom(i * 7) * w
         const sy = seededRandom(i * 13) * h
         const twinkle = 0.3 + Math.abs(Math.sin(time * 0.002 + i)) * 0.7
