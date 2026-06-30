@@ -51,7 +51,7 @@ export function listPresets(category?: SceneCategory): ScenePresetDef[] {
 }
 
 function collectPresetCandidates(
-  preferCategory: SceneCategory,
+  preferCategory: SceneCategory | 'all',
   excludeIds: string[],
 ): ScenePresetDef[] {
   const exclude = new Set(excludeIds)
@@ -63,6 +63,10 @@ function collectPresetCandidates(
       out.push(p)
     }
   }
+  if (preferCategory === 'all') {
+    tryCategory(null)
+    return out
+  }
   tryCategory(preferCategory)
   if (out.length === 0 && preferCategory !== 'production') tryCategory('production')
   if (out.length === 0) tryCategory(null)
@@ -70,13 +74,25 @@ function collectPresetCandidates(
 }
 
 export function pickPreset(opts: {
-  preferCategory?: SceneCategory
+  preferCategory?: SceneCategory | 'all'
   reducedMotion?: boolean
   excludeIds?: string[]
+  /** When true, every candidate has equal chance regardless of preset weight. */
+  equalWeight?: boolean
 }): ScenePresetDef | null {
-  const { preferCategory = 'production', reducedMotion = false, excludeIds = [] } = opts
+  const {
+    preferCategory = 'production',
+    reducedMotion = false,
+    excludeIds = [],
+    equalWeight = false,
+  } = opts
   const candidates = collectPresetCandidates(preferCategory, excludeIds)
   if (candidates.length === 0) return null
+
+  if (equalWeight) {
+    const picked = candidates[Math.floor(Math.random() * candidates.length)]
+    return resolve(picked, reducedMotion)
+  }
 
   const total = candidates.reduce((s, p) => s + (p.weight ?? 1), 0)
   let r = Math.random() * total

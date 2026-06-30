@@ -31,9 +31,8 @@ function resolvePresetChoice(reducedMotion: boolean, excludeIds: string[] = []):
     }
   }
 
-  // Auto-enter and auto-rotate use production pool only. Lab presets (e.g. cheechChongFarm)
-  // stay available via ?theatrePreset= or the manual preset menu.
-  return pickPreset({ preferCategory: 'production', reducedMotion, excludeIds })
+  // Auto-enter and auto-rotate: uniform pick across every seed-registered preset.
+  return pickPreset({ preferCategory: 'all', reducedMotion, excludeIds, equalWeight: true })
 }
 
 export type TheatreRotationPolicy = {
@@ -45,10 +44,10 @@ export type TheatreRotationPolicy = {
 }
 
 export const DEFAULT_ROTATION_POLICY: TheatreRotationPolicy = {
-  minSceneMs: 6000,
-  maxSceneMs: 30000,
+  minSceneMs: 1000,
+  maxSceneMs: 16000,
   clipLengthBias: 'minimum',
-  varianceMs: 8000,
+  varianceMs: 2000,
   requireAudioPop: true,
 }
 
