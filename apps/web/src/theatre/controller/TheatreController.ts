@@ -294,8 +294,12 @@ class TheatreController extends EventTarget {
         const initContext: AnimationContext = {
           ...ctxParam,
           options: layerOptions
-            ? { ...ctxParam.options, ...layerOptions }
-            : ctxParam.options,
+            ? {
+              ...ctxParam.options,
+              ...layerOptions,
+              objectTheatrePresetId: preset.id,
+            }
+            : { ...ctxParam.options, objectTheatrePresetId: preset.id },
         }
         return withTheatreInitContext(entry.factory(initContext), initContext)
       })

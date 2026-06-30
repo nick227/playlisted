@@ -1,3 +1,4 @@
+import type { ObjectTheatrePreset } from './engine/types'
 import type { ObjectTheatreSeed } from './buildPreset'
 
 export const osmCalmFloatSeed: ObjectTheatreSeed = {
@@ -6,7 +7,7 @@ export const osmCalmFloatSeed: ObjectTheatreSeed = {
   category: 'production',
   weight: 2,
   config: {
-    backgroundPreset: 'radialGradient', shapePack: 'party', motionPreset: 'float',
+    backgroundPreset: 'radialGradient', shapePack: 'nature', motionPreset: 'float',
     beatBehavior: 'scaleOnBeat', spawnStyle: 'randomPop', palette: 'pastel', depthBands: 3,
     objectCount: 16,
   },
@@ -166,4 +167,12 @@ export const ALL_OBJECT_THEATRE_SEEDS = [
 
 export function listObjectTheatreSeedIds(): string[] {
   return ALL_OBJECT_THEATRE_SEEDS.map(seed => seed.id)
+}
+
+const seedConfigById = new Map<string, ObjectTheatrePreset>(
+  ALL_OBJECT_THEATRE_SEEDS.map(seed => [seed.id, seed.config]),
+)
+
+export function getObjectTheatreSeedConfig(presetId: string): ObjectTheatrePreset | null {
+  return seedConfigById.get(presetId) ?? null
 }

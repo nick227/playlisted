@@ -12,6 +12,7 @@ import { signalOrganismPackage } from '../packages/signal-organism'
 import { monsterCrewPackage } from '../packages/monster-crew'
 import { liminalDoomPackage } from '../packages/liminal-doom'
 import { eqBarsPackage } from '../packages/eq-bars'
+import { cheechChongPackage } from '../packages/cheech-chong'
 import { rainPackage } from '../packages/rain'
 import { puppetDancerPackage } from '../packages/puppet-dancer'
 import { goopyPackage } from '../packages/goopy'
@@ -63,7 +64,9 @@ registerObjectTheatreInSeed([
 ])
 
 ;[
+  cheechChongPackage,
   /*
+  rampagePackage,
   rampagePackage,
   cruisinPackage,
   speakerPackage,

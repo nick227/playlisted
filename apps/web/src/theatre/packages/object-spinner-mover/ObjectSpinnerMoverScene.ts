@@ -17,6 +17,7 @@ import {
   drawMacroVignette,
 } from './engine/macroEffects'
 import { createObjectPool, respawnObject, updateHero } from './engine/state'
+import { getObjectTheatreSeedConfig } from './seeds'
 
 const DEFAULT_PRESET: ObjectTheatrePreset = {
   backgroundPreset: 'radialGradient',
@@ -28,10 +29,17 @@ const DEFAULT_PRESET: ObjectTheatrePreset = {
   depthBands: 3,
 }
 
-function readPreset(context: AnimationContext): ObjectTheatrePreset {
+function readPreset(context: AnimationContext, fallback?: ObjectTheatrePreset): ObjectTheatrePreset {
   const raw = context.options?.objectTheatre
-  if (raw && typeof raw === 'object') return { ...DEFAULT_PRESET, ...(raw as ObjectTheatrePreset) }
-  return DEFAULT_PRESET
+  if (raw && typeof raw === 'object') {
+    return { ...DEFAULT_PRESET, ...(raw as ObjectTheatrePreset) }
+  }
+  const presetId = context.options?.objectTheatrePresetId
+  if (typeof presetId === 'string') {
+    const fromSeed = getObjectTheatreSeedConfig(presetId)
+    if (fromSeed) return { ...DEFAULT_PRESET, ...fromSeed }
+  }
+  return fallback ?? DEFAULT_PRESET
 }
 
 export function objectSpinnerMoverFactory(ctx?: AnimationContext): IAnimation {
@@ -52,9 +60,7 @@ export function objectSpinnerMoverFactory(ctx?: AnimationContext): IAnimation {
 
     override async init(container: HTMLElement, context: AnimationContext) {
       await super.init(container, context)
-      if (context.options?.objectTheatre) {
-        this.preset = readPreset(context)
-      }
+      this.preset = readPreset(context, boundPreset)
       this.beatState = createBeatState()
       this.macroState = createMacroEffectState()
       this.prevDropBurst = 0
@@ -67,6 +73,16 @@ export function objectSpinnerMoverFactory(ctx?: AnimationContext): IAnimation {
       if (this.initialized) return
       this.objects = createObjectPool(this.preset, w, h)
       this.initialized = true
+    }
+
+    getObjectTheatreDebugState() {
+      return {
+        shapePack: this.preset.shapePack,
+        motionPreset: this.preset.motionPreset,
+        palette: this.preset.palette,
+        backgroundPreset: this.preset.backgroundPreset,
+        sampleShapes: this.objects.filter(obj => !obj.isHero).slice(0, 8).map(obj => obj.shape),
+      }
     }
 
     protected draw(context: AnimationContext) {

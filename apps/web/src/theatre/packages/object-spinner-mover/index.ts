@@ -4,6 +4,7 @@ export type { ObjectTheatreSeed } from './buildPreset'
 export { buildObjectTheatrePreset, isObjectTheatrePreset, OBJECT_SPINNER_MOVER_ID } from './buildPreset'
 export {
   ALL_OBJECT_THEATRE_SEEDS,
+  getObjectTheatreSeedConfig,
   listObjectTheatreSeedIds,
   osmCalmFloatSeed,
   burgerBounceCarnivalSeed,

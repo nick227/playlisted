@@ -16,7 +16,7 @@ const LAYER_BASE = {
   blendMode: 'normal' as const,
   intensity: 1,
   sensitivity: 1,
-  preset: 'vivid' as const,
+  preset: 'tame' as const,
 }
 
 export const OBJECT_SPINNER_MOVER_ID = 'objectSpinnerMover'
@@ -27,11 +27,15 @@ export function buildObjectTheatrePreset(seed: ObjectTheatreSeed): ScenePresetDe
     label: seed.label,
     category: seed.category ?? 'production',
     weight: seed.weight ?? 1,
-    reducedMotionPreset: seed.reducedMotionPreset ?? 'osm-calm-float',
+    reducedMotionPreset: seed.reducedMotionPreset ?? seed.id,
     layers: [{
       animationId: OBJECT_SPINNER_MOVER_ID,
       role: 'subject',
-      options: { ...LAYER_BASE, objectTheatre: seed.config },
+      options: {
+        ...LAYER_BASE,
+        objectTheatrePresetId: seed.id,
+        objectTheatre: seed.config,
+      },
     }],
   }
 }
