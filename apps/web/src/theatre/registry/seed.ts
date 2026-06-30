@@ -20,11 +20,15 @@ import { eyeCloudPackage } from '../packages/eye-cloud'
 import { jellyBellPackage } from '../packages/jelly-bell'
 import { cuteMonstroPackage } from '../packages/cute-monstro'
 import { monsterWavePackage } from '../packages/monster-wave'
+import { rampagePackage } from '../packages/rampage'
+import { objectSpinnerMoverPackage } from '../packages/object-spinner-mover'
 
 // Package order matters only when presets reference animations owned by an
 // earlier package. Keep quietPulse first so reduced-motion fallbacks can point
 // at it, then register composite dependencies before their presets.
 [
+  objectSpinnerMoverPackage,
+  rampagePackage,/*
   speakerPackage,
   bioMachinePackage,
   spinAmpPackage,
@@ -102,7 +106,7 @@ createVideoPackage({ id: 'video56', label: 'Video 56', videoUrl: '/56.mp4', cate
 createVideoPackage({ id: 'video57', label: 'Video 57', videoUrl: '/57.mp4', category: 'lab', reducedMotionPreset: 'quietPulse' }),
 createVideoPackage({ id: 'video58', label: 'Video 58', videoUrl: '/58.mp4', category: 'lab', reducedMotionPreset: 'quietPulse' }),
   createVideoPackage({ id: 'demo1', label: 'demo1', videoUrl: '/demo1.mp4', category: 'lab', reducedMotionPreset: 'quietPulse' }),
-  createVideoPackage({ id: 'demo2', label: 'demo2', videoUrl: '/demo2.mp4', category: 'lab', reducedMotionPreset: 'quietPulse' }),
+  createVideoPackage({ id: 'demo2', label: 'demo2', videoUrl: '/demo2.mp4', category: 'lab', reducedMotionPreset: 'quietPulse' }),*/
 ].forEach(registerAnimationPackage)
 
 export default registry
