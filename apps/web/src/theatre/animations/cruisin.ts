@@ -163,7 +163,7 @@ export function cruisinFactory(): IAnimation {
       ctx.fill()
     }
 
-    private drawSprite(ctx: CanvasRenderingContext2D, segment: Segment, cameraX: number) {
+    private drawSprite(ctx: CanvasRenderingContext2D, segment: Segment, _cameraX: number) {
       if (segment.sprite === 7) {
         // Checkpoint Gate
         if (segment.pScreen.scale <= 0) return
@@ -203,7 +203,6 @@ export function cruisinFactory(): IAnimation {
       const destY = segment.pScreen.y
       
       const w = this.cssWidth
-      const h = this.cssHeight
 
       // Don't draw if too far off screen
       if (destX < -w || destX > w * 2) return
@@ -525,8 +524,6 @@ export function cruisinFactory(): IAnimation {
       const startSegment = this.segments[startPos % this.trackLength]
       
       // Auto-drive: player X follows the curve roughly
-      // We can also make player bounce to the beat
-      const carBounce = triggers.bassHit ? 5 : 0
 
       // Calculate camera coordinates
       const camX = this.playerX * this.roadWidth

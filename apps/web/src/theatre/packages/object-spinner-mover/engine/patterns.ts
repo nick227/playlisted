@@ -15,7 +15,7 @@ export function applyFormationPattern(
   index: number,
   total: number,
   frame: EngineFrame,
-  bandCount: number,
+  _bandCount: number,
 ) {
   const { cx, cy, w, h, time, delta, bass, reducedMotion } = frame
   const dt = delta / 1000

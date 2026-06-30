@@ -6,7 +6,5 @@ export const cruisinManifest: AnimationPackageManifest = {
   version: '1.0.0',
   kind: 'visual-scene',
   category: 'lab',
-  capabilities: {
-    audioFeatureReactivity: ['energy', 'bassHit']
-  }
+  capabilities: ['audio-features', 'visual-triggers', 'external-raf'],
 }

@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest'
 import registry from '../registry'
 import { getPreset } from '../registry/scenePresets'
 import { withTheatreInitContext, resolveTheatreInitContext } from '../controller/theatreFrameContext'
-import { objectSpinnerMoverFactory } from '../packages/object-spinner-mover/ObjectSpinnerMoverScene'
 import { getObjectTheatreSeedConfig } from '../packages/object-spinner-mover/seeds'
 import '../registry/seed'
 

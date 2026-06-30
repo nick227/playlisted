@@ -6,7 +6,5 @@ export const cheechChongManifest: AnimationPackageManifest = {
   version: '1.0.0',
   kind: 'visual-scene',
   category: 'lab',
-  capabilities: {
-    audioFeatureReactivity: ['energy', 'bassHit', 'beat']
-  }
+  capabilities: ['audio-features', 'visual-triggers', 'external-raf'],
 }
