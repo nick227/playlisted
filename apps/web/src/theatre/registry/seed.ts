@@ -65,8 +65,6 @@ registerObjectTheatreInSeed([
 
 ;[
   cheechChongPackage,
-  /*
-  rampagePackage,
   rampagePackage,
   cruisinPackage,
   speakerPackage,
@@ -146,7 +144,7 @@ createVideoPackage({ id: 'video56', label: 'Video 56', videoUrl: '/56.mp4', cate
 createVideoPackage({ id: 'video57', label: 'Video 57', videoUrl: '/57.mp4', category: 'lab', reducedMotionPreset: 'quietPulse' }),
 createVideoPackage({ id: 'video58', label: 'Video 58', videoUrl: '/58.mp4', category: 'lab', reducedMotionPreset: 'quietPulse' }),
   createVideoPackage({ id: 'demo1', label: 'demo1', videoUrl: '/demo1.mp4', category: 'lab', reducedMotionPreset: 'quietPulse' }),
-  createVideoPackage({ id: 'demo2', label: 'demo2', videoUrl: '/demo2.mp4', category: 'lab', reducedMotionPreset: 'quietPulse' }),*/
+  createVideoPackage({ id: 'demo2', label: 'demo2', videoUrl: '/demo2.mp4', category: 'lab', reducedMotionPreset: 'quietPulse' }),
 ].forEach(registerAnimationPackage)
 
 export default registry
