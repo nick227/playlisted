@@ -550,7 +550,7 @@ export function cheechChongFactory(): IAnimation {
       const bounceY = isBouncing ? -10 * carScale : 0
       
       ctx.save()
-      ctx.translate(w * 0.45, h * 0.58 - (19 * carScale)) // Moved to center-left and slightly down to ground
+      ctx.translate(w * 0.50, h * 0.58 - (19 * carScale)) // Center
       
       // Pivot around the rear wheels for the jump
       ctx.translate(25 * carScale, 15 * carScale)
@@ -635,7 +635,7 @@ export function cheechChongFactory(): IAnimation {
       // ==========================================
       // CHEECH FULL BODY
       // ==========================================
-      const cx = w * 0.25 - 20 * characterScale
+      const cx = w * 0.15 - 20 * characterScale
       const cy = h - 70 * characterScale - bob
       
       // Draw Cheech Body (with Breathing)
@@ -689,7 +689,7 @@ export function cheechChongFactory(): IAnimation {
       // ==========================================
       // CHONG FULL BODY
       // ==========================================
-      const chongX = w * 0.75 - 20 * characterScale
+      const chongX = w * 0.85 - 20 * characterScale
       const chongY = h - 70 * characterScale - bob
 
       // Draw Chong Body (with Breathing)

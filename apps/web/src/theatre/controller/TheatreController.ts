@@ -45,10 +45,10 @@ export type TheatreRotationPolicy = {
 }
 
 export const DEFAULT_ROTATION_POLICY: TheatreRotationPolicy = {
-  minSceneMs: 12_000,
-  maxSceneMs: 45_000,
+  minSceneMs: 40_000,
+  maxSceneMs: 120_000,
   clipLengthBias: 'minimum',
-  varianceMs: 4_000,
+  varianceMs: 10_000,
   requireAudioPop: true,
 }
 
