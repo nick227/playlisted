@@ -9,6 +9,7 @@ import { playbackFocusTiming } from '@/lib/playbackFocusTiming'
 import { createTheatreDevPanel, destroyTheatreDevPanel } from '../dev/TheatreDevPanel'
 import { TheatreSceneDeck } from './TheatreSceneDeck'
 import { theatreBreadcrumb } from './theatreBreadcrumbs'
+import { withTheatreInitContext } from './theatreInitContext'
 import { isPresetQuarantined, quarantinePreset } from './presetQuarantine'
 import { isObjectTheatrePreset } from '../packages/object-spinner-mover'
 
@@ -290,10 +291,13 @@ class TheatreController extends EventTarget {
       if (!entry) continue
       const layerOptions = layer.options
       factories.push((ctxParam: AnimationContext) => {
-        const options = layerOptions
-          ? { ...ctxParam.options, ...layerOptions }
-          : ctxParam.options
-        return entry.factory({ ...ctxParam, options })
+        const initContext: AnimationContext = {
+          ...ctxParam,
+          options: layerOptions
+            ? { ...ctxParam.options, ...layerOptions }
+            : ctxParam.options,
+        }
+        return withTheatreInitContext(entry.factory(initContext), initContext)
       })
     }
     return factories

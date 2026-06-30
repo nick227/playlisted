@@ -34,10 +34,12 @@ function readPreset(context: AnimationContext): ObjectTheatrePreset {
   return DEFAULT_PRESET
 }
 
-export function objectSpinnerMoverFactory(): IAnimation {
+export function objectSpinnerMoverFactory(ctx?: AnimationContext): IAnimation {
+  const boundPreset = readPreset(ctx ?? { options: {} })
+
   class ObjectSpinnerMoverScene extends CanvasAnimation {
-    private preset: ObjectTheatrePreset = DEFAULT_PRESET
-    private objects = createObjectPool(DEFAULT_PRESET, 800, 600)
+    private preset: ObjectTheatrePreset = boundPreset
+    private objects = createObjectPool(boundPreset, 800, 600)
     private beatState = createBeatState()
     private macroState = createMacroEffectState()
     private prevDropBurst = 0
@@ -50,7 +52,9 @@ export function objectSpinnerMoverFactory(): IAnimation {
 
     override async init(container: HTMLElement, context: AnimationContext) {
       await super.init(container, context)
-      this.preset = readPreset(context)
+      if (context.options?.objectTheatre) {
+        this.preset = readPreset(context)
+      }
       this.beatState = createBeatState()
       this.macroState = createMacroEffectState()
       this.prevDropBurst = 0

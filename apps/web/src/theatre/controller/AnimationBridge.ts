@@ -29,7 +29,8 @@ export class AnimationBridge {
           detail: `layer=${layerIndex}`,
         })
         instance = factory(ctx)
-        await instance.init(container, ctx)
+        const initContext = resolveTheatreInitContext(instance, ctx)
+        await instance.init(container, initContext)
         // Opt in to controller RAF loop before start() so the animation never
         // creates its own loop. Old-pattern animations without enableExternalDriving
         // are unaffected and continue self-driving (backward compat).
