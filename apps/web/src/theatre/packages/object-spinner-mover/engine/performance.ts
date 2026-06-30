@@ -6,6 +6,7 @@ export type ObjectTheatrePerf = {
   sizeMul: number
   usePatternDrift: boolean
   useMacroFx: boolean
+  useEqWave: boolean
   depthBands: number
 }
 
@@ -34,6 +35,7 @@ export function resolveObjectTheatrePerf(
     sizeMul,
     usePatternDrift: !reduced && particleScale > 0.35,
     useMacroFx: !reduced && particleScale > 0.2,
+    useEqWave: particleScale > 0.15,
     depthBands: reduced || lowPower ? 2 : Math.min(preset.depthBands ?? 2, 3),
   }
 }

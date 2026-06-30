@@ -18,6 +18,14 @@ import {
   drawMacroVignette,
 } from './engine/macroEffects'
 import { resolveObjectTheatrePerf, type ObjectTheatrePerf } from './engine/performance'
+import {
+  collectiveEqPulse,
+  collectiveEqSpinBoost,
+  createEqWaveState,
+  drawEqWave,
+  updateEqWave,
+  type EqWaveState,
+} from './engine/eqWave'
 import { createObjectPool, respawnObject, updateHero } from './engine/state'
 import { getObjectTheatreSeedConfig } from './seeds'
 
@@ -56,6 +64,8 @@ export function objectSpinnerMoverFactory(ctx?: AnimationContext): IAnimation {
     private lastTime = 0
     private poolCount = -1
     private perf: ObjectTheatrePerf = resolveObjectTheatrePerf(boundPreset, { options: {} })
+    private eqWave: EqWaveState = createEqWaveState()
+    private freqBuf: Uint8Array<ArrayBuffer> | null = null
 
     constructor() {
       super({ useEffects: false, defaultBlendMode: 'normal', defaultZIndex: 101 })
@@ -69,6 +79,16 @@ export function objectSpinnerMoverFactory(ctx?: AnimationContext): IAnimation {
       this.prevDropBurst = 0
       this.poolCount = -1
       this.objects = []
+      this.eqWave = createEqWaveState()
+      this.freqBuf = null
+    }
+
+    private ensureFreqBuf(context: AnimationContext) {
+      const analyser = context.analyser
+      if (!analyser) return
+      if (!this.freqBuf || this.freqBuf.length !== analyser.frequencyBinCount) {
+        this.freqBuf = new Uint8Array(analyser.frequencyBinCount)
+      }
     }
 
     private ensurePool(context: AnimationContext) {
@@ -101,6 +121,8 @@ export function objectSpinnerMoverFactory(ctx?: AnimationContext): IAnimation {
       liveCount: number,
       palette: ReturnType<typeof getPalette>,
       delta: number,
+      eqPulse: number,
+      eqSpin: number,
     ) {
       const { w, h } = frame
 
@@ -114,9 +136,10 @@ export function objectSpinnerMoverFactory(ctx?: AnimationContext): IAnimation {
         }
         applyPersonality(obj, frame)
         applyBeatToObject(obj, this.preset.beatBehavior, frame, this.beatState)
+        obj.rot += obj.rotSpeed * (delta / 1000) * (eqSpin - 1) * 0.35
       }
 
-      const size = Math.min(w, h) * perf.sizeMul * objectRenderScale(obj, perf.depthBands) * frame.particleScale
+      const size = Math.min(w, h) * perf.sizeMul * eqPulse * objectRenderScale(obj, perf.depthBands) * frame.particleScale
       const alpha = objectRenderAlpha(obj, perf.depthBands)
 
       this.ctx.save()
@@ -192,6 +215,25 @@ export function objectSpinnerMoverFactory(ctx?: AnimationContext): IAnimation {
         palette,
       })
 
+      let eqPulse = 1
+      let eqSpin = 1
+      if (perf.useEqWave) {
+        this.ensureFreqBuf(context)
+        updateEqWave(this.eqWave, context.analyser, this.freqBuf, {
+          time: now,
+          bass: frame.bass,
+          mids: frame.mids,
+          beat: frame.beat,
+          bassHit: frame.bassHit,
+        })
+        eqPulse = collectiveEqPulse(this.eqWave)
+        eqSpin = collectiveEqSpinBoost(this.eqWave, frame.beat)
+        drawEqWave(this.ctx, w, h, this.eqWave, palette, {
+          alpha: frame.reducedMotion ? 0.35 : 0.68,
+          reducedMotion: frame.reducedMotion,
+        })
+      }
+
       if (perf.useMacroFx) {
         drawMacroPulseRing(this.ctx, frame.cx, frame.cy, w, h, this.macroState, palette, now)
       }
@@ -211,7 +253,7 @@ export function objectSpinnerMoverFactory(ctx?: AnimationContext): IAnimation {
         for (let i = 0; i < this.objects.length; i++) {
           const obj = this.objects[i]!
           if (!obj.alive || obj.isHero || obj.zBand !== band) continue
-          this.drawObject(obj, frame, perf, motion, directMotion, liveSlot, liveCount, palette, delta)
+          this.drawObject(obj, frame, perf, motion, directMotion, liveSlot, liveCount, palette, delta, eqPulse, eqSpin)
           if (!obj.isHero) liveSlot++
         }
       }
@@ -219,7 +261,7 @@ export function objectSpinnerMoverFactory(ctx?: AnimationContext): IAnimation {
       for (let i = 0; i < this.objects.length; i++) {
         const obj = this.objects[i]!
         if (!obj.alive || !obj.isHero) continue
-        this.drawObject(obj, frame, perf, motion, directMotion, liveSlot, liveCount, palette, delta)
+        this.drawObject(obj, frame, perf, motion, directMotion, liveSlot, liveCount, palette, delta, eqPulse, eqSpin)
       }
 
       if (perf.useMacroFx) {
