@@ -393,7 +393,7 @@ export function CollectionView({
       ) : null}
 
       <div className="flex flex-col gap-8 md:flex-row md:items-start bg-[var(--color-canvas)] rounded-lg p-2 max-w-3xl p-4">
-        <div className="mx-auto shrink-0 md:mx-0">
+        <div className="mx-auto shrink-0 md:mx-0 flex justify-center align-center">
           <button
             type="button"
             onClick={isEdit ? onCoverClick : undefined}
