@@ -23,6 +23,7 @@ type Args = {
   limit: number;
   apply: boolean;
   deleteLegacy: boolean;
+  includeNotReady: boolean;
   legacyOnly: boolean;
   includeReady: boolean;
 };
@@ -35,6 +36,7 @@ function parseArgs(): Args {
     limit: 20,
     apply: false,
     deleteLegacy: false,
+    includeNotReady: false,
     legacyOnly: false,
     includeReady: false,
   };
@@ -57,6 +59,7 @@ function parseArgs(): Args {
   for (const arg of rest) {
     if (arg === "--apply") args.apply = true;
     else if (arg === "--delete-legacy") args.deleteLegacy = true;
+    else if (arg === "--include-not-ready") args.includeNotReady = true;
     else if (arg === "--legacy-only") args.legacyOnly = true;
     else if (arg === "--include-ready") args.includeReady = true;
     else if (arg.startsWith("--id=")) args.id = arg.slice("--id=".length);
@@ -171,14 +174,15 @@ Commands:
   queue --limit=5 [--apply]
   status
   inspect --id=<recordingId>
-  delete-legacy --id=<recordingId> [--apply]
-  delete-legacy --limit=5 [--apply]
+  delete-legacy --id=<recordingId> [--apply] [--include-not-ready]
+  delete-legacy --limit=5 [--apply] [--include-not-ready]
 
 Apply guard:
   SUBTITLE_MAINTENANCE_CONFIRM=${requiredConfirm} npm run subtitles:maintenance -- migrate --id=... --apply
 
 Legacy deletion:
   --delete-legacy also requires LEGACY_DELETE_UPLOADS_DIR and only deletes files from that mounted uploads root.
+  delete-legacy defaults to READY subtitles only. Use --include-not-ready only for intentional storage-only cleanup.
 `);
 }
 
@@ -769,9 +773,18 @@ async function inspect(args: Args) {
   }
 }
 
-async function deleteLegacyOne(recording: Prisma.RecordingGetPayload<{ include: { subtitle: true } }>, apply: boolean) {
+async function deleteLegacyOne(
+  recording: Prisma.RecordingGetPayload<{ include: { subtitle: true } }>,
+  apply: boolean,
+  includeNotReady: boolean,
+) {
   if (!isR2Url(recording.audioUrl)) {
     throw new Error(`Refusing to delete legacy file because DB audioUrl is not on configured R2 base: ${recording.audioUrl}`);
+  }
+  if (recording.subtitle?.status !== "READY" && !includeNotReady) {
+    throw new Error(
+      `Refusing to delete legacy file for ${recording.id}: subtitle status is ${recording.subtitle?.status ?? "NOT_QUEUED"}. Use --include-not-ready for intentional storage-only cleanup.`,
+    );
   }
 
   const relative = inferLegacyRelativePath(recording.id, recording.audioUrl);
@@ -852,9 +865,10 @@ async function deleteLegacyOne(recording: Prisma.RecordingGetPayload<{ include: 
   return { status: deleted.deleted ? "deleted" as const : "already_absent" as const, recordingId: recording.id };
 }
 
-async function legacyFileExistsForRecording(recording: { id: string; audioUrl: string }) {
+async function legacyFileExistsForRecording(recording: { id: string; audioUrl: string; subtitle?: { status: string } | null }, includeNotReady: boolean) {
   try {
     if (!isR2Url(recording.audioUrl)) return false;
+    if (recording.subtitle?.status !== "READY" && !includeNotReady) return false;
     const relative = inferLegacyRelativePath(recording.id, recording.audioUrl);
     const legacy = await resolveLegacyDeleteCandidate(relative);
     return legacy.exists;
@@ -885,6 +899,7 @@ async function deleteLegacy(args: Args) {
         where: {
           recordingType: "SONG",
           audioUrl: { startsWith: `${r2BaseUrl}/audio/legacy/` },
+          ...(args.includeNotReady ? {} : { subtitle: { status: "READY" as const } }),
         },
         orderBy: { id: "asc" },
         ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
@@ -895,7 +910,7 @@ async function deleteLegacy(args: Args) {
       cursor = candidates[candidates.length - 1]?.id;
 
       for (const candidate of candidates) {
-        if (await legacyFileExistsForRecording(candidate)) {
+        if (await legacyFileExistsForRecording(candidate, args.includeNotReady)) {
           recordings.push(candidate);
           if (recordings.length >= args.limit) break;
         }
@@ -914,7 +929,7 @@ async function deleteLegacy(args: Args) {
   );
   const summary: Record<string, number> = {};
   for (const recording of recordings) {
-    const result = await deleteLegacyOne(recording, args.apply);
+    const result = await deleteLegacyOne(recording, args.apply, args.includeNotReady);
     summary[result.status] = (summary[result.status] ?? 0) + 1;
   }
 
