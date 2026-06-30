@@ -69,31 +69,51 @@ function parseArgs(): Args {
 
 function validateDatabaseTarget() {
   const mysqlPublicUrl = process.env.MYSQL_PUBLIC_URL;
-  if (!mysqlPublicUrl) {
+  if (!mysqlPublicUrl && process.env.SUBTITLE_MAINTENANCE_ALLOW_DATABASE_URL !== "true") {
     throw new Error("MYSQL_PUBLIC_URL is required for subtitle maintenance. Refusing to fall back to DATABASE_URL.");
   }
 
+  if (!mysqlPublicUrl) {
+    const databaseUrl = process.env.DATABASE_URL;
+    if (!databaseUrl) {
+      throw new Error("DATABASE_URL is required when SUBTITLE_MAINTENANCE_ALLOW_DATABASE_URL=true.");
+    }
+    validateMysqlUrl(databaseUrl, "DATABASE_URL", { allowInternalHost: true });
+    validateMaxBytes();
+    return;
+  }
+
+  validateMysqlUrl(mysqlPublicUrl, "MYSQL_PUBLIC_URL", { allowInternalHost: false });
+  validateMaxBytes();
+  process.env.DATABASE_URL = mysqlPublicUrl;
+}
+
+function validateMysqlUrl(value: string, name: string, options: { allowInternalHost: boolean }) {
   let parsed: URL;
   try {
-    parsed = new URL(mysqlPublicUrl);
+    parsed = new URL(value);
   } catch {
-    throw new Error("MYSQL_PUBLIC_URL is not a valid URL.");
+    throw new Error(`${name} is not a valid URL.`);
   }
 
   if (parsed.protocol !== "mysql:") {
-    throw new Error("MYSQL_PUBLIC_URL must use the mysql:// protocol.");
+    throw new Error(`${name} must use the mysql:// protocol.`);
   }
-  if (!parsed.hostname || parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1") {
-    throw new Error("MYSQL_PUBLIC_URL must point at the Railway public MySQL host, not localhost.");
+  if (
+    !options.allowInternalHost &&
+    (!parsed.hostname || parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1")
+  ) {
+    throw new Error(`${name} must point at the Railway public MySQL host, not localhost.`);
   }
   if (!parsed.pathname || parsed.pathname === "/") {
-    throw new Error("MYSQL_PUBLIC_URL must include the database name in the path.");
+    throw new Error(`${name} must include the database name in the path.`);
   }
+}
+
+function validateMaxBytes() {
   if (!Number.isFinite(maxBytes) || maxBytes <= 0) {
     throw new Error("SUBTITLE_MAINTENANCE_MAX_BYTES must be a positive number.");
   }
-
-  process.env.DATABASE_URL = mysqlPublicUrl;
 }
 
 function requireApplyConfirmation(apply: boolean) {
@@ -137,7 +157,8 @@ function requireR2UploadEnv() {
 function usage() {
   console.log(`Subtitle maintenance
 
-MYSQL_PUBLIC_URL is required and is copied into DATABASE_URL by this script.
+MYSQL_PUBLIC_URL is required locally and is copied into DATABASE_URL by this script.
+For Railway-volume cleanup only, set SUBTITLE_MAINTENANCE_ALLOW_DATABASE_URL=true to use DATABASE_URL.
 Use LEGACY_UPLOADS_PUBLIC_ORIGIN=https://your-prod-host for /uploads/... files.
 Use R2_* env vars for R2 upload and public verification.
 Set SUBTITLE_MAINTENANCE_MAX_BYTES to override the default 100000000-byte safety cap.
@@ -150,7 +171,7 @@ Commands:
   queue --limit=5 [--apply]
   status
   inspect --id=<recordingId>
-  delete-legacy --id=<recordingId> --apply
+  delete-legacy --id=<recordingId> [--apply]
 
 Apply guard:
   SUBTITLE_MAINTENANCE_CONFIRM=${requiredConfirm} npm run subtitles:maintenance -- migrate --id=... --apply
@@ -289,6 +310,47 @@ async function deleteLegacyRelativePath(relative: string) {
     relative,
     filePath,
     bytes: before.size,
+  };
+}
+
+async function resolveLegacyDeleteCandidate(relative: string) {
+  const uploadsDir = process.env.LEGACY_DELETE_UPLOADS_DIR;
+  if (!uploadsDir) {
+    throw new Error("LEGACY_DELETE_UPLOADS_DIR is required for legacy deletion.");
+  }
+
+  if (!/^(audio|images)\/[^/?#]+$/.test(relative)) {
+    throw new Error(`Refusing unsafe legacy relative path: ${relative}`);
+  }
+
+  const root = path.resolve(uploadsDir);
+  const filePath = path.resolve(root, relative);
+  if (filePath !== root && !filePath.startsWith(`${root}${path.sep}`)) {
+    throw new Error("Resolved legacy delete path escapes LEGACY_DELETE_UPLOADS_DIR.");
+  }
+
+  const stat = await fs.stat(filePath).catch(() => null);
+  if (!stat?.isFile()) {
+    return {
+      exists: false,
+      relative,
+      filePath,
+      bytes: null,
+      sha256: null,
+    };
+  }
+
+  if (stat.size > maxBytes) {
+    throw new Error(`Refusing to hash/delete ${stat.size} bytes; cap is ${maxBytes}.`);
+  }
+
+  const body = await fs.readFile(filePath);
+  return {
+    exists: true,
+    relative,
+    filePath,
+    bytes: stat.size,
+    sha256: crypto.createHash("sha256").update(body).digest("hex"),
   };
 }
 
@@ -708,27 +770,72 @@ async function inspect(args: Args) {
 
 async function deleteLegacy(args: Args) {
   requireApplyConfirmation(args.apply);
-  if (!args.apply) throw new Error("delete-legacy requires --apply.");
   if (!args.id) throw new Error("delete-legacy requires --id=<recordingId>.");
   if (!process.env.LEGACY_DELETE_UPLOADS_DIR) {
     throw new Error("LEGACY_DELETE_UPLOADS_DIR is required for delete-legacy.");
   }
+  requireR2PublicBase();
 
   const recording = await prisma.recording.findUnique({
     where: { id: args.id },
-    select: {
-      id: true,
-      title: true,
-      audioUrl: true,
-      audioBytes: true,
+    include: {
+      subtitle: true,
     },
   });
   if (!recording) throw new Error(`Recording not found: ${args.id}`);
+  if (!isR2Url(recording.audioUrl)) {
+    throw new Error(`Refusing to delete legacy file because DB audioUrl is not on configured R2 base: ${recording.audioUrl}`);
+  }
 
   const relative = inferLegacyRelativePath(recording.id, recording.audioUrl);
+  const expectedBytes = recording.audioBytes == null ? null : Number(recording.audioBytes);
+  if (expectedBytes != null && (!Number.isFinite(expectedBytes) || expectedBytes <= 0)) {
+    throw new Error(`Recording has invalid audioBytes: ${recording.audioBytes?.toString()}`);
+  }
+
   console.log(`Delete legacy for: ${recording.id} "${recording.title}"`);
   console.log(`Current DB audioUrl: ${recording.audioUrl}`);
   console.log(`Inferred legacy relative path: ${relative}`);
+  console.log(`Subtitle status: ${recording.subtitle?.status ?? "NOT_QUEUED"}`);
+  console.log(`Mode: ${args.apply ? "apply" : "dry-run"}`);
+
+  const r2Verification = await verifyPublicUrl(recording.audioUrl, expectedBytes ?? 0);
+  const r2Hash = await sha256FromPublicUrl(recording.audioUrl);
+  const legacy = await resolveLegacyDeleteCandidate(relative);
+
+  console.log(
+    `R2 verify: ok=${r2Verification.ok} method=${r2Verification.method} status=${r2Verification.status} bytes=${r2Verification.bytes ?? "?"}`,
+  );
+  console.log(`R2 hash: bytes=${r2Hash.bytes} sha256=${r2Hash.sha256}`);
+  console.log(
+    `Legacy file: exists=${legacy.exists} path=${legacy.filePath} bytes=${legacy.bytes ?? "?"} sha256=${legacy.sha256 ?? "?"}`,
+  );
+
+  const bytesMatch =
+    legacy.exists &&
+    r2Hash.bytes === legacy.bytes &&
+    (expectedBytes == null || expectedBytes === legacy.bytes);
+  const hashMatches = legacy.exists && r2Hash.sha256 === legacy.sha256;
+  if (!r2Verification.ok || !bytesMatch || !hashMatches) {
+    throw new Error("Refusing to delete: R2 verification and mounted legacy file do not match.");
+  }
+
+  await appendAudit("legacy_delete_verified", {
+    recordingId: recording.id,
+    title: recording.title,
+    currentAudioUrl: recording.audioUrl,
+    subtitleStatus: recording.subtitle?.status ?? null,
+    relative,
+    legacy,
+    r2Verification,
+    r2Hash,
+    apply: args.apply,
+  });
+
+  if (!args.apply) {
+    console.log("Dry run complete. Legacy file was not deleted.");
+    return;
+  }
 
   const deleted = await deleteLegacyRelativePath(relative);
   console.log(
