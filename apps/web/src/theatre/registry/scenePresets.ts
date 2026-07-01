@@ -16,6 +16,8 @@ export type TheatreTransitionKind =
   | 'crossfade'
   | 'dipToBlack'
 
+export type AudioSensitivity = 'tame' | 'vivid' | 'chaos' | 'nightmare'
+
 export type ScenePresetDef = {
   id: string
   label: string
@@ -24,6 +26,8 @@ export type ScenePresetDef = {
   /** Preset to use instead when prefers-reduced-motion is active. */
   reducedMotionPreset?: string
   weight?: number
+  tags?: string[]
+  audioSensitivity?: AudioSensitivity
   timing?: {
     minDurationMs?: number
     preferredDurationMs?: number

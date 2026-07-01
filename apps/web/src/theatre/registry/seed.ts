@@ -2,6 +2,7 @@ import registry from './index'
 import { registerAnimationPackage } from './registerAnimationPackage'
 import { createIndividualVideoPackages, SEED_VIDEO_ENTRIES } from '../packages/createVideoPackage'
 
+import { albumArtPackage } from '../packages/album-art'
 import { speakerPackage } from '../packages/speaker'
 import { bioMachinePackage } from '../packages/bio-machine'
 import { spinAmpPackage } from '../packages/spin-amp'
@@ -70,6 +71,7 @@ registerObjectTheatreInSeed([
   rampagePackage,
   cruisinPackage,
   speakerPackage,
+  albumArtPackage,
   bioMachinePackage,
   spinAmpPackage,
   weatherSpeakerPackage,

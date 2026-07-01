@@ -14,7 +14,9 @@ export type AnimationOptions = {
   sensitivity?: number
   intensity?: number
   preset?: 'tame' | 'vivid' | 'chaos' | 'nightmare' | string
-  [key: string]: any
+  imageUrl?: string
+  videoUrl?: string
+  [key: string]: unknown
 }
 
 export type SharedContext = {
