@@ -12,7 +12,7 @@ import { playlistPath, profilePath } from "@/lib/routes";
 import { useTopArtists, useTopPlaylists, useTopSongs } from "@/hooks/useCharts";
 import type { ChartsTab } from "@/lib/chartsPageState";
 
-import { CHARTS_PAGE_ITEM_LIMIT, HOME_CHART_RANGE_LABEL } from "./chartConfig";
+import { CHARTS_PAGE_ITEM_LIMIT } from "./chartConfig";
 import { ChartPanelRow } from "./ChartPanelRow";
 import { SkeletonRow } from "./ChartPanelSkeleton";
 import { ChartSongPanelRow } from "./ChartSongPanelRow";
@@ -67,7 +67,6 @@ function ChartsTabPanel({
 }
 
 export function ChartsList({ tab, range, genre }: ChartsListProps) {
-  const rangeLabel = HOME_CHART_RANGE_LABEL[range];
   const { play: playSong } = useChartsPageSongPlayback();
   const { play: playPlaylist, isActive: playlistActive, isPlaying: playlistPlaying } =
     useChartsPagePlaylistPlayback();
@@ -87,9 +86,7 @@ export function ChartsList({ tab, range, genre }: ChartsListProps) {
   const artistsLoading = topArtists.isPending && artists.length === 0;
 
   return (
-    <div>
-
-      <div className="overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]">
+    <>
         <ChartsTabPanel tab="songs" activeTab={tab} label="Top songs">
           {songsLoading ? (
             <ChartsListSkeleton />
@@ -207,7 +204,6 @@ export function ChartsList({ tab, range, genre }: ChartsListProps) {
             </ul>
           )}
         </ChartsTabPanel>
-      </div>
-    </div>
+    </>
   );
 }

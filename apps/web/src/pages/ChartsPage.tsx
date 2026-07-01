@@ -11,7 +11,7 @@ import {
   type ChartsPageState,
 } from "@/lib/chartsPageState";
 
-const CHARTS_LAYOUT_CLASS = "mx-auto min-h-[72vh] max-w-5xl px-4 py-6 sm:px-6";
+const CHARTS_LAYOUT_CLASS = "mx-auto min-h-[72vh] max-w-5xl px-4 py-6 sm:px-6 bg-[var(--color-surface)]/80 rounded-lg p-4";
 
 export function ChartsPage() {
   const [params, setSearchParams] = useSearchParams();
@@ -36,20 +36,19 @@ export function ChartsPage() {
   return (
     <div className={CHARTS_LAYOUT_CLASS}>
       <header className="mb-4">
-        <h1 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl bg-[var(--color-surface)]/80 rounded-lg p-4">Charts</h1>
+        <h1 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl">Charts</h1>
       </header>
 
-      <ChartsFilterBar
-        tab={state.tab}
-        range={state.range}
-        genre={state.genre}
-        genres={genres}
-        onTabChange={(tab) => updateState({ tab })}
-        onRangeChange={(range) => updateState({ range })}
-        onGenreChange={(genre) => updateState({ genre })}
-      />
-
-      <div className="mt-6">
+      <div className="overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]">
+        <ChartsFilterBar
+          tab={state.tab}
+          range={state.range}
+          genre={state.genre}
+          genres={genres}
+          onTabChange={(tab) => updateState({ tab })}
+          onRangeChange={(range) => updateState({ range })}
+          onGenreChange={(genre) => updateState({ genre })}
+        />
         <ChartsList tab={state.tab} range={state.range} genre={state.genre} />
       </div>
     </div>
