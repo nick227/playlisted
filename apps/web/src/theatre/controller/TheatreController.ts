@@ -21,7 +21,7 @@ function presetIdFromUrl(): string | null {
 }
 
 function resolvePresetChoice(reducedMotion: boolean, excludeIds: string[] = []): ScenePresetDef | null {
-  const fromUrl = presetIdFromUrl()
+  const fromUrl = excludeIds.length === 0 ? presetIdFromUrl() : null
   if (fromUrl) {
     const preset = getPreset(fromUrl)
     if (preset) {
@@ -45,14 +45,15 @@ export type TheatreRotationPolicy = {
 }
 
 export const DEFAULT_ROTATION_POLICY: TheatreRotationPolicy = {
-  minSceneMs: 4_000,
-  maxSceneMs: 20_000,
+  minSceneMs: 8_000,
+  maxSceneMs: 120_000,
   clipLengthBias: 'minimum',
   varianceMs: 1_000,
   requireAudioPop: true,
 }
 
 const AUTO_ROTATE_POP_THRESHOLD = 0.02
+const AUTO_ROTATE_MAX_ARMED_WAIT_MS = 5_000
 const PRELOAD_LEAD_MS = 4_000
 const PRELOAD_MIN_DELAY_MS = 2_000
 const MANUAL_PRESET_THROTTLE_MS = 100
@@ -85,6 +86,7 @@ class TheatreController extends EventTarget {
   private autoRotateEnabled = false
   private nextAutoRotateTime = 0
   private autoRotateArmed = false
+  private autoRotateArmedAt = 0
   private manualPresetLatest: string | null = null
   private manualPresetTimerId: number | null = null
   private lastManualPresetStart = 0
@@ -194,7 +196,7 @@ class TheatreController extends EventTarget {
   }
 
   public setAutoRotation(enabled: boolean) {
-    console.log('[TheatreController] setAutoRotation:', enabled)
+    if (import.meta.env.DEV) console.log('[TheatreController] setAutoRotation:', enabled)
     this.autoRotateEnabled = enabled
     if (enabled) {
       this.resetAutoRotateTimer()
@@ -223,7 +225,7 @@ class TheatreController extends EventTarget {
 
   private resetAutoRotateTimer() {
     const policy = DEFAULT_ROTATION_POLICY
-    let baseMin = policy.minSceneMs
+    const baseMin = policy.minSceneMs
 
     // Determine the most accurate duration for the next rotation
     let durationMs: number | null = null
@@ -244,14 +246,17 @@ class TheatreController extends EventTarget {
     }
 
     // Clamp duration between minSceneMs and maxSceneMs so we don't wait the full song length
-    let targetMs = Math.min(durationMs, policy.maxSceneMs)
+    const targetMs = Math.min(durationMs, policy.maxSceneMs)
 
     // Formula: nextSwitchAt = now + max(targetMs, minSceneMs) + randomVariance
     const nextWaitMs = Math.max(targetMs, baseMin) + (Math.random() * policy.varianceMs)
     
     this.nextAutoRotateTime = performance.now() + nextWaitMs
     this.autoRotateArmed = false
-    console.log(`[TheatreController] resetAutoRotateTimer: durationMs=${durationMs.toFixed(0)}, targetMs=${targetMs.toFixed(0)}, baseMin=${baseMin}, nextWaitMs=${nextWaitMs.toFixed(0)}, nextTime=${this.nextAutoRotateTime.toFixed(0)}`)
+    this.autoRotateArmedAt = 0
+    if (import.meta.env.DEV) {
+      console.log(`[TheatreController] resetAutoRotateTimer: durationMs=${durationMs.toFixed(0)}, targetMs=${targetMs.toFixed(0)}, baseMin=${baseMin}, nextWaitMs=${nextWaitMs.toFixed(0)}, nextTime=${this.nextAutoRotateTime.toFixed(0)}`)
+    }
   }
 
   private ensureBackgroundIfNeeded() {
@@ -793,7 +798,8 @@ class TheatreController extends EventTarget {
 
   public async toggle() {
     if (!this.audioEl) this.rebindAudio()
-    if (this.state.active || this.transitioning) return this.exit()
+    if (this.transitioning) return
+    if (this.state.active) return this.exit()
     return this.enter()
   }
 
@@ -1002,6 +1008,8 @@ class TheatreController extends EventTarget {
     theatreBreadcrumb('enter:complete', { presetId: initialPresetId ?? undefined, detail: mode })
     this.deck?.assertInvariants('enter:complete')
     
+    this.resetAutoRotateTimer()
+    this.markRotationComplete()
     this.schedulePreloadNext()
 
     this.revealOverlay(overlay, token)
@@ -1027,13 +1035,30 @@ class TheatreController extends EventTarget {
       
       if (this.autoRotateEnabled && this.state.active && !this.transitioning) {
         if (!this.autoRotateArmed && now >= this.nextAutoRotateTime) {
-          console.log(`[TheatreController] autoRotate timer fired at ${now.toFixed(0)}. ARMING (waiting for pop).`)
+          if (import.meta.env.DEV) {
+            console.log(`[TheatreController] autoRotate timer fired at ${now.toFixed(0)}. ARMING${this.extractor ? ' (waiting for pop).' : ' (no analyser fallback).'}`)
+          }
           this.autoRotateArmed = true
+          this.autoRotateArmedAt = now
         }
-        if (this.autoRotateArmed && this.extractor && this.canRotateNow()) {
-          const features = this.extractor.getFeatures()
-          if (features.flux.overall > AUTO_ROTATE_POP_THRESHOLD) {
-            console.log(`[TheatreController] autoRotate triggered on pop: flux=${features.flux.overall.toFixed(3)} > ${AUTO_ROTATE_POP_THRESHOLD}`)
+        if (this.autoRotateArmed && this.canRotateNow()) {
+          const features = this.extractor?.getFeatures()
+          const armedWaitMs = this.autoRotateArmedAt > 0 ? now - this.autoRotateArmedAt : 0
+          const shouldRotate =
+            !DEFAULT_ROTATION_POLICY.requireAudioPop ||
+            !features ||
+            armedWaitMs >= AUTO_ROTATE_MAX_ARMED_WAIT_MS ||
+            features.flux.overall > AUTO_ROTATE_POP_THRESHOLD
+
+          if (shouldRotate) {
+            if (import.meta.env.DEV) {
+              const reason = features
+                ? armedWaitMs >= AUTO_ROTATE_MAX_ARMED_WAIT_MS
+                  ? `timed fallback: flux=${features.flux.overall.toFixed(3)} <= ${AUTO_ROTATE_POP_THRESHOLD} for ${armedWaitMs.toFixed(0)}ms`
+                  : `pop: flux=${features.flux.overall.toFixed(3)} > ${AUTO_ROTATE_POP_THRESHOLD}`
+                : 'timed fallback: no analyser'
+              console.log(`[TheatreController] autoRotate triggered on ${reason}`)
+            }
             this.resetAutoRotateTimer()
             void this.rotateRandomPreset()
           }

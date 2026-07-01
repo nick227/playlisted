@@ -191,7 +191,7 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
   const chatPanel = chatOpen
     ? createPortal(
       <aside
-        className="fixed bottom-0 right-0 top-[var(--spacing-topbar)] z-[52] flex w-full flex-col border-l border-[var(--color-border)] bg-[var(--color-canvas-alt)] shadow-2xl shadow-black/60 sm:w-[360px]"
+        className="fixed bottom-0 right-0 top-[50%] min-h-[50vh] z-[52] flex w-full rounded-l-xl flex-col border-l border-[var(--color-border)] bg-[var(--color-canvas-alt)] shadow-2xl shadow-black/60 sm:w-[360px]"
       >
         <div className="flex shrink-0 items-center justify-between border-b border-white/[0.06] bg-[var(--color-surface)] px-4 py-3">
           <div className="flex items-center gap-2 text-sm font-bold text-white">
@@ -293,9 +293,6 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
               <Send size={14} />
             </button>
           </form>
-          <p className="mt-1.5 text-[10px] text-[var(--color-text-subtle)]">
-            Enter to send · Shift+Enter for new line
-          </p>
           {chatMutation.isError ? (
             <p className="mt-2 text-xs text-red-400">Message didn&apos;t send. Try again.</p>
           ) : null}
