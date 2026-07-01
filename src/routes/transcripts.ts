@@ -9,8 +9,8 @@ import { srtToSegments, vttToSrt } from "../lib/subtitles/srtUtils.js";
 import { segmentsToVtt } from "../lib/subtitles/vtt.js";
 import { Prisma } from "@prisma/client";
 import { canViewerAccessPlaylist } from "../lib/publicPlaylistFilter.js";
-import { runSubtitleProvider } from "../lib/subtitles/providers/index.js";
-
+import { getSubtitleProvider, runSubtitleProvider } from "../lib/subtitles/providers/index.js";
+import { checkLocalPythonProvider } from "../lib/subtitles/providers/localPythonProvider.js";
 const upload = multer({ storage: multer.memoryStorage() });
 
 export const transcriptsRouter = Router({ mergeParams: true });
@@ -148,7 +148,7 @@ transcriptsRouter.post("/upload", upload.single("file"), async (req, res, next) 
 
     if (fileContent.includes("WEBVTT")) {
       vttText = fileContent;
-      // Note: we could parse vtt to segments here if needed
+      segments = srtToSegments(vttToSrt(fileContent));
     } else {
       // Assuming SRT
       segments = srtToSegments(fileContent);
@@ -204,8 +204,34 @@ transcriptsRouter.post("/generate", async (req, res, next) => {
     if (recording.uploaderId !== auth.user.id && auth.user.role !== "ADMIN") {
       return res.status(401).json({ error: "unauthorized", message: "Not authorized" });
     }
+
+    if (process.env.SUBTITLES_ENABLED === "false" || getSubtitleProvider() === "disabled") {
+      return res.status(503).json({ error: "service_unavailable", message: "Subtitle generation is currently disabled." });
+    }
+
+    if (recording.durationSeconds) {
+      const maxAudioSeconds = Number(process.env.SUBTITLES_MAX_AUDIO_SECONDS ?? 900);
+      if (recording.durationSeconds > maxAudioSeconds) {
+        return res.status(400).json({
+          error: "bad_request",
+          message: `Audio duration ${Math.ceil(recording.durationSeconds)}s exceeds subtitle limit ${maxAudioSeconds}s.`,
+        });
+      }
+    }
     
     const source = provider === "whisper" ? "WHISPER" : "MODAL";
+    const resolvedProvider = source === "WHISPER" ? "whisper" : getSubtitleProvider();
+
+    if (resolvedProvider === "local-python") {
+      try {
+        checkLocalPythonProvider();
+      } catch (err: any) {
+        return res.status(503).json({
+          error: "service_unavailable",
+          message: err.message || "Local python provider is not configured properly.",
+        });
+      }
+    }
 
     // Set other transcripts to inactive
     await prisma.recordingSubtitle.updateMany({

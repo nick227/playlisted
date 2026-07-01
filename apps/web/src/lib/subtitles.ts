@@ -1,7 +1,7 @@
 import { trafficHeaders } from "@/lib/trafficIdentity";
 import type { TranscriptEntity } from "@/types/transcript";
 
-export type SubtitleStatus = "QUEUED" | "PROCESSING" | "READY" | "FAILED";
+export type SubtitleStatus = "MISSING" | "QUEUED" | "PROCESSING" | "READY" | "FAILED";
 
 export type SubtitleSegment = {
   start: number;
@@ -131,7 +131,9 @@ export async function generateTranscript(
     },
     body: JSON.stringify({ provider }),
   });
-  if (!response.ok) throw new Error("Failed to generate transcript");
+  if (!response.ok) {
+    const err = await response.json().catch(() => null);
+    throw new Error(err?.message || "Failed to generate transcript");
+  }
   return response.json();
 }
-

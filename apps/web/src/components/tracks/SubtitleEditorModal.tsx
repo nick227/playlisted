@@ -21,14 +21,35 @@ export function SubtitleEditorModal({ recordingId, recordingTitle, onClose }: Su
   
   const [srtDraft, setSrtDraft] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [generateError, setGenerateError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const effectiveTranscript =
+    transcripts.find((t) => t.isActive && t.status === "READY") ??
+    transcripts.find((t) => t.status === "READY") ??
+    transcripts.find((t) => t.isActive && (t.status === "PROCESSING" || t.status === "QUEUED")) ??
+    transcripts.find((t) => t.status === "PROCESSING" || t.status === "QUEUED") ??
+    transcripts.find((t) => t.isActive) ??
+    transcripts[0];
 
   const fetchAndSetTranscripts = async () => {
     const data = await fetchTranscripts(recordingId, accessToken);
     setTranscripts(data);
-    const active = data.find((t) => t.isActive) || data[0];
+    const active =
+      data.find((t) => t.isActive && t.status === "READY") ??
+      data.find((t) => t.status === "READY") ??
+      data.find((t) => t.isActive && (t.status === "PROCESSING" || t.status === "QUEUED")) ??
+      data.find((t) => t.status === "PROCESSING" || t.status === "QUEUED") ??
+      data.find((t) => t.isActive) ??
+      data[0];
+      
     if (active && active.srtText) {
       setSrtDraft(active.srtText);
+    }
+    
+    // Automatically switch to subtitles tab if the effective one is not ready
+    if (active && active.status !== "READY") {
+      setActiveTab("subtitles");
     }
   };
 
@@ -52,16 +73,18 @@ export function SubtitleEditorModal({ recordingId, recordingTitle, onClose }: Su
     return () => clearInterval(interval);
   }, [transcripts, recordingId, accessToken]);
 
-  const activeTranscript = transcripts.find((t) => t.isActive);
-
   const handleSaveLyrics = async () => {
-    if (!activeTranscript) return;
+    if (!effectiveTranscript) return;
     setIsSaving(true);
     try {
-      await updateTranscript(recordingId, activeTranscript.id, { srtText: srtDraft }, accessToken || "");
+      await updateTranscript(recordingId, effectiveTranscript.id, { srtText: srtDraft, isActive: true }, accessToken || "");
       // Update local state
       setTranscripts((prev) =>
-        prev.map((t) => (t.id === activeTranscript.id ? { ...t, srtText: srtDraft } : t))
+        prev.map((t) => ({
+          ...t,
+          srtText: t.id === effectiveTranscript.id ? srtDraft : t.srtText,
+          isActive: t.id === effectiveTranscript.id,
+        }))
       );
     } finally {
       setIsSaving(false);
@@ -100,6 +123,7 @@ export function SubtitleEditorModal({ recordingId, recordingTitle, onClose }: Su
 
   const handleGenerate = async (provider: "modal" | "whisper") => {
     setLoading(true);
+    setGenerateError(null);
     try {
       const newTranscript = await generateTranscript(recordingId, provider, accessToken || "");
       setTranscripts((prev) => [
@@ -107,6 +131,9 @@ export function SubtitleEditorModal({ recordingId, recordingTitle, onClose }: Su
         ...prev.map((t) => ({ ...t, isActive: false })),
       ]);
       setSrtDraft("");
+      setActiveTab("subtitles");
+    } catch (err: any) {
+      setGenerateError(err.message || "Failed to generate transcript");
     } finally {
       setLoading(false);
     }
@@ -170,7 +197,7 @@ Lyrics in SRT format..."
                 <button
                   className="rounded bg-emerald-500 px-6 py-2 font-semibold text-black hover:bg-emerald-400 disabled:opacity-50"
                   onClick={handleSaveLyrics}
-                  disabled={isSaving || !activeTranscript}
+                  disabled={isSaving || !effectiveTranscript}
                 >
                   {isSaving ? "Saving..." : "Save Changes"}
                 </button>
@@ -178,6 +205,11 @@ Lyrics in SRT format..."
             </div>
           ) : (
             <div className="flex flex-1 flex-col overflow-y-auto p-4">
+              {generateError && (
+                <div className="mb-4 rounded-lg bg-red-500/10 border border-red-500/20 p-3 text-sm text-red-400">
+                  {generateError}
+                </div>
+              )}
               {/* Generation Actions */}
               <div className="mb-8 grid grid-cols-3 gap-3">
                 <button
@@ -245,19 +277,25 @@ Lyrics in SRT format..."
                                 ACTIVE
                               </span>
                             )}
-                            {(t.status === "QUEUED" || t.status === "PROCESSING") && (
+                            {t.status === "QUEUED" && (
                               <span className="flex items-center gap-1 rounded bg-blue-500/20 px-1.5 py-0.5 text-[10px] font-bold text-blue-300">
+                                <Loader2 size={12} className="animate-spin" />
+                                QUEUED (WAITING)
+                              </span>
+                            )}
+                            {t.status === "PROCESSING" && (
+                              <span className="flex items-center gap-1 rounded bg-purple-500/20 px-1.5 py-0.5 text-[10px] font-bold text-purple-300">
                                 <Loader2 size={12} className="animate-spin" />
                                 GENERATING
                               </span>
                             )}
                             {t.status === "FAILED" && (
-                              <div className="flex flex-col gap-1">
+                              <div className="flex flex-col gap-1 mt-1">
                                 <span className="flex items-center gap-1 w-max rounded bg-red-500/20 px-1.5 py-0.5 text-[10px] font-bold text-red-300">
                                   FAILED
                                 </span>
                                 {t.errorMessage && (
-                                  <span className="text-[10px] text-red-400/80 italic max-w-xs truncate" title={t.errorMessage}>
+                                  <span className="text-xs text-red-400/80 italic bg-red-500/10 p-2 rounded max-w-full break-words">
                                     {t.errorMessage}
                                   </span>
                                 )}

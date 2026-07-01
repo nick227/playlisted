@@ -10,6 +10,7 @@ import { requireAuth } from "../lib/requireAuth.js";
 import { prisma } from "../lib/prisma.js";
 import { parsePageSize, parsePositivePage } from "../lib/pagination.js";
 import { mapSubtitleSummary, subtitleInclude } from "../lib/subtitles/summary.js";
+import { srtToSegments, vttToSrt } from "../lib/subtitles/srtUtils.js";
 import { transcriptsRouter } from "./transcripts.js";
 
 const DEFAULT_PAGE = 1;
@@ -337,7 +338,18 @@ recordingsRouter.get("/:recordingId/subtitles", async (req, res, next) => {
       include: {
         uploader: { select: { id: true } },
         publishedPlaylist: true,
-        subtitles: { where: { isActive: true }, take: 1 },
+        subtitles: {
+          orderBy: [{ isActive: "desc" }, { createdAt: "desc" }],
+          select: {
+            status: true,
+            language: true,
+            segments: true,
+            vttText: true,
+            errorMessage: true,
+            isActive: true,
+            createdAt: true,
+          },
+        },
       },
     });
 
@@ -359,10 +371,18 @@ recordingsRouter.get("/:recordingId/subtitles", async (req, res, next) => {
     }
 
     if (!recording.subtitles || recording.subtitles.length === 0) {
-      return res.json({ status: "QUEUED" });
+      return res.json({ status: "MISSING" });
     }
 
-    const activeSubtitle = recording.subtitles[0];
+    const activeSubtitle =
+      recording.subtitles.find((subtitle) => subtitle.isActive && subtitle.status === "READY") ??
+      recording.subtitles.find((subtitle) => subtitle.status === "READY") ??
+      recording.subtitles.find(
+        (subtitle) =>
+          subtitle.isActive && (subtitle.status === "PROCESSING" || subtitle.status === "QUEUED"),
+      ) ??
+      recording.subtitles.find((subtitle) => subtitle.status === "PROCESSING" || subtitle.status === "QUEUED") ??
+      recording.subtitles[0];
 
     if (activeSubtitle.status !== "READY") {
       const canSeeRawError =
@@ -377,10 +397,19 @@ recordingsRouter.get("/:recordingId/subtitles", async (req, res, next) => {
       });
     }
 
+    const storedSegments = Array.isArray(activeSubtitle.segments)
+      ? activeSubtitle.segments
+      : [];
+    const segments = storedSegments.length > 0
+      ? storedSegments
+      : activeSubtitle.vttText
+        ? srtToSegments(vttToSrt(activeSubtitle.vttText))
+        : [];
+
     return res.json({
       status: activeSubtitle.status,
       language: activeSubtitle.language,
-      segments: activeSubtitle.segments ?? [],
+      segments,
       vttText: activeSubtitle.vttText ?? "",
     });
   } catch (error) {

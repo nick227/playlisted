@@ -20,6 +20,8 @@ interface AppShellProps {
   children: ReactNode;
 }
 
+type PlayFocusArmReason = "initial" | "activity";
+
 export function AppShell({ children }: AppShellProps) {
   const mainRef = useRef<HTMLElement | null>(null);
   const bodyFocusTimerRef = useRef<number | null>(null);
@@ -107,18 +109,17 @@ export function AppShell({ children }: AppShellProps) {
     snapRevealTimerRef.current = null;
   }, []);
 
-  const armPlayFocus = useCallback(() => {
+  const armPlayFocus = useCallback((reason: PlayFocusArmReason = "initial") => {
     clearFocusTimer();
     setBodyFocusHidden(false);
     setBodyFadedAtTrackMs(null);
     setMiniViewVisible(false);
     if (!playFocusActive || playbackFocusSuppressed) return;
-    const bodyDelayMs = playbackFocusTiming.body.delayMs > 0
-      ? playbackFocusTiming.body.delayMs
-      : 3000;
-    const miniViewDelayMs = playbackFocusTiming.miniView.delayMs > 0
-      ? playbackFocusTiming.miniView.delayMs
-      : 3000;
+    const bodyDelayMs =
+      reason === "activity"
+        ? playbackFocusTiming.body.restoreDelayMs
+        : playbackFocusTiming.body.delayMs;
+    const miniViewDelayMs = playbackFocusTiming.miniView.delayMs;
     bodyFocusTimerRef.current = window.setTimeout(() => {
       setBodyFocusHidden(true);
       setBodyFadedAtTrackMs(currentTimeMsRef.current);
@@ -141,7 +142,7 @@ export function AppShell({ children }: AppShellProps) {
   }, [clearFocusTimer, playbackFocusSuppressed]);
 
   useEffect(() => {
-    armPlayFocus();
+    armPlayFocus("initial");
     return () => {
       clearFocusTimer();
       clearSnapRevealTimer();
@@ -152,7 +153,7 @@ export function AppShell({ children }: AppShellProps) {
     if (!playFocusActive) return;
 
     const onUserActivity = () => {
-      armPlayFocus();
+      armPlayFocus("activity");
     };
 
     window.addEventListener("pointermove", onUserActivity, { passive: true });
@@ -178,7 +179,7 @@ export function AppShell({ children }: AppShellProps) {
     if (!bodyFocusHidden && !miniViewVisible) return;
     clearSnapRevealTimer();
     setSnapReveal(true);
-    armPlayFocus();
+    armPlayFocus("activity");
     snapRevealTimerRef.current = window.setTimeout(() => {
       setSnapReveal(false);
       snapRevealTimerRef.current = null;

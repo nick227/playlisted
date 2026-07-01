@@ -1584,7 +1584,7 @@ export interface components {
             total: number;
         };
         /** @enum {string} */
-        SubtitleStatus: "QUEUED" | "PROCESSING" | "READY" | "FAILED";
+        SubtitleStatus: "MISSING" | "QUEUED" | "PROCESSING" | "READY" | "FAILED";
         RecordingSubtitleSummary: {
             status: components["schemas"]["SubtitleStatus"];
             language?: string | null;
@@ -6696,7 +6696,15 @@ export interface operations {
                     "application/json": components["schemas"]["TranscriptEntity"][];
                 };
             };
-            404: components["schemas"]["ErrorResponse"];
+            /** @description Recording not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
     updateTranscript: {
@@ -6727,8 +6735,24 @@ export interface operations {
                     "application/json": components["schemas"]["TranscriptEntity"];
                 };
             };
-            401: components["schemas"]["ErrorResponse"];
-            404: components["schemas"]["ErrorResponse"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Transcript not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
     uploadTranscript: {

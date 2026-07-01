@@ -6,6 +6,12 @@ export const playbackFocusTiming = {
     exitBufferMs: 380,
   },
 
+  body: {
+    delayMs: 6000,
+    restoreDelayMs: 3000,
+    fadeOutMs: 2000,
+  },
+
   focusLane: {
     delayMs: 0,
     fadeInMs: 1200,
@@ -13,22 +19,22 @@ export const playbackFocusTiming = {
     exitBufferMs: 180,
   },
 
-  titleIntro: {
-    delayMs: 0,
-    minVisibleMs: 2800,
-    fadeInMs: 900,
-    fadeOutMs: 650,
-  },
-
   artistVisual: {
-    gapAfterTitleIntroMs: 200,
+    gapAfterTitleIntroMs: 0,
     minVisibleMs: 5000,
     fadeInMs: 900,
     fadeOutMs: 900,
   },
 
+  titleIntro: {
+    delayMs: 5000,
+    minVisibleMs: 2800,
+    fadeInMs: 900,
+    fadeOutMs: 650,
+  },
+
   fallbackSubtitle: {
-    gapAfterArtistMs: 200,
+    gapAfterArtistMs: 7000,
     fadeInMs: 900,
     fadeOutMs: 650,
     maxVisibleMs: 5000,
@@ -37,11 +43,6 @@ export const playbackFocusTiming = {
   miniView: {
     delayMs: 3000,
     fadeInMs: 620,
-  },
-
-  body: {
-    delayMs: 5000,
-    fadeOutMs: 2000,
   },
 
   sidebarNav: {
