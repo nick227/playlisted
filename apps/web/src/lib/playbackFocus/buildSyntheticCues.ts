@@ -9,8 +9,8 @@ export function buildSyntheticSubtitleCues(recording: FocusRecording): Synthetic
   cues.push({
     id: "title-intro",
     source: "title-intro",
-    startMs: titleIntro.startMs,
-    endMs: titleIntro.startMs + titleIntro.minVisibleMs + titleIntro.fadeOutMs,
+    startMs: titleIntro.delayMs,
+    endMs: titleIntro.delayMs + titleIntro.minVisibleMs + titleIntro.fadeOutMs,
     text: recording.title,
     priority: 20,
   });

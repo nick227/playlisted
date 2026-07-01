@@ -60,7 +60,7 @@ export function resolvePlaybackFocusFixture(input: ResolvePlaybackFocusInput): P
   }
 
   const titleCue = findActiveSyntheticCue(syntheticCues, currentTimeMs, "title-intro");
-  if (titleCue?.text.trim()) {
+  if (titleCue?.text.trim() && canShowPostBodyFixture(focusState)) {
     return {
       type: "fallbackSubtitle",
       text: titleCue.text.trim(),

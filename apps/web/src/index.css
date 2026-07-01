@@ -107,7 +107,7 @@ body {
 
 .focus-lane--title-intro.is-visible {
   transition-duration: var(--duration-title-intro-fade-in);
-  transition-delay: 0ms;
+  transition-delay: var(--delay-title-intro);
 }
 
 .focus-lane--fallback.is-visible {

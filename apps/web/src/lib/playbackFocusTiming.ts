@@ -14,7 +14,7 @@ export const playbackFocusTiming = {
   },
 
   titleIntro: {
-    startMs: 0,
+    delayMs: 3000,
     minVisibleMs: 2800,
     fadeInMs: 900,
     fadeOutMs: 650,
@@ -65,6 +65,7 @@ export function applyPlaybackFocusTimingCssVars(root: HTMLElement) {
   root.style.setProperty("--duration-focus-lane-fade-out", ms(playbackFocusTiming.focusLane.fadeOutMs));
   root.style.setProperty("--duration-focus-lane-exit-buffer", ms(playbackFocusTiming.focusLane.exitBufferMs));
 
+  root.style.setProperty("--delay-title-intro", ms(playbackFocusTiming.titleIntro.delayMs));
   root.style.setProperty("--duration-title-intro-fade-in", ms(playbackFocusTiming.titleIntro.fadeInMs));
   root.style.setProperty("--duration-title-intro-fade-out", ms(playbackFocusTiming.titleIntro.fadeOutMs));
 
