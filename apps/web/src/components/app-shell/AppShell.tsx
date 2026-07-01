@@ -96,15 +96,21 @@ export function AppShell({ children }: AppShellProps) {
     setBodyFocusHidden(false);
     setMiniViewVisible(false);
     if (!playFocusActive) return;
+    const bodyDelayMs = playbackFocusTiming.body.delayMs > 0
+      ? playbackFocusTiming.body.delayMs
+      : 3000;
+    const miniViewDelayMs = playbackFocusTiming.miniView.delayMs > 0
+      ? playbackFocusTiming.miniView.delayMs
+      : 3000;
     bodyFocusTimerRef.current = window.setTimeout(() => {
       setBodyFocusHidden(true);
       bodyFocusTimerRef.current = null;
-    }, playbackFocusTiming.body.delayMs);
+    }, bodyDelayMs);
     if (focusTrack?.sourceLabel === "Radio") {
       miniViewTimerRef.current = window.setTimeout(() => {
         setMiniViewVisible(true);
         miniViewTimerRef.current = null;
-      }, playbackFocusTiming.miniView.delayMs);
+      }, miniViewDelayMs);
     }
   }, [clearFocusTimer, playFocusActive, focusTrack?.sourceLabel]);
 
