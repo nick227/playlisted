@@ -5,6 +5,7 @@ import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 import { useRadioPlayer } from "@/providers/RadioPlayerProvider";
 import { useActivePlayback } from "@/hooks/useActivePlayback";
 import { playbackFocusTiming } from "@/lib/playbackFocusTiming";
+import { getRadioSeekTime } from "@/lib/radio/radioPlayback";
 import { usePlaybackFocusSuppressed } from "@/lib/playbackFocusSuppression";
 
 import { BackgroundLayer } from "./BackgroundLayer";
@@ -112,7 +113,17 @@ export function AppShell({ children }: AppShellProps) {
       : 3000;
     bodyFocusTimerRef.current = window.setTimeout(() => {
       setBodyFocusHidden(true);
-      setBodyFadedAtTrackMs(currentTimeMsRef.current);
+      let trackMs = currentTimeMsRef.current;
+      if (radioPlaying && radioNowPlaying) {
+        const stationMs = getRadioSeekTime(
+          radioNowPlaying.elapsedSeconds,
+          radioNowPlaying.durationSeconds,
+        ) * 1000;
+        if (trackMs < 500) {
+          trackMs = stationMs;
+        }
+      }
+      setBodyFadedAtTrackMs(trackMs);
       bodyFocusTimerRef.current = null;
     }, bodyDelayMs);
     if (focusTrack?.sourceLabel === "Radio") {
@@ -121,7 +132,7 @@ export function AppShell({ children }: AppShellProps) {
         miniViewTimerRef.current = null;
       }, miniViewDelayMs);
     }
-  }, [clearFocusTimer, playFocusActive, playbackFocusSuppressed, focusTrack?.sourceLabel]);
+  }, [clearFocusTimer, playFocusActive, playbackFocusSuppressed, focusTrack?.sourceLabel, radioNowPlaying, radioPlaying]);
 
   useEffect(() => {
     if (!playbackFocusSuppressed) return;

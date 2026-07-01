@@ -33,24 +33,11 @@ function canShowFocusLane(focusState: PlaybackFocusState): boolean {
   return focusState.playFocusActive && focusState.hasBodyFaded;
 }
 
-function resolveSyntheticFixture(input: {
-  focusLaneElapsedMs: number;
-  syntheticCues: SyntheticSubtitleCue[];
-  artist: FocusArtist | null;
-}): PlaybackFocusFixture | null {
-  const { focusLaneElapsedMs, syntheticCues, artist } = input;
+function resolveArtistVisualFixture(
+  focusLaneElapsedMs: number,
+  artist: FocusArtist | null,
+): PlaybackFocusFixture | null {
   const { artistStart, artistEnd } = getFocusLaneSequenceWindows();
-
-  const titleCue = findActiveSyntheticCue(syntheticCues, focusLaneElapsedMs, "title-intro");
-  if (titleCue?.text.trim()) {
-    return {
-      type: "fallbackSubtitle",
-      text: titleCue.text.trim(),
-      key: titleCue.id,
-      source: titleCue.source,
-    };
-  }
-
   if (
     focusLaneElapsedMs >= artistStart &&
     focusLaneElapsedMs < artistEnd &&
@@ -62,6 +49,35 @@ function resolveSyntheticFixture(input: {
       imageUrl: artist.imageUrl ?? undefined,
       bioLine: artist.bioLine ?? undefined,
     };
+  }
+  return null;
+}
+
+function resolveSyntheticFixture(input: {
+  focusLaneElapsedMs: number;
+  syntheticCues: SyntheticSubtitleCue[];
+  artist: FocusArtist | null;
+  isRadio: boolean;
+}): PlaybackFocusFixture | null {
+  const { focusLaneElapsedMs, syntheticCues, artist, isRadio } = input;
+
+  if (isRadio) {
+    return resolveArtistVisualFixture(focusLaneElapsedMs, artist);
+  }
+
+  const titleCue = findActiveSyntheticCue(syntheticCues, focusLaneElapsedMs, "title-intro");
+  if (titleCue?.text.trim()) {
+    return {
+      type: "fallbackSubtitle",
+      text: titleCue.text.trim(),
+      key: titleCue.id,
+      source: titleCue.source,
+    };
+  }
+
+  const artistVisual = resolveArtistVisualFixture(focusLaneElapsedMs, artist);
+  if (artistVisual) {
+    return artistVisual;
   }
 
   const fallbackCue = findActiveSyntheticCue(syntheticCues, focusLaneElapsedMs);
@@ -94,6 +110,8 @@ export function resolvePlaybackFocusFixture(input: ResolvePlaybackFocusInput): P
     currentTimeMs,
     subtitleSegments,
     subtitleReady,
+    awaitingSubtitles,
+    isRadio,
     syntheticCues,
     artist,
     recording,
@@ -111,16 +129,18 @@ export function resolvePlaybackFocusFixture(input: ResolvePlaybackFocusInput): P
     subtitleSegments,
   });
 
-  if (usableSubtitles) {
-    const currentTimeSec = currentTimeMs / 1000;
-    const activeSegment = findActiveSegment(subtitleSegments!, currentTimeSec);
-    const text = activeSegment?.text.trim();
-    if (text) {
-      return {
-        type: "subtitle",
-        text,
-        cueId: `real:${activeSegment?.start ?? 0}-${activeSegment?.end ?? 0}`,
-      };
+  if (subtitlesEnabled && (usableSubtitles || awaitingSubtitles)) {
+    if (usableSubtitles) {
+      const currentTimeSec = currentTimeMs / 1000;
+      const activeSegment = findActiveSegment(subtitleSegments!, currentTimeSec);
+      const text = activeSegment?.text.trim();
+      if (text) {
+        return {
+          type: "subtitle",
+          text,
+          cueId: `real:${activeSegment?.start ?? 0}-${activeSegment?.end ?? 0}`,
+        };
+      }
     }
 
     return { type: "none" };
@@ -131,9 +151,18 @@ export function resolvePlaybackFocusFixture(input: ResolvePlaybackFocusInput): P
     focusState.bodyFadedAtTrackMs,
   );
 
-  const synthetic = resolveSyntheticFixture({ focusLaneElapsedMs, syntheticCues, artist });
+  const synthetic = resolveSyntheticFixture({
+    focusLaneElapsedMs,
+    syntheticCues,
+    artist,
+    isRadio,
+  });
   if (synthetic) {
     return synthetic;
+  }
+
+  if (isRadio) {
+    return { type: "none" };
   }
 
   const title = recording?.title?.trim();
