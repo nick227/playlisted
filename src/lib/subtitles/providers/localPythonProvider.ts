@@ -2,8 +2,8 @@ import { spawn, spawnSync } from "node:child_process";
 import { once } from "node:events";
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 
+import { getBackendRoot } from "../../projectRoot.js";
 import type { SubtitleSegment } from "../vtt.js";
 import type { SubtitleProviderInput, SubtitleProviderResult } from "./types.js";
 
@@ -16,8 +16,7 @@ const whisperModel = process.env.SUBTITLES_WHISPER_MODEL ?? "tiny";
 const maxRuntimeSeconds = Number(process.env.SUBTITLES_MAX_RUNTIME_SECONDS ?? 1_200);
 
 export function getProjectRoot() {
-  const currentDir = path.dirname(fileURLToPath(import.meta.url));
-  return path.resolve(currentDir, "../../../../");
+  return getBackendRoot();
 }
 
 export function getPythonCommand() {
@@ -37,17 +36,28 @@ export function getPythonCommand() {
   return "python3";
 }
 
+export function resolveLocalPythonCommand() {
+  const pythonCommand = getPythonCommand();
+  if (pythonCommand === "python3") {
+    throw new Error(
+      `No project virtualenv python found under ${getProjectRoot()}. Expected .venv or .modal-venv, or set SUBTITLES_PYTHON_COMMAND.`,
+    );
+  }
+  return pythonCommand;
+}
+
 export function checkLocalPythonProvider() {
-  const pythonCmd = getPythonCommand();
+  const pythonCmd = resolveLocalPythonCommand();
   const result = spawnSync(pythonCmd, ["-c", "import faster_whisper"], { encoding: "utf8" });
   if (result.status !== 0) {
     const detail = (result.stderr || result.stdout || "").trim();
     throw new Error(`faster-whisper is not installed or could not be imported using '${pythonCmd}'. Detail: ${detail}`);
   }
+  return pythonCmd;
 }
 
 export async function runLocalPythonProvider(input: SubtitleProviderInput): Promise<SubtitleProviderResult> {
-  const pythonCommand = getPythonCommand();
+  const pythonCommand = resolveLocalPythonCommand();
   const projectRoot = getProjectRoot();
   const args = [
     "scripts/transcribe.py",

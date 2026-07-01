@@ -2,7 +2,6 @@ import "dotenv/config";
 
 import {
   checkLocalPythonProvider,
-  getPythonCommand,
 } from "../src/lib/subtitles/providers/localPythonProvider.ts";
 
 function requireMysqlPublicUrl() {
@@ -34,7 +33,9 @@ function requireMysqlPublicUrl() {
 async function main() {
   process.env.DATABASE_URL = requireMysqlPublicUrl();
   process.env.SUBTITLES_PROVIDER = "local-python";
-  process.env.SUBTITLES_PYTHON_COMMAND = process.env.PROD_LOCAL_SUBTITLES_PYTHON_COMMAND ?? getPythonCommand();
+  if (process.env.PROD_LOCAL_SUBTITLES_PYTHON_COMMAND) {
+    process.env.SUBTITLES_PYTHON_COMMAND = process.env.PROD_LOCAL_SUBTITLES_PYTHON_COMMAND;
+  }
   process.env.SUBTITLES_DEVICE = process.env.PROD_LOCAL_SUBTITLES_DEVICE ?? "cuda";
   process.env.SUBTITLES_COMPUTE_TYPE = process.env.PROD_LOCAL_SUBTITLES_COMPUTE_TYPE ?? "float16";
   process.env.SUBTITLES_WHISPER_MODEL = process.env.PROD_LOCAL_SUBTITLES_WHISPER_MODEL ?? "small";
@@ -46,7 +47,7 @@ async function main() {
   } else {
     process.env.SUBTITLES_LANGUAGE = language;
   }
-  checkLocalPythonProvider();
+  process.env.SUBTITLES_PYTHON_COMMAND = checkLocalPythonProvider();
 
   const hasLimit = process.argv.some((arg) => arg.startsWith("--limit="));
   if (!process.argv.includes("--once") && !hasLimit) {

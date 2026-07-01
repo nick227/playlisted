@@ -3,6 +3,8 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import { fileURLToPath } from "node:url";
 
+import { getBackendRoot } from "../projectRoot.js";
+
 const ABSOLUTE_URL_RE = /^https?:\/\//i;
 
 function localUploadPath(audioUrl: string) {
@@ -16,7 +18,7 @@ function localUploadPath(audioUrl: string) {
     throw new Error("Only local uploaded audio files can be transcribed by this worker.");
   }
 
-  const uploadsDir = path.resolve(process.cwd(), process.env.UPLOADS_DIR ?? "uploads");
+  const uploadsDir = path.resolve(getBackendRoot(), process.env.UPLOADS_DIR ?? "uploads");
   const relative = fileURLToPath(`file://${pathname}`).replace(/^\/uploads\//, "");
   const resolved = path.resolve(uploadsDir, relative);
 

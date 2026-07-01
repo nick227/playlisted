@@ -6,7 +6,10 @@ import fs from "node:fs/promises";
 import { prisma } from "../lib/prisma.js";
 import { prepareSubtitleAudioFile } from "../lib/subtitles/audioFile.js";
 import { getSubtitleProvider, runSubtitleProvider } from "../lib/subtitles/providers/index.js";
-import { checkLocalPythonProvider } from "../lib/subtitles/providers/localPythonProvider.js";
+import {
+  checkLocalPythonProvider,
+  getProjectRoot,
+} from "../lib/subtitles/providers/localPythonProvider.js";
 import { segmentsToVtt } from "../lib/subtitles/vtt.js";
 
 const sleepMs = Number(process.env.SUBTITLES_WORKER_SLEEP_MS ?? 10_000);
@@ -322,8 +325,10 @@ async function main() {
     log("subtitle.worker.provider_disabled");
     return;
   }
+  let localPythonCommand: string | null = null;
   if (provider === "local-python") {
-    checkLocalPythonProvider();
+    localPythonCommand = checkLocalPythonProvider();
+    process.env.SUBTITLES_PYTHON_COMMAND = localPythonCommand;
   }
 
   log("subtitle.worker.start", {
@@ -335,6 +340,9 @@ async function main() {
     whisperModel,
     backfill: "manual_only",
     requireModalProvider,
+    ...(localPythonCommand
+      ? { localPythonCommand, projectRoot: getProjectRoot() }
+      : {}),
   });
 
   await resetStaleProcessingRows();
