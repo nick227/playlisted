@@ -508,7 +508,7 @@ export function CollectionView({
             <button
               type="button"
               onClick={handleShare}
-              className="inline-flex h-10 w-20 items-center justify-center rounded-full border border-white/20 text-white hover:bg-white/10"
+              className="inline-flex h-10 w-30 items-center justify-center rounded-full border border-white/20 text-white hover:bg-white/10"
               aria-label="Share"
             >
               <Share2 size={18} />
@@ -522,7 +522,7 @@ export function CollectionView({
             {isOwner ? (
               <Link
                 to={studioCollectionEditPath(playlist.id)}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/20 text-white hover:bg-white/10"
+                className="inline-flex h-10 w-30 items-center justify-center rounded-full border border-white/20 text-white hover:bg-white/10"
                 aria-label="Edit playlist"
                 title="Edit"
               >
@@ -550,7 +550,7 @@ export function CollectionView({
                       : "Add to collections"
                 }
                 className={[
-                  "inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/20 text-white transition hover:bg-white/10",
+                  "inline-flex h-10 w-30 items-center justify-center rounded-full border border-white/20 text-white transition hover:bg-white/10",
                   collectionAdded ? "bg-white/10" : "",
                 ].join(" ")}
               >
