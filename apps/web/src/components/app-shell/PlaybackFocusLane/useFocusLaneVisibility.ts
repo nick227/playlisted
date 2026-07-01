@@ -1,0 +1,75 @@
+import { useEffect, useMemo, useRef, useState } from "react";
+
+import { getFixtureFadeOutMs } from "@/lib/playbackFocus/resolvePlaybackFocusFixture";
+import type { PlaybackFocusFixture } from "@/lib/playbackFocus/types";
+
+function fixtureKey(fixture: PlaybackFocusFixture | null): string {
+  if (!fixture || fixture.type === "none") return "none";
+  if (fixture.type === "subtitle") return `subtitle:${fixture.cueId}:${fixture.text}`;
+  if (fixture.type === "fallbackSubtitle") return `fallback:${fixture.key}:${fixture.text}`;
+  return `artist:${fixture.artistName}:${fixture.imageUrl ?? "none"}`;
+}
+
+function fixtureVariantClass(fixture: PlaybackFocusFixture | null): string {
+  if (!fixture || fixture.type === "none") return "";
+  if (fixture.type === "subtitle") return " focus-lane--subtitle";
+  if (fixture.type === "artistVisual") return " focus-lane--artist-visual";
+  if (fixture.source === "title-intro") return " focus-lane--title-intro";
+  return " focus-lane--fallback";
+}
+
+export function useFocusLaneVisibility(activeFixture: PlaybackFocusFixture) {
+  const [renderedFixture, setRenderedFixture] = useState<PlaybackFocusFixture | null>(null);
+  const [layerVisible, setLayerVisible] = useState(false);
+  const renderedFixtureRef = useRef<PlaybackFocusFixture | null>(null);
+  const activeKey = fixtureKey(activeFixture);
+  const hasActiveContent = activeFixture.type !== "none";
+
+  useEffect(() => {
+    renderedFixtureRef.current = renderedFixture;
+  }, [renderedFixture]);
+
+  useEffect(() => {
+    if (hasActiveContent) {
+      setRenderedFixture(activeFixture);
+      if (renderedFixtureRef.current && renderedFixtureRef.current.type !== "none") {
+        setLayerVisible(true);
+        return;
+      }
+
+      setLayerVisible(false);
+      let secondFrame: number | null = null;
+      const firstFrame = window.requestAnimationFrame(() => {
+        secondFrame = window.requestAnimationFrame(() => {
+          setLayerVisible(true);
+        });
+      });
+
+      return () => {
+        window.cancelAnimationFrame(firstFrame);
+        if (secondFrame !== null) window.cancelAnimationFrame(secondFrame);
+      };
+    }
+
+    setLayerVisible(false);
+    const previous = renderedFixtureRef.current;
+    if (!previous || previous.type === "none") {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      setRenderedFixture(null);
+    }, getFixtureFadeOutMs(previous));
+
+    return () => window.clearTimeout(timeout);
+  }, [activeFixture, activeKey, hasActiveContent]);
+
+  const displayFixture = hasActiveContent ? activeFixture : renderedFixture;
+  const variantClass = useMemo(() => fixtureVariantClass(displayFixture), [displayFixture]);
+
+  return {
+    displayFixture,
+    layerVisible: layerVisible && displayFixture?.type !== "none",
+    variantClass,
+  };
+}

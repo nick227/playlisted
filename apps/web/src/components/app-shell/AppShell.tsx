@@ -11,7 +11,7 @@ import { BottomPlayer } from "./BottomPlayer";
 import { PlaybackFocusLayer, type PlaybackFocusTrack } from "./PlaybackFocusLayer";
 import { QueuePanel } from "./QueuePanel";
 import { Sidebar } from "./Sidebar";
-import { SubtitleLayer } from "./SubtitleLayer";
+import { PlaybackFocusLane } from "./PlaybackFocusLane/PlaybackFocusLane";
 import { TopBar } from "./TopBar";
 
 interface AppShellProps {
@@ -162,6 +162,13 @@ export function AppShell({ children }: AppShellProps) {
   const bodyFocusMode = playFocusActive && bodyFocusHidden;
   const miniViewMode = playFocusActive && miniViewVisible;
   const playFocusHasPlayer = playerShellActive;
+  const focusState = useMemo(
+    () => ({
+      playFocusActive,
+      hasBodyFaded: bodyFocusMode,
+    }),
+    [bodyFocusMode, playFocusActive],
+  );
 
   return (
     <div className="relative flex min-h-full w-full max-w-full overflow-x-clip bg-transparent">
@@ -205,7 +212,7 @@ export function AppShell({ children }: AppShellProps) {
         snapReveal={snapReveal}
       />
       <BottomPlayer />
-      <SubtitleLayer visible={bodyFocusMode} />
+      <PlaybackFocusLane focusState={focusState} />
       <QueuePanel />
     </div>
   );
