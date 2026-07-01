@@ -1,8 +1,9 @@
 import "dotenv/config";
 
-import { spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
-import path from "node:path";
+import {
+  checkLocalPythonProvider,
+  getPythonCommand,
+} from "../src/lib/subtitles/providers/localPythonProvider.ts";
 
 function requireMysqlPublicUrl() {
   const value = process.env.MYSQL_PUBLIC_URL;
@@ -30,37 +31,10 @@ function requireMysqlPublicUrl() {
   return value;
 }
 
-function defaultPythonCommand() {
-  const localVenvPython = path.resolve(process.cwd(), ".venv/bin/python");
-  if (existsSync(localVenvPython)) return localVenvPython;
-  const modalVenvPython = path.resolve(process.cwd(), ".modal-venv/bin/python");
-  if (existsSync(modalVenvPython)) return modalVenvPython;
-  return "python3";
-}
-
-function assertFasterWhisperInstalled(pythonCommand: string) {
-  const result = spawnSync(pythonCommand, ["-c", "import faster_whisper"], {
-    cwd: process.cwd(),
-    encoding: "utf8",
-  });
-
-  if (result.status !== 0) {
-    const detail = (result.stderr || result.stdout || "").trim();
-    throw new Error(
-      [
-        `Python preflight failed for ${pythonCommand}.`,
-        "Install faster-whisper in that interpreter before running the prod-local worker.",
-        "Suggested command: <venv>/bin/python -m pip install faster-whisper",
-        detail ? `Python said: ${detail}` : "",
-      ].filter(Boolean).join("\n"),
-    );
-  }
-}
-
 async function main() {
   process.env.DATABASE_URL = requireMysqlPublicUrl();
   process.env.SUBTITLES_PROVIDER = "local-python";
-  process.env.SUBTITLES_PYTHON_COMMAND = process.env.PROD_LOCAL_SUBTITLES_PYTHON_COMMAND ?? defaultPythonCommand();
+  process.env.SUBTITLES_PYTHON_COMMAND = process.env.PROD_LOCAL_SUBTITLES_PYTHON_COMMAND ?? getPythonCommand();
   process.env.SUBTITLES_DEVICE = process.env.PROD_LOCAL_SUBTITLES_DEVICE ?? "cuda";
   process.env.SUBTITLES_COMPUTE_TYPE = process.env.PROD_LOCAL_SUBTITLES_COMPUTE_TYPE ?? "float16";
   process.env.SUBTITLES_WHISPER_MODEL = process.env.PROD_LOCAL_SUBTITLES_WHISPER_MODEL ?? "small";
@@ -72,7 +46,7 @@ async function main() {
   } else {
     process.env.SUBTITLES_LANGUAGE = language;
   }
-  assertFasterWhisperInstalled(process.env.SUBTITLES_PYTHON_COMMAND);
+  checkLocalPythonProvider();
 
   const hasLimit = process.argv.some((arg) => arg.startsWith("--limit="));
   if (!process.argv.includes("--once") && !hasLimit) {

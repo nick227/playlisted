@@ -1,5 +1,8 @@
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { once } from "node:events";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import type { SubtitleSegment } from "../vtt.js";
 import type { SubtitleProviderInput, SubtitleProviderResult } from "./types.js";
@@ -11,9 +14,41 @@ type TranscriptionResult = {
 
 const whisperModel = process.env.SUBTITLES_WHISPER_MODEL ?? "tiny";
 const maxRuntimeSeconds = Number(process.env.SUBTITLES_MAX_RUNTIME_SECONDS ?? 1_200);
-const pythonCommand = process.env.SUBTITLES_PYTHON_COMMAND ?? "python3";
+
+export function getProjectRoot() {
+  const currentDir = path.dirname(fileURLToPath(import.meta.url));
+  return path.resolve(currentDir, "../../../../");
+}
+
+export function getPythonCommand() {
+  if (process.env.SUBTITLES_PYTHON_COMMAND) return process.env.SUBTITLES_PYTHON_COMMAND;
+
+  const projectRoot = getProjectRoot();
+  const localVenv = path.resolve(projectRoot, ".venv/bin/python");
+  if (fs.existsSync(localVenv)) return localVenv;
+  const modalVenv = path.resolve(projectRoot, ".modal-venv/bin/python");
+  if (fs.existsSync(modalVenv)) return modalVenv;
+
+  const localVenvWin = path.resolve(projectRoot, ".venv/Scripts/python.exe");
+  if (fs.existsSync(localVenvWin)) return localVenvWin;
+  const modalVenvWin = path.resolve(projectRoot, ".modal-venv/Scripts/python.exe");
+  if (fs.existsSync(modalVenvWin)) return modalVenvWin;
+
+  return "python3";
+}
+
+export function checkLocalPythonProvider() {
+  const pythonCmd = getPythonCommand();
+  const result = spawnSync(pythonCmd, ["-c", "import faster_whisper"], { encoding: "utf8" });
+  if (result.status !== 0) {
+    const detail = (result.stderr || result.stdout || "").trim();
+    throw new Error(`faster-whisper is not installed or could not be imported using '${pythonCmd}'. Detail: ${detail}`);
+  }
+}
 
 export async function runLocalPythonProvider(input: SubtitleProviderInput): Promise<SubtitleProviderResult> {
+  const pythonCommand = getPythonCommand();
+  const projectRoot = getProjectRoot();
   const args = [
     "scripts/transcribe.py",
     input.audioPath,
@@ -25,7 +60,7 @@ export async function runLocalPythonProvider(input: SubtitleProviderInput): Prom
   if (language) args.push("--language", language);
 
   const child = spawn(pythonCommand, args, {
-    cwd: process.cwd(),
+    cwd: projectRoot,
     stdio: ["ignore", "pipe", "pipe"],
     env: process.env,
   });

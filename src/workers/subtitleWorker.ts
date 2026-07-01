@@ -6,6 +6,7 @@ import fs from "node:fs/promises";
 import { prisma } from "../lib/prisma.js";
 import { prepareSubtitleAudioFile } from "../lib/subtitles/audioFile.js";
 import { getSubtitleProvider, runSubtitleProvider } from "../lib/subtitles/providers/index.js";
+import { checkLocalPythonProvider } from "../lib/subtitles/providers/localPythonProvider.js";
 import { segmentsToVtt } from "../lib/subtitles/vtt.js";
 
 const sleepMs = Number(process.env.SUBTITLES_WORKER_SLEEP_MS ?? 10_000);
@@ -320,6 +321,9 @@ async function main() {
   if (provider === "disabled") {
     log("subtitle.worker.provider_disabled");
     return;
+  }
+  if (provider === "local-python") {
+    checkLocalPythonProvider();
   }
 
   log("subtitle.worker.start", {
