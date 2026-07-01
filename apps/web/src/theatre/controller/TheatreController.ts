@@ -2,6 +2,14 @@ import registry from '../registry'
 import { AnimationContext, AnimationFactory } from '../core/IAnimation'
 import AudioFeatureExtractor from '../audio/AudioFeatureExtractor'
 import { TheatreAudioBus } from '../audio/TheatreAudioBus'
+import {
+  createRotationPolicyState,
+  DEFAULT_FLUX_GATE_THRESHOLD,
+  LEGACY_EXTERNAL_ROTATE_MIN_MS,
+  LEGACY_ROTATION_COMPAT,
+  RotationPolicy,
+} from '../rotation/RotationPolicy'
+import type { RotationPolicyState } from '../rotation/types'
 import { getOrCreateAudioAnalyserConnection, type AudioAnalyserConnection } from '@/features/playback-indicators/audioAnalyser'
 import { getPreset, listPresets, type ScenePresetDef, type TheatreTransitionKind } from '../registry/scenePresets'
 import { getPackageIdForPreset, pickPackagePreset } from '../registry/packageRotation'
@@ -45,18 +53,8 @@ export type TheatreRotationPolicy = {
   requireAudioPop: boolean
 }
 
-export const DEFAULT_ROTATION_POLICY: TheatreRotationPolicy = {
-  minSceneMs: 8_000,
-  maxSceneMs: 120_000,
-  clipLengthBias: 'minimum',
-  varianceMs: 1_000,
-  requireAudioPop: true,
-}
-
-const AUTO_ROTATE_POP_THRESHOLD = 0.02
-const AUTO_ROTATE_MAX_ARMED_WAIT_MS = 5_000
-const PRELOAD_LEAD_MS = 4_000
-const PRELOAD_MIN_DELAY_MS = 2_000
+/** @deprecated Prefer DEFAULT_ROTATION_POLICY_CONFIG from rotation/RotationPolicy */
+export const DEFAULT_ROTATION_POLICY: TheatreRotationPolicy = LEGACY_ROTATION_COMPAT
 const MANUAL_PRESET_THROTTLE_MS = 100
 const MANUAL_PRESET_COOLDOWN_MS = 3000
 const PRESET_CHANGE_TIMEOUT_MS = 6_000
@@ -86,14 +84,13 @@ class TheatreController extends EventTarget {
   private transitioning = false
   private transitionToken = 0
   private autoRotateEnabled = false
-  private nextAutoRotateTime = 0
-  private autoRotateArmed = false
-  private autoRotateArmedAt = 0
+  private rotationPolicy = new RotationPolicy()
+  private rotationState: RotationPolicyState = createRotationPolicyState()
+  private rotationPreloadTriggered = false
   private manualPresetLatest: string | null = null
   private manualPresetTimerId: number | null = null
   private lastManualPresetStart = 0
   private manualChangeActiveUntil = 0
-  private lastRotationAt = 0
   private preloadTimerId: number | null = null
 
   private readonly onVisibilityChange = () => {
@@ -201,9 +198,6 @@ class TheatreController extends EventTarget {
   public setAutoRotation(enabled: boolean) {
     if (import.meta.env.DEV) console.log('[TheatreController] setAutoRotation:', enabled)
     this.autoRotateEnabled = enabled
-    if (enabled) {
-      this.resetAutoRotateTimer()
-    }
   }
 
   public setClipDuration(durationMs: number | null) {
@@ -217,49 +211,42 @@ class TheatreController extends EventTarget {
     }
   }
 
-  private markRotationComplete() {
-    this.lastRotationAt = performance.now()
+  private resetRotationHold(nowMs = performance.now()) {
+    this.rotationState.presetStartedAtMs = nowMs
+    this.rotationPreloadTriggered = false
   }
 
-  private canRotateNow(): boolean {
-    if (this.lastRotationAt <= 0) return true
-    return performance.now() - this.lastRotationAt >= DEFAULT_ROTATION_POLICY.minSceneMs
+  private canRotateNow(nowMs = performance.now(), minHoldMs = this.rotationPolicy.config.minHoldMs): boolean {
+    return nowMs - this.rotationState.presetStartedAtMs >= minHoldMs
   }
 
-  private resetAutoRotateTimer() {
-    const policy = DEFAULT_ROTATION_POLICY
-    const baseMin = policy.minSceneMs
-
-    // Determine the most accurate duration for the next rotation
-    let durationMs: number | null = null
-    
-    // 1. Explicit clip duration passed via React (e.g. from segment or track metadata)
-    if (this._clipDurationMs !== null && this._clipDurationMs > 0 && Number.isFinite(this._clipDurationMs)) {
-      durationMs = this._clipDurationMs
-    } 
-    // 2. Fallback to audioEl.duration if reasonable
-    else if (this.audioEl?.duration && Number.isFinite(this.audioEl.duration) && this.audioEl.duration > 0) {
-      // Treat duration as stream (like icecast) if it's unreasonably large (e.g., > 1 hour)
-      const sec = this.audioEl.duration
-      if (sec < 3600) durationMs = sec * 1000
+  private handleRotationPolicyDecision(
+    decision: ReturnType<RotationPolicy['evaluate']>,
+    nowMs: number,
+  ) {
+    if (decision.action === 'preload') {
+      if (
+        !this.rotationPreloadTriggered &&
+        !this.deck?.getNextPresetId() &&
+        !this.isManualChangeCooldownActive() &&
+        !this.manualPresetLatest
+      ) {
+        this.rotationPreloadTriggered = true
+        void this.runPreloadNext()
+      }
+      return
     }
 
-    if (durationMs === null) {
-      durationMs = policy.maxSceneMs // Default fallback
-    }
+    if (decision.action !== 'rotate' || !this.canRotateNow(nowMs, this.rotationPolicy.config.minHoldMs)) return
 
-    // Clamp duration between minSceneMs and maxSceneMs so we don't wait the full song length
-    const targetMs = Math.min(durationMs, policy.maxSceneMs)
-
-    // Formula: nextSwitchAt = now + max(targetMs, minSceneMs) + randomVariance
-    const nextWaitMs = Math.max(targetMs, baseMin) + (Math.random() * policy.varianceMs)
-    
-    this.nextAutoRotateTime = performance.now() + nextWaitMs
-    this.autoRotateArmed = false
-    this.autoRotateArmedAt = 0
     if (import.meta.env.DEV) {
-      console.log(`[TheatreController] resetAutoRotateTimer: durationMs=${durationMs.toFixed(0)}, targetMs=${targetMs.toFixed(0)}, baseMin=${baseMin}, nextWaitMs=${nextWaitMs.toFixed(0)}, nextTime=${this.nextAutoRotateTime.toFixed(0)}`)
+      const elapsed = nowMs - this.rotationState.presetStartedAtMs
+      console.log(
+        `[TheatreController] autoRotate triggered: reason=${decision.reason}, elapsedMs=${elapsed.toFixed(0)}`,
+      )
     }
+
+    void this.rotateRandomPreset()
   }
 
   private ensureBackgroundIfNeeded() {
@@ -510,7 +497,7 @@ class TheatreController extends EventTarget {
   public async rotateRandomPreset() {
     if (!this.state.active) return
     if (this.transitioning) return
-    if (!this.canRotateNow()) return
+    if (!this.canRotateNow(performance.now(), LEGACY_EXTERNAL_ROTATE_MIN_MS)) return
 
     if (this.deck?.getNextPresetId()) {
       const token = this.bumpTransitionToken()
@@ -710,8 +697,8 @@ class TheatreController extends EventTarget {
       if (isVideoPresetId(selectedPreset.id) || isVideoPresetId(this.deck.getActivePresetId())) {
         kind = 'cut'
       } else if (features) {
-        if (features.flux.overall > AUTO_ROTATE_POP_THRESHOLD * 1.5) kind = 'cut'
-        else if (features.flux.overall > AUTO_ROTATE_POP_THRESHOLD * 0.8) kind = 'fastFade'
+        if (features.flux.overall > DEFAULT_FLUX_GATE_THRESHOLD * 1.5) kind = 'cut'
+        else if (features.flux.overall > DEFAULT_FLUX_GATE_THRESHOLD * 0.8) kind = 'fastFade'
         else if (features.flux.overall < 0.005) kind = 'slowFade'
       }
 
@@ -720,13 +707,12 @@ class TheatreController extends EventTarget {
 
     if (!this.stillCurrent(token) || !this.overlay || !this.state.active) return
 
-    this.resetAutoRotateTimer()
-    this.markRotationComplete()
+    this.resetRotationHold()
     this.dispatchEvent(new Event('change'))
     theatreBreadcrumb(`${source}:preset-inner:complete`, { presetId })
 
     if (source === 'auto' && !this.isManualChangeCooldownActive()) {
-      this.schedulePreloadNext()
+      this.rotationPreloadTriggered = Boolean(this.deck?.getNextPresetId())
     }
   }
 
@@ -753,8 +739,8 @@ class TheatreController extends EventTarget {
     }
     
     if (!isVideoPresetId(selectedPreset.id) && !isVideoPresetId(this.deck.getActivePresetId()) && features) {
-      if (features.flux.overall > AUTO_ROTATE_POP_THRESHOLD * 1.5) kind = 'cut'
-      else if (features.flux.overall > AUTO_ROTATE_POP_THRESHOLD * 0.8) kind = 'fastFade'
+      if (features.flux.overall > DEFAULT_FLUX_GATE_THRESHOLD * 1.5) kind = 'cut'
+      else if (features.flux.overall > DEFAULT_FLUX_GATE_THRESHOLD * 0.8) kind = 'fastFade'
       else if (features.flux.overall < 0.005 && kind !== 'crossfade') kind = 'slowFade'
     }
 
@@ -762,30 +748,14 @@ class TheatreController extends EventTarget {
 
     if (!this.stillCurrent(token) || !this.overlay || !this.state.active) return
 
-    this.resetAutoRotateTimer()
-    this.markRotationComplete()
+    this.resetRotationHold()
     this.dispatchEvent(new Event('change'))
     theatreBreadcrumb('auto:preloaded:complete', { presetId: selectedPreset.id })
     this.deck.assertInvariants('auto:preloaded:complete')
 
     if (!this.isManualChangeCooldownActive()) {
-      this.schedulePreloadNext()
+      this.rotationPreloadTriggered = true
     }
-  }
-
-  private schedulePreloadNext() {
-    if (!this.state.active || !this.deck) return
-    if (this.isManualChangeCooldownActive() || this.manualPresetLatest) return
-
-    this.clearPreloadTimer()
-
-    const msUntilRotate = Math.max(0, this.nextAutoRotateTime - performance.now())
-    const delayMs = Math.max(PRELOAD_MIN_DELAY_MS, msUntilRotate - PRELOAD_LEAD_MS)
-
-    this.preloadTimerId = window.setTimeout(() => {
-      this.preloadTimerId = null
-      void this.runPreloadNext()
-    }, delayMs)
   }
 
   private async runPreloadNext() {
@@ -1006,10 +976,7 @@ class TheatreController extends EventTarget {
     theatreBreadcrumb('enter:complete', { presetId: initialPresetId ?? undefined, detail: mode })
     this.deck?.assertInvariants('enter:complete')
     
-    this.resetAutoRotateTimer()
-    this.markRotationComplete()
-    this.schedulePreloadNext()
-
+    this.resetRotationHold(performance.now())
     this.revealOverlay(overlay, token)
 
     // Single RAF loop owns all frame work:
@@ -1039,35 +1006,13 @@ class TheatreController extends EventTarget {
       }
       
       if (this.autoRotateEnabled && this.state.active && !this.transitioning) {
-        if (!this.autoRotateArmed && now >= this.nextAutoRotateTime) {
-          if (import.meta.env.DEV) {
-            console.log(`[TheatreController] autoRotate timer fired at ${now.toFixed(0)}. ARMING${this.extractor ? ' (waiting for pop).' : ' (no analyser fallback).'}`)
-          }
-          this.autoRotateArmed = true
-          this.autoRotateArmedAt = now
-        }
-        if (this.autoRotateArmed && this.canRotateNow()) {
-          const features = this.extractor?.getFeatures()
-          const armedWaitMs = this.autoRotateArmedAt > 0 ? now - this.autoRotateArmedAt : 0
-          const shouldRotate =
-            !DEFAULT_ROTATION_POLICY.requireAudioPop ||
-            !features ||
-            armedWaitMs >= AUTO_ROTATE_MAX_ARMED_WAIT_MS ||
-            features.flux.overall > AUTO_ROTATE_POP_THRESHOLD
-
-          if (shouldRotate) {
-            if (import.meta.env.DEV) {
-              const reason = features
-                ? armedWaitMs >= AUTO_ROTATE_MAX_ARMED_WAIT_MS
-                  ? `timed fallback: flux=${features.flux.overall.toFixed(3)} <= ${AUTO_ROTATE_POP_THRESHOLD} for ${armedWaitMs.toFixed(0)}ms`
-                  : `pop: flux=${features.flux.overall.toFixed(3)} > ${AUTO_ROTATE_POP_THRESHOLD}`
-                : 'timed fallback: no analyser'
-              console.log(`[TheatreController] autoRotate triggered on ${reason}`)
-            }
-            this.resetAutoRotateTimer()
-            void this.rotateRandomPreset()
-          }
-        }
+        const decision = this.rotationPolicy.evaluate({
+          nowMs: now,
+          presetStartedAtMs: this.rotationState.presetStartedAtMs,
+          audio: audioSnapshot,
+          features: featuresRef,
+        })
+        this.handleRotationPolicyDecision(decision, now)
       }
 
       this.deck?.renderFrame(frameCtx)
