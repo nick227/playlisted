@@ -1,78 +1,131 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { ScenePresetDef } from '../registry/scenePresets'
 import { FxSelector } from '../selection/FxSelector'
+import type { FxBagStorage, FxBagStorageState } from '../selection/fxBagStorage'
 import type { PickContext } from '../selection/types'
 
-function preset(id: string): ScenePresetDef {
-  return { id, label: id, category: 'production', layers: [{ animationId: 'a' }] }
+vi.mock('../registry/scenePresets', () => ({
+  getPreset: (id: string) => ({
+    id,
+    label: id,
+    category: 'production',
+    layers: [{ animationId: 'mock' }],
+  }),
+}))
+
+vi.mock('../controller/presetQuarantine', () => ({
+  isPresetQuarantined: () => false,
+}))
+
+const TEST_VERSION = 'selector-test-v1'
+
+function createMemoryStorage(initial: FxBagStorageState | null = null) {
+  let value = initial
+  const storage: FxBagStorage = {
+    read: () => value,
+    write: state => {
+      value = state
+    },
+    remove: () => {
+      value = null
+    },
+  }
+  return { storage, get: () => value }
 }
 
-const ctx = (activePresetId: string | null, extra: Partial<PickContext> = {}): PickContext => ({
+const ctx = (activePresetId: string | null): PickContext => ({
   reducedMotion: false,
   activePresetId,
   allowUrlPreset: false,
-  ...extra,
 })
 
 describe('FxSelector', () => {
   it('peekNext returns a candidate', () => {
-    const pickFn = vi.fn().mockReturnValue(preset('alpha'))
-    const selector = new FxSelector(pickFn)
+    const memory = createMemoryStorage({
+      version: TEST_VERSION,
+      bag: ['alpha', 'beta'],
+      updatedAt: Date.now(),
+    })
+    const selector = new FxSelector({
+      storage: memory.storage,
+      catalogVersion: TEST_VERSION,
+      getCatalogEntries: () => [{ id: 'alpha', weight: 1 }, { id: 'beta', weight: 1 }],
+      isValidPresetId: id => id === 'alpha' || id === 'beta',
+    })
 
-    const picked = selector.peekNext(ctx(null))
-
-    expect(picked?.id).toBe('alpha')
-    expect(pickFn).toHaveBeenCalledTimes(1)
+    expect(selector.peekNext(ctx(null))?.id).toBe('alpha')
   })
 
   it('consumeNext returns the same candidate after peekNext', () => {
-    const pickFn = vi.fn().mockReturnValue(preset('alpha'))
-    const selector = new FxSelector(pickFn)
+    const memory = createMemoryStorage({
+      version: TEST_VERSION,
+      bag: ['alpha', 'beta'],
+      updatedAt: Date.now(),
+    })
+    const selector = new FxSelector({
+      storage: memory.storage,
+      catalogVersion: TEST_VERSION,
+      getCatalogEntries: () => [{ id: 'alpha', weight: 1 }, { id: 'beta', weight: 1 }],
+      isValidPresetId: id => id === 'alpha' || id === 'beta',
+    })
 
     expect(selector.peekNext(ctx(null))?.id).toBe('alpha')
     expect(selector.consumeNext(ctx(null))?.id).toBe('alpha')
-    expect(pickFn).toHaveBeenCalledTimes(1)
+    expect(memory.get()?.bag).toEqual(['beta'])
   })
 
   it('consumeNext clears the candidate', () => {
-    const pickFn = vi
-      .fn()
-      .mockReturnValueOnce(preset('alpha'))
-      .mockReturnValueOnce(preset('beta'))
-    const selector = new FxSelector(pickFn)
+    const memory = createMemoryStorage({
+      version: TEST_VERSION,
+      bag: ['alpha', 'beta'],
+      updatedAt: Date.now(),
+    })
+    const selector = new FxSelector({
+      storage: memory.storage,
+      catalogVersion: TEST_VERSION,
+      getCatalogEntries: () => [{ id: 'alpha', weight: 1 }, { id: 'beta', weight: 1 }],
+      isValidPresetId: id => id === 'alpha' || id === 'beta',
+    })
 
     selector.peekNext(ctx(null))
     selector.consumeNext(ctx(null))
 
     expect(selector.peekNext(ctx(null))?.id).toBe('beta')
-    expect(pickFn).toHaveBeenCalledTimes(2)
   })
 
-  it('clearCandidate forces a new pick', () => {
-    const pickFn = vi
-      .fn()
-      .mockReturnValueOnce(preset('alpha'))
-      .mockReturnValueOnce(preset('beta'))
-    const selector = new FxSelector(pickFn)
+  it('clearCandidate forces a new pick on next peek', () => {
+    const memory = createMemoryStorage({
+      version: TEST_VERSION,
+      bag: ['alpha', 'beta'],
+      updatedAt: Date.now(),
+    })
+    const selector = new FxSelector({
+      storage: memory.storage,
+      catalogVersion: TEST_VERSION,
+      getCatalogEntries: () => [{ id: 'alpha', weight: 1 }, { id: 'beta', weight: 1 }],
+      isValidPresetId: id => id === 'alpha' || id === 'beta',
+    })
 
     selector.peekNext(ctx(null))
     selector.clearCandidate()
 
-    expect(selector.peekNext(ctx(null))?.id).toBe('beta')
-    expect(pickFn).toHaveBeenCalledTimes(2)
+    expect(selector.peekNext(ctx(null))?.id).toBe('alpha')
+    expect(memory.get()?.bag).toEqual(['alpha', 'beta'])
   })
 
   it('avoids active preset when alternatives exist', () => {
-    const pickFn = vi.fn((pickCtx: PickContext) => {
-      const exclude = new Set(pickCtx.activePresetId ? [pickCtx.activePresetId] : [])
-      const options = ['alpha', 'beta'].filter(id => !exclude.has(id))
-      return preset(options[0]!)
+    const memory = createMemoryStorage({
+      version: TEST_VERSION,
+      bag: ['alpha', 'beta'],
+      updatedAt: Date.now(),
     })
-    const selector = new FxSelector(pickFn)
+    const selector = new FxSelector({
+      storage: memory.storage,
+      catalogVersion: TEST_VERSION,
+      getCatalogEntries: () => [{ id: 'alpha', weight: 1 }, { id: 'beta', weight: 1 }],
+      isValidPresetId: id => id === 'alpha' || id === 'beta',
+    })
 
-    const picked = selector.consumeNext(ctx('alpha'))
-
-    expect(picked?.id).toBe('beta')
+    expect(selector.consumeNext(ctx('alpha'))?.id).toBe('beta')
   })
 })
