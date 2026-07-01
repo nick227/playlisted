@@ -32,8 +32,8 @@ function resolvePresetChoice(reducedMotion: boolean, excludeIds: string[] = []):
     }
   }
 
-  // Auto-enter and auto-rotate stay on production presets; lab/dev remain manual or URL-only.
-  return pickPackagePreset({ reducedMotion, excludePresetIds: excludeIds, preferCategory: 'production' })
+  // Auto-enter and auto-rotate: pick package family first (each video is its own package).
+  return pickPackagePreset({ reducedMotion, excludePresetIds: excludeIds, preferCategory: 'all' })
 }
 
 export type TheatreRotationPolicy = {

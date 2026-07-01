@@ -11,23 +11,15 @@ export type CreateVideoPackageOptions = {
   weight?: number
 }
 
-export type VideoFamilyEntry = {
+export type VideoPackageEntry = {
   id: string
   label: string
   videoUrl: string
 }
 
-export type CreateVideoFamilyPackageOptions = {
-  id?: string
-  label?: string
-  category?: SceneCategory
-  reducedMotionPreset?: string
-  weight?: number
-  videos: VideoFamilyEntry[]
-}
-
-export const DEFAULT_VIDEO_LIBRARY: VideoFamilyEntry[] = [
-  ...Array.from({ length: 58 }, (_, index) => {
+/** One package per video — each gets an equal rotation slot via per-package pick. */
+export const SEED_VIDEO_ENTRIES: VideoPackageEntry[] = [
+  ...Array.from({ length: 61 }, (_, index) => {
     const n = index + 1
     return { id: `video${n}`, label: `Video ${n}`, videoUrl: `/${n}.mp4` }
   }),
@@ -35,57 +27,19 @@ export const DEFAULT_VIDEO_LIBRARY: VideoFamilyEntry[] = [
   { id: 'demo2', label: 'demo2', videoUrl: '/demo2.mp4' },
 ]
 
-export function createVideoFamilyPackage(opts: CreateVideoFamilyPackageOptions): AnimationPackage {
-  const {
-    id = 'videos',
-    label = 'Videos',
-    category = 'lab',
-    reducedMotionPreset = 'quietPulse',
-    weight = 1,
-    videos,
-  } = opts
+export type IndividualVideoPackageDefaults = Omit<CreateVideoPackageOptions, 'id' | 'label' | 'videoUrl'>
 
-  const animations = videos.map(video => ({
-    id: `${video.id}Animation`,
-    label: video.label,
-    factory: () => new VideoAnimation({ defaultVideoUrl: video.videoUrl, defaultZIndex: 0 }),
-    visualType: 'video' as const,
-    mood: 'calm' as const,
-    role: 'background' as const,
-  }))
-
-  const presets = videos.map(video => ({
+/** Register each video as its own package (one preset each, equal family weight). */
+export function createIndividualVideoPackages(
+  videos: VideoPackageEntry[],
+  defaults: IndividualVideoPackageDefaults = {},
+): AnimationPackage[] {
+  return videos.map(video => createVideoPackage({
+    ...defaults,
     id: video.id,
     label: video.label,
-    category,
-    reducedMotionPreset,
-    layers: [{
-      animationId: `${video.id}Animation`,
-      role: 'background' as const,
-      options: { preset: 'tame' as const },
-    }],
+    videoUrl: video.videoUrl,
   }))
-
-  return {
-    manifest: {
-      id,
-      label,
-      version: '1.0.0',
-      kind: 'visual-scene',
-      category,
-      description: 'Rotating cover video family',
-      capabilities: ['reduced-motion'],
-      weight,
-    },
-    animations,
-    presets,
-  }
-}
-
-export function createDefaultVideoFamilyPackage(
-  opts: Omit<CreateVideoFamilyPackageOptions, 'videos'> = {},
-): AnimationPackage {
-  return createVideoFamilyPackage({ ...opts, videos: DEFAULT_VIDEO_LIBRARY })
 }
 
 export function createVideoPackage(opts: CreateVideoPackageOptions): AnimationPackage {
@@ -116,6 +70,7 @@ export function createVideoPackage(opts: CreateVideoPackageOptions): AnimationPa
       category,
       description: `Full bleed cover video: ${label}`,
       capabilities: ['reduced-motion'],
+      weight,
     },
     animations: [
       {
@@ -125,7 +80,7 @@ export function createVideoPackage(opts: CreateVideoPackageOptions): AnimationPa
         visualType: 'video',
         mood: 'calm',
         role: 'background',
-      }
+      },
     ],
     presets: [
       {
@@ -139,11 +94,11 @@ export function createVideoPackage(opts: CreateVideoPackageOptions): AnimationPa
             animationId,
             role: 'background',
             options: {
-              preset: 'tame'
-            }
-          }
-        ]
-      }
-    ]
+              preset: 'tame',
+            },
+          },
+        ],
+      },
+    ],
   }
 }

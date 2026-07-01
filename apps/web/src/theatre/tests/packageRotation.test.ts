@@ -13,14 +13,14 @@ describe('package rotation', () => {
     vi.restoreAllMocks()
   })
 
-  it('registers videos as one rotation family', () => {
-    const videos = getRotationPackages().find(pkg => pkg.manifest.id === 'videos')
-    expect(videos?.presetIds).toHaveLength(60)
+  it('registers each video as its own rotation package', () => {
+    expect(getPackageIdForPreset('video17')).toBe('video17')
+    expect(getPackageIdForPreset('video61')).toBe('video61')
+    expect(getRotationPackages().find(pkg => pkg.manifest.id === 'videos')).toBeUndefined()
   })
 
   it('maps presets back to their package', () => {
     expect(getPackageIdForPreset('cheechChongFarm')).toBe('cheech-chong')
-    expect(getPackageIdForPreset('video17')).toBe('videos')
     expect(getPackageIdForPreset('geometryTunnel')).toBe('spin-amp')
   })
 
@@ -40,11 +40,12 @@ describe('package rotation', () => {
     }
   })
 
-  it('can limit automatic rotation to production presets', () => {
-    for (let i = 0; i < 100; i++) {
-      const picked = pickPackagePreset({ preferCategory: 'production' })
-      expect(picked?.category).toBe('production')
-      expect(getPackageIdForPreset(picked?.id ?? '')).not.toBe('videos')
+  it('includes lab video packages in automatic rotation', () => {
+    for (let i = 0; i < 200; i++) {
+      const picked = pickPackagePreset({ preferCategory: 'all' })
+      expect(picked).not.toBeNull()
     }
+    const videoPackages = getRotationPackages().filter(pkg => pkg.manifest.id.startsWith('video'))
+    expect(videoPackages.length).toBeGreaterThanOrEqual(61)
   })
 })
