@@ -4,6 +4,7 @@ import { getAuthContextFromRequest } from "../lib/auth.js";
 import { normalizeUploadUrl, resolveRecordingArtworkUrl } from "../lib/mediaUrls.js";
 import { prisma } from "../lib/prisma.js";
 import { radioChatLimiter, radioHeartbeatLimiter } from "../lib/rateLimiter.js";
+import { mapSubtitleSummary, subtitleInclude } from "../lib/subtitles/summary.js";
 
 const DEFAULT_STATION_SLUG = "main";
 const LISTENER_TTL_MS = 60_000;
@@ -113,6 +114,7 @@ async function getRadioRecordings() {
     include: {
       uploader: true,
       publishedPlaylist: true,
+      subtitles: subtitleInclude(),
     },
     orderBy: [{ publishedAt: "asc" }, { createdAt: "asc" }, { id: "asc" }],
   });
@@ -128,6 +130,7 @@ function mapRecording(recording: RadioRecording) {
     durationSeconds: recording.durationSeconds,
     artworkUrl: resolveRecordingArtworkUrl(recording, recording.publishedPlaylist),
     explicit: recording.explicit,
+    subtitle: mapSubtitleSummary(recording.subtitles),
     uploader: {
       id: recording.uploader.id,
       username: recording.uploader.username,

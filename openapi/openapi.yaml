@@ -3429,6 +3429,10 @@ components:
           $ref: '#/components/schemas/RadioOwnerSummary'
         playlist:
           $ref: '#/components/schemas/RadioRecordingPlaylist'
+        subtitle:
+          oneOf:
+            - $ref: '#/components/schemas/RecordingSubtitleSummary'
+            - type: 'null'
 
     RadioNowPlaying:
       allOf:

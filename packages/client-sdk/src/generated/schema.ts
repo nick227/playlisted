@@ -1463,6 +1463,7 @@ export interface components {
             explicit: boolean;
             uploader: components["schemas"]["RadioOwnerSummary"];
             playlist: components["schemas"]["RadioRecordingPlaylist"];
+            subtitle?: components["schemas"]["RecordingSubtitleSummary"] | null;
         };
         RadioNowPlaying: components["schemas"]["RadioRecording"] & {
             /** Format: date-time */

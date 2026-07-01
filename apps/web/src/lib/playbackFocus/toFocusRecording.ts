@@ -26,6 +26,7 @@ export function toFocusRecording(track: ActiveTrack): FocusRecording | null {
       description: track.description,
       playlistTitle: track.playlist.title,
       durationSeconds: track.durationSeconds,
+      hasSubtitleTrack: track.subtitle != null,
     };
   }
 

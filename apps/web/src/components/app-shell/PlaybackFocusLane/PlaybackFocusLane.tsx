@@ -21,7 +21,7 @@ type PlaybackFocusLaneProps = {
 export function PlaybackFocusLane({ focusState }: PlaybackFocusLaneProps) {
   const { accessToken } = useAuth();
   const { subtitlesEnabled } = useSubtitleDisplay();
-  const { track, isPlaying, currentTime, isRadio } = useActivePlayback();
+  const { track, isPlaying, currentTime } = useActivePlayback();
   const [subtitles, setSubtitles] = useState<RecordingSubtitlesResponse | null>(null);
 
   const recording = useMemo(() => toFocusRecording(track), [track]);
@@ -35,7 +35,6 @@ export function PlaybackFocusLane({ focusState }: PlaybackFocusLaneProps) {
     subtitlesEnabled &&
     isPlaying &&
     recording?.id &&
-    !isRadio &&
     recording.hasSubtitleTrack,
   );
 
