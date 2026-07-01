@@ -1,19 +1,19 @@
 export const playbackFocusTiming = {
   theatre: {
-    delayMs: 0,
+    delayMs: 200,
     fadeInMs: 1200,
-    fadeOutMs: 1450,
+    fadeOutMs: 1200,
     exitBufferMs: 380,
   },
 
   body: {
-    delayMs: 7000,
+    delayMs: 15000,
     restoreDelayMs: 3000,
     fadeOutMs: 2000,
   },
 
   focusLane: {
-    delayMs: 0,
+    delayMs: 200,
     fadeInMs: 1200,
     fadeOutMs: 450,
     exitBufferMs: 180,
