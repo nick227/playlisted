@@ -10,9 +10,11 @@ import {
   RotationPolicy,
 } from '../rotation/RotationPolicy'
 import type { RotationPolicyState } from '../rotation/types'
+import { FxSelector } from '../selection/FxSelector'
+import type { PickContext } from '../selection/types'
 import { getOrCreateAudioAnalyserConnection, type AudioAnalyserConnection } from '@/features/playback-indicators/audioAnalyser'
 import { getPreset, listPresets, type ScenePresetDef, type TheatreTransitionKind } from '../registry/scenePresets'
-import { getPackageIdForPreset, pickPackagePreset } from '../registry/packageRotation'
+import { getPackageIdForPreset } from '../registry/packageRotation'
 import { buildAnimationFrameContext, withTheatreInitContext } from './theatreFrameContext'
 import { detectPolicy } from '../runtime/PerformancePolicy'
 import { playbackFocusTiming } from '@/lib/playbackFocusTiming'
@@ -21,29 +23,6 @@ import { TheatreSceneDeck } from './TheatreSceneDeck'
 import { theatreBreadcrumb } from './theatreBreadcrumbs'
 import { isPresetQuarantined, quarantinePreset } from './presetQuarantine'
 import { isObjectTheatrePreset } from '../packages/object-spinner-mover'
-
-function presetIdFromUrl(): string | null {
-  if (typeof window === 'undefined') return null
-  const id = new URLSearchParams(window.location.search).get('theatrePreset')?.trim()
-  if (!id || !getPreset(id)) return null
-  return id
-}
-
-function resolvePresetChoice(reducedMotion: boolean, excludeIds: string[] = []): ScenePresetDef | null {
-  const fromUrl = excludeIds.length === 0 ? presetIdFromUrl() : null
-  if (fromUrl) {
-    const preset = getPreset(fromUrl)
-    if (preset) {
-      if (reducedMotion && preset.reducedMotionPreset) {
-        return getPreset(preset.reducedMotionPreset) ?? preset
-      }
-      return preset
-    }
-  }
-
-  // Auto-enter and auto-rotate: pick package family first (each video is its own package).
-  return pickPackagePreset({ reducedMotion, excludePresetIds: excludeIds, preferCategory: 'all' })
-}
 
 export type TheatreRotationPolicy = {
   minSceneMs: number
@@ -87,6 +66,7 @@ class TheatreController extends EventTarget {
   private rotationPolicy = new RotationPolicy()
   private rotationState: RotationPolicyState = createRotationPolicyState()
   private rotationPreloadTriggered = false
+  private fxSelector = new FxSelector()
   private manualPresetLatest: string | null = null
   private manualPresetTimerId: number | null = null
   private lastManualPresetStart = 0
@@ -134,6 +114,7 @@ class TheatreController extends EventTarget {
     this.stopFeatureLoop()
     this.extractor = null
     this.audioBus.reset()
+    this.fxSelector.clearCandidate()
     this.frameContext = null
     this.clearOverlayBoundsTracking()
     this.overlay?.remove()
@@ -468,6 +449,14 @@ class TheatreController extends EventTarget {
     }
   }
 
+  private buildFxPickContext(allowUrlPreset = false): PickContext {
+    return {
+      reducedMotion: this.prefersReducedMotion(),
+      activePresetId: this.state.presetId,
+      allowUrlPreset,
+    }
+  }
+
   private async togglePlayback() {
     if (!this.audioEl) this.rebindAudio()
     const audio = this.audioEl
@@ -487,19 +476,15 @@ class TheatreController extends EventTarget {
     this.deck?.pause()
   }
 
-  private pickRandomPreset(excludeCurrent = true): ScenePresetDef | null {
-    return resolvePresetChoice(
-      this.prefersReducedMotion(),
-      excludeCurrent && this.state.presetId ? [this.state.presetId] : [],
-    )
-  }
-
   public async rotateRandomPreset() {
     if (!this.state.active) return
     if (this.transitioning) return
     if (!this.canRotateNow(performance.now(), LEGACY_EXTERNAL_ROTATE_MIN_MS)) return
 
+    const pickCtx = this.buildFxPickContext()
+
     if (this.deck?.getNextPresetId()) {
+      this.fxSelector.consumeNext(pickCtx)
       const token = this.bumpTransitionToken()
       this.transitioning = true
       try {
@@ -510,7 +495,7 @@ class TheatreController extends EventTarget {
         if (this.stillCurrent(token)) this.transitioning = false
       }
     } else {
-      const selectedPreset = this.pickRandomPreset()
+      const selectedPreset = this.fxSelector.consumeNext(pickCtx)
       if (!selectedPreset || selectedPreset.id === this.state.presetId) return
       await this.changePresetAuto(selectedPreset.id)
     }
@@ -559,6 +544,7 @@ class TheatreController extends EventTarget {
 
     this.lastManualPresetStart = performance.now()
     this.manualChangeActiveUntil = performance.now() + MANUAL_PRESET_COOLDOWN_MS
+    this.fxSelector.clearCandidate()
     this.clearPreloadTimer()
     await this.deck?.cancelInFlight()
 
@@ -639,6 +625,7 @@ class TheatreController extends EventTarget {
     this.state.presetId = null
     this.extractor = null
     this.frameContext = null
+    this.fxSelector.clearCandidate()
 
     destroyTheatreDevPanel()
     await this.deck?.cancelInFlight()
@@ -762,7 +749,7 @@ class TheatreController extends EventTarget {
     if (!this.state.active || !this.deck || this.deck.getNextPresetId() || this.transitioning) return
     if (this.isManualChangeCooldownActive() || this.manualPresetLatest) return
 
-    const nextPreset = this.pickRandomPreset()
+    const nextPreset = this.fxSelector.peekNext(this.buildFxPickContext())
     if (!nextPreset) return
 
     const { ctx, policy } = this.buildFrameContextWithAudio(0, this.frameContext?.shared?.time)
@@ -939,10 +926,15 @@ class TheatreController extends EventTarget {
       this.extractor = new AudioFeatureExtractor(analyser)
     }
     this.audioBus.reset()
+    this.fxSelector.clearCandidate()
 
     const { ctx, policy } = this.buildFrameContextWithAudio(0)
 
-    const selectedPreset = resolvePresetChoice(this.prefersReducedMotion())
+    const selectedPreset = this.fxSelector.consumeNext({
+      reducedMotion: this.prefersReducedMotion(),
+      activePresetId: null,
+      allowUrlPreset: true,
+    })
     const initialPresetId = selectedPreset?.id ?? null
 
     this.deck = new TheatreSceneDeck(overlay)
@@ -1044,6 +1036,7 @@ class TheatreController extends EventTarget {
       this.state.mode = null
       this.extractor = null
       this.audioBus.reset()
+      this.fxSelector.clearCandidate()
       this.frameContext = null
       
       destroyTheatreDevPanel()
