@@ -1,4 +1,5 @@
 import { playbackFocusTiming } from "@/lib/playbackFocusTiming";
+import { getFocusLaneElapsedMs, getFocusLaneSequenceWindows } from "@/lib/playbackFocus/focusLaneSequence";
 import type { SubtitleSegment } from "@/lib/subtitles";
 import type {
   FocusArtist,
@@ -33,13 +34,14 @@ function canShowFocusLane(focusState: PlaybackFocusState): boolean {
 }
 
 function resolveSyntheticFixture(input: {
-  currentTimeMs: number;
+  focusLaneElapsedMs: number;
   syntheticCues: SyntheticSubtitleCue[];
   artist: FocusArtist | null;
 }): PlaybackFocusFixture | null {
-  const { currentTimeMs, syntheticCues, artist } = input;
+  const { focusLaneElapsedMs, syntheticCues, artist } = input;
+  const { artistStart, artistEnd } = getFocusLaneSequenceWindows();
 
-  const titleCue = findActiveSyntheticCue(syntheticCues, currentTimeMs, "title-intro");
+  const titleCue = findActiveSyntheticCue(syntheticCues, focusLaneElapsedMs, "title-intro");
   if (titleCue?.text.trim()) {
     return {
       type: "fallbackSubtitle",
@@ -50,9 +52,8 @@ function resolveSyntheticFixture(input: {
   }
 
   if (
-    currentTimeMs >= playbackFocusTiming.artistVisual.delayMs &&
-    currentTimeMs <
-      playbackFocusTiming.artistVisual.delayMs + playbackFocusTiming.fallbackSubtitle.maxVisibleMs &&
+    focusLaneElapsedMs >= artistStart &&
+    focusLaneElapsedMs < artistEnd &&
     artist?.artistName
   ) {
     return {
@@ -63,7 +64,7 @@ function resolveSyntheticFixture(input: {
     };
   }
 
-  const fallbackCue = findActiveSyntheticCue(syntheticCues, currentTimeMs);
+  const fallbackCue = findActiveSyntheticCue(syntheticCues, focusLaneElapsedMs);
   if (fallbackCue?.text.trim() && fallbackCue.source !== "title-intro") {
     return {
       type: "fallbackSubtitle",
@@ -125,7 +126,12 @@ export function resolvePlaybackFocusFixture(input: ResolvePlaybackFocusInput): P
     return { type: "none" };
   }
 
-  const synthetic = resolveSyntheticFixture({ currentTimeMs, syntheticCues, artist });
+  const focusLaneElapsedMs = getFocusLaneElapsedMs(
+    currentTimeMs,
+    focusState.bodyFadedAtTrackMs,
+  );
+
+  const synthetic = resolveSyntheticFixture({ focusLaneElapsedMs, syntheticCues, artist });
   if (synthetic) {
     return synthetic;
   }

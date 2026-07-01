@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 import { useRadioPlayer } from "@/providers/RadioPlayerProvider";
+import { useActivePlayback } from "@/hooks/useActivePlayback";
 import { playbackFocusTiming } from "@/lib/playbackFocusTiming";
 import { usePlaybackFocusSuppressed } from "@/lib/playbackFocusSuppression";
 
@@ -26,6 +27,7 @@ export function AppShell({ children }: AppShellProps) {
   const snapRevealTimerRef = useRef<number | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [bodyFocusHidden, setBodyFocusHidden] = useState(false);
+  const [bodyFadedAtTrackMs, setBodyFadedAtTrackMs] = useState<number | null>(null);
   const [miniViewVisible, setMiniViewVisible] = useState(false);
   const [snapReveal, setSnapReveal] = useState(false);
   const playbackFocusSuppressed = usePlaybackFocusSuppressed();
@@ -40,6 +42,9 @@ export function AppShell({ children }: AppShellProps) {
     playing: radioPlaying,
     nowPlaying: radioNowPlaying,
   } = useRadioPlayer();
+  const { currentTime } = useActivePlayback();
+  const currentTimeMsRef = useRef(0);
+  currentTimeMsRef.current = currentTime * 1000;
 
   const focusTrack = useMemo<PlaybackFocusTrack | null>(() => {
     if (radioPlaying && radioNowPlaying) {
@@ -96,6 +101,7 @@ export function AppShell({ children }: AppShellProps) {
   const armPlayFocus = useCallback(() => {
     clearFocusTimer();
     setBodyFocusHidden(false);
+    setBodyFadedAtTrackMs(null);
     setMiniViewVisible(false);
     if (!playFocusActive || playbackFocusSuppressed) return;
     const bodyDelayMs = playbackFocusTiming.body.delayMs > 0
@@ -106,6 +112,7 @@ export function AppShell({ children }: AppShellProps) {
       : 3000;
     bodyFocusTimerRef.current = window.setTimeout(() => {
       setBodyFocusHidden(true);
+      setBodyFadedAtTrackMs(currentTimeMsRef.current);
       bodyFocusTimerRef.current = null;
     }, bodyDelayMs);
     if (focusTrack?.sourceLabel === "Radio") {
@@ -120,6 +127,7 @@ export function AppShell({ children }: AppShellProps) {
     if (!playbackFocusSuppressed) return;
     clearFocusTimer();
     setBodyFocusHidden(false);
+    setBodyFadedAtTrackMs(null);
     setMiniViewVisible(false);
   }, [clearFocusTimer, playbackFocusSuppressed]);
 
@@ -175,8 +183,9 @@ export function AppShell({ children }: AppShellProps) {
     () => ({
       playFocusActive: playFocusActive && !playbackFocusSuppressed,
       hasBodyFaded: bodyFocusMode,
+      bodyFadedAtTrackMs: bodyFocusMode ? bodyFadedAtTrackMs : null,
     }),
-    [bodyFocusMode, playFocusActive, playbackFocusSuppressed],
+    [bodyFadedAtTrackMs, bodyFocusMode, playFocusActive, playbackFocusSuppressed],
   );
 
   return (

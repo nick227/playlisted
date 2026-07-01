@@ -1,16 +1,18 @@
 import { playbackFocusTiming } from "@/lib/playbackFocusTiming";
+import { getFocusLaneSequenceWindows } from "@/lib/playbackFocus/focusLaneSequence";
 import { buildArtistInfoLine, buildFallbackInfoText } from "@/lib/playbackFocus/formatFocusText";
 import type { FocusRecording, SyntheticSubtitleCue } from "@/lib/playbackFocus/types";
 
 export function buildSyntheticSubtitleCues(recording: FocusRecording): SyntheticSubtitleCue[] {
-  const { titleIntro, fallbackSubtitle, artistVisual } = playbackFocusTiming;
+  const { fallbackSubtitle } = playbackFocusTiming;
+  const { titleStart, titleEnd, fallbackStart } = getFocusLaneSequenceWindows();
   const cues: SyntheticSubtitleCue[] = [];
 
   cues.push({
     id: "title-intro",
     source: "title-intro",
-    startMs: titleIntro.delayMs,
-    endMs: titleIntro.delayMs + titleIntro.minVisibleMs + titleIntro.fadeOutMs,
+    startMs: titleStart,
+    endMs: titleEnd,
     text: recording.title,
     priority: 20,
   });
@@ -20,8 +22,8 @@ export function buildSyntheticSubtitleCues(recording: FocusRecording): Synthetic
     cues.push({
       id: "fallback-info",
       source: "song-info",
-      startMs: fallbackSubtitle.delayMs,
-      endMs: fallbackSubtitle.delayMs + fallbackSubtitle.maxVisibleMs,
+      startMs: fallbackStart,
+      endMs: fallbackStart + fallbackSubtitle.maxVisibleMs,
       text: fallbackText,
       priority: 10,
     });
@@ -29,7 +31,7 @@ export function buildSyntheticSubtitleCues(recording: FocusRecording): Synthetic
 
   const artistLine = buildArtistInfoLine(recording);
   if (artistLine) {
-    const artistInfoStart = artistVisual.delayMs + 2900;
+    const artistInfoStart = fallbackStart + fallbackSubtitle.maxVisibleMs;
     cues.push({
       id: "artist-info",
       source: "artist-info",

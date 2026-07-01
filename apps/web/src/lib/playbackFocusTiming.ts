@@ -21,13 +21,14 @@ export const playbackFocusTiming = {
   },
 
   artistVisual: {
-    delayMs: 3000,
+    gapAfterTitleIntroMs: 200,
+    minVisibleMs: 5000,
     fadeInMs: 900,
     fadeOutMs: 900,
   },
 
   fallbackSubtitle: {
-    delayMs: 3200,
+    gapAfterArtistMs: 200,
     fadeInMs: 900,
     fadeOutMs: 650,
     maxVisibleMs: 5000,
@@ -69,11 +70,11 @@ export function applyPlaybackFocusTimingCssVars(root: HTMLElement) {
   root.style.setProperty("--duration-title-intro-fade-in", ms(playbackFocusTiming.titleIntro.fadeInMs));
   root.style.setProperty("--duration-title-intro-fade-out", ms(playbackFocusTiming.titleIntro.fadeOutMs));
 
-  root.style.setProperty("--delay-artist-visual", ms(playbackFocusTiming.artistVisual.delayMs));
+  root.style.setProperty("--delay-artist-visual", ms(0));
   root.style.setProperty("--duration-artist-visual-fade-in", ms(playbackFocusTiming.artistVisual.fadeInMs));
   root.style.setProperty("--duration-artist-visual-fade-out", ms(playbackFocusTiming.artistVisual.fadeOutMs));
 
-  root.style.setProperty("--delay-fallback-subtitle", ms(playbackFocusTiming.fallbackSubtitle.delayMs));
+  root.style.setProperty("--delay-fallback-subtitle", ms(0));
   root.style.setProperty(
     "--duration-fallback-subtitle-fade-in",
     ms(playbackFocusTiming.fallbackSubtitle.fadeInMs),
