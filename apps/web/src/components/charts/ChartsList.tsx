@@ -88,9 +88,6 @@ export function ChartsList({ tab, range, genre }: ChartsListProps) {
 
   return (
     <div>
-      <p className="mb-3 text-xs text-[var(--color-text-muted)]">
-        Ranked by most played · {rangeLabel}
-      </p>
 
       <div className="overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]">
         <ChartsTabPanel tab="songs" activeTab={tab} label="Top songs">

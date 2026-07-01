@@ -36,10 +36,7 @@ export function ChartsPage() {
   return (
     <div className={CHARTS_LAYOUT_CLASS}>
       <header className="mb-4">
-        <h1 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl">Charts</h1>
-        <p className="mt-2 text-sm text-[var(--color-text-muted)]">
-          What&apos;s getting the most plays on Playlisted.
-        </p>
+        <h1 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl bg-[var(--color-surface)]/80 rounded-lg p-4">Charts</h1>
       </header>
 
       <ChartsFilterBar
