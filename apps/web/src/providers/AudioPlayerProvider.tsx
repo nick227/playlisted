@@ -128,6 +128,8 @@ interface AudioPlayerContextValue {
   updateQueuePlaylistSlug: (playlistId: string, slug: string) => void;
   /** Pause, dismiss the bar (with fade), and clear the active track; queue is kept. */
   releasePlayback: () => void;
+  /** Resume the current audio element when it was paused without clearing the queue. */
+  resumePlaybackIfPaused: () => void;
 }
 
 export type PlaybackTransportValue = {
@@ -288,6 +290,40 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     [accessToken],
   );
 
+  const trackSrcMatches = useCallback((audio: HTMLAudioElement, audioUrl: string) => {
+    try {
+      return (
+        new URL(audio.src, window.location.origin).href ===
+        new URL(audioUrl, window.location.origin).href
+      );
+    } catch {
+      return false;
+    }
+  }, []);
+
+  /** Keep playback running when re-anchoring queue/context to the same audio source. */
+  const tryContinueSameSource = useCallback(
+    (track: QueueTrack): boolean => {
+      const audio = audioRef.current;
+      if (!audio || !track.audioUrl || audio.ended) return false;
+      if (!trackSrcMatches(audio, track.audioUrl)) return false;
+
+      if (audio.paused) {
+        setState("loading");
+        void audio.play().then(() => {
+          if (!audio.paused) {
+            setState("playing");
+            logPlaybackStart(track);
+          }
+        }).catch(() => setState("paused"));
+      } else {
+        setState("playing");
+      }
+      return true;
+    },
+    [logPlaybackStart, trackSrcMatches],
+  );
+
   const loadTrack = useCallback((track: QueueTrack) => {
     if (adoptedAudioRef.current) {
       adoptedAudioRef.current.pause();
@@ -348,9 +384,12 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       setActiveOriginKey(options?.playbackOrigin ?? null);
       setQueueState(tracks);
       setQueueIndex(index);
-      loadTrack(tracks[index]);
+      const track = tracks[index];
+      if (!tryContinueSameSource(track)) {
+        loadTrack(track);
+      }
     },
-    [loadTrack],
+    [loadTrack, tryContinueSameSource],
   );
 
   const adoptExternalPlayback = useCallback(
@@ -684,6 +723,15 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     setQueueOpen(false);
   }, [transportDuration, flushPlayback, state]);
 
+  const resumePlaybackIfPaused = useCallback(() => {
+    const audio = audioRef.current;
+    if (!audio || audio.ended || queueIndexRef.current < 0) return;
+    if (!audio.paused) return;
+    void audio.play().then(() => {
+      if (!audio.paused) setState("playing");
+    }).catch(() => setState("paused"));
+  }, []);
+
   useEffect(() => {
     return () => {
       if (dismissTimerRef.current !== null) {
@@ -865,6 +913,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       updateQueuePlaylistTitle,
       updateQueuePlaylistSlug,
       releasePlayback,
+      resumePlaybackIfPaused,
     }),
     [
       currentTrack,
@@ -904,6 +953,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       updateQueuePlaylistTitle,
       updateQueuePlaylistSlug,
       releasePlayback,
+      resumePlaybackIfPaused,
     ],
   );
 

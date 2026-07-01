@@ -27,6 +27,7 @@ export function AppShell({ children }: AppShellProps) {
   const bodyFocusTimerRef = useRef<number | null>(null);
   const miniViewTimerRef = useRef<number | null>(null);
   const snapRevealTimerRef = useRef<number | null>(null);
+  const resumeAfterNavRef = useRef(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [bodyFocusHidden, setBodyFocusHidden] = useState(false);
   const [bodyFadedAtTrackMs, setBodyFadedAtTrackMs] = useState<number | null>(null);
@@ -39,6 +40,8 @@ export function AppShell({ children }: AppShellProps) {
     isPlaying,
     playbackContext,
     playerShellActive,
+    state,
+    resumePlaybackIfPaused,
   } = useAudioPlayer();
   const {
     playing: radioPlaying,
@@ -148,6 +151,21 @@ export function AppShell({ children }: AppShellProps) {
       clearSnapRevealTimer();
     };
   }, [armPlayFocus, clearFocusTimer, clearSnapRevealTimer, focusTrackKey, location.pathname, location.search, playbackFocusSuppressed]);
+
+  useEffect(() => {
+    return () => {
+      resumeAfterNavRef.current = state === "playing" || state === "loading";
+    };
+  }, [location.pathname, state]);
+
+  useEffect(() => {
+    if (!resumeAfterNavRef.current) return;
+    resumeAfterNavRef.current = false;
+    const timer = window.setTimeout(() => {
+      resumePlaybackIfPaused();
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [location.pathname, resumePlaybackIfPaused]);
 
   useEffect(() => {
     if (!playFocusActive) return;

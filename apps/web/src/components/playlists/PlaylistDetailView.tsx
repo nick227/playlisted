@@ -82,6 +82,9 @@ export function PlaylistDetailView({ playlist }: PlaylistDetailViewProps) {
 
   const playRecording = useCallback((recording: CollectionRecording, index: number) => {
     if (currentTrack?.id === recording.id) {
+      if (state === "playing") {
+        return;
+      }
       if (playbackContext.playlistId === playlist.id) {
         togglePlay();
         return;
@@ -121,6 +124,7 @@ export function PlaylistDetailView({ playlist }: PlaylistDetailViewProps) {
     playlist.title,
     queueTracks,
     setQueue,
+    state,
     togglePlay,
   ]);
 
