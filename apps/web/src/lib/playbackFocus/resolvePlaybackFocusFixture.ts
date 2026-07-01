@@ -33,37 +33,13 @@ function canShowFocusLane(focusState: PlaybackFocusState): boolean {
   return focusState.playFocusActive && focusState.hasBodyFaded;
 }
 
-function resolveArtistVisualFixture(
-  focusLaneElapsedMs: number,
-  artist: FocusArtist | null,
-): PlaybackFocusFixture | null {
-  const { artistStart, artistEnd } = getFocusLaneSequenceWindows();
-  if (
-    focusLaneElapsedMs >= artistStart &&
-    focusLaneElapsedMs < artistEnd &&
-    artist?.artistName
-  ) {
-    return {
-      type: "artistVisual",
-      artistName: artist.artistName,
-      imageUrl: artist.imageUrl ?? undefined,
-      bioLine: artist.bioLine ?? undefined,
-    };
-  }
-  return null;
-}
-
 function resolveSyntheticFixture(input: {
   focusLaneElapsedMs: number;
   syntheticCues: SyntheticSubtitleCue[];
   artist: FocusArtist | null;
-  isRadio: boolean;
 }): PlaybackFocusFixture | null {
-  const { focusLaneElapsedMs, syntheticCues, artist, isRadio } = input;
-
-  if (isRadio) {
-    return resolveArtistVisualFixture(focusLaneElapsedMs, artist);
-  }
+  const { focusLaneElapsedMs, syntheticCues, artist } = input;
+  const { artistStart, artistEnd } = getFocusLaneSequenceWindows();
 
   const titleCue = findActiveSyntheticCue(syntheticCues, focusLaneElapsedMs, "title-intro");
   if (titleCue?.text.trim()) {
@@ -75,9 +51,17 @@ function resolveSyntheticFixture(input: {
     };
   }
 
-  const artistVisual = resolveArtistVisualFixture(focusLaneElapsedMs, artist);
-  if (artistVisual) {
-    return artistVisual;
+  if (
+    focusLaneElapsedMs >= artistStart &&
+    focusLaneElapsedMs < artistEnd &&
+    artist?.artistName
+  ) {
+    return {
+      type: "artistVisual",
+      artistName: artist.artistName,
+      imageUrl: artist.imageUrl ?? undefined,
+      bioLine: artist.bioLine ?? undefined,
+    };
   }
 
   const fallbackCue = findActiveSyntheticCue(syntheticCues, focusLaneElapsedMs);
@@ -110,8 +94,6 @@ export function resolvePlaybackFocusFixture(input: ResolvePlaybackFocusInput): P
     currentTimeMs,
     subtitleSegments,
     subtitleReady,
-    awaitingSubtitles,
-    isRadio,
     syntheticCues,
     artist,
     recording,
@@ -129,18 +111,16 @@ export function resolvePlaybackFocusFixture(input: ResolvePlaybackFocusInput): P
     subtitleSegments,
   });
 
-  if (subtitlesEnabled && (usableSubtitles || awaitingSubtitles)) {
-    if (usableSubtitles) {
-      const currentTimeSec = currentTimeMs / 1000;
-      const activeSegment = findActiveSegment(subtitleSegments!, currentTimeSec);
-      const text = activeSegment?.text.trim();
-      if (text) {
-        return {
-          type: "subtitle",
-          text,
-          cueId: `real:${activeSegment?.start ?? 0}-${activeSegment?.end ?? 0}`,
-        };
-      }
+  if (usableSubtitles) {
+    const currentTimeSec = currentTimeMs / 1000;
+    const activeSegment = findActiveSegment(subtitleSegments!, currentTimeSec);
+    const text = activeSegment?.text.trim();
+    if (text) {
+      return {
+        type: "subtitle",
+        text,
+        cueId: `real:${activeSegment?.start ?? 0}-${activeSegment?.end ?? 0}`,
+      };
     }
 
     return { type: "none" };
@@ -151,18 +131,9 @@ export function resolvePlaybackFocusFixture(input: ResolvePlaybackFocusInput): P
     focusState.bodyFadedAtTrackMs,
   );
 
-  const synthetic = resolveSyntheticFixture({
-    focusLaneElapsedMs,
-    syntheticCues,
-    artist,
-    isRadio,
-  });
+  const synthetic = resolveSyntheticFixture({ focusLaneElapsedMs, syntheticCues, artist });
   if (synthetic) {
     return synthetic;
-  }
-
-  if (isRadio) {
-    return { type: "none" };
   }
 
   const title = recording?.title?.trim();

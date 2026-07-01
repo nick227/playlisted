@@ -14,23 +14,15 @@ export function useActivePlayback() {
   const [radioTime, setRadioTime] = useState(0);
 
   useEffect(() => {
-    if (!isRadioActive || !nowPlaying) {
-      setRadioTime(0);
-      return;
-    }
-
+    if (!isRadioActive || !nowPlaying) return;
     const audio = radioAudioRef.current;
-    const stationElapsed = getRadioSeekTime(nowPlaying.elapsedSeconds, nowPlaying.durationSeconds);
-
-    if (!audio) {
-      setRadioTime(stationElapsed);
-      return;
-    }
+    if (!audio) return;
 
     const syncFromAudio = () => {
       setRadioTime(audio.currentTime);
     };
 
+    const stationElapsed = getRadioSeekTime(nowPlaying.elapsedSeconds, nowPlaying.durationSeconds);
     if (audio.currentTime < 0.5 && stationElapsed > 0.5) {
       setRadioTime(stationElapsed);
     } else {
@@ -39,23 +31,11 @@ export function useActivePlayback() {
 
     audio.addEventListener("timeupdate", syncFromAudio);
     audio.addEventListener("seeked", syncFromAudio);
-    audio.addEventListener("playing", syncFromAudio);
-
     return () => {
       audio.removeEventListener("timeupdate", syncFromAudio);
       audio.removeEventListener("seeked", syncFromAudio);
-      audio.removeEventListener("playing", syncFromAudio);
     };
   }, [isRadioActive, nowPlaying, radioAudioRef]);
-
-  useEffect(() => {
-    if (!isRadioActive || !nowPlaying) return;
-    const audio = radioAudioRef.current;
-    if (audio && !audio.paused) return;
-
-    const stationElapsed = getRadioSeekTime(nowPlaying.elapsedSeconds, nowPlaying.durationSeconds);
-    setRadioTime((prev) => (stationElapsed > prev + 1.5 || prev < 0.5 ? stationElapsed : prev));
-  }, [isRadioActive, nowPlaying?.elapsedSeconds, nowPlaying?.id, radioAudioRef]);
 
   const activeTrack = isRadioActive ? nowPlaying : currentTrack;
   const isPlaying = isRadioActive ? radioPlaying : sitePlaying;

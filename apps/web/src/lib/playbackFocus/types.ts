@@ -49,8 +49,6 @@ export type ResolvePlaybackFocusInput = {
   currentTimeMs: number;
   subtitleSegments: SubtitleSegment[] | null | undefined;
   subtitleReady: boolean;
-  awaitingSubtitles: boolean;
-  isRadio: boolean;
   syntheticCues: SyntheticSubtitleCue[];
   artist: FocusArtist | null;
   recording: FocusRecording | null;

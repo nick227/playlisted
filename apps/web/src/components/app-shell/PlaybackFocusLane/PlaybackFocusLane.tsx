@@ -21,7 +21,7 @@ type PlaybackFocusLaneProps = {
 export function PlaybackFocusLane({ focusState }: PlaybackFocusLaneProps) {
   const { accessToken } = useAuth();
   const { subtitlesEnabled } = useSubtitleDisplay();
-  const { track, isPlaying, currentTime, isRadio } = useActivePlayback();
+  const { track, isPlaying, currentTime } = useActivePlayback();
   const [subtitles, setSubtitles] = useState<RecordingSubtitlesResponse | null>(null);
 
   const recording = useMemo(() => toFocusRecording(track), [track]);
@@ -31,14 +31,10 @@ export function PlaybackFocusLane({ focusState }: PlaybackFocusLaneProps) {
     [recording],
   );
 
-  const shouldLoadSubtitles = Boolean(subtitlesEnabled && isPlaying && recording?.id);
-  const awaitingSubtitles = Boolean(
-    shouldLoadSubtitles &&
-    (!subtitles || subtitles.status === "QUEUED" || subtitles.status === "PROCESSING"),
-  );
+  const canLoadSubtitles = Boolean(subtitlesEnabled && isPlaying && recording?.id);
 
   useEffect(() => {
-    if (!shouldLoadSubtitles || !recording?.id) {
+    if (!canLoadSubtitles || !recording?.id) {
       setSubtitles(null);
       return;
     }
@@ -66,7 +62,7 @@ export function PlaybackFocusLane({ focusState }: PlaybackFocusLaneProps) {
       cancelled = true;
       if (pollTimer !== null) window.clearTimeout(pollTimer);
     };
-  }, [accessToken, shouldLoadSubtitles, recording?.id]);
+  }, [accessToken, canLoadSubtitles, recording?.id]);
 
   const currentTimeMs = currentTime * 1000;
 
@@ -76,8 +72,6 @@ export function PlaybackFocusLane({ focusState }: PlaybackFocusLaneProps) {
         currentTimeMs,
         subtitleSegments: subtitles?.segments,
         subtitleReady: subtitles?.status === "READY",
-        awaitingSubtitles,
-        isRadio,
         syntheticCues,
         artist,
         recording,
@@ -86,10 +80,8 @@ export function PlaybackFocusLane({ focusState }: PlaybackFocusLaneProps) {
       }),
     [
       artist,
-      awaitingSubtitles,
       currentTimeMs,
       focusState,
-      isRadio,
       recording,
       subtitles?.segments,
       subtitles?.status,
