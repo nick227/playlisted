@@ -126,7 +126,15 @@ export function PlaybackFocusLayer({
             event.stopPropagation();
             onReturn();
           }}
-          onClick={onReturn}
+          onPointerUp={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+          }}
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            onReturn();
+          }}
           className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/15 bg-white/10 text-white transition hover:border-white/30 hover:bg-white/18"
           aria-label="Return to page"
         >

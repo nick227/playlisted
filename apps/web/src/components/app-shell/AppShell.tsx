@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type SyntheticEvent } from "react";
 import { useLocation } from "react-router-dom";
 
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
@@ -204,8 +204,19 @@ export function AppShell({ children }: AppShellProps) {
     }, playbackFocusTiming.snapRevealMs);
   }, [armPlayFocus, bodyFocusHidden, clearSnapRevealTimer, miniViewVisible]);
 
+  const consumeRevealEvent = useCallback((event: SyntheticEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+  }, []);
+
+  const handleRevealEvent = useCallback((event: SyntheticEvent) => {
+    consumeRevealEvent(event);
+    revealPage();
+  }, [consumeRevealEvent, revealPage]);
+
   const bodyFocusMode = playFocusActive && bodyFocusHidden && !playbackFocusSuppressed;
   const miniViewMode = playFocusActive && miniViewVisible && !playbackFocusSuppressed;
+  const revealShieldVisible = bodyFocusMode || snapReveal;
   const playFocusHasPlayer = playerShellActive;
   const focusState = useMemo(
     () => ({
@@ -221,7 +232,10 @@ export function AppShell({ children }: AppShellProps) {
       <BackgroundLayer />
       <Sidebar mobileOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="relative z-10 flex min-h-full min-w-0 w-full max-w-full flex-1 flex-col">
-        <TopBar onMenuClick={() => setSidebarOpen(true)} />
+        <TopBar
+          onMenuClick={() => setSidebarOpen(true)}
+          cinematicBgTransparent={bodyFocusMode}
+        />
         <main
           ref={mainRef}
           key={location.pathname}
@@ -238,15 +252,13 @@ export function AppShell({ children }: AppShellProps) {
           {children}
         </main>
       </div>
-      {bodyFocusMode ? (
+      {revealShieldVisible ? (
         <button
           type="button"
           className={`play-focus-theatre-hit-area${playFocusHasPlayer ? "" : " play-focus-theatre-hit-area--no-player"}`}
-          onPointerDown={(event) => {
-            event.preventDefault();
-            revealPage();
-          }}
-          onClick={revealPage}
+          onPointerDown={handleRevealEvent}
+          onPointerUp={consumeRevealEvent}
+          onClick={handleRevealEvent}
           aria-label="Show page content"
         />
       ) : null}

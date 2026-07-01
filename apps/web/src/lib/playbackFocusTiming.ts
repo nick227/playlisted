@@ -41,12 +41,16 @@ export const playbackFocusTiming = {
   },
 
   miniView: {
-    delayMs: 3000,
+    delayMs: 6500,
     fadeInMs: 620,
   },
 
   sidebarNav: {
     blurDelayMs: 3500,
+    fadeMs: 620,
+  },
+
+  topBarBgFade: {
     fadeMs: 620,
   },
 
@@ -99,4 +103,5 @@ export function applyPlaybackFocusTimingCssVars(root: HTMLElement) {
   );
   root.style.setProperty("--duration-play-focus-body-fade", ms(playbackFocusTiming.body.fadeOutMs));
   root.style.setProperty("--duration-sidebar-nav-fade", ms(playbackFocusTiming.sidebarNav.fadeMs));
+  root.style.setProperty("--duration-topbar-bg-fade", ms(playbackFocusTiming.topBarBgFade.fadeMs));
 }

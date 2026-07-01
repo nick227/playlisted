@@ -368,6 +368,18 @@ body {
     bottom var(--duration-player-enter) var(--ease-player-enter);
 }
 
+.topbar-chrome {
+  background-color: color-mix(in srgb, var(--color-canvas) 95%, transparent);
+  transition:
+    background-color var(--duration-topbar-bg-fade, 620ms) var(--ease-play-focus-fade),
+    backdrop-filter var(--duration-topbar-bg-fade, 620ms) var(--ease-play-focus-fade);
+}
+
+.topbar-chrome.is-play-focus-bg-transparent {
+  background-color: transparent;
+  backdrop-filter: none;
+}
+
 .play-focus-content {
   transition:
     opacity var(--duration-play-focus-body-fade) var(--ease-play-focus-fade),
@@ -389,7 +401,7 @@ body {
 .play-focus-theatre-hit-area {
   position: fixed;
   inset: var(--spacing-topbar) 0 var(--spacing-player-safe-mobile) 0;
-  z-index: 20;
+  z-index: 9990;
   cursor: default;
   border: 0;
   padding: 0;
@@ -416,7 +428,7 @@ body {
   left: max(1rem, env(safe-area-inset-left));
   right: max(1rem, env(safe-area-inset-right));
   bottom: var(--play-focus-layer-bottom-mobile);
-  z-index: 30;
+  z-index: 9991;
   display: flex;
   justify-content: center;
   pointer-events: none;

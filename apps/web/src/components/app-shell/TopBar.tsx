@@ -7,6 +7,7 @@ import { TopBarSearch } from "./TopBarSearch";
 
 interface TopBarProps {
   onMenuClick: () => void;
+  cinematicBgTransparent?: boolean;
 }
 
 /**
@@ -22,12 +23,16 @@ interface TopBarProps {
  *   • Login / sign-up links replace the mobile avatar shortcut.
  *   • Hamburger hidden from lg up (persistent sidebar).
  */
-export function TopBar({ onMenuClick }: TopBarProps) {
+export function TopBar({ onMenuClick, cinematicBgTransparent = false }: TopBarProps) {
   /** Mobile-only: false = icon trigger + full wordmark; true = expanded search + PL mini. */
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-40 flex h-[var(--spacing-topbar)] w-full min-w-0 max-w-full shrink-0 items-center gap-1.5 sm:gap-3 overflow-x-clip border-b border-[var(--color-border)] bg-[var(--color-canvas)]/95 px-2 sm:px-4 backdrop-blur-md">
+    <header
+      className={`topbar-chrome sticky top-0 z-40 flex h-[var(--spacing-topbar)] w-full min-w-0 max-w-full shrink-0 items-center gap-1.5 overflow-x-clip border-b border-[var(--color-border)] px-2 backdrop-blur-md sm:gap-3 sm:px-4${
+        cinematicBgTransparent ? " is-play-focus-bg-transparent" : ""
+      }`}
+    >
       <TopBarMenuButton onClick={onMenuClick} />
       <TopBarBrand mobileSearchOpen={mobileSearchOpen} />
       {mobileSearchOpen ? (

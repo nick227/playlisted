@@ -355,7 +355,7 @@ export function CollectionView({
   const isEdit = mode === "edit";
   const isOwner = Boolean(user?.id && user.id === playlist.ownerId);
   const coverArtClassName =
-    "h-[min(70vw,350px)] w-[min(70vw,100%)] min-w-0 overflow-hidden rounded-lg object-cover sm:h-[350px] sm:w-[100%]";
+    "h-[min(70vw,350px)] w-full min-w-0 overflow-hidden rounded-lg object-cover sm:h-[350px] sm:w-[100%]";
   const recordings = playlist.recordings as CollectionRecording[];
 
   const coverStyle = playlist.coverArtUrl
@@ -392,8 +392,8 @@ export function CollectionView({
         <div className="mb-6 flex flex-wrap items-center gap-3">{editToolbar}</div>
       ) : null}
 
-      <div className="flex flex-row gap-8 rounded-lg p-2 max-w-3xl">
-        <div className="mx-auto shrink-0 md:mx-0 flex justify-center align-center max-w-[50%]">
+      <div className="flex flex-col lg:flex-row gap-8 rounded-lg p-2 max-w-3xl">
+        <div className="mx-auto shrink-0 md:mx-0 flex justify-center align-center w-full lg:max-w-[50%]">
           <button
             type="button"
             onClick={isEdit ? onCoverClick : undefined}

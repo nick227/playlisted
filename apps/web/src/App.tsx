@@ -109,6 +109,10 @@ function MainRoutes() {
   return (
     <AppShell>
       <Routes>
+        <Route element={<AuthLayout />}>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+        </Route>
         <Route path="/" element={<HomePage />} />
         <Route path="/charts" element={<ChartsPage />} />
         <Route path="/search" element={<SearchPage />} />
@@ -240,13 +244,7 @@ export function App() {
     <BrowserRouter>
       <RadioPlayerProvider>
         <Suspense fallback={null}>
-          <Routes>
-            <Route element={<AuthLayout />}>
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/register" element={<RegisterPage />} />
-            </Route>
-            <Route path="/*" element={<MainRoutes />} />
-          </Routes>
+          <MainRoutes />
         </Suspense>
       </RadioPlayerProvider>
     </BrowserRouter>

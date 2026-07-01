@@ -32,7 +32,7 @@ export function ChartsFilterBar({
   onGenreChange,
 }: ChartsFilterBarProps) {
   return (
-    <div className="sticky top-0 z-10 -mx-4 border-b border-[var(--color-border)] bg-[var(--color-canvas)]/95 px-4 py-3 backdrop-blur-md sm:-mx-6 sm:px-6">
+    <div className="sticky top-0 z-10 border-b border-[var(--color-border)] bg-[var(--color-canvas)]/95 px-4 py-3 backdrop-blur-md rounded-lg">
       <div className="flex flex-wrap items-center gap-2" role="tablist" aria-label="Chart category">
         {TAB_OPTIONS.map((option) => (
           <button
