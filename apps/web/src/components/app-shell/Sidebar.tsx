@@ -21,6 +21,7 @@ import { useCollectionPlaylists } from "@/hooks/useCollections";
 import { usePlaylists } from "@/hooks/usePlaylists";
 import { authedApi } from "@/lib/authedApi";
 import { playbackFocusTiming } from "@/lib/playbackFocusTiming";
+import { usePlaybackFocusSuppressed } from "@/lib/playbackFocusSuppression";
 import {
   ARTISTS_PATH,
   FAVORITES_PATH,
@@ -108,6 +109,7 @@ function SubNavItem({
 
 export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
   const blurTimerRef = useRef<number | null>(null);
+  const playbackFocusSuppressed = usePlaybackFocusSuppressed();
   const { status, user, accessToken } = useAuth();
   const client = authedApi(accessToken);
   const navigate = useNavigate();
@@ -154,12 +156,18 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
 
   const scheduleNavFade = useCallback(() => {
     clearBlurTimer();
-    if (mobileOpen) return;
+    if (mobileOpen || playbackFocusSuppressed) return;
     blurTimerRef.current = window.setTimeout(() => {
       setNavDimmed(true);
       blurTimerRef.current = null;
     }, playbackFocusTiming.sidebarNav.blurDelayMs);
-  }, [clearBlurTimer, mobileOpen]);
+  }, [clearBlurTimer, mobileOpen, playbackFocusSuppressed]);
+
+  useEffect(() => {
+    if (playbackFocusSuppressed) {
+      showNav();
+    }
+  }, [playbackFocusSuppressed, showNav]);
 
   useEffect(() => {
     if (mobileOpen) {

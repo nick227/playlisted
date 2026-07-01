@@ -4,6 +4,7 @@ import { useLocation } from "react-router-dom";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 import { useRadioPlayer } from "@/providers/RadioPlayerProvider";
 import { playbackFocusTiming } from "@/lib/playbackFocusTiming";
+import { usePlaybackFocusSuppressed } from "@/lib/playbackFocusSuppression";
 
 import { BackgroundLayer } from "./BackgroundLayer";
 
@@ -27,6 +28,7 @@ export function AppShell({ children }: AppShellProps) {
   const [bodyFocusHidden, setBodyFocusHidden] = useState(false);
   const [miniViewVisible, setMiniViewVisible] = useState(false);
   const [snapReveal, setSnapReveal] = useState(false);
+  const playbackFocusSuppressed = usePlaybackFocusSuppressed();
   const location = useLocation();
   const {
     currentTrack,
@@ -95,7 +97,7 @@ export function AppShell({ children }: AppShellProps) {
     clearFocusTimer();
     setBodyFocusHidden(false);
     setMiniViewVisible(false);
-    if (!playFocusActive) return;
+    if (!playFocusActive || playbackFocusSuppressed) return;
     const bodyDelayMs = playbackFocusTiming.body.delayMs > 0
       ? playbackFocusTiming.body.delayMs
       : 3000;
@@ -112,7 +114,14 @@ export function AppShell({ children }: AppShellProps) {
         miniViewTimerRef.current = null;
       }, miniViewDelayMs);
     }
-  }, [clearFocusTimer, playFocusActive, focusTrack?.sourceLabel]);
+  }, [clearFocusTimer, playFocusActive, playbackFocusSuppressed, focusTrack?.sourceLabel]);
+
+  useEffect(() => {
+    if (!playbackFocusSuppressed) return;
+    clearFocusTimer();
+    setBodyFocusHidden(false);
+    setMiniViewVisible(false);
+  }, [clearFocusTimer, playbackFocusSuppressed]);
 
   useEffect(() => {
     armPlayFocus();
@@ -120,7 +129,7 @@ export function AppShell({ children }: AppShellProps) {
       clearFocusTimer();
       clearSnapRevealTimer();
     };
-  }, [armPlayFocus, clearFocusTimer, clearSnapRevealTimer, focusTrackKey, location.pathname, location.search]);
+  }, [armPlayFocus, clearFocusTimer, clearSnapRevealTimer, focusTrackKey, location.pathname, location.search, playbackFocusSuppressed]);
 
   useEffect(() => {
     if (!playFocusActive) return;
@@ -159,15 +168,15 @@ export function AppShell({ children }: AppShellProps) {
     }, playbackFocusTiming.snapRevealMs);
   }, [armPlayFocus, bodyFocusHidden, clearSnapRevealTimer, miniViewVisible]);
 
-  const bodyFocusMode = playFocusActive && bodyFocusHidden;
-  const miniViewMode = playFocusActive && miniViewVisible;
+  const bodyFocusMode = playFocusActive && bodyFocusHidden && !playbackFocusSuppressed;
+  const miniViewMode = playFocusActive && miniViewVisible && !playbackFocusSuppressed;
   const playFocusHasPlayer = playerShellActive;
   const focusState = useMemo(
     () => ({
-      playFocusActive,
+      playFocusActive: playFocusActive && !playbackFocusSuppressed,
       hasBodyFaded: bodyFocusMode,
     }),
-    [bodyFocusMode, playFocusActive],
+    [bodyFocusMode, playFocusActive, playbackFocusSuppressed],
   );
 
   return (
@@ -179,7 +188,7 @@ export function AppShell({ children }: AppShellProps) {
         <main
           ref={mainRef}
           key={location.pathname}
-          className={`player-shell-transition play-focus-content flex-1 min-w-0 max-w-full overflow-x-clip overflow-y-auto px-4 pt-2 md:px-8 ${
+          className={`player-shell-transition play-focus-content flex-1 min-w-0 max-w-full overflow-x-clip overflow-y-auto px-4 md:px-8 ${
             bodyFocusMode ? "is-play-focus-hidden" : ""
           } ${
             snapReveal ? "is-play-focus-revealing" : ""
