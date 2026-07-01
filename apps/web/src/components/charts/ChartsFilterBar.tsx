@@ -73,7 +73,7 @@ export function ChartsFilterBar({
             id="charts-genre"
             value={genre ?? ""}
             onChange={(e) => onGenreChange(e.target.value || null)}
-            className="rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-1.5 text-xs text-white outline-none focus:border-[var(--color-brand)]/50"
+            className="rounded-lg border border-white/10 px-2.5 py-1.5 text-xs outline-none focus:border-[var(--color-brand)]/50"
           >
             <option value="">All genres</option>
             {genres.map((g) => (
