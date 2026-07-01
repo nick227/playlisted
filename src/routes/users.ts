@@ -153,7 +153,7 @@ usersRouter.get("/by-username/:username/playlists/:slug", async (req, res, next)
             recording: {
               include: {
                 uploader: { select: { id: true, username: true, displayName: true, avatarUrl: true, role: true } },
-                subtitle: subtitleInclude(),
+                subtitles: subtitleInclude(),
               },
             },
           },

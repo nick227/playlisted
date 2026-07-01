@@ -51,6 +51,7 @@ function jsonObject(value: Record<string, unknown>): Prisma.InputJsonObject {
 }
 
 function assertProductionProvider(provider: string) {
+  if (provider === "whisper") return; // Allow whisper anywhere
   if (requireModalProvider && provider !== "modal") {
     throw new Error(
       "Production subtitle worker requires SUBTITLES_PROVIDER=modal. Set SUBTITLES_WORKER_ALLOW_NON_MODAL=true only for an intentional non-production override.",
@@ -111,7 +112,7 @@ async function processNextSubtitle() {
   if (claimed.count !== 1) return true;
 
   log("subtitle.job.claimed", { recordingId: next.recordingId, subtitleId: next.id });
-  const provider = getSubtitleProvider();
+  const provider = next.source === "WHISPER" ? "whisper" : getSubtitleProvider();
   const attempt = await prisma.recordingSubtitleAttempt.create({
     data: {
       subtitleId: next.id,

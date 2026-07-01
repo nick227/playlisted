@@ -63,7 +63,7 @@ export function StudioHistoryPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="mx-auto max-w-3xl bg-[var(--color-canvas)]/80">
       <Link
         to="/studio"
         className="mb-4 inline-flex text-sm font-semibold text-[var(--color-brand)] hover:underline"

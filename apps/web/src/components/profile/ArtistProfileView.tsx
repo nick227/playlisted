@@ -90,12 +90,12 @@ export function ArtistProfileView({ user, preview }: ArtistProfileViewProps) {
   }
 
   return (
-    <div className="pb-16">
-      <div className={ARTIST_PROFILE_LAYOUT_CLASS}>
+    <div className="pb-16 mx-auto max-w-3xl bg-[var(--color-canvas)]/80">
+      <div className="py-2 px-4">
         <BrowseBreadcrumbs crumbs={browseCrumbs} />
       </div>
 
-      <div className="mx-auto mt-5 max-w-7xl space-y-10">
+      <div className="space-y-10">
         <ArtistProfileHero
           user={user}
           genreNames={genreNames}
@@ -128,7 +128,7 @@ export function ArtistProfileView({ user, preview }: ArtistProfileViewProps) {
       </div>
 
       {relatedArtists.length > 0 ? (
-        <div className={`${ARTIST_PROFILE_LAYOUT_CLASS} mt-14`}>
+        <div className={`${ARTIST_PROFILE_LAYOUT_CLASS} mt-4`}>
           <ContentRow title="More Artists">
             {relatedArtists.map((item: TopArtistItem) => (
               <ArtistCard

@@ -1,6 +1,6 @@
 import type { SubtitleSegment } from "../vtt.js";
 
-export type SubtitleProviderName = "local-python" | "modal" | "disabled";
+export type SubtitleProviderName = "local-python" | "modal" | "whisper" | "disabled";
 
 export type SubtitleProviderInput = {
   subtitleId: string;

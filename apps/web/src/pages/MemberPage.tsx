@@ -29,7 +29,7 @@ export function MemberPage() {
         <div className={ARTIST_PROFILE_LAYOUT_CLASS}>
           <BrowseBreadcrumbs crumbs={artistDetailCrumbs(fallbackName)} />
         </div>
-        <div className="mx-auto mt-5 max-w-7xl space-y-10">
+        <div className="mx-auto mt-5 max-w-7xl space-y-10 bg-[var(--color-canvas)]/50">
           <Skeleton className="h-[420px] w-full rounded-3xl" />
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {Array.from({ length: 4 }).map((_, index) => (

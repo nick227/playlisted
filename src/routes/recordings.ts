@@ -10,11 +10,13 @@ import { requireAuth } from "../lib/requireAuth.js";
 import { prisma } from "../lib/prisma.js";
 import { parsePageSize, parsePositivePage } from "../lib/pagination.js";
 import { mapSubtitleSummary, subtitleInclude } from "../lib/subtitles/summary.js";
+import { transcriptsRouter } from "./transcripts.js";
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_PAGE_SIZE = 20;
 
 export const recordingsRouter = Router();
+recordingsRouter.use("/:recordingId/transcripts", transcriptsRouter);
 
 function mapRecordingSummary(recording: any) {
   return {
@@ -37,7 +39,7 @@ function mapRecordingSummary(recording: any) {
     releaseDate: recording.releaseDate?.toISOString() ?? null,
     publishedAt: recording.publishedAt?.toISOString() ?? null,
     playCount: recording.playCount,
-    subtitle: mapSubtitleSummary(recording.subtitle),
+    subtitle: mapSubtitleSummary(recording.subtitles),
     createdAt: recording.createdAt.toISOString(),
     updatedAt: recording.updatedAt.toISOString(),
   };
@@ -106,7 +108,7 @@ recordingsRouter.get("/", async (req, res, next) => {
     const [items, total] = await Promise.all([
       prisma.recording.findMany({
         where,
-        include: { publishedPlaylist: { select: { coverArtUrl: true } }, subtitle: subtitleInclude() },
+        include: { publishedPlaylist: { select: { coverArtUrl: true } }, subtitles: subtitleInclude() },
         orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
         skip: (page - 1) * pageSize,
         take: pageSize,
@@ -130,7 +132,7 @@ recordingsRouter.get("/:recordingId", async (req, res, next) => {
       include: {
         uploader: true,
         publishedPlaylist: true,
-        subtitle: subtitleInclude(),
+        subtitles: subtitleInclude(),
       },
     });
 
@@ -209,7 +211,7 @@ recordingsRouter.patch("/:recordingId", async (req, res, next) => {
       include: {
         uploader: true,
         publishedPlaylist: true,
-        subtitle: subtitleInclude(),
+        subtitles: subtitleInclude(),
       },
     });
 
@@ -308,7 +310,7 @@ recordingsRouter.post("/", async (req, res, next) => {
         include: {
           uploader: true,
           publishedPlaylist: true,
-          subtitle: subtitleInclude(),
+          subtitles: subtitleInclude(),
         },
       });
     });
@@ -335,7 +337,7 @@ recordingsRouter.get("/:recordingId/subtitles", async (req, res, next) => {
       include: {
         uploader: { select: { id: true } },
         publishedPlaylist: true,
-        subtitle: true,
+        subtitles: { where: { isActive: true }, take: 1 },
       },
     });
 
@@ -356,28 +358,30 @@ recordingsRouter.get("/:recordingId/subtitles", async (req, res, next) => {
       });
     }
 
-    if (!recording.subtitle) {
+    if (!recording.subtitles || recording.subtitles.length === 0) {
       return res.json({ status: "QUEUED" });
     }
 
-    if (recording.subtitle.status !== "READY") {
+    const activeSubtitle = recording.subtitles[0];
+
+    if (activeSubtitle.status !== "READY") {
       const canSeeRawError =
-        recording.subtitle.status === "FAILED" &&
+        activeSubtitle.status === "FAILED" &&
         (auth?.user.role === "ADMIN" || auth?.user.id === recording.uploaderId);
 
       return res.json({
-        status: recording.subtitle.status,
-        ...(recording.subtitle.status === "FAILED"
-          ? { errorMessage: canSeeRawError ? recording.subtitle.errorMessage ?? "Subtitles unavailable" : "Subtitles unavailable" }
+        status: activeSubtitle.status,
+        ...(activeSubtitle.status === "FAILED"
+          ? { errorMessage: canSeeRawError ? activeSubtitle.errorMessage ?? "Subtitles unavailable" : "Subtitles unavailable" }
           : {}),
       });
     }
 
     return res.json({
-      status: recording.subtitle.status,
-      language: recording.subtitle.language,
-      segments: recording.subtitle.segments ?? [],
-      vttText: recording.subtitle.vttText ?? "",
+      status: activeSubtitle.status,
+      language: activeSubtitle.language,
+      segments: activeSubtitle.segments ?? [],
+      vttText: activeSubtitle.vttText ?? "",
     });
   } catch (error) {
     return next(error);

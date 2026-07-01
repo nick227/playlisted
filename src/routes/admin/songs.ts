@@ -31,7 +31,7 @@ const adminSongInclude = {
   },
   tags: { include: { tag: { select: { id: true, name: true, slug: true, kind: true } } } },
   _count: { select: { saves: true } },
-  subtitle: subtitleInclude(),
+  subtitles: subtitleInclude(),
 } as const;
 
 function mapTagRef(t: { tag: { id: string; name: string; slug: string; kind: string } }) {
@@ -83,7 +83,7 @@ function mapSong(r: any) {
     status: r.status,
     explicit: r.explicit,
     playCount: r.playCount,
-    subtitle: mapSubtitleSummary(r.subtitle),
+    subtitle: mapSubtitleSummary(r.subtitles),
     publishedAt: r.publishedAt?.toISOString() ?? null,
     createdAt: r.createdAt.toISOString(),
     updatedAt: r.updatedAt.toISOString(),

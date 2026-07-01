@@ -94,11 +94,11 @@ export function mapRecordingInPlaylist(recording: {
     role: string;
   };
   tags?: { tag: { id: string; name: string; slug: string; kind: string } }[];
-  subtitle?: {
+  subtitles?: {
     status: "QUEUED" | "PROCESSING" | "READY" | "FAILED";
     language: string | null;
     generatedAt: Date | null;
-  } | null;
+  }[];
 }, fallbackArtworkUrl?: string | null) {
   return {
     id: recording.id,
@@ -119,7 +119,7 @@ export function mapRecordingInPlaylist(recording: {
     explicit: recording.explicit,
     releaseDate: recording.releaseDate?.toISOString() ?? null,
     playCount: recording.playCount,
-    subtitle: mapSubtitleSummary(recording.subtitle),
+    subtitle: mapSubtitleSummary(recording.subtitles),
     publishedAt: recording.publishedAt?.toISOString() ?? null,
     createdAt: recording.createdAt.toISOString(),
     updatedAt: recording.updatedAt.toISOString(),
@@ -161,7 +161,7 @@ export const playlistDetailInclude = {
             select: { id: true, username: true, displayName: true, avatarUrl: true, role: true },
           },
           tags: { include: { tag: true } },
-          subtitle: subtitleInclude(),
+          subtitles: subtitleInclude(),
         },
       },
     },

@@ -62,7 +62,7 @@ export function StudioLinksPage() {
   if (!user) return null;
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="mx-auto max-w-3xl bg-[var(--color-canvas)]/80">
       <Link
         to="/studio"
         className="mb-8 inline-flex items-center gap-2 text-sm font-semibold text-[var(--color-text-muted)] transition hover:text-white"

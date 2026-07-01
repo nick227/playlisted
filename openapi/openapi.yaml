@@ -30,7 +30,7 @@ tags:
 paths:
   /api/v1/health:
     get:
-      tags: [System]
+      tags: [ System ]
       operationId: getHealth
       summary: Health check
       responses:
@@ -43,7 +43,7 @@ paths:
 
   /api/v1/radio:
     get:
-      tags: [Radio]
+      tags: [ Radio ]
       operationId: getRadioStation
       summary: Get public radio now-playing state
       responses:
@@ -56,7 +56,7 @@ paths:
 
   /api/v1/radio/listeners/heartbeat:
     post:
-      tags: [Radio]
+      tags: [ Radio ]
       operationId: heartbeatRadioListener
       summary: Mark an anonymous radio listener as active
       requestBody:
@@ -75,7 +75,7 @@ paths:
 
   /api/v1/radio/chat:
     post:
-      tags: [Radio]
+      tags: [ Radio ]
       operationId: createRadioChatMessage
       summary: Send an anonymous radio chat message
       requestBody:
@@ -100,7 +100,7 @@ paths:
 
   /api/v1/radio/admin:
     get:
-      tags: [Radio]
+      tags: [ Radio ]
       operationId: getRadioAdminStation
       summary: Get radio state for admin tools
       security:
@@ -127,7 +127,7 @@ paths:
 
   /api/v1/auth/register:
     post:
-      tags: [Auth]
+      tags: [ Auth ]
       operationId: register
       summary: Register a user and create a session
       requestBody:
@@ -152,7 +152,7 @@ paths:
 
   /api/v1/auth/login:
     post:
-      tags: [Auth]
+      tags: [ Auth ]
       operationId: login
       summary: Log in with email and password
       requestBody:
@@ -177,7 +177,7 @@ paths:
 
   /api/v1/auth/me:
     get:
-      tags: [Auth]
+      tags: [ Auth ]
       operationId: getMe
       summary: Get the current authenticated user
       security:
@@ -198,7 +198,7 @@ paths:
 
   /api/v1/auth/logout:
     post:
-      tags: [Auth]
+      tags: [ Auth ]
       operationId: logout
       summary: Revoke the current session
       security:
@@ -215,7 +215,7 @@ paths:
 
   /api/v1/me/playlists:
     get:
-      tags: [Me]
+      tags: [ Me ]
       operationId: listMyPlaylists
       summary: List playlists owned by the current user
       security:
@@ -239,7 +239,7 @@ paths:
 
   /api/v1/me/recordings:
     get:
-      tags: [Me]
+      tags: [ Me ]
       operationId: listMyRecordings
       summary: List recordings uploaded by the current user
       security:
@@ -263,7 +263,7 @@ paths:
 
   /api/v1/me/favorites/recordings:
     get:
-      tags: [Me]
+      tags: [ Me ]
       operationId: listFavoriteRecordings
       summary: List the current user's favorited recordings
       security:
@@ -287,7 +287,7 @@ paths:
 
   /api/v1/me/favorites/recordings/{recordingId}:
     post:
-      tags: [Me]
+      tags: [ Me ]
       operationId: addFavoriteRecording
       summary: Add a recording to favorites
       security:
@@ -318,7 +318,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     delete:
-      tags: [Me]
+      tags: [ Me ]
       operationId: removeFavoriteRecording
       summary: Remove a recording from favorites
       security:
@@ -341,7 +341,7 @@ paths:
 
   /api/v1/me/collections/playlists:
     get:
-      tags: [Me]
+      tags: [ Me ]
       operationId: listCollectionPlaylists
       summary: List playlists saved to the current user's collections
       security:
@@ -365,7 +365,7 @@ paths:
 
   /api/v1/me/collections/playlists/{playlistId}:
     post:
-      tags: [Me]
+      tags: [ Me ]
       operationId: addCollectionPlaylist
       summary: Add a playlist to the current user's collections
       security:
@@ -402,7 +402,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     delete:
-      tags: [Me]
+      tags: [ Me ]
       operationId: removeCollectionPlaylist
       summary: Remove a playlist from the current user's collections
       security:
@@ -425,7 +425,7 @@ paths:
 
   /api/v1/me/favorites/playlists:
     get:
-      tags: [Me]
+      tags: [ Me ]
       operationId: listFavoritePlaylists
       summary: List the current user's favorited playlists
       security:
@@ -449,7 +449,7 @@ paths:
 
   /api/v1/me/favorites/playlists/{playlistId}:
     post:
-      tags: [Me]
+      tags: [ Me ]
       operationId: addFavoritePlaylist
       summary: Add a playlist to favorites
       security:
@@ -480,7 +480,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     delete:
-      tags: [Me]
+      tags: [ Me ]
       operationId: removeFavoritePlaylist
       summary: Remove a playlist from favorites
       security:
@@ -503,7 +503,7 @@ paths:
 
   /api/v1/me/favorites/artists:
     get:
-      tags: [Me]
+      tags: [ Me ]
       operationId: listFavoriteArtists
       summary: List the current user's favorited artists
       security:
@@ -527,7 +527,7 @@ paths:
 
   /api/v1/me/favorites/artists/{artistId}:
     post:
-      tags: [Me]
+      tags: [ Me ]
       operationId: addFavoriteArtist
       summary: Add an artist to favorites
       security:
@@ -564,7 +564,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     delete:
-      tags: [Me]
+      tags: [ Me ]
       operationId: removeFavoriteArtist
       summary: Remove an artist from favorites
       security:
@@ -587,7 +587,7 @@ paths:
 
   /api/v1/me/follows/artists:
     get:
-      tags: [Me]
+      tags: [ Me ]
       operationId: listFollowedArtists
       summary: List the current user's followed artists
       security:
@@ -611,7 +611,7 @@ paths:
 
   /api/v1/me/follows/artists/{artistId}:
     post:
-      tags: [Me]
+      tags: [ Me ]
       operationId: followArtist
       summary: Follow an artist
       security:
@@ -648,7 +648,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     delete:
-      tags: [Me]
+      tags: [ Me ]
       operationId: unfollowArtist
       summary: Unfollow an artist
       security:
@@ -671,7 +671,7 @@ paths:
 
   /api/v1/me/most-played:
     get:
-      tags: [Me]
+      tags: [ Me ]
       operationId: getMostPlayed
       summary: Get the current user's most-played recordings
       security:
@@ -700,7 +700,7 @@ paths:
 
   /api/v1/me/recently-played:
     get:
-      tags: [Me]
+      tags: [ Me ]
       operationId: getRecentlyPlayed
       summary: Get the current user's recently played recordings (distinct)
       security:
@@ -729,7 +729,7 @@ paths:
 
   /api/v1/me/playback-events:
     post:
-      tags: [Me]
+      tags: [ Me ]
       operationId: createPlaybackEvent
       summary: Log a playback event for the current user
       security:
@@ -762,7 +762,7 @@ paths:
 
   /api/v1/me/analytics/summary:
     get:
-      tags: [Analytics]
+      tags: [ Analytics ]
       operationId: getAnalyticsSummary
       summary: Get analytics summary for the current creator
       security:
@@ -788,7 +788,7 @@ paths:
 
   /api/v1/me/analytics/recordings:
     get:
-      tags: [Analytics]
+      tags: [ Analytics ]
       operationId: getAnalyticsRecordings
       summary: Get per-track analytics for the current creator
       security:
@@ -802,13 +802,13 @@ paths:
           name: sortBy
           schema:
             type: string
-            enum: [plays, duration, completion]
+            enum: [ plays, duration, completion ]
             default: plays
         - in: query
           name: order
           schema:
             type: string
-            enum: [asc, desc]
+            enum: [ asc, desc ]
             default: desc
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/PageSize'
@@ -828,7 +828,7 @@ paths:
 
   /api/v1/me/analytics/playlists:
     get:
-      tags: [Analytics]
+      tags: [ Analytics ]
       operationId: getAnalyticsPlaylists
       summary: Get per-playlist analytics for the current creator
       security:
@@ -842,13 +842,13 @@ paths:
           name: sortBy
           schema:
             type: string
-            enum: [plays, duration, completion, likes, follows]
+            enum: [ plays, duration, completion, likes, follows ]
             default: plays
         - in: query
           name: order
           schema:
             type: string
-            enum: [asc, desc]
+            enum: [ asc, desc ]
             default: desc
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/PageSize'
@@ -868,7 +868,7 @@ paths:
 
   /api/v1/me/playback-history:
     get:
-      tags: [Me]
+      tags: [ Me ]
       operationId: listPlaybackHistory
       summary: List recent playback history for the current user
       security:
@@ -892,7 +892,7 @@ paths:
 
   /api/v1/homepage:
     get:
-      tags: [Homepage]
+      tags: [ Homepage ]
       operationId: getHomepage
       summary: Get curated homepage sections
       responses:
@@ -905,7 +905,7 @@ paths:
 
   /api/v1/charts/top-songs:
     get:
-      tags: [Charts]
+      tags: [ Charts ]
       operationId: getTopSongs
       summary: Get top songs by play count
       parameters:
@@ -935,7 +935,7 @@ paths:
 
   /api/v1/charts/top-playlists:
     get:
-      tags: [Charts]
+      tags: [ Charts ]
       operationId: getTopPlaylists
       summary: Get top playlists by play count
       parameters:
@@ -960,7 +960,7 @@ paths:
 
   /api/v1/charts/top-artists:
     get:
-      tags: [Charts]
+      tags: [ Charts ]
       operationId: getTopArtists
       summary: Get top artists by play count
       parameters:
@@ -985,7 +985,7 @@ paths:
 
   /api/v1/library/genres:
     get:
-      tags: [Library]
+      tags: [ Library ]
       operationId: getLibraryGenres
       summary: List genre tags that have public published songs (library browse)
       parameters:
@@ -1005,7 +1005,7 @@ paths:
 
   /api/v1/library/playlist-genres:
     get:
-      tags: [Library]
+      tags: [ Library ]
       operationId: getLibraryPlaylistGenres
       summary: List genre tags that have public published playlists (library browse)
       responses:
@@ -1018,7 +1018,7 @@ paths:
 
   /api/v1/tags/genres:
     get:
-      tags: [Tags]
+      tags: [ Tags ]
       operationId: getTagGenres
       summary: List all genre tags for authoring
       responses:
@@ -1029,7 +1029,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/LibraryGenresResponse'
     post:
-      tags: [Tags]
+      tags: [ Tags ]
       operationId: createTagGenre
       summary: Create a new genre tag
       security:
@@ -1041,7 +1041,7 @@ paths:
             schema:
               type: object
               additionalProperties: false
-              required: [name]
+              required: [ name ]
               properties:
                 name:
                   type: string
@@ -1067,7 +1067,7 @@ paths:
 
   /api/v1/library/songs:
     get:
-      tags: [Library]
+      tags: [ Library ]
       operationId: getLibrarySongs
       summary: List all public published songs, optionally filtered by genre
       parameters:
@@ -1094,7 +1094,7 @@ paths:
 
   /api/v1/library/artists:
     get:
-      tags: [Library]
+      tags: [ Library ]
       operationId: getLibraryArtists
       summary: List all artists with public published songs
       responses:
@@ -1107,7 +1107,7 @@ paths:
 
   /api/v1/search/suggestions:
     get:
-      tags: [Search]
+      tags: [ Search ]
       operationId: searchSuggestions
       summary: Search lightweight suggestions for autocomplete
       parameters:
@@ -1142,7 +1142,7 @@ paths:
 
   /api/v1/search/unified:
     get:
-      tags: [Search]
+      tags: [ Search ]
       operationId: unifiedSearch
       summary: Search songs, playlists, artists, and genres
       parameters:
@@ -1177,7 +1177,7 @@ paths:
 
   /api/v1/users:
     get:
-      tags: [Users]
+      tags: [ Users ]
       operationId: listUsers
       summary: List users
       parameters:
@@ -1204,7 +1204,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/UserListResponse'
     post:
-      tags: [Users]
+      tags: [ Users ]
       operationId: createUser
       summary: Create a user (admin)
       security:
@@ -1243,7 +1243,7 @@ paths:
 
   /api/v1/users/{userId}:
     get:
-      tags: [Users]
+      tags: [ Users ]
       operationId: getUserById
       summary: Get user detail
       parameters:
@@ -1268,7 +1268,7 @@ paths:
 
   /api/v1/users/check-username:
     get:
-      tags: [Users]
+      tags: [ Users ]
       operationId: checkUsername
       summary: Check whether a username is available
       parameters:
@@ -1293,7 +1293,7 @@ paths:
 
   /api/v1/users/by-username/{username}:
     get:
-      tags: [Users]
+      tags: [ Users ]
       operationId: getUserByUsername
       summary: Get user detail by username
       parameters:
@@ -1318,7 +1318,7 @@ paths:
 
   /api/v1/users/by-username/{username}/playlists/{slug}:
     get:
-      tags: [Users]
+      tags: [ Users ]
       operationId: getPlaylistByUsernameAndSlug
       summary: Get playlist detail by owner username and slug
       parameters:
@@ -1360,7 +1360,7 @@ paths:
 
   /api/v1/users/me:
     patch:
-      tags: [Users]
+      tags: [ Users ]
       operationId: updateMyProfile
       summary: Update the current user's profile
       security:
@@ -1393,7 +1393,7 @@ paths:
 
   /api/v1/playlists:
     get:
-      tags: [Playlists]
+      tags: [ Playlists ]
       operationId: listPlaylists
       summary: List playlists
       parameters:
@@ -1424,7 +1424,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PlaylistListResponse'
     post:
-      tags: [Playlists]
+      tags: [ Playlists ]
       operationId: createPlaylist
       summary: Create a playlist
       requestBody:
@@ -1455,7 +1455,7 @@ paths:
 
   /api/v1/playlists/random:
     get:
-      tags: [Playlists]
+      tags: [ Playlists ]
       operationId: getRandomPlaylists
       summary: Get random public published playlists
       parameters:
@@ -1476,7 +1476,7 @@ paths:
 
   /api/v1/playlists/{playlistId}:
     get:
-      tags: [Playlists]
+      tags: [ Playlists ]
       operationId: getPlaylistById
       summary: Get playlist detail
       parameters:
@@ -1511,7 +1511,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     delete:
-      tags: [Playlists]
+      tags: [ Playlists ]
       operationId: deletePlaylist
       summary: Delete a playlist owned by the current user
       security:
@@ -1544,7 +1544,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     patch:
-      tags: [Playlists]
+      tags: [ Playlists ]
       operationId: updatePlaylist
       summary: Update a playlist owned by the current user
       security:
@@ -1589,7 +1589,7 @@ paths:
 
   /api/v1/playlists/{playlistId}/items:
     post:
-      tags: [Playlists]
+      tags: [ Playlists ]
       operationId: addPlaylistItem
       summary: Add a recording to a playlist
       security:
@@ -1640,7 +1640,7 @@ paths:
 
   /api/v1/playlists/{playlistId}/items/{recordingId}:
     delete:
-      tags: [Playlists]
+      tags: [ Playlists ]
       operationId: removePlaylistItem
       summary: Remove a recording from a playlist
       security:
@@ -1684,7 +1684,7 @@ paths:
 
   /api/v1/playlists/{playlistId}/items/reorder:
     put:
-      tags: [Playlists]
+      tags: [ Playlists ]
       operationId: reorderPlaylistItems
       summary: Reorder tracks in a playlist
       security:
@@ -1729,7 +1729,7 @@ paths:
 
   /api/v1/playlists/{playlistId}/tags:
     put:
-      tags: [Playlists]
+      tags: [ Playlists ]
       operationId: setPlaylistTags
       summary: Replace all tag associations on a playlist
       security:
@@ -1774,7 +1774,7 @@ paths:
 
   /api/v1/recordings:
     get:
-      tags: [Recordings]
+      tags: [ Recordings ]
       operationId: listRecordings
       summary: List recordings
       parameters:
@@ -1808,7 +1808,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/RecordingListResponse'
     post:
-      tags: [Recordings]
+      tags: [ Recordings ]
       operationId: createRecording
       summary: Create a recording and attach it to its canonical playlist
       requestBody:
@@ -1839,7 +1839,7 @@ paths:
 
   /api/v1/recordings/{recordingId}:
     get:
-      tags: [Recordings]
+      tags: [ Recordings ]
       operationId: getRecordingById
       summary: Get recording detail
       parameters:
@@ -1862,7 +1862,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     patch:
-      tags: [Recordings]
+      tags: [ Recordings ]
       operationId: updateRecording
       summary: Update recording metadata
       security:
@@ -1913,7 +1913,7 @@ paths:
 
   /api/v1/recordings/{recordingId}/subtitles:
     get:
-      tags: [Recordings]
+      tags: [ Recordings ]
       operationId: getRecordingSubtitles
       summary: Get generated subtitles for a recording
       parameters:
@@ -1938,7 +1938,7 @@ paths:
 
   /api/v1/admin/tags:
     get:
-      tags: [Admin]
+      tags: [ Admin ]
       operationId: adminListTags
       summary: List all tags (admin)
       security:
@@ -1968,7 +1968,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     post:
-      tags: [Admin]
+      tags: [ Admin ]
       operationId: adminCreateTag
       summary: Create a tag (admin)
       security:
@@ -2007,7 +2007,7 @@ paths:
 
   /api/v1/admin/dashboard:
     get:
-      tags: [Admin]
+      tags: [ Admin ]
       operationId: adminGetDashboard
       summary: Admin dashboard stats and time-series data
       security:
@@ -2034,7 +2034,7 @@ paths:
 
   /api/v1/admin/traffic:
     get:
-      tags: [Admin]
+      tags: [ Admin ]
       operationId: adminGetTraffic
       summary: Admin traffic report from currently captured events
       security:
@@ -2066,7 +2066,7 @@ paths:
 
   /api/v1/admin/songs:
     get:
-      tags: [Admin]
+      tags: [ Admin ]
       operationId: adminListSongs
       summary: List all recordings with full metadata and metrics (admin)
       security:
@@ -2106,12 +2106,12 @@ paths:
           name: sortBy
           schema:
             type: string
-            enum: [createdAt, plays, title, duration]
+            enum: [ createdAt, plays, title, duration ]
         - in: query
           name: order
           schema:
             type: string
-            enum: [asc, desc]
+            enum: [ asc, desc ]
       responses:
         '200':
           description: Song list
@@ -2134,7 +2134,7 @@ paths:
 
   /api/v1/admin/songs/{songId}:
     patch:
-      tags: [Admin]
+      tags: [ Admin ]
       operationId: adminUpdateSong
       summary: Update a song's status, visibility, or explicit flag (admin)
       security:
@@ -2177,7 +2177,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     delete:
-      tags: [Admin]
+      tags: [ Admin ]
       operationId: adminDeleteSong
       summary: Permanently delete a song (admin)
       security:
@@ -2212,7 +2212,7 @@ paths:
 
   /api/v1/admin/songs/{songId}/tags:
     put:
-      tags: [Admin]
+      tags: [ Admin ]
       operationId: adminSetSongTags
       summary: Replace all genre tags for a song (admin)
       security:
@@ -2263,7 +2263,7 @@ paths:
 
   /api/v1/admin/playlists/{playlistId}/tags:
     put:
-      tags: [Admin]
+      tags: [ Admin ]
       operationId: adminSetPlaylistTags
       summary: Replace all genre tags for a playlist (admin)
       security:
@@ -2314,7 +2314,7 @@ paths:
 
   /api/v1/admin/playlists:
     get:
-      tags: [Admin]
+      tags: [ Admin ]
       operationId: adminListPlaylists
       summary: List all playlists with full metadata and metrics (admin)
       security:
@@ -2354,12 +2354,12 @@ paths:
           name: sortBy
           schema:
             type: string
-            enum: [createdAt, saves, items, duration, title]
+            enum: [ createdAt, saves, items, duration, title ]
         - in: query
           name: order
           schema:
             type: string
-            enum: [asc, desc]
+            enum: [ asc, desc ]
       responses:
         '200':
           description: Playlist list
@@ -2382,7 +2382,7 @@ paths:
 
   /api/v1/admin/playlists/{playlistId}:
     patch:
-      tags: [Admin]
+      tags: [ Admin ]
       operationId: adminUpdatePlaylist
       summary: Update a playlist's status, visibility, or featured flag (admin)
       security:
@@ -2427,7 +2427,7 @@ paths:
 
   /api/v1/admin/tags/bulk:
     post:
-      tags: [Admin]
+      tags: [ Admin ]
       operationId: adminBulkCreateTags
       summary: Bulk create tags from a list, skipping duplicates (admin)
       security:
@@ -2466,7 +2466,7 @@ paths:
 
   /api/v1/admin/tags/{tagId}:
     patch:
-      tags: [Admin]
+      tags: [ Admin ]
       operationId: adminUpdateTag
       summary: Update a tag (admin)
       security:
@@ -2509,7 +2509,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     delete:
-      tags: [Admin]
+      tags: [ Admin ]
       operationId: adminDeleteTag
       summary: Delete a tag (admin)
       security:
@@ -2544,7 +2544,7 @@ paths:
 
   /api/v1/admin/homepage-features:
     get:
-      tags: [Admin]
+      tags: [ Admin ]
       operationId: adminListHomepageFeatures
       summary: List all homepage features including inactive (admin)
       security:
@@ -2569,7 +2569,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     post:
-      tags: [Admin]
+      tags: [ Admin ]
       operationId: adminCreateHomepageFeature
       summary: Create a homepage feature (admin)
       security:
@@ -2602,7 +2602,7 @@ paths:
 
   /api/v1/admin/homepage-features/{featureId}:
     patch:
-      tags: [Admin]
+      tags: [ Admin ]
       operationId: adminUpdateHomepageFeature
       summary: Update a homepage feature (admin)
       security:
@@ -2645,7 +2645,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     delete:
-      tags: [Admin]
+      tags: [ Admin ]
       operationId: adminDeleteHomepageFeature
       summary: Delete a homepage feature (admin)
       security:
@@ -2680,7 +2680,7 @@ paths:
 
   /api/v1/admin/users:
     get:
-      tags: [Admin]
+      tags: [ Admin ]
       operationId: adminListUsers
       summary: List all users with full details including email (admin)
       security:
@@ -2722,7 +2722,7 @@ paths:
 
   /api/v1/admin/users/{userId}:
     patch:
-      tags: [Admin]
+      tags: [ Admin ]
       operationId: adminUpdateUser
       summary: Update a user's role, status, or featured flag (admin)
       security:
@@ -2767,7 +2767,7 @@ paths:
 
   /api/v1/ingest/uploads:
     get:
-      tags: [Ingest]
+      tags: [ Ingest ]
       operationId: listIngestUploads
       summary: List upload assets for the current API key user
       security:
@@ -2777,7 +2777,7 @@ paths:
           name: kind
           schema:
             type: string
-            enum: [audio, image]
+            enum: [ audio, image ]
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/PageSize'
       responses:
@@ -2794,19 +2794,19 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     post:
-      tags: [Ingest]
+      tags: [ Ingest ]
       operationId: ingestUpload
       summary: Upload an audio or image file using an API key (MVP multipart)
       description: >
-        MVP multipart upload — the file is received by the app server and written
-        to local storage. Maximum size is **100 MB** for audio and **15 MB** for
-        images. Requires a Bearer API key; session tokens are rejected.
+        MVP multipart upload — the file is received by the app server and
+        written to local storage. Maximum size is **100 MB** for audio and **15
+        MB** for images. Requires a Bearer API key; session tokens are rejected.
 
-        Allowed audio: mp3, wav, m4a, flac, ogg, aac, webm.
-        Allowed image: jpg, jpeg, png, webp.
+        Allowed audio: mp3, wav, m4a, flac, ogg, aac, webm. Allowed image: jpg,
+        jpeg, png, webp.
 
-        Returns a stable `uploadId` that must be passed to the recording/playlist
-        ingest endpoints to reference this asset.
+        Returns a stable `uploadId` that must be passed to the
+        recording/playlist ingest endpoints to reference this asset.
 
         Note: a future milestone will replace this endpoint with a presigned-URL
         intent flow for direct client-to-storage uploads.
@@ -2818,14 +2818,14 @@ paths:
           required: true
           schema:
             type: string
-            enum: [audio, image]
+            enum: [ audio, image ]
       requestBody:
         required: true
         content:
           multipart/form-data:
             schema:
               type: object
-              required: [file]
+              required: [ file ]
               properties:
                 file:
                   type: string
@@ -2865,10 +2865,11 @@ paths:
 
   /api/v1/ingest/playlists:
     get:
-      tags: [Ingest]
+      tags: [ Ingest ]
       operationId: listIngestPlaylists
       summary: List playlists ingested by the current API key user
-      description: Filtered to playlists owned by the authenticated user. Optionally filter by externalSource for sync-client reconciliation.
+      description: Filtered to playlists owned by the authenticated user. Optionally
+        filter by externalSource for sync-client reconciliation.
       security:
         - bearerAuth: []
       parameters:
@@ -2896,13 +2897,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     post:
-      tags: [Ingest]
+      tags: [ Ingest ]
       operationId: ingestPlaylist
       summary: Upsert a playlist by externalSource + externalId
       description: >
-        Creates or updates a playlist owned by the API key holder.
-        Upsert key is `ownerId + externalSource + externalId`.
-        Visibility defaults to PRIVATE and status to DRAFT on creation.
+        Creates or updates a playlist owned by the API key holder. Upsert key is
+        `ownerId + externalSource + externalId`. Visibility defaults to PRIVATE
+        and status to DRAFT on creation.
       security:
         - bearerAuth: []
       requestBody:
@@ -2951,10 +2952,11 @@ paths:
 
   /api/v1/ingest/recordings:
     get:
-      tags: [Ingest]
+      tags: [ Ingest ]
       operationId: listIngestRecordings
       summary: List recordings ingested by the current API key user
-      description: Filtered to recordings uploaded by the authenticated user. Filter by externalSource and optionally by playlistId.
+      description: Filtered to recordings uploaded by the authenticated user. Filter
+        by externalSource and optionally by playlistId.
       security:
         - bearerAuth: []
       parameters:
@@ -2986,15 +2988,15 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     post:
-      tags: [Ingest]
+      tags: [ Ingest ]
       operationId: ingestRecording
       summary: Upsert a recording by externalSource + externalId
       description: >
-        Creates or updates a recording owned by the API key holder.
-        Upsert key is `uploaderId + externalSource + externalId`.
-        The recording is linked to the playlist identified by `playlistExternalId`
-        (must already exist under the same externalSource for this user).
-        `uploaderId` is always derived from the API key — it cannot be supplied by the caller.
+        Creates or updates a recording owned by the API key holder. Upsert key
+        is `uploaderId + externalSource + externalId`. The recording is linked
+        to the playlist identified by `playlistExternalId` (must already exist
+        under the same externalSource for this user). `uploaderId` is always
+        derived from the API key — it cannot be supplied by the caller.
       security:
         - bearerAuth: []
       requestBody:
@@ -3043,7 +3045,7 @@ paths:
 
   /api/v1/admin/developer/keys:
     get:
-      tags: [Admin]
+      tags: [ Admin ]
       operationId: adminListApiKeys
       summary: List all API keys across all users (admin)
       security:
@@ -3053,7 +3055,7 @@ paths:
           name: status
           schema:
             type: string
-            enum: [all, active, revoked]
+            enum: [ all, active, revoked ]
             default: all
         - in: query
           name: q
@@ -3088,7 +3090,7 @@ paths:
 
   /api/v1/admin/developer/keys/{keyId}:
     delete:
-      tags: [Admin]
+      tags: [ Admin ]
       operationId: adminRevokeApiKey
       summary: Revoke any user's API key (admin)
       security:
@@ -3123,7 +3125,7 @@ paths:
 
   /api/v1/developer/keys:
     get:
-      tags: [Developer]
+      tags: [ Developer ]
       operationId: listApiKeys
       summary: List active API keys for the current user
       security:
@@ -3142,7 +3144,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     post:
-      tags: [Developer]
+      tags: [ Developer ]
       operationId: createApiKey
       summary: Create a new API key — raw key returned once
       security:
@@ -3169,7 +3171,7 @@ paths:
 
   /api/v1/developer/keys/{keyId}:
     delete:
-      tags: [Developer]
+      tags: [ Developer ]
       operationId: revokeApiKey
       summary: Revoke an API key
       security:
@@ -3195,6 +3197,136 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/recordings/{recordingId}/transcripts:
+    get:
+      tags:
+        - Recordings
+      operationId: getRecordingTranscripts
+      summary: Get all transcripts for a recording
+      parameters:
+        - in: path
+          name: recordingId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of transcripts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TranscriptEntity"
+        "404":
+          $ref: "#/components/schemas/ErrorResponse"
+  /api/v1/recordings/{recordingId}/transcripts/{transcriptId}:
+    patch:
+      tags:
+        - Recordings
+      operationId: updateTranscript
+      summary: Update transcript (e.g. set active, update lyrics)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: recordingId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: transcriptId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                isActive:
+                  type: boolean
+                srtText:
+                  type: string
+      responses:
+        "200":
+          description: Updated transcript
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TranscriptEntity"
+        "401":
+          $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          $ref: "#/components/schemas/ErrorResponse"
+  /api/v1/recordings/{recordingId}/transcripts/upload:
+    post:
+      tags:
+        - Recordings
+      operationId: uploadTranscript
+      summary: Upload a transcript file (SRT or VTT)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: recordingId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: Uploaded transcript
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TranscriptEntity"
+  /api/v1/recordings/{recordingId}/transcripts/generate:
+    post:
+      tags:
+        - Recordings
+      operationId: generateTranscript
+      summary: Generate transcript using an AI provider (e.g. whisper)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: recordingId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                provider:
+                  type: string
+                  enum:
+                    - whisper
+                    - modal
+      responses:
+        "200":
+          description: Started generation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TranscriptEntity"
 
 components:
   securitySchemes:
@@ -3223,30 +3355,30 @@ components:
   schemas:
     UserRole:
       type: string
-      enum: [LISTENER, CREATOR, EDITOR, ADMIN]
+      enum: [ LISTENER, CREATOR, EDITOR, ADMIN ]
     UserStatus:
       type: string
-      enum: [ACTIVE, SUSPENDED, INVITED]
+      enum: [ ACTIVE, SUSPENDED, INVITED ]
     PlaylistType:
       type: string
-      enum: [PLAYLIST, ALBUM, MIX, PODCAST_CHANNEL, RELEASE]
+      enum: [ PLAYLIST, ALBUM, MIX, PODCAST_CHANNEL, RELEASE ]
     RecordingType:
       type: string
-      enum: [SONG, PODCAST_EPISODE, MIX_SEGMENT, OTHER]
+      enum: [ SONG, PODCAST_EPISODE, MIX_SEGMENT, OTHER ]
     Visibility:
       type: string
-      enum: [PUBLIC, UNLISTED, PRIVATE]
+      enum: [ PUBLIC, UNLISTED, PRIVATE ]
     PublishStatus:
       type: string
-      enum: [DRAFT, PUBLISHED, ARCHIVED]
+      enum: [ DRAFT, PUBLISHED, ARCHIVED ]
     TagKind:
       type: string
-      enum: [GENRE, MOOD, CATEGORY, SCENE]
+      enum: [ GENRE, MOOD, CATEGORY, SCENE ]
 
     RadioOwnerSummary:
       type: object
       additionalProperties: false
-      required: [id, username, displayName]
+      required: [ id, username, displayName ]
       properties:
         id:
           type: string
@@ -3255,13 +3387,13 @@ components:
         displayName:
           type: string
         avatarUrl:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: uri-reference
 
     RadioRecordingPlaylist:
       type: object
       additionalProperties: false
-      required: [id, title, slug]
+      required: [ id, title, slug ]
       properties:
         id:
           type: string
@@ -3273,23 +3405,23 @@ components:
     RadioRecording:
       type: object
       additionalProperties: false
-      required: [id, title, audioUrl, explicit, uploader, playlist]
+      required: [ id, title, audioUrl, explicit, uploader, playlist ]
       properties:
         id:
           type: string
         title:
           type: string
         description:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         audioUrl:
           type: string
           format: uri-reference
         audioMimeType:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         durationSeconds:
-          type: [integer, 'null']
+          type: [ integer, 'null' ]
         artworkUrl:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: uri-reference
         explicit:
           type: boolean
@@ -3303,7 +3435,7 @@ components:
         - $ref: '#/components/schemas/RadioRecording'
         - type: object
           additionalProperties: false
-          required: [startedAt, elapsedSeconds]
+          required: [ startedAt, elapsedSeconds ]
           properties:
             startedAt:
               type: string
@@ -3314,7 +3446,7 @@ components:
     RadioChatMessage:
       type: object
       additionalProperties: false
-      required: [id, listenerId, displayName, message, createdAt]
+      required: [ id, listenerId, displayName, message, createdAt ]
       properties:
         id:
           type: string
@@ -3331,7 +3463,19 @@ components:
     RadioStationResponse:
       type: object
       additionalProperties: false
-      required: [id, slug, name, status, listenerCount, chatMessages, sourcePlaylist, nowPlaying, upNext, updatedAt]
+      required:
+        [
+          id,
+          slug,
+          name,
+          status,
+          listenerCount,
+          chatMessages,
+          sourcePlaylist,
+          nowPlaying,
+          upNext,
+          updatedAt
+        ]
       properties:
         id:
           type: string
@@ -3341,7 +3485,7 @@ components:
           type: string
         status:
           type: string
-          enum: [OFFLINE, LIVE]
+          enum: [ OFFLINE, LIVE ]
         listenerCount:
           type: integer
         chatMessages:
@@ -3374,7 +3518,7 @@ components:
     RadioHeartbeatResponse:
       type: object
       additionalProperties: false
-      required: [listenerId, station, listenerCount]
+      required: [ listenerId, station, listenerCount ]
       properties:
         listenerId:
           type: string
@@ -3386,7 +3530,7 @@ components:
     CreateRadioChatMessageRequest:
       type: object
       additionalProperties: false
-      required: [message]
+      required: [ message ]
       properties:
         listenerId:
           type: string
@@ -3403,7 +3547,7 @@ components:
     HealthResponse:
       type: object
       additionalProperties: false
-      required: [ok, service, version]
+      required: [ ok, service, version ]
       properties:
         ok:
           type: boolean
@@ -3416,7 +3560,7 @@ components:
     LoginRequest:
       type: object
       additionalProperties: false
-      required: [email, password]
+      required: [ email, password ]
       properties:
         email:
           type: string
@@ -3429,7 +3573,7 @@ components:
     RegisterRequest:
       type: object
       additionalProperties: false
-      required: [email, displayName, password]
+      required: [ email, displayName, password ]
       properties:
         email:
           type: string
@@ -3447,12 +3591,12 @@ components:
           minLength: 8
           maxLength: 200
         bio:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         avatarUrl:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: uri-reference
         heroImageUrl:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: uri-reference
         profileLinks:
           type: array
@@ -3463,7 +3607,17 @@ components:
       type: object
       additionalProperties: false
       required:
-        [id, email, username, displayName, role, status, isFeaturedArtist, createdAt, updatedAt]
+        [
+          id,
+          email,
+          username,
+          displayName,
+          role,
+          status,
+          isFeaturedArtist,
+          createdAt,
+          updatedAt
+        ]
       properties:
         id:
           type: string
@@ -3475,12 +3629,12 @@ components:
         displayName:
           type: string
         bio:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         avatarUrl:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: uri-reference
         heroImageUrl:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: uri-reference
         profileLinks:
           type: array
@@ -3502,13 +3656,13 @@ components:
     AuthResponse:
       type: object
       additionalProperties: false
-      required: [accessToken, tokenType, expiresAt, user]
+      required: [ accessToken, tokenType, expiresAt, user ]
       properties:
         accessToken:
           type: string
         tokenType:
           type: string
-          enum: [Bearer]
+          enum: [ Bearer ]
         expiresAt:
           type: string
           format: date-time
@@ -3518,19 +3672,29 @@ components:
     MeResponse:
       type: object
       additionalProperties: false
-      required: [user]
+      required: [ user ]
       properties:
         user:
           $ref: '#/components/schemas/AuthUser'
 
     ProfileLinkPlatform:
       type: string
-      enum: [soundcloud, instagram, distrokid, spotify, apple_music, youtube, patreon, custom]
+      enum:
+        [
+          soundcloud,
+          instagram,
+          distrokid,
+          spotify,
+          apple_music,
+          youtube,
+          patreon,
+          custom
+        ]
 
     ProfileLink:
       type: object
       additionalProperties: false
-      required: [id, platform, label, url]
+      required: [ id, platform, label, url ]
       properties:
         id:
           type: string
@@ -3550,7 +3714,7 @@ components:
     ErrorResponse:
       type: object
       additionalProperties: true
-      required: [error, message]
+      required: [ error, message ]
       properties:
         error:
           type: string
@@ -3561,7 +3725,7 @@ components:
     PaginationMeta:
       type: object
       additionalProperties: false
-      required: [page, pageSize, total]
+      required: [ page, pageSize, total ]
       properties:
         page:
           type: integer
@@ -3572,25 +3736,25 @@ components:
 
     SubtitleStatus:
       type: string
-      enum: [QUEUED, PROCESSING, READY, FAILED]
+      enum: [ QUEUED, PROCESSING, READY, FAILED ]
 
     RecordingSubtitleSummary:
       type: object
       additionalProperties: false
-      required: [status]
+      required: [ status ]
       properties:
         status:
           $ref: '#/components/schemas/SubtitleStatus'
         language:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         generatedAt:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: date-time
 
     SubtitleSegment:
       type: object
       additionalProperties: false
-      required: [start, end, text]
+      required: [ start, end, text ]
       properties:
         start:
           type: number
@@ -3602,12 +3766,12 @@ components:
     RecordingSubtitlesResponse:
       type: object
       additionalProperties: false
-      required: [status]
+      required: [ status ]
       properties:
         status:
           $ref: '#/components/schemas/SubtitleStatus'
         language:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         segments:
           type: array
           items:
@@ -3619,12 +3783,12 @@ components:
 
     HomepageTargetType:
       type: string
-      enum: [PLAYLIST, USER, EDITORIAL_POST, RECORDING]
+      enum: [ PLAYLIST, USER, EDITORIAL_POST, RECORDING ]
 
     HomepageItem:
       type: object
       additionalProperties: false
-      required: [id, targetType, title, href]
+      required: [ id, targetType, title, href ]
       properties:
         id:
           type: string
@@ -3633,11 +3797,11 @@ components:
         title:
           type: string
         subtitle:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         description:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         imageUrl:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: uri
         href:
           type: string
@@ -3648,7 +3812,7 @@ components:
         audioUrl:
           type: string
         durationSeconds:
-          type: [integer, 'null']
+          type: [ integer, 'null' ]
         recordingType:
           $ref: '#/components/schemas/RecordingType'
         visibility:
@@ -3675,11 +3839,22 @@ components:
     HomepageSection:
       type: object
       additionalProperties: false
-      required: [section, title, items]
+      required: [ section, title, items ]
       properties:
         section:
           type: string
-          enum: [SPOTLIGHT, FEATURED_ARTIST, FEATURED_PLAYLIST, CUSTOM_MIX, NEW_RELEASE, NEW_ARTIST, TRENDING, EDITOR_PICK, SITE_NEWS]
+          enum:
+            [
+              SPOTLIGHT,
+              FEATURED_ARTIST,
+              FEATURED_PLAYLIST,
+              CUSTOM_MIX,
+              NEW_RELEASE,
+              NEW_ARTIST,
+              TRENDING,
+              EDITOR_PICK,
+              SITE_NEWS
+            ]
         title:
           type: string
         items:
@@ -3690,7 +3865,7 @@ components:
     HomepageResponse:
       type: object
       additionalProperties: false
-      required: [sections]
+      required: [ sections ]
       properties:
         sections:
           type: array
@@ -3700,7 +3875,17 @@ components:
     UserSummary:
       type: object
       required:
-        [id, email, username, displayName, role, status, isFeaturedArtist, createdAt, updatedAt]
+        [
+          id,
+          email,
+          username,
+          displayName,
+          role,
+          status,
+          isFeaturedArtist,
+          createdAt,
+          updatedAt
+        ]
       properties:
         id:
           type: string
@@ -3712,12 +3897,12 @@ components:
         displayName:
           type: string
         bio:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         avatarUrl:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: uri-reference
         heroImageUrl:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: uri-reference
         profileLinks:
           type: array
@@ -3740,7 +3925,22 @@ components:
       type: object
       additionalProperties: false
       required:
-        [id, href, ownerId, title, slug, type, visibility, status, featured, isPinnedOnProfile, itemCount, totalDurationSeconds, createdAt, updatedAt]
+        [
+          id,
+          href,
+          ownerId,
+          title,
+          slug,
+          type,
+          visibility,
+          status,
+          featured,
+          isPinnedOnProfile,
+          itemCount,
+          totalDurationSeconds,
+          createdAt,
+          updatedAt
+        ]
       properties:
         id:
           type: string
@@ -3753,9 +3953,9 @@ components:
         slug:
           type: string
         description:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         coverArtUrl:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: uri-reference
         type:
           $ref: '#/components/schemas/PlaylistType'
@@ -3772,7 +3972,7 @@ components:
         totalDurationSeconds:
           type: integer
         publishedAt:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: date-time
         createdAt:
           type: string
@@ -3786,7 +3986,7 @@ components:
         - $ref: '#/components/schemas/UserSummary'
         - type: object
           additionalProperties: false
-          required: [publicPlaylists]
+          required: [ publicPlaylists ]
           properties:
             publicPlaylists:
               type: array
@@ -3796,7 +3996,7 @@ components:
     UserListResponse:
       type: object
       additionalProperties: false
-      required: [data, meta]
+      required: [ data, meta ]
       properties:
         data:
           type: array
@@ -3808,7 +4008,7 @@ components:
     CreateUserRequest:
       type: object
       additionalProperties: false
-      required: [email, displayName]
+      required: [ email, displayName ]
       properties:
         email:
           type: string
@@ -3822,14 +4022,14 @@ components:
           minLength: 1
           maxLength: 120
         passwordHash:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         bio:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         avatarUrl:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: uri-reference
         heroImageUrl:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: uri-reference
         role:
           $ref: '#/components/schemas/UserRole'
@@ -3842,7 +4042,7 @@ components:
     Tag:
       type: object
       additionalProperties: false
-      required: [id, name, slug, kind]
+      required: [ id, name, slug, kind ]
       properties:
         id:
           type: string
@@ -3856,7 +4056,7 @@ components:
     OwnerSummary:
       type: object
       additionalProperties: false
-      required: [id, username, displayName, role]
+      required: [ id, username, displayName, role ]
       properties:
         id:
           type: string
@@ -3865,10 +4065,10 @@ components:
         displayName:
           type: string
         avatarUrl:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: uri-reference
         heroImageUrl:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: uri-reference
         role:
           $ref: '#/components/schemas/UserRole'
@@ -3877,7 +4077,20 @@ components:
       type: object
       additionalProperties: false
       required:
-        [id, uploaderId, publishedPlaylistId, title, audioUrl, recordingType, visibility, status, explicit, playCount, createdAt, updatedAt]
+        [
+          id,
+          uploaderId,
+          publishedPlaylistId,
+          title,
+          audioUrl,
+          recordingType,
+          visibility,
+          status,
+          explicit,
+          playCount,
+          createdAt,
+          updatedAt
+        ]
       properties:
         id:
           type: string
@@ -3888,18 +4101,18 @@ components:
         title:
           type: string
         description:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         audioUrl:
           type: string
           format: uri-reference
         audioMimeType:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         audioBytes:
-          type: [integer, 'null']
+          type: [ integer, 'null' ]
         durationSeconds:
-          type: [integer, 'null']
+          type: [ integer, 'null' ]
         artworkUrl:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: uri-reference
         recordingType:
           $ref: '#/components/schemas/RecordingType'
@@ -3908,16 +4121,16 @@ components:
         status:
           $ref: '#/components/schemas/PublishStatus'
         trackNumber:
-          type: [integer, 'null']
+          type: [ integer, 'null' ]
         episodeNumber:
-          type: [integer, 'null']
+          type: [ integer, 'null' ]
         explicit:
           type: boolean
         releaseDate:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: date-time
         publishedAt:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: date-time
         playCount:
           type: integer
@@ -3935,7 +4148,7 @@ components:
     PublishedPlaylistReference:
       type: object
       additionalProperties: false
-      required: [id, ownerId, title, slug, type, visibility, status]
+      required: [ id, ownerId, title, slug, type, visibility, status ]
       properties:
         id:
           type: string
@@ -3957,7 +4170,7 @@ components:
         - $ref: '#/components/schemas/RecordingSummary'
         - type: object
           additionalProperties: false
-          required: [uploader, publishedPlaylist]
+          required: [ uploader, publishedPlaylist ]
           properties:
             uploader:
               $ref: '#/components/schemas/OwnerSummary'
@@ -3967,7 +4180,7 @@ components:
     RecordingListResponse:
       type: object
       additionalProperties: false
-      required: [data, meta]
+      required: [ data, meta ]
       properties:
         data:
           type: array
@@ -3979,7 +4192,7 @@ components:
     CreateRecordingRequest:
       type: object
       additionalProperties: false
-      required: [uploaderId, publishedPlaylistId, title, audioUrl]
+      required: [ uploaderId, publishedPlaylistId, title, audioUrl ]
       properties:
         uploaderId:
           type: string
@@ -3990,20 +4203,20 @@ components:
           minLength: 1
           maxLength: 191
         description:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         audioUrl:
           type: string
           format: uri-reference
         audioMimeType:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         audioBytes:
-          type: [integer, 'null']
+          type: [ integer, 'null' ]
           minimum: 0
         durationSeconds:
-          type: [integer, 'null']
+          type: [ integer, 'null' ]
           minimum: 0
         artworkUrl:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: uri-reference
         recordingType:
           $ref: '#/components/schemas/RecordingType'
@@ -4012,19 +4225,19 @@ components:
         status:
           $ref: '#/components/schemas/PublishStatus'
         trackNumber:
-          type: [integer, 'null']
+          type: [ integer, 'null' ]
           minimum: 0
         episodeNumber:
-          type: [integer, 'null']
+          type: [ integer, 'null' ]
           minimum: 0
         explicit:
           type: boolean
           default: false
         releaseDate:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: date-time
         publishedAt:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: date-time
 
     UpdateRecordingRequest:
@@ -4036,16 +4249,32 @@ components:
           minLength: 1
           maxLength: 191
         artworkUrl:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: uri-reference
         coverArtUrl:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: uri-reference
 
     PlaylistSummary:
       type: object
       required:
-        [id, href, ownerId, title, slug, type, visibility, status, featured, isPinnedOnProfile, itemCount, totalDurationSeconds, createdAt, updatedAt, owner]
+        [
+          id,
+          href,
+          ownerId,
+          title,
+          slug,
+          type,
+          visibility,
+          status,
+          featured,
+          isPinnedOnProfile,
+          itemCount,
+          totalDurationSeconds,
+          createdAt,
+          updatedAt,
+          owner
+        ]
       properties:
         id:
           type: string
@@ -4058,9 +4287,9 @@ components:
         slug:
           type: string
         description:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         coverArtUrl:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: uri-reference
         type:
           $ref: '#/components/schemas/PlaylistType'
@@ -4077,7 +4306,7 @@ components:
         totalDurationSeconds:
           type: integer
         publishedAt:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: date-time
         createdAt:
           type: string
@@ -4096,7 +4325,24 @@ components:
       type: object
       additionalProperties: false
       required:
-        [id, href, ownerId, title, slug, type, visibility, status, featured, isPinnedOnProfile, itemCount, totalDurationSeconds, createdAt, updatedAt, owner, recordings]
+        [
+          id,
+          href,
+          ownerId,
+          title,
+          slug,
+          type,
+          visibility,
+          status,
+          featured,
+          isPinnedOnProfile,
+          itemCount,
+          totalDurationSeconds,
+          createdAt,
+          updatedAt,
+          owner,
+          recordings
+        ]
       properties:
         id:
           type: string
@@ -4109,9 +4355,9 @@ components:
         slug:
           type: string
         description:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         coverArtUrl:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: uri-reference
         type:
           $ref: '#/components/schemas/PlaylistType'
@@ -4128,7 +4374,7 @@ components:
         totalDurationSeconds:
           type: integer
         publishedAt:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: date-time
         createdAt:
           type: string
@@ -4150,7 +4396,7 @@ components:
     PlaylistListResponse:
       type: object
       additionalProperties: false
-      required: [data, meta]
+      required: [ data, meta ]
       properties:
         data:
           type: array
@@ -4162,7 +4408,7 @@ components:
     CreatePlaylistRequest:
       type: object
       additionalProperties: false
-      required: [ownerId, title]
+      required: [ ownerId, title ]
       properties:
         ownerId:
           type: string
@@ -4171,9 +4417,9 @@ components:
           minLength: 1
           maxLength: 191
         description:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         coverArtUrl:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: uri-reference
         type:
           $ref: '#/components/schemas/PlaylistType'
@@ -4182,7 +4428,7 @@ components:
         status:
           $ref: '#/components/schemas/PublishStatus'
         publishedAt:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: date-time
 
     UpdateProfileRequest:
@@ -4198,12 +4444,12 @@ components:
           minLength: 1
           maxLength: 50
         bio:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         avatarUrl:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: uri-reference
         heroImageUrl:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: uri-reference
         profileLinks:
           type: array
@@ -4214,7 +4460,7 @@ components:
     UsernameAvailabilityResponse:
       type: object
       additionalProperties: false
-      required: [username, available]
+      required: [ username, available ]
       properties:
         username:
           type: string
@@ -4230,9 +4476,9 @@ components:
           minLength: 1
           maxLength: 191
         description:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         coverArtUrl:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: uri-reference
         type:
           $ref: '#/components/schemas/PlaylistType'
@@ -4243,13 +4489,13 @@ components:
         isPinnedOnProfile:
           type: boolean
         publishedAt:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: date-time
 
     AddPlaylistItemRequest:
       type: object
       additionalProperties: false
-      required: [recordingId]
+      required: [ recordingId ]
       properties:
         recordingId:
           type: string
@@ -4257,7 +4503,7 @@ components:
     ReorderPlaylistItemsRequest:
       type: object
       additionalProperties: false
-      required: [recordingIds]
+      required: [ recordingIds ]
       properties:
         recordingIds:
           type: array
@@ -4268,7 +4514,20 @@ components:
       type: object
       additionalProperties: false
       required:
-        [id, uploaderId, publishedPlaylistId, title, audioUrl, recordingType, visibility, status, explicit, playCount, createdAt, updatedAt]
+        [
+          id,
+          uploaderId,
+          publishedPlaylistId,
+          title,
+          audioUrl,
+          recordingType,
+          visibility,
+          status,
+          explicit,
+          playCount,
+          createdAt,
+          updatedAt
+        ]
       properties:
         id:
           type: string
@@ -4279,18 +4538,18 @@ components:
         title:
           type: string
         description:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         audioUrl:
           type: string
           format: uri-reference
         audioMimeType:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         audioBytes:
-          type: [integer, 'null']
+          type: [ integer, 'null' ]
         durationSeconds:
-          type: [integer, 'null']
+          type: [ integer, 'null' ]
         artworkUrl:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: uri-reference
         recordingType:
           $ref: '#/components/schemas/RecordingType'
@@ -4299,16 +4558,16 @@ components:
         status:
           $ref: '#/components/schemas/PublishStatus'
         trackNumber:
-          type: [integer, 'null']
+          type: [ integer, 'null' ]
         episodeNumber:
-          type: [integer, 'null']
+          type: [ integer, 'null' ]
         explicit:
           type: boolean
         releaseDate:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: date-time
         publishedAt:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: date-time
         playCount:
           type: integer
@@ -4332,16 +4591,16 @@ components:
     CreatePlaybackEventRequest:
       type: object
       additionalProperties: false
-      required: [recordingId]
+      required: [ recordingId ]
       properties:
         recordingId:
           type: string
         playlistId:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         sourceContext:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         playedSeconds:
-          type: [integer, 'null']
+          type: [ integer, 'null' ]
           minimum: 0
         completed:
           type: boolean
@@ -4350,18 +4609,18 @@ components:
     PlaybackEventCreated:
       type: object
       additionalProperties: false
-      required: [id, recordingId, completed, createdAt]
+      required: [ id, recordingId, completed, createdAt ]
       properties:
         id:
           type: string
         recordingId:
           type: string
         playlistId:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         sourceContext:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         playedSeconds:
-          type: [integer, 'null']
+          type: [ integer, 'null' ]
         completed:
           type: boolean
         createdAt:
@@ -4371,7 +4630,7 @@ components:
     PlaybackHistoryPlaylistRef:
       type: object
       additionalProperties: false
-      required: [id, href, title]
+      required: [ id, href, title ]
       properties:
         id:
           type: string
@@ -4383,18 +4642,18 @@ components:
     PlaybackHistoryItem:
       type: object
       additionalProperties: false
-      required: [id, recordingId, completed, createdAt, recording]
+      required: [ id, recordingId, completed, createdAt, recording ]
       properties:
         id:
           type: string
         recordingId:
           type: string
         playlistId:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         sourceContext:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         playedSeconds:
-          type: [integer, 'null']
+          type: [ integer, 'null' ]
         completed:
           type: boolean
         createdAt:
@@ -4410,7 +4669,7 @@ components:
     PlaybackHistoryResponse:
       type: object
       additionalProperties: false
-      required: [data, meta]
+      required: [ data, meta ]
       properties:
         data:
           type: array
@@ -4421,13 +4680,13 @@ components:
 
     ChartRange:
       type: string
-      enum: [today, 7d, 30d, all]
+      enum: [ today, 7d, 30d, all ]
       default: 30d
 
     ChartArtistRef:
       type: object
       additionalProperties: false
-      required: [id, username, displayName, role]
+      required: [ id, username, displayName, role ]
       properties:
         id:
           type: string
@@ -4436,7 +4695,7 @@ components:
         displayName:
           type: string
         avatarUrl:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: uri-reference
         role:
           $ref: '#/components/schemas/UserRole'
@@ -4444,7 +4703,7 @@ components:
     ChartPlaylistRef:
       type: object
       additionalProperties: false
-      required: [id, title, slug, owner]
+      required: [ id, title, slug, owner ]
       properties:
         id:
           type: string
@@ -4459,7 +4718,23 @@ components:
       type: object
       additionalProperties: false
       required:
-        [rank, recordingId, uploaderId, publishedPlaylistId, title, audioUrl, recordingType, visibility, status, explicit, playCount, createdAt, updatedAt, uploader, playlist]
+        [
+          rank,
+          recordingId,
+          uploaderId,
+          publishedPlaylistId,
+          title,
+          audioUrl,
+          recordingType,
+          visibility,
+          status,
+          explicit,
+          playCount,
+          createdAt,
+          updatedAt,
+          uploader,
+          playlist
+        ]
       properties:
         rank:
           type: integer
@@ -4475,10 +4750,10 @@ components:
           type: string
           format: uri-reference
         artworkUrl:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: uri-reference
         durationSeconds:
-          type: [integer, 'null']
+          type: [ integer, 'null' ]
         recordingType:
           $ref: '#/components/schemas/RecordingType'
         visibility:
@@ -4507,7 +4782,7 @@ components:
     TopSongsResponse:
       type: object
       additionalProperties: false
-      required: [range, data]
+      required: [ range, data ]
       properties:
         range:
           $ref: '#/components/schemas/ChartRange'
@@ -4519,7 +4794,18 @@ components:
     TopPlaylistItem:
       type: object
       additionalProperties: false
-      required: [rank, playlistId, title, slug, type, itemCount, totalDurationSeconds, playCount, owner]
+      required:
+        [
+          rank,
+          playlistId,
+          title,
+          slug,
+          type,
+          itemCount,
+          totalDurationSeconds,
+          playCount,
+          owner
+        ]
       properties:
         rank:
           type: integer
@@ -4530,7 +4816,7 @@ components:
         slug:
           type: string
         coverArtUrl:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: uri-reference
         type:
           $ref: '#/components/schemas/PlaylistType'
@@ -4550,7 +4836,7 @@ components:
     TopPlaylistsResponse:
       type: object
       additionalProperties: false
-      required: [range, data]
+      required: [ range, data ]
       properties:
         range:
           $ref: '#/components/schemas/ChartRange'
@@ -4562,7 +4848,7 @@ components:
     RandomPlaylistsResponse:
       type: object
       additionalProperties: false
-      required: [data]
+      required: [ data ]
       properties:
         data:
           type: array
@@ -4572,7 +4858,7 @@ components:
     TopArtistItem:
       type: object
       additionalProperties: false
-      required: [rank, userId, username, displayName, role, playCount]
+      required: [ rank, userId, username, displayName, role, playCount ]
       properties:
         rank:
           type: integer
@@ -4583,10 +4869,10 @@ components:
         displayName:
           type: string
         avatarUrl:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: uri-reference
         heroImageUrl:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: uri-reference
         role:
           $ref: '#/components/schemas/UserRole'
@@ -4596,7 +4882,7 @@ components:
     TopArtistsResponse:
       type: object
       additionalProperties: false
-      required: [range, data]
+      required: [ range, data ]
       properties:
         range:
           $ref: '#/components/schemas/ChartRange'
@@ -4608,7 +4894,7 @@ components:
     MetricTrend:
       type: object
       additionalProperties: false
-      required: [current, previous, changePercent]
+      required: [ current, previous, changePercent ]
       properties:
         current:
           type: number
@@ -4620,7 +4906,7 @@ components:
     AnalyticsSummaryResponse:
       type: object
       additionalProperties: false
-      required: [summary]
+      required: [ summary ]
       properties:
         summary:
           type: object
@@ -4655,7 +4941,17 @@ components:
     AnalyticsRecordingItem:
       type: object
       additionalProperties: false
-      required: [recordingId, title, playlistId, playlistTitle, totalPlays, totalPlaySeconds, completionRate, likes]
+      required:
+        [
+          recordingId,
+          title,
+          playlistId,
+          playlistTitle,
+          totalPlays,
+          totalPlaySeconds,
+          completionRate,
+          likes
+        ]
       properties:
         recordingId:
           type: string
@@ -4666,10 +4962,10 @@ components:
         playlistTitle:
           type: string
         artworkUrl:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: uri-reference
         durationSeconds:
-          type: [integer, 'null']
+          type: [ integer, 'null' ]
         totalPlays:
           type: integer
         totalPlaySeconds:
@@ -4682,7 +4978,7 @@ components:
     AnalyticsRecordingsResponse:
       type: object
       additionalProperties: false
-      required: [data, meta]
+      required: [ data, meta ]
       properties:
         data:
           type: array
@@ -4711,7 +5007,7 @@ components:
         title:
           type: string
         coverArtUrl:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: uri-reference
         trackCount:
           type: integer
@@ -4726,16 +5022,16 @@ components:
         followers:
           type: integer
         topRecordingId:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         topRecordingTitle:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         topRecordingPlays:
           type: integer
 
     AnalyticsPlaylistsResponse:
       type: object
       additionalProperties: false
-      required: [data, meta]
+      required: [ data, meta ]
       properties:
         data:
           type: array
@@ -4747,7 +5043,7 @@ components:
     SetPlaylistTagsRequest:
       type: object
       additionalProperties: false
-      required: [tagIds]
+      required: [ tagIds ]
       properties:
         tagIds:
           type: array
@@ -4757,7 +5053,7 @@ components:
     LibraryGenre:
       type: object
       additionalProperties: false
-      required: [id, name, slug, songCount]
+      required: [ id, name, slug, songCount ]
       properties:
         id:
           type: string
@@ -4771,7 +5067,7 @@ components:
     SongGenreRef:
       type: object
       additionalProperties: false
-      required: [id, name, slug]
+      required: [ id, name, slug ]
       properties:
         id:
           type: string
@@ -4783,7 +5079,7 @@ components:
     LibraryGenresResponse:
       type: object
       additionalProperties: false
-      required: [data]
+      required: [ data ]
       properties:
         data:
           type: array
@@ -4793,7 +5089,7 @@ components:
     LibraryPlaylistRef:
       type: object
       additionalProperties: false
-      required: [id, slug, title]
+      required: [ id, slug, title ]
       properties:
         id:
           type: string
@@ -4805,7 +5101,25 @@ components:
     LibrarySong:
       type: object
       additionalProperties: false
-      required: [id, uploaderId, publishedPlaylistId, title, audioUrl, recordingType, visibility, status, explicit, playCount, favoriteCount, createdAt, updatedAt, uploader, playlist, genres]
+      required:
+        [
+          id,
+          uploaderId,
+          publishedPlaylistId,
+          title,
+          audioUrl,
+          recordingType,
+          visibility,
+          status,
+          explicit,
+          playCount,
+          favoriteCount,
+          createdAt,
+          updatedAt,
+          uploader,
+          playlist,
+          genres
+        ]
       properties:
         id:
           type: string
@@ -4816,18 +5130,18 @@ components:
         title:
           type: string
         description:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         audioUrl:
           type: string
           format: uri-reference
         audioMimeType:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         audioBytes:
-          type: [integer, 'null']
+          type: [ integer, 'null' ]
         durationSeconds:
-          type: [integer, 'null']
+          type: [ integer, 'null' ]
         artworkUrl:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: uri-reference
         recordingType:
           $ref: '#/components/schemas/RecordingType'
@@ -4836,16 +5150,16 @@ components:
         status:
           $ref: '#/components/schemas/PublishStatus'
         trackNumber:
-          type: [integer, 'null']
+          type: [ integer, 'null' ]
         episodeNumber:
-          type: [integer, 'null']
+          type: [ integer, 'null' ]
         explicit:
           type: boolean
         releaseDate:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: date-time
         publishedAt:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: date-time
         playCount:
           type: integer
@@ -4873,7 +5187,7 @@ components:
     LibrarySongsResponse:
       type: object
       additionalProperties: false
-      required: [data, meta]
+      required: [ data, meta ]
       properties:
         data:
           type: array
@@ -4885,7 +5199,7 @@ components:
     SearchResponse:
       type: object
       additionalProperties: false
-      required: [songs, playlists, artists, genres]
+      required: [ songs, playlists, artists, genres ]
       properties:
         songs:
           type: array
@@ -4907,13 +5221,13 @@ components:
     SearchSuggestionOption:
       type: object
       additionalProperties: false
-      required: [id, kind, label, href]
+      required: [ id, kind, label, href ]
       properties:
         id:
           type: string
         kind:
           type: string
-          enum: [song, playlist, artist, genre]
+          enum: [ song, playlist, artist, genre ]
         label:
           type: string
         meta:
@@ -4921,13 +5235,13 @@ components:
         href:
           type: string
         imageUrl:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: uri-reference
 
     SearchSuggestionGroup:
       type: object
       additionalProperties: false
-      required: [label, options]
+      required: [ label, options ]
       properties:
         label:
           type: string
@@ -4939,7 +5253,7 @@ components:
     SearchSuggestionsResponse:
       type: object
       additionalProperties: false
-      required: [groups]
+      required: [ groups ]
       properties:
         groups:
           type: array
@@ -4949,7 +5263,7 @@ components:
     LibraryArtistGenre:
       type: object
       additionalProperties: false
-      required: [id, name, slug]
+      required: [ id, name, slug ]
       properties:
         id:
           type: string
@@ -4961,17 +5275,17 @@ components:
     LibraryArtistYearRange:
       type: object
       additionalProperties: false
-      required: [earliest, latest]
+      required: [ earliest, latest ]
       properties:
         earliest:
-          type: [integer, 'null']
+          type: [ integer, 'null' ]
         latest:
-          type: [integer, 'null']
+          type: [ integer, 'null' ]
 
     LibraryArtist:
       type: object
       additionalProperties: false
-      required: [id, username, displayName, songCount, genres, yearRange]
+      required: [ id, username, displayName, songCount, genres, yearRange ]
       properties:
         id:
           type: string
@@ -4980,7 +5294,7 @@ components:
         displayName:
           type: string
         avatarUrl:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: uri-reference
         songCount:
           type: integer
@@ -4994,7 +5308,7 @@ components:
     LibraryArtistsResponse:
       type: object
       additionalProperties: false
-      required: [data]
+      required: [ data ]
       properties:
         data:
           type: array
@@ -5003,7 +5317,23 @@ components:
 
     PersonalTrackItem:
       type: object
-      required: [id, uploaderId, publishedPlaylistId, title, audioUrl, recordingType, visibility, status, explicit, playCount, createdAt, updatedAt, uploader, playlist]
+      required:
+        [
+          id,
+          uploaderId,
+          publishedPlaylistId,
+          title,
+          audioUrl,
+          recordingType,
+          visibility,
+          status,
+          explicit,
+          playCount,
+          createdAt,
+          updatedAt,
+          uploader,
+          playlist
+        ]
       properties:
         id:
           type: string
@@ -5014,18 +5344,18 @@ components:
         title:
           type: string
         description:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         audioUrl:
           type: string
           format: uri-reference
         audioMimeType:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         audioBytes:
-          type: [integer, 'null']
+          type: [ integer, 'null' ]
         durationSeconds:
-          type: [integer, 'null']
+          type: [ integer, 'null' ]
         artworkUrl:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: uri-reference
         recordingType:
           $ref: '#/components/schemas/RecordingType'
@@ -5034,16 +5364,16 @@ components:
         status:
           $ref: '#/components/schemas/PublishStatus'
         trackNumber:
-          type: [integer, 'null']
+          type: [ integer, 'null' ]
         episodeNumber:
-          type: [integer, 'null']
+          type: [ integer, 'null' ]
         explicit:
           type: boolean
         releaseDate:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: date-time
         publishedAt:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: date-time
         playCount:
           type: integer
@@ -5062,7 +5392,7 @@ components:
       allOf:
         - $ref: '#/components/schemas/PersonalTrackItem'
         - type: object
-          required: [savedAt]
+          required: [ savedAt ]
           properties:
             savedAt:
               type: string
@@ -5071,7 +5401,7 @@ components:
     FavoriteRecordingsResponse:
       type: object
       additionalProperties: false
-      required: [data, meta]
+      required: [ data, meta ]
       properties:
         data:
           type: array
@@ -5083,7 +5413,7 @@ components:
     FavoriteSavedResponse:
       type: object
       additionalProperties: false
-      required: [id, recordingId, savedAt]
+      required: [ id, recordingId, savedAt ]
       properties:
         id:
           type: string
@@ -5097,7 +5427,7 @@ components:
       allOf:
         - $ref: '#/components/schemas/PlaylistSummary'
         - type: object
-          required: [savedAt]
+          required: [ savedAt ]
           properties:
             savedAt:
               type: string
@@ -5106,7 +5436,7 @@ components:
     FavoritePlaylistsResponse:
       type: object
       additionalProperties: false
-      required: [data, meta]
+      required: [ data, meta ]
       properties:
         data:
           type: array
@@ -5118,7 +5448,7 @@ components:
     FavoritePlaylistSavedResponse:
       type: object
       additionalProperties: false
-      required: [id, playlistId, savedAt]
+      required: [ id, playlistId, savedAt ]
       properties:
         id:
           type: string
@@ -5132,7 +5462,7 @@ components:
       allOf:
         - $ref: '#/components/schemas/PlaylistSummary'
         - type: object
-          required: [savedAt]
+          required: [ savedAt ]
           properties:
             savedAt:
               type: string
@@ -5141,7 +5471,7 @@ components:
     CollectionPlaylistsResponse:
       type: object
       additionalProperties: false
-      required: [data, meta]
+      required: [ data, meta ]
       properties:
         data:
           type: array
@@ -5153,7 +5483,7 @@ components:
     CollectionPlaylistSavedResponse:
       type: object
       additionalProperties: false
-      required: [id, playlistId, savedAt]
+      required: [ id, playlistId, savedAt ]
       properties:
         id:
           type: string
@@ -5167,7 +5497,7 @@ components:
       allOf:
         - $ref: '#/components/schemas/UserSummary'
         - type: object
-          required: [savedAt]
+          required: [ savedAt ]
           properties:
             savedAt:
               type: string
@@ -5176,7 +5506,7 @@ components:
     FavoriteArtistsResponse:
       type: object
       additionalProperties: false
-      required: [data, meta]
+      required: [ data, meta ]
       properties:
         data:
           type: array
@@ -5188,7 +5518,7 @@ components:
     FavoriteArtistSavedResponse:
       type: object
       additionalProperties: false
-      required: [id, artistId, savedAt]
+      required: [ id, artistId, savedAt ]
       properties:
         id:
           type: string
@@ -5202,7 +5532,7 @@ components:
       allOf:
         - $ref: '#/components/schemas/UserSummary'
         - type: object
-          required: [followedAt]
+          required: [ followedAt ]
           properties:
             followedAt:
               type: string
@@ -5211,7 +5541,7 @@ components:
     FollowedArtistsResponse:
       type: object
       additionalProperties: false
-      required: [data, meta]
+      required: [ data, meta ]
       properties:
         data:
           type: array
@@ -5223,7 +5553,7 @@ components:
     FollowedArtistSavedResponse:
       type: object
       additionalProperties: false
-      required: [id, artistId, followedAt]
+      required: [ id, artistId, followedAt ]
       properties:
         id:
           type: string
@@ -5237,7 +5567,7 @@ components:
       allOf:
         - $ref: '#/components/schemas/PersonalTrackItem'
         - type: object
-          required: [userPlayCount]
+          required: [ userPlayCount ]
           properties:
             userPlayCount:
               type: integer
@@ -5245,7 +5575,7 @@ components:
     MostPlayedResponse:
       type: object
       additionalProperties: false
-      required: [data]
+      required: [ data ]
       properties:
         data:
           type: array
@@ -5256,7 +5586,7 @@ components:
       allOf:
         - $ref: '#/components/schemas/PersonalTrackItem'
         - type: object
-          required: [lastPlayedAt]
+          required: [ lastPlayedAt ]
           properties:
             lastPlayedAt:
               type: string
@@ -5265,7 +5595,7 @@ components:
     RecentlyPlayedResponse:
       type: object
       additionalProperties: false
-      required: [data]
+      required: [ data ]
       properties:
         data:
           type: array
@@ -5275,7 +5605,7 @@ components:
     AdminTag:
       type: object
       additionalProperties: false
-      required: [id, name, slug, kind, createdAt]
+      required: [ id, name, slug, kind, createdAt ]
       properties:
         id:
           type: string
@@ -5292,7 +5622,7 @@ components:
     AdminTagListResponse:
       type: object
       additionalProperties: false
-      required: [data]
+      required: [ data ]
       properties:
         data:
           type: array
@@ -5302,7 +5632,7 @@ components:
     AdminCreateTagRequest:
       type: object
       additionalProperties: false
-      required: [name]
+      required: [ name ]
       properties:
         name:
           type: string
@@ -5325,7 +5655,7 @@ components:
     AdminBulkCreateTagItem:
       type: object
       additionalProperties: false
-      required: [name]
+      required: [ name ]
       properties:
         name:
           type: string
@@ -5343,7 +5673,7 @@ components:
     AdminBulkCreateTagsResponse:
       type: object
       additionalProperties: false
-      required: [created, skipped, skippedNames]
+      required: [ created, skipped, skippedNames ]
       properties:
         created:
           type: integer
@@ -5357,20 +5687,20 @@ components:
     AdminHomepageFeatureRef:
       type: object
       additionalProperties: false
-      required: [id, title]
+      required: [ id, title ]
       properties:
         id:
           type: string
         title:
           type: string
         coverArtUrl:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: uri-reference
 
     AdminHomepageUserRef:
       type: object
       additionalProperties: false
-      required: [id, username, displayName]
+      required: [ id, username, displayName ]
       properties:
         id:
           type: string
@@ -5379,13 +5709,13 @@ components:
         displayName:
           type: string
         avatarUrl:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: uri-reference
 
     AdminHomepageEditorialAuthorRef:
       type: object
       additionalProperties: false
-      required: [id, username, displayName]
+      required: [ id, username, displayName ]
       properties:
         id:
           type: string
@@ -5397,41 +5727,52 @@ components:
     AdminHomepageEditorialPostRef:
       type: object
       additionalProperties: false
-      required: [id, kind, title, slug, body, status, author]
+      required: [ id, kind, title, slug, body, status, author ]
       properties:
         id:
           type: string
         kind:
           type: string
-          enum: [NEWS, REVIEW, FEATURE, SPOTLIGHT]
+          enum: [ NEWS, REVIEW, FEATURE, SPOTLIGHT ]
         title:
           type: string
         slug:
           type: string
         summary:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         body:
           type: string
         coverImageUrl:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: uri-reference
         status:
           type: string
-          enum: [DRAFT, PUBLISHED, ARCHIVED]
+          enum: [ DRAFT, PUBLISHED, ARCHIVED ]
         publishedAt:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: date-time
         author:
           $ref: '#/components/schemas/AdminHomepageEditorialAuthorRef'
 
     AdminHomepageSection:
       type: string
-      enum: [SPOTLIGHT, FEATURED_ARTIST, FEATURED_PLAYLIST, CUSTOM_MIX, NEW_RELEASE, NEW_ARTIST, TRENDING, EDITOR_PICK, SITE_NEWS]
+      enum:
+        [
+          SPOTLIGHT,
+          FEATURED_ARTIST,
+          FEATURED_PLAYLIST,
+          CUSTOM_MIX,
+          NEW_RELEASE,
+          NEW_ARTIST,
+          TRENDING,
+          EDITOR_PICK,
+          SITE_NEWS
+        ]
 
     AdminHomepageFeature:
       type: object
       additionalProperties: false
-      required: [id, section, position, isActive, createdAt, updatedAt]
+      required: [ id, section, position, isActive, createdAt, updatedAt ]
       properties:
         id:
           type: string
@@ -5440,28 +5781,28 @@ components:
         position:
           type: integer
         titleOverride:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         subtitleOverride:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         description:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         imageUrl:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: uri-reference
         isActive:
           type: boolean
         startsAt:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: date-time
         endsAt:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: date-time
         playlistId:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         userId:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         editorialPostId:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         createdAt:
           type: string
           format: date-time
@@ -5484,7 +5825,7 @@ components:
     AdminHomepageFeatureListResponse:
       type: object
       additionalProperties: false
-      required: [data]
+      required: [ data ]
       properties:
         data:
           type: array
@@ -5494,36 +5835,36 @@ components:
     AdminCreateHomepageFeatureRequest:
       type: object
       additionalProperties: false
-      required: [section]
+      required: [ section ]
       properties:
         section:
           $ref: '#/components/schemas/AdminHomepageSection'
         position:
           type: integer
         titleOverride:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         subtitleOverride:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         description:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         imageUrl:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: uri-reference
         isActive:
           type: boolean
           default: true
         startsAt:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: date-time
         endsAt:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: date-time
         playlistId:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         userId:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         editorialPostId:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         editorialPost:
           $ref: '#/components/schemas/AdminHomepageEditorialPostInput'
 
@@ -5536,28 +5877,28 @@ components:
         position:
           type: integer
         titleOverride:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         subtitleOverride:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         description:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         imageUrl:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: uri-reference
         isActive:
           type: boolean
         startsAt:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: date-time
         endsAt:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: date-time
         playlistId:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         userId:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         editorialPostId:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         editorialPost:
           $ref: '#/components/schemas/AdminHomepageEditorialPostInput'
 
@@ -5570,22 +5911,22 @@ components:
           minLength: 1
           maxLength: 191
         slug:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           maxLength: 191
         summary:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           maxLength: 512
         body:
           type: string
           minLength: 1
         coverImageUrl:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: uri-reference
         status:
           type: string
-          enum: [DRAFT, PUBLISHED, ARCHIVED]
+          enum: [ DRAFT, PUBLISHED, ARCHIVED ]
         publishedAt:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: date-time
 
     AdminUpdateUserRequest:
@@ -5602,7 +5943,7 @@ components:
     AdminContentUploaderRef:
       type: object
       additionalProperties: false
-      required: [id, username, displayName]
+      required: [ id, username, displayName ]
       properties:
         id:
           type: string
@@ -5611,13 +5952,13 @@ components:
         displayName:
           type: string
         avatarUrl:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: uri-reference
 
     AdminContentTagRef:
       type: object
       additionalProperties: false
-      required: [id, name, slug, kind]
+      required: [ id, name, slug, kind ]
       properties:
         id:
           type: string
@@ -5631,22 +5972,39 @@ components:
     AdminSong:
       type: object
       additionalProperties: false
-      required: [id, title, audioUrl, recordingType, visibility, status, explicit, playCount, savesCount, createdAt, updatedAt, uploader, playlist, tags, playlistGenres]
+      required:
+        [
+          id,
+          title,
+          audioUrl,
+          recordingType,
+          visibility,
+          status,
+          explicit,
+          playCount,
+          savesCount,
+          createdAt,
+          updatedAt,
+          uploader,
+          playlist,
+          tags,
+          playlistGenres
+        ]
       properties:
         id:
           type: string
         title:
           type: string
         description:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         audioUrl:
           type: string
           format: uri-reference
         artworkUrl:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: uri-reference
         durationSeconds:
-          type: [integer, 'null']
+          type: [ integer, 'null' ]
         recordingType:
           $ref: '#/components/schemas/RecordingType'
         visibility:
@@ -5664,7 +6022,7 @@ components:
         savesCount:
           type: integer
         publishedAt:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: date-time
         createdAt:
           type: string
@@ -5677,7 +6035,7 @@ components:
         playlist:
           type: object
           additionalProperties: false
-          required: [id, title, slug]
+          required: [ id, title, slug ]
           properties:
             id:
               type: string
@@ -5691,14 +6049,15 @@ components:
             $ref: '#/components/schemas/AdminContentTagRef'
         playlistGenres:
           type: array
-          description: Genre tags on the song's published playlist (homepage effective genres)
+          description: Genre tags on the song's published playlist (homepage effective
+            genres)
           items:
             $ref: '#/components/schemas/AdminContentTagRef'
 
     AdminSongListResponse:
       type: object
       additionalProperties: false
-      required: [data, meta]
+      required: [ data, meta ]
       properties:
         data:
           type: array
@@ -5723,7 +6082,7 @@ components:
     AdminSetSongTagsRequest:
       type: object
       additionalProperties: false
-      required: [tagIds]
+      required: [ tagIds ]
       properties:
         tagIds:
           type: array
@@ -5733,16 +6092,32 @@ components:
     AdminPlaylist:
       type: object
       additionalProperties: false
-      required: [id, title, type, visibility, status, featured, itemCount, totalDurationSeconds, savesCount, playCount, createdAt, updatedAt, owner, tags]
+      required:
+        [
+          id,
+          title,
+          type,
+          visibility,
+          status,
+          featured,
+          itemCount,
+          totalDurationSeconds,
+          savesCount,
+          playCount,
+          createdAt,
+          updatedAt,
+          owner,
+          tags
+        ]
       properties:
         id:
           type: string
         title:
           type: string
         description:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         coverArtUrl:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: uri-reference
         type:
           $ref: '#/components/schemas/PlaylistType'
@@ -5761,7 +6136,7 @@ components:
         playCount:
           type: integer
         publishedAt:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: date-time
         createdAt:
           type: string
@@ -5779,7 +6154,7 @@ components:
     AdminPlaylistListResponse:
       type: object
       additionalProperties: false
-      required: [data, meta]
+      required: [ data, meta ]
       properties:
         data:
           type: array
@@ -5804,12 +6179,12 @@ components:
     AdminDashboardTotals:
       type: object
       additionalProperties: false
-      required: [users, songs, playlists, plays, playSeconds, saves, follows]
+      required: [ users, songs, playlists, plays, playSeconds, saves, follows ]
       properties:
         users:
           type: object
           additionalProperties: false
-          required: [total, newToday, newThisWeek]
+          required: [ total, newToday, newThisWeek ]
           properties:
             total:
               type: integer
@@ -5820,7 +6195,7 @@ components:
         songs:
           type: object
           additionalProperties: false
-          required: [total, published, draft]
+          required: [ total, published, draft ]
           properties:
             total:
               type: integer
@@ -5831,7 +6206,7 @@ components:
         playlists:
           type: object
           additionalProperties: false
-          required: [total, published]
+          required: [ total, published ]
           properties:
             total:
               type: integer
@@ -5840,7 +6215,7 @@ components:
         plays:
           type: object
           additionalProperties: false
-          required: [total, today]
+          required: [ total, today ]
           properties:
             total:
               type: integer
@@ -5849,7 +6224,7 @@ components:
         playSeconds:
           type: object
           additionalProperties: false
-          required: [total, today]
+          required: [ total, today ]
           properties:
             total:
               type: integer
@@ -5863,7 +6238,7 @@ components:
     AdminDashboardResponse:
       type: object
       additionalProperties: false
-      required: [totals, hourlyPlays, dailyPlays, dailyNewUsers, topSongsToday]
+      required: [ totals, hourlyPlays, dailyPlays, dailyNewUsers, topSongsToday ]
       properties:
         totals:
           $ref: '#/components/schemas/AdminDashboardTotals'
@@ -5872,7 +6247,7 @@ components:
           items:
             type: object
             additionalProperties: false
-            required: [hour, plays]
+            required: [ hour, plays ]
             properties:
               hour:
                 type: string
@@ -5883,7 +6258,7 @@ components:
           items:
             type: object
             additionalProperties: false
-            required: [day, plays]
+            required: [ day, plays ]
             properties:
               day:
                 type: string
@@ -5894,7 +6269,7 @@ components:
           items:
             type: object
             additionalProperties: false
-            required: [day, newUsers]
+            required: [ day, newUsers ]
             properties:
               day:
                 type: string
@@ -5905,7 +6280,7 @@ components:
           items:
             type: object
             additionalProperties: false
-            required: [recordingId, plays, title, artist]
+            required: [ recordingId, plays, title, artist ]
             properties:
               recordingId:
                 type: string
@@ -5914,7 +6289,7 @@ components:
               title:
                 type: string
               artworkUrl:
-                type: [string, 'null']
+                type: [ string, 'null' ]
                 format: uri-reference
               artist:
                 type: string
@@ -5997,7 +6372,19 @@ components:
     AdminTrafficResponse:
       type: object
       additionalProperties: false
-      required: [range, caveat, totals, dailyProfileViews, dailyPlays, topProfiles, referrers, topConsumers, topRoutes, limitations]
+      required:
+        [
+          range,
+          caveat,
+          totals,
+          dailyProfileViews,
+          dailyPlays,
+          topProfiles,
+          referrers,
+          topConsumers,
+          topRoutes,
+          limitations
+        ]
       properties:
         range:
           $ref: '#/components/schemas/ChartRange'
@@ -6010,7 +6397,7 @@ components:
           items:
             type: object
             additionalProperties: false
-            required: [day, views]
+            required: [ day, views ]
             properties:
               day:
                 type: string
@@ -6021,7 +6408,7 @@ components:
           items:
             type: object
             additionalProperties: false
-            required: [day, plays]
+            required: [ day, plays ]
             properties:
               day:
                 type: string
@@ -6032,7 +6419,7 @@ components:
           items:
             type: object
             additionalProperties: false
-            required: [userId, username, displayName, views]
+            required: [ userId, username, displayName, views ]
             properties:
               userId:
                 type: string
@@ -6047,7 +6434,7 @@ components:
           items:
             type: object
             additionalProperties: false
-            required: [referrer, views]
+            required: [ referrer, views ]
             properties:
               referrer:
                 type: string
@@ -6058,7 +6445,19 @@ components:
           items:
             type: object
             additionalProperties: false
-            required: [userId, username, displayName, role, plays, profileViews, saves, follows, totalActions, lastActivityAt]
+            required:
+              [
+                userId,
+                username,
+                displayName,
+                role,
+                plays,
+                profileViews,
+                saves,
+                follows,
+                totalActions,
+                lastActivityAt
+              ]
             properties:
               userId:
                 type: string
@@ -6079,14 +6478,14 @@ components:
               totalActions:
                 type: integer
               lastActivityAt:
-                type: [string, 'null']
+                type: [ string, 'null' ]
                 format: date-time
         topRoutes:
           type: array
           items:
             type: object
             additionalProperties: false
-            required: [path, method, requests, avgLatencyMs, errors, errorRate]
+            required: [ path, method, requests, avgLatencyMs, errors, errorRate ]
             properties:
               path:
                 type: string
@@ -6108,7 +6507,7 @@ components:
     ApiKey:
       type: object
       additionalProperties: false
-      required: [id, name, prefix, lastUsedAt, createdAt, updatedAt]
+      required: [ id, name, prefix, lastUsedAt, createdAt, updatedAt ]
       properties:
         id:
           type: string
@@ -6117,7 +6516,7 @@ components:
         prefix:
           type: string
         lastUsedAt:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: date-time
         createdAt:
           type: string
@@ -6129,7 +6528,7 @@ components:
     ApiKeyCreatedResponse:
       type: object
       additionalProperties: false
-      required: [id, name, prefix, key, lastUsedAt, createdAt, updatedAt]
+      required: [ id, name, prefix, key, lastUsedAt, createdAt, updatedAt ]
       properties:
         id:
           type: string
@@ -6140,7 +6539,7 @@ components:
         key:
           type: string
         lastUsedAt:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: date-time
         createdAt:
           type: string
@@ -6152,7 +6551,7 @@ components:
     ApiKeyListResponse:
       type: object
       additionalProperties: false
-      required: [keys]
+      required: [ keys ]
       properties:
         keys:
           type: array
@@ -6162,7 +6561,7 @@ components:
     AdminApiKey:
       type: object
       additionalProperties: false
-      required: [id, name, prefix, lastUsedAt, revokedAt, createdAt, user]
+      required: [ id, name, prefix, lastUsedAt, revokedAt, createdAt, user ]
       properties:
         id:
           type: string
@@ -6171,10 +6570,10 @@ components:
         prefix:
           type: string
         lastUsedAt:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: date-time
         revokedAt:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           format: date-time
         createdAt:
           type: string
@@ -6182,7 +6581,7 @@ components:
         user:
           type: object
           additionalProperties: false
-          required: [id, email, username, displayName]
+          required: [ id, email, username, displayName ]
           properties:
             id:
               type: string
@@ -6196,7 +6595,7 @@ components:
     AdminApiKeyStats:
       type: object
       additionalProperties: false
-      required: [totalActive, totalRevoked, usedLast7d]
+      required: [ totalActive, totalRevoked, usedLast7d ]
       properties:
         totalActive:
           type: integer
@@ -6209,7 +6608,7 @@ components:
     AdminApiKeyListResponse:
       type: object
       additionalProperties: false
-      required: [data, meta, stats]
+      required: [ data, meta, stats ]
       properties:
         data:
           type: array
@@ -6223,7 +6622,7 @@ components:
     IngestListMeta:
       type: object
       additionalProperties: false
-      required: [page, pageSize, total]
+      required: [ page, pageSize, total ]
       properties:
         page:
           type: integer
@@ -6235,13 +6634,13 @@ components:
     IngestUploadData:
       type: object
       additionalProperties: false
-      required: [uploadId, kind, url, mimeType, bytes, originalName, status, createdAt]
+      required: [ uploadId, kind, url, mimeType, bytes, originalName, status, createdAt ]
       properties:
         uploadId:
           type: string
         kind:
           type: string
-          enum: [audio, image]
+          enum: [ audio, image ]
         url:
           type: string
         mimeType:
@@ -6259,7 +6658,7 @@ components:
     IngestUploadsListResponse:
       type: object
       additionalProperties: false
-      required: [data, meta]
+      required: [ data, meta ]
       properties:
         data:
           type: array
@@ -6271,7 +6670,7 @@ components:
     IngestPlaylistsListResponse:
       type: object
       additionalProperties: false
-      required: [data, meta]
+      required: [ data, meta ]
       properties:
         data:
           type: array
@@ -6283,7 +6682,7 @@ components:
     IngestRecordingsListResponse:
       type: object
       additionalProperties: false
-      required: [data, meta]
+      required: [ data, meta ]
       properties:
         data:
           type: array
@@ -6295,7 +6694,7 @@ components:
     IngestPlaylistRequest:
       type: object
       additionalProperties: false
-      required: [externalSource, externalId, title]
+      required: [ externalSource, externalId, title ]
       properties:
         externalSource:
           type: string
@@ -6310,19 +6709,19 @@ components:
           minLength: 1
           maxLength: 191
         description:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         visibility:
           $ref: '#/components/schemas/Visibility'
         type:
           $ref: '#/components/schemas/PlaylistType'
         coverUploadId:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           description: uploadId returned from POST /api/v1/ingest/uploads (kind=image)
 
     IngestRecordingRequest:
       type: object
       additionalProperties: false
-      required: [externalSource, externalId, playlistExternalId, title, audioUploadId]
+      required: [ externalSource, externalId, playlistExternalId, title, audioUploadId ]
       properties:
         externalSource:
           type: string
@@ -6333,7 +6732,8 @@ components:
         playlistExternalId:
           type: string
           maxLength: 255
-          description: externalId of the target playlist (must already exist under the same externalSource)
+          description: externalId of the target playlist (must already exist under the
+            same externalSource)
         title:
           type: string
           minLength: 1
@@ -6342,21 +6742,34 @@ components:
           type: string
           description: uploadId returned from POST /api/v1/ingest/uploads (kind=audio)
         coverUploadId:
-          type: [string, 'null']
+          type: [ string, 'null' ]
           description: uploadId returned from POST /api/v1/ingest/uploads (kind=image)
         trackNumber:
-          type: [integer, 'null']
+          type: [ integer, 'null' ]
           minimum: 1
         durationSeconds:
-          type: [number, 'null']
+          type: [ number, 'null' ]
           minimum: 0
         description:
-          type: [string, 'null']
+          type: [ string, 'null' ]
 
     IngestPlaylistData:
       type: object
       additionalProperties: false
-      required: [id, ownerId, title, slug, type, visibility, status, externalSource, externalId, createdAt, updatedAt]
+      required:
+        [
+          id,
+          ownerId,
+          title,
+          slug,
+          type,
+          visibility,
+          status,
+          externalSource,
+          externalId,
+          createdAt,
+          updatedAt
+        ]
       properties:
         id:
           type: string
@@ -6367,9 +6780,9 @@ components:
         slug:
           type: string
         description:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         coverArtUrl:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         type:
           $ref: '#/components/schemas/PlaylistType'
         visibility:
@@ -6377,9 +6790,9 @@ components:
         status:
           $ref: '#/components/schemas/PublishStatus'
         externalSource:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         externalId:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         createdAt:
           type: string
           format: date-time
@@ -6390,7 +6803,7 @@ components:
     IngestPlaylistResponse:
       type: object
       additionalProperties: false
-      required: [created, playlist]
+      required: [ created, playlist ]
       properties:
         created:
           type: boolean
@@ -6400,7 +6813,21 @@ components:
     IngestRecordingData:
       type: object
       additionalProperties: false
-      required: [id, uploaderId, playlistId, title, audioUrl, recordingType, visibility, status, externalSource, externalId, createdAt, updatedAt]
+      required:
+        [
+          id,
+          uploaderId,
+          playlistId,
+          title,
+          audioUrl,
+          recordingType,
+          visibility,
+          status,
+          externalSource,
+          externalId,
+          createdAt,
+          updatedAt
+        ]
       properties:
         id:
           type: string
@@ -6411,19 +6838,19 @@ components:
         title:
           type: string
         description:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         audioUrl:
           type: string
         audioMimeType:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         audioBytes:
-          type: [integer, 'null']
+          type: [ integer, 'null' ]
         durationSeconds:
-          type: [integer, 'null']
+          type: [ integer, 'null' ]
         artworkUrl:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         trackNumber:
-          type: [integer, 'null']
+          type: [ integer, 'null' ]
         recordingType:
           $ref: '#/components/schemas/RecordingType'
         visibility:
@@ -6431,9 +6858,9 @@ components:
         status:
           $ref: '#/components/schemas/PublishStatus'
         externalSource:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         externalId:
-          type: [string, 'null']
+          type: [ string, 'null' ]
         createdAt:
           type: string
           format: date-time
@@ -6444,7 +6871,7 @@ components:
     IngestRecordingResponse:
       type: object
       additionalProperties: false
-      required: [created, recording]
+      required: [ created, recording ]
       properties:
         created:
           type: boolean
@@ -6454,7 +6881,7 @@ components:
     CreateApiKeyRequest:
       type: object
       additionalProperties: false
-      required: [name]
+      required: [ name ]
       properties:
         name:
           type: string
@@ -6464,20 +6891,67 @@ components:
     IngestUploadResponse:
       type: object
       additionalProperties: false
-      required: [uploadId, url, kind, mimeType, bytes, originalName]
+      required: [ uploadId, url, kind, mimeType, bytes, originalName ]
       properties:
         uploadId:
           type: string
-          description: Stable asset ID (upl_…) — pass this to recording/playlist ingest endpoints
+          description: Stable asset ID (upl_…) — pass this to recording/playlist ingest
+            endpoints
         url:
           type: string
           description: Public URL of the uploaded file
         kind:
           type: string
-          enum: [audio, image]
+          enum: [ audio, image ]
         mimeType:
           type: string
         bytes:
           type: integer
         originalName:
           type: string
+    TranscriptSource:
+      type: string
+      enum:
+        - WHISPER
+        - MODAL
+        - UPLOAD
+        - MANUAL
+    TranscriptEntity:
+      type: object
+      required:
+        - id
+        - recordingId
+        - source
+        - status
+        - isActive
+        - createdAt
+      properties:
+        id:
+          type: string
+        recordingId:
+          type: string
+        source:
+          $ref: "#/components/schemas/TranscriptSource"
+        status:
+          $ref: "#/components/schemas/SubtitleStatus"
+        language:
+          type: string
+          nullable: true
+        vttText:
+          type: string
+          nullable: true
+        srtText:
+          type: string
+          nullable: true
+        errorMessage:
+          type: string
+          nullable: true
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        generatedAt:
+          type: string
+          format: date-time
+          nullable: true

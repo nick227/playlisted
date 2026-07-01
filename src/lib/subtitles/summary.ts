@@ -6,7 +6,8 @@ type SubtitleLike = {
   generatedAt: Date | string | null;
 } | null | undefined;
 
-export function mapSubtitleSummary(subtitle: SubtitleLike) {
+export function mapSubtitleSummary(subtitles: SubtitleLike[] | SubtitleLike) {
+  const subtitle = Array.isArray(subtitles) ? subtitles[0] : subtitles;
   if (!subtitle) return null;
 
   return {
@@ -21,10 +22,12 @@ export function mapSubtitleSummary(subtitle: SubtitleLike) {
 
 export function subtitleInclude() {
   return {
+    orderBy: [{ isActive: "desc" as const }, { createdAt: "desc" as const }],
+    take: 1,
     select: {
       status: true,
       language: true,
       generatedAt: true,
     },
-  } as const;
+  };
 }

@@ -137,7 +137,7 @@ export function PlaylistDetailView({ playlist }: PlaylistDetailViewProps) {
       </div>
 
       {related && related.data.length > 0 ? (
-        <div className={`${BROWSE_LAYOUT_CLASS} mt-14`}>
+        <div className={`${BROWSE_LAYOUT_CLASS} mt-4`}>
           <ContentRow title="More playlists">
             {related.data
               .filter((item) => item.id !== playlist.id)

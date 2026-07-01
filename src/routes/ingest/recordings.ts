@@ -146,21 +146,32 @@ ingestRecordingsRouter.post("/", async (req, res, next) => {
       });
 
       if (audioChanged) {
-        await prisma.recordingSubtitle.upsert({
-          where: { recordingId: existing.id },
-          create: {
-            recordingId: existing.id,
-            status: "QUEUED",
-          },
-          update: {
-            status: "QUEUED",
-            language: null,
-            segments: Prisma.JsonNull,
-            vttText: null,
-            errorMessage: null,
-            generatedAt: null,
-          },
+        const activeSub = await prisma.recordingSubtitle.findFirst({
+          where: { recordingId: existing.id, isActive: true },
         });
+
+        if (activeSub) {
+          await prisma.recordingSubtitle.update({
+            where: { id: activeSub.id },
+            data: {
+              status: "QUEUED",
+              language: null,
+              segments: Prisma.JsonNull,
+              vttText: null,
+              errorMessage: null,
+              generatedAt: null,
+            },
+          });
+        } else {
+          await prisma.recordingSubtitle.create({
+            data: {
+              recordingId: existing.id,
+              isActive: true,
+              source: "MODAL",
+              status: "QUEUED",
+            },
+          });
+        }
       }
 
       await syncPlaylistStats(updated.publishedPlaylistId);
@@ -196,6 +207,8 @@ ingestRecordingsRouter.post("/", async (req, res, next) => {
           await tx.recordingSubtitle.create({
             data: {
               recordingId: created.id,
+              isActive: true,
+              source: "MODAL",
               status: "QUEUED",
             },
           });

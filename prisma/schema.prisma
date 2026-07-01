@@ -191,7 +191,7 @@ model Recording {
   saves             RecordingSave[]
   playbackEvents    PlaybackEvent[]
   tags              RecordingTag[]
-  subtitle          RecordingSubtitle?
+  subtitles         RecordingSubtitle[]
 
   @@unique([uploaderId, externalSource, externalId])
   @@index([uploaderId])
@@ -267,14 +267,23 @@ model PlaybackEvent {
   @@index([playlistId, createdAt])
 }
 
+enum TranscriptSource {
+  WHISPER
+  MODAL
+  UPLOAD
+  MANUAL
+}
+
 model RecordingSubtitle {
-  id           String         @id @default(cuid()) @db.VarChar(191)
-  recordingId  String         @unique @db.VarChar(191)
-  status       SubtitleStatus @default(QUEUED)
-  language     String?        @db.VarChar(16)
+  id           String           @id @default(cuid()) @db.VarChar(191)
+  recordingId  String           @db.VarChar(191)
+  source       TranscriptSource @default(MODAL)
+  isActive     Boolean          @default(false)
+  status       SubtitleStatus   @default(QUEUED)
+  language     String?          @db.VarChar(16)
   segments     Json?
-  vttText      String?        @db.LongText
-  errorMessage String?        @db.Text
+  vttText      String?          @db.LongText
+  errorMessage String?          @db.Text
   generatedAt  DateTime?
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
@@ -282,6 +291,7 @@ model RecordingSubtitle {
   recording Recording                  @relation(fields: [recordingId], references: [id], onDelete: Cascade)
   attempts  RecordingSubtitleAttempt[]
 
+  @@index([recordingId])
   @@index([status, createdAt])
   @@index([status, updatedAt])
 }

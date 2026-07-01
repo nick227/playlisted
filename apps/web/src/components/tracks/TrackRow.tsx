@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { RecordingActionMenu } from "@/components/media/RecordingActionMenu";
 import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
 import { PlaybackBars } from "@/features/playback-indicators/PlaybackBars";
+import { SubtitleEditorModal } from "./SubtitleEditorModal";
 import { useTrackPlayback } from "@/hooks/useTrackPlayback";
 import { formatDuration, formatPlayCount } from "@/lib/format";
 import { MediaCover } from "@/components/cards/MediaCover";
@@ -124,6 +125,7 @@ export function TrackRow({
 }: TrackRowProps) {
   const { isActive, isPlaying } = useTrackPlayback(recordingId, playbackOrigin);
   const showActions = !editMode && queueTrack && shareUrl;
+  const [isSubtitleModalOpen, setSubtitleModalOpen] = useState(false);
   const artworkInputRef = useRef<HTMLInputElement>(null);
   const [draftTitle, setDraftTitle] = useState(title);
   const [localError, setLocalError] = useState<string | null>(null);
@@ -307,7 +309,19 @@ export function TrackRow({
             {formatPlayCount(playCount)} plays
           </span>
         )}
-        {editMode ? <SubtitleStatusBadge subtitle={subtitle ?? queueTrack?.subtitle} /> : null}
+        {editMode ? (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setSubtitleModalOpen(true);
+            }}
+            className="rounded focus:outline-none focus:ring-1 focus:ring-emerald-400 transition-transform hover:scale-105"
+            title="Edit Subtitles"
+          >
+            <SubtitleStatusBadge subtitle={subtitle ?? queueTrack?.subtitle} />
+          </button>
+        ) : null}
         <span className="text-xs text-[var(--color-text-muted)]">{formatDuration(durationSeconds)}</span>
         {editMode ? (
           <>
@@ -373,6 +387,14 @@ export function TrackRow({
           </>
         ) : null}
       </div>
+
+      {isSubtitleModalOpen && (
+        <SubtitleEditorModal
+          recordingId={recordingId}
+          recordingTitle={title}
+          onClose={() => setSubtitleModalOpen(false)}
+        />
+      )}
     </div>
   );
 }

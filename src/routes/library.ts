@@ -121,7 +121,7 @@ libraryRouter.get("/songs", async (req, res, next) => {
           _count: {
             select: { saves: { where: { kind: "FAVORITE" } } },
           },
-          subtitle: subtitleInclude(),
+          subtitles: subtitleInclude(),
         },
         orderBy: { title: "asc" },
         skip: (page - 1) * pageSize,
@@ -152,7 +152,7 @@ libraryRouter.get("/songs", async (req, res, next) => {
         publishedAt: r.publishedAt?.toISOString() ?? null,
         playCount: r.playCount,
         favoriteCount: r._count.saves,
-        subtitle: mapSubtitleSummary(r.subtitle),
+        subtitle: mapSubtitleSummary(r.subtitles),
         createdAt: r.createdAt.toISOString(),
         updatedAt: r.updatedAt.toISOString(),
         uploader: r.uploader,

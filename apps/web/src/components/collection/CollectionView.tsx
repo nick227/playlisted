@@ -392,8 +392,8 @@ export function CollectionView({
         <div className="mb-6 flex flex-wrap items-center gap-3">{editToolbar}</div>
       ) : null}
 
-      <div className="flex flex-col gap-8 md:flex-row md:items-start bg-[var(--color-canvas)] rounded-lg p-2 max-w-3xl p-4">
-        <div className="mx-auto shrink-0 md:mx-0 flex justify-center align-center">
+      <div className="flex flex-row gap-8 rounded-lg p-2 max-w-3xl">
+        <div className="mx-auto shrink-0 md:mx-0 flex justify-center align-center max-w-[50%]">
           <button
             type="button"
             onClick={isEdit ? onCoverClick : undefined}
@@ -488,76 +488,84 @@ export function CollectionView({
               {playlist.description}
             </p>
           ) : null}
-          {!isEdit && onPlayAll ? (
-            <div className="mt-6 flex flex-nowrap items-center gap-3 overflow-x-auto collection-controls">
+                <div className="my-4 w-full">
+        <hr className="border-[var(--color-border)]" />
+
+        {!isEdit && onPlayAll ? (
+          <div className="mt-6 flex flex-nowrap items-center gap-3 overflow-x-auto collection-controls">
+            <button
+              type="button"
+              onClick={() => onPlayAll(false)}
+              className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-black"
+            >
+              {playlistIsPlaying ? (
+                <Pause size={18} fill="currentColor" />
+              ) : (
+                <Play size={18} fill="currentColor" />
+              )}
+              {playlistIsPlaying ? "Playing" : playlistIsPaused ? "Resume" : "Play"}
+            </button>
+            <button
+              type="button"
+              onClick={handleShare}
+              className="inline-flex h-10 w-20 items-center justify-center rounded-full border border-white/20 text-white hover:bg-white/10"
+              aria-label="Share"
+            >
+              <Share2 size={18} />
+            </button>
+            <FavoriteHeartButton
+              target="playlist"
+              id={playlist.id}
+              variant="inline"
+              className="!h-10 !w-10 !rounded-full !border !border-white/20 !bg-transparent !opacity-100"
+            />
+            {isOwner ? (
+              <Link
+                to={studioCollectionEditPath(playlist.id)}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/20 text-white hover:bg-white/10"
+                aria-label="Edit playlist"
+                title="Edit"
+              >
+                <Pencil size={18} />
+              </Link>
+            ) : null}
+            {onAddCollection ? (
               <button
                 type="button"
-                onClick={() => onPlayAll(false)}
-                className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-black"
+                onClick={onAddCollection}
+                disabled={collectionAddPending || collectionAdded}
+                aria-label={
+                  collectionAdded
+                    ? "In collections"
+                    : collectionAddPending
+                      ? "Adding to collections"
+                      : "Add to collections"
+                }
+                aria-pressed={collectionAdded}
+                title={
+                  collectionAdded
+                    ? "In collections"
+                    : collectionAddPending
+                      ? "Adding…"
+                      : "Add to collections"
+                }
+                className={[
+                  "inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/20 text-white transition hover:bg-white/10",
+                  collectionAdded ? "bg-white/10" : "",
+                ].join(" ")}
               >
-                {playlistIsPlaying ? (
-                  <Pause size={18} fill="currentColor" />
-                ) : (
-                  <Play size={18} fill="currentColor" />
-                )}
-                {playlistIsPlaying ? "Playing" : playlistIsPaused ? "Resume" : "Play"}
+                {collectionAdded ? <Library size={18} /> : <Plus size={18} />}
               </button>
-              <button
-                type="button"
-                onClick={handleShare}
-                className="inline-flex h-10 w-20 items-center justify-center rounded-full border border-white/20 text-white hover:bg-white/10"
-                aria-label="Share"
-              >
-                <Share2 size={18} />
-              </button>
-              <FavoriteHeartButton
-                target="playlist"
-                id={playlist.id}
-                variant="inline"
-                className="!h-10 !w-10 !rounded-full !border !border-white/20 !bg-transparent !opacity-100"
-              />
-              {isOwner ? (
-                <Link
-                  to={studioCollectionEditPath(playlist.id)}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/20 text-white hover:bg-white/10"
-                  aria-label="Edit playlist"
-                  title="Edit"
-                >
-                  <Pencil size={18} />
-                </Link>
-              ) : null}
-              {onAddCollection ? (
-                <button
-                  type="button"
-                  onClick={onAddCollection}
-                  disabled={collectionAddPending || collectionAdded}
-                  aria-label={
-                    collectionAdded
-                      ? "In collections"
-                      : collectionAddPending
-                        ? "Adding to collections"
-                        : "Add to collections"
-                  }
-                  aria-pressed={collectionAdded}
-                  title={
-                    collectionAdded
-                      ? "In collections"
-                      : collectionAddPending
-                        ? "Adding…"
-                        : "Add to collections"
-                  }
-                  className={[
-                    "inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/20 text-white transition hover:bg-white/10",
-                    collectionAdded ? "bg-white/10" : "",
-                  ].join(" ")}
-                >
-                  {collectionAdded ? <Library size={18} /> : <Plus size={18} />}
-                </button>
-              ) : null}
-            </div>
-          ) : null}
+            ) : null}
+          </div>
+        ) : null}
+        
+      </div>
         </div>
       </div>
+
+
+
       <div className="flex w-full justify-center">
         {isEdit && onAddTracks ? (
           <button

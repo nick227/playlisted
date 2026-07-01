@@ -27,11 +27,11 @@ export function mapPlaybackHistoryItem(event: {
     playCount: number;
     createdAt: Date;
     updatedAt: Date;
-    subtitle?: {
+    subtitles?: {
       status: "QUEUED" | "PROCESSING" | "READY" | "FAILED";
       language: string | null;
       generatedAt: Date | null;
-    } | null;
+    }[];
   };
   playlist: { id: string; title: string; coverArtUrl?: string | null; owner?: { username?: string | null } | null; slug?: string | null } | null;
 }) {
@@ -59,7 +59,7 @@ export function mapPlaybackHistoryItem(event: {
       status: event.recording.status,
       explicit: event.recording.explicit,
       playCount: event.recording.playCount,
-      subtitle: mapSubtitleSummary(event.recording.subtitle),
+      subtitle: mapSubtitleSummary(event.recording.subtitles),
       createdAt: event.recording.createdAt.toISOString(),
       updatedAt: event.recording.updatedAt.toISOString(),
     },

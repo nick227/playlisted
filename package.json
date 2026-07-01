@@ -74,6 +74,7 @@
     "express-rate-limit": "^8.5.2",
     "multer": "^2.1.1",
     "music-metadata": "^11.12.3",
+    "openai": "^6.45.0",
     "prisma": "^6.8.2",
     "sharp": "^0.34.5",
     "swagger-ui-express": "^5.0.1",

@@ -1352,6 +1352,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/recordings/{recordingId}/transcripts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get all transcripts for a recording */
+        get: operations["getRecordingTranscripts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/recordings/{recordingId}/transcripts/{transcriptId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update transcript (e.g. set active, update lyrics) */
+        patch: operations["updateTranscript"];
+        trace?: never;
+    };
+    "/api/v1/recordings/{recordingId}/transcripts/upload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upload a transcript file (SRT or VTT) */
+        post: operations["uploadTranscript"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/recordings/{recordingId}/transcripts/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Generate transcript using an AI provider (e.g. whisper) */
+        post: operations["generateTranscript"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2783,6 +2851,23 @@ export interface components {
             mimeType: string;
             bytes: number;
             originalName: string;
+        };
+        /** @enum {string} */
+        TranscriptSource: "WHISPER" | "MODAL" | "UPLOAD" | "MANUAL";
+        TranscriptEntity: {
+            id: string;
+            recordingId: string;
+            source: components["schemas"]["TranscriptSource"];
+            status: components["schemas"]["SubtitleStatus"];
+            language?: string | null;
+            vttText?: string | null;
+            srtText?: string | null;
+            errorMessage?: string | null;
+            isActive: boolean;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            generatedAt?: string | null;
         };
     };
     responses: never;
@@ -6586,6 +6671,119 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getRecordingTranscripts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recordingId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List of transcripts */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranscriptEntity"][];
+                };
+            };
+            404: components["schemas"]["ErrorResponse"];
+        };
+    };
+    updateTranscript: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recordingId: string;
+                transcriptId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    isActive?: boolean;
+                    srtText?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Updated transcript */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranscriptEntity"];
+                };
+            };
+            401: components["schemas"]["ErrorResponse"];
+            404: components["schemas"]["ErrorResponse"];
+        };
+    };
+    uploadTranscript: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recordingId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Uploaded transcript */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranscriptEntity"];
+                };
+            };
+        };
+    };
+    generateTranscript: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recordingId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    provider?: "whisper" | "modal";
+                };
+            };
+        };
+        responses: {
+            /** @description Started generation */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranscriptEntity"];
                 };
             };
         };

@@ -1,16 +1,19 @@
 import { useState, useEffect, useRef } from "react";
 import { X, Mic, Upload, MessageSquare, CheckCircle2, Loader2 } from "lucide-react";
-import { fetchTranscripts, updateTranscript, uploadTranscript } from "@/lib/subtitles";
+import { fetchTranscripts, updateTranscript, uploadTranscript, generateTranscript } from "@/lib/subtitles";
 import { useSuppressPlaybackFocus } from "@/lib/playbackFocusSuppression";
+import { useAuth } from "@/providers/AuthProvider";
 import type { TranscriptEntity } from "@/types/transcript";
 
 interface SubtitleEditorModalProps {
   recordingId: string;
+  recordingTitle: string;
   onClose: () => void;
 }
 
-export function SubtitleEditorModal({ recordingId, onClose }: SubtitleEditorModalProps) {
+export function SubtitleEditorModal({ recordingId, recordingTitle, onClose }: SubtitleEditorModalProps) {
   useSuppressPlaybackFocus();
+  const { accessToken } = useAuth();
 
   const [activeTab, setActiveTab] = useState<"lyrics" | "subtitles">("lyrics");
   const [transcripts, setTranscripts] = useState<TranscriptEntity[]>([]);
@@ -20,16 +23,34 @@ export function SubtitleEditorModal({ recordingId, onClose }: SubtitleEditorModa
   const [isSaving, setIsSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const fetchAndSetTranscripts = async () => {
+    const data = await fetchTranscripts(recordingId, accessToken);
+    setTranscripts(data);
+    const active = data.find((t) => t.isActive) || data[0];
+    if (active && active.srtText) {
+      setSrtDraft(active.srtText);
+    }
+  };
+
   useEffect(() => {
-    fetchTranscripts(recordingId).then((data) => {
-      setTranscripts(data);
-      const active = data.find((t) => t.isActive) || data[0];
-      if (active && active.srtText) {
-        setSrtDraft(active.srtText);
-      }
-      setLoading(false);
-    });
+    fetchAndSetTranscripts().finally(() => setLoading(false));
   }, [recordingId]);
+
+  // Polling for generation updates
+  useEffect(() => {
+    const hasPending = transcripts.some((t) => t.status === "QUEUED" || t.status === "PROCESSING");
+    if (!hasPending) return;
+
+    const interval = setInterval(() => {
+      fetchTranscripts(recordingId, accessToken).then((data) => {
+        setTranscripts(data);
+        // We do NOT update srtDraft here to avoid overwriting user edits while polling,
+        // unless it's their first time viewing.
+      });
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [transcripts, recordingId, accessToken]);
 
   const activeTranscript = transcripts.find((t) => t.isActive);
 
@@ -37,7 +58,7 @@ export function SubtitleEditorModal({ recordingId, onClose }: SubtitleEditorModa
     if (!activeTranscript) return;
     setIsSaving(true);
     try {
-      await updateTranscript(activeTranscript.id, { srtText: srtDraft });
+      await updateTranscript(recordingId, activeTranscript.id, { srtText: srtDraft }, accessToken || "");
       // Update local state
       setTranscripts((prev) =>
         prev.map((t) => (t.id === activeTranscript.id ? { ...t, srtText: srtDraft } : t))
@@ -52,7 +73,7 @@ export function SubtitleEditorModal({ recordingId, onClose }: SubtitleEditorModa
     if (!file) return;
     setLoading(true);
     try {
-      const newTranscript = await uploadTranscript(recordingId, file);
+      const newTranscript = await uploadTranscript(recordingId, file, accessToken || "");
       setTranscripts((prev) => [
         newTranscript,
         ...prev.map((t) => ({ ...t, isActive: false })),
@@ -67,11 +88,25 @@ export function SubtitleEditorModal({ recordingId, onClose }: SubtitleEditorModa
   const handleSetActive = async (id: string) => {
     setLoading(true);
     try {
-      await updateTranscript(id, { isActive: true });
+      await updateTranscript(recordingId, id, { isActive: true }, accessToken || "");
       const updated = transcripts.map((t) => ({ ...t, isActive: t.id === id }));
       setTranscripts(updated);
       const newActive = updated.find((t) => t.id === id);
       if (newActive?.srtText) setSrtDraft(newActive.srtText);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGenerate = async (provider: "modal" | "whisper") => {
+    setLoading(true);
+    try {
+      const newTranscript = await generateTranscript(recordingId, provider, accessToken || "");
+      setTranscripts((prev) => [
+        newTranscript,
+        ...prev.map((t) => ({ ...t, isActive: false })),
+      ]);
+      setSrtDraft("");
     } finally {
       setLoading(false);
     }
@@ -146,19 +181,19 @@ Lyrics in SRT format..."
               {/* Generation Actions */}
               <div className="mb-8 grid grid-cols-3 gap-3">
                 <button
-                  className="flex flex-col items-center justify-center rounded-lg border border-white/10 bg-white/5 p-4 text-white/30 transition-colors"
-                  disabled
-                  title="Coming soon"
+                  className="flex flex-col items-center justify-center rounded-lg border border-white/10 bg-white/5 p-4 text-white hover:bg-white/10 transition-colors"
+                  onClick={() => handleGenerate("whisper")}
+                  disabled={loading}
+                  title="Generate with Whisper"
                 >
                   <Mic size={24} className="mb-2" />
                   <span className="text-sm font-medium">Whisper API</span>
-                  <span className="mt-1 text-[10px] text-white/20 uppercase tracking-wider">Coming Soon</span>
+                  <span className="mt-1 text-[10px] text-white/40 uppercase tracking-wider">Fast & Accurate</span>
                 </button>
                 <button
                   className="flex flex-col items-center justify-center rounded-lg border border-emerald-400/30 bg-emerald-400/10 p-4 text-emerald-300 hover:bg-emerald-400/20 transition-colors"
-                  onClick={() => {
-                    alert("Trigger modal subtitle generation");
-                  }}
+                  onClick={() => handleGenerate("modal")}
+                  disabled={loading}
                 >
                   <MessageSquare size={24} className="mb-2" />
                   <span className="text-sm font-medium">Auto Generate</span>
@@ -202,20 +237,44 @@ Lyrics in SRT format..."
                         <div>
                           <div className="flex items-center gap-2">
                             <span className="font-medium text-white">
-                              {t.source === "upload" ? "Uploaded File" : t.source === "modal" ? "Auto-Generated" : "Manual Edit"}
+                              {recordingTitle} ({t.source})
                             </span>
-                            {t.isActive && (
+                            {t.isActive && t.status === "READY" && (
                               <span className="flex items-center gap-1 rounded bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-bold text-emerald-300">
                                 <CheckCircle2 size={12} />
                                 ACTIVE
                               </span>
                             )}
+                            {(t.status === "QUEUED" || t.status === "PROCESSING") && (
+                              <span className="flex items-center gap-1 rounded bg-blue-500/20 px-1.5 py-0.5 text-[10px] font-bold text-blue-300">
+                                <Loader2 size={12} className="animate-spin" />
+                                GENERATING
+                              </span>
+                            )}
+                            {t.status === "FAILED" && (
+                              <div className="flex flex-col gap-1">
+                                <span className="flex items-center gap-1 w-max rounded bg-red-500/20 px-1.5 py-0.5 text-[10px] font-bold text-red-300">
+                                  FAILED
+                                </span>
+                                {t.errorMessage && (
+                                  <span className="text-[10px] text-red-400/80 italic max-w-xs truncate" title={t.errorMessage}>
+                                    {t.errorMessage}
+                                  </span>
+                                )}
+                              </div>
+                            )}
                           </div>
                           <div className="mt-1 text-xs text-white/40">
-                            Created {new Date(t.createdAt).toLocaleDateString()}
+                            {new Date(t.createdAt).toLocaleString(undefined, {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric',
+                              hour: 'numeric',
+                              minute: '2-digit',
+                            })}
                           </div>
                         </div>
-                        {!t.isActive && (
+                        {!t.isActive && t.status === "READY" && (
                           <button
                             className="rounded px-3 py-1.5 text-xs font-medium text-white/70 hover:bg-white/10 hover:text-white"
                             onClick={() => handleSetActive(t.id)}

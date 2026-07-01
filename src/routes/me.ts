@@ -55,11 +55,11 @@ function mapRecordingWithUploader(r: {
   updatedAt: Date;
   uploader: { id: string; username: string; displayName: string; avatarUrl: string | null; role: string };
   publishedPlaylist: { id: string; slug: string; title: string; coverArtUrl: string | null };
-  subtitle?: {
+  subtitles?: {
     status: "QUEUED" | "PROCESSING" | "READY" | "FAILED";
     language: string | null;
     generatedAt: Date | null;
-  } | null;
+  }[];
 }) {
   return {
     id: r.id,
@@ -81,7 +81,7 @@ function mapRecordingWithUploader(r: {
     releaseDate: r.releaseDate?.toISOString() ?? null,
     publishedAt: r.publishedAt?.toISOString() ?? null,
     playCount: r.playCount,
-    subtitle: mapSubtitleSummary(r.subtitle),
+    subtitle: mapSubtitleSummary(r.subtitles),
     createdAt: r.createdAt.toISOString(),
     updatedAt: r.updatedAt.toISOString(),
     uploader: r.uploader,
@@ -97,7 +97,7 @@ function mapRecordingWithUploader(r: {
 const RECORDING_WITH_UPLOADER_INCLUDE = {
   uploader: { select: UPLOADER_SELECT },
   publishedPlaylist: { select: { id: true, slug: true, title: true, coverArtUrl: true } },
-  subtitle: subtitleInclude(),
+  subtitles: subtitleInclude(),
 } as const;
 
 function mapFavoriteArtist(favorite: any) {
@@ -299,7 +299,7 @@ meRouter.get("/playback-history", async (req, res, next) => {
       prisma.playbackEvent.findMany({
         where,
         include: {
-          recording: { include: { subtitle: subtitleInclude() } },
+          recording: { include: { subtitles: subtitleInclude() } },
           playlist: { select: { id: true, title: true, slug: true, coverArtUrl: true, owner: { select: { username: true } } } },
         },
         orderBy: { createdAt: "desc" },

@@ -87,7 +87,7 @@ export function ArtistProfileHero({
   }
 
   return (
-    <section className="border-b border-white/10 pb-12 bg-[var(--color-canvas)]/50 rounded-lg p-4">
+    <section className="border-b border-white/10 pb-12 rounded-lg p-4">
       <div className="grid gap-10 md:grid-cols-[minmax(140px,180px)_1fr] md:items-start">
         {user.avatarUrl ? (
           <img

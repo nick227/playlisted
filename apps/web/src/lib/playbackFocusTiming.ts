@@ -7,21 +7,21 @@ export const playbackFocusTiming = {
   },
 
   focusLane: {
-    delayMs: 3000,
+    delayMs: 0,
     fadeInMs: 1200,
     fadeOutMs: 450,
     exitBufferMs: 180,
   },
 
   titleIntro: {
-    delayMs: 3000,
+    delayMs: 0,
     minVisibleMs: 2800,
     fadeInMs: 900,
     fadeOutMs: 650,
   },
 
   artistVisual: {
-    delayMs: 3600,
+    delayMs: 3000,
     fadeInMs: 900,
     fadeOutMs: 900,
   },
@@ -39,7 +39,7 @@ export const playbackFocusTiming = {
   },
 
   body: {
-    delayMs: 3000,
+    delayMs: 5000,
     fadeOutMs: 2000,
   },
 

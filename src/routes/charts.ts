@@ -52,11 +52,11 @@ function mapTopSongItem(
       tags: { tag: { id: string; name: string; slug: string } }[];
     };
     tags?: { tag: { id: string; name: string; slug: string } }[];
-    subtitle?: {
+    subtitles?: {
       status: "QUEUED" | "PROCESSING" | "READY" | "FAILED";
       language: string | null;
       generatedAt: Date | null;
-    } | null;
+    }[];
   },
   rank: number,
   playCount: number,
@@ -78,7 +78,7 @@ function mapTopSongItem(
     status: r.status,
     explicit: r.explicit,
     playCount,
-    subtitle: mapSubtitleSummary(r.subtitle),
+    subtitle: mapSubtitleSummary(r.subtitles),
     createdAt: r.createdAt.toISOString(),
     updatedAt: r.updatedAt.toISOString(),
     uploader: r.uploader,
@@ -129,7 +129,7 @@ chartsRouter.get("/top-songs", async (req, res, next) => {
               },
             },
             ...songTagInclude,
-            subtitle: subtitleInclude(),
+            subtitles: subtitleInclude(),
           },
         });
         return {
@@ -162,7 +162,7 @@ chartsRouter.get("/top-songs", async (req, res, next) => {
             },
           },
           ...songTagInclude,
-          subtitle: subtitleInclude(),
+          subtitles: subtitleInclude(),
         },
       });
 

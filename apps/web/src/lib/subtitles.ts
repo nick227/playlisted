@@ -1,4 +1,5 @@
 import { trafficHeaders } from "@/lib/trafficIdentity";
+import type { TranscriptEntity } from "@/types/transcript";
 
 export type SubtitleStatus = "QUEUED" | "PROCESSING" | "READY" | "FAILED";
 
@@ -61,3 +62,76 @@ export async function downloadRecordingTranscript(params: {
   link.remove();
   URL.revokeObjectURL(url);
 }
+
+export async function fetchTranscripts(recordingId: string, accessToken?: string | null): Promise<TranscriptEntity[]> {
+  const base = import.meta.env.VITE_API_BASE_URL ?? "";
+  const response = await fetch(`${base}/api/v1/recordings/${encodeURIComponent(recordingId)}/transcripts`, {
+    headers: {
+      ...trafficHeaders(),
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
+  });
+  if (!response.ok) throw new Error("Failed to fetch transcripts");
+  return response.json() as Promise<TranscriptEntity[]>;
+}
+
+export async function updateTranscript(
+  recordingId: string,
+  transcriptId: string,
+  updates: Partial<TranscriptEntity>,
+  accessToken: string
+): Promise<TranscriptEntity> {
+  const base = import.meta.env.VITE_API_BASE_URL ?? "";
+  const response = await fetch(`${base}/api/v1/recordings/${encodeURIComponent(recordingId)}/transcripts/${encodeURIComponent(transcriptId)}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      ...trafficHeaders(),
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(updates),
+  });
+  if (!response.ok) throw new Error("Failed to update transcript");
+  return response.json();
+}
+
+export async function uploadTranscript(
+  recordingId: string,
+  file: File,
+  accessToken: string
+): Promise<TranscriptEntity> {
+  const base = import.meta.env.VITE_API_BASE_URL ?? "";
+  const formData = new FormData();
+  formData.append("file", file);
+  
+  const response = await fetch(`${base}/api/v1/recordings/${encodeURIComponent(recordingId)}/transcripts/upload`, {
+    method: "POST",
+    headers: {
+      ...trafficHeaders(),
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: formData,
+  });
+  if (!response.ok) throw new Error("Failed to upload transcript");
+  return response.json();
+}
+
+export async function generateTranscript(
+  recordingId: string,
+  provider: "modal" | "whisper",
+  accessToken: string
+): Promise<TranscriptEntity> {
+  const base = import.meta.env.VITE_API_BASE_URL ?? "";
+  const response = await fetch(`${base}/api/v1/recordings/${encodeURIComponent(recordingId)}/transcripts/generate`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...trafficHeaders(),
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({ provider }),
+  });
+  if (!response.ok) throw new Error("Failed to generate transcript");
+  return response.json();
+}
+
