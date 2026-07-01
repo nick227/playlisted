@@ -1,17 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { focusLaneFixtureKey } from "@/lib/playbackFocus/fixtureKey";
 import { getFixtureFadeOutMs } from "@/lib/playbackFocus/resolvePlaybackFocusFixture";
 import type { PlaybackFocusFixture } from "@/lib/playbackFocus/types";
-
-function fixtureKey(fixture: PlaybackFocusFixture | null): string {
-  if (!fixture || fixture.type === "none") return "none";
-  if (fixture.type === "subtitle") return `subtitle:${fixture.cueId}:${fixture.text}`;
-  if (fixture.type === "fallbackSubtitle") return `fallback:${fixture.key}:${fixture.text}`;
-  if (fixture.type === "finalFallback") {
-    return `final:${fixture.key}:${fixture.title}:${fixture.artistName ?? ""}`;
-  }
-  return `artist:${fixture.artistName}:${fixture.imageUrl ?? "none"}`;
-}
 
 function fixtureVariantClass(fixture: PlaybackFocusFixture | null): string {
   if (!fixture || fixture.type === "none") return "";
@@ -26,7 +17,7 @@ export function useFocusLaneVisibility(activeFixture: PlaybackFocusFixture) {
   const [renderedFixture, setRenderedFixture] = useState<PlaybackFocusFixture | null>(null);
   const [layerVisible, setLayerVisible] = useState(false);
   const renderedFixtureRef = useRef<PlaybackFocusFixture | null>(null);
-  const activeKey = fixtureKey(activeFixture);
+  const activeKey = focusLaneFixtureKey(activeFixture);
   const hasActiveContent = activeFixture.type !== "none";
 
   useEffect(() => {
@@ -35,8 +26,16 @@ export function useFocusLaneVisibility(activeFixture: PlaybackFocusFixture) {
 
   useEffect(() => {
     if (hasActiveContent) {
+      const previousKey = focusLaneFixtureKey(renderedFixtureRef.current);
+      const fixtureChanged = previousKey !== activeKey;
+
       setRenderedFixture(activeFixture);
-      if (renderedFixtureRef.current && renderedFixtureRef.current.type !== "none") {
+
+      if (
+        renderedFixtureRef.current &&
+        renderedFixtureRef.current.type !== "none" &&
+        !fixtureChanged
+      ) {
         setLayerVisible(true);
         return;
       }
@@ -69,10 +68,12 @@ export function useFocusLaneVisibility(activeFixture: PlaybackFocusFixture) {
   }, [activeFixture, activeKey, hasActiveContent]);
 
   const displayFixture = hasActiveContent ? activeFixture : renderedFixture;
+  const displayKey = focusLaneFixtureKey(displayFixture);
   const variantClass = useMemo(() => fixtureVariantClass(displayFixture), [displayFixture]);
 
   return {
     displayFixture,
+    displayKey,
     layerVisible: layerVisible && displayFixture?.type !== "none",
     variantClass,
   };

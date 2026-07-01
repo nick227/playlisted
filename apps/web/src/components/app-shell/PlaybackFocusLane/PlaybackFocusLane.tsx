@@ -96,7 +96,7 @@ export function PlaybackFocusLane({ focusState }: PlaybackFocusLaneProps) {
     ],
   );
 
-  const { displayFixture, layerVisible, variantClass } = useFocusLaneVisibility(activeFixture);
+  const { displayFixture, displayKey, layerVisible, variantClass } = useFocusLaneVisibility(activeFixture);
 
   if (!recording?.id || !displayFixture || displayFixture.type === "none") {
     return null;
@@ -104,26 +104,31 @@ export function PlaybackFocusLane({ focusState }: PlaybackFocusLaneProps) {
 
   const subtitleProps = fixtureToSubtitleProps(displayFixture);
 
+  const laneContent =
+    displayFixture.type === "artistVisual" ? (
+      <ArtistVisual
+        artistName={displayFixture.artistName}
+        imageUrl={displayFixture.imageUrl}
+        bioLine={displayFixture.bioLine}
+      />
+    ) : displayFixture.type === "finalFallback" ? (
+      <FinalFallbackText
+        title={displayFixture.title}
+        artistName={displayFixture.artistName}
+      />
+    ) : subtitleProps ? (
+      <SubtitleText {...subtitleProps} />
+    ) : null;
+
   return createPortal(
     <div
       data-focus-lane
       className={`focus-lane${layerVisible ? " is-visible" : ""}${variantClass}`}
       aria-hidden={!layerVisible}
     >
-      {displayFixture.type === "artistVisual" ? (
-        <ArtistVisual
-          artistName={displayFixture.artistName}
-          imageUrl={displayFixture.imageUrl}
-          bioLine={displayFixture.bioLine}
-        />
-      ) : displayFixture.type === "finalFallback" ? (
-        <FinalFallbackText
-          title={displayFixture.title}
-          artistName={displayFixture.artistName}
-        />
-      ) : subtitleProps ? (
-        <SubtitleText {...subtitleProps} />
-      ) : null}
+      <div key={displayKey} className="focus-lane__content">
+        {laneContent}
+      </div>
     </div>,
     document.body,
   );

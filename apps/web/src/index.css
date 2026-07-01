@@ -120,6 +120,10 @@ body {
   transition-delay: var(--delay-artist-visual);
 }
 
+.focus-lane__content {
+  display: contents;
+}
+
 .subtitle-layer__text,
 .focus-lane__text {
   width: min(58rem, 100%);
