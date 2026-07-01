@@ -7,4 +7,5 @@ export const impossibleAquariumManifest: AnimationPackageManifest = {
   kind: 'visual-scene',
   category: 'production',
   capabilities: ['audio-features', 'visual-triggers', 'external-raf'],
+  weight: 4,
 }

@@ -9,5 +9,6 @@ export const puppetDancerManifest: AnimationPackageManifest = {
   description: 'Pose-driven puppet dancer with beat-synced forward kinematics.',
   capabilities: ['audio-features', 'visual-triggers', 'external-raf', 'reduced-motion', 'character-rig'],
   reducedMotionSafe: true,
+  weight: 3,
 }
 

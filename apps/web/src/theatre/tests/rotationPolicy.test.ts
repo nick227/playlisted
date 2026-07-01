@@ -79,7 +79,7 @@ function audioWithEdges(edges: Partial<TheatreAudioSnapshot['edges']>): TheatreA
       drop: false,
       ...edges,
     },
-    beat: { bpm: 0, confidence: 0, phase: 0, msSinceLastBeat: 0 },
+    beat: { bpm: 0, confidence: 0, phase: 0, msSinceLastBeat: 0, lastBeatAtMs: 0 },
   }
 }
 

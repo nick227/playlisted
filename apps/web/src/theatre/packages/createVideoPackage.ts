@@ -1,5 +1,12 @@
 import type { AnimationPackage } from '../registry/packages'
-import type { SceneCategory } from '../registry/scenePresets'
+import type { AudioSensitivity, SceneCategory, ScenePresetDef } from '../registry/scenePresets'
+import {
+  AUDIO_TAME,
+  FAMILY_WEIGHT_LAB,
+  PRESET_WEIGHT_OCCASIONAL,
+  ROTATION_HOLD_LAB,
+  TAGS_VIDEO,
+} from '../registry/presetTuning'
 import VideoAnimation from '../core/VideoAnimation'
 
 export type CreateVideoPackageOptions = {
@@ -8,7 +15,11 @@ export type CreateVideoPackageOptions = {
   videoUrl: string
   category?: SceneCategory
   reducedMotionPreset?: string
+  familyWeight?: number
   weight?: number
+  tags?: string[]
+  audioSensitivity?: AudioSensitivity
+  rotation?: ScenePresetDef['rotation']
 }
 
 export type VideoPackageEntry = {
@@ -49,7 +60,11 @@ export function createVideoPackage(opts: CreateVideoPackageOptions): AnimationPa
     videoUrl,
     category = 'production',
     reducedMotionPreset,
-    weight = 1,
+    familyWeight = FAMILY_WEIGHT_LAB,
+    weight = PRESET_WEIGHT_OCCASIONAL,
+    tags = [...TAGS_VIDEO],
+    audioSensitivity = AUDIO_TAME,
+    rotation = ROTATION_HOLD_LAB,
   } = opts
 
   const animationId = `${id}Animation`
@@ -70,7 +85,7 @@ export function createVideoPackage(opts: CreateVideoPackageOptions): AnimationPa
       category,
       description: `Full bleed cover video: ${label}`,
       capabilities: ['reduced-motion'],
-      weight,
+      weight: familyWeight,
     },
     animations: [
       {
@@ -88,6 +103,9 @@ export function createVideoPackage(opts: CreateVideoPackageOptions): AnimationPa
         label,
         category,
         weight,
+        tags,
+        audioSensitivity,
+        rotation,
         reducedMotionPreset,
         layers: [
           {

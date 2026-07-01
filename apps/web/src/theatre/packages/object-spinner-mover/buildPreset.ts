@@ -1,4 +1,10 @@
-import type { ScenePresetDef } from '../../registry/scenePresets'
+import type { AudioSensitivity, ScenePresetDef } from '../../registry/scenePresets'
+import {
+  AUDIO_VIVID,
+  PRESET_WEIGHT_OCCASIONAL,
+  ROTATION_HOLD_LAB,
+  TAGS_LAB,
+} from '../../registry/presetTuning'
 import type { ObjectTheatrePreset } from './engine/types'
 
 export type ObjectTheatreSeed = {
@@ -7,6 +13,9 @@ export type ObjectTheatreSeed = {
   weight?: number
   category?: 'production' | 'lab'
   reducedMotionPreset?: string
+  tags?: string[]
+  audioSensitivity?: AudioSensitivity
+  rotation?: ScenePresetDef['rotation']
   config: ObjectTheatrePreset
 }
 
@@ -26,7 +35,10 @@ export function buildObjectTheatrePreset(seed: ObjectTheatreSeed): ScenePresetDe
     id: seed.id,
     label: seed.label,
     category: seed.category ?? 'production',
-    weight: seed.weight ?? 1,
+    weight: seed.weight ?? PRESET_WEIGHT_OCCASIONAL,
+    tags: seed.tags ?? [...TAGS_LAB, 'object-theatre'],
+    audioSensitivity: seed.audioSensitivity ?? AUDIO_VIVID,
+    rotation: seed.rotation ?? ROTATION_HOLD_LAB,
     reducedMotionPreset: seed.reducedMotionPreset ?? seed.id,
     layers: [{
       animationId: OBJECT_SPINNER_MOVER_ID,

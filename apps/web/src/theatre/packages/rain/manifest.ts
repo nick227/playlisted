@@ -7,4 +7,5 @@ export const rainManifest: AnimationPackageManifest = {
   kind: 'audio-reactive-background',
   category: 'production',
   capabilities: ['audio-features', 'visual-triggers', 'external-raf'],
+  weight: 4,
 }

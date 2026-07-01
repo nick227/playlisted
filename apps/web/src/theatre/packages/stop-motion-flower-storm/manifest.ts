@@ -7,4 +7,5 @@ export const stopMotionFlowerStormManifest: AnimationPackageManifest = {
   kind: 'stop-motion-story',
   category: 'lab',
   capabilities: ['audio-features', 'visual-triggers', 'external-raf', 'story'],
+  weight: 3,
 }

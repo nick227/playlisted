@@ -7,4 +7,5 @@ export const monsterCrewManifest: AnimationPackageManifest = {
   kind: 'character-scene',
   category: 'production',
   capabilities: ['audio-features', 'external-raf'],
+  weight: 4,
 }

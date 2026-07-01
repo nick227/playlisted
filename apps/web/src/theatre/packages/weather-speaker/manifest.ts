@@ -7,4 +7,5 @@ export const weatherSpeakerManifest: AnimationPackageManifest = {
   kind: 'audio-reactive-background',
   category: 'lab',
   capabilities: ['audio-features', 'external-raf'],
+  weight: 2,
 }

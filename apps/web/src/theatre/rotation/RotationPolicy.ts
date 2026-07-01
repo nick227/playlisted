@@ -14,9 +14,9 @@ export const LEGACY_EXTERNAL_ROTATE_MIN_MS = 8_000
 
 export const DEFAULT_ROTATION_POLICY_CONFIG: RotationPolicyConfig = {
   mode: 'timedMusicAware',
-  minHoldMs: 30_000,
-  targetHoldMs: 60_000,
-  maxHoldMs: 120_000,
+  minHoldMs: 45_000,
+  targetHoldMs: 90_000,
+  maxHoldMs: 150_000,
   gate: { kind: 'beatOrChaosOrDropEdge' },
 }
 

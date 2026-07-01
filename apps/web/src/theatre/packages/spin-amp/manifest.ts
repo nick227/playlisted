@@ -7,4 +7,5 @@ export const spinAmpManifest: AnimationPackageManifest = {
   kind: 'visual-scene',
   category: 'lab',
   capabilities: ['audio-features', 'external-raf'],
+  weight: 3,
 }

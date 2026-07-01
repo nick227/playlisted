@@ -7,4 +7,5 @@ export const signalOrganismManifest: AnimationPackageManifest = {
   kind: 'visual-scene',
   category: 'production',
   capabilities: ['audio-features', 'visual-triggers', 'external-raf', 'particles'],
+  weight: 4,
 }

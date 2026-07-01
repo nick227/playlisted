@@ -9,4 +9,5 @@ export const speakerManifest: AnimationPackageManifest = {
   description: 'Reduced-motion-safe pulsing speaker scene.',
   capabilities: ['audio-features', 'external-raf', 'reduced-motion'],
   reducedMotionSafe: true,
+  weight: 2,
 }

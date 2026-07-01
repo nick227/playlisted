@@ -7,4 +7,5 @@ export const eqBarsManifest: AnimationPackageManifest = {
   kind: 'audio-reactive-background',
   category: 'production',
   capabilities: ['audio-features', 'external-raf', 'reduced-motion'],
+  weight: 4,
 }
