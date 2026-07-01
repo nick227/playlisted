@@ -22,21 +22,24 @@ const SEGMENT_LABEL = "Charts";
 export function useChartsPageSongPlayback() {
   const { playTrack, currentTrack, activeOriginKey, togglePlay } = useAudioPlayer();
 
-  function play(item: TopSongItem, siblings: TopSongItem[]) {
-    const origin = chartsPageSongOrigin(item.recordingId);
-    if (currentTrack?.id === item.recordingId && activeOriginKey === origin) {
-      togglePlay();
-      return;
-    }
-    const idx = siblings.findIndex((s) => s.recordingId === item.recordingId);
-    if (idx < 0) return;
-    const tracks = siblings.map((s) => topSongToQueueTrack(s, SEGMENT_LABEL));
-    playTrack(topSongToQueueTrack(item, SEGMENT_LABEL), tracks, chartItemPlaybackContext(item), {
-      segmentLabel: SEGMENT_LABEL,
-      playbackOrigin: origin,
-      originScope: "track",
-    });
-  }
+  const play = useCallback(
+    (item: TopSongItem, siblings: TopSongItem[]) => {
+      const origin = chartsPageSongOrigin(item.recordingId);
+      if (currentTrack?.id === item.recordingId && activeOriginKey === origin) {
+        togglePlay();
+        return;
+      }
+      const idx = siblings.findIndex((s) => s.recordingId === item.recordingId);
+      if (idx < 0) return;
+      const tracks = siblings.map((s) => topSongToQueueTrack(s, SEGMENT_LABEL));
+      playTrack(topSongToQueueTrack(item, SEGMENT_LABEL), tracks, chartItemPlaybackContext(item), {
+        segmentLabel: SEGMENT_LABEL,
+        playbackOrigin: origin,
+        originScope: "track",
+      });
+    },
+    [activeOriginKey, currentTrack?.id, playTrack, togglePlay],
+  );
 
   return { play };
 }

@@ -82,7 +82,22 @@ export function PlaylistDetailView({ playlist }: PlaylistDetailViewProps) {
 
   const playRecording = useCallback((recording: CollectionRecording, index: number) => {
     if (currentTrack?.id === recording.id) {
-      togglePlay();
+      if (playbackContext.playlistId === playlist.id) {
+        togglePlay();
+        return;
+      }
+
+      setQueue(
+        queueTracks,
+        index,
+        {
+          playlistId: playlist.id,
+          playlistOwnerUsername: playlist.owner.username,
+          playlistSlug: playlist.slug,
+          sourceContext: "playlist",
+        },
+        { segmentLabel: playlist.title },
+      );
       return;
     }
 
@@ -99,6 +114,7 @@ export function PlaylistDetailView({ playlist }: PlaylistDetailViewProps) {
     );
   }, [
     currentTrack?.id,
+    playbackContext.playlistId,
     playlist.id,
     playlist.owner.username,
     playlist.slug,

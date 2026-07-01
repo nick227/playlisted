@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
 import { api } from "@/lib/api";
 import type {
@@ -9,21 +9,34 @@ import type {
   TopSongsResponse,
 } from "@playlisted/client-sdk";
 
-export function useTopSongs(range: ChartRange = "7d", limit = 10, genre?: string, enabled = true) {
+export function useTopSongs(
+  range: ChartRange = "7d",
+  limit = 10,
+  genre?: string,
+  enabled = true,
+  keepPrevious = false,
+) {
   return useQuery<TopSongsResponse>({
     queryKey: ["charts", "top-songs", range, limit, genre ?? null],
     queryFn: () => api.charts.topSongs({ range, limit, genre }),
     enabled,
     staleTime: 2 * 60_000,
+    placeholderData: keepPrevious ? keepPreviousData : undefined,
   });
 }
 
-export function useTopPlaylists(range: ChartRange = "7d", limit = 10, enabled = true) {
+export function useTopPlaylists(
+  range: ChartRange = "7d",
+  limit = 10,
+  enabled = true,
+  keepPrevious = false,
+) {
   return useQuery<TopPlaylistsResponse>({
     queryKey: ["charts", "top-playlists", range, limit],
     queryFn: () => api.charts.topPlaylists({ range, limit }),
     enabled,
     staleTime: 2 * 60_000,
+    placeholderData: keepPrevious ? keepPreviousData : undefined,
   });
 }
 
@@ -36,11 +49,17 @@ export function useUserRandomPlaylists(limit = 10, enabled = true) {
   });
 }
 
-export function useTopArtists(range: ChartRange = "7d", limit = 10, enabled = true) {
+export function useTopArtists(
+  range: ChartRange = "7d",
+  limit = 10,
+  enabled = true,
+  keepPrevious = false,
+) {
   return useQuery<TopArtistsResponse>({
     queryKey: ["charts", "top-artists", range, limit],
     queryFn: () => api.charts.topArtists({ range, limit }),
     enabled,
     staleTime: 2 * 60_000,
+    placeholderData: keepPrevious ? keepPreviousData : undefined,
   });
 }

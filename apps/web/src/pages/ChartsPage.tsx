@@ -1,13 +1,12 @@
 import { useCallback, useMemo } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 
 import { ChartsFilterBar } from "@/components/charts/ChartsFilterBar";
 import { ChartsList } from "@/components/charts/ChartsList";
 import { useLibraryGenres } from "@/hooks/useLibrary";
 import { usePageMeta } from "@/hooks/usePageMeta";
-import { CHARTS_PATH } from "@/lib/browsePaths";
 import {
-  chartsPageHref,
+  chartsPageSearchParams,
   parseChartsPageState,
   type ChartsPageState,
 } from "@/lib/chartsPageState";
@@ -15,8 +14,7 @@ import {
 const CHARTS_LAYOUT_CLASS = "mx-auto min-h-[72vh] max-w-5xl px-4 py-6 sm:px-6";
 
 export function ChartsPage() {
-  const navigate = useNavigate();
-  const [params] = useSearchParams();
+  const [params, setSearchParams] = useSearchParams();
   const state = useMemo(() => parseChartsPageState(params), [params]);
   const { data: genreData } = useLibraryGenres();
   const genres = genreData?.data ?? [];
@@ -30,9 +28,9 @@ export function ChartsPage() {
     (patch: Partial<ChartsPageState>) => {
       const next = { ...state, ...patch };
       if (next.tab !== "songs") next.genre = null;
-      navigate(chartsPageHref(next, CHARTS_PATH), { replace: true });
+      setSearchParams(chartsPageSearchParams(next), { replace: true });
     },
-    [navigate, state],
+    [setSearchParams, state],
   );
 
   return (
