@@ -6,6 +6,20 @@ type SubtitleTextProps = {
   source?: "title-intro" | "artist-info" | "song-info" | "system";
 };
 
+type FinalFallbackTextProps = {
+  title: string;
+  artistName?: string | null;
+};
+
+export function FinalFallbackText({ title, artistName }: FinalFallbackTextProps) {
+  return (
+    <div className="focus-lane__text focus-lane__text--fallback focus-lane__text--final-fallback">
+      <p className="focus-lane__final-title">{title}</p>
+      {artistName ? <p className="focus-lane__final-artist">{artistName}</p> : null}
+    </div>
+  );
+}
+
 export function SubtitleText({ text, variant, source }: SubtitleTextProps) {
   const isTitleIntro = variant === "fallbackSubtitle" && source === "title-intro";
 

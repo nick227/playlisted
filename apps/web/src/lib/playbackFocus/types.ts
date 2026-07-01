@@ -4,6 +4,7 @@ export type PlaybackFocusFixture =
   | { type: "subtitle"; text: string; cueId: string }
   | { type: "fallbackSubtitle"; text: string; key: string; source: SyntheticSubtitleSource }
   | { type: "artistVisual"; artistName: string; imageUrl?: string; bioLine?: string }
+  | { type: "finalFallback"; key: string; title: string; artistName?: string | null }
   | { type: "none" };
 
 export type SyntheticSubtitleSource = "title-intro" | "artist-info" | "song-info" | "system";
@@ -49,6 +50,7 @@ export type ResolvePlaybackFocusInput = {
   subtitleReady: boolean;
   syntheticCues: SyntheticSubtitleCue[];
   artist: FocusArtist | null;
+  recording: FocusRecording | null;
   focusState: PlaybackFocusState;
   subtitlesEnabled: boolean;
 };

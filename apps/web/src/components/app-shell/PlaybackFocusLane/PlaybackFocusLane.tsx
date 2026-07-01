@@ -11,7 +11,7 @@ import { useSubtitleDisplay } from "@/lib/subtitleDisplay";
 import { useAuth } from "@/providers/AuthProvider";
 
 import { ArtistVisual } from "./ArtistVisual";
-import { fixtureToSubtitleProps, SubtitleText } from "./SubtitleText";
+import { FinalFallbackText, fixtureToSubtitleProps, SubtitleText } from "./SubtitleText";
 import { useFocusLaneVisibility } from "./useFocusLaneVisibility";
 
 type PlaybackFocusLaneProps = {
@@ -80,6 +80,7 @@ export function PlaybackFocusLane({ focusState }: PlaybackFocusLaneProps) {
         subtitleReady: subtitles?.status === "READY",
         syntheticCues,
         artist,
+        recording,
         focusState,
         subtitlesEnabled,
       }),
@@ -87,6 +88,7 @@ export function PlaybackFocusLane({ focusState }: PlaybackFocusLaneProps) {
       artist,
       currentTimeMs,
       focusState,
+      recording,
       subtitles?.segments,
       subtitles?.status,
       subtitlesEnabled,
@@ -113,6 +115,11 @@ export function PlaybackFocusLane({ focusState }: PlaybackFocusLaneProps) {
           artistName={displayFixture.artistName}
           imageUrl={displayFixture.imageUrl}
           bioLine={displayFixture.bioLine}
+        />
+      ) : displayFixture.type === "finalFallback" ? (
+        <FinalFallbackText
+          title={displayFixture.title}
+          artistName={displayFixture.artistName}
         />
       ) : subtitleProps ? (
         <SubtitleText {...subtitleProps} />

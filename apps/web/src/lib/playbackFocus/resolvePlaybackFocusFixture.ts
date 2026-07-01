@@ -1,7 +1,9 @@
 import { playbackFocusTiming } from "@/lib/playbackFocusTiming";
 import type { SubtitleSegment } from "@/lib/subtitles";
 import type {
+  FocusArtist,
   PlaybackFocusFixture,
+  PlaybackFocusState,
   ResolvePlaybackFocusInput,
   SyntheticSubtitleCue,
 } from "@/lib/playbackFocus/types";
@@ -26,41 +28,19 @@ function findActiveSyntheticCue(
     .sort((left, right) => right.priority - left.priority)[0];
 }
 
-function canShowPostBodyFixture(focusState: ResolvePlaybackFocusInput["focusState"]): boolean {
+function canShowFocusLane(focusState: PlaybackFocusState): boolean {
   return focusState.playFocusActive && focusState.hasBodyFaded;
 }
 
-export function resolvePlaybackFocusFixture(input: ResolvePlaybackFocusInput): PlaybackFocusFixture {
-  const {
-    currentTimeMs,
-    subtitleSegments,
-    subtitleReady,
-    syntheticCues,
-    artist,
-    focusState,
-    subtitlesEnabled,
-  } = input;
-
-  if (!focusState.playFocusActive || !subtitlesEnabled) {
-    return { type: "none" };
-  }
-
-  const currentTimeSec = currentTimeMs / 1000;
-
-  if (subtitleReady && subtitleSegments?.length) {
-    const activeSegment = findActiveSegment(subtitleSegments, currentTimeSec);
-    const text = activeSegment?.text.trim();
-    if (text && canShowPostBodyFixture(focusState)) {
-      return {
-        type: "subtitle",
-        text,
-        cueId: `real:${activeSegment?.start ?? 0}-${activeSegment?.end ?? 0}`,
-      };
-    }
-  }
+function resolveSyntheticFixture(input: {
+  currentTimeMs: number;
+  syntheticCues: SyntheticSubtitleCue[];
+  artist: FocusArtist | null;
+}): PlaybackFocusFixture | null {
+  const { currentTimeMs, syntheticCues, artist } = input;
 
   const titleCue = findActiveSyntheticCue(syntheticCues, currentTimeMs, "title-intro");
-  if (titleCue?.text.trim() && canShowPostBodyFixture(focusState)) {
+  if (titleCue?.text.trim()) {
     return {
       type: "fallbackSubtitle",
       text: titleCue.text.trim(),
@@ -70,7 +50,6 @@ export function resolvePlaybackFocusFixture(input: ResolvePlaybackFocusInput): P
   }
 
   if (
-    canShowPostBodyFixture(focusState) &&
     currentTimeMs >= playbackFocusTiming.artistVisual.delayMs &&
     currentTimeMs <
       playbackFocusTiming.artistVisual.delayMs + playbackFocusTiming.fallbackSubtitle.maxVisibleMs &&
@@ -84,16 +63,62 @@ export function resolvePlaybackFocusFixture(input: ResolvePlaybackFocusInput): P
     };
   }
 
-  if (canShowPostBodyFixture(focusState)) {
-    const fallbackCue = findActiveSyntheticCue(syntheticCues, currentTimeMs);
-    if (fallbackCue?.text.trim() && fallbackCue.source !== "title-intro") {
+  const fallbackCue = findActiveSyntheticCue(syntheticCues, currentTimeMs);
+  if (fallbackCue?.text.trim() && fallbackCue.source !== "title-intro") {
+    return {
+      type: "fallbackSubtitle",
+      text: fallbackCue.text.trim(),
+      key: fallbackCue.id,
+      source: fallbackCue.source,
+    };
+  }
+
+  return null;
+}
+
+export function resolvePlaybackFocusFixture(input: ResolvePlaybackFocusInput): PlaybackFocusFixture {
+  const {
+    currentTimeMs,
+    subtitleSegments,
+    subtitleReady,
+    syntheticCues,
+    artist,
+    recording,
+    focusState,
+    subtitlesEnabled,
+  } = input;
+
+  if (!canShowFocusLane(focusState)) {
+    return { type: "none" };
+  }
+
+  const currentTimeSec = currentTimeMs / 1000;
+
+  if (subtitlesEnabled && subtitleReady && subtitleSegments?.length) {
+    const activeSegment = findActiveSegment(subtitleSegments, currentTimeSec);
+    const text = activeSegment?.text.trim();
+    if (text) {
       return {
-        type: "fallbackSubtitle",
-        text: fallbackCue.text.trim(),
-        key: fallbackCue.id,
-        source: fallbackCue.source,
+        type: "subtitle",
+        text,
+        cueId: `real:${activeSegment?.start ?? 0}-${activeSegment?.end ?? 0}`,
       };
     }
+  }
+
+  const synthetic = resolveSyntheticFixture({ currentTimeMs, syntheticCues, artist });
+  if (synthetic) {
+    return synthetic;
+  }
+
+  const title = recording?.title?.trim();
+  if (title) {
+    return {
+      type: "finalFallback",
+      key: `final-song-title:${recording?.id ?? title}`,
+      title,
+      artistName: recording?.ownerName?.trim() || null,
+    };
   }
 
   return { type: "none" };
@@ -107,6 +132,9 @@ export function getFixtureFadeOutMs(fixture: PlaybackFocusFixture): number {
   if (fixture.type === "artistVisual") {
     return playbackFocusTiming.artistVisual.fadeOutMs;
   }
+  if (fixture.type === "finalFallback") {
+    return playbackFocusTiming.fallbackSubtitle.fadeOutMs;
+  }
   if (fixture.source === "title-intro") {
     return playbackFocusTiming.titleIntro.fadeOutMs;
   }
@@ -117,6 +145,9 @@ export function getFixtureFadeInMs(fixture: PlaybackFocusFixture): number {
   if (fixture.type === "none") return 0;
   if (fixture.type === "subtitle") return playbackFocusTiming.focusLane.fadeInMs;
   if (fixture.type === "artistVisual") return playbackFocusTiming.artistVisual.fadeInMs;
+  if (fixture.type === "finalFallback") {
+    return playbackFocusTiming.fallbackSubtitle.fadeInMs;
+  }
   if (fixture.type === "fallbackSubtitle" && fixture.source === "title-intro") {
     return playbackFocusTiming.titleIntro.fadeInMs;
   }

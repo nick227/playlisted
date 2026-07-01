@@ -7,6 +7,9 @@ function fixtureKey(fixture: PlaybackFocusFixture | null): string {
   if (!fixture || fixture.type === "none") return "none";
   if (fixture.type === "subtitle") return `subtitle:${fixture.cueId}:${fixture.text}`;
   if (fixture.type === "fallbackSubtitle") return `fallback:${fixture.key}:${fixture.text}`;
+  if (fixture.type === "finalFallback") {
+    return `final:${fixture.key}:${fixture.title}:${fixture.artistName ?? ""}`;
+  }
   return `artist:${fixture.artistName}:${fixture.imageUrl ?? "none"}`;
 }
 
@@ -14,6 +17,7 @@ function fixtureVariantClass(fixture: PlaybackFocusFixture | null): string {
   if (!fixture || fixture.type === "none") return "";
   if (fixture.type === "subtitle") return " focus-lane--subtitle";
   if (fixture.type === "artistVisual") return " focus-lane--artist-visual";
+  if (fixture.type === "finalFallback") return " focus-lane--fallback";
   if (fixture.source === "title-intro") return " focus-lane--title-intro";
   return " focus-lane--fallback";
 }
