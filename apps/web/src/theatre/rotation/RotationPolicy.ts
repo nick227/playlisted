@@ -2,6 +2,7 @@ import type { Features } from '../audio/AudioFeatureExtractor'
 import type { TheatreAudioSnapshot } from '../audio/TheatreAudioBus'
 import type {
   AudioGate,
+  ResolvedRotationPolicy,
   RotationDecision,
   RotationPolicyConfig,
   RotationPolicyInput,
@@ -52,8 +53,12 @@ export function matchesAudioGate(
 
 export function evaluateRotationPolicy(
   input: RotationPolicyInput,
-  config: RotationPolicyConfig = DEFAULT_ROTATION_POLICY_CONFIG,
+  config: RotationPolicyConfig | ResolvedRotationPolicy = DEFAULT_ROTATION_POLICY_CONFIG,
 ): RotationDecision {
+  if (shouldSuppressRotation(input, config)) {
+    return { action: 'hold' }
+  }
+
   const elapsed = input.nowMs - input.presetStartedAtMs
 
   if (elapsed < config.minHoldMs) {
@@ -75,10 +80,24 @@ export function evaluateRotationPolicy(
   return { action: 'hold' }
 }
 
+function shouldSuppressRotation(
+  input: RotationPolicyInput,
+  config: RotationPolicyConfig,
+): boolean {
+  if (config.mode === 'perTrack') return true
+
+  if (config.pinPresetId && input.activePresetId === config.pinPresetId) return true
+
+  return false
+}
+
 export class RotationPolicy {
   constructor(public readonly config: RotationPolicyConfig = DEFAULT_ROTATION_POLICY_CONFIG) {}
 
-  evaluate(input: RotationPolicyInput): RotationDecision {
-    return evaluateRotationPolicy(input, this.config)
+  evaluate(
+    input: RotationPolicyInput,
+    resolved: ResolvedRotationPolicy = this.config,
+  ): RotationDecision {
+    return evaluateRotationPolicy(input, resolved)
   }
 }

@@ -1,4 +1,5 @@
 import type { AnimationRole, AnimationOptions } from '../core/IAnimation'
+import type { AudioGate, RotationMode } from '../rotation/types'
 
 export type SceneCategory = 'production' | 'lab' | 'dev'
 
@@ -28,6 +29,14 @@ export type ScenePresetDef = {
     preferredDurationMs?: number
     maxDurationMs?: number
     transitionPreference?: TheatreTransitionKind
+  }
+  rotation?: {
+    mode?: RotationMode
+    pinPresetId?: string
+    minHoldMs?: number
+    targetHoldMs?: number
+    maxHoldMs?: number
+    gate?: AudioGate
   }
 }
 

@@ -24,6 +24,13 @@ export function useTheatreTrackRotation(
   }, [segmentId, enabled]);
 
   useEffect(() => {
+    theatreController.setTrackContext(
+      enabled && segmentId ? { segmentId, trackId: segmentId } : null,
+    );
+    return () => theatreController.setTrackContext(null);
+  }, [segmentId, enabled]);
+
+  useEffect(() => {
     theatreController.setAutoRotation(enabled);
     return () => theatreController.setAutoRotation(false);
   }, [enabled]);

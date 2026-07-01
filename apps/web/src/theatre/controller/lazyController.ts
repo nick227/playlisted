@@ -31,6 +31,7 @@ interface RealTheatreController extends EventTarget {
   rotateRandomPreset(): Promise<void>
   setAutoRotation(enabled: boolean): void
   setClipDuration(durationMs: number | null): void
+  setTrackContext(track: { segmentId?: string | null; trackId?: string | null } | null): void
 }
 
 const THEATRE_RELOAD_KEY = 'playlisted:theatre:chunk-reload-attempted'
@@ -76,6 +77,7 @@ class LazyTheatreController extends EventTarget {
   // Buffered calls replayed when the real controller loads.
   private _pendingSource: { el: HTMLMediaElement | null; meta?: { artworkUrl?: string | null } } | null = null
   private _pendingClipDuration: number | null = null
+  private _pendingTrackContext: { segmentId?: string | null; trackId?: string | null } | null = null
   private _pendingArtwork: { url: string | null } | null = null
   private _pendingAutoRotate: boolean = false
   private _pendingFxEnabled: boolean | null = null
@@ -99,6 +101,9 @@ class LazyTheatreController extends EventTarget {
         }
         if (this._pendingClipDuration !== null) {
           real.setClipDuration(this._pendingClipDuration)
+        }
+        if (this._pendingTrackContext !== null) {
+          real.setTrackContext(this._pendingTrackContext)
         }
         if (this._pendingArtwork !== null) {
           real.setArtwork(this._pendingArtwork.url)
@@ -171,6 +176,13 @@ class LazyTheatreController extends EventTarget {
     this._pendingClipDuration = durationMs
     if (this._real) {
       this._real.setClipDuration(durationMs)
+    }
+  }
+
+  public setTrackContext(track: { segmentId?: string | null; trackId?: string | null } | null) {
+    this._pendingTrackContext = track
+    if (this._real) {
+      this._real.setTrackContext(track)
     }
   }
 

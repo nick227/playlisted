@@ -1,7 +1,7 @@
 import type { Features } from '../audio/AudioFeatureExtractor'
 import type { TheatreAudioSnapshot } from '../audio/TheatreAudioBus'
 
-export type RotationMode = 'timedMusicAware'
+export type RotationMode = 'timedMusicAware' | 'perTrack'
 
 export type AudioGate =
   | { kind: 'beatOrChaosOrDropEdge' }
@@ -14,6 +14,22 @@ export type RotationPolicyConfig = {
   targetHoldMs: number
   maxHoldMs: number
   gate: AudioGate
+  pinPresetId?: string
+}
+
+export type RotationOverrideSource = 'default' | 'preset' | 'song'
+
+export type RotationOverride = {
+  mode?: RotationMode
+  pinPresetId?: string
+  minHoldMs?: number
+  targetHoldMs?: number
+  maxHoldMs?: number
+  gate?: AudioGate
+}
+
+export type ResolvedRotationPolicy = RotationPolicyConfig & {
+  source: RotationOverrideSource
 }
 
 export type RotationPolicyState = {
@@ -30,6 +46,12 @@ export type RotationDecision =
 export type RotationPolicyInput = {
   nowMs: number
   presetStartedAtMs: number
+  activePresetId?: string | null
   audio?: TheatreAudioSnapshot
   features?: Features
+}
+
+export type TheatreTrackContext = {
+  segmentId?: string | null
+  trackId?: string | null
 }

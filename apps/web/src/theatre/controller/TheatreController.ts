@@ -9,7 +9,8 @@ import {
   LEGACY_ROTATION_COMPAT,
   RotationPolicy,
 } from '../rotation/RotationPolicy'
-import type { RotationPolicyState } from '../rotation/types'
+import { resolveRotationPolicy } from '../rotation/rotationOverrides'
+import type { ResolvedRotationPolicy, RotationPolicyState, TheatreTrackContext } from '../rotation/types'
 import { FxSelector } from '../selection/FxSelector'
 import type { PickContext } from '../selection/types'
 import { getOrCreateAudioAnalyserConnection, type AudioAnalyserConnection } from '@/features/playback-indicators/audioAnalyser'
@@ -66,6 +67,7 @@ class TheatreController extends EventTarget {
   private rotationPolicy = new RotationPolicy()
   private rotationState: RotationPolicyState = createRotationPolicyState()
   private rotationPreloadTriggered = false
+  private trackContext: TheatreTrackContext | null = null
   private fxSelector = new FxSelector()
   private manualPresetLatest: string | null = null
   private manualPresetTimerId: number | null = null
@@ -185,6 +187,18 @@ class TheatreController extends EventTarget {
     this._clipDurationMs = durationMs
   }
 
+  public setTrackContext(track: TheatreTrackContext | null) {
+    this.trackContext = track
+  }
+
+  private resolveActiveRotationPolicy(): ResolvedRotationPolicy {
+    return resolveRotationPolicy({
+      activePresetId: this.state.presetId,
+      activePreset: this.state.presetId ? getPreset(this.state.presetId) : null,
+      track: this.trackContext,
+    })
+  }
+
   private clearPreloadTimer() {
     if (this.preloadTimerId !== null) {
       window.clearTimeout(this.preloadTimerId)
@@ -204,6 +218,7 @@ class TheatreController extends EventTarget {
   private handleRotationPolicyDecision(
     decision: ReturnType<RotationPolicy['evaluate']>,
     nowMs: number,
+    resolved: ResolvedRotationPolicy,
   ) {
     if (decision.action === 'preload') {
       if (
@@ -218,7 +233,7 @@ class TheatreController extends EventTarget {
       return
     }
 
-    if (decision.action !== 'rotate' || !this.canRotateNow(nowMs, this.rotationPolicy.config.minHoldMs)) return
+    if (decision.action !== 'rotate' || !this.canRotateNow(nowMs, resolved.minHoldMs)) return
 
     if (import.meta.env.DEV) {
       const elapsed = nowMs - this.rotationState.presetStartedAtMs
@@ -998,13 +1013,15 @@ class TheatreController extends EventTarget {
       }
       
       if (this.autoRotateEnabled && this.state.active && !this.transitioning) {
+        const resolved = this.resolveActiveRotationPolicy()
         const decision = this.rotationPolicy.evaluate({
           nowMs: now,
           presetStartedAtMs: this.rotationState.presetStartedAtMs,
+          activePresetId: this.state.presetId,
           audio: audioSnapshot,
           features: featuresRef,
-        })
-        this.handleRotationPolicyDecision(decision, now)
+        }, resolved)
+        this.handleRotationPolicyDecision(decision, now, resolved)
       }
 
       this.deck?.renderFrame(frameCtx)
