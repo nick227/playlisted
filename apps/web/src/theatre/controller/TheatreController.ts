@@ -1,6 +1,7 @@
 import registry from '../registry'
 import { AnimationContext, AnimationFactory } from '../core/IAnimation'
 import AudioFeatureExtractor from '../audio/AudioFeatureExtractor'
+import { TheatreAudioBus } from '../audio/TheatreAudioBus'
 import { getOrCreateAudioAnalyserConnection, type AudioAnalyserConnection } from '@/features/playback-indicators/audioAnalyser'
 import { getPreset, listPresets, type ScenePresetDef, type TheatreTransitionKind } from '../registry/scenePresets'
 import { getPackageIdForPreset, pickPackagePreset } from '../registry/packageRotation'
@@ -77,6 +78,7 @@ class TheatreController extends EventTarget {
   private audioEl: HTMLMediaElement | null = null
   private analyserConnection: AudioAnalyserConnection | null = null
   private extractor: AudioFeatureExtractor | null = null
+  private audioBus = new TheatreAudioBus()
   private featureLoopId: number | null = null
   private backgroundEnterTimerId: number | null = null
   private frameContext: AnimationContext | null = null
@@ -134,6 +136,7 @@ class TheatreController extends EventTarget {
     this.clearBackgroundEnterTimer()
     this.stopFeatureLoop()
     this.extractor = null
+    this.audioBus.reset()
     this.frameContext = null
     this.clearOverlayBoundsTracking()
     this.overlay?.remove()
@@ -666,20 +669,30 @@ class TheatreController extends EventTarget {
     this.ensureBackgroundIfNeeded()
   }
 
+  private buildFrameContextWithAudio(
+    deltaMs = 0,
+    existingTimeRef?: { elapsed: number; delta: number; frame: number },
+  ) {
+    const featuresRef = this.extractor?.getFeatures()
+    const audioSnapshot = this.audioBus.tick(featuresRef, deltaMs)
+    return buildAnimationFrameContext({
+      audioEl: this.audioEl,
+      analyser: this.getOrCreateAnalyser(),
+      mediaSrc: this.audioEl?.currentSrc || null,
+      artworkUrl: this.state.artworkUrl,
+      featuresRef,
+      audioSnapshot,
+      existingTimeRef,
+    })
+  }
+
   private async changePresetInner(presetId: string, token: number, source: PresetChangeSource) {
     const selectedPreset = getPreset(presetId)
     if (!selectedPreset || !this.stillCurrent(token)) return
 
     theatreBreadcrumb(`${source}:preset-inner:start`, { presetId })
 
-    const analyser = this.getOrCreateAnalyser()
-    const { ctx, policy } = buildAnimationFrameContext({
-      audioEl: this.audioEl,
-      analyser,
-      mediaSrc: this.audioEl?.currentSrc || null,
-      artworkUrl: this.state.artworkUrl,
-      featuresRef: this.extractor?.getFeatures(),
-    })
+    const { ctx, policy } = this.buildFrameContextWithAudio(0)
 
     if (!this.deck) return
 
@@ -782,15 +795,7 @@ class TheatreController extends EventTarget {
     const nextPreset = this.pickRandomPreset()
     if (!nextPreset) return
 
-    const analyser = this.getOrCreateAnalyser()
-    const { ctx, policy } = buildAnimationFrameContext({
-      audioEl: this.audioEl,
-      analyser,
-      mediaSrc: this.audioEl?.currentSrc || null,
-      artworkUrl: this.state.artworkUrl,
-      featuresRef: this.extractor?.getFeatures(),
-      existingTimeRef: this.frameContext?.shared?.time,
-    })
+    const { ctx, policy } = this.buildFrameContextWithAudio(0, this.frameContext?.shared?.time)
 
     const factories = this.buildFactoriesForPreset(nextPreset, policy.maxLayers)
     await this.deck.preload(nextPreset.id, factories, ctx)
@@ -960,19 +965,12 @@ class TheatreController extends EventTarget {
 
     const analyser = this.getOrCreateAnalyser()
 
-    let featuresRef: ReturnType<AudioFeatureExtractor['getFeatures']> | undefined
     if (analyser) {
       this.extractor = new AudioFeatureExtractor(analyser)
-      featuresRef = this.extractor.getFeatures()
     }
+    this.audioBus.reset()
 
-    const { ctx, policy } = buildAnimationFrameContext({
-      audioEl: this.audioEl,
-      analyser,
-      mediaSrc: this.audioEl?.currentSrc || null,
-      artworkUrl: this.state.artworkUrl,
-      featuresRef,
-    })
+    const { ctx, policy } = this.buildFrameContextWithAudio(0)
 
     const selectedPreset = resolvePresetChoice(this.prefersReducedMotion())
     const initialPresetId = selectedPreset?.id ?? null
@@ -1032,6 +1030,13 @@ class TheatreController extends EventTarget {
         frameCtx.shared.time.frame += 1
       }
       try { this.extractor?.update() } catch { /* ignore */ }
+
+      const featuresRef = this.extractor?.getFeatures()
+      const audioSnapshot = this.audioBus.tick(featuresRef, delta)
+      if (frameCtx.shared) {
+        frameCtx.shared.features = featuresRef
+        frameCtx.shared.audio = audioSnapshot
+      }
       
       if (this.autoRotateEnabled && this.state.active && !this.transitioning) {
         if (!this.autoRotateArmed && now >= this.nextAutoRotateTime) {
@@ -1093,6 +1098,7 @@ class TheatreController extends EventTarget {
       this.state.active = false
       this.state.mode = null
       this.extractor = null
+      this.audioBus.reset()
       this.frameContext = null
       
       destroyTheatreDevPanel()

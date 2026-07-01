@@ -1,4 +1,5 @@
 import type { Features } from '../audio/AudioFeatureExtractor'
+import type { TheatreAudioSnapshot } from '../audio/TheatreAudioBus'
 import type { TriggerFrame } from '../audio/VisualTriggers'
 
 export type AnimationRole = 'background' | 'subject' | 'foreground' | 'overlay' | 'any'
@@ -18,6 +19,7 @@ export type AnimationOptions = {
 
 export type SharedContext = {
   features?: Features
+  audio?: TheatreAudioSnapshot
   reducedMotion?: boolean
   lowPower?: boolean
   dprClamp?: number
