@@ -14,3 +14,11 @@ export const HOME_CHART_ITEM_LIMIT = 10;
 export const HOME_CHART_PLAYLIST_LIMIT = { mobile: 4, desktop: 6 } as const;
 
 export const CHART_PANELS_GRID_CLASS = "mb-10 grid gap-4 lg:grid-cols-3";
+
+export const CHARTS_PAGE_ITEM_LIMIT = 50;
+
+export const CHARTS_PAGE_RANGE_OPTIONS: { value: ChartRange; label: string }[] = [
+  { value: "today", label: "Today" },
+  { value: "30d", label: "This month" },
+  { value: "all", label: "All time" },
+];

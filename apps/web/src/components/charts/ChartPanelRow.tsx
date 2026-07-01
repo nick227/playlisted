@@ -31,6 +31,8 @@ interface ChartPanelRowProps {
   play: ChartPanelPlayState;
   favorite: ChartPanelFavorite;
   actionSlot?: ReactNode;
+  secondaryMeta?: string;
+  variant?: "panel" | "page";
 }
 
 export function ChartPanelRow({
@@ -46,15 +48,20 @@ export function ChartPanelRow({
   play,
   favorite,
   actionSlot,
+  secondaryMeta,
+  variant = "panel",
 }: ChartPanelRowProps) {
   const rounded = imageShape === "circle" ? "rounded-full" : "rounded-md";
   const { isActive, isPlaying, onPlay } = play;
+  const isPage = variant === "page";
+  const artSize = isPage ? "h-12 w-12" : "h-10 w-10";
 
   return (
     <li>
       <div
         className={[
-          "grid w-full grid-cols-[auto_auto_auto_1fr_auto] items-center gap-3 px-3 py-2.5 transition",
+          "grid w-full grid-cols-[auto_auto_1fr_auto] items-center gap-3 transition sm:grid-cols-[auto_auto_1fr_auto_auto]",
+          isPage ? "px-4 py-3" : "px-3 py-2.5",
           isActive ? "bg-white/10" : "hover:bg-white/[0.04]",
         ].join(" ")}
       >
@@ -69,7 +76,7 @@ export function ChartPanelRow({
           type="button"
           onClick={onPlay}
           aria-label={isPlaying ? `Pause ${title}` : `Play ${title}`}
-          className={`h-10 w-10 shrink-0 cursor-pointer overflow-hidden ${rounded}`}
+          className={`${artSize} shrink-0 cursor-pointer overflow-hidden ${rounded}`}
         >
           {imageUrl ? (
             <img
@@ -93,7 +100,13 @@ export function ChartPanelRow({
           <ChartRowSubtitle text={subtitle} href={subtitleHref} genre={genre} />
         </div>
 
-        <div className="ml-auto flex shrink-0 items-center justify-end gap-1 pl-2">
+        {secondaryMeta ? (
+          <span className="hidden shrink-0 text-xs text-[var(--color-text-subtle)] md:inline">
+            {secondaryMeta}
+          </span>
+        ) : null}
+
+        <div className="flex shrink-0 items-center justify-end gap-1 sm:gap-2">
           <div
             className="flex w-8 shrink-0 justify-center"
             onClick={(e) => e.stopPropagation()}
@@ -104,6 +117,7 @@ export function ChartPanelRow({
             {playCount > 0 ? (
               <span className="hidden text-xs tabular-nums text-[var(--color-text-subtle)] sm:inline">
                 {formatPlayCount(playCount)}
+                {isPage ? " plays" : ""}
               </span>
             ) : null}
             <FavoriteHeartButton

@@ -4,6 +4,7 @@ import { RecordingActionMenu } from "@/components/media/RecordingActionMenu";
 import { PlaylistActionMenu } from "@/components/media/PlaylistActionMenu";
 import { useTopArtists, useTopPlaylists, useTopSongs } from "@/hooks/useCharts";
 import { useIsMdUp } from "@/hooks/useIsMdUp";
+import { CHARTS_PATH } from "@/lib/browsePaths";
 import { homeChartSongOrigin } from "@/lib/playbackOrigin";
 import { topSongToQueueTrack } from "@/lib/queueTrack";
 import { playlistPath, profilePath } from "@/lib/routes";
@@ -59,7 +60,11 @@ export function HomeChartsSection() {
   return (
     <section className={CHART_PANELS_GRID_CLASS} aria-label="Charts">
       {songs.length > 0 ? (
-        <ChartPanelContainer title="Top Songs" subtitle={`Most-played — ${rangeLabel}`}>
+        <ChartPanelContainer
+          title="Top Songs"
+          subtitle={`Most-played — ${rangeLabel}`}
+          viewAllHref={`${CHARTS_PATH}?tab=songs`}
+        >
           {songs.map((item: TopSongItem) => (
             <ChartSongPanelRow
               key={item.recordingId}
@@ -91,6 +96,7 @@ export function HomeChartsSection() {
         <ChartPanelContainer
           title="Top Playlists"
           subtitle={`Most-played collections — ${rangeLabel}`}
+          viewAllHref={`${CHARTS_PATH}?tab=playlists`}
         >
           {playlists.map((item: TopPlaylistItem) => (
             <ChartPanelRow
@@ -130,6 +136,7 @@ export function HomeChartsSection() {
         <ChartPanelContainer
           title="Top Artists"
           subtitle={`Creators driving the most plays — ${rangeLabel}`}
+          viewAllHref={`${CHARTS_PATH}?tab=artists`}
         >
           {artists.map((item: TopArtistItem) => (
             <ChartPanelRow

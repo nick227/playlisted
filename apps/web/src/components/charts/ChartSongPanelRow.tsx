@@ -17,6 +17,8 @@ interface ChartSongPanelRowProps {
   playCount: number;
   onPlay: () => void;
   actionSlot: ReactNode;
+  secondaryMeta?: string;
+  variant?: "panel" | "page";
 }
 
 export function ChartSongPanelRow({

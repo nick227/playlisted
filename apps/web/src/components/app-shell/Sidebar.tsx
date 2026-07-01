@@ -1,5 +1,6 @@
 import {
   AudioLines,
+  BarChart3,
   BookOpen,
   Heart,
   Home,
@@ -24,6 +25,7 @@ import { playbackFocusTiming } from "@/lib/playbackFocusTiming";
 import { usePlaybackFocusSuppressed } from "@/lib/playbackFocusSuppression";
 import {
   ARTISTS_PATH,
+  CHARTS_PATH,
   FAVORITES_PATH,
   GENRES_PATH,
   LIBRARY_PATH,
@@ -40,6 +42,7 @@ interface SidebarProps {
 
 const discoverLinks = [
   { to: "/", label: "Home", icon: Home },
+  { to: CHARTS_PATH, label: "Charts", icon: BarChart3 },
 ];
 
 const libraryBrowseLinks = [

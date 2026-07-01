@@ -10,6 +10,7 @@ const LoginPage = lazy(() => import("@/pages/LoginPage").then((mod) => ({ defaul
 const RegisterPage = lazy(() => import("@/pages/RegisterPage").then((mod) => ({ default: mod.RegisterPage })));
 
 const HomePage = lazy(() => import("@/pages/HomePage").then((mod) => ({ default: mod.HomePage })));
+const ChartsPage = lazy(() => import("@/pages/ChartsPage").then((mod) => ({ default: mod.ChartsPage })));
 const SearchPage = lazy(() => import("@/pages/SearchPage").then((mod) => ({ default: mod.SearchPage })));
 const RadioPage = lazy(() => import("@/pages/RadioPage").then((mod) => ({ default: mod.RadioPage })));
 const CanonicalPlaylistPage = lazy(() =>
@@ -109,6 +110,7 @@ function MainRoutes() {
     <AppShell>
       <Routes>
         <Route path="/" element={<HomePage />} />
+        <Route path="/charts" element={<ChartsPage />} />
         <Route path="/search" element={<SearchPage />} />
         <Route path="/radio" element={<RadioPage />} />
         <Route path="/@:username" element={<LegacyProfileRedirect />} />
@@ -118,7 +120,7 @@ function MainRoutes() {
         <Route path="/@/:username" element={<MemberPage />} />
         <Route path="/members/:userId" element={<MemberPage />} />
         <Route path="/explore" element={<Navigate to="/" replace />} />
-        <Route path="/trending" element={<Navigate to="/" replace />} />
+        <Route path="/trending" element={<Navigate to="/charts" replace />} />
         <Route path="/musicians" element={<MusiciansPage />} />
         <Route path="/developers" element={<DevelopersPage />} />
         <Route path="/advertising" element={<AdvertisingPage />} />

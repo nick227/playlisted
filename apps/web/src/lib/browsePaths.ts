@@ -6,6 +6,7 @@ export const GENRES_PATH = "/genres";
 export const ARTISTS_PATH = "/artists";
 export const PLAYLISTS_PATH = "/playlists";
 export const FAVORITES_PATH = "/favorites";
+export const CHARTS_PATH = "/charts";
 
 /** Shared max-width for browse breadcrumbs and collection content. */
 export const BROWSE_LAYOUT_CLASS = "mx-auto max-w-3xl  bg-[var(--color-canvas)]/80 p-4";

@@ -17,6 +17,18 @@ export function homeChartArtistOrigin(userId: string): string {
   return playbackOriginKey("home", "chart", "top-artists", userId);
 }
 
+export function chartsPageSongOrigin(recordingId: string): string {
+  return playbackOriginKey("charts", "songs", recordingId);
+}
+
+export function chartsPagePlaylistOrigin(playlistId: string): string {
+  return playbackOriginKey("charts", "playlists", playlistId);
+}
+
+export function chartsPageArtistOrigin(userId: string): string {
+  return playbackOriginKey("charts", "artists", userId);
+}
+
 export function homeGridPlaylistOrigin(sectionKey: string, playlistId: string): string {
   return playbackOriginKey("home", "grid", sectionKey, playlistId);
 }
