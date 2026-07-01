@@ -1,9 +1,15 @@
 import { getPreset, type ScenePresetDef } from '../registry/scenePresets'
 import { isPresetQuarantined } from '../controller/presetQuarantine'
-import { buildWeightedShuffleBag } from './buildWeightedShuffleBag'
 import {
+  buildFxShuffleBag,
+  DEFAULT_BAG_BUILD_STRATEGY,
+  type BagBuildStrategy,
+} from './buildWeightedShuffleBag'
+import {
+  collectWeightedFamilyCatalog,
   collectWeightedPresetCatalog,
   computeCatalogVersion,
+  type WeightedFamilyCatalogEntry,
   type WeightedPresetEntry,
 } from './catalogVersion'
 import {
@@ -47,6 +53,8 @@ export type FxSelectorOptions = {
   storage?: FxBagStorage
   isValidPresetId?: (id: string) => boolean
   catalogVersion?: string
+  bagStrategy?: BagBuildStrategy
+  getCatalogFamilies?: () => WeightedFamilyCatalogEntry[]
   getCatalogEntries?: () => WeightedPresetEntry[]
 }
 
@@ -57,12 +65,16 @@ export class FxSelector {
   private readonly storage: FxBagStorage
   private readonly isValidPresetId: (id: string) => boolean
   private readonly catalogVersionOverride?: string
+  private readonly bagStrategy: BagBuildStrategy
+  private readonly getCatalogFamiliesOverride?: () => WeightedFamilyCatalogEntry[]
   private readonly getCatalogEntriesOverride?: () => WeightedPresetEntry[]
 
   constructor(options: FxSelectorOptions = {}) {
     this.storage = options.storage ?? createLocalFxBagStorage()
     this.isValidPresetId = options.isValidPresetId ?? defaultIsValidPresetId
     this.catalogVersionOverride = options.catalogVersion
+    this.bagStrategy = options.bagStrategy ?? DEFAULT_BAG_BUILD_STRATEGY
+    this.getCatalogFamiliesOverride = options.getCatalogFamilies
     this.getCatalogEntriesOverride = options.getCatalogEntries
   }
 
@@ -135,13 +147,17 @@ export class FxSelector {
     return this.candidate
   }
 
+  private getCatalogFamilies(): WeightedFamilyCatalogEntry[] {
+    return this.getCatalogFamiliesOverride?.() ?? collectWeightedFamilyCatalog()
+  }
+
   private getCatalogEntries(): WeightedPresetEntry[] {
     return this.getCatalogEntriesOverride?.() ?? collectWeightedPresetCatalog()
   }
 
   private getCatalogVersion(): string {
     if (this.catalogVersionOverride) return this.catalogVersionOverride
-    return computeCatalogVersion(this.getCatalogEntries())
+    return computeCatalogVersion(this.getCatalogFamilies())
   }
 
   private ensureBagState(ctx: PickContext): FxBagStorageState {
@@ -166,8 +182,12 @@ export class FxSelector {
     ctx: PickContext,
     lastPresetId?: string,
   ): FxBagStorageState {
-    const entries = this.getCatalogEntries()
-    const bag = buildWeightedShuffleBag(entries, buildAvoidFirstIds(ctx, lastPresetId))
+    const bag = buildFxShuffleBag({
+      strategy: this.bagStrategy,
+      families: this.getCatalogFamilies(),
+      entries: this.getCatalogEntries(),
+      avoidFirstIds: buildAvoidFirstIds(ctx, lastPresetId),
+    })
     return {
       version,
       bag,

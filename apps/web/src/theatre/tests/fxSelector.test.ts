@@ -1,8 +1,20 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { FxSelector } from '../selection/FxSelector'
+import type { WeightedFamilyCatalogEntry } from '../selection/catalogVersion'
 import type { FxBagStorage, FxBagStorageState } from '../selection/fxBagStorage'
 import type { PickContext } from '../selection/types'
+
+const TEST_FAMILIES: WeightedFamilyCatalogEntry[] = [
+  {
+    familyId: 'test-family',
+    familyWeight: 1,
+    presets: [
+      { id: 'alpha', weight: 1 },
+      { id: 'beta', weight: 1 },
+    ],
+  },
+]
 
 vi.mock('../registry/scenePresets', () => ({
   getPreset: (id: string) => ({
@@ -49,7 +61,7 @@ describe('FxSelector', () => {
     const selector = new FxSelector({
       storage: memory.storage,
       catalogVersion: TEST_VERSION,
-      getCatalogEntries: () => [{ id: 'alpha', weight: 1 }, { id: 'beta', weight: 1 }],
+      getCatalogFamilies: () => TEST_FAMILIES,
       isValidPresetId: id => id === 'alpha' || id === 'beta',
     })
 
@@ -65,7 +77,7 @@ describe('FxSelector', () => {
     const selector = new FxSelector({
       storage: memory.storage,
       catalogVersion: TEST_VERSION,
-      getCatalogEntries: () => [{ id: 'alpha', weight: 1 }, { id: 'beta', weight: 1 }],
+      getCatalogFamilies: () => TEST_FAMILIES,
       isValidPresetId: id => id === 'alpha' || id === 'beta',
     })
 
@@ -83,7 +95,7 @@ describe('FxSelector', () => {
     const selector = new FxSelector({
       storage: memory.storage,
       catalogVersion: TEST_VERSION,
-      getCatalogEntries: () => [{ id: 'alpha', weight: 1 }, { id: 'beta', weight: 1 }],
+      getCatalogFamilies: () => TEST_FAMILIES,
       isValidPresetId: id => id === 'alpha' || id === 'beta',
     })
 
@@ -102,7 +114,7 @@ describe('FxSelector', () => {
     const selector = new FxSelector({
       storage: memory.storage,
       catalogVersion: TEST_VERSION,
-      getCatalogEntries: () => [{ id: 'alpha', weight: 1 }, { id: 'beta', weight: 1 }],
+      getCatalogFamilies: () => TEST_FAMILIES,
       isValidPresetId: id => id === 'alpha' || id === 'beta',
     })
 
@@ -122,7 +134,7 @@ describe('FxSelector', () => {
     const selector = new FxSelector({
       storage: memory.storage,
       catalogVersion: TEST_VERSION,
-      getCatalogEntries: () => [{ id: 'alpha', weight: 1 }, { id: 'beta', weight: 1 }],
+      getCatalogFamilies: () => TEST_FAMILIES,
       isValidPresetId: id => id === 'alpha' || id === 'beta',
     })
 

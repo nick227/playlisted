@@ -1,10 +1,18 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import {
-  buildWeightedShuffleBag,
+  buildFamilyWeightedShuffleBag,
+  buildFxShuffleBag,
+  buildPresetWeightedShuffleBag,
+  countFamilyRepresentation,
   expandWeightedPresetIds,
 } from '../selection/buildWeightedShuffleBag'
-import { computeCatalogVersion, hashCatalogPayload } from '../selection/catalogVersion'
+import {
+  buildCatalogVersionPayload,
+  computeCatalogVersion,
+  hashCatalogPayload,
+  type WeightedFamilyCatalogEntry,
+} from '../selection/catalogVersion'
 import { FxSelector } from '../selection/FxSelector'
 import {
   createLocalFxBagStorage,
@@ -15,11 +23,17 @@ import {
 } from '../selection/fxBagStorage'
 import type { PickContext } from '../selection/types'
 
-const TEST_ENTRIES = [
-  { id: 'alpha', weight: 1 },
-  { id: 'beta', weight: 3 },
-  { id: 'gamma', weight: 1 },
-] as const
+const TEST_FAMILIES: WeightedFamilyCatalogEntry[] = [
+  {
+    familyId: 'test-family',
+    familyWeight: 1,
+    presets: [
+      { id: 'alpha', weight: 1 },
+      { id: 'beta', weight: 3 },
+      { id: 'gamma', weight: 1 },
+    ],
+  },
+]
 
 const TEST_VERSION = 'test-catalog-v1'
 
@@ -60,7 +74,7 @@ function createTestSelector(storage: FxBagStorage) {
   return new FxSelector({
     storage,
     catalogVersion: TEST_VERSION,
-    getCatalogEntries: () => [...TEST_ENTRIES],
+    getCatalogFamilies: () => TEST_FAMILIES,
     isValidPresetId: id => ['alpha', 'beta', 'gamma'].includes(id),
   })
 }
@@ -72,16 +86,99 @@ const ctx = (activePresetId: string | null, extra: Partial<PickContext> = {}): P
   ...extra,
 })
 
-describe('buildWeightedShuffleBag', () => {
+describe('buildPresetWeightedShuffleBag', () => {
   it('includes weighted copies', () => {
-    const bag = buildWeightedShuffleBag([...TEST_ENTRIES], [], () => 0.5)
+    const entries = TEST_FAMILIES[0]!.presets.map(preset => ({ id: preset.id, weight: preset.weight }))
+    const bag = buildPresetWeightedShuffleBag(entries, [], () => 0.5)
     expect(bag).toHaveLength(5)
     expect(bag.filter(id => id === 'beta')).toHaveLength(3)
-    expect(bag.filter(id => id === 'alpha')).toHaveLength(1)
-    expect(bag.filter(id => id === 'gamma')).toHaveLength(1)
-    expect(expandWeightedPresetIds([...TEST_ENTRIES])).toEqual([
+    expect(expandWeightedPresetIds(entries)).toEqual([
       'alpha', 'beta', 'beta', 'beta', 'gamma',
     ])
+  })
+})
+
+describe('buildFamilyWeightedShuffleBag', () => {
+  const videoFamily = (count: number, familyWeight = 1): WeightedFamilyCatalogEntry => ({
+    familyId: 'videos',
+    familyWeight,
+    presets: Array.from({ length: count }, (_, index) => ({
+      id: `video${index + 1}`,
+      weight: 1,
+    })),
+  })
+
+  const canvasFamily = (familyWeight = 1): WeightedFamilyCatalogEntry => ({
+    familyId: 'canvas',
+    familyWeight,
+    presets: [{ id: 'canvasA', weight: 1 }],
+  })
+
+  it('does not let large families dominate equal-weight smaller families', () => {
+    const bag = buildFamilyWeightedShuffleBag(
+      [videoFamily(60, 1), canvasFamily(1)],
+      [],
+      () => 0.42,
+    )
+
+    const counts = countFamilyRepresentation(bag, presetId =>
+      presetId.startsWith('video') ? 'videos' : presetId === 'canvasA' ? 'canvas' : null,
+    )
+
+    expect(counts.get('videos')).toBe(1)
+    expect(counts.get('canvas')).toBe(1)
+    expect(bag.filter(id => id.startsWith('video'))).toHaveLength(1)
+  })
+
+  it('increases family representation when package weight is higher', () => {
+    const bag = buildFamilyWeightedShuffleBag(
+      [videoFamily(60, 2), canvasFamily(1)],
+      [],
+      () => 0.42,
+    )
+
+    const counts = countFamilyRepresentation(bag, presetId =>
+      presetId.startsWith('video') ? 'videos' : presetId === 'canvasA' ? 'canvas' : null,
+    )
+
+    expect(counts.get('videos')).toBe(2)
+    expect(counts.get('canvas')).toBe(1)
+  })
+
+  it('still applies preset weight inside a family', () => {
+    const family: WeightedFamilyCatalogEntry = {
+      familyId: 'mixed',
+      familyWeight: 1,
+      presets: [
+        { id: 'heavy', weight: 3 },
+        { id: 'light', weight: 1 },
+      ],
+    }
+
+    const bag = buildFamilyWeightedShuffleBag([family], [], () => 0.5)
+    expect(bag.filter(id => id === 'heavy').length).toBeGreaterThan(bag.filter(id => id === 'light').length)
+  })
+})
+
+describe('buildFxShuffleBag strategies', () => {
+  it('supports presetWeighted behavior', () => {
+    const entries = TEST_FAMILIES[0]!.presets.map(preset => ({ id: preset.id, weight: preset.weight }))
+    const bag = buildFxShuffleBag({
+      strategy: 'presetWeighted',
+      entries,
+      rng: () => 0.5,
+    })
+
+    expect(bag).toHaveLength(5)
+  })
+
+  it('defaults to familyWeighted', () => {
+    const bag = buildFxShuffleBag({
+      families: TEST_FAMILIES,
+      rng: () => 0.5,
+    })
+
+    expect(bag).toHaveLength(3)
   })
 })
 
@@ -133,7 +230,12 @@ describe('fxBagStorage', () => {
 
 describe('FxSelector weighted bag', () => {
   it('avoids immediate active/last preset when alternatives exist', () => {
-    const bag = buildWeightedShuffleBag([...TEST_ENTRIES], ['alpha', 'beta'], () => 0.1)
+    const bag = buildFxShuffleBag({
+      strategy: 'presetWeighted',
+      entries: TEST_FAMILIES[0]!.presets.map(preset => ({ id: preset.id, weight: preset.weight })),
+      avoidFirstIds: ['alpha', 'beta'],
+      rng: () => 0.1,
+    })
     expect(bag[0]).not.toBe('alpha')
     expect(bag[0]).not.toBe('beta')
   })
@@ -192,11 +294,40 @@ describe('FxSelector weighted bag', () => {
 })
 
 describe('catalogVersion', () => {
-  it('builds deterministic version hash', () => {
-    const version = computeCatalogVersion([
-      { id: 'alpha', weight: 1 },
-      { id: 'beta', weight: 2 },
-    ])
-    expect(version).toBe(hashCatalogPayload('alpha:1|beta:2'))
+  it('builds deterministic version hash from family catalog', () => {
+    const families: WeightedFamilyCatalogEntry[] = [
+      {
+        familyId: 'canvas',
+        familyWeight: 1,
+        presets: [{ id: 'alpha', weight: 1 }],
+      },
+      {
+        familyId: 'videos',
+        familyWeight: 2,
+        presets: [{ id: 'video1', weight: 1 }],
+      },
+    ]
+
+    const version = computeCatalogVersion(families)
+    expect(version).toBe(hashCatalogPayload(buildCatalogVersionPayload(families)))
+  })
+
+  it('changes when package weight changes', () => {
+    const base: WeightedFamilyCatalogEntry[] = [
+      {
+        familyId: 'videos',
+        familyWeight: 1,
+        presets: [{ id: 'video1', weight: 1 }],
+      },
+    ]
+    const heavier: WeightedFamilyCatalogEntry[] = [
+      {
+        familyId: 'videos',
+        familyWeight: 2,
+        presets: [{ id: 'video1', weight: 1 }],
+      },
+    ]
+
+    expect(computeCatalogVersion(base)).not.toBe(computeCatalogVersion(heavier))
   })
 })
