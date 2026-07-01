@@ -1,4 +1,5 @@
 import type { Features } from './AudioFeatureExtractor'
+import { BeatClock, EMPTY_BEAT_CLOCK, type BeatClockSnapshot } from './BeatClock'
 import { getVisualTriggers, type TriggerFrame } from './VisualTriggers'
 import { createDropDetectorState, tickDropDetector, type DropDetectorState } from './dropDetection'
 
@@ -16,13 +17,7 @@ export type TriggerEdges = {
   drop: boolean
 }
 
-/** Placeholder until phase-2 beat clock lands. */
-export type BeatClock = {
-  bpm: number
-  confidence: number
-  phase: number
-  msSinceLastBeat: number
-}
+export type BeatClock = BeatClockSnapshot
 
 export type TriggersByPreset = Record<AudioSensitivityPreset, TriggerFrame>
 
@@ -34,12 +29,7 @@ export type TheatreAudioSnapshot = {
   beat: BeatClock
 }
 
-export const EMPTY_BEAT_CLOCK: BeatClock = {
-  bpm: 0,
-  confidence: 0,
-  phase: 0,
-  msSinceLastBeat: 0,
-}
+export { EMPTY_BEAT_CLOCK }
 
 export const FALLBACK_TRIGGER_FRAME: TriggerFrame = {
   bassHit: false,
@@ -126,13 +116,18 @@ export function getTriggersForPreset(
 export class TheatreAudioBus {
   private prevDefaultTriggers: TriggerFrame | null = null
   private dropState: DropDetectorState = createDropDetectorState()
+  private beatClock = new BeatClock()
+  private clockNowMs = 0
 
   reset(): void {
     this.prevDefaultTriggers = null
     this.dropState = createDropDetectorState()
+    this.beatClock.reset()
+    this.clockNowMs = 0
   }
 
   tick(features: Features | undefined, deltaMs: number): TheatreAudioSnapshot {
+    this.clockNowMs += deltaMs
     const triggersByPreset = buildTriggersByPreset(features)
     const triggers = triggersByPreset[DEFAULT_AUDIO_SENSITIVITY]
     const edges = deriveEdges(this.prevDefaultTriggers, triggers)
@@ -143,12 +138,18 @@ export class TheatreAudioBus {
 
     this.prevDefaultTriggers = triggers
 
+    const beat = this.beatClock.tick({
+      nowMs: this.clockNowMs,
+      deltaMs,
+      beatEdge: edges.beat,
+    })
+
     return {
       features,
       triggers,
       triggersByPreset,
       edges,
-      beat: { ...EMPTY_BEAT_CLOCK },
+      beat,
     }
   }
 }
