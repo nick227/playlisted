@@ -5,6 +5,7 @@ import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 import { useRadioPlayer } from "@/providers/RadioPlayerProvider";
 import { usePlaybackTransport } from "@/hooks/usePlaybackTransport";
 import { playbackFocusTiming } from "@/lib/playbackFocusTiming";
+import { isPlaybackFocusBodyFadeDisabled } from "@/lib/playbackFocusBodyFade";
 import { usePlaybackFocusSuppressed } from "@/lib/playbackFocusSuppression";
 
 import { BackgroundLayer } from "./BackgroundLayer";
@@ -35,6 +36,7 @@ export function AppShell({ children }: AppShellProps) {
   const [snapReveal, setSnapReveal] = useState(false);
   const playbackFocusSuppressed = usePlaybackFocusSuppressed();
   const location = useLocation();
+  const bodyFadeDisabled = isPlaybackFocusBodyFadeDisabled(location.pathname);
   const {
     currentTrack,
     isPlaying,
@@ -117,7 +119,7 @@ export function AppShell({ children }: AppShellProps) {
     setBodyFocusHidden(false);
     setBodyFadedAtTrackMs(null);
     setMiniViewVisible(false);
-    if (!playFocusActive || playbackFocusSuppressed) return;
+    if (!playFocusActive || playbackFocusSuppressed || bodyFadeDisabled) return;
     const bodyDelayMs =
       reason === "activity"
         ? playbackFocusTiming.body.restoreDelayMs
@@ -134,15 +136,15 @@ export function AppShell({ children }: AppShellProps) {
         miniViewTimerRef.current = null;
       }, miniViewDelayMs);
     }
-  }, [clearFocusTimer, playFocusActive, playbackFocusSuppressed, focusTrack?.sourceLabel]);
+  }, [bodyFadeDisabled, clearFocusTimer, playFocusActive, playbackFocusSuppressed, focusTrack?.sourceLabel]);
 
   useEffect(() => {
-    if (!playbackFocusSuppressed) return;
+    if (!playbackFocusSuppressed && !bodyFadeDisabled) return;
     clearFocusTimer();
     setBodyFocusHidden(false);
     setBodyFadedAtTrackMs(null);
     setMiniViewVisible(false);
-  }, [clearFocusTimer, playbackFocusSuppressed]);
+  }, [bodyFadeDisabled, clearFocusTimer, playbackFocusSuppressed]);
 
   useEffect(() => {
     armPlayFocus("initial");
@@ -150,7 +152,7 @@ export function AppShell({ children }: AppShellProps) {
       clearFocusTimer();
       clearSnapRevealTimer();
     };
-  }, [armPlayFocus, clearFocusTimer, clearSnapRevealTimer, focusTrackKey, location.pathname, location.search, playbackFocusSuppressed]);
+  }, [armPlayFocus, bodyFadeDisabled, clearFocusTimer, clearSnapRevealTimer, focusTrackKey, location.pathname, location.search, playbackFocusSuppressed]);
 
   useEffect(() => {
     return () => {
@@ -214,7 +216,8 @@ export function AppShell({ children }: AppShellProps) {
     revealPage();
   }, [consumeRevealEvent, revealPage]);
 
-  const bodyFocusMode = playFocusActive && bodyFocusHidden && !playbackFocusSuppressed;
+  const bodyFocusMode =
+    playFocusActive && bodyFocusHidden && !playbackFocusSuppressed && !bodyFadeDisabled;
   const miniViewMode = playFocusActive && miniViewVisible && !playbackFocusSuppressed;
   const revealShieldVisible = bodyFocusMode || snapReveal;
   const playFocusHasPlayer = playerShellActive;
