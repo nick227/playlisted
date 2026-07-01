@@ -95,6 +95,28 @@ export async function updateTranscript(
   return response.json();
 }
 
+export async function createManualTranscript(
+  recordingId: string,
+  srtText: string,
+  accessToken: string
+): Promise<TranscriptEntity> {
+  const base = import.meta.env.VITE_API_BASE_URL ?? "";
+  const response = await fetch(`${base}/api/v1/recordings/${encodeURIComponent(recordingId)}/transcripts`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...trafficHeaders(),
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({ srtText }),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => null);
+    throw new Error(err?.message || "Failed to create transcript");
+  }
+  return response.json();
+}
+
 export async function uploadTranscript(
   recordingId: string,
   file: File,

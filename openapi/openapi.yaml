@@ -3224,6 +3224,56 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+    post:
+      tags:
+        - Recordings
+      operationId: createManualTranscript
+      summary: Create a manual transcript from timed SRT text
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: recordingId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - srtText
+              properties:
+                srtText:
+                  type: string
+      responses:
+        "201":
+          description: Created transcript
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TranscriptEntity"
+        "400":
+          description: Invalid transcript text
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Recording not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /api/v1/recordings/{recordingId}/transcripts/{transcriptId}:
     patch:
       tags:

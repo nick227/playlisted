@@ -1,16 +1,17 @@
 import type { SubtitleStatus } from "@/lib/subtitles";
 
-export type TranscriptSource = "whisper" | "modal" | "upload" | "manual";
+export type TranscriptSource = "WHISPER" | "MODAL" | "UPLOAD" | "MANUAL";
 
 export interface TranscriptEntity {
   id: string;
   recordingId: string;
   source: TranscriptSource;
   status: SubtitleStatus;
-  vttText?: string;
-  srtText?: string;
+  language?: string | null;
+  vttText?: string | null;
+  srtText?: string | null;
   isActive: boolean;
-  errorMessage?: string;
-  generatedAt?: string;
+  errorMessage?: string | null;
+  generatedAt?: string | null;
   createdAt: string;
 }

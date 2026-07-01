@@ -15,6 +15,33 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 export const transcriptsRouter = Router({ mergeParams: true });
 
+function mapTranscriptResponse(transcript: {
+  id: string;
+  recordingId: string;
+  source: string;
+  status: string;
+  language: string | null;
+  vttText: string | null;
+  errorMessage: string | null;
+  isActive: boolean;
+  createdAt: Date;
+  generatedAt: Date | null;
+}) {
+  return {
+    id: transcript.id,
+    recordingId: transcript.recordingId,
+    source: transcript.source,
+    status: transcript.status,
+    language: transcript.language,
+    vttText: transcript.vttText,
+    srtText: transcript.vttText ? vttToSrt(transcript.vttText) : null,
+    errorMessage: transcript.errorMessage,
+    isActive: transcript.isActive,
+    createdAt: transcript.createdAt.toISOString(),
+    generatedAt: transcript.generatedAt ? transcript.generatedAt.toISOString() : null,
+  };
+}
+
 transcriptsRouter.get("/", async (req, res, next) => {
   try {
     const recordingId = (req.params as any).recordingId;
@@ -42,19 +69,54 @@ transcriptsRouter.get("/", async (req, res, next) => {
       transcripts[0].isActive = true;
     }
 
-    return res.json(transcripts.map(t => ({
-      id: t.id,
-      recordingId: t.recordingId,
-      source: t.source,
-      status: t.status,
-      language: t.language,
-      vttText: t.vttText,
-      srtText: t.vttText ? vttToSrt(t.vttText) : null,
-      errorMessage: t.errorMessage,
-      isActive: t.isActive,
-      createdAt: t.createdAt.toISOString(),
-      generatedAt: t.generatedAt ? t.generatedAt.toISOString() : null,
-    })));
+    return res.json(transcripts.map(mapTranscriptResponse));
+  } catch (error) {
+    next(error);
+  }
+});
+
+transcriptsRouter.post("/", async (req, res, next) => {
+  try {
+    const auth = await requireAuth(req, res);
+    if (!auth) return;
+
+    const recordingId = (req.params as any).recordingId;
+    const { srtText } = req.body;
+
+    const recording = await prisma.recording.findUnique({ where: { id: recordingId } });
+    if (!recording) return res.status(404).json({ error: "not_found", message: "Recording not found" });
+    if (recording.uploaderId !== auth.user.id && auth.user.role !== "ADMIN") {
+      return res.status(401).json({ error: "unauthorized", message: "Not authorized" });
+    }
+
+    if (typeof srtText !== "string" || !srtText.trim()) {
+      return res.status(400).json({ error: "bad_request", message: "Transcript text is required" });
+    }
+
+    const segments = srtToSegments(srtText);
+    if (segments.length === 0) {
+      return res.status(400).json({ error: "bad_request", message: "Transcript text must contain timed subtitle cues" });
+    }
+
+    await prisma.recordingSubtitle.updateMany({
+      where: { recordingId },
+      data: { isActive: false },
+    });
+
+    const transcript = await prisma.recordingSubtitle.create({
+      data: {
+        recordingId,
+        source: "MANUAL",
+        status: "READY",
+        isActive: true,
+        vttText: segmentsToVtt(segments),
+        segments: segments as any,
+        errorMessage: null,
+        generatedAt: new Date(),
+      },
+    });
+
+    return res.status(201).json(mapTranscriptResponse(transcript));
   } catch (error) {
     next(error);
   }
@@ -87,8 +149,14 @@ transcriptsRouter.patch("/:transcriptId", async (req, res, next) => {
     
     if (typeof srtText === "string") {
       const segments = srtToSegments(srtText);
+      if (segments.length === 0) {
+        return res.status(400).json({ error: "bad_request", message: "Transcript text must contain timed subtitle cues" });
+      }
       updates.vttText = segmentsToVtt(segments);
       updates.segments = segments as any;
+      updates.status = "READY";
+      updates.errorMessage = null;
+      updates.generatedAt = new Date();
     }
     
     if (isActive === true) {
@@ -107,19 +175,7 @@ transcriptsRouter.patch("/:transcriptId", async (req, res, next) => {
       data: updates,
     });
 
-    return res.json({
-      id: updated.id,
-      recordingId: updated.recordingId,
-      source: updated.source,
-      status: updated.status,
-      language: updated.language,
-      vttText: updated.vttText,
-      srtText: updated.vttText ? vttToSrt(updated.vttText) : null,
-      errorMessage: updated.errorMessage,
-      isActive: updated.isActive,
-      createdAt: updated.createdAt.toISOString(),
-      generatedAt: updated.generatedAt ? updated.generatedAt.toISOString() : null,
-    });
+    return res.json(mapTranscriptResponse(updated));
   } catch (error) {
     next(error);
   }
@@ -173,19 +229,7 @@ transcriptsRouter.post("/upload", upload.single("file"), async (req, res, next) 
       },
     });
 
-    return res.json({
-      id: transcript.id,
-      recordingId: transcript.recordingId,
-      source: transcript.source,
-      status: transcript.status,
-      language: transcript.language,
-      vttText: transcript.vttText,
-      srtText: transcript.vttText ? vttToSrt(transcript.vttText) : null,
-      errorMessage: transcript.errorMessage,
-      isActive: transcript.isActive,
-      createdAt: transcript.createdAt.toISOString(),
-      generatedAt: transcript.generatedAt ? transcript.generatedAt.toISOString() : null,
-    });
+    return res.json(mapTranscriptResponse(transcript));
   } catch (error) {
     next(error);
   }
@@ -248,19 +292,7 @@ transcriptsRouter.post("/generate", async (req, res, next) => {
       },
     });
 
-    return res.json({
-      id: transcript.id,
-      recordingId: transcript.recordingId,
-      source: transcript.source,
-      status: transcript.status,
-      language: transcript.language,
-      vttText: transcript.vttText,
-      srtText: transcript.vttText ? vttToSrt(transcript.vttText) : null,
-      errorMessage: transcript.errorMessage,
-      isActive: transcript.isActive,
-      createdAt: transcript.createdAt.toISOString(),
-      generatedAt: transcript.generatedAt ? transcript.generatedAt.toISOString() : null,
-    });
+    return res.json(mapTranscriptResponse(transcript));
   } catch (error) {
     next(error);
   }

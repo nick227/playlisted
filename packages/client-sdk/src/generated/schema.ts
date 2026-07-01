@@ -1362,7 +1362,8 @@ export interface paths {
         /** Get all transcripts for a recording */
         get: operations["getRecordingTranscripts"];
         put?: never;
-        post?: never;
+        /** Create a manual transcript from timed SRT text */
+        post: operations["createManualTranscript"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6694,6 +6695,61 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TranscriptEntity"][];
+                };
+            };
+            /** @description Recording not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    createManualTranscript: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recordingId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    srtText: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Created transcript */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranscriptEntity"];
+                };
+            };
+            /** @description Invalid transcript text */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Recording not found */
