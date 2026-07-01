@@ -60,17 +60,19 @@ export function ChartPanelRow({
     <li>
       <div
         className={[
-          "grid w-full grid-cols-[auto_auto_1fr_auto] items-center gap-3 transition sm:grid-cols-[auto_auto_1fr_auto_auto]",
+          "flex w-full items-center gap-2 sm:gap-3",
           isPage ? "px-4 py-3" : "px-3 py-2.5",
           isActive ? "bg-white/10" : "hover:bg-white/[0.04]",
         ].join(" ")}
       >
-        <ChartRowPlayControls
-          rank={rank}
-          isActive={isActive}
-          isPlaying={isPlaying}
-          onPlay={onPlay}
-        />
+        <div className="flex shrink-0 items-center">
+          <ChartRowPlayControls
+            rank={rank}
+            isActive={isActive}
+            isPlaying={isPlaying}
+            onPlay={onPlay}
+          />
+        </div>
 
         <button
           type="button"
@@ -95,7 +97,7 @@ export function ChartPanelRow({
           )}
         </button>
 
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1 text-left">
           <ChartRowTitle title={title} href={titleHref} active={isActive} />
           <ChartRowSubtitle text={subtitle} href={subtitleHref} genre={genre} />
         </div>
