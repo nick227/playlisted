@@ -77,18 +77,6 @@ function resolveSyntheticFixture(input: {
   return null;
 }
 
-function hasUsableSubtitleTrack(input: {
-  subtitlesEnabled: boolean;
-  subtitleReady: boolean;
-  subtitleSegments: ResolvePlaybackFocusInput["subtitleSegments"];
-}): boolean {
-  return (
-    input.subtitlesEnabled &&
-    input.subtitleReady &&
-    Boolean(input.subtitleSegments?.length)
-  );
-}
-
 export function resolvePlaybackFocusFixture(input: ResolvePlaybackFocusInput): PlaybackFocusFixture {
   const {
     currentTimeMs,
@@ -105,15 +93,10 @@ export function resolvePlaybackFocusFixture(input: ResolvePlaybackFocusInput): P
     return { type: "none" };
   }
 
-  const usableSubtitles = hasUsableSubtitleTrack({
-    subtitlesEnabled,
-    subtitleReady,
-    subtitleSegments,
-  });
+  const currentTimeSec = currentTimeMs / 1000;
 
-  if (usableSubtitles) {
-    const currentTimeSec = currentTimeMs / 1000;
-    const activeSegment = findActiveSegment(subtitleSegments!, currentTimeSec);
+  if (subtitlesEnabled && subtitleReady && subtitleSegments?.length) {
+    const activeSegment = findActiveSegment(subtitleSegments, currentTimeSec);
     const text = activeSegment?.text.trim();
     if (text) {
       return {
@@ -122,8 +105,6 @@ export function resolvePlaybackFocusFixture(input: ResolvePlaybackFocusInput): P
         cueId: `real:${activeSegment?.start ?? 0}-${activeSegment?.end ?? 0}`,
       };
     }
-
-    return { type: "none" };
   }
 
   const focusLaneElapsedMs = getFocusLaneElapsedMs(

@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 import { useRadioPlayer } from "@/providers/RadioPlayerProvider";
-import { useActivePlayback } from "@/hooks/useActivePlayback";
+import { usePlaybackTransport } from "@/hooks/usePlaybackTransport";
 import { playbackFocusTiming } from "@/lib/playbackFocusTiming";
 import { usePlaybackFocusSuppressed } from "@/lib/playbackFocusSuppression";
 
@@ -41,10 +41,19 @@ export function AppShell({ children }: AppShellProps) {
   const {
     playing: radioPlaying,
     nowPlaying: radioNowPlaying,
+    audioRef: radioAudioRef,
   } = useRadioPlayer();
-  const { currentTime } = useActivePlayback();
+  const { currentTime: siteCurrentTime } = usePlaybackTransport();
   const currentTimeMsRef = useRef(0);
-  currentTimeMsRef.current = currentTime * 1000;
+
+  useEffect(() => {
+    if (radioPlaying && radioNowPlaying) {
+      const audio = radioAudioRef.current;
+      currentTimeMsRef.current = (audio?.currentTime ?? radioNowPlaying.elapsedSeconds ?? 0) * 1000;
+      return;
+    }
+    currentTimeMsRef.current = siteCurrentTime * 1000;
+  }, [radioAudioRef, radioNowPlaying, radioPlaying, siteCurrentTime]);
 
   const focusTrack = useMemo<PlaybackFocusTrack | null>(() => {
     if (radioPlaying && radioNowPlaying) {

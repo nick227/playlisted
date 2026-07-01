@@ -1,28 +1,38 @@
 import { useEffect, useState } from "react";
+
+import { getRadioSeekTime } from "@/lib/radio/radioPlayback";
+import { usePlaybackTransport } from "@/hooks/usePlaybackTransport";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 import { useRadioPlayer } from "@/providers/RadioPlayerProvider";
-import { usePlaybackTransport } from "@/hooks/usePlaybackTransport";
-import { getRadioSeekTime } from "@/lib/radio/radioPlayback";
 
-export function useActivePlayback() {
+export function useFocusLanePlayback() {
   const { currentTrack, isPlaying: sitePlaying } = useAudioPlayer();
   const { currentTime: siteCurrentTime } = usePlaybackTransport();
+  const { playing: radioPlaying, nowPlaying, audioRef } = useRadioPlayer();
 
-  const { playing: radioPlaying, nowPlaying, audioRef: radioAudioRef } = useRadioPlayer();
-
-  const isRadioActive = radioPlaying && Boolean(nowPlaying);
+  const isRadio = Boolean(radioPlaying && nowPlaying);
+  const track = isRadio ? nowPlaying : currentTrack;
+  const isPlaying = isRadio ? radioPlaying : sitePlaying;
   const [radioTime, setRadioTime] = useState(0);
 
   useEffect(() => {
-    if (!isRadioActive || !nowPlaying) return;
-    const audio = radioAudioRef.current;
-    if (!audio) return;
+    if (!isRadio || !nowPlaying) {
+      setRadioTime(0);
+      return;
+    }
+
+    const audio = audioRef.current;
+    const stationElapsed = getRadioSeekTime(nowPlaying.elapsedSeconds, nowPlaying.durationSeconds);
+
+    if (!audio) {
+      setRadioTime(stationElapsed);
+      return;
+    }
 
     const syncFromAudio = () => {
       setRadioTime(audio.currentTime);
     };
 
-    const stationElapsed = getRadioSeekTime(nowPlaying.elapsedSeconds, nowPlaying.durationSeconds);
     if (audio.currentTime < 0.5 && stationElapsed > 0.5) {
       setRadioTime(stationElapsed);
     } else {
@@ -35,16 +45,14 @@ export function useActivePlayback() {
       audio.removeEventListener("timeupdate", syncFromAudio);
       audio.removeEventListener("seeked", syncFromAudio);
     };
-  }, [isRadioActive, nowPlaying, radioAudioRef]);
+  }, [audioRef, isRadio, nowPlaying]);
 
-  const activeTrack = isRadioActive ? nowPlaying : currentTrack;
-  const isPlaying = isRadioActive ? radioPlaying : sitePlaying;
-  const currentTime = isRadioActive ? radioTime : siteCurrentTime;
+  const currentTime = isRadio ? radioTime : siteCurrentTime;
 
   return {
-    track: activeTrack,
+    track,
     isPlaying,
     currentTime,
-    isRadio: isRadioActive,
+    isRadio,
   };
 }

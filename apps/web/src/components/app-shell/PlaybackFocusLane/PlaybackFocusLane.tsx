@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 
-import { useActivePlayback } from "@/hooks/useActivePlayback";
+import { useFocusLanePlayback } from "@/hooks/useFocusLanePlayback";
 import { buildSyntheticSubtitleCues } from "@/lib/playbackFocus/buildSyntheticCues";
 import { resolvePlaybackFocusFixture } from "@/lib/playbackFocus/resolvePlaybackFocusFixture";
 import { toFocusArtist, toFocusRecording } from "@/lib/playbackFocus/toFocusRecording";
@@ -21,7 +21,7 @@ type PlaybackFocusLaneProps = {
 export function PlaybackFocusLane({ focusState }: PlaybackFocusLaneProps) {
   const { accessToken } = useAuth();
   const { subtitlesEnabled } = useSubtitleDisplay();
-  const { track, isPlaying, currentTime } = useActivePlayback();
+  const { track, isPlaying, currentTime } = useFocusLanePlayback();
   const [subtitles, setSubtitles] = useState<RecordingSubtitlesResponse | null>(null);
 
   const recording = useMemo(() => toFocusRecording(track), [track]);
