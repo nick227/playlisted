@@ -4,7 +4,7 @@ import { getAudioAnalyserConnection } from "@/features/playback-indicators/audio
 
 import { resolveAssetUrl } from "../types";
 
-async function resumePreviewAudioContext(audio: HTMLAudioElement) {
+async function resumeAnalyserContext(audio: HTMLAudioElement) {
   const connection = getAudioAnalyserConnection(audio);
   if (!connection || connection.context.state === "running") return;
   try {
@@ -14,28 +14,40 @@ async function resumePreviewAudioContext(audio: HTMLAudioElement) {
   }
 }
 
+async function playPreviewAudio(audio: HTMLAudioElement) {
+  await resumeAnalyserContext(audio);
+  await audio.play();
+}
+
 export function useSongVisualPreviewPlayback(audioUrl?: string | null) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [audioReady, setAudioReady] = useState(false);
   const [currentTimeSec, setCurrentTimeSec] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [durationSec, setDurationSec] = useState(0);
 
-  useEffect(() => {
-    const audio = new Audio();
-    audio.preload = "metadata";
+  const bindAudioElement = useCallback((audio: HTMLAudioElement | null) => {
     audioRef.current = audio;
+    setAudioReady(audio != null);
+  }, []);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
 
     const onTimeUpdate = () => setCurrentTimeSec(audio.currentTime);
-    const onPlay = () => setIsPlaying(true);
+    const onPlay = () => {
+      setIsPlaying(true);
+      void resumeAnalyserContext(audio);
+    };
     const onPause = () => setIsPlaying(false);
     const onLoadedMetadata = () => setDurationSec(audio.duration || 0);
     const onEnded = () => {
       setIsPlaying(false);
       setCurrentTimeSec(0);
     };
-
     const onPlaybackIntent = () => {
-      void resumePreviewAudioContext(audio);
+      void resumeAnalyserContext(audio);
     };
 
     audio.addEventListener("timeupdate", onTimeUpdate);
@@ -53,9 +65,8 @@ export function useSongVisualPreviewPlayback(audioUrl?: string | null) {
       audio.removeEventListener("pause", onPause);
       audio.removeEventListener("loadedmetadata", onLoadedMetadata);
       audio.removeEventListener("ended", onEnded);
-      audioRef.current = null;
     };
-  }, []);
+  }, [audioReady]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -73,14 +84,13 @@ export function useSongVisualPreviewPlayback(audioUrl?: string | null) {
     audio.src = resolveAssetUrl(audioUrl);
     audio.load();
     setCurrentTimeSec(0);
-  }, [audioUrl]);
+  }, [audioReady, audioUrl]);
 
   const togglePlayback = useCallback(() => {
     const audio = audioRef.current;
     if (!audio || !audioUrl) return;
     if (audio.paused) {
-      void resumePreviewAudioContext(audio);
-      void audio.play();
+      void playPreviewAudio(audio).catch(() => undefined);
       return;
     }
     audio.pause();
@@ -95,6 +105,7 @@ export function useSongVisualPreviewPlayback(audioUrl?: string | null) {
 
   return {
     audioRef,
+    bindAudioElement,
     currentTimeSec,
     durationSec,
     isPlaying,

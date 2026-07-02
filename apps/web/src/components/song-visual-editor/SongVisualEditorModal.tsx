@@ -181,6 +181,12 @@ function SongVisualEditorModalInner({
             event.currentTarget.value = "";
           }}
         />
+        <audio
+          ref={playback.bindAudioElement}
+          crossOrigin="anonymous"
+          preload="metadata"
+          className="hidden"
+        />
       </div>
     </div>
   );

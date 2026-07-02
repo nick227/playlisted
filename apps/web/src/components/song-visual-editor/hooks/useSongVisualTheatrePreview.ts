@@ -12,6 +12,7 @@ import { registerDynamicPreset } from "@/theatre/media/dynamicPresetStore";
 import { buildPreviewAnimationFactories } from "../preview/buildPreviewAnimationFactories";
 import { clipToVisualMediaAttachment } from "../preview/clipToVisualMediaAttachment";
 import { ensureSongVisualPreviewEngine } from "../preview/ensureSongVisualPreviewEngine";
+import { readClipAudioPulse } from "../audioPulse";
 import type { TimelineClip } from "../types";
 
 type UseSongVisualTheatrePreviewArgs = {
@@ -37,10 +38,11 @@ export function useSongVisualTheatrePreview({
   const rafRef = useRef<number | null>(null);
 
   clipRef.current = clip;
+  const needsAudioAnalysis = clip ? readClipAudioPulse(clip.attachment) : false;
 
   useEffect(() => {
     const audio = audioRef.current;
-    if (!audio || !clip) {
+    if (!audio || !needsAudioAnalysis) {
       extractorRef.current = null;
       return;
     }
@@ -48,10 +50,13 @@ export function useSongVisualTheatrePreview({
     try {
       const connection = getOrCreateAudioAnalyserConnection(audio);
       extractorRef.current = new AudioFeatureExtractor(connection.analyser);
+      if (!audio.paused) {
+        void connection.context.resume();
+      }
     } catch {
       extractorRef.current = null;
     }
-  }, [audioRef, clip]);
+  }, [audioRef, clip?.attachment.id, needsAudioAnalysis]);
 
   useEffect(() => {
     const container = containerRef.current;
