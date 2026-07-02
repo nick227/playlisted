@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import type { SongVisualAttachmentRecord, SongVisualMediaRecord } from "@/lib/visualMediaApi";
 
 import {
+  applyBeatFxPatch,
   applyClipBoundsPatch,
   reconcileAttachmentInCache,
   removeAttachmentFromCache,
@@ -78,6 +79,26 @@ describe("optimisticSongVisualCache", () => {
     expect(next?.attachments[0].playback?.timelineStartSec).toBe(12);
     expect(next?.attachments[0].playback?.timelineDurationSec).toBe(6);
     expect(next?.attachments[0].playback?.startOffsetMs).toBe(500);
+  });
+
+  it("applies beatFx optimistically", () => {
+    const queryClient = new QueryClient();
+    const recordingId = "rec-1";
+    const attachment = makeAttachment("a1", 0);
+    seedCache(queryClient, recordingId, [attachment]);
+
+    applyBeatFxPatch(queryClient, recordingId, "a1", {
+      enabled: true,
+      intensity: "subtle",
+      effects: ["scale", "brightness"],
+    });
+
+    const next = queryClient.getQueryData<SongVisualMediaRecord>(songVisualQueryKey(recordingId));
+    expect(next?.attachments[0].beatFx).toEqual({
+      enabled: true,
+      intensity: "subtle",
+      effects: ["scale", "brightness"],
+    });
   });
 
   it("restores a removed attachment on rollback", () => {

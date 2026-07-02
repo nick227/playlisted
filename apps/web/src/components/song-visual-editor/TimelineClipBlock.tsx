@@ -1,4 +1,4 @@
-import { GripVertical, Repeat, Scissors } from "lucide-react";
+import { GripVertical, Repeat, Scissors, AudioLines } from "lucide-react";
 import { useState, type PointerEvent as ReactPointerEvent } from "react";
 
 import { MediaAssetThumb } from "./MediaAssetThumb";
@@ -10,6 +10,7 @@ import {
   timeSecFromTimelinePointer,
 } from "./timelineLayout";
 import type { ClipSyncStatus } from "./hooks/optimisticSongVisualCache";
+import { readClipAudioPulse } from "./audioPulse";
 import type { TimelineClip } from "./types";
 
 type TimelineClipBlockProps = {
@@ -70,6 +71,7 @@ export function TimelineClipBlock({
   const widthPct = songDurationSec > 0 ? (renderDurationSec / songDurationSec) * 100 : 0;
   const isDragging = drag != null;
   const { attachment } = clip;
+  const audioPulse = readClipAudioPulse(attachment);
 
   function trackTime(clientX: number) {
     const rect = getTrackRect();
@@ -210,6 +212,7 @@ export function TimelineClipBlock({
           {clip.attachment.label ?? clip.attachment.mediaAsset.originalName}
         </span>
         {clip.loop ? <Repeat size={10} className="shrink-0 opacity-80" /> : null}
+        {audioPulse ? <AudioLines size={10} className="shrink-0 opacity-80" /> : null}
         {cutMode ? <Scissors size={10} className="shrink-0 opacity-80" /> : null}
       </div>
 

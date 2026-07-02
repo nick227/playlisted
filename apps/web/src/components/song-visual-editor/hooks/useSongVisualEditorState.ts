@@ -32,6 +32,7 @@ import {
 } from "../timelineLayout";
 import { layoutTimelineClips, policyFromIncludeSiteMedia, policyIncludesSiteMedia } from "../types";
 import {
+  applyBeatFxPatch,
   applyClipBoundsPatch,
   applyLoopPatch,
   cloneAttachment,
@@ -42,6 +43,11 @@ import {
   songVisualQueryKey,
   type ClipSyncStatus,
 } from "./optimisticSongVisualCache";
+import {
+  beatFxForAudioPulse,
+  defaultAssetAudioPulse,
+  readClipAudioPulse,
+} from "../audioPulse";
 
 type ClipClipboard = {
   mediaAssetId: string;
@@ -74,6 +80,7 @@ export function useSongVisualEditorState({
   const [error, setError] = useState<string | null>(null);
   const [selectedAttachmentId, setSelectedAttachmentId] = useState<string | null>(null);
   const [assetLoopPrefs, setAssetLoopPrefs] = useState<Record<string, boolean>>({});
+  const [assetAudioPulsePrefs, setAssetAudioPulsePrefs] = useState<Record<string, boolean>>({});
   const [clipboard, setClipboard] = useState<ClipClipboard | null>(null);
   const [clipSyncStatus, setClipSyncStatus] = useState<Record<string, ClipSyncStatus>>({});
 
@@ -196,6 +203,14 @@ export function useSongVisualEditorState({
     setAssetLoopPrefs((current) => ({ ...current, [assetId]: loop }));
   }
 
+  function getAssetAudioPulsePref(asset: VisualMediaAssetRecord) {
+    return assetAudioPulsePrefs[asset.id] ?? defaultAssetAudioPulse(asset.mediaType);
+  }
+
+  function setAssetAudioPulsePref(assetId: string, enabled: boolean) {
+    setAssetAudioPulsePrefs((current) => ({ ...current, [assetId]: enabled }));
+  }
+
   function nextClipOrder(source = attachments) {
     return source.reduce((max, attachment) => Math.max(max, attachment.order), -1) + 1;
   }
@@ -305,8 +320,8 @@ export function useSongVisualEditorState({
         muted: true,
         objectFit: "cover",
       },
-      beatFx: asset.mediaType === "video"
-        ? { enabled: true, intensity: "subtle", effects: ["scale", "brightness"] }
+      beatFx: asset.mediaType === "video" && getAssetAudioPulsePref(asset)
+        ? beatFxForAudioPulse(true)
         : undefined,
     });
   }
@@ -366,6 +381,33 @@ export function useSongVisualEditorState({
       commitGeneration.current.delete(attachmentId);
       setClipStatus(attachmentId, "error");
       setError(err instanceof Error ? err.message : "Could not update loop.");
+      window.setTimeout(() => setClipStatus(attachmentId, null), 2400);
+    });
+  }
+
+  function setClipAudioPulse(attachmentId: string, enabled: boolean) {
+    const attachment = getAttachmentSnapshot(attachmentId);
+    if (!attachment || attachment.mediaAsset.mediaType !== "video") return;
+
+    const beatFx = beatFxForAudioPulse(enabled, attachment.beatFx);
+    const generation = (commitGeneration.current.get(attachmentId) ?? 0) + 1;
+    commitGeneration.current.set(attachmentId, generation);
+    rememberRollback(attachment);
+    applyBeatFxPatch(queryClient, recordingId, attachmentId, beatFx);
+    setClipStatus(attachmentId, "saving");
+    setError(null);
+
+    void updateMutation.mutateAsync({
+      attachmentId,
+      body: { beatFx },
+    }).then((updated) => {
+      finishClipSync(attachmentId, generation, updated);
+    }).catch((err) => {
+      if (commitGeneration.current.get(attachmentId) !== generation) return;
+      rollbackClip(attachmentId);
+      commitGeneration.current.delete(attachmentId);
+      setClipStatus(attachmentId, "error");
+      setError(err instanceof Error ? err.message : "Could not update audio pulse.");
       window.setTimeout(() => setClipStatus(attachmentId, null), 2400);
     });
   }
@@ -558,12 +600,16 @@ export function useSongVisualEditorState({
     fileInputRef,
     getAssetLoopPref,
     setAssetLoopPref,
+    getAssetAudioPulsePref,
+    setAssetAudioPulsePref,
+    readClipAudioPulse,
     openUploadPicker,
     uploadFile,
     attachExistingAsset,
     deleteAsset: deleteAssetMutation.mutate,
     setIncludeSiteMedia,
     setClipLoop,
+    setClipAudioPulse,
     resizeClip,
     resizeClipStart,
     resetClipTrim,

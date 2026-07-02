@@ -1,6 +1,7 @@
 import type { QueryClient } from "@tanstack/react-query";
 
 import type { SongVisualAttachmentRecord, SongVisualMediaRecord } from "@/lib/visualMediaApi";
+import type { VisualMediaBeatFx } from "@/theatre/media/types";
 
 import { buildPlaybackPatch } from "../timelineLayout";
 import type { ClipBounds } from "../timelineLayout";
@@ -32,6 +33,7 @@ export function applyAttachmentPatch(
   attachmentId: string,
   patch: {
     playback?: Record<string, unknown> | null;
+    beatFx?: VisualMediaBeatFx | null;
     order?: number;
     enabled?: boolean;
   },
@@ -48,6 +50,9 @@ export function applyAttachmentPatch(
           ...(patch.enabled != null ? { enabled: patch.enabled } : {}),
           ...(patch.playback !== undefined
             ? { playback: patch.playback }
+            : {}),
+          ...(patch.beatFx !== undefined
+            ? { beatFx: patch.beatFx }
             : {}),
         };
       }),
@@ -89,6 +94,15 @@ export function applyLoopPatch(
       timelineDurationSec,
     }),
   });
+}
+
+export function applyBeatFxPatch(
+  queryClient: QueryClient,
+  recordingId: string,
+  attachmentId: string,
+  beatFx: VisualMediaBeatFx,
+) {
+  applyAttachmentPatch(queryClient, recordingId, attachmentId, { beatFx });
 }
 
 export function removeAttachmentFromCache(
