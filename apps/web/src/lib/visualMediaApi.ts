@@ -134,6 +134,33 @@ async function readVisualUploadMetadata(file: File, kind: "video" | "image"): Pr
     : readImageUploadMetadata(file);
 }
 
+export async function importVisualMediaImageFromUrl(
+  url: string,
+  originalName: string,
+  accessToken: string,
+  existingAssets: VisualMediaAssetRecord[],
+) {
+  const resolved = new URL(url, window.location.origin).href;
+  const existing = existingAssets.find(
+    (asset) =>
+      asset.mediaType === "image" &&
+      new URL(asset.url, window.location.origin).href === resolved,
+  );
+  if (existing) return existing;
+
+  const response = await fetch(resolved, { credentials: "include" });
+  if (!response.ok) {
+    throw new Error("Could not import image.");
+  }
+
+  const blob = await response.blob();
+  const extension = blob.type.includes("png") ? "png" : "jpg";
+  const file = new File([blob], `${originalName}.${extension}`, {
+    type: blob.type || "image/jpeg",
+  });
+  return uploadVisualMediaFile(file, accessToken, "image");
+}
+
 export async function listVisualMediaAssets(accessToken: string) {
   const response = await fetch(`${apiBase()}/api/v1/visual-media`, {
     headers: authHeaders(accessToken),

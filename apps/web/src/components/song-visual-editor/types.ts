@@ -15,6 +15,7 @@ export type TimelineClip = {
 
 export type SongVisualEditorRecording = FocusRecording & {
   audioUrl?: string | null;
+  publishedPlaylistId?: string | null;
 };
 
 /** Checked = built-in site/theatre visuals may appear alongside attached media. */

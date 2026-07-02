@@ -1,3 +1,4 @@
+import { Pause, Play } from "lucide-react";
 import { useMemo, useRef, type RefObject } from "react";
 
 import type { VisualMediaAssetRecord } from "@/lib/visualMediaApi";
@@ -23,6 +24,8 @@ type SongVisualEditorPreviewProps = {
   previewSubtitles: boolean;
   recording: SongVisualEditorRecording;
   audioRef: RefObject<HTMLAudioElement | null>;
+  onTogglePlayback: () => void;
+  canPlay: boolean;
 };
 
 export function SongVisualEditorPreview({
@@ -32,6 +35,8 @@ export function SongVisualEditorPreview({
   previewSubtitles,
   recording,
   audioRef,
+  onTogglePlayback,
+  canPlay,
 }: SongVisualEditorPreviewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const attachment = clip?.attachment ?? null;
@@ -50,12 +55,17 @@ export function SongVisualEditorPreview({
 
   return (
     <div className="flex justify-center">
-      <div
-        className="relative w-full max-w-xl overflow-hidden rounded-xl border border-white/10 bg-black"
+      <button
+        type="button"
+        disabled={!canPlay}
+        onClick={onTogglePlayback}
+        className="group/preview relative w-full max-w-xl overflow-hidden rounded-xl border border-white/10 bg-black text-left disabled:cursor-default"
         style={{ aspectRatio }}
+        aria-label={isPlaying ? "Pause preview" : "Play preview"}
       >
         {!media ? (
-          <div className="flex h-full w-full items-center justify-center px-6 text-center">
+          <div className="flex h-full w-full items-center justify-center px-6 text-center text-sm text-white/35">
+            Add media to preview visuals
           </div>
         ) : (
           <div ref={containerRef} className="absolute inset-0" />
@@ -66,6 +76,23 @@ export function SongVisualEditorPreview({
           recording={recording}
           currentTimeSec={currentTimeSec}
         />
+
+        {canPlay ? (
+          <div
+            className={[
+              "pointer-events-none absolute inset-0 flex items-center justify-center bg-black/25 transition-opacity",
+              isPlaying ? "opacity-0 group-hover/preview:opacity-100" : "opacity-100",
+            ].join(" ")}
+          >
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-black/55 text-white shadow-lg">
+              {isPlaying ? (
+                <Pause size={22} fill="currentColor" />
+              ) : (
+                <Play size={22} className="ml-0.5" fill="currentColor" />
+              )}
+            </span>
+          </div>
+        ) : null}
 
         {media ? (
           <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-4 py-3">
@@ -79,7 +106,7 @@ export function SongVisualEditorPreview({
             </p>
           </div>
         ) : null}
-      </div>
+      </button>
     </div>
   );
 }

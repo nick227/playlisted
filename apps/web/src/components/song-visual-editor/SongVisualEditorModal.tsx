@@ -75,14 +75,28 @@ function SongVisualEditorModalInner({
     durationSec,
   });
 
+  function handleClose() {
+    if (editor.isDirty && !window.confirm("Discard unsaved visual changes?")) return;
+    onClose();
+  }
+
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-3 backdrop-blur-sm sm:p-4">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-3 backdrop-blur-sm sm:p-4 pb-36 h-full">
       <div className="flex h-full max-h-[92vh] w-full max-w-6xl flex-col overflow-hidden rounded-xl border border-white/10 bg-[var(--color-canvas)] shadow-2xl">
-        <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-3">
-          <h2 className="truncate text-lg font-bold text-white/50 justify-center flex-1 text-center w-full">{recording.title}</h2>
+        <div className="flex shrink-0 items-center gap-2 border-b border-white/10 px-4 py-3">
+          <h2 className="min-w-0 flex-1 truncate text-center text-lg font-bold text-white/50">{recording.title}</h2>
           <button
             type="button"
-            onClick={onClose}
+            onClick={() => editor.saveChanges()}
+            disabled={!editor.isDirty || editor.isSaving}
+            className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-500/10 px-4 py-1.5 text-sm font-semibold text-emerald-100 hover:bg-emerald-500/20 disabled:opacity-40"
+          >
+            {editor.isSaving ? <Loader2 size={14} className="animate-spin" /> : null}
+            Save
+          </button>
+          <button
+            type="button"
+            onClick={handleClose}
             className="rounded-full p-2 text-white/50 hover:bg-white/10 hover:text-white"
             aria-label="Close visual editor"
           >
@@ -98,19 +112,18 @@ function SongVisualEditorModalInner({
             previewSubtitles={previewSubtitles}
             recording={recording}
             audioRef={playback.audioRef}
+            onTogglePlayback={playback.togglePlayback}
+            canPlay={Boolean(recording.audioUrl) && durationSec > 0}
           />
 
           <SongVisualEditorToolbar
-            isPlaying={playback.isPlaying}
             isBusy={editor.isBusy}
             currentTimeSec={playback.currentTimeSec}
             durationSec={durationSec}
             includeSiteMedia={editor.includeSiteMedia}
             previewSubtitles={previewSubtitles}
             hasAttachments={editor.attachments.some((attachment) => attachment.enabled)}
-            onTogglePlayback={playback.togglePlayback}
-            onUpload={editor.openUploadPicker}
-            onIncludeSiteMediaChange={(includeSiteMedia) => void editor.setIncludeSiteMedia(includeSiteMedia)}
+            onIncludeSiteMediaChange={(includeSiteMedia) => editor.setIncludeSiteMedia(includeSiteMedia)}
             onPreviewSubtitlesChange={setPreviewSubtitles}
           />
 
@@ -140,23 +153,24 @@ function SongVisualEditorModalInner({
             hasClipboard={editor.hasClipboard}
             selectedAttachmentId={editor.selectedAttachmentId}
             onSelectAttachment={editor.selectAttachment}
-            onMoveClip={(attachmentId, nextStartSec) => void editor.moveClip(attachmentId, nextStartSec)}
-            onResizeClip={(attachmentId, nextDurationSec) => void editor.resizeClip(attachmentId, nextDurationSec)}
-            onResizeClipStart={(attachmentId, nextStartSec) => void editor.resizeClipStart(attachmentId, nextStartSec)}
-            onCutClipAt={(attachmentId, cutSec) => void editor.cutClipAt(attachmentId, cutSec)}
-            onCutAtTime={(cutSec) => void editor.cutAtTime(cutSec)}
+            onMoveClip={(attachmentId, nextStartSec) => editor.moveClip(attachmentId, nextStartSec)}
+            onResizeClip={(attachmentId, nextDurationSec) => editor.resizeClip(attachmentId, nextDurationSec)}
+            onResizeClipStart={(attachmentId, nextStartSec) => editor.resizeClipStart(attachmentId, nextStartSec)}
+            onCutClipAt={(attachmentId, cutSec) => editor.cutClipAt(attachmentId, cutSec)}
+            onCutAtTime={(cutSec) => editor.cutAtTime(cutSec)}
           />
 
           <SongVisualAssetLibrary
+            recording={recording}
             timelineClips={editor.timelineClips}
             assets={editor.assets}
             isBusy={editor.isBusy}
-            onClipLoopChange={(attachmentId, loop) => void editor.setClipLoop(attachmentId, loop)}
-            onClipAudioPulseChange={(attachmentId, enabled) => void editor.setClipAudioPulse(attachmentId, enabled)}
+            accessToken={accessToken}
+            onClipLoopChange={(attachmentId, loop) => editor.setClipLoop(attachmentId, loop)}
+            onClipAudioPulseChange={(attachmentId, enabled) => editor.setClipAudioPulse(attachmentId, enabled)}
             readClipAudioPulse={editor.readClipAudioPulse}
-            onResetClipTrim={(attachmentId) => void editor.resetClipTrim(attachmentId)}
-            clipSyncStatus={editor.clipSyncStatus}
-            onAddToTimeline={(assetId) => void editor.attachExistingAsset(assetId, playback.currentTimeSec)}
+            onResetClipTrim={(attachmentId) => editor.resetClipTrim(attachmentId)}
+            onAddRow={(row) => void editor.attachLibraryRow(row, playback.currentTimeSec)}
             onRemoveClip={editor.detachAttachment}
             onSelectClip={editor.selectAttachment}
             onDeleteAsset={editor.deleteAsset}
