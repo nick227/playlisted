@@ -5,7 +5,7 @@ export type VisualMediaType = 'video' | 'image'
 
 export type BeatFxIntensity = 'subtle' | 'normal' | 'strong'
 
-export type BeatFxEffect = 'scale' | 'brightness' | 'shake' | 'blur' | 'flash'
+export type BeatFxEffect = 'scale' | 'brightness' | 'dropPunch'
 
 export type VisualMediaBeatFx = {
   enabled?: boolean

@@ -1,4 +1,12 @@
 import { AnimationContext, IAnimation } from './IAnimation'
+import {
+  computeVideoBeatFxFrame,
+  formatVideoBeatFxFilter,
+  formatVideoBeatFxTransform,
+  parseVideoBeatFx,
+  tickVideoBeatFxPulse,
+  type VideoBeatFxPulseState,
+} from './videoBeatFxUtils'
 
 export type VideoAnimationInitOptions = {
   defaultOpacity?: number
@@ -13,15 +21,22 @@ export class VideoAnimation implements IAnimation {
   protected containerRef: HTMLElement | null = null
   protected context: AnimationContext | null = null
   private initOptions: VideoAnimationInitOptions
+  private externallyDriven = false
+  private pulseState: VideoBeatFxPulseState = { beatPulse: 0, dropPulse: 0 }
 
   constructor(initOptions: VideoAnimationInitOptions = {}) {
     this.initOptions = initOptions
   }
 
+  enableExternalDriving() {
+    this.externallyDriven = true
+  }
+
   async init(container: HTMLElement, context: AnimationContext) {
     this.containerRef = container
     this.context = context
-    
+    this.pulseState = { beatPulse: 0, dropPulse: 0 }
+
     this.video = document.createElement('video')
     this.video.style.position = 'absolute'
     this.video.style.inset = '0'
@@ -29,13 +44,14 @@ export class VideoAnimation implements IAnimation {
     this.video.style.height = '100%'
     this.video.style.objectFit = 'cover'
     this.video.style.pointerEvents = 'none'
+    this.video.style.transformOrigin = 'center center'
 
     const opacity = context.options?.opacity ?? this.initOptions.defaultOpacity
     if (opacity !== undefined) this.video.style.opacity = String(opacity)
-    
+
     const blendMode = context.options?.blendMode ?? this.initOptions.defaultBlendMode
     if (blendMode) this.video.style.mixBlendMode = blendMode
-    
+
     const zIndex = context.options?.zIndex ?? this.initOptions.defaultZIndex
     if (zIndex !== undefined) this.video.style.zIndex = String(zIndex)
 
@@ -121,6 +137,38 @@ export class VideoAnimation implements IAnimation {
         this.video.parentElement.removeChild(this.video)
       }
     }
+    this.pulseState = { beatPulse: 0, dropPulse: 0 }
+  }
+
+  renderFrame(context: AnimationContext) {
+    if (!this.running || !this.externallyDriven || !this.video) return
+
+    const beatFx = parseVideoBeatFx(context.options?.beatFx)
+    if (!beatFx) return
+
+    const preset = context.options?.preset ?? 'tame'
+    const triggers = context.shared?.getTriggers?.(preset)
+    const energy = triggers?.energy ?? 0
+    const beatEdge = Boolean(context.shared?.audio?.edges?.beat)
+    const dropEdge = Boolean(context.shared?.audio?.edges?.drop)
+    const deltaMs = context.shared?.time?.delta ?? 16
+    const reducedMotion = Boolean(context.shared?.reducedMotion)
+    const lowPower = Boolean(context.shared?.lowPower)
+
+    this.pulseState = tickVideoBeatFxPulse(this.pulseState, { beatEdge, dropEdge, deltaMs })
+
+    const frame = computeVideoBeatFxFrame({
+      beatFx,
+      reducedMotion,
+      lowPower,
+      energy,
+      beatPulse: this.pulseState.beatPulse,
+      dropPulse: this.pulseState.dropPulse,
+    })
+
+    this.video.style.willChange = 'transform, filter'
+    this.video.style.transform = formatVideoBeatFxTransform(frame.scale)
+    this.video.style.filter = formatVideoBeatFxFilter(frame)
   }
 }
 
