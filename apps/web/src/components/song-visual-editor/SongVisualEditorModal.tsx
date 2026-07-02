@@ -81,7 +81,7 @@ function SongVisualEditorModalInner({
   }
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-3 backdrop-blur-sm sm:p-4 pb-36 h-full">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-3 backdrop-blur-sm sm:p-4 h-full">
       <div className="flex h-full max-h-[92vh] w-full max-w-6xl flex-col overflow-hidden rounded-xl border border-white/10 bg-[var(--color-canvas)] shadow-2xl">
         <div className="flex shrink-0 items-center gap-2 border-b border-white/10 px-4 py-3">
           <h2 className="min-w-0 flex-1 truncate text-center text-lg font-bold text-white/50">{recording.title}</h2>

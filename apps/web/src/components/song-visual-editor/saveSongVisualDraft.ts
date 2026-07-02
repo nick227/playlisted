@@ -56,6 +56,7 @@ export async function saveSongVisualDraft({
       label: attachment.label ?? attachment.mediaAsset.originalName,
       playback: attachment.playback ?? undefined,
       beatFx: attachment.beatFx ?? undefined,
+      tags: attachment.tags ?? undefined,
     });
   }
 
@@ -68,6 +69,7 @@ export async function saveSongVisualDraft({
       enabled: attachment.enabled,
       beatFx: attachment.beatFx,
       playback: attachment.playback,
+      tags: attachment.tags,
       ...(policyChanged ? { policy: draftPolicy } : {}),
     });
   }

@@ -4,8 +4,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { validateVisualUploadFile } from "@/lib/visualUploadLimits";
 import {
   deleteVisualMediaAsset,
+  ensureTheatrePlaceholderAsset,
   fetchSongVisualAttachments,
   importVisualMediaImageFromUrl,
+  importVisualMediaVideoFromUrl,
   listVisualMediaAssets,
   uploadVisualMediaFile,
   type SongVisualAttachmentRecord,
@@ -25,6 +27,8 @@ import {
   removeDraftAttachment,
 } from "../draftSongVisualAttachments";
 import { saveSongVisualDraft } from "../saveSongVisualDraft";
+import { theatrePresetTag } from "../theatreFxLibrary";
+import type { VisualLibraryRow } from "../useSongVisualLibraryItems";
 import {
   beatFxForAudioPulse,
   readClipAudioPulse,
@@ -197,14 +201,21 @@ export function useSongVisualEditorState({
     return asset;
   }
 
-  async function resolveImportUrl(url: string, label: string) {
+  async function resolveImportUrl(url: string, label: string, mediaType: "image" | "video") {
     const assets = assetsQuery.data ?? [];
-    return importVisualMediaImageFromUrl(url, label, accessToken, assets);
+    return mediaType === "video"
+      ? importVisualMediaVideoFromUrl(url, label, accessToken, assets)
+      : importVisualMediaImageFromUrl(url, label, accessToken, assets);
   }
 
   async function attachAssetToTimeline(
     asset: VisualMediaAssetRecord,
-    opts: { loop?: boolean; startSec?: number } = {},
+    opts: {
+      loop?: boolean;
+      startSec?: number;
+      label?: string;
+      tags?: string[] | null;
+    } = {},
   ) {
     const loop = opts.loop ?? defaultAssetLoop(asset);
     const requestedStart = opts.startSec ?? 0;
@@ -222,7 +233,8 @@ export function useSongVisualEditorState({
       asset,
       policy: nextPolicy,
       order: nextClipOrder(),
-      label: asset.originalName,
+      label: opts.label ?? asset.originalName,
+      tags: opts.tags ?? null,
       playback: {
         loop,
         timelineStartSec: bounds.timelineStartSec,
@@ -457,21 +469,35 @@ export function useSongVisualEditorState({
     await attachAssetToTimeline(asset, { startSec });
   }
 
-  async function attachLibraryRow(
-    row: { asset?: VisualMediaAssetRecord; importUrl?: string; label: string },
-    startSec?: number,
-  ) {
+  async function attachTheatrePreset(presetId: string, label: string, startSec?: number) {
+    const assets = assetsQuery.data ?? [];
+    const placeholder = await ensureTheatrePlaceholderAsset(accessToken, assets);
+    await queryClient.invalidateQueries({ queryKey: ["visual-media-assets"] });
+    await attachAssetToTimeline(placeholder, {
+      startSec,
+      label,
+      loop: true,
+      tags: [theatrePresetTag(presetId)],
+    });
+  }
+
+  async function attachLibraryRow(row: VisualLibraryRow, startSec?: number) {
     try {
+      if (row.theatrePresetId && !row.importUrl) {
+        await attachTheatrePreset(row.theatrePresetId, row.label, startSec);
+        return;
+      }
+
       const asset = row.asset
         ? await resolveLibraryAsset(row.asset)
         : row.importUrl
-          ? await resolveImportUrl(row.importUrl, row.label)
+          ? await resolveImportUrl(row.importUrl, row.label, row.mediaType)
           : null;
       if (!asset) return;
       if (!row.asset) {
         await queryClient.invalidateQueries({ queryKey: ["visual-media-assets"] });
       }
-      await attachAssetToTimeline(asset, { startSec });
+      await attachAssetToTimeline(asset, { startSec, label: row.label });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not add media.");
     }

@@ -36,9 +36,17 @@ export function SongVisualLibraryRow({
 
   return (
     <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-black/20 px-2 py-1.5">
-      <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md">
+      <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md bg-black/40">
         {row.thumbUrl ? (
           <img src={resolveAssetUrl(row.thumbUrl)} alt="" className="h-full w-full object-cover" />
+        ) : row.importUrl && row.mediaType === "video" ? (
+          <video
+            src={resolveAssetUrl(row.importUrl)}
+            className="h-full w-full object-cover"
+            muted
+            playsInline
+            preload="metadata"
+          />
         ) : (
           <MediaAssetThumb asset={thumbAsset} className="h-10 w-10" />
         )}

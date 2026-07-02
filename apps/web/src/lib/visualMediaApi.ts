@@ -134,6 +134,50 @@ async function readVisualUploadMetadata(file: File, kind: "video" | "image"): Pr
     : readImageUploadMetadata(file);
 }
 
+export async function importVisualMediaVideoFromUrl(
+  url: string,
+  originalName: string,
+  accessToken: string,
+  existingAssets: VisualMediaAssetRecord[],
+) {
+  const resolved = new URL(url, window.location.origin).href;
+  const existing = existingAssets.find(
+    (asset) =>
+      asset.mediaType === "video" &&
+      new URL(asset.url, window.location.origin).href === resolved,
+  );
+  if (existing) return existing;
+
+  const response = await fetch(resolved, { credentials: "include" });
+  if (!response.ok) {
+    throw new Error("Could not import video.");
+  }
+
+  const blob = await response.blob();
+  const extension = blob.type.includes("webm") ? "webm" : "mp4";
+  const file = new File([blob], `${originalName}.${extension}`, {
+    type: blob.type || "video/mp4",
+  });
+  return uploadVisualMediaFile(file, accessToken, "video");
+}
+
+const THEATRE_PLACEHOLDER_NAME = "theatre-fx-placeholder.png";
+
+export async function ensureTheatrePlaceholderAsset(
+  accessToken: string,
+  existingAssets: VisualMediaAssetRecord[],
+) {
+  const existing = existingAssets.find((asset) => asset.originalName === THEATRE_PLACEHOLDER_NAME);
+  if (existing) return existing;
+
+  const bytes = Uint8Array.from(
+    atob("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="),
+    (char) => char.charCodeAt(0),
+  );
+  const file = new File([bytes], THEATRE_PLACEHOLDER_NAME, { type: "image/png" });
+  return uploadVisualMediaFile(file, accessToken, "image");
+}
+
 export async function importVisualMediaImageFromUrl(
   url: string,
   originalName: string,
@@ -214,6 +258,7 @@ export async function attachSongVisualMedia(
     label?: string;
     beatFx?: VisualMediaBeatFx;
     playback?: Record<string, unknown>;
+    tags?: string[] | null;
   },
 ) {
   const response = await fetch(`${apiBase()}/api/v1/songs/${encodeURIComponent(recordingId)}/visual-media`, {
@@ -239,6 +284,7 @@ export async function updateSongVisualAttachment(
     enabled: boolean;
     beatFx: VisualMediaBeatFx | null;
     playback: Record<string, unknown> | null;
+    tags: string[] | null;
   }>,
 ) {
   const response = await fetch(

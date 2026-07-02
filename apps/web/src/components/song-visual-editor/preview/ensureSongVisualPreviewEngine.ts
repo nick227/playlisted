@@ -1,4 +1,5 @@
 import { registerUserMediaEngine } from "@/theatre/media/userMediaEngine";
+import "@/theatre/registry/seed";
 
 let previewEngineReady = false;
 

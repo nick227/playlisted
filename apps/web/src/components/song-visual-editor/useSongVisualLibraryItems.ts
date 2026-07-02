@@ -8,11 +8,12 @@ import type { SongVisualAttachmentRecord } from "@/lib/visualMediaApi";
 
 import { formatMegabytes } from "./timelineLayout";
 import type { SongVisualEditorRecording } from "./types";
+import { buildTheatreFxCommunityRows } from "./theatreFxLibrary";
 
 export const LIBRARY_BATCH_SIZE = 10;
 
 export type LibraryTabId = "images" | "videos" | "community";
-export type CommunityFilter = "all" | "song" | "playlists" | "songs" | "artist" | "uploads";
+export type CommunityFilter = "all" | "song" | "playlists" | "songs" | "artist" | "uploads" | "theatre";
 
 export type VisualLibraryRow = {
   id: string;
@@ -23,6 +24,7 @@ export type VisualLibraryRow = {
   rank: number;
   asset?: VisualMediaAssetRecord;
   importUrl?: string;
+  theatrePresetId?: string;
   communitySource?: Exclude<CommunityFilter, "all">;
 };
 
@@ -130,7 +132,7 @@ function buildCommunityRows(input: {
   const seenUrls = new Set<string>();
 
   function pushRow(row: VisualLibraryRow) {
-    const key = row.importUrl ?? row.thumbUrl ?? row.id;
+    const key = row.theatrePresetId ?? row.importUrl ?? row.thumbUrl ?? row.id;
     if (!key || seenUrls.has(key)) return;
     seenUrls.add(key);
     rows.push(row);
@@ -217,6 +219,10 @@ function buildCommunityRows(input: {
       rank: 6,
       communitySource: "uploads",
     });
+  }
+
+  for (const theatreRow of buildTheatreFxCommunityRows()) {
+    pushRow(theatreRow);
   }
 
   return rows.sort((left, right) => left.rank - right.rank || left.label.localeCompare(right.label));

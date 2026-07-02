@@ -46,6 +46,7 @@ const TABS: Array<{ id: LibraryTabId; label: string }> = [
 
 const COMMUNITY_FILTERS: Array<{ id: CommunityFilter; label: string }> = [
   { id: "all", label: "All" },
+  { id: "theatre", label: "Theatre FX" },
   { id: "song", label: "This song" },
   { id: "playlists", label: "Playlists" },
   { id: "songs", label: "Songs" },

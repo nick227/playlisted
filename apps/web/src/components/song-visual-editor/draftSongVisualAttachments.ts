@@ -24,6 +24,7 @@ function normalizeAttachment(attachment: SongVisualAttachmentRecord) {
     enabled: attachment.enabled,
     playback: attachment.playback,
     beatFx: attachment.beatFx,
+    tags: attachment.tags,
   };
 }
 
@@ -49,6 +50,7 @@ export function patchDraftAttachment(
     policy?: SongVisualPolicy;
     order?: number;
     enabled?: boolean;
+    tags?: string[] | null;
   },
 ) {
   return attachments.map((attachment) => {
@@ -60,6 +62,7 @@ export function patchDraftAttachment(
       ...(patch.policy != null ? { policy: patch.policy } : {}),
       ...(patch.playback !== undefined ? { playback: patch.playback } : {}),
       ...(patch.beatFx !== undefined ? { beatFx: patch.beatFx } : {}),
+      ...(patch.tags !== undefined ? { tags: patch.tags } : {}),
     };
   });
 }
@@ -102,6 +105,7 @@ export function createDraftAttachment(input: {
   label: string;
   playback: Record<string, unknown>;
   beatFx?: VisualMediaBeatFx | null;
+  tags?: string[] | null;
 }): SongVisualAttachmentRecord {
   const now = new Date().toISOString();
   return {
@@ -117,7 +121,7 @@ export function createDraftAttachment(input: {
     playback: input.playback,
     rotation: null,
     beatFx: input.beatFx ?? null,
-    tags: null,
+    tags: input.tags ?? null,
     mediaAsset: input.asset,
     createdAt: now,
     updatedAt: now,
