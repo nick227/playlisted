@@ -5,7 +5,7 @@ import type { VisualMediaAssetRecord } from "@/lib/visualMediaApi";
 import { useSongVisualTheatrePreview } from "./hooks/useSongVisualTheatrePreview";
 import { readClipAudioPulse } from "./audioPulse";
 import { SongVisualPreviewFocusLane } from "./SongVisualPreviewFocusLane";
-import type { TimelineClip } from "./types";
+import type { TimelineClip, SongVisualEditorRecording } from "./types";
 
 const DEFAULT_ASPECT = 16 / 9;
 const MAX_PREVIEW_ASPECT = 16 / 9;
@@ -21,8 +21,7 @@ type SongVisualEditorPreviewProps = {
   isPlaying: boolean;
   currentTimeSec: number;
   previewSubtitles: boolean;
-  recordingId: string;
-  recordingTitle: string;
+  recording: SongVisualEditorRecording;
   audioRef: RefObject<HTMLAudioElement | null>;
 };
 
@@ -31,8 +30,7 @@ export function SongVisualEditorPreview({
   isPlaying,
   currentTimeSec,
   previewSubtitles,
-  recordingId,
-  recordingTitle,
+  recording,
   audioRef,
 }: SongVisualEditorPreviewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -66,9 +64,8 @@ export function SongVisualEditorPreview({
 
         <SongVisualPreviewFocusLane
           enabled={previewSubtitles}
-          recording={{ id: recordingId, title: recordingTitle }}
+          recording={recording}
           currentTimeSec={currentTimeSec}
-          isPlaying={isPlaying}
         />
 
         {media ? (

@@ -1,3 +1,4 @@
+import type { FocusRecording } from "@/lib/playbackFocus/types";
 import type { SongVisualAttachmentRecord } from "@/lib/visualMediaApi";
 import type { SongVisualPolicy } from "@/theatre/media/types";
 
@@ -12,11 +13,8 @@ export type TimelineClip = {
   naturalDurationSec: number;
 };
 
-export type SongVisualEditorRecording = {
-  id: string;
-  title: string;
+export type SongVisualEditorRecording = FocusRecording & {
   audioUrl?: string | null;
-  durationSeconds?: number | null;
 };
 
 /** Checked = built-in site/theatre visuals may appear alongside attached media. */

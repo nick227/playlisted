@@ -1,6 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { getAudioAnalyserConnection } from "@/features/playback-indicators/audioAnalyser";
+
 import { resolveAssetUrl } from "../types";
+
+async function resumePreviewAudioContext(audio: HTMLAudioElement) {
+  const connection = getAudioAnalyserConnection(audio);
+  if (!connection || connection.context.state === "running") return;
+  try {
+    await connection.context.resume();
+  } catch {
+    // ignore resume failures during preview
+  }
+}
 
 export function useSongVisualPreviewPlayback(audioUrl?: string | null) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -22,8 +34,13 @@ export function useSongVisualPreviewPlayback(audioUrl?: string | null) {
       setCurrentTimeSec(0);
     };
 
+    const onPlaybackIntent = () => {
+      void resumePreviewAudioContext(audio);
+    };
+
     audio.addEventListener("timeupdate", onTimeUpdate);
     audio.addEventListener("play", onPlay);
+    audio.addEventListener("playing", onPlaybackIntent);
     audio.addEventListener("pause", onPause);
     audio.addEventListener("loadedmetadata", onLoadedMetadata);
     audio.addEventListener("ended", onEnded);
@@ -32,6 +49,7 @@ export function useSongVisualPreviewPlayback(audioUrl?: string | null) {
       audio.pause();
       audio.removeEventListener("timeupdate", onTimeUpdate);
       audio.removeEventListener("play", onPlay);
+      audio.removeEventListener("playing", onPlaybackIntent);
       audio.removeEventListener("pause", onPause);
       audio.removeEventListener("loadedmetadata", onLoadedMetadata);
       audio.removeEventListener("ended", onEnded);
@@ -61,6 +79,7 @@ export function useSongVisualPreviewPlayback(audioUrl?: string | null) {
     const audio = audioRef.current;
     if (!audio || !audioUrl) return;
     if (audio.paused) {
+      void resumePreviewAudioContext(audio);
       void audio.play();
       return;
     }

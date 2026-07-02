@@ -96,8 +96,7 @@ function SongVisualEditorModalInner({
             isPlaying={playback.isPlaying}
             currentTimeSec={playback.currentTimeSec}
             previewSubtitles={previewSubtitles}
-            recordingId={recording.id}
-            recordingTitle={recording.title}
+            recording={recording}
             audioRef={playback.audioRef}
           />
 

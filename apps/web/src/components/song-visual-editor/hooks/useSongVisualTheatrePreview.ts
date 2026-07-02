@@ -40,7 +40,7 @@ export function useSongVisualTheatrePreview({
 
   useEffect(() => {
     const audio = audioRef.current;
-    if (!audio) {
+    if (!audio || !clip) {
       extractorRef.current = null;
       return;
     }
@@ -51,7 +51,7 @@ export function useSongVisualTheatrePreview({
     } catch {
       extractorRef.current = null;
     }
-  }, [audioRef, clip?.attachment.id]);
+  }, [audioRef, clip]);
 
   useEffect(() => {
     const container = containerRef.current;
