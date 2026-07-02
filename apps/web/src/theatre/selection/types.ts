@@ -17,4 +17,6 @@ export type PickContext = {
   timelineClips?: VisualMediaTimelineClip[]
   /** Current song playhead in seconds (audio currentTime). */
   songPlayheadSec?: number
+  /** True while visual attachments for the active track are still loading. */
+  songVisualHydrationPending?: boolean
 }

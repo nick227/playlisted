@@ -2,6 +2,7 @@ import type { ScenePresetDef } from '../registry/scenePresets'
 import type { TheatreTrackContext } from '../rotation/types'
 import type { PickContext } from '../selection/types'
 import { attachmentsToScenePresets } from './attachmentToScenePreset'
+import { ensureAttachedOnlyBlankPreset } from './attachedOnlyBlankPreset'
 import { syncDynamicPresets } from './dynamicPresetStore'
 import { resolveTrackVisualMedia } from './resolveTrackVisualMedia'
 import { layoutTimelineClips, type VisualMediaTimelineClip } from './timelineClipLayout'
@@ -47,6 +48,9 @@ export function buildSongVisualPickExtras(
       ? timelineClips.map((clip) => clip.attachment)
       : resolved.attachments,
   )
+  if (resolved.policy === 'attachedOnly') {
+    ensureAttachedOnlyBlankPreset()
+  }
   syncDynamicPresets(dynamicPresets)
 
   return {

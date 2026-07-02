@@ -16,9 +16,12 @@ import type { PickContext } from '../selection/types'
 import { getOrCreateAudioAnalyserConnection, type AudioAnalyserConnection } from '@/features/playback-indicators/audioAnalyser'
 import { listPresets, type ScenePresetDef, type TheatreTransitionKind } from '../registry/scenePresets'
 import { buildSongVisualPickExtras } from '../media/buildSongVisualPool'
+import { ATTACHED_ONLY_BLANK_PRESET_ID } from '../media/attachedOnlyBlankPreset'
+import { hasAttachedOnlyTimeline, shouldSuppressSiteRotationInGap } from '../media/attachedOnlyPlayback'
 import { clearDynamicPresets } from '../media/dynamicPresetStore'
 import { isUserMediaPresetId, resolvePreset } from '../media/resolvePreset'
 import { resolveTimelinePlaybackDecision } from '../media/TimelinePlaybackDirector'
+import { resolveTimelinePresetId } from '../media/timelineClipPick'
 import { hydrateTrackVisualMedia } from '../media/hydrateTrackVisualMedia'
 import { getPackageIdForPreset } from '../registry/packageRotation'
 import { buildAnimationFrameContext, withTheatreInitContext } from './theatreFrameContext'
@@ -78,6 +81,8 @@ class TheatreController extends EventTarget {
   private rotationPreloadTriggered = false
   private trackContext: TheatreTrackContext | null = null
   private lastTimelineClipPresetId: string | null = null
+  private songVisualHydrationPending = false
+  private visualMediaHydration: Promise<void> | null = null
   private fxSelector = new FxSelector()
   private manualPresetLatest: string | null = null
   private manualPresetTimerId: number | null = null
@@ -202,12 +207,58 @@ class TheatreController extends EventTarget {
     this.lastTimelineClipPresetId = null
     clearDynamicPresets()
     this.fxSelector.clearCandidate()
-    void hydrateTrackVisualMedia(track).then(() => {
-      this.fxSelector.clearCandidate()
-      if (this.state.active && this.state.presetId && isUserMediaPresetId(this.state.presetId) && !resolvePreset(this.state.presetId)) {
-        void this.changeToTimelineFallbackPreset()
+
+    if (!track) {
+      this.songVisualHydrationPending = false
+      this.visualMediaHydration = null
+      return
+    }
+
+    this.songVisualHydrationPending = true
+    this.visualMediaHydration = hydrateTrackVisualMedia(track)
+      .then(() => {
+        this.fxSelector.clearCandidate()
+        if (!this.state.active) return
+        void this.syncAttachedOnlyPlaybackAfterHydrate()
+        if (
+          this.state.presetId &&
+          isUserMediaPresetId(this.state.presetId) &&
+          !resolvePreset(this.state.presetId) &&
+          !hasAttachedOnlyTimeline(this.buildFxPickContext())
+        ) {
+          void this.changeToTimelineFallbackPreset()
+        }
+      })
+      .finally(() => {
+        this.songVisualHydrationPending = false
+        this.visualMediaHydration = null
+      })
+  }
+
+  private async ensureVisualMediaHydrated(): Promise<void> {
+    if (this.visualMediaHydration) {
+      await this.visualMediaHydration
+    }
+  }
+
+  private async syncAttachedOnlyPlaybackAfterHydrate() {
+    if (!this.state.active || this.transitioning) return
+
+    const pickCtx = this.buildFxPickContext()
+    if (pickCtx.songVisualPolicy !== 'attachedOnly') return
+
+    const timelinePresetId = resolveTimelinePresetId(pickCtx)
+    if (timelinePresetId) {
+      if (timelinePresetId !== this.state.presetId) {
+        this.lastTimelineClipPresetId = timelinePresetId
+        await this.changePresetAuto(timelinePresetId)
       }
-    })
+      return
+    }
+
+    if ((pickCtx.timelineClips?.length ?? 0) > 0 && this.state.presetId !== ATTACHED_ONLY_BLANK_PRESET_ID) {
+      await this.changePresetAuto(ATTACHED_ONLY_BLANK_PRESET_ID)
+    }
   }
 
   private resolveActiveRotationPolicy(): ResolvedRotationPolicy {
@@ -497,6 +548,7 @@ class TheatreController extends EventTarget {
       reducedMotion: this.prefersReducedMotion(),
       activePresetId: this.state.presetId,
       allowUrlPreset,
+      songVisualHydrationPending: this.songVisualHydrationPending,
       ...buildSongVisualPickExtras(this.trackContext, {
         songDurationSec,
         songPlayheadSec: this.getSongPlayheadSec(),
@@ -525,6 +577,14 @@ class TheatreController extends EventTarget {
       return decision.suppressTimedRotation
     }
 
+    if (decision.kind === 'gapFallback' && shouldSuppressSiteRotationInGap(pickCtx)) {
+      if (this.state.presetId !== ATTACHED_ONLY_BLANK_PRESET_ID && !this.transitioning) {
+        this.lastTimelineClipPresetId = null
+        void this.changePresetAuto(ATTACHED_ONLY_BLANK_PRESET_ID)
+      }
+      return true
+    }
+
     const activeUserPresetMissing = Boolean(this.state.presetId && !resolvePreset(this.state.presetId))
     const shouldLeaveUserMedia =
       this.state.presetId &&
@@ -543,7 +603,14 @@ class TheatreController extends EventTarget {
 
   private async changeToTimelineFallbackPreset() {
     if (!this.state.active || this.transitioning) return
-    const selectedPreset = this.fxSelector.consumeNext(this.buildFxPickContext())
+    const pickCtx = this.buildFxPickContext()
+    if (pickCtx.songVisualPolicy === 'attachedOnly') {
+      if ((pickCtx.timelineClips?.length ?? 0) > 0) {
+        await this.changePresetAuto(ATTACHED_ONLY_BLANK_PRESET_ID)
+      }
+      return
+    }
+    const selectedPreset = this.fxSelector.consumeNext(pickCtx)
     if (!selectedPreset || selectedPreset.id === this.state.presetId) return
     await this.changePresetAuto(selectedPreset.id)
   }
@@ -571,6 +638,8 @@ class TheatreController extends EventTarget {
     if (!this.state.active) return
     if (this.transitioning) return
     if (!this.canRotateNow(performance.now(), LEGACY_EXTERNAL_ROTATE_MIN_MS)) return
+
+    await this.ensureVisualMediaHydrated()
 
     const pickCtx = this.buildFxPickContext()
 
@@ -1018,6 +1087,8 @@ class TheatreController extends EventTarget {
     }
     this.audioBus.reset()
     this.fxSelector.clearCandidate()
+
+    await this.ensureVisualMediaHydrated()
 
     const { ctx, policy } = this.buildFrameContextWithAudio(0)
 

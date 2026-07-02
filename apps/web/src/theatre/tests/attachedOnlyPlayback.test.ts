@@ -1,13 +1,14 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 
-import registry from '../registry'
 import { registerUserMediaEngine } from '../media/userMediaEngine'
 import {
-  attachmentToScenePreset,
-  userMediaPresetId,
-} from '../media/attachmentToScenePreset'
+  ATTACHED_ONLY_BLANK_PRESET_ID,
+  ensureAttachedOnlyBlankPreset,
+  registerAttachedOnlyBlankEngine,
+} from '../media/attachedOnlyBlankPreset'
 import { buildSongVisualPickExtras } from '../media/buildSongVisualPool'
 import { clearDynamicPresets } from '../media/dynamicPresetStore'
+import { userMediaPresetId } from '../media/attachmentToScenePreset'
 import { resolvePreset } from '../media/resolvePreset'
 import {
   registerLocalTrackVisualMedia,
@@ -39,7 +40,7 @@ vi.mock('../controller/presetQuarantine', () => ({
   isPresetQuarantined: () => false,
 }))
 
-const TEST_VERSION = 'timeline-test-v1'
+const TEST_VERSION = 'attached-only-v1'
 
 function sampleAttachment(overrides: Partial<VisualMediaAttachment> = {}): VisualMediaAttachment {
   return {
@@ -47,7 +48,13 @@ function sampleAttachment(overrides: Partial<VisualMediaAttachment> = {}): Visua
     mediaType: 'video',
     url: '/uploads/user/clip-a.mp4',
     label: 'User Clip A',
-    playback: { loop: true, timelineDurationSec: 120, muted: true, objectFit: 'cover' },
+    playback: {
+      loop: true,
+      timelineStartSec: 0,
+      timelineDurationSec: 120,
+      muted: true,
+      objectFit: 'cover',
+    },
     weight: 1,
     order: 0,
     enabled: true,
@@ -71,51 +78,26 @@ function createSelector(storage: FxBagStorage) {
     storage,
     catalogVersion: TEST_VERSION,
     getCatalogFamilies: () => TEST_FAMILIES,
-    isValidPresetId: id => id === 'alpha' || id === 'beta' || id.startsWith('user-media:'),
+    isValidPresetId: id =>
+      id === 'alpha'
+      || id === 'beta'
+      || id.startsWith('user-media:')
+      || id === ATTACHED_ONLY_BLANK_PRESET_ID,
   })
 }
 
-describe('timeline theatre playback', () => {
+describe('attachedOnly theatre playback', () => {
   beforeEach(() => {
     clearDynamicPresets()
     registerUserMediaEngine()
+    registerAttachedOnlyBlankEngine()
+    ensureAttachedOnlyBlankPreset()
   })
 
-  it('builds timeline clips from playbackJson duration and loop', () => {
-    registerLocalTrackVisualMedia('song-timeline', [sampleAttachment()])
-
+  it('attachedOnly active clip → user-media preset', () => {
+    registerLocalTrackVisualMedia('song-attached', [sampleAttachment()], 'attachedOnly')
     const extras = buildSongVisualPickExtras(
-      { trackId: 'song-timeline' },
-      { songDurationSec: 120, songPlayheadSec: 30 },
-    )
-
-    expect(extras.timelineClips).toHaveLength(1)
-    expect(extras.timelineClips[0]?.startSec).toBe(0)
-    expect(extras.timelineClips[0]?.durationSec).toBe(120)
-    expect(pickTimelineClipPresetId(extras)).toBe(userMediaPresetId('clip-a'))
-  })
-
-  it('returns null preset id in timeline gaps', () => {
-    registerLocalTrackVisualMedia('song-gap', [
-      sampleAttachment({
-        playback: { loop: false, timelineDurationSec: 60 },
-        durationMs: 60_000,
-      }),
-    ])
-
-    const extras = buildSongVisualPickExtras(
-      { trackId: 'song-gap' },
-      { songDurationSec: 120, songPlayheadSec: 90 },
-    )
-
-    expect(extras.timelineClips[0]?.durationSec).toBe(60)
-    expect(pickTimelineClipPresetId(extras)).toBeNull()
-  })
-
-  it('FxSelector picks active timeline clip at playhead instead of weighted bag', () => {
-    registerLocalTrackVisualMedia('song-playhead', [sampleAttachment({ id: 'clip-a' })], 'preferAttached')
-    const extras = buildSongVisualPickExtras(
-      { trackId: 'song-playhead' },
+      { trackId: 'song-attached' },
       { songDurationSec: 120, songPlayheadSec: 10 },
     )
 
@@ -126,25 +108,25 @@ describe('timeline theatre playback', () => {
     })
     const selector = createSelector(memory.storage)
 
-    const picked = selector.consumeNext({
+    expect(extras.songVisualPolicy).toBe('attachedOnly')
+    expect(pickTimelineClipPresetId(extras)).toBe(userMediaPresetId('clip-a'))
+    expect(selector.consumeNext({
       reducedMotion: false,
       activePresetId: null,
       ...extras,
-    })
-
-    expect(picked?.id).toBe(userMediaPresetId('clip-a'))
+    })?.id).toBe(userMediaPresetId('clip-a'))
     expect(memory.get()?.bag).toEqual(['alpha', 'beta'])
   })
 
-  it('preferAttached falls back to built-in presets in timeline gaps', () => {
-    registerLocalTrackVisualMedia('song-gap-2', [
+  it('attachedOnly gap → blank preset, no builtin', () => {
+    registerLocalTrackVisualMedia('song-gap', [
       sampleAttachment({
         playback: { loop: false, timelineStartSec: 0, timelineDurationSec: 60 },
         durationMs: 60_000,
       }),
-    ], 'preferAttached')
+    ], 'attachedOnly')
     const extras = buildSongVisualPickExtras(
-      { trackId: 'song-gap-2' },
+      { trackId: 'song-gap' },
       { songDurationSec: 120, songPlayheadSec: 90 },
     )
 
@@ -155,6 +137,55 @@ describe('timeline theatre playback', () => {
     })
     const selector = createSelector(memory.storage)
 
+    expect(pickTimelineClipPresetId(extras)).toBeNull()
+    expect(selector.consumeNext({
+      reducedMotion: false,
+      activePresetId: null,
+      ...extras,
+    })?.id).toBe(ATTACHED_ONLY_BLANK_PRESET_ID)
+    expect(memory.get()?.bag).toEqual(['alpha', 'beta'])
+    expect(resolvePreset(ATTACHED_ONLY_BLANK_PRESET_ID)).not.toBeNull()
+  })
+
+  it('attachedOnly hydration pending → no builtin', () => {
+    const memory = createMemoryStorage({
+      version: TEST_VERSION,
+      bag: ['alpha', 'beta'],
+      updatedAt: Date.now(),
+    })
+    const selector = createSelector(memory.storage)
+
+    expect(selector.consumeNext({
+      reducedMotion: false,
+      activePresetId: null,
+      songVisualPolicy: 'attachedOnly',
+      songVisualHydrationPending: true,
+      dynamicPresets: [],
+      timelineClips: [],
+    })).toBeNull()
+    expect(memory.get()?.bag).toEqual(['alpha', 'beta'])
+  })
+
+  it('preferAttached gap → builtin fallback', () => {
+    registerLocalTrackVisualMedia('song-prefer', [
+      sampleAttachment({
+        playback: { loop: false, timelineStartSec: 0, timelineDurationSec: 60 },
+        durationMs: 60_000,
+      }),
+    ], 'preferAttached')
+    const extras = buildSongVisualPickExtras(
+      { trackId: 'song-prefer' },
+      { songDurationSec: 120, songPlayheadSec: 90 },
+    )
+
+    const memory = createMemoryStorage({
+      version: TEST_VERSION,
+      bag: ['alpha', 'beta'],
+      updatedAt: Date.now(),
+    })
+    const selector = createSelector(memory.storage)
+
+    expect(extras.songVisualPolicy).toBe('preferAttached')
     expect(selector.consumeNext({
       reducedMotion: false,
       activePresetId: null,
@@ -162,7 +193,7 @@ describe('timeline theatre playback', () => {
     })?.id).toBe('alpha')
   })
 
-  it('keeps weighted rotation when song has no timeline attachments', () => {
+  it('no attachments → builtin fallback', () => {
     const memory = createMemoryStorage({
       version: TEST_VERSION,
       bag: ['alpha', 'beta'],
@@ -172,18 +203,11 @@ describe('timeline theatre playback', () => {
     const extras = buildSongVisualPickExtras(null, { songDurationSec: 120, songPlayheadSec: 0 })
 
     expect(extras.timelineClips).toEqual([])
+    expect(extras.songVisualPolicy).toBe('defaultOnly')
     expect(selector.consumeNext({
       reducedMotion: false,
       activePresetId: null,
       ...extras,
     })?.id).toBe('alpha')
-  })
-
-  it('maps timeline playback fields from API attachments', () => {
-    const preset = attachmentToScenePreset(sampleAttachment({
-      playback: { loop: false, timelineDurationSec: 45, timelineStartSec: 0 },
-    }))
-    expect(preset.layers[0]?.options?.loop).toBe(false)
-    expect(resolvePreset(preset.id)).not.toBeNull()
   })
 })

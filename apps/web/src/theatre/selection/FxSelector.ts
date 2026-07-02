@@ -1,8 +1,12 @@
 import { getPreset, type ScenePresetDef } from '../registry/scenePresets'
 import { isPresetQuarantined } from '../controller/presetQuarantine'
 import { hasDynamicPreset, syncDynamicPresets } from '../media/dynamicPresetStore'
+import {
+  blocksBuiltinSitePresets,
+  resolveTimelineAwarePresetId,
+} from '../media/attachedOnlyPlayback'
 import { resolvePreset } from '../media/resolvePreset'
-import { isTimelinePlaybackActive, resolveTimelinePresetId } from '../media/timelineClipPick'
+import { isTimelinePlaybackActive } from '../media/timelineClipPick'
 import type { SongVisualPolicy } from '../media/types'
 import {
   avoidFirstPosition,
@@ -267,6 +271,7 @@ export class FxSelector {
   }
 
   private nextBuiltinBagId(ctx: PickContext, consume: boolean): string | null {
+    if (blocksBuiltinSitePresets(ctx)) return null
     const state = this.ensureBagState(ctx)
     const exclude = new Set(buildExcludePresetIds(ctx))
     let id = state.bag.find(candidateId => !exclude.has(candidateId) && this.isValidPresetId(candidateId)) ?? null
@@ -284,9 +289,14 @@ export class FxSelector {
   }
 
   private nextBagId(ctx: PickContext, consume: boolean): string | null {
+    if (ctx.songVisualHydrationPending && ctx.songVisualPolicy === 'attachedOnly') {
+      return null
+    }
+
+    const timelineAwareId = resolveTimelineAwarePresetId(ctx)
+    if (timelineAwareId) return timelineAwareId
+
     if (isTimelinePlaybackActive(ctx)) {
-      const timelineId = resolveTimelinePresetId(ctx)
-      if (timelineId) return timelineId
       return this.nextBuiltinBagId(ctx, consume)
     }
 
