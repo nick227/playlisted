@@ -1,47 +1,77 @@
-import { getPreset } from "@/theatre/registry/scenePresets";
+import "@/theatre/registry/seed";
+
 import { SEED_VIDEO_ENTRIES } from "@/theatre/packages/createVideoPackage";
+import registry from "@/theatre/registry";
+import { listPresets, type ScenePresetDef } from "@/theatre/registry/scenePresets";
 import { THEATRE_PRESET_TAG_PREFIX } from "@/theatre/media/attachmentToScenePreset";
 
 import type { VisualLibraryRow } from "./useSongVisualLibraryItems";
 
 export { readTheatrePresetIdFromTags } from "@/theatre/media/attachmentToScenePreset";
 
+export type CommunityKind = "animations" | "videos" | "images";
+
 export function theatrePresetTag(presetId: string) {
   return `${THEATRE_PRESET_TAG_PREFIX}${presetId}`;
 }
 
-const FEATURED_CANVAS_PRESET_IDS = ["cheechChongFarm"];
+const VIDEO_URL_BY_PRESET_ID = new Map(
+  SEED_VIDEO_ENTRIES.map((entry) => [entry.id, entry.videoUrl]),
+);
 
-export function buildTheatreFxCommunityRows(): VisualLibraryRow[] {
-  const rows: VisualLibraryRow[] = [];
+function presetPrimaryKind(preset: ScenePresetDef): CommunityKind | null {
+  const animationId = preset.layers[0]?.animationId;
+  if (!animationId) return null;
 
-  for (const presetId of FEATURED_CANVAS_PRESET_IDS) {
-    const preset = getPreset(presetId);
-    if (!preset) continue;
-    rows.push({
-      id: `theatre-preset-${presetId}`,
-      label: preset.label,
-      detail: "Theatre animation",
-      thumbUrl: null,
-      mediaType: "image",
-      theatrePresetId: presetId,
-      rank: -2,
-      communitySource: "theatre",
-    });
+  const entry = registry.get(animationId);
+  if (!entry) return null;
+
+  if (entry.visualType === "video") return "videos";
+  if (entry.visualType === "image") return "images";
+  if (entry.visualType === "canvas" || entry.visualType === "hybrid") return "animations";
+  return null;
+}
+
+function isSelectableCommunityPreset(preset: ScenePresetDef) {
+  if (preset.tags?.includes("internal")) return false;
+  if (preset.tags?.includes("user-media")) return false;
+  if (preset.id === "quietPulse") return false;
+  return presetPrimaryKind(preset) != null;
+}
+
+function presetToRow(preset: ScenePresetDef, kind: CommunityKind, rank: number): VisualLibraryRow {
+  const previewUrl = kind === "videos" ? VIDEO_URL_BY_PRESET_ID.get(preset.id) ?? null : null;
+  const detail =
+    kind === "animations" ? "Theatre animation" : kind === "videos" ? "Theatre video" : "Theatre image";
+
+  return {
+    id: `community-${kind}-${preset.id}`,
+    label: preset.label,
+    detail,
+    thumbUrl: previewUrl,
+    mediaType: kind === "videos" ? "video" : "image",
+    theatrePresetId: preset.id,
+    rank,
+    communityKind: kind,
+  };
+}
+
+export function buildCommunityLibraryRows(): Record<CommunityKind, VisualLibraryRow[]> {
+  const buckets: Record<CommunityKind, VisualLibraryRow[]> = {
+    animations: [],
+    videos: [],
+    images: [],
+  };
+
+  const presets = listPresets()
+    .filter(isSelectableCommunityPreset)
+    .sort((left, right) => left.label.localeCompare(right.label));
+
+  for (const [index, preset] of presets.entries()) {
+    const kind = presetPrimaryKind(preset);
+    if (!kind) continue;
+    buckets[kind].push(presetToRow(preset, kind, index));
   }
 
-  for (const [index, video] of SEED_VIDEO_ENTRIES.entries()) {
-    rows.push({
-      id: `theatre-video-${video.id}`,
-      label: video.label,
-      detail: "Theatre video",
-      thumbUrl: null,
-      mediaType: "video",
-      importUrl: video.videoUrl,
-      rank: 100 + index,
-      communitySource: "theatre",
-    });
-  }
-
-  return rows;
+  return buckets;
 }

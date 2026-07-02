@@ -483,7 +483,7 @@ export function useSongVisualEditorState({
 
   async function attachLibraryRow(row: VisualLibraryRow, startSec?: number) {
     try {
-      if (row.theatrePresetId && !row.importUrl) {
+      if (row.theatrePresetId) {
         await attachTheatrePreset(row.theatrePresetId, row.label, startSec);
         return;
       }

@@ -104,7 +104,7 @@ function SongVisualEditorModalInner({
           </button>
         </div>
 
-        <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-4">
+        <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-4 pb-[var(--spacing-player-safe-mobile)] md:pb-[var(--spacing-player)]">
           <SongVisualEditorPreview
             clip={activeClip}
             isPlaying={playback.isPlaying}
@@ -161,11 +161,9 @@ function SongVisualEditorModalInner({
           />
 
           <SongVisualAssetLibrary
-            recording={recording}
             timelineClips={editor.timelineClips}
             assets={editor.assets}
             isBusy={editor.isBusy}
-            accessToken={accessToken}
             onClipLoopChange={(attachmentId, loop) => editor.setClipLoop(attachmentId, loop)}
             onClipAudioPulseChange={(attachmentId, enabled) => editor.setClipAudioPulse(attachmentId, enabled)}
             readClipAudioPulse={editor.readClipAudioPulse}

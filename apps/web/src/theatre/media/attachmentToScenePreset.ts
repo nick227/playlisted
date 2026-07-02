@@ -1,5 +1,6 @@
 import type { ScenePresetDef } from '../registry/scenePresets'
 import { ROTATION_HOLD_DEFAULT } from '../registry/presetTuning'
+import registry from '../registry'
 import { getNaturalDurationSec, readClipPlayback } from './timelineClipLayout'
 import type { VisualMediaAttachment } from './types'
 import { resolvePreset } from './resolvePreset'
@@ -27,7 +28,8 @@ export function attachmentToScenePreset(attachment: VisualMediaAttachment): Scen
   const theatrePreset = theatrePresetForAttachment(attachment)
   if (theatrePreset) {
     const playback = readClipPlayback(attachment)
-    const isVideo = attachment.mediaType === 'video'
+    const primaryAnimation = registry.get(theatrePreset.layers[0]?.animationId ?? '')
+    const isVideo = primaryAnimation?.visualType === 'video' || attachment.mediaType === 'video'
     const timelineStartSec = playback.timelineStartSec
     const timelineSync = isVideo && typeof timelineStartSec === 'number'
       ? {

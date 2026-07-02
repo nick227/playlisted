@@ -1,26 +1,22 @@
-import { Loader2, Upload } from "lucide-react";
+import { Upload } from "lucide-react";
 import { useState, type DragEvent } from "react";
 
-import { useAuth } from "@/providers/AuthProvider";
 import { VISUAL_UPLOAD_MAX_BYTES } from "@/lib/visualUploadLimits";
 
 import { SongVisualLibraryRow } from "./SongVisualLibraryRow";
 import { MediaAssetThumb } from "./MediaAssetThumb";
 import { formatMediaOffsetMs, formatMegabytes, readClipStartOffsetMs } from "./timelineLayout";
 import type { TimelineClip } from "./types";
-import type { SongVisualEditorRecording } from "./types";
 import type { VisualMediaAssetRecord } from "@/lib/visualMediaApi";
 import {
-  filterCommunityRows,
   LIBRARY_BATCH_SIZE,
   useSongVisualLibraryItems,
-  type CommunityFilter,
+  type CommunityKind,
   type LibraryTabId,
   type VisualLibraryRow,
 } from "./useSongVisualLibraryItems";
 
 type SongVisualAssetLibraryProps = {
-  recording: SongVisualEditorRecording;
   timelineClips: TimelineClip[];
   assets: VisualMediaAssetRecord[];
   isBusy: boolean;
@@ -35,7 +31,6 @@ type SongVisualAssetLibraryProps = {
   onUpload: () => void;
   onUploadFile: (file: File) => void;
   selectedAttachmentId: string | null;
-  accessToken: string;
 };
 
 const TABS: Array<{ id: LibraryTabId; label: string }> = [
@@ -44,18 +39,26 @@ const TABS: Array<{ id: LibraryTabId; label: string }> = [
   { id: "community", label: "Community" },
 ];
 
-const COMMUNITY_FILTERS: Array<{ id: CommunityFilter; label: string }> = [
-  { id: "all", label: "All" },
-  { id: "theatre", label: "Theatre FX" },
-  { id: "song", label: "This song" },
-  { id: "playlists", label: "Playlists" },
-  { id: "songs", label: "Songs" },
-  { id: "artist", label: "Artist" },
-  { id: "uploads", label: "Uploads" },
+const COMMUNITY_KINDS: Array<{ id: CommunityKind; label: string }> = [
+  { id: "animations", label: "Animations" },
+  { id: "videos", label: "Videos" },
+  { id: "images", label: "Images" },
 ];
 
+type VisibleCountKey =
+  | "images"
+  | "videos"
+  | "communityAnimations"
+  | "communityVideos"
+  | "communityImages";
+
+function communityCountKey(kind: CommunityKind): VisibleCountKey {
+  if (kind === "animations") return "communityAnimations";
+  if (kind === "videos") return "communityVideos";
+  return "communityImages";
+}
+
 export function SongVisualAssetLibrary({
-  recording,
   timelineClips,
   assets,
   isBusy,
@@ -70,34 +73,42 @@ export function SongVisualAssetLibrary({
   onUpload,
   onUploadFile,
   selectedAttachmentId,
-  accessToken,
 }: SongVisualAssetLibraryProps) {
-  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<LibraryTabId>("images");
-  const [communityFilter, setCommunityFilter] = useState<CommunityFilter>("all");
-  const [visibleCounts, setVisibleCounts] = useState<Record<LibraryTabId, number>>({
+  const [communityKind, setCommunityKind] = useState<CommunityKind>("animations");
+  const [visibleCounts, setVisibleCounts] = useState<Record<VisibleCountKey, number>>({
     images: LIBRARY_BATCH_SIZE,
     videos: LIBRARY_BATCH_SIZE,
-    community: LIBRARY_BATCH_SIZE,
+    communityAnimations: LIBRARY_BATCH_SIZE,
+    communityVideos: LIBRARY_BATCH_SIZE,
+    communityImages: LIBRARY_BATCH_SIZE,
   });
   const [isDragOver, setIsDragOver] = useState(false);
 
-  const { imageRows, videoRows, communityRows, isCommunityLoading } = useSongVisualLibraryItems({
-    recording,
-    assets,
-    attachments: timelineClips.map((clip) => clip.attachment),
-    accessToken,
-    user,
-  });
+  const { imageRows, videoRows, communityAnimations, communityVideos, communityImages } =
+    useSongVisualLibraryItems({
+      assets,
+      attachments: timelineClips.map((clip) => clip.attachment),
+    });
 
-  const tabRows: Record<LibraryTabId, VisualLibraryRow[]> = {
-    images: imageRows,
-    videos: videoRows,
-    community: filterCommunityRows(communityRows, communityFilter),
+  const communityByKind: Record<CommunityKind, VisualLibraryRow[]> = {
+    animations: communityAnimations,
+    videos: communityVideos,
+    images: communityImages,
   };
 
-  const visibleRows = tabRows[activeTab].slice(0, visibleCounts[activeTab]);
-  const hasMore = tabRows[activeTab].length > visibleCounts[activeTab];
+  const activeCountKey: VisibleCountKey =
+    activeTab === "community" ? communityCountKey(communityKind) : activeTab;
+
+  const activeRows =
+    activeTab === "community"
+      ? communityByKind[communityKind]
+      : activeTab === "images"
+        ? imageRows
+        : videoRows;
+
+  const visibleRows = activeRows.slice(0, visibleCounts[activeCountKey]);
+  const hasMore = activeRows.length > visibleCounts[activeCountKey];
 
   function handleDrop(event: DragEvent<HTMLDivElement>) {
     event.preventDefault();
@@ -112,7 +123,7 @@ export function SongVisualAssetLibrary({
   function loadMore() {
     setVisibleCounts((current) => ({
       ...current,
-      [activeTab]: current[activeTab] + LIBRARY_BATCH_SIZE,
+      [activeCountKey]: current[activeCountKey] + LIBRARY_BATCH_SIZE,
     }));
   }
 
@@ -245,32 +256,31 @@ export function SongVisualAssetLibrary({
 
         {activeTab === "community" ? (
           <div className="mb-3 flex flex-wrap gap-1.5">
-            {COMMUNITY_FILTERS.map((filter) => (
+            {COMMUNITY_KINDS.map((kind) => (
               <button
-                key={filter.id}
+                key={kind.id}
                 type="button"
                 onClick={() => {
-                  setCommunityFilter(filter.id);
-                  setVisibleCounts((current) => ({ ...current, community: LIBRARY_BATCH_SIZE }));
+                  setCommunityKind(kind.id);
+                  setVisibleCounts((current) => ({
+                    ...current,
+                    [communityCountKey(kind.id)]: LIBRARY_BATCH_SIZE,
+                  }));
                 }}
                 className={[
                   "rounded-full border px-2.5 py-0.5 text-[10px] font-medium transition",
-                  communityFilter === filter.id
+                  communityKind === kind.id
                     ? "border-emerald-400/40 bg-emerald-500/10 text-emerald-100"
                     : "border-white/10 text-white/45 hover:border-white/20 hover:text-white/70",
                 ].join(" ")}
               >
-                {filter.label}
+                {kind.label}
               </button>
             ))}
           </div>
         ) : null}
 
-        {activeTab === "community" && isCommunityLoading ? (
-          <div className="flex items-center justify-center py-10 text-white/40">
-            <Loader2 size={18} className="animate-spin" />
-          </div>
-        ) : visibleRows.length === 0 ? (
+        {visibleRows.length === 0 ? (
           <button
             type="button"
             disabled={isBusy}
@@ -281,7 +291,7 @@ export function SongVisualAssetLibrary({
               <Upload size={18} />
             </div>
             <p className="text-sm text-white/60">
-              {activeTab === "community" ? "No community art found yet" : "Click or drop videos and images here"}
+              {activeTab === "community" ? "No theatre items in this category" : "Click or drop videos and images here"}
             </p>
             {activeTab !== "community" ? (
               <p className="text-xs text-white/35">
