@@ -275,13 +275,13 @@ function GenreCard({ genre }: { genre: LibraryGenre }) {
 
         <div className="w-full">
           {isLoading ? (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6 xl:gap-4">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {Array.from({ length: 6 }).map((_, i) => (
                 <Skeleton key={i} className="aspect-square rounded-lg" />
               ))}
             </div>
           ) : previewSongs.length > 0 ? (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6 xl:gap-4">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {previewSongs.slice(0, 6).map((song) => (
                 <GenreSongThumb key={song.id} song={song} queue={previewSongs} />
               ))}
