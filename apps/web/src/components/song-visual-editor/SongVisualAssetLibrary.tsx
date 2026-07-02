@@ -3,9 +3,10 @@ import { useState, type DragEvent } from "react";
 
 import { VISUAL_UPLOAD_MAX_BYTES } from "@/lib/visualUploadLimits";
 
-import { SongVisualLibraryRow } from "./SongVisualLibraryRow";
+import { EditorSection } from "./EditorSection";
+import { SongVisualLibraryCard } from "./SongVisualLibraryCard";
 import { MediaAssetThumb } from "./MediaAssetThumb";
-import { formatMediaOffsetMs, formatMegabytes, readClipStartOffsetMs } from "./timelineLayout";
+import { formatMegabytes, readClipStartOffsetMs } from "./timelineLayout";
 import type { TimelineClip } from "./types";
 import type { VisualMediaAssetRecord } from "@/lib/visualMediaApi";
 import {
@@ -13,6 +14,7 @@ import {
   useSongVisualLibraryItems,
   type CommunityKind,
   type LibraryTabId,
+  type MineMediaKind,
   type VisualLibraryRow,
 } from "./useSongVisualLibraryItems";
 
@@ -33,10 +35,14 @@ type SongVisualAssetLibraryProps = {
   selectedAttachmentId: string | null;
 };
 
-const TABS: Array<{ id: LibraryTabId; label: string }> = [
-  { id: "images", label: "Images" },
-  { id: "videos", label: "Videos" },
+const PRIMARY_TABS: Array<{ id: LibraryTabId; label: string }> = [
+  { id: "mine", label: "Mine" },
   { id: "community", label: "Community" },
+];
+
+const MINE_KINDS: Array<{ id: MineMediaKind; label: string }> = [
+  { id: "image", label: "Images" },
+  { id: "video", label: "Videos" },
 ];
 
 const COMMUNITY_KINDS: Array<{ id: CommunityKind; label: string }> = [
@@ -46,8 +52,8 @@ const COMMUNITY_KINDS: Array<{ id: CommunityKind; label: string }> = [
 ];
 
 type VisibleCountKey =
-  | "images"
-  | "videos"
+  | "mineImages"
+  | "mineVideos"
   | "communityAnimations"
   | "communityVideos"
   | "communityImages";
@@ -56,6 +62,71 @@ function communityCountKey(kind: CommunityKind): VisibleCountKey {
   if (kind === "animations") return "communityAnimations";
   if (kind === "videos") return "communityVideos";
   return "communityImages";
+}
+
+function PrimaryTabs({
+  activeTab,
+  onChange,
+}: {
+  activeTab: LibraryTabId;
+  onChange: (tab: LibraryTabId) => void;
+}) {
+  return (
+    <div className="inline-flex rounded-lg border border-white/10 bg-black/30 p-0.5">
+      {PRIMARY_TABS.map((tab) => (
+        <button
+          key={tab.id}
+          type="button"
+          onClick={() => onChange(tab.id)}
+          className={[
+            "rounded-md px-3 py-1 text-[11px] font-semibold transition",
+            activeTab === tab.id
+              ? "bg-white/15 text-white shadow-sm"
+              : "text-white/45 hover:text-white/70",
+          ].join(" ")}
+        >
+          {tab.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function FilterChips<T extends string>({
+  items,
+  activeId,
+  onChange,
+  accent,
+}: {
+  items: Array<{ id: T; label: string }>;
+  activeId: T;
+  onChange: (id: T) => void;
+  accent: "violet" | "cyan";
+}) {
+  const activeClass =
+    accent === "violet"
+      ? "border-violet-400/40 bg-violet-500/10 text-violet-100"
+      : "border-cyan-400/40 bg-cyan-500/10 text-cyan-100";
+
+  return (
+    <div className="flex min-h-[1.75rem] flex-wrap gap-1.5">
+      {items.map((item) => (
+        <button
+          key={item.id}
+          type="button"
+          onClick={() => onChange(item.id)}
+          className={[
+            "rounded-full border px-2.5 py-0.5 text-[10px] font-medium transition",
+            activeId === item.id
+              ? activeClass
+              : "border-white/10 text-white/45 hover:border-white/20 hover:text-white/70",
+          ].join(" ")}
+        >
+          {item.label}
+        </button>
+      ))}
+    </div>
+  );
 }
 
 export function SongVisualAssetLibrary({
@@ -74,11 +145,12 @@ export function SongVisualAssetLibrary({
   onUploadFile,
   selectedAttachmentId,
 }: SongVisualAssetLibraryProps) {
-  const [activeTab, setActiveTab] = useState<LibraryTabId>("images");
+  const [activeTab, setActiveTab] = useState<LibraryTabId>("mine");
+  const [mineKind, setMineKind] = useState<MineMediaKind>("image");
   const [communityKind, setCommunityKind] = useState<CommunityKind>("animations");
   const [visibleCounts, setVisibleCounts] = useState<Record<VisibleCountKey, number>>({
-    images: LIBRARY_BATCH_SIZE,
-    videos: LIBRARY_BATCH_SIZE,
+    mineImages: LIBRARY_BATCH_SIZE,
+    mineVideos: LIBRARY_BATCH_SIZE,
     communityAnimations: LIBRARY_BATCH_SIZE,
     communityVideos: LIBRARY_BATCH_SIZE,
     communityImages: LIBRARY_BATCH_SIZE,
@@ -98,12 +170,16 @@ export function SongVisualAssetLibrary({
   };
 
   const activeCountKey: VisibleCountKey =
-    activeTab === "community" ? communityCountKey(communityKind) : activeTab;
+    activeTab === "community"
+      ? communityCountKey(communityKind)
+      : mineKind === "image"
+        ? "mineImages"
+        : "mineVideos";
 
   const activeRows =
     activeTab === "community"
       ? communityByKind[communityKind]
-      : activeTab === "images"
+      : mineKind === "image"
         ? imageRows
         : videoRows;
 
@@ -113,7 +189,7 @@ export function SongVisualAssetLibrary({
   function handleDrop(event: DragEvent<HTMLDivElement>) {
     event.preventDefault();
     setIsDragOver(false);
-    if (isBusy) return;
+    if (isBusy || activeTab !== "mine") return;
     const file = Array.from(event.dataTransfer.files).find(
       (candidate) => candidate.type.startsWith("video/") || candidate.type.startsWith("image/"),
     );
@@ -127,17 +203,18 @@ export function SongVisualAssetLibrary({
     }));
   }
 
+  const sortedClips = [...timelineClips].sort((left, right) => left.startSec - right.startSec);
+
   return (
-    <div className="space-y-4">
-      <section className="space-y-2">
-        <h3 className="text-xs uppercase tracking-wide text-white/40">Active</h3>
-        {timelineClips.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-white/10 bg-black/20 px-3 py-4 text-center text-xs text-white/35">
-            Add clips from the library below or upload new media.
+    <div className="space-y-3">
+      <EditorSection title="Active">
+        {sortedClips.length === 0 ? (
+          <p className="rounded-lg border border-dashed border-white/10 bg-black/30 px-3 py-6 text-center text-xs text-white/35">
+            Add clips from your library below.
           </p>
         ) : (
-          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-            {[...timelineClips].sort((left, right) => left.startSec - right.startSec).map((clip) => {
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+            {sortedClips.map((clip) => {
               const { attachment } = clip;
               const selected = attachment.id === selectedAttachmentId;
               const startOffsetMs = readClipStartOffsetMs(attachment);
@@ -161,15 +238,6 @@ export function SongVisualAssetLibrary({
                   <div className="space-y-1.5 p-2">
                     <p className="truncate text-xs font-medium text-white">
                       {attachment.label ?? attachment.mediaAsset.originalName}
-                    </p>
-                    <p className="text-[10px] text-white/40">
-                      {clip.startSec.toFixed(1)}s · {clip.durationSec.toFixed(1)}s
-                    </p>
-                    <p className={[
-                      "text-[10px]",
-                      selected ? "text-amber-200/90" : "text-white/35",
-                    ].join(" ")}>
-                      Cut-in: {formatMediaOffsetMs(startOffsetMs)}
                     </p>
                     <div className="flex flex-wrap items-center gap-1">
                       <label className="inline-flex min-w-[3.75rem] flex-1 items-center gap-1 rounded-md border border-white/10 px-1.5 py-1 text-[10px] text-white/80">
@@ -222,125 +290,107 @@ export function SongVisualAssetLibrary({
             })}
           </div>
         )}
-      </section>
+      </EditorSection>
 
-      <section
-        onDragOver={(event) => {
-          event.preventDefault();
-          if (!isBusy) setIsDragOver(true);
-        }}
-        onDragLeave={() => setIsDragOver(false)}
-        onDrop={handleDrop}
-        className={[
-          "rounded-xl border bg-black/20 p-3 transition-colors",
-          isDragOver ? "border-emerald-400/50 bg-emerald-500/10" : "border-white/10",
-        ].join(" ")}
+      <EditorSection
+        title="Library"
+        action={<PrimaryTabs activeTab={activeTab} onChange={setActiveTab} />}
       >
-        <div className="mb-3 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1">
-            {TABS.map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id)}
-                className={[
-                  "rounded-full px-3 py-1 text-[11px] font-semibold transition",
-                  activeTab === tab.id
-                    ? "bg-white/15 text-white"
-                    : "text-white/45 hover:bg-white/5 hover:text-white/70",
-                ].join(" ")}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-          <button
-            type="button"
-            disabled={isBusy}
-            onClick={onUpload}
-            className="inline-flex items-center gap-1 rounded-full border border-white/15 px-3 py-1 text-[11px] font-semibold text-white hover:bg-white/10 disabled:opacity-40"
-          >
-            <Upload size={12} />
-            Upload
-          </button>
+        <div className="mb-3 space-y-2">
+          {activeTab === "mine" ? (
+            <FilterChips items={MINE_KINDS} activeId={mineKind} onChange={setMineKind} accent="violet" />
+          ) : (
+            <FilterChips
+              items={COMMUNITY_KINDS}
+              activeId={communityKind}
+              onChange={setCommunityKind}
+              accent="cyan"
+            />
+          )}
         </div>
 
-        {activeTab === "community" ? (
-          <div className="mb-3 flex flex-wrap gap-1.5">
-            {COMMUNITY_KINDS.map((kind) => (
+        <div
+          onDragOver={(event) => {
+            if (activeTab !== "mine") return;
+            event.preventDefault();
+            if (!isBusy) setIsDragOver(true);
+          }}
+          onDragLeave={() => setIsDragOver(false)}
+          onDrop={handleDrop}
+          className={[
+            "min-h-[11rem] rounded-lg border bg-black/30 p-2 transition-colors",
+            isDragOver ? "border-emerald-400/50 bg-emerald-500/10" : "border-white/10",
+          ].join(" ")}
+        >
+          {activeTab === "mine" ? (
+            <div className="mb-2 flex justify-end">
               <button
-                key={kind.id}
                 type="button"
-                onClick={() => {
-                  setCommunityKind(kind.id);
-                  setVisibleCounts((current) => ({
-                    ...current,
-                    [communityCountKey(kind.id)]: LIBRARY_BATCH_SIZE,
-                  }));
-                }}
-                className={[
-                  "rounded-full border px-2.5 py-0.5 text-[10px] font-medium transition",
-                  communityKind === kind.id
-                    ? "border-emerald-400/40 bg-emerald-500/10 text-emerald-100"
-                    : "border-white/10 text-white/45 hover:border-white/20 hover:text-white/70",
-                ].join(" ")}
-              >
-                {kind.label}
-              </button>
-            ))}
-          </div>
-        ) : null}
-
-        {visibleRows.length === 0 ? (
-          <button
-            type="button"
-            disabled={isBusy}
-            onClick={onUpload}
-            className="flex w-full flex-col items-center gap-2 py-8 text-center disabled:opacity-40"
-          >
-            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/50">
-              <Upload size={18} />
-            </div>
-            <p className="text-sm text-white/60">
-              {activeTab === "community" ? "No theatre items in this category" : "Click or drop videos and images here"}
-            </p>
-            {activeTab !== "community" ? (
-              <p className="text-xs text-white/35">
-                Up to {formatMegabytes(VISUAL_UPLOAD_MAX_BYTES.video)} video · {formatMegabytes(VISUAL_UPLOAD_MAX_BYTES.image)} image
-              </p>
-            ) : null}
-          </button>
-        ) : (
-          <div className="space-y-1.5">
-            {visibleRows.map((row) => (
-              <SongVisualLibraryRow
-                key={row.id}
-                row={row}
                 disabled={isBusy}
-                onAction={() => onAddRow(row)}
-                onDelete={
-                  row.asset && activeTab !== "community"
-                    ? () => {
-                        if (window.confirm(`Delete "${row.label}" permanently?`)) {
-                          onDeleteAsset(row.asset!.id);
-                        }
-                      }
-                    : undefined
-                }
-              />
-            ))}
-            {hasMore ? (
+                onClick={onUpload}
+                className="inline-flex items-center gap-1 rounded-md border border-white/15 bg-white/5 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-white/10 disabled:opacity-40"
+              >
+                <Upload size={12} />
+                Upload to mine
+              </button>
+            </div>
+          ) : null}
+
+          {visibleRows.length === 0 ? (
+            activeTab === "mine" ? (
               <button
                 type="button"
-                onClick={loadMore}
-                className="w-full rounded-lg border border-white/10 py-2 text-xs font-medium text-white/60 hover:bg-white/5 hover:text-white"
+                disabled={isBusy}
+                onClick={onUpload}
+                className="flex w-full flex-col items-center gap-2 py-8 text-center disabled:opacity-40"
               >
-                Load more
+                <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/50">
+                  <Upload size={18} />
+                </div>
+                <p className="text-sm text-white/60">Click or drop {mineKind === "video" ? "videos" : "images"} here</p>
+                <p className="text-xs text-white/35">
+                  Up to {formatMegabytes(VISUAL_UPLOAD_MAX_BYTES.video)} video ·{" "}
+                  {formatMegabytes(VISUAL_UPLOAD_MAX_BYTES.image)} image
+                </p>
               </button>
-            ) : null}
-          </div>
-        )}
-      </section>
+            ) : (
+              <p className="py-8 text-center text-xs text-white/35">
+                No community {communityKind} available.
+              </p>
+            )
+          ) : (
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+              {visibleRows.map((row) => (
+                <SongVisualLibraryCard
+                  key={row.id}
+                  row={row}
+                  disabled={isBusy}
+                  onAction={() => onAddRow(row)}
+                  onDelete={
+                    row.asset && activeTab === "mine"
+                      ? () => {
+                          if (window.confirm(`Delete "${row.label}" permanently?`)) {
+                            onDeleteAsset(row.asset!.id);
+                          }
+                        }
+                      : undefined
+                  }
+                />
+              ))}
+            </div>
+          )}
+
+          {hasMore ? (
+            <button
+              type="button"
+              onClick={loadMore}
+              className="mt-2 w-full rounded-lg border border-white/10 py-2 text-xs font-medium text-white/60 hover:bg-white/5 hover:text-white"
+            >
+              Load more
+            </button>
+          ) : null}
+        </div>
+      </EditorSection>
     </div>
   );
 }

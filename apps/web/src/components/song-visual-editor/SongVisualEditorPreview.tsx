@@ -68,7 +68,7 @@ export function SongVisualEditorPreview({
         type="button"
         disabled={!canPlay}
         onClick={onTogglePlayback}
-        className="group/preview relative w-full max-w-xl overflow-hidden rounded-xl border border-white/10 bg-black text-left disabled:cursor-default"
+        className="group/preview relative w-full max-w-2xl overflow-hidden rounded-xl border border-white/10 bg-black text-left disabled:cursor-default"
         style={{ aspectRatio }}
         aria-label={isPlaying ? "Pause preview" : "Play preview"}
       >
@@ -89,22 +89,22 @@ export function SongVisualEditorPreview({
         {canPlay ? (
           <div
             className={[
-              "pointer-events-none absolute inset-0 flex items-center justify-center bg-black/25 transition-opacity",
+              "pointer-events-none absolute inset-0 z-20 flex items-center justify-center bg-black/30 transition-opacity",
               isPlaying ? "opacity-0 group-hover/preview:opacity-100" : "opacity-100",
             ].join(" ")}
           >
-            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-black/55 text-white shadow-lg">
+            <span className="flex h-14 w-14 items-center justify-center rounded-full border border-white/20 bg-black/70 text-white shadow-xl backdrop-blur-sm">
               {isPlaying ? (
-                <Pause size={22} fill="currentColor" />
+                <Pause size={24} fill="currentColor" />
               ) : (
-                <Play size={22} className="ml-0.5" fill="currentColor" />
+                <Play size={24} className="ml-0.5" fill="currentColor" />
               )}
             </span>
           </div>
         ) : null}
 
         {media ? (
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-4 py-3">
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/80 to-transparent px-4 py-3">
             <p className="truncate text-sm font-medium text-white">
               {attachment?.label ?? media.originalName}
             </p>

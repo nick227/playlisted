@@ -1,23 +1,25 @@
-import { MousePointer2, Scissors } from "lucide-react";
-import { useMemo, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, type PointerEvent as ReactPointerEvent } from "react";
 
 import type { ClipSyncStatus } from "./hooks/optimisticSongVisualCache";
 import { useTimelineSnapGuides } from "./hooks/useTimelineSnapGuides";
 import { useTimelineTrackRect } from "./hooks/useTimelineTrackRect";
+import { drawWaveformPeaks, drawWaveformPlayhead } from "./drawWaveformPeaks";
 import { timeSecFromTimelinePointer } from "./timelineLayout";
 import { TimelineClipBlock } from "./TimelineClipBlock";
+import type { TimelineEditMode } from "./SongVisualEditorToolbar";
 import type { TimelineClip } from "./types";
-
-type TimelineEditMode = "select" | "cut";
 
 type SongVisualEditorTimelineProps = {
   clips: TimelineClip[];
   durationSec: number;
   currentTimeSec: number;
-  isLibraryBusy: boolean;
+  peaks?: number[];
+  waveformLoading?: boolean;
+  waveformError?: string | null;
   clipSyncStatus: Record<string, ClipSyncStatus>;
-  hasClipboard: boolean;
+  editMode: TimelineEditMode;
   selectedAttachmentId: string | null;
+  onSeek: (timeSec: number) => void;
   onSelectAttachment: (attachmentId: string | null) => void;
   onMoveClip: (attachmentId: string, nextStartSec: number) => void;
   onResizeClip: (attachmentId: string, nextDurationSec: number) => void;
@@ -30,10 +32,13 @@ export function SongVisualEditorTimeline({
   clips,
   durationSec,
   currentTimeSec,
-  isLibraryBusy,
+  peaks,
+  waveformLoading,
+  waveformError,
   clipSyncStatus,
-  hasClipboard: _hasClipboard,
+  editMode,
   selectedAttachmentId,
+  onSeek,
   onSelectAttachment,
   onMoveClip,
   onResizeClip,
@@ -41,6 +46,8 @@ export function SongVisualEditorTimeline({
   onCutClipAt,
   onCutAtTime,
 }: SongVisualEditorTimelineProps) {
+  const waveformRef = useRef<HTMLDivElement>(null);
+  const waveformCanvasRef = useRef<HTMLCanvasElement>(null);
   const { trackRef, getTrackRect, refreshTrackRect } = useTimelineTrackRect();
   const { activeGuide, snapMoveStart, snapResizeStart, snapResizeEnd, clearSnapGuide } = useTimelineSnapGuides({
     clips,
@@ -48,14 +55,53 @@ export function SongVisualEditorTimeline({
     playheadSec: currentTimeSec,
     getTrackRect,
   });
-  const [editMode, setEditMode] = useState<TimelineEditMode>("select");
 
   const guidePct = durationSec > 0 && activeGuide ? (activeGuide.timeSec / durationSec) * 100 : null;
+  const playheadPct = durationSec > 0 ? (currentTimeSec / durationSec) * 100 : 0;
 
   const sortedClips = useMemo(
     () => [...clips].sort((left, right) => left.attachment.order - right.attachment.order),
     [clips],
   );
+
+  useEffect(() => {
+    const canvas = waveformCanvasRef.current;
+    const container = waveformRef.current;
+    if (!canvas || !container || !peaks?.length || durationSec <= 0) return;
+
+    const draw = () => {
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+      if (width <= 0 || height <= 0) return;
+
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.floor(width * dpr);
+      canvas.height = Math.floor(height * dpr);
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+
+      const context = canvas.getContext("2d");
+      if (!context) return;
+
+      context.setTransform(dpr, 0, 0, dpr, 0, 0);
+      context.clearRect(0, 0, width, height);
+      drawWaveformPeaks(context, peaks, width, height);
+      drawWaveformPlayhead(context, width, height, currentTimeSec, durationSec);
+    };
+
+    draw();
+    const observer = new ResizeObserver(draw);
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [currentTimeSec, durationSec, peaks]);
+
+  function seekFromClientX(clientX: number) {
+    const waveformRect = waveformRef.current?.getBoundingClientRect();
+    const trackRect = getTrackRect();
+    const rect = waveformRect ?? trackRect;
+    if (!rect || durationSec <= 0) return;
+    onSeek(timeSecFromTimelinePointer(clientX, rect, durationSec));
+  }
 
   function cutSecFromPointer(clientX: number) {
     const rect = getTrackRect();
@@ -79,33 +125,31 @@ export function SongVisualEditorTimeline({
   }
 
   return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <div className="inline-flex rounded-full border border-white/10 p-0.5">
-            <ModeButton
-              active={editMode === "select"}
-              disabled={isLibraryBusy}
-              label="Select"
-              onClick={() => setEditMode("select")}
-            >
-              <MousePointer2 size={12} />
-            </ModeButton>
-            <ModeButton
-              active={editMode === "cut"}
-              disabled={isLibraryBusy}
-              label="Cut"
-              onClick={() => setEditMode("cut")}
-            >
-              <Scissors size={12} />
-            </ModeButton>
+    <div className="overflow-hidden rounded-lg border border-white/10 bg-black/30">
+      <div
+        ref={waveformRef}
+        className="relative h-14 w-full cursor-crosshair border-b border-white/10 bg-black/40"
+        onClick={(event) => seekFromClientX(event.clientX)}
+        role="slider"
+        aria-label="Audio waveform"
+        aria-valuemin={0}
+        aria-valuemax={durationSec}
+        aria-valuenow={currentTimeSec}
+      >
+        {waveformLoading ? (
+          <div className="flex h-full items-center justify-center text-[11px] text-white/35">Loading waveform…</div>
+        ) : peaks?.length ? (
+          <canvas ref={waveformCanvasRef} className="absolute inset-0 h-full w-full" />
+        ) : (
+          <div className="flex h-full items-center justify-center px-4 text-center text-[11px] text-white/35">
+            {waveformError ?? "Audio waveform unavailable for this track."}
           </div>
-        </div>
+        )}
       </div>
 
       <div
         ref={trackRef}
-        className="relative min-h-[5.5rem] rounded-lg border border-white/10 bg-black/30"
+        className="relative min-h-[5.5rem]"
         onPointerDown={handleTrackPointerDown}
         onPointerUp={handleTrackPointerUp}
       >
@@ -145,42 +189,10 @@ export function SongVisualEditorTimeline({
 
         <div
           className="pointer-events-none absolute inset-y-0 z-[60] w-0.5 bg-emerald-400/70"
-          style={{ left: `${durationSec > 0 ? (currentTimeSec / durationSec) * 100 : 0}%` }}
+          style={{ left: `${playheadPct}%` }}
           aria-hidden
         />
       </div>
     </div>
-  );
-}
-
-function ModeButton({
-  active,
-  disabled,
-  label,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  disabled: boolean;
-  label: string;
-  onClick: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={onClick}
-      className={[
-        "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium",
-        active ? "bg-white/15 text-white" : "text-white/50 hover:text-white/80",
-        disabled ? "opacity-40" : "",
-      ].join(" ")}
-      aria-pressed={active}
-      aria-label={label}
-    >
-      {children}
-      {label}
-    </button>
   );
 }

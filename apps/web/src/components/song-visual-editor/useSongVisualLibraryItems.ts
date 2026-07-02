@@ -8,7 +8,8 @@ import { buildCommunityLibraryRows } from "./theatreFxLibrary";
 
 export const LIBRARY_BATCH_SIZE = 10;
 
-export type LibraryTabId = "images" | "videos" | "community";
+export type LibraryTabId = "mine" | "community";
+export type MineMediaKind = "image" | "video";
 export type CommunityKind = "animations" | "videos" | "images";
 
 export type VisualLibraryRow = {
