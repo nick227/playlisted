@@ -41,6 +41,8 @@ export class ImageAnimation implements IAnimation {
     this.externallyDriven = true
   }
 
+  private boundImageUrl: string | null = null
+
   async init(container: HTMLElement, context: AnimationContext) {
     this.containerRef = container
     this.context = context
@@ -90,6 +92,10 @@ export class ImageAnimation implements IAnimation {
     this.root.appendChild(this.img)
     container.appendChild(this.root)
 
+    const initSrc = resolveImageUrl(context)
+    if (context.options?.mediaAttachmentId && initSrc) {
+      this.boundImageUrl = initSrc
+    }
     this.applyImageSource(context)
   }
 
@@ -127,6 +133,7 @@ export class ImageAnimation implements IAnimation {
     this.context = null
     this.resolvedSrc = ''
     this.imageVisible = false
+    this.boundImageUrl = null
     this.pulseState = { beatPulse: 0, dropPulse: 0 }
   }
 
@@ -175,7 +182,10 @@ export class ImageAnimation implements IAnimation {
 
   private applyImageSource(context: AnimationContext) {
     if (!this.img) return
-    const nextSrc = resolveImageUrl(context)
+    const optionImageUrl = context.options?.imageUrl
+    const nextSrc = typeof optionImageUrl === 'string' && optionImageUrl.trim().length > 0
+      ? optionImageUrl.trim()
+      : this.boundImageUrl ?? resolveImageUrl(context)
     if (!nextSrc) {
       this.resolvedSrc = ''
       this.imageVisible = false

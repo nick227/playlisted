@@ -26,7 +26,7 @@ import { hydrateTrackVisualMedia } from '../media/hydrateTrackVisualMedia'
 import { lookupTrackVisualMediaKey } from '../media/resolveTrackVisualMedia'
 import { songVisualDebug } from '../media/songVisualDebug'
 import { getPackageIdForPreset } from '../registry/packageRotation'
-import { buildAnimationFrameContext, withTheatreInitContext } from './theatreFrameContext'
+import { buildAnimationFrameContext, mergePresetLayerOptions, withTheatreInitContext } from './theatreFrameContext'
 import { detectPolicy } from '../runtime/PerformancePolicy'
 import { playbackFocusTiming } from '@/lib/playbackFocusTiming'
 import { createTheatreDevPanel, destroyTheatreDevPanel } from '../dev/TheatreDevPanel'
@@ -410,6 +410,15 @@ class TheatreController extends EventTarget {
       overlay.addEventListener('transitionend', onEnd)
       overlay.classList.remove('is-visible')
     })
+  }
+
+  private buildRenderFrameContext(baseCtx: AnimationContext): AnimationContext {
+    const preset = this.state.presetId ? resolvePreset(this.state.presetId) : null
+    const withPreset = mergePresetLayerOptions(baseCtx, preset)
+    return {
+      ...withPreset,
+      audioElement: this.audioEl ?? withPreset.audioElement,
+    }
   }
 
   private buildFactoriesForPreset(preset: ScenePresetDef | null, maxLayers = Number.POSITIVE_INFINITY) {
@@ -1273,7 +1282,7 @@ class TheatreController extends EventTarget {
         }
       }
 
-      this.deck?.renderFrame(frameCtx)
+      this.deck?.renderFrame(this.buildRenderFrameContext(frameCtx))
       this.featureLoopId = requestAnimationFrame(loop)
     }
     this.featureLoopId = requestAnimationFrame(loop)

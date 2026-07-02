@@ -1,5 +1,6 @@
 import type { AnimationContext, IAnimation } from '../core/IAnimation'
 import type AudioFeatureExtractor from '../audio/AudioFeatureExtractor'
+import type { ScenePresetDef } from '../registry/scenePresets'
 import {
   getTriggersForPreset,
   type TheatreAudioSnapshot,
@@ -47,6 +48,24 @@ export function buildAnimationFrameContext(input: FrameContextInput): {
   }
 
   return { ctx, policy }
+}
+
+export function mergePresetLayerOptions(
+  baseCtx: AnimationContext,
+  preset: ScenePresetDef | null | undefined,
+): AnimationContext {
+  if (!preset) return baseCtx
+
+  const mergedOptions = { ...baseCtx.options }
+  for (const layer of preset.layers) {
+    if (layer.options) Object.assign(mergedOptions, layer.options)
+  }
+  mergedOptions.objectTheatrePresetId = preset.id
+
+  return {
+    ...baseCtx,
+    options: mergedOptions,
+  }
 }
 
 const theatreInitContextKey = Symbol('theatreInitContext')

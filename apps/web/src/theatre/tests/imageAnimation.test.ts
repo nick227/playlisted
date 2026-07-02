@@ -105,6 +105,47 @@ describe('ImageAnimation init', () => {
     expect(() => animation.destroy()).not.toThrow()
   })
 
+  it('keeps user-media image when render frames omit imageUrl but artwork is present', async () => {
+    const container = createDomContainer()
+    const animation = new ImageAnimation()
+    await animation.init(container, {
+      artworkUrl: 'https://cdn.example/artwork.jpg',
+      options: {
+        imageUrl: 'https://cdn.example/synthwave.jpg',
+        mediaAttachmentId: 'clip-a',
+        preset: 'tame',
+      },
+    })
+    animation.enableExternalDriving()
+    await animation.start()
+
+    const img = container.querySelector('img') as HTMLElement & { src: string }
+    img.onload?.()
+    expect(img.src).toContain('synthwave.jpg')
+
+    animation.renderFrame({
+      artworkUrl: 'https://cdn.example/artwork.jpg',
+      options: { preset: 'tame' },
+      shared: {
+        reducedMotion: false,
+        lowPower: false,
+        time: { elapsed: 16, delta: 16, frame: 1 },
+        getTriggers: () => ({
+          bassHit: false,
+          midsHit: false,
+          highsHit: false,
+          beat: false,
+          chaosHit: false,
+          energy: 0,
+          brightness: 1,
+        }),
+      },
+    })
+
+    expect(img.src).toContain('synthwave.jpg')
+    animation.destroy()
+  })
+
   it('applies beatFx transforms when pulse is enabled', async () => {
     const container = createDomContainer()
     const animation = new ImageAnimation()
