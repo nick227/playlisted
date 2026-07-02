@@ -1,9 +1,10 @@
-export type UploadMediaKind = "audio" | "image";
+export type UploadMediaKind = "audio" | "image" | "video";
 
 /** Generous audio cap; image cap blocks accidental huge covers. */
 export const UPLOAD_MAX_BYTES: Record<UploadMediaKind, number> = {
   audio: 100 * 1024 * 1024,
   image: 15 * 1024 * 1024,
+  video: 200 * 1024 * 1024,
 };
 
 export const BULK_REGISTER_MAX_FILES = 50;
@@ -20,6 +21,10 @@ export const UPLOAD_ALLOWED: Record<UploadMediaKind, { mimes: Set<string>; exts:
   image: {
     mimes: new Set(["image/jpeg", "image/png", "image/webp"]),
     exts: new Set([".jpg", ".jpeg", ".png", ".webp"]),
+  },
+  video: {
+    mimes: new Set(["video/mp4", "video/webm", "video/quicktime"]),
+    exts: new Set([".mp4", ".webm", ".mov"]),
   },
 };
 

@@ -73,6 +73,17 @@ enum SubtitleStatus {
   FAILED
 }
 
+enum VisualMediaType {
+  IMAGE
+  VIDEO
+}
+
+enum SongVisualPolicy {
+  PREFER_ATTACHED
+  ATTACHED_ONLY
+  MIX_ATTACHED_AND_DEFAULT
+}
+
 enum HomepageSection {
   SPOTLIGHT
   FEATURED_ARTIST
@@ -117,6 +128,7 @@ model User {
   sessions               Session[]
   apiKeys                ApiKey[]
   uploadAssets           UploadAsset[]
+  visualMediaAssets      VisualMediaAsset[]
   receivedProfileViews   ProfileViewEvent[] @relation("ProfileViews")
   viewedProfiles         ProfileViewEvent[] @relation("ViewerActivities")
   trafficEvents          TrafficEvent[]
@@ -192,6 +204,7 @@ model Recording {
   playbackEvents    PlaybackEvent[]
   tags              RecordingTag[]
   subtitles         RecordingSubtitle[]
+  songVisualAttachments SongVisualAttachment[]
 
   @@unique([uploaderId, externalSource, externalId])
   @@index([uploaderId])
@@ -480,6 +493,51 @@ model UploadAsset {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+model VisualMediaAsset {
+  id           String          @id @default(cuid()) @db.VarChar(191)
+  ownerId      String          @db.VarChar(191)
+  mediaType    VisualMediaType
+  storageKey   String?         @db.VarChar(512)
+  url          String          @db.VarChar(2048)
+  thumbnailUrl String?         @db.VarChar(2048)
+  originalName String          @db.VarChar(255)
+  mimeType     String          @db.VarChar(100)
+  sizeBytes    Int             @db.UnsignedInt
+  durationMs   Int?            @db.UnsignedInt
+  width        Int?            @db.UnsignedInt
+  height       Int?            @db.UnsignedInt
+  createdAt    DateTime        @default(now())
+
+  owner       User                   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  attachments SongVisualAttachment[]
+
+  @@index([ownerId, createdAt])
+}
+
+model SongVisualAttachment {
+  id           String           @id @default(cuid()) @db.VarChar(191)
+  recordingId  String           @db.VarChar(191)
+  mediaAssetId String           @db.VarChar(191)
+  policy       SongVisualPolicy @default(PREFER_ATTACHED)
+  weight       Int              @default(1) @db.UnsignedInt
+  sortOrder    Int              @default(0) @db.UnsignedInt
+  label        String?          @db.VarChar(191)
+  playbackJson Json?
+  rotationJson Json?
+  beatFxJson   Json?
+  tagsJson     Json?
+  enabled      Boolean          @default(true)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  recording  Recording        @relation(fields: [recordingId], references: [id], onDelete: Cascade)
+  mediaAsset VisualMediaAsset @relation(fields: [mediaAssetId], references: [id], onDelete: Cascade)
+
+  @@unique([recordingId, mediaAssetId])
+  @@index([recordingId, enabled, sortOrder])
+  @@index([mediaAssetId])
 }
 
 model ApiKey {

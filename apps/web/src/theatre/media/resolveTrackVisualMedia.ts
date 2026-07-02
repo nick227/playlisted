@@ -1,38 +1,18 @@
 import type { TheatreTrackContext } from '../rotation/types'
 import type { TrackVisualMediaResolution, VisualMediaAttachment } from './types'
 
-/** Local stub map — replace with API/DB lookup in Phase 7E. */
-const LOCAL_ATTACHMENT_MAP = new Map<string, VisualMediaAttachment[]>([
-  ['demo-track-visuals', [
-    {
-      id: 'demo-video-a',
-      trackId: 'demo-track-visuals',
-      mediaType: 'video',
-      url: '/demo1.mp4',
-      label: 'Demo Video A',
-      weight: 2,
-      tags: ['demo'],
-      playback: { loop: true, muted: true, objectFit: 'cover' },
-    },
-    {
-      id: 'demo-video-b',
-      trackId: 'demo-track-visuals',
-      mediaType: 'video',
-      url: '/demo2.mp4',
-      label: 'Demo Video B',
-      weight: 1,
-      playback: { loop: true, muted: true, objectFit: 'cover' },
-    },
-  ]],
-])
+/** Local stub map — dev/testing override; takes precedence over remote cache. */
+const LOCAL_ATTACHMENT_MAP = new Map<string, VisualMediaAttachment[]>()
 
 const LOCAL_POLICY_MAP = new Map<string, TrackVisualMediaResolution['policy']>()
+
+const REMOTE_CACHE = new Map<string, TrackVisualMediaResolution>()
 
 export type TrackVisualMediaResolver = (
   track: TheatreTrackContext | null | undefined,
 ) => TrackVisualMediaResolution
 
-function lookupKey(track: TheatreTrackContext | null | undefined): string | null {
+export function lookupTrackVisualMediaKey(track: TheatreTrackContext | null | undefined): string | null {
   const trackId = track?.trackId?.trim()
   if (trackId) return trackId
   const segmentId = track?.segmentId?.trim()
@@ -49,19 +29,31 @@ export function registerLocalTrackVisualMedia(
   LOCAL_POLICY_MAP.set(key, policy)
 }
 
+export function setRemoteTrackVisualMedia(key: string, resolution: TrackVisualMediaResolution): void {
+  REMOTE_CACHE.set(key, resolution)
+}
+
+export function clearRemoteTrackVisualMedia(key?: string): void {
+  if (key) {
+    REMOTE_CACHE.delete(key)
+    return
+  }
+  REMOTE_CACHE.clear()
+}
+
 export const resolveTrackVisualMedia: TrackVisualMediaResolver = track => {
-  const key = lookupKey(track)
+  const key = lookupTrackVisualMediaKey(track)
   if (!key) {
     return { attachments: [], policy: 'defaultOnly' }
   }
 
-  const attachments = LOCAL_ATTACHMENT_MAP.get(key) ?? []
-  if (attachments.length === 0) {
-    return { attachments: [], policy: 'defaultOnly' }
+  const localAttachments = LOCAL_ATTACHMENT_MAP.get(key) ?? []
+  if (localAttachments.length > 0) {
+    return {
+      attachments: localAttachments,
+      policy: LOCAL_POLICY_MAP.get(key) ?? 'preferAttached',
+    }
   }
 
-  return {
-    attachments,
-    policy: LOCAL_POLICY_MAP.get(key) ?? 'preferAttached',
-  }
+  return REMOTE_CACHE.get(key) ?? { attachments: [], policy: 'defaultOnly' }
 }

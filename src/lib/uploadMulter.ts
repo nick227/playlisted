@@ -11,8 +11,10 @@ import { slugify } from "../utils/slug.js";
 const uploadsDir = path.resolve(process.cwd(), process.env.UPLOADS_DIR ?? "uploads");
 const mediaBaseUrl = process.env.MEDIA_BASE_URL?.replace(/\/$/, "") ?? null;
 
-function uploadSubdir(kind: UploadMediaKind): "audio" | "images" {
-  return kind === "audio" ? "audio" : "images";
+function uploadSubdir(kind: UploadMediaKind): "audio" | "images" | "videos" {
+  if (kind === "audio") return "audio";
+  if (kind === "video") return "videos";
+  return "images";
 }
 
 export function storedUploadUrl(subdir: string, filename: string): string {
@@ -55,8 +57,10 @@ export function createDiskMulter(kind: UploadMediaKind) {
 
 export const studioAudioUpload = createDiskMulter("audio");
 export const studioImageUpload = createDiskMulter("image");
+export const studioVideoUpload = createDiskMulter("video");
 export const ingestAudioUpload = createDiskMulter("audio");
 export const ingestImageUpload = createDiskMulter("image");
+export const ingestVideoUpload = createDiskMulter("video");
 
 export function handleMulterSingleError(
   err: unknown,

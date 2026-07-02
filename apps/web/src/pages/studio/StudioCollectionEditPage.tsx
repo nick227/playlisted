@@ -6,6 +6,7 @@ import { Link, useParams } from "react-router-dom";
 import { CollectionView } from "@/components/collection/CollectionView";
 import { EmptyState } from "@/components/feedback/EmptyState";
 import { Skeleton } from "@/components/feedback/Skeleton";
+import { SongVisualMediaPanel } from "@/components/studio/SongVisualMediaPanel";
 import { TrackUploadQueue } from "@/components/uploads/TrackUploadQueue";
 import { useStudioCollectionDraftAutosave } from "@/hooks/studio/useStudioCollectionDraftAutosave";
 import { useStudioCollectionGenres } from "@/hooks/studio/useStudioCollectionGenres";
@@ -238,6 +239,15 @@ export function StudioCollectionEditPage() {
         }
         trackSavingById={{ ...savingRecordingIds, ...trackGenreSavingById }}
         trackErrorById={{ ...recordingErrors, ...trackGenreErrorById }}
+        renderTrackEditExtras={(recording) =>
+          accessToken ? (
+            <SongVisualMediaPanel
+              recordingId={recording.id}
+              recordingTitle={recording.title}
+              accessToken={accessToken}
+            />
+          ) : null
+        }
         selectedGenreId={selectedGenreId}
         onGenreChange={handleGenreChange}
         onGenreCreate={handleGenreCreate}

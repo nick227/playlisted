@@ -37,6 +37,8 @@ import { recordingsRouter } from "./routes/recordings.js";
 import { searchRouter } from "./routes/search.js";
 import { tagsRouter } from "./routes/tags.js";
 import { uploadsRouter } from "./routes/uploads.js";
+import { visualMediaAssetsRouter } from "./routes/visualMedia/assets.js";
+import { songVisualMediaRouter } from "./routes/visualMedia/songAttachments.js";
 import { ingestUploadsRouter } from "./routes/ingest/uploads.js";
 import { ingestPlaylistsRouter } from "./routes/ingest/playlists.js";
 import { ingestRecordingsRouter } from "./routes/ingest/recordings.js";
@@ -87,6 +89,8 @@ export function createApp(options: CreateAppOptions = {}) {
     }),
   );
   app.use("/api/v1/uploads", studioUploadLimiter, uploadsRouter);
+  app.use("/api/v1/visual-media", studioUploadLimiter, visualMediaAssetsRouter);
+  app.use("/api/v1/songs", songVisualMediaRouter);
   // Ingest upload: multipart — mounted before OpenAPI validator
   app.use("/api/v1/ingest/uploads", ingestUploadLimiter, ingestUploadsRouter);
 

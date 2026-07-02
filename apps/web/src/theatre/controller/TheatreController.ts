@@ -16,6 +16,7 @@ import type { PickContext } from '../selection/types'
 import { getOrCreateAudioAnalyserConnection, type AudioAnalyserConnection } from '@/features/playback-indicators/audioAnalyser'
 import { getPreset, listPresets, type ScenePresetDef, type TheatreTransitionKind } from '../registry/scenePresets'
 import { buildSongVisualPickExtras } from '../media/buildSongVisualPool'
+import { hydrateTrackVisualMedia } from '../media/hydrateTrackVisualMedia'
 import { resolvePreset } from '../media/resolvePreset'
 import { getPackageIdForPreset } from '../registry/packageRotation'
 import { buildAnimationFrameContext, withTheatreInitContext } from './theatreFrameContext'
@@ -191,6 +192,9 @@ class TheatreController extends EventTarget {
 
   public setTrackContext(track: TheatreTrackContext | null) {
     this.trackContext = track
+    void hydrateTrackVisualMedia(track).then(() => {
+      this.fxSelector.clearCandidate()
+    })
   }
 
   private resolveActiveRotationPolicy(): ResolvedRotationPolicy {
