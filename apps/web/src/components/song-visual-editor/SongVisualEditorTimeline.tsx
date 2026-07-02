@@ -1,19 +1,25 @@
-import { Repeat, Trash2 } from "lucide-react";
-import { useRef } from "react";
+import { MousePointer2, Repeat, Scissors, Trash2 } from "lucide-react";
+import { useRef, useState, type ReactNode } from "react";
 
+import { TimelineClipBlock } from "./TimelineClipBlock";
 import type { TimelineClip } from "./types";
+
+type TimelineEditMode = "select" | "cut";
 
 type SongVisualEditorTimelineProps = {
   clips: TimelineClip[];
   durationSec: number;
   remainingSec: number;
   currentTimeSec: number;
+  isBusy: boolean;
   selectedAttachmentId: string | null;
-  onSelectAttachment: (attachmentId: string) => void;
-  onSeek: (timeSec: number) => void;
+  onSelectAttachment: (attachmentId: string | null) => void;
   onRemoveAttachment: (attachmentId: string) => void;
   onToggleLoop: (attachmentId: string, loop: boolean) => void;
+  onMoveClip: (attachmentId: string, nextStartSec: number) => void;
   onResizeClip: (attachmentId: string, nextDurationSec: number) => void;
+  onResizeClipStart: (attachmentId: string, nextStartSec: number) => void;
+  onCutClipAt: (attachmentId: string, cutSec: number) => void;
 };
 
 export function SongVisualEditorTimeline({
@@ -21,32 +27,64 @@ export function SongVisualEditorTimeline({
   durationSec,
   remainingSec,
   currentTimeSec,
+  isBusy,
   selectedAttachmentId,
   onSelectAttachment,
-  onSeek,
   onRemoveAttachment,
   onToggleLoop,
+  onMoveClip,
   onResizeClip,
+  onResizeClipStart,
+  onCutClipAt,
 }: SongVisualEditorTimelineProps) {
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [editMode, setEditMode] = useState<TimelineEditMode>("select");
+  const [trackRect, setTrackRect] = useState<DOMRect | null>(null);
+
   const playheadPct = durationSec > 0 ? (currentTimeSec / durationSec) * 100 : 0;
   const selectedClip = clips.find((clip) => clip.attachment.id === selectedAttachmentId) ?? null;
 
+  function refreshTrackRect() {
+    setTrackRect(trackRef.current?.getBoundingClientRect() ?? null);
+  }
+
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between text-xs uppercase tracking-wide text-white/40">
-        <span>Timeline</span>
-        <span>
-          {formatTime(currentTimeSec)} / {formatTime(durationSec)}
-          {remainingSec > 0 ? ` · ${remainingSec.toFixed(1)}s free` : " · full"}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <span className="text-xs uppercase tracking-wide text-white/40">Timeline</span>
+          <div className="inline-flex rounded-full border border-white/10 p-0.5">
+            <ModeButton
+              active={editMode === "select"}
+              disabled={isBusy}
+              label="Select"
+              onClick={() => setEditMode("select")}
+            >
+              <MousePointer2 size={12} />
+            </ModeButton>
+            <ModeButton
+              active={editMode === "cut"}
+              disabled={isBusy}
+              label="Cut"
+              onClick={() => setEditMode("cut")}
+            >
+              <Scissors size={12} />
+            </ModeButton>
+          </div>
+        </div>
+        <span className="text-xs text-white/40">
+          {editMode === "cut" ? "Click a clip to split" : "Drag clips · trim handles when selected"}
         </span>
       </div>
 
       <div
+        ref={trackRef}
         className="relative min-h-[4.5rem] rounded-lg border border-white/10 bg-black/30"
+        onPointerEnter={refreshTrackRect}
         onClick={(event) => {
-          const rect = event.currentTarget.getBoundingClientRect();
-          const ratio = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
-          onSeek(ratio * durationSec);
+          if (event.target === event.currentTarget) {
+            onSelectAttachment(null);
+          }
         }}
       >
         <div className="absolute inset-y-2 left-0 right-0">
@@ -56,18 +94,21 @@ export function SongVisualEditorTimeline({
               clip={clip}
               durationSec={durationSec}
               selected={clip.attachment.id === selectedAttachmentId}
-              onSelect={() => {
-                onSelectAttachment(clip.attachment.id);
-                onSeek(clip.startSec + 0.05);
-              }}
-              onResize={(nextDurationSec) => onResizeClip(clip.attachment.id, nextDurationSec)}
+              cutMode={editMode === "cut"}
+              isBusy={isBusy}
+              trackRect={trackRect}
+              onSelect={() => onSelectAttachment(clip.attachment.id)}
+              onMove={(nextStartSec) => onMoveClip(clip.attachment.id, nextStartSec)}
+              onResizeEnd={(nextDurationSec) => onResizeClip(clip.attachment.id, nextDurationSec)}
+              onResizeStart={(nextStartSec) => onResizeClipStart(clip.attachment.id, nextStartSec)}
+              onCutAt={(cutSec) => onCutClipAt(clip.attachment.id, cutSec)}
             />
           ))}
-          {remainingSec > 0 ? (
+          {remainingSec > 0.5 ? (
             <div
-              className="absolute top-0 flex h-full items-center justify-center border border-dashed border-white/10 bg-white/[0.02] text-[10px] uppercase tracking-wide text-white/30"
+              className="pointer-events-none absolute top-0 flex h-full items-center justify-center border border-dashed border-white/10 bg-white/[0.02] text-[10px] uppercase tracking-wide text-white/30"
               style={{
-                left: `${((clips.at(-1)?.endSec ?? 0) / durationSec) * 100}%`,
+                left: `${((clips.reduce((max, clip) => Math.max(max, clip.endSec), 0)) / durationSec) * 100}%`,
                 width: `${(remainingSec / durationSec) * 100}%`,
               }}
             >
@@ -77,8 +118,9 @@ export function SongVisualEditorTimeline({
         </div>
 
         <div
-          className="pointer-events-none absolute inset-y-0 w-0.5 bg-emerald-400"
+          className="pointer-events-none absolute inset-y-0 z-10 w-0.5 bg-emerald-400/70"
           style={{ left: `${playheadPct}%` }}
+          aria-hidden
         />
       </div>
 
@@ -89,7 +131,7 @@ export function SongVisualEditorTimeline({
               {selectedClip.attachment.label ?? selectedClip.attachment.mediaAsset.originalName}
             </p>
             <p className="text-xs text-white/45">
-              {selectedClip.durationSec.toFixed(1)}s on timeline
+              {selectedClip.startSec.toFixed(1)}s – {selectedClip.endSec.toFixed(1)}s
               {selectedClip.loop
                 ? " · loop fills slot"
                 : ` · natural max ${selectedClip.naturalDurationSec.toFixed(1)}s`}
@@ -100,6 +142,7 @@ export function SongVisualEditorTimeline({
               <input
                 type="checkbox"
                 checked={selectedClip.loop}
+                disabled={isBusy}
                 onChange={(event) => onToggleLoop(selectedClip.attachment.id, event.target.checked)}
                 className="rounded border-white/20 bg-black/40 text-emerald-500"
               />
@@ -108,8 +151,9 @@ export function SongVisualEditorTimeline({
             </label>
             <button
               type="button"
+              disabled={isBusy}
               onClick={() => onRemoveAttachment(selectedClip.attachment.id)}
-              className="inline-flex items-center gap-1 rounded-full border border-red-500/30 px-3 py-1 text-xs text-red-200 hover:bg-red-500/10"
+              className="inline-flex items-center gap-1 rounded-full border border-red-500/30 px-3 py-1 text-xs text-red-200 hover:bg-red-500/10 disabled:opacity-40"
             >
               <Trash2 size={12} />
               Remove
@@ -121,85 +165,34 @@ export function SongVisualEditorTimeline({
   );
 }
 
-function TimelineClipBlock({
-  clip,
-  durationSec,
-  selected,
-  onSelect,
-  onResize,
+function ModeButton({
+  active,
+  disabled,
+  label,
+  onClick,
+  children,
 }: {
-  clip: TimelineClip;
-  durationSec: number;
-  selected: boolean;
-  onSelect: () => void;
-  onResize: (nextDurationSec: number) => void;
+  active: boolean;
+  disabled: boolean;
+  label: string;
+  onClick: () => void;
+  children: ReactNode;
 }) {
-  const dragRef = useRef<{ startX: number; startDuration: number } | null>(null);
-  const leftPct = (clip.startSec / durationSec) * 100;
-  const widthPct = (clip.durationSec / durationSec) * 100;
-  const mediaType = clip.attachment.mediaAsset.mediaType;
-
-  function onResizePointerDown(event: React.PointerEvent<HTMLButtonElement>) {
-    event.stopPropagation();
-    event.currentTarget.setPointerCapture(event.pointerId);
-    dragRef.current = { startX: event.clientX, startDuration: clip.durationSec };
-  }
-
-  function onResizePointerMove(event: React.PointerEvent<HTMLButtonElement>) {
-    if (!dragRef.current) return;
-    const parent = event.currentTarget.parentElement?.parentElement;
-    if (!parent) return;
-    const deltaRatio = (event.clientX - dragRef.current.startX) / parent.clientWidth;
-    onResize(dragRef.current.startDuration + deltaRatio * durationSec);
-  }
-
-  function onResizePointerUp(event: React.PointerEvent<HTMLButtonElement>) {
-    dragRef.current = null;
-    event.currentTarget.releasePointerCapture(event.pointerId);
-  }
-
   return (
-    <div
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
       className={[
-        "absolute top-0 flex h-full min-w-[3rem] overflow-hidden rounded-md border text-left text-[11px] transition",
-        selected
-          ? "border-emerald-400/60 bg-emerald-400/20 text-white"
-          : "border-white/15 bg-white/10 text-white/80 hover:border-white/30",
+        "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium",
+        active ? "bg-white/15 text-white" : "text-white/50 hover:text-white/80",
+        disabled ? "opacity-40" : "",
       ].join(" ")}
-      style={{ left: `${leftPct}%`, width: `${widthPct}%` }}
+      aria-pressed={active}
+      aria-label={label}
     >
-      <button
-        type="button"
-        onClick={(event) => {
-          event.stopPropagation();
-          onSelect();
-        }}
-        className="flex min-w-0 flex-1 items-center gap-2 px-2 py-1"
-        title={clip.attachment.label ?? clip.attachment.mediaAsset.originalName}
-      >
-        <span className="truncate font-medium">
-          {clip.attachment.label ?? clip.attachment.mediaAsset.originalName}
-        </span>
-        <span className="shrink-0 rounded bg-black/30 px-1 py-0.5 uppercase">{mediaType}</span>
-        {clip.loop ? <Repeat size={10} className="shrink-0 opacity-60" /> : null}
-      </button>
-      {selected ? (
-        <button
-          type="button"
-          aria-label="Trim or stretch clip"
-          onPointerDown={onResizePointerDown}
-          onPointerMove={onResizePointerMove}
-          onPointerUp={onResizePointerUp}
-          className="w-2 shrink-0 cursor-ew-resize bg-emerald-400/40 hover:bg-emerald-400/70"
-        />
-      ) : null}
-    </div>
+      {children}
+      {label}
+    </button>
   );
-}
-
-function formatTime(seconds: number) {
-  const whole = Math.max(0, Math.floor(seconds));
-  const mins = Math.floor(whole / 60);
-  const secs = whole % 60;
-  return `${mins}:${secs.toString().padStart(2, "0")}`;
 }

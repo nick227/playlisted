@@ -5,7 +5,8 @@ import type { TimelineClip } from "./types";
 
 const IMAGE_NATURAL_SEC = 8;
 const VIDEO_FALLBACK_NATURAL_SEC = 30;
-const MIN_CLIP_SEC = 0.5;
+export const MIN_CLIP_SEC = 0.5;
+const DRAG_CLICK_THRESHOLD_PX = 4;
 
 export function readClipPlayback(attachment: SongVisualAttachmentRecord): VisualMediaPlayback & {
   timelineDurationSec?: number;
@@ -68,45 +69,146 @@ export function clipDurationAfterLoopChange(
   return Math.min(currentDurationSec, naturalCap);
 }
 
+export function usesExplicitTimelineLayout(attachments: SongVisualAttachmentRecord[]): boolean {
+  return attachments.some((attachment) => {
+    if (!attachment.enabled) return false;
+    return typeof readClipPlayback(attachment).timelineStartSec === "number";
+  });
+}
+
+function sortAttachmentsForLayout(attachments: SongVisualAttachmentRecord[]): SongVisualAttachmentRecord[] {
+  const enabled = attachments.filter((attachment) => attachment.enabled);
+  if (usesExplicitTimelineLayout(enabled)) {
+    return [...enabled].sort((left, right) => {
+      const leftStart = readClipPlayback(left).timelineStartSec ?? 0;
+      const rightStart = readClipPlayback(right).timelineStartSec ?? 0;
+      if (leftStart !== rightStart) return leftStart - rightStart;
+      return left.order - right.order;
+    });
+  }
+  return [...enabled].sort((left, right) => left.order - right.order);
+}
+
+function buildTimelineClip(
+  attachment: SongVisualAttachmentRecord,
+  startSec: number,
+  songDurationSec: number,
+): TimelineClip | null {
+  const loop = getClipLoop(attachment);
+  const naturalDurationSec = getNaturalDurationSec(attachment);
+  const playback = readClipPlayback(attachment);
+  const storedDuration = playback.timelineDurationSec;
+  const maxDuration = maxClipDurationSec(attachment, startSec, songDurationSec, loop);
+  const fallbackDuration = defaultClipDurationSec(attachment, startSec, songDurationSec);
+  let durationSec = storedDuration ?? fallbackDuration;
+  durationSec = Math.min(Math.max(MIN_CLIP_SEC, durationSec), maxDuration);
+  if (durationSec <= 0) return null;
+
+  return {
+    attachment,
+    startSec,
+    endSec: startSec + durationSec,
+    durationSec,
+    loop,
+    naturalDurationSec,
+  };
+}
+
 export function layoutTimelineClips(
   attachments: SongVisualAttachmentRecord[],
   songDurationSec: number,
 ): TimelineClip[] {
-  const enabled = attachments
-    .filter((attachment) => attachment.enabled)
-    .sort((left, right) => left.order - right.order);
-
+  const enabled = sortAttachmentsForLayout(attachments);
   if (enabled.length === 0 || songDurationSec <= 0) return [];
+
+  if (usesExplicitTimelineLayout(enabled)) {
+    const clips: TimelineClip[] = [];
+    for (const attachment of enabled) {
+      const playback = readClipPlayback(attachment);
+      const startSec = playback.timelineStartSec ?? 0;
+      const clip = buildTimelineClip(attachment, startSec, songDurationSec);
+      if (clip) clips.push(clip);
+    }
+    return clips;
+  }
 
   let cursorSec = 0;
   const clips: TimelineClip[] = [];
-
   for (const attachment of enabled) {
     if (cursorSec >= songDurationSec - MIN_CLIP_SEC) break;
+    const clip = buildTimelineClip(attachment, cursorSec, songDurationSec);
+    if (!clip) break;
+    clips.push(clip);
+    cursorSec += clip.durationSec;
+  }
+  return clips;
+}
 
-    const loop = getClipLoop(attachment);
-    const naturalDurationSec = getNaturalDurationSec(attachment);
-    const playback = readClipPlayback(attachment);
-    const storedDuration = playback.timelineDurationSec;
-    const maxDuration = maxClipDurationSec(attachment, cursorSec, songDurationSec, loop);
-    const fallbackDuration = defaultClipDurationSec(attachment, cursorSec, songDurationSec);
-    let durationSec = storedDuration ?? fallbackDuration;
-    durationSec = Math.min(Math.max(MIN_CLIP_SEC, durationSec), maxDuration);
+export function clampClipStart(
+  nextStartSec: number,
+  durationSec: number,
+  songDurationSec: number,
+): number {
+  const maxStart = Math.max(0, songDurationSec - durationSec);
+  return Math.min(Math.max(0, nextStartSec), maxStart);
+}
 
-    if (durationSec <= 0) break;
+export function resolveClipMoveStart(
+  clip: TimelineClip,
+  allClips: TimelineClip[],
+  desiredStartSec: number,
+  songDurationSec: number,
+): number {
+  let startSec = clampClipStart(desiredStartSec, clip.durationSec, songDurationSec);
+  const others = allClips.filter((item) => item.attachment.id !== clip.attachment.id);
 
-    clips.push({
-      attachment,
-      startSec: cursorSec,
-      endSec: cursorSec + durationSec,
-      durationSec,
-      loop,
-      naturalDurationSec,
-    });
-    cursorSec += durationSec;
+  for (const other of others) {
+    const overlaps = startSec < other.endSec && startSec + clip.durationSec > other.startSec;
+    if (!overlaps) continue;
+
+    const snapBefore = other.startSec - clip.durationSec;
+    const snapAfter = other.endSec;
+    startSec = Math.abs(startSec - snapBefore) <= Math.abs(startSec - snapAfter)
+      ? snapBefore
+      : snapAfter;
+    startSec = clampClipStart(startSec, clip.durationSec, songDurationSec);
   }
 
-  return clips;
+  return startSec;
+}
+
+export function canCutClipAt(clip: TimelineClip, cutSec: number): boolean {
+  const leftDuration = cutSec - clip.startSec;
+  const rightDuration = clip.endSec - cutSec;
+  return leftDuration >= MIN_CLIP_SEC && rightDuration >= MIN_CLIP_SEC;
+}
+
+export function splitClipAt(
+  clip: TimelineClip,
+  cutSec: number,
+): { leftDurationSec: number; rightDurationSec: number; rightStartOffsetMs: number } | null {
+  if (!canCutClipAt(clip, cutSec)) return null;
+
+  const leftDurationSec = cutSec - clip.startSec;
+  const rightDurationSec = clip.endSec - cutSec;
+  const playback = readClipPlayback(clip.attachment);
+  const currentOffsetMs = playback.startOffsetMs ?? 0;
+  const rightStartOffsetMs = currentOffsetMs + Math.round(leftDurationSec * 1000);
+
+  return { leftDurationSec, rightDurationSec, rightStartOffsetMs };
+}
+
+export function isPointerDrag(deltaX: number, deltaY: number): boolean {
+  return Math.hypot(deltaX, deltaY) >= DRAG_CLICK_THRESHOLD_PX;
+}
+
+export function timeSecFromTimelinePointer(
+  clientX: number,
+  rect: Pick<DOMRect, "left" | "width">,
+  durationSec: number,
+): number {
+  const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+  return ratio * durationSec;
 }
 
 export function getRemainingTimelineSec(clips: TimelineClip[], songDurationSec: number): number {

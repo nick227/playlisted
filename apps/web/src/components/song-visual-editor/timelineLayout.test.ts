@@ -4,8 +4,9 @@ import {
   clipDurationAfterLoopChange,
   defaultClipDurationSec,
   getRemainingTimelineSec,
+  layoutTimelineClips,
+  splitClipAt,
 } from './timelineLayout'
-import { layoutTimelineClips } from './types'
 import type { SongVisualAttachmentRecord } from '@/lib/visualMediaApi'
 
 function attachment(
@@ -94,5 +95,31 @@ describe('timelineLayout', () => {
 
     expect(clips).toHaveLength(1)
     expect(getRemainingTimelineSec(clips, 120)).toBe(0)
+  })
+
+  it('respects explicit timelineStartSec positions with gaps', () => {
+    const clips = layoutTimelineClips([
+      attachment('clip-a', 0, 'video', { loop: false, timelineStartSec: 0, timelineDurationSec: 20 }, 60_000),
+      attachment('clip-b', 1, 'image', { loop: false, timelineStartSec: 40, timelineDurationSec: 8 }),
+    ], 120)
+
+    expect(clips).toHaveLength(2)
+    expect(clips[0]?.startSec).toBe(0)
+    expect(clips[1]?.startSec).toBe(40)
+    expect(getRemainingTimelineSec(clips, 120)).toBe(72)
+  })
+
+  it('splits clip timing for cut operations', () => {
+    const clip = layoutTimelineClips([
+      attachment('clip-a', 0, 'video', { loop: false, timelineStartSec: 10, timelineDurationSec: 30, startOffsetMs: 1000 }, 60_000),
+    ], 120)[0]
+
+    expect(clip).toBeDefined()
+    const split = splitClipAt(clip!, 25)
+    expect(split).toEqual({
+      leftDurationSec: 15,
+      rightDurationSec: 15,
+      rightStartOffsetMs: 16000,
+    })
   })
 })

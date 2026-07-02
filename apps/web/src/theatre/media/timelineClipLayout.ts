@@ -62,9 +62,56 @@ export function layoutTimelineClips(
 ): VisualMediaTimelineClip[] {
   const enabled = attachments
     .filter((attachment) => attachment.enabled !== false)
-    .sort((left, right) => (left.order ?? 0) - (right.order ?? 0))
+    .sort((left, right) => {
+      const leftExplicit = typeof readClipPlayback(left).timelineStartSec === 'number'
+      const rightExplicit = typeof readClipPlayback(right).timelineStartSec === 'number'
+      if (leftExplicit || rightExplicit) {
+        const leftStart = readClipPlayback(left).timelineStartSec ?? 0
+        const rightStart = readClipPlayback(right).timelineStartSec ?? 0
+        if (leftStart !== rightStart) return leftStart - rightStart
+      }
+      return (left.order ?? 0) - (right.order ?? 0)
+    })
 
   if (enabled.length === 0 || songDurationSec <= 0) return []
+
+  const hasExplicitLayout = enabled.some(
+    (attachment) => typeof readClipPlayback(attachment).timelineStartSec === 'number',
+  )
+
+  if (hasExplicitLayout) {
+    const clips: VisualMediaTimelineClip[] = []
+    for (const attachment of enabled) {
+      const playback = readClipPlayback(attachment)
+      const startSec = playback.timelineStartSec ?? 0
+      const loop = getClipLoop(attachment)
+      const naturalDurationSec = getNaturalDurationSec(attachment)
+      const storedDuration = playback.timelineDurationSec
+      const maxDuration = maxClipDurationSec(attachment, startSec, songDurationSec, loop)
+      const fallbackDuration = defaultClipDurationSec(attachment, startSec, songDurationSec)
+      let durationSec = storedDuration ?? fallbackDuration
+      durationSec = Math.min(Math.max(MIN_CLIP_SEC, durationSec), maxDuration)
+      if (durationSec <= 0) continue
+
+      clips.push({
+        attachment: {
+          ...attachment,
+          playback: {
+            ...playback,
+            timelineStartSec: startSec,
+            timelineDurationSec: durationSec,
+            loop,
+          },
+        },
+        startSec,
+        endSec: startSec + durationSec,
+        durationSec,
+        loop,
+        naturalDurationSec,
+      })
+    }
+    return clips
+  }
 
   let cursorSec = 0
   const clips: VisualMediaTimelineClip[] = []

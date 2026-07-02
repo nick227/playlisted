@@ -20,7 +20,12 @@ import {
   clipDurationAfterLoopChange,
   defaultClipDurationSec,
   getClipLoop,
+  getNaturalDurationSec,
   getRemainingTimelineSec,
+  MIN_CLIP_SEC,
+  readClipPlayback,
+  resolveClipMoveStart,
+  splitClipAt,
 } from "../timelineLayout";
 import { layoutTimelineClips, policyFromIncludeSiteMedia, policyIncludesSiteMedia } from "../types";
 
@@ -156,7 +161,13 @@ export function useSongVisualEditorState({
       policy: policy === "defaultOnly" ? "preferAttached" : policy,
       order: timelineClips.length,
       label: asset.originalName,
-      playback: { loop, timelineDurationSec: clipDurationSec, muted: true, objectFit: "cover" },
+      playback: {
+        loop,
+        timelineStartSec: startSec,
+        timelineDurationSec: clipDurationSec,
+        muted: true,
+        objectFit: "cover",
+      },
       beatFx: asset.mediaType === "video"
         ? { enabled: true, intensity: "subtle", effects: ["scale", "brightness"] }
         : undefined,
@@ -193,7 +204,107 @@ export function useSongVisualEditorState({
 
     await updateMutation.mutateAsync({
       attachmentId,
-      body: { playback: buildPlaybackPatch(attachment, { loop, timelineDurationSec: nextDurationSec }) },
+      body: {
+        playback: buildPlaybackPatch(attachment, {
+          loop,
+          timelineStartSec: clip.startSec,
+          timelineDurationSec: nextDurationSec,
+        }),
+      },
+    });
+  }
+
+  async function moveClip(attachmentId: string, nextStartSec: number) {
+    const attachment = attachments.find((item) => item.id === attachmentId);
+    const clip = timelineClips.find((item) => item.attachment.id === attachmentId);
+    if (!attachment || !clip) return;
+
+    const resolvedStart = resolveClipMoveStart(clip, timelineClips, nextStartSec, timelineDurationSec);
+    if (Math.abs(resolvedStart - clip.startSec) < 0.01) return;
+
+    await updateMutation.mutateAsync({
+      attachmentId,
+      body: {
+        playback: buildPlaybackPatch(attachment, { timelineStartSec: resolvedStart }),
+      },
+    });
+  }
+
+  async function resizeClipStart(attachmentId: string, nextStartSec: number) {
+    const attachment = attachments.find((item) => item.id === attachmentId);
+    const clip = timelineClips.find((item) => item.attachment.id === attachmentId);
+    if (!attachment || !clip) return;
+
+    const loop = getClipLoop(attachment);
+    const playback = readClipPlayback(attachment);
+    const endSec = clip.endSec;
+    let startSec = Math.max(0, Math.min(nextStartSec, endSec - MIN_CLIP_SEC));
+    const tentativeClip = { ...clip, startSec, durationSec: endSec - startSec };
+    startSec = resolveClipMoveStart(tentativeClip, timelineClips, startSec, timelineDurationSec);
+
+    let durationSec = endSec - startSec;
+    const deltaSec = startSec - clip.startSec;
+    let startOffsetMs = Math.max(0, (playback.startOffsetMs ?? 0) + Math.round(deltaSec * 1000));
+
+    if (!loop) {
+      const maxDuration = getNaturalDurationSec(attachment) - startOffsetMs / 1000;
+      if (durationSec > maxDuration) {
+        durationSec = Math.max(MIN_CLIP_SEC, maxDuration);
+        startSec = endSec - durationSec;
+        startOffsetMs = Math.max(0, (playback.startOffsetMs ?? 0) + Math.round((startSec - clip.startSec) * 1000));
+      }
+    }
+
+    if (durationSec < MIN_CLIP_SEC) return;
+
+    await updateMutation.mutateAsync({
+      attachmentId,
+      body: {
+        playback: buildPlaybackPatch(attachment, {
+          timelineStartSec: startSec,
+          timelineDurationSec: durationSec,
+          startOffsetMs,
+        }),
+      },
+    });
+  }
+
+  async function cutClipAt(attachmentId: string, cutSec: number) {
+    const attachment = attachments.find((item) => item.id === attachmentId);
+    const clip = timelineClips.find((item) => item.attachment.id === attachmentId);
+    if (!attachment || !clip) return;
+
+    const split = splitClipAt(clip, cutSec);
+    if (!split) {
+      setError(`Cut needs at least ${MIN_CLIP_SEC}s on each side of the split.`);
+      return;
+    }
+
+    setError(null);
+    const playback = readClipPlayback(attachment);
+
+    await updateMutation.mutateAsync({
+      attachmentId,
+      body: {
+        playback: buildPlaybackPatch(attachment, {
+          timelineStartSec: clip.startSec,
+          timelineDurationSec: split.leftDurationSec,
+        }),
+      },
+    });
+
+    await attachMutation.mutateAsync({
+      mediaAssetId: attachment.mediaAssetId,
+      policy: attachment.policy,
+      order: attachment.order + 1,
+      label: attachment.label ?? attachment.mediaAsset.originalName,
+      playback: {
+        ...playback,
+        timelineStartSec: cutSec,
+        timelineDurationSec: split.rightDurationSec,
+        startOffsetMs: split.rightStartOffsetMs,
+      },
+      beatFx: attachment.beatFx ?? undefined,
     });
   }
 
@@ -210,7 +321,12 @@ export function useSongVisualEditorState({
 
     await updateMutation.mutateAsync({
       attachmentId,
-      body: { playback: buildPlaybackPatch(attachment, { timelineDurationSec: clipDurationSec }) },
+      body: {
+        playback: buildPlaybackPatch(attachment, {
+          timelineStartSec: clip.startSec,
+          timelineDurationSec: clipDurationSec,
+        }),
+      },
     });
   }
 
@@ -272,6 +388,9 @@ export function useSongVisualEditorState({
     setIncludeSiteMedia,
     setClipLoop,
     resizeClip,
+    resizeClipStart,
+    moveClip,
+    cutClipAt,
     selectAttachment,
     detachAttachment: detachMutation.mutate,
   };

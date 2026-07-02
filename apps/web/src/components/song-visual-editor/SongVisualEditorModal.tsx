@@ -101,12 +101,15 @@ export function SongVisualEditorModal({ recording, onClose }: SongVisualEditorMo
             durationSec={durationSec}
             remainingSec={editor.remainingTimelineSec}
             currentTimeSec={playback.currentTimeSec}
+            isBusy={editor.isBusy}
             selectedAttachmentId={editor.selectedAttachmentId}
             onSelectAttachment={editor.selectAttachment}
-            onSeek={playback.seekTo}
             onRemoveAttachment={editor.detachAttachment}
             onToggleLoop={(attachmentId, loop) => void editor.setClipLoop(attachmentId, loop)}
+            onMoveClip={(attachmentId, nextStartSec) => void editor.moveClip(attachmentId, nextStartSec)}
             onResizeClip={(attachmentId, nextDurationSec) => void editor.resizeClip(attachmentId, nextDurationSec)}
+            onResizeClipStart={(attachmentId, nextStartSec) => void editor.resizeClipStart(attachmentId, nextStartSec)}
+            onCutClipAt={(attachmentId, cutSec) => void editor.cutClipAt(attachmentId, cutSec)}
           />
 
           <SongVisualAssetLibrary
@@ -117,6 +120,7 @@ export function SongVisualEditorModal({ recording, onClose }: SongVisualEditorMo
             onAddToTimeline={(assetId) => void editor.attachExistingAsset(assetId)}
             onDeleteAsset={editor.deleteAsset}
             onUpload={editor.openUploadPicker}
+            onUploadFile={editor.uploadFile}
           />
 
           {editor.error ? (
