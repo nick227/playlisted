@@ -20,7 +20,7 @@ interface TopBarProps {
  *
  * DESKTOP (sm+):
  *   • Always-on centered search combobox; no in-bar wordmark (sidebar has branding).
- *   • Login / sign-up links replace the mobile avatar shortcut.
+ *   • Guest users see a blank profile button that links to sign in.
  *   • Hamburger hidden from lg up (persistent sidebar).
  */
 export function TopBar({ onMenuClick, cinematicBgTransparent = false }: TopBarProps) {
