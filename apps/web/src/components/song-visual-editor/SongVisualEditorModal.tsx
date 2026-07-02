@@ -1,5 +1,7 @@
-import { Loader2, X } from "lucide-react";
+import { Loader2, RadioIcon, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
+import { Link } from "react-router-dom";
 
 import { useSuppressPlaybackFocus } from "@/lib/playbackFocusSuppression";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
@@ -73,6 +75,14 @@ function SongVisualEditorModalInner({
     pauseRadio();
   }, [pauseRadio, releasePlayback]);
 
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, []);
+
   useSongVisualEditorHotkeys({
     copySelectedClip: editor.copySelectedClip,
     pasteClipAt: editor.pasteClipAt,
@@ -89,112 +99,132 @@ function SongVisualEditorModalInner({
     onClose();
   }
 
-  return (
-    <div className="fixed inset-0 z-[9999] flex flex-col bg-[var(--color-canvas)] lg:left-[var(--spacing-sidebar)]">
-      <div className="flex shrink-0 items-center gap-2 border-b border-white/10 px-4 py-2.5">
-        <h2 className="min-w-0 flex-1 truncate text-base font-semibold text-white">{recording.title}</h2>
-        <button
-          type="button"
-          onClick={() => editor.saveChanges()}
-          disabled={!editor.isDirty || editor.isSaving}
-          className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-1 text-sm font-semibold text-emerald-100 hover:bg-emerald-500/20 disabled:opacity-40"
-        >
-          {editor.isSaving ? <Loader2 size={14} className="animate-spin" /> : null}
-          Save
-        </button>
-        <button
-          type="button"
-          onClick={handleClose}
-          className="rounded-full p-2 text-white/50 hover:bg-white/10 hover:text-white"
-          aria-label="Close visual editor"
-        >
-          <X size={20} />
-        </button>
+  return createPortal(
+    <>
+      <div className="fixed inset-0 z-[10000] flex flex-col bg-[var(--color-canvas)]">
+        <header className="relative flex shrink-0 items-center border-b border-white/10 px-4 py-3 md:px-6">
+          <h2 className="pointer-events-none absolute inset-x-0 truncate px-28 text-center text-base font-semibold text-white md:text-lg">
+            {recording.title}
+          </h2>
+          <div className="ml-auto flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => editor.saveChanges()}
+              disabled={!editor.isDirty || editor.isSaving}
+              className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-1 text-sm font-semibold text-emerald-100 hover:bg-emerald-500/20 disabled:opacity-40"
+            >
+              {editor.isSaving ? <Loader2 size={14} className="animate-spin" /> : null}
+              Save
+            </button>
+            <button
+              type="button"
+              onClick={handleClose}
+              className="rounded-full p-2 text-white/50 hover:bg-white/10 hover:text-white"
+              aria-label="Close visual editor"
+            >
+              <X size={20} />
+            </button>
+          </div>
+        </header>
+
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 py-3 md:px-6 md:py-4">
+          <div className="shrink-0 space-y-2.5 md:space-y-3">
+            <SongVisualEditorPreview
+              clip={activeClip}
+              isPlaying={playback.isPlaying}
+              currentTimeSec={playback.currentTimeSec}
+              previewSubtitles={previewSubtitles}
+              recording={recording}
+              audioRef={playback.audioRef}
+              onTogglePlayback={playback.togglePlayback}
+              canPlay={Boolean(recording.audioUrl) && durationSec > 0}
+            />
+
+            <SongVisualEditorToolbar
+              isBusy={editor.isBusy}
+              currentTimeSec={playback.currentTimeSec}
+              durationSec={durationSec}
+              editMode={editMode}
+              includeSiteMedia={editor.includeSiteMedia}
+              previewSubtitles={previewSubtitles}
+              hasAttachments={editor.attachments.some((attachment) => attachment.enabled)}
+              onEditModeChange={setEditMode}
+              onIncludeSiteMediaChange={(includeSiteMedia) => editor.setIncludeSiteMedia(includeSiteMedia)}
+              onPreviewSubtitlesChange={setPreviewSubtitles}
+            />
+
+            <SongVisualEditorTimeline
+              clips={editor.timelineClips}
+              durationSec={durationSec}
+              currentTimeSec={playback.currentTimeSec}
+              peaks={waveform?.peaks}
+              waveformLoading={waveformLoading}
+              waveformError={waveformError}
+              clipSyncStatus={editor.clipSyncStatus}
+              editMode={editMode}
+              selectedAttachmentId={editor.selectedAttachmentId}
+              onSeek={playback.seekTo}
+              onSelectAttachment={editor.selectAttachment}
+              onMoveClip={(attachmentId, nextStartSec) => editor.moveClip(attachmentId, nextStartSec)}
+              onResizeClip={(attachmentId, nextDurationSec) => editor.resizeClip(attachmentId, nextDurationSec)}
+              onResizeClipStart={(attachmentId, nextStartSec) => editor.resizeClipStart(attachmentId, nextStartSec)}
+              onCutClipAt={(attachmentId, cutSec) => editor.cutClipAt(attachmentId, cutSec)}
+              onCutAtTime={(cutSec) => editor.cutAtTime(cutSec)}
+            />
+          </div>
+
+          <div className="mt-3 min-h-0 flex-1 overflow-y-auto md:mt-4">
+            <SongVisualAssetLibrary
+              timelineClips={editor.timelineClips}
+              assets={editor.assets}
+              isBusy={editor.isBusy}
+              onClipLoopChange={(attachmentId, loop) => editor.setClipLoop(attachmentId, loop)}
+              onClipAudioPulseChange={(attachmentId, enabled) => editor.setClipAudioPulse(attachmentId, enabled)}
+              readClipAudioPulse={editor.readClipAudioPulse}
+              onResetClipTrim={(attachmentId) => editor.resetClipTrim(attachmentId)}
+              onAddRow={(row) => void editor.attachLibraryRow(row, playback.currentTimeSec)}
+              onRemoveClip={editor.detachAttachment}
+              onSelectClip={editor.selectAttachment}
+              onDeleteAsset={editor.deleteAsset}
+              onUpload={editor.openUploadPicker}
+              onUploadFile={editor.uploadFile}
+              selectedAttachmentId={editor.selectedAttachmentId}
+            />
+
+            {editor.error ? (
+              <p className="mt-3 text-sm text-red-300">{editor.error}</p>
+            ) : null}
+          </div>
+        </div>
+
+        <input
+          ref={editor.fileInputRef}
+          type="file"
+          accept="video/*,image/*"
+          className="hidden"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (file) editor.uploadFile(file);
+            event.currentTarget.value = "";
+          }}
+        />
+        <audio
+          ref={playback.bindAudioElement}
+          crossOrigin="anonymous"
+          preload="metadata"
+          className="hidden"
+        />
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto p-3 pb-[var(--spacing-player-safe-mobile)] md:gap-3 md:p-4 md:pb-4">
-        <SongVisualEditorPreview
-          clip={activeClip}
-          isPlaying={playback.isPlaying}
-          currentTimeSec={playback.currentTimeSec}
-          previewSubtitles={previewSubtitles}
-          recording={recording}
-          audioRef={playback.audioRef}
-          onTogglePlayback={playback.togglePlayback}
-          canPlay={Boolean(recording.audioUrl) && durationSec > 0}
-        />
-
-        <SongVisualEditorToolbar
-          isBusy={editor.isBusy}
-          currentTimeSec={playback.currentTimeSec}
-          durationSec={durationSec}
-          editMode={editMode}
-          includeSiteMedia={editor.includeSiteMedia}
-          previewSubtitles={previewSubtitles}
-          hasAttachments={editor.attachments.some((attachment) => attachment.enabled)}
-          onEditModeChange={setEditMode}
-          onIncludeSiteMediaChange={(includeSiteMedia) => editor.setIncludeSiteMedia(includeSiteMedia)}
-          onPreviewSubtitlesChange={setPreviewSubtitles}
-        />
-
-        <SongVisualEditorTimeline
-          clips={editor.timelineClips}
-          durationSec={durationSec}
-          currentTimeSec={playback.currentTimeSec}
-          peaks={waveform?.peaks}
-          waveformLoading={waveformLoading}
-          waveformError={waveformError}
-          clipSyncStatus={editor.clipSyncStatus}
-          editMode={editMode}
-          selectedAttachmentId={editor.selectedAttachmentId}
-          onSeek={playback.seekTo}
-          onSelectAttachment={editor.selectAttachment}
-          onMoveClip={(attachmentId, nextStartSec) => editor.moveClip(attachmentId, nextStartSec)}
-          onResizeClip={(attachmentId, nextDurationSec) => editor.resizeClip(attachmentId, nextDurationSec)}
-          onResizeClipStart={(attachmentId, nextStartSec) => editor.resizeClipStart(attachmentId, nextStartSec)}
-          onCutClipAt={(attachmentId, cutSec) => editor.cutClipAt(attachmentId, cutSec)}
-          onCutAtTime={(cutSec) => editor.cutAtTime(cutSec)}
-        />
-
-        <SongVisualAssetLibrary
-          timelineClips={editor.timelineClips}
-          assets={editor.assets}
-          isBusy={editor.isBusy}
-          onClipLoopChange={(attachmentId, loop) => editor.setClipLoop(attachmentId, loop)}
-          onClipAudioPulseChange={(attachmentId, enabled) => editor.setClipAudioPulse(attachmentId, enabled)}
-          readClipAudioPulse={editor.readClipAudioPulse}
-          onResetClipTrim={(attachmentId) => editor.resetClipTrim(attachmentId)}
-          onAddRow={(row) => void editor.attachLibraryRow(row, playback.currentTimeSec)}
-          onRemoveClip={editor.detachAttachment}
-          onSelectClip={editor.selectAttachment}
-          onDeleteAsset={editor.deleteAsset}
-          onUpload={editor.openUploadPicker}
-          onUploadFile={editor.uploadFile}
-          selectedAttachmentId={editor.selectedAttachmentId}
-        />
-
-        {editor.error ? (
-          <p className="text-sm text-red-300">{editor.error}</p>
-        ) : null}
-      </div>
-
-      <input
-        ref={editor.fileInputRef}
-        type="file"
-        accept="video/*,image/*"
-        className="hidden"
-        onChange={(event) => {
-          const file = event.target.files?.[0];
-          if (file) editor.uploadFile(file);
-          event.currentTarget.value = "";
-        }}
-      />
-      <audio
-        ref={playback.bindAudioElement}
-        crossOrigin="anonymous"
-        preload="metadata"
-        className="hidden"
-      />
-    </div>
+      <Link
+        to="/"
+        className="fixed left-4 top-3 z-[10001] flex items-center gap-1.5 rounded-lg border border-white/10 bg-[var(--color-canvas)]/95 px-2.5 py-1.5 text-xl font-bold tracking-tight text-white shadow-lg backdrop-blur-md md:left-6 md:text-2xl"
+        aria-label="Playlisted home"
+      >
+        Play<span className="text-[var(--color-brand)]">listed</span>
+        <RadioIcon size={16} className="text-[var(--color-brand)]" />
+      </Link>
+    </>,
+    document.body,
   );
 }
