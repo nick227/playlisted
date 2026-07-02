@@ -211,7 +211,7 @@ function toolbarToggleClass(active: boolean, disabled: boolean, sizeClass: strin
   return [
     `inline-flex items-center rounded-md text-[11px] font-medium transition ${sizeClass}`,
     active
-      ? "bg-emerald-500 text-black hover:bg-emerald-400"
+      ? "bg-sky-600 text-white ring-1 ring-inset ring-sky-400/50 hover:bg-sky-500"
       : "text-white/55 hover:bg-white/5 hover:text-white/85",
     disabled ? "cursor-not-allowed opacity-40" : "",
   ].join(" ");
