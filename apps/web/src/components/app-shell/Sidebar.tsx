@@ -1,10 +1,8 @@
 import {
   AudioLines,
   BarChart3,
-  BookOpen,
   Heart,
   Home,
-  ListMusic,
   Lock,
   Mic2,
   PanelsTopLeft,
@@ -28,8 +26,6 @@ import {
   CHARTS_PATH,
   FAVORITES_PATH,
   GENRES_PATH,
-  LIBRARY_PATH,
-  PLAYLISTS_PATH,
   SONGS_PATH,
 } from "@/lib/browsePaths";
 import { ADMIN_PATH, panelPathForRole, playlistPath, studioCollectionEditPath } from "@/lib/routes";
@@ -43,13 +39,6 @@ interface SidebarProps {
 const discoverLinks = [
   { to: "/", label: "Home", icon: Home },
   { to: CHARTS_PATH, label: "Charts", icon: BarChart3 },
-];
-
-const libraryBrowseLinks = [
-  { to: SONGS_PATH, label: "Songs", icon: AudioLines },
-  { to: GENRES_PATH, label: "Genres", icon: Tags },
-  { to: ARTISTS_PATH, label: "Artists", icon: Mic2 },
-  { to: PLAYLISTS_PATH, label: "Playlists", icon: ListMusic },
 ];
 
 const baseNavClass = "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition";
