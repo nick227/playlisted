@@ -1,4 +1,4 @@
-import { Pause, Play, Upload } from "lucide-react";
+import { Pause, Play } from "lucide-react";
 
 type SongVisualEditorToolbarProps = {
   isPlaying: boolean;
@@ -23,7 +23,7 @@ export function SongVisualEditorToolbar({
   previewSubtitles,
   hasAttachments,
   onTogglePlayback,
-  onUpload,
+  onUpload: _onUpload,
   onIncludeSiteMediaChange,
   onPreviewSubtitlesChange,
 }: SongVisualEditorToolbarProps) {

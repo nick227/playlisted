@@ -512,7 +512,7 @@ export function useSongVisualEditorState({
       startOffsetMs?: number;
     };
     const loop = playback.loop ?? defaultAssetLoop(asset);
-    const stubAttachment = { mediaAsset: asset, playback: { loop, ...playback } } as SongVisualAttachmentRecord;
+    const stubAttachment = { mediaAsset: asset, playback: { loop, ...playback } } as unknown as SongVisualAttachmentRecord;
     const bounds = resolveClipInsert(stubAttachment, startSec, timelineDurationSec, {
       loop,
       durationSec: playback.timelineDurationSec,

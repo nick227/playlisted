@@ -1,6 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 
-import registry from '../registry'
 import { registerUserMediaEngine } from '../media/userMediaEngine'
 import {
   attachmentToScenePreset,

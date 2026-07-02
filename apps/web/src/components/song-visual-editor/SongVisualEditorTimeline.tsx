@@ -32,7 +32,7 @@ export function SongVisualEditorTimeline({
   currentTimeSec,
   isLibraryBusy,
   clipSyncStatus,
-  hasClipboard,
+  hasClipboard: _hasClipboard,
   selectedAttachmentId,
   onSelectAttachment,
   onMoveClip,

@@ -1,5 +1,5 @@
 import type { Features } from './AudioFeatureExtractor'
-import { BeatClock, EMPTY_BEAT_CLOCK, type BeatClockSnapshot } from './BeatClock'
+import { BeatClock as BeatClockImpl, EMPTY_BEAT_CLOCK, type BeatClockSnapshot } from './BeatClock'
 import { getVisualTriggers, type TriggerFrame } from './VisualTriggers'
 import { createDropDetectorState, tickDropDetector, type DropDetectorState } from './dropDetection'
 
@@ -116,7 +116,7 @@ export function getTriggersForPreset(
 export class TheatreAudioBus {
   private prevDefaultTriggers: TriggerFrame | null = null
   private dropState: DropDetectorState = createDropDetectorState()
-  private beatClock = new BeatClock()
+  private beatClock = new BeatClockImpl()
   private clockNowMs = 0
 
   reset(): void {

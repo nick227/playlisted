@@ -26,6 +26,6 @@ export function beatFxForAudioPulse(
   };
 }
 
-export function defaultAssetAudioPulse(mediaType: "image" | "video"): boolean {
+export function defaultAssetAudioPulse(_mediaType: "image" | "video"): boolean {
   return false;
 }

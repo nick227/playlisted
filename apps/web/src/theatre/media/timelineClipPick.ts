@@ -4,7 +4,9 @@ import type { VisualMediaTimelineClip } from './timelineClipLayout'
 import { findActiveTimelineClip, localPlayheadSec } from './timelineClipLayout'
 import type { PickContext } from '../selection/types'
 
-export function pickTimelineClipPresetId(ctx: PickContext): string | null {
+type TimelineCtx = Pick<PickContext, 'songPlayheadSec' | 'timelineClips'>
+
+export function pickTimelineClipPresetId(ctx: TimelineCtx): string | null {
   if (ctx.songPlayheadSec == null || !ctx.timelineClips?.length) return null
   const clip = findActiveTimelineClip(ctx.timelineClips, ctx.songPlayheadSec)
   return clip ? userMediaPresetId(clip.attachment.id) : null
@@ -17,7 +19,7 @@ export function buildTimelineVideoStartOffsetMs(
   return Math.round(localPlayheadSec(playheadSec, clip) * 1000)
 }
 
-export function isTimelinePlaybackActive(ctx: PickContext): boolean {
+export function isTimelinePlaybackActive(ctx: TimelineCtx): boolean {
   return Boolean(ctx.timelineClips?.length && ctx.songPlayheadSec != null)
 }
 
@@ -25,7 +27,7 @@ export function isUserMediaPresetId(presetId: string | null | undefined): boolea
   return Boolean(presetId?.startsWith('user-media:'))
 }
 
-export function resolveTimelinePresetId(ctx: PickContext): string | null {
+export function resolveTimelinePresetId(ctx: TimelineCtx): string | null {
   const presetId = pickTimelineClipPresetId(ctx)
   if (!presetId || !resolvePreset(presetId)) return null
   return presetId

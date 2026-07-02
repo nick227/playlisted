@@ -96,7 +96,7 @@ export class RotationPolicy {
 
   evaluate(
     input: RotationPolicyInput,
-    resolved: ResolvedRotationPolicy = this.config,
+    resolved: RotationPolicyConfig | ResolvedRotationPolicy = this.config,
   ): RotationDecision {
     return evaluateRotationPolicy(input, resolved)
   }

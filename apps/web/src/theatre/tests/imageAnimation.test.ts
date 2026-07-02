@@ -9,6 +9,7 @@ import type { AnimationContext } from '../core/IAnimation'
 import registry from '../registry'
 import { getPreset } from '../registry/scenePresets'
 import { albumArtPackage } from '../packages/album-art'
+import { createFallbackAudioSnapshot } from '../audio/TheatreAudioBus'
 import '../registry/seed'
 
 describe('imageAnimationUtils', () => {
@@ -120,7 +121,7 @@ describe('ImageAnimation init', () => {
     await animation.start()
 
     const img = container.querySelector('img') as HTMLElement & { src: string }
-    img.onload?.()
+    img.onload?.(new Event('load'))
     expect(img.src).toContain('synthwave.jpg')
 
     animation.renderFrame({
@@ -159,8 +160,8 @@ describe('ImageAnimation init', () => {
     animation.enableExternalDriving()
     await animation.start()
 
-    const img = container.querySelector('img') as HTMLElement & { style: Record<string, string> }
-    img.onload?.()
+    const img = container.querySelector('img') as unknown as HTMLElement & { style: Record<string, string> }
+    img.onload?.(new Event('load'))
 
     animation.renderFrame({
       options: {
@@ -173,6 +174,7 @@ describe('ImageAnimation init', () => {
         lowPower: false,
         time: { elapsed: 0, delta: 16, frame: 1 },
         audio: {
+          ...createFallbackAudioSnapshot(),
           edges: { beat: true, drop: false, bassHit: false, midsHit: false, highsHit: false, chaosHit: false },
         },
         getTriggers: () => ({

@@ -39,23 +39,25 @@ function makeAttachment(id: string, order: number): SongVisualAttachmentRecord {
     updatedAt: "2026-01-01T00:00:00.000Z",
     mediaAsset: {
       id: `asset-${id}`,
-      userId: "user-1",
-      mediaType: "video",
-      storageKey: `key-${id}`,
+      ownerId: "user-1",
+      mediaType: "video" as const,
+      url: `/uploads/user/video-${id}.mp4`,
+      thumbnailUrl: null,
       originalName: `video-${id}.mp4`,
       mimeType: "video/mp4",
-      byteSize: 1000,
+      sizeBytes: 1000,
       width: 1920,
       height: 1080,
       durationMs: 8000,
       createdAt: "2026-01-01T00:00:00.000Z",
-      updatedAt: "2026-01-01T00:00:00.000Z",
     },
   };
 }
 
 function seedCache(queryClient: QueryClient, recordingId: string, attachments: SongVisualAttachmentRecord[]) {
   const data: SongVisualMediaRecord = {
+    songId: "song-1",
+    recordingId,
     policy: "preferAttached",
     attachments,
   };

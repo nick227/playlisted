@@ -27,9 +27,6 @@ export class ImageAnimation implements IAnimation {
   private running = false
   private externallyDriven = false
   private resolvedSrc = ''
-  private imageVisible = false
-  private containerRef: HTMLElement | null = null
-  private context: AnimationContext | null = null
   private initOptions: ImageAnimationInitOptions
   private pulseState: VideoBeatFxPulseState = { beatPulse: 0, dropPulse: 0 }
 
@@ -44,9 +41,6 @@ export class ImageAnimation implements IAnimation {
   private boundImageUrl: string | null = null
 
   async init(container: HTMLElement, context: AnimationContext) {
-    this.containerRef = container
-    this.context = context
-
     this.root = document.createElement('div')
     this.root.style.position = 'absolute'
     this.root.style.inset = '0'
@@ -80,11 +74,9 @@ export class ImageAnimation implements IAnimation {
     this.img.alt = ''
 
     this.img.onload = () => {
-      this.imageVisible = true
       if (this.img) this.img.style.display = 'block'
     }
     this.img.onerror = () => {
-      this.imageVisible = false
       if (this.img) this.img.style.display = 'none'
     }
 
@@ -129,10 +121,7 @@ export class ImageAnimation implements IAnimation {
     this.root = null
     this.fallbackEl = null
     this.img = null
-    this.containerRef = null
-    this.context = null
     this.resolvedSrc = ''
-    this.imageVisible = false
     this.boundImageUrl = null
     this.pulseState = { beatPulse: 0, dropPulse: 0 }
   }
@@ -188,14 +177,12 @@ export class ImageAnimation implements IAnimation {
       : this.boundImageUrl ?? resolveImageUrl(context)
     if (!nextSrc) {
       this.resolvedSrc = ''
-      this.imageVisible = false
       this.img.style.display = 'none'
       this.img.removeAttribute('src')
       return
     }
     if (nextSrc === this.resolvedSrc) return
     this.resolvedSrc = nextSrc
-    this.imageVisible = false
     this.img.style.display = 'none'
     this.img.src = nextSrc
   }

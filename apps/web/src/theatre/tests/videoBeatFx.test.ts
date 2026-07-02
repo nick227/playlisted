@@ -9,6 +9,7 @@ import {
 import { ImageAnimation } from '../core/ImageAnimation'
 import { attachmentToScenePreset } from '../media/attachmentToScenePreset'
 import type { VisualMediaAttachment } from '../media/types'
+import { createFallbackAudioSnapshot } from '../audio/TheatreAudioBus'
 
 describe('videoBeatFxUtils', () => {
   it('returns null when beatFx is missing or disabled', () => {
@@ -140,7 +141,7 @@ describe('VideoAnimation beatFx integration', () => {
         reducedMotion: false,
         lowPower: false,
         time: { elapsed: 0, delta: 16, frame: 1 },
-        audio: { edges: { beat: true, drop: true, bassHit: false, midsHit: false, highsHit: false, chaosHit: false } },
+        audio: { ...createFallbackAudioSnapshot(), edges: { beat: true, drop: true, bassHit: false, midsHit: false, highsHit: false, chaosHit: false } },
         getTriggers: () => ({
           bassHit: false,
           midsHit: false,
@@ -202,7 +203,7 @@ describe('VideoAnimation beatFx integration', () => {
         reducedMotion: false,
         lowPower: false,
         time: { elapsed: 0, delta: 16, frame: 1 },
-        audio: { edges: { beat: true, drop: false, bassHit: false, midsHit: false, highsHit: false, chaosHit: false } },
+        audio: { ...createFallbackAudioSnapshot(), edges: { beat: true, drop: false, bassHit: false, midsHit: false, highsHit: false, chaosHit: false } },
         getTriggers: () => ({
           bassHit: false,
           midsHit: false,

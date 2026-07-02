@@ -251,7 +251,7 @@ export function resolveClipInsert(
   if (!Number.isFinite(startSec) || startSec >= songDurationSec) return null;
 
   const loop = opts.loop ?? getClipLoop(attachment);
-  const stub = { mediaAsset: attachment.mediaAsset, playback: { loop } } as SongVisualAttachmentRecord;
+  const stub = { mediaAsset: attachment.mediaAsset, playback: { loop } } as unknown as SongVisualAttachmentRecord;
   const startOffsetMs = opts.startOffsetMs ?? 0;
   const fallbackDuration = opts.durationSec ?? defaultClipDurationSec(stub, startSec, songDurationSec);
   const timelineStartSec = clampClipStart(startSec, fallbackDuration, songDurationSec);

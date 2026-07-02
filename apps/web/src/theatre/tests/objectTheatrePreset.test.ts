@@ -44,8 +44,9 @@ describe('object theatre presets', () => {
       expect(entry).not.toBeNull()
       const instance = withTheatreInitContext(entry!.factory(initContext), initContext)
       const resolved = resolveTheatreInitContext(instance, { options: {} })
-      expect(resolved.options?.objectTheatre?.shapePack).toBe(shapePack)
-      expect(resolved.options?.objectTheatre?.motionPreset).toBe(motionPreset)
+      const theatre = resolved.options?.objectTheatre as { shapePack?: string; motionPreset?: string } | undefined
+      expect(theatre?.shapePack).toBe(shapePack)
+      expect(theatre?.motionPreset).toBe(motionPreset)
     }
   })
 
