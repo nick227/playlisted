@@ -23,6 +23,8 @@ import { isUserMediaPresetId, resolvePreset } from '../media/resolvePreset'
 import { resolveTimelinePlaybackDecision } from '../media/TimelinePlaybackDirector'
 import { resolveTimelinePresetId } from '../media/timelineClipPick'
 import { hydrateTrackVisualMedia } from '../media/hydrateTrackVisualMedia'
+import { lookupTrackVisualMediaKey } from '../media/resolveTrackVisualMedia'
+import { songVisualDebug } from '../media/songVisualDebug'
 import { getPackageIdForPreset } from '../registry/packageRotation'
 import { buildAnimationFrameContext, withTheatreInitContext } from './theatreFrameContext'
 import { detectPolicy } from '../runtime/PerformancePolicy'
@@ -51,7 +53,7 @@ const VIDEO_PACKAGE_ID = 'videos'
 
 type PresetChangeSource = 'manual' | 'auto'
 
-type PlaybackSourceMeta = { artworkUrl?: string | null }
+type PlaybackSourceMeta = { artworkUrl?: string | null; recordingId?: string | null }
 type TheatreMode = 'background' | 'immersive'
 
 function isVideoPresetId(presetId: string | null | undefined): boolean {
@@ -149,11 +151,15 @@ class TheatreController extends EventTarget {
     } else if (meta && 'artworkUrl' in meta) {
       this.state.artworkUrl = meta.artworkUrl ?? null
     }
+    if (meta?.recordingId) {
+      this.setTrackContext({ segmentId: meta.recordingId, trackId: meta.recordingId })
+    }
     this.rebindAudio()
   }
 
   public setArtwork(artworkUrl: string | null) {
     this.state.artworkUrl = artworkUrl
+    songVisualDebug('setArtwork', { artworkUrl })
     this.dispatchEvent(new Event('change'))
   }
 
@@ -203,36 +209,67 @@ class TheatreController extends EventTarget {
   }
 
   public setTrackContext(track: TheatreTrackContext | null) {
-    this.trackContext = track
-    this.lastTimelineClipPresetId = null
-    clearDynamicPresets()
-    this.fxSelector.clearCandidate()
+    const nextKey = lookupTrackVisualMediaKey(track)
+    const prevKey = lookupTrackVisualMediaKey(this.trackContext)
+
+    songVisualDebug('setTrackContext', {
+      track,
+      nextKey,
+      prevKey,
+      activePresetId: this.state.presetId,
+      active: this.state.active,
+      canEnter: this.state.canEnter,
+    })
 
     if (!track) {
+      this.trackContext = null
+      this.lastTimelineClipPresetId = null
+      clearDynamicPresets()
+      this.fxSelector.clearCandidate()
       this.songVisualHydrationPending = false
       this.visualMediaHydration = null
       return
     }
 
+    if (nextKey === prevKey && nextKey !== null) {
+      this.trackContext = track
+      return
+    }
+
+    this.trackContext = track
+    this.lastTimelineClipPresetId = null
+    clearDynamicPresets()
+    this.fxSelector.clearCandidate()
+
     this.songVisualHydrationPending = true
     this.visualMediaHydration = hydrateTrackVisualMedia(track, { forceNetwork: true })
       .then(() => {
+        songVisualDebug('hydration:complete', {
+          track,
+          active: this.state.active,
+          presetId: this.state.presetId,
+        })
         this.fxSelector.clearCandidate()
-        if (!this.state.active) return
-        void this.syncAttachedOnlyPlaybackAfterHydrate()
-        if (
-          this.state.presetId &&
-          isUserMediaPresetId(this.state.presetId) &&
-          !resolvePreset(this.state.presetId) &&
-          !hasAttachedOnlyTimeline(this.buildFxPickContext())
-        ) {
-          void this.changeToTimelineFallbackPreset()
-        }
+        void this.reconcileVisualMediaAfterHydrate()
       })
       .finally(() => {
         this.songVisualHydrationPending = false
         this.visualMediaHydration = null
       })
+  }
+
+  private async reconcileVisualMediaAfterHydrate() {
+    if (!this.state.active) return
+
+    await this.syncAttachedOnlyPlaybackAfterHydrate()
+    if (
+      this.state.presetId &&
+      isUserMediaPresetId(this.state.presetId) &&
+      !resolvePreset(this.state.presetId) &&
+      !hasAttachedOnlyTimeline(this.buildFxPickContext())
+    ) {
+      await this.changeToTimelineFallbackPreset()
+    }
   }
 
   private async ensureVisualMediaHydrated(): Promise<void> {
@@ -573,6 +610,14 @@ class TheatreController extends EventTarget {
       songPlayheadSec: playheadSec,
       resolvePreset,
     })
+    songVisualDebug('timelineDirector:decision', {
+      playheadSec,
+      policy: pickCtx.songVisualPolicy,
+      kind: decision.kind,
+      activeAttachmentId: decision.activeClip?.attachment.id ?? null,
+      presetId: decision.presetId,
+      suppressTimedRotation: decision.suppressTimedRotation,
+    })
 
     if (decision.kind === 'activeClip' && decision.presetId) {
       if (decision.presetId !== this.state.presetId && !this.transitioning) {
@@ -612,6 +657,11 @@ class TheatreController extends EventTarget {
     if (!this.state.active || this.transitioning) return
     const pickCtx = this.buildFxPickContext()
     if (pickCtx.songVisualPolicy === 'attachedOnly') {
+      songVisualDebug('builtinPreset:blocked', {
+        reason: 'attachedOnlyTimelineFallback',
+        timelineClipCount: pickCtx.timelineClips?.length ?? 0,
+        activePresetId: this.state.presetId,
+      })
       if ((pickCtx.timelineClips?.length ?? 0) > 0) {
         await this.changePresetAuto(ATTACHED_ONLY_BLANK_PRESET_ID)
       }
@@ -648,6 +698,10 @@ class TheatreController extends EventTarget {
 
     const pickCtx = this.buildFxPickContext()
     if (pickCtx.songVisualPolicy === 'attachedOnly') {
+      songVisualDebug('builtinPreset:blocked', {
+        reason: 'rotateRandomPreset',
+        activePresetId: this.state.presetId,
+      })
       await this.syncAttachedOnlyPlaybackAfterHydrate()
       return
     }
@@ -954,6 +1008,8 @@ class TheatreController extends EventTarget {
   public async enterBackground() {
     if (!this.state.fxEnabled || this.state.active || this.transitioning) return
 
+    this.clearStaleOverlay()
+
     const token = this.bumpTransitionToken()
     this.transitioning = true
     try {
@@ -973,6 +1029,12 @@ class TheatreController extends EventTarget {
     } finally {
       if (this.stillCurrent(token)) this.transitioning = false
     }
+  }
+
+  private clearStaleOverlay() {
+    if (!this.overlay || this.state.active) return
+    this.overlay.remove()
+    this.overlay = null
   }
 
   private getBackgroundMount(): HTMLElement {
@@ -1123,6 +1185,16 @@ class TheatreController extends EventTarget {
       selectedPreset = resolvePreset(attachedOnlyPresetId)
     }
     const initialPresetId = selectedPreset?.id ?? null
+    songVisualDebug('initialPreset:choice', {
+      mode,
+      initialPresetId,
+      policy: pickCtx.songVisualPolicy,
+      hydrationPending: pickCtx.songVisualHydrationPending,
+      dynamicPresetCount: pickCtx.dynamicPresets?.length ?? 0,
+      timelineClipCount: pickCtx.timelineClips?.length ?? 0,
+      playheadSec: pickCtx.songPlayheadSec,
+      attachedOnlyPresetId,
+    })
 
     const { ctx, policy } = this.buildFrameContextWithAudio(0)
 

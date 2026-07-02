@@ -19,7 +19,7 @@ interface RealTheatreController extends EventTarget {
     mediaSrc: string | null
     artworkUrl: string | null
   }
-  registerPlaybackSource(el: HTMLMediaElement | null, meta?: { artworkUrl?: string | null }): void
+  registerPlaybackSource(el: HTMLMediaElement | null, meta?: { artworkUrl?: string | null; recordingId?: string | null }): void
   setArtwork(url: string | null): void
   setCanEnter(canEnter: boolean): void
   setFxEnabled(enabled: boolean): void | Promise<void>
@@ -78,7 +78,7 @@ class LazyTheatreController extends EventTarget {
   // Buffered calls replayed when the real controller loads.
   private _pendingSource: { el: HTMLMediaElement | null; meta?: { artworkUrl?: string | null } } | null = null
   private _pendingClipDuration: number | null = null
-  private _pendingTrackContext: { segmentId?: string | null; trackId?: string | null } | null = null
+  private _pendingTrackContext: { segmentId?: string | null; trackId?: string | null } | null | undefined = undefined
   private _pendingArtwork: { url: string | null } | null = null
   private _pendingAutoRotate: boolean = false
   private _pendingFxEnabled: boolean | null = null
@@ -103,7 +103,7 @@ class LazyTheatreController extends EventTarget {
         if (this._pendingClipDuration !== null) {
           real.setClipDuration(this._pendingClipDuration)
         }
-        if (this._pendingTrackContext !== null) {
+        if (this._pendingTrackContext !== undefined) {
           real.setTrackContext(this._pendingTrackContext)
         }
         if (this._pendingArtwork !== null) {
@@ -145,7 +145,7 @@ class LazyTheatreController extends EventTarget {
 
   public registerPlaybackSource(
     el: HTMLMediaElement | null,
-    meta?: { artworkUrl?: string | null },
+    meta?: { artworkUrl?: string | null; recordingId?: string | null },
   ) {
     if (el === null) {
       this.state.artworkUrl = null
@@ -184,6 +184,15 @@ class LazyTheatreController extends EventTarget {
     this._pendingTrackContext = track
     if (this._real) {
       this._real.setTrackContext(track)
+      return
+    }
+
+    if (track) {
+      void this._load().then(real => {
+        if (this._pendingTrackContext !== undefined) {
+          real.setTrackContext(this._pendingTrackContext)
+        }
+      })
     }
   }
 
@@ -198,6 +207,9 @@ class LazyTheatreController extends EventTarget {
     this.dispatchEvent(new Event('change'))
     if (canEnter && this.state.fxEnabled) {
       void this._load().then(real => {
+        if (this._pendingTrackContext !== undefined) {
+          real.setTrackContext(this._pendingTrackContext)
+        }
         if (this.state.canEnter) real.setCanEnter(true)
       })
     }

@@ -2,24 +2,17 @@ import { useEffect, useRef } from "react";
 
 import theatreController from "@/theatre/controller/lazyController";
 
-/** Pick a new random theatre preset when the playback segment identity changes. */
+/** Rotate theatre presets when the playback segment identity changes. */
 export function useTheatreTrackRotation(
   segmentId: string | null | undefined,
-  enabled: boolean,
+  autoRotateEnabled: boolean,
   durationMs?: number | null,
 ) {
   const prevSegmentIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    theatreController.setTrackContext(
-      enabled && segmentId ? { segmentId, trackId: segmentId } : null,
-    );
-    return () => theatreController.setTrackContext(null);
-  }, [segmentId, enabled]);
-
-  useEffect(() => {
-    if (!enabled || !segmentId) {
-      if (!enabled) prevSegmentIdRef.current = null;
+    if (!segmentId) {
+      prevSegmentIdRef.current = null;
       return;
     }
 
@@ -28,12 +21,12 @@ export function useTheatreTrackRotation(
     const isSegmentChange = prevSegmentIdRef.current !== null;
     prevSegmentIdRef.current = segmentId;
     if (isSegmentChange) void theatreController.onPlaybackSegmentChanged();
-  }, [segmentId, enabled]);
+  }, [segmentId]);
 
   useEffect(() => {
-    theatreController.setAutoRotation(enabled);
+    theatreController.setAutoRotation(autoRotateEnabled);
     return () => theatreController.setAutoRotation(false);
-  }, [enabled]);
+  }, [autoRotateEnabled]);
 
   useEffect(() => {
     theatreController.setClipDuration(durationMs ?? null);

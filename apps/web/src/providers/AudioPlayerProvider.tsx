@@ -13,6 +13,7 @@ import {
 
 import { prefetchTrackVisualMedia } from "@/theatre/media/hydrateTrackVisualMedia";
 import theatreController from "@/theatre/controller/lazyController";
+import { syncTheatreTrackContext } from "@/theatre/syncTheatreTrackContext";
 import {
   getRadioPlaybackActive,
   subscribeRadioPlayback,
@@ -216,6 +217,10 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   }, [currentTrack?.artworkUrl]);
 
   useEffect(() => {
+    syncTheatreTrackContext(currentTrack?.id ?? null);
+  }, [currentTrack?.id]);
+
+  useEffect(() => {
     if (!currentTrack?.id) return;
     prefetchTrackVisualMedia({ segmentId: currentTrack.id, trackId: currentTrack.id });
   }, [currentTrack?.id]);
@@ -314,16 +319,20 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       if (!audio || !track.audioUrl || audio.ended) return false;
       if (!trackSrcMatches(audio, track.audioUrl)) return false;
 
+      syncTheatreTrackContext(track.id);
+
       if (audio.paused) {
         setState("loading");
         void audio.play().then(() => {
           if (!audio.paused) {
             setState("playing");
             logPlaybackStart(track);
+            theatreController.setCanEnter(true);
           }
         }).catch(() => setState("paused"));
       } else {
         setState("playing");
+        theatreController.setCanEnter(true);
       }
       return true;
     },
@@ -331,6 +340,8 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   );
 
   const loadTrack = useCallback((track: QueueTrack) => {
+    syncTheatreTrackContext(track.id);
+
     if (adoptedAudioRef.current) {
       adoptedAudioRef.current.pause();
       adoptedAudioRef.current = null;
@@ -350,6 +361,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       if (!audio.paused) {
         setState("playing");
         logPlaybackStart(track);
+        theatreController.setCanEnter(true);
       }
     }).catch(() => setState("paused"));
   }, [logPlaybackStart]);
@@ -429,7 +441,11 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       adoptedAudioRef.current = audio;
       audioRef.current = audio;
       setActiveAudio(audio);
-      theatreController.registerPlaybackSource(audio);
+      syncTheatreTrackContext(track.id);
+      theatreController.registerPlaybackSource(audio, {
+        recordingId: track.id,
+        artworkUrl: track.artworkUrl ?? null,
+      });
 
       if (context) {
         playbackContextRef.current = context;
@@ -584,16 +600,22 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
 
   const togglePlay = useCallback(() => {
     const audio = audioRef.current;
-    if (!audio || !currentTrack) return;
+    const idx = queueIndexRef.current;
+    if (!audio || idx < 0) return;
+    const track = queueRef.current[idx];
     if (audio.paused) {
+      if (track) syncTheatreTrackContext(track.id);
       void audio.play().then(() => {
-        if (!audio.paused) setState("playing");
+        if (!audio.paused) {
+          setState("playing");
+          theatreController.setCanEnter(true);
+        }
       }).catch(() => setState("paused"));
     } else {
       audio.pause();
       setState("paused");
     }
-  }, [currentTrack]);
+  }, []);
 
   const playNext = useCallback(() => {
     const end = segmentEndIndexRef.current;
