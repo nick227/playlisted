@@ -6,6 +6,7 @@ import { useTimelineTrackRect } from "./hooks/useTimelineTrackRect";
 import { drawWaveformPeaks } from "./drawWaveformPeaks";
 import { timeSecFromTimelinePointer } from "./timelineLayout";
 import { TimelineClipBlock } from "./TimelineClipBlock";
+import { TimelineScrubRuler } from "./TimelineScrubRuler";
 import type { TimelineEditMode } from "./SongVisualEditorToolbar";
 import type { TimelineClip } from "./types";
 
@@ -28,24 +29,6 @@ type SongVisualEditorTimelineProps = {
   onCutAtTime: (cutSec: number) => void;
 };
 
-function drawTimelineRuler(
-  context: CanvasRenderingContext2D,
-  width: number,
-  height: number,
-  durationSec: number,
-) {
-  context.strokeStyle = "rgba(255,255,255,0.08)";
-  context.lineWidth = 1;
-  const tickCount = Math.max(4, Math.min(24, Math.floor(durationSec / 15)));
-  for (let index = 0; index <= tickCount; index += 1) {
-    const x = (index / tickCount) * width;
-    context.beginPath();
-    context.moveTo(x, height - 10);
-    context.lineTo(x, height);
-    context.stroke();
-  }
-}
-
 export function SongVisualEditorTimeline({
   clips,
   durationSec,
@@ -64,6 +47,7 @@ export function SongVisualEditorTimeline({
   onCutClipAt,
   onCutAtTime,
 }: SongVisualEditorTimelineProps) {
+  const chromeRef = useRef<HTMLDivElement>(null);
   const waveformCanvasRef = useRef<HTMLCanvasElement>(null);
   const { trackRef, getTrackRect, refreshTrackRect } = useTimelineTrackRect();
   const { activeGuide, snapMoveStart, snapResizeStart, snapResizeEnd, clearSnapGuide } = useTimelineSnapGuides({
@@ -107,8 +91,6 @@ export function SongVisualEditorTimeline({
 
       if (peaks?.length && durationSec > 0) {
         drawWaveformPeaks(context, peaks, width, height);
-      } else {
-        drawTimelineRuler(context, width, height, durationSec);
       }
     };
   }, [durationSec, peaks, trackRef]);
@@ -126,12 +108,6 @@ export function SongVisualEditorTimeline({
     observer.observe(container);
     return () => observer.disconnect();
   }, [redrawWaveform, trackRef]);
-
-  function seekFromClientX(clientX: number) {
-    const rect = getTrackRect();
-    if (!rect || durationSec <= 0) return;
-    onSeek(timeSecFromTimelinePointer(clientX, rect, durationSec));
-  }
 
   function cutSecFromPointer(clientX: number) {
     const rect = getTrackRect();
@@ -154,86 +130,93 @@ export function SongVisualEditorTimeline({
     onCutAtTime(cutSec);
   }
 
-  function handleTrackClick(event: ReactPointerEvent<HTMLDivElement>) {
-    if (event.target !== event.currentTarget) return;
-    seekFromClientX(event.clientX);
-  }
-
   return (
     <div className="shrink-0 space-y-1.5">
       <p className="text-[10px] font-semibold uppercase tracking-wide text-white/40">Timeline</p>
       <div
-        ref={trackRef}
-        className="relative h-36 min-h-[9rem] w-full shrink-0 cursor-crosshair overflow-hidden rounded-lg border-2 border-white/15 bg-[#080d14] shadow-inner ring-1 ring-white/5"
-        onClick={handleTrackClick}
-        onPointerDown={handleTrackPointerDown}
-        onPointerUp={handleTrackPointerUp}
-        role="slider"
-        aria-label="Audio timeline"
-        aria-valuemin={0}
-        aria-valuemax={durationSec}
-        aria-valuenow={currentTimeSec}
+        ref={chromeRef}
+        className="relative overflow-hidden rounded-lg border-2 border-white/15 bg-[#080d14] shadow-inner ring-1 ring-white/5"
       >
-        {waveformLoading ? (
-          <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center text-xs text-white/45">
-            Loading waveform…
-          </div>
-        ) : null}
-
-        <canvas ref={waveformCanvasRef} className="pointer-events-none absolute inset-0 z-0 h-full w-full" />
-
-        {!waveformLoading && !peaks?.length ? (
-          <div className="pointer-events-none absolute inset-x-0 top-2 z-[1] px-3 text-center text-[11px] text-white/40">
-            {waveformError ?? "Waveform unavailable — clips still align to track duration."}
-          </div>
-        ) : null}
-
-        <div className="pointer-events-none absolute inset-x-0 inset-y-2 z-10">
-          {sortedClips.map((clip, index) => (
-            <TimelineClipBlock
-              key={clip.attachment.id}
-              clip={clip}
-              songDurationSec={durationSec}
-              selected={clip.attachment.id === selectedAttachmentId}
-              cutMode={editMode === "cut"}
-              isLocked={clipSyncStatus[clip.attachment.id] === "saving"}
-              syncStatus={clipSyncStatus[clip.attachment.id]}
-              stackOrder={index + 1}
-              tintIndex={index}
-              getTrackRect={getTrackRect}
-              onRefreshTrackRect={refreshTrackRect}
-              onSelect={() => onSelectAttachment(clip.attachment.id)}
-              onMove={(nextStartSec) => onMoveClip(clip.attachment.id, nextStartSec)}
-              onResizeEnd={(nextDurationSec) => onResizeClip(clip.attachment.id, nextDurationSec)}
-              onResizeStart={(nextStartSec) => onResizeClipStart(clip.attachment.id, nextStartSec)}
-              onCutAt={(cutSec) => onCutClipAt(clip.attachment.id, cutSec)}
-              snapMoveStart={(proposedStartSec) => snapMoveStart(clip.attachment.id, clip, proposedStartSec)}
-              snapResizeStart={(proposedStartSec) => snapResizeStart(clip.attachment.id, proposedStartSec)}
-              snapResizeEnd={(proposedEndSec) => snapResizeEnd(clip.attachment.id, proposedEndSec)}
-              onSnapEnd={clearSnapGuide}
-            />
-          ))}
-        </div>
-
-        {guidePct != null ? (
-          <div
-            className="pointer-events-none absolute inset-y-0 z-20 w-px bg-amber-300/90 shadow-[0_0_8px_rgba(252,211,77,0.55)]"
-            style={{ left: `${guidePct}%` }}
-            aria-hidden
-          />
-        ) : null}
+        <TimelineScrubRuler
+          durationSec={durationSec}
+          currentTimeSec={currentTimeSec}
+          onSeek={onSeek}
+        />
 
         <div
-          className="pointer-events-none absolute inset-y-0 z-30 w-0.5 bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.8)]"
+          ref={trackRef}
+          className="relative h-36 min-h-[9rem] w-full shrink-0"
+          onPointerDown={handleTrackPointerDown}
+          onPointerUp={handleTrackPointerUp}
+        >
+          {waveformLoading ? (
+            <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center text-xs text-white/45">
+              Loading waveform…
+            </div>
+          ) : null}
+
+          <canvas ref={waveformCanvasRef} className="pointer-events-none absolute inset-0 z-0 h-full w-full" />
+
+          {!waveformLoading && !peaks?.length ? (
+            <div className="pointer-events-none absolute inset-x-0 top-2 z-[1] px-3 text-center text-[11px] text-white/40">
+              {waveformError ?? "Waveform unavailable — clips still align to track duration."}
+            </div>
+          ) : null}
+
+          <div className="pointer-events-none absolute inset-x-0 inset-y-2 z-10">
+            {sortedClips.map((clip, index) => (
+              <TimelineClipBlock
+                key={clip.attachment.id}
+                clip={clip}
+                songDurationSec={durationSec}
+                selected={clip.attachment.id === selectedAttachmentId}
+                cutMode={editMode === "cut"}
+                isLocked={clipSyncStatus[clip.attachment.id] === "saving"}
+                syncStatus={clipSyncStatus[clip.attachment.id]}
+                stackOrder={index + 1}
+                tintIndex={index}
+                getTrackRect={getTrackRect}
+                onRefreshTrackRect={refreshTrackRect}
+                onSelect={() => onSelectAttachment(clip.attachment.id)}
+                onMove={(nextStartSec) => onMoveClip(clip.attachment.id, nextStartSec)}
+                onResizeEnd={(nextDurationSec) => onResizeClip(clip.attachment.id, nextDurationSec)}
+                onResizeStart={(nextStartSec) => onResizeClipStart(clip.attachment.id, nextStartSec)}
+                onCutAt={(cutSec) => onCutClipAt(clip.attachment.id, cutSec)}
+                snapMoveStart={(proposedStartSec) => snapMoveStart(clip.attachment.id, clip, proposedStartSec)}
+                snapResizeStart={(proposedStartSec) => snapResizeStart(clip.attachment.id, proposedStartSec)}
+                snapResizeEnd={(proposedEndSec) => snapResizeEnd(clip.attachment.id, proposedEndSec)}
+                onSnapEnd={clearSnapGuide}
+              />
+            ))}
+          </div>
+
+          {guidePct != null ? (
+            <div
+              className="pointer-events-none absolute inset-y-0 z-20 w-px bg-amber-300/90 shadow-[0_0_8px_rgba(252,211,77,0.55)]"
+              style={{ left: `${guidePct}%` }}
+              aria-hidden
+            />
+          ) : null}
+
+          {sortedClips.length === 0 ? (
+            <div className="pointer-events-none absolute inset-0 z-[5] flex items-center justify-center px-4 text-center text-xs text-white/35">
+              Add clips from the library — they layer over the audio here
+            </div>
+          ) : null}
+        </div>
+
+        <div
+          className="pointer-events-none absolute inset-y-0 z-40 w-px bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.8)]"
           style={{ left: `${playheadPct}%` }}
           aria-hidden
         />
-
-        {sortedClips.length === 0 ? (
-          <div className="pointer-events-none absolute inset-0 z-[5] flex items-center justify-center px-4 text-center text-xs text-white/35">
-            Add clips from the library — they layer over the audio here
-          </div>
-        ) : null}
+        <div
+          className="pointer-events-none absolute top-0 z-40 -translate-x-1/2"
+          style={{ left: `${playheadPct}%` }}
+          aria-hidden
+        >
+          <div className="h-0 w-0 border-l-[5px] border-r-[5px] border-t-[6px] border-l-transparent border-r-transparent border-t-emerald-400" />
+        </div>
       </div>
     </div>
   );

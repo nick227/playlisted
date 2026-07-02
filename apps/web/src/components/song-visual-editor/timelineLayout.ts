@@ -522,3 +522,46 @@ export function buildPlaybackPatch(
 export function formatMegabytes(sizeBytes: number) {
   return `${(sizeBytes / (1024 * 1024)).toFixed(1)} MB`;
 }
+
+export function formatTimelineTime(seconds: number): string {
+  const whole = Math.max(0, Math.floor(seconds));
+  const hrs = Math.floor(whole / 3600);
+  const mins = Math.floor((whole % 3600) / 60);
+  const secs = whole % 60;
+  const secText = secs.toString().padStart(2, "0");
+  if (hrs > 0) {
+    return `${hrs}:${mins.toString().padStart(2, "0")}:${secText}`;
+  }
+  return `${mins}:${secText}`;
+}
+
+export type RulerMark = {
+  sec: number;
+  major: boolean;
+};
+
+export function buildRulerMarks(durationSec: number, widthPx: number): RulerMark[] {
+  if (durationSec <= 0) return [{ sec: 0, major: true }];
+
+  const targetMajorCount = Math.max(2, Math.min(10, Math.floor(widthPx / 80)));
+  const rawMajor = durationSec / targetMajorCount;
+  const niceSteps = [1, 2, 5, 10, 15, 30, 60, 120, 300, 600, 900, 1800, 3600];
+  const majorStep = niceSteps.find((step) => step >= rawMajor) ?? niceSteps[niceSteps.length - 1]!;
+  const minorStep = majorStep / 4;
+
+  const marks: RulerMark[] = [];
+  for (let sec = 0; sec <= durationSec + 0.001; sec += minorStep) {
+    const rounded = Math.min(durationSec, Math.round(sec * 100) / 100);
+    if (marks.some((mark) => Math.abs(mark.sec - rounded) < 0.01)) continue;
+    marks.push({
+      sec: rounded,
+      major: Math.abs(rounded % majorStep) < 0.01 || rounded === 0,
+    });
+  }
+
+  if (!marks.some((mark) => Math.abs(mark.sec - durationSec) < 0.01)) {
+    marks.push({ sec: durationSec, major: true });
+  }
+
+  return marks;
+}

@@ -322,20 +322,6 @@ export function SongVisualAssetLibrary({
             isDragOver ? "border-emerald-400/50 bg-emerald-500/10" : "border-white/10",
           ].join(" ")}
         >
-          {activeTab === "mine" ? (
-            <div className="mb-2 flex justify-end">
-              <button
-                type="button"
-                disabled={isBusy}
-                onClick={onUpload}
-                className="inline-flex items-center gap-1 rounded-md border border-white/15 bg-white/5 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-white/10 disabled:opacity-40"
-              >
-                <Upload size={12} />
-                Upload to mine
-              </button>
-            </div>
-          ) : null}
-
           {visibleRows.length === 0 ? (
             activeTab === "mine" ? (
               <button

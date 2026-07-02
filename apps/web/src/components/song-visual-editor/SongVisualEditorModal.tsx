@@ -125,8 +125,6 @@ function SongVisualEditorModalInner({
               isBusy={editor.isBusy}
               isDirty={editor.isDirty}
               isSaving={editor.isSaving}
-              currentTimeSec={playback.currentTimeSec}
-              durationSec={durationSec}
               editMode={editMode}
               includeSiteMedia={editor.includeSiteMedia}
               previewSubtitles={previewSubtitles}
@@ -134,6 +132,7 @@ function SongVisualEditorModalInner({
               onEditModeChange={setEditMode}
               onIncludeSiteMediaChange={(includeSiteMedia) => editor.setIncludeSiteMedia(includeSiteMedia)}
               onPreviewSubtitlesChange={setPreviewSubtitles}
+              onUpload={editor.openUploadPicker}
               onSave={() => editor.saveChanges()}
               onCancel={handleClose}
             />
