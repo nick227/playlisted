@@ -290,12 +290,15 @@ recordingsRouter.post("/", async (req, res, next) => {
         },
       });
 
-      await tx.recordingSubtitle.create({
-        data: {
-          recordingId: recording.id,
-          status: "QUEUED",
-        },
-      });
+      const subtitlesEnabled =
+        process.env.SUBTITLES_ENABLED !== "false" &&
+        (process.env.SUBTITLES_PROVIDER ?? "disabled") !== "disabled";
+
+      if (subtitlesEnabled) {
+        await tx.recordingSubtitle.create({
+          data: { recordingId: recording.id, status: "QUEUED" },
+        });
+      }
 
       await tx.playlistItem.create({
         data: {

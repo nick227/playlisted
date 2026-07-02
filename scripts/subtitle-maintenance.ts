@@ -15,7 +15,7 @@ const r2BaseUrl = (process.env.R2_PUBLIC_BASE_URL ?? process.env.UPLOADS_PUBLIC_
 const maxBytes = Number(process.env.SUBTITLE_MAINTENANCE_MAX_BYTES ?? 100_000_000);
 let prisma: PrismaClient;
 
-type Command = "list" | "migrate" | "queue" | "status" | "inspect" | "delete-legacy" | "help";
+type Command = "list" | "migrate" | "queue" | "fail-stale" | "status" | "inspect" | "delete-legacy" | "help";
 
 type Args = {
   command: Command;
@@ -48,6 +48,7 @@ function parseArgs(): Args {
     command === "list" ||
     command === "migrate" ||
     command === "queue" ||
+    command === "fail-stale" ||
     command === "status" ||
     command === "inspect" ||
     command === "delete-legacy" ||
@@ -175,6 +176,7 @@ Commands:
   migrate --limit=5 [--apply] [--delete-legacy]
   queue --id=<recordingId> [--apply] [--include-ready]
   queue --limit=5 [--apply] [--include-failed]
+  fail-stale [--apply]
   status
   inspect --id=<recordingId>
   delete-legacy --id=<recordingId> [--apply] [--include-not-ready]
@@ -182,6 +184,11 @@ Commands:
 
 Apply guard:
   SUBTITLE_MAINTENANCE_CONFIRM=${requiredConfirm} npm run subtitles:maintenance -- migrate --id=... --apply
+
+fail-stale:
+  Marks all QUEUED and PROCESSING subtitle rows as FAILED. Use this to clear orphaned
+  rows left by songs uploaded when no subtitle worker was running.
+  SUBTITLE_MAINTENANCE_CONFIRM=${requiredConfirm} npm run subtitles:maintenance -- fail-stale --apply
 
 Legacy deletion:
   --delete-legacy also requires LEGACY_DELETE_UPLOADS_DIR and only deletes files from that mounted uploads root.
@@ -941,6 +948,37 @@ async function deleteLegacy(args: Args) {
   }
 }
 
+async function failStale(args: Args) {
+  requireApplyConfirmation(args.apply);
+
+  const [queued, processing] = await Promise.all([
+    prisma.recordingSubtitle.count({ where: { status: "QUEUED" } }),
+    prisma.recordingSubtitle.count({ where: { status: "PROCESSING" } }),
+  ]);
+
+  console.log(`QUEUED rows: ${queued}`);
+  console.log(`PROCESSING rows: ${processing}`);
+  console.log(`Total to fail: ${queued + processing}`);
+
+  if (!args.apply) {
+    console.log("Dry run complete. No rows were changed. Pass --apply to commit.");
+    return;
+  }
+
+  const [qResult, pResult] = await Promise.all([
+    prisma.recordingSubtitle.updateMany({
+      where: { status: "QUEUED" },
+      data: { status: "FAILED", errorMessage: "Marked failed by maintenance script (was never processed)." },
+    }),
+    prisma.recordingSubtitle.updateMany({
+      where: { status: "PROCESSING" },
+      data: { status: "FAILED", errorMessage: "Marked failed by maintenance script (was stuck processing)." },
+    }),
+  ]);
+
+  console.log(`Marked FAILED: ${qResult.count} QUEUED, ${pResult.count} PROCESSING.`);
+}
+
 async function main() {
   if (args.command === "help") return usage();
 
@@ -950,6 +988,7 @@ async function main() {
   if (args.command === "list") return list(args);
   if (args.command === "migrate") return migrate(args);
   if (args.command === "queue") return queue(args);
+  if (args.command === "fail-stale") return failStale(args);
   if (args.command === "status") return status();
   if (args.command === "inspect") return inspect(args);
   if (args.command === "delete-legacy") return deleteLegacy(args);
