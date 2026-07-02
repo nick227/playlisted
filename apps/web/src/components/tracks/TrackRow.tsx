@@ -224,7 +224,7 @@ export function TrackRow({
       id={`track-${recordingId}`}
       className={`group/card grid w-full ${
         editMode && onPlay ? "grid-cols-[auto_auto_minmax(0,1fr)_auto]" : "grid-cols-[auto_minmax(0,1fr)_auto]"
-      } items-center gap-1.5 rounded-lg px-1 py-1.5 transition sm:gap-2 sm:px-2 ${
+      } items-center gap-1 rounded-lg px-1 py-1.5 transition sm:gap-2 sm:px-2 ${
         isActive ? "bg-[var(--color-surface)]/80" : "hover:bg-[var(--color-surface-hover)]"
       }${onPlay && !editMode ? " cursor-pointer" : ""}`}
       role={onPlay && !editMode ? "button" : undefined}
@@ -271,14 +271,14 @@ export function TrackRow({
         </button>
       ) : null}
       <div className="flex min-w-0 items-center gap-2 text-left">
-        <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-md">
+        <div className="relative h-6 w-6 shrink-0 overflow-hidden rounded-md">
           {editMode && onUpdateArtwork ? (
             <>
               <button
                 type="button"
                 onClick={() => artworkInputRef.current?.click()}
                 disabled={saving}
-                className="group/art relative block h-9 w-9 overflow-hidden rounded-md text-left disabled:opacity-60"
+                className="group/art relative block h-6 w-6 overflow-hidden rounded-md text-left disabled:opacity-60"
                 aria-label="Change track artwork"
                 title="Change track artwork"
               >
@@ -428,7 +428,7 @@ export function TrackRow({
                       : "Uses playlist genre"
                 }
                 aria-label="Track genre"
-                className="max-w-[6.5rem] truncate rounded border border-white/10 bg-black px-1.5 py-0.5 text-xs text-white outline-none focus:border-[var(--color-brand)] disabled:opacity-50"
+                className="max-w-[4rem] md:max-w-[6.5rem] truncate rounded border border-white/10 bg-black px-1.5 py-0.5 text-xs text-white outline-none focus:border-[var(--color-brand)] disabled:opacity-50"
               >
                 <option value="">Default</option>
                 {genreOptions.map((genre) => (

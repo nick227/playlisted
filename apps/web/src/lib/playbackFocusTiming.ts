@@ -1,13 +1,13 @@
 export const playbackFocusTiming = {
   theatre: {
-    delayMs: 0,
+    delayMs: 2000,
     fadeInMs: 1200,
     fadeOutMs: 1200,
     exitBufferMs: 1200,
   },
 
   body: {
-    delayMs: 1000,
+    delayMs: 5000,
     restoreDelayMs: 6000,
     fadeOutMs: 2000,
   },
@@ -27,8 +27,8 @@ export const playbackFocusTiming = {
   },
 
   titleIntro: {
-    delayMs: 1000,
-    minVisibleMs: 2800,
+    delayMs: 0,
+    minVisibleMs: 3000,
     fadeInMs: 900,
     fadeOutMs: 650,
   },
@@ -41,7 +41,7 @@ export const playbackFocusTiming = {
   },
 
   miniView: {
-    delayMs: 1000,
+    delayMs: 5000,
     fadeInMs: 620,
   },
 
