@@ -6,13 +6,19 @@ import type { VisualMediaAssetRecord } from "@/lib/visualMediaApi";
 import { useSongVisualTheatrePreview } from "./hooks/useSongVisualTheatrePreview";
 import { readClipAudioPulse } from "./audioPulse";
 import { SongVisualPreviewFocusLane } from "./SongVisualPreviewFocusLane";
+import { readTheatrePresetIdFromTags } from "./theatreFxLibrary";
 import type { TimelineClip, SongVisualEditorRecording } from "./types";
 
 const DEFAULT_ASPECT = 16 / 9;
 const MAX_PREVIEW_ASPECT = 16 / 9;
 
-function previewAspectRatio(media: VisualMediaAssetRecord | null): number {
+function previewAspectRatio(
+  media: VisualMediaAssetRecord | null,
+  attachment: TimelineClip["attachment"] | null,
+): number {
+  if (readTheatrePresetIdFromTags(attachment?.tags)) return DEFAULT_ASPECT;
   if (!media?.width || !media?.height) return DEFAULT_ASPECT;
+  if (media.width <= 1 && media.height <= 1) return DEFAULT_ASPECT;
   const native = media.width / media.height;
   return Math.min(native, MAX_PREVIEW_ASPECT);
 }
@@ -51,7 +57,10 @@ export function SongVisualEditorPreview({
     isPlaying,
   });
 
-  const aspectRatio = useMemo(() => previewAspectRatio(media), [media]);
+  const aspectRatio = useMemo(
+    () => previewAspectRatio(media, attachment),
+    [attachment, media],
+  );
 
   return (
     <div className="flex justify-center">
