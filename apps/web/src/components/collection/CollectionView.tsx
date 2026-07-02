@@ -50,7 +50,6 @@ export interface CollectionViewProps {
   genreError?: string;
   editToolbar?: React.ReactNode;
   uploadProgress?: React.ReactNode;
-  renderTrackEditExtras?: (recording: CollectionRecording) => React.ReactNode;
 }
 
 const typeLabels: Record<string, string> = {
@@ -351,7 +350,6 @@ export function CollectionView({
   genreError,
   editToolbar,
   uploadProgress,
-  renderTrackEditExtras,
 }: CollectionViewProps) {
   const { user } = useAuth();
   const isEdit = mode === "edit";
@@ -613,7 +611,6 @@ export function CollectionView({
               fallbackArtworkUrl={playlist.coverArtUrl}
               savingById={trackSavingById}
               errorById={trackErrorById}
-              renderTrackEditExtras={renderTrackEditExtras}
             />
           </div>
         ) : (

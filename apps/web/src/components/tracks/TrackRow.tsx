@@ -1,14 +1,18 @@
+import { useQuery } from "@tanstack/react-query";
 import { Captions, ChevronDown, ChevronUp, CircleSlash, ImagePlus, Loader2, Pause, Play, TriangleAlert, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { RecordingActionMenu } from "@/components/media/RecordingActionMenu";
 import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
+import { SongVisualEditorModal, SongVisualStatusBadge } from "@/components/song-visual-editor";
 import { PlaybackBars } from "@/features/playback-indicators/PlaybackBars";
+import { fetchSongVisualAttachments } from "@/lib/visualMediaApi";
 import { SubtitleEditorModal } from "./SubtitleEditorModal";
 import { useTrackPlayback } from "@/hooks/useTrackPlayback";
 import { formatDuration, formatPlayCount } from "@/lib/format";
 import { MediaCover } from "@/components/cards/MediaCover";
 import type { QueueTrack } from "@/providers/AudioPlayerProvider";
+import { useAuth } from "@/providers/AuthProvider";
 import { Link } from "react-router-dom";
 
 import type { GenreOption } from "@/components/studio/studioCollectionUtils";
@@ -25,6 +29,7 @@ interface TrackRowProps {
   meta?: string | null;
   playCount?: number | null;
   durationSeconds?: number | null;
+  audioUrl?: string | null;
   artworkUrl?: string | null;
   recordingHref?: string;
   playlistHref?: string;
@@ -98,6 +103,7 @@ export function TrackRow({
   meta,
   playCount,
   durationSeconds,
+  audioUrl,
   artworkUrl,
   recordingHref,
   playlistHref,
@@ -123,9 +129,20 @@ export function TrackRow({
   subtitle,
   shareUrl,
 }: TrackRowProps) {
+  const { accessToken } = useAuth();
   const { isActive, isPlaying } = useTrackPlayback(recordingId, playbackOrigin);
   const showActions = !editMode && queueTrack && shareUrl;
   const [isSubtitleModalOpen, setSubtitleModalOpen] = useState(false);
+  const [isVisualEditorOpen, setVisualEditorOpen] = useState(false);
+
+  const visualAttachmentsQuery = useQuery({
+    queryKey: ["song-visual-media", recordingId],
+    queryFn: () => fetchSongVisualAttachments(recordingId, accessToken),
+    enabled: editMode && Boolean(accessToken),
+    staleTime: 30_000,
+  });
+  const visualAttachmentCount =
+    visualAttachmentsQuery.data?.attachments.filter((attachment) => attachment.enabled).length ?? 0;
   const artworkInputRef = useRef<HTMLInputElement>(null);
   const [draftTitle, setDraftTitle] = useState(title);
   const [localError, setLocalError] = useState<string | null>(null);
@@ -310,17 +327,30 @@ export function TrackRow({
           </span>
         )}
         {editMode ? (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setSubtitleModalOpen(true);
-            }}
-            className="rounded focus:outline-none focus:ring-1 focus:ring-emerald-400 transition-transform hover:scale-105"
-            title="Edit Subtitles"
-          >
-            <SubtitleStatusBadge subtitle={subtitle ?? queueTrack?.subtitle} />
-          </button>
+          <>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setSubtitleModalOpen(true);
+              }}
+              className="rounded focus:outline-none focus:ring-1 focus:ring-emerald-400 transition-transform hover:scale-105"
+              title="Edit Subtitles"
+            >
+              <SubtitleStatusBadge subtitle={subtitle ?? queueTrack?.subtitle} />
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setVisualEditorOpen(true);
+              }}
+              className="rounded focus:outline-none focus:ring-1 focus:ring-emerald-400 transition-transform hover:scale-105"
+              title="Edit Visuals"
+            >
+              <SongVisualStatusBadge attachmentCount={visualAttachmentCount} />
+            </button>
+          </>
         ) : null}
         <span className="text-xs text-[var(--color-text-muted)]">{formatDuration(durationSeconds)}</span>
         {editMode ? (
@@ -395,6 +425,18 @@ export function TrackRow({
           onClose={() => setSubtitleModalOpen(false)}
         />
       )}
+      {isVisualEditorOpen && accessToken ? (
+        <SongVisualEditorModal
+          recording={{
+            id: recordingId,
+            title,
+            audioUrl,
+            durationSeconds,
+            artworkUrl,
+          }}
+          onClose={() => setVisualEditorOpen(false)}
+        />
+      ) : null}
     </div>
   );
 }

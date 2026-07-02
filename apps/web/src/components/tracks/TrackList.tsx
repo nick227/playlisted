@@ -34,7 +34,6 @@ interface TrackListProps {
   fallbackArtworkUrl?: string | null;
   savingById?: Record<string, boolean>;
   errorById?: Record<string, string | undefined>;
-  renderTrackEditExtras?: (recording: Recording) => React.ReactNode;
 }
 
 export function TrackList({
@@ -56,7 +55,6 @@ export function TrackList({
   fallbackArtworkUrl,
   savingById,
   errorById,
-  renderTrackEditExtras,
 }: TrackListProps) {
   if (recordings.length === 0) {
     return null;
@@ -92,6 +90,7 @@ export function TrackList({
             meta={recording.recordingType}
             playCount={recording.playCount}
             durationSeconds={recording.durationSeconds}
+            audioUrl={recording.audioUrl}
             artworkUrl={recording.artworkUrl ?? fallbackArtworkUrl}
             onPlay={() => onPlay(recording, index)}
             playbackOrigin={playbackOriginForTrack?.(recording, index)}
@@ -136,7 +135,6 @@ export function TrackList({
                 : recordingShareUrlForContext(recording, playlistContext)
             }
             />
-            {editMode ? renderTrackEditExtras?.(recording) : null}
           </div>
         );
       })}
