@@ -434,7 +434,7 @@ export function useSongVisualEditorState({
   function cutAtTime(cutSec: number) {
     const clip = findTopClipAtTime(timelineClips, cutSec);
     if (!clip) {
-      setError("Click on a clip to cut.");
+      setError("No clip at this position to cut.");
       return;
     }
     cutClipAt(clip.attachment.id, cutSec);

@@ -1,7 +1,8 @@
 import { MousePointer2, Scissors } from "lucide-react";
-import { useMemo, useRef, useState, type ReactNode } from "react";
+import { useMemo, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 
 import type { ClipSyncStatus } from "./hooks/optimisticSongVisualCache";
+import { useTimelineTrackRect } from "./hooks/useTimelineTrackRect";
 import { timeSecFromTimelinePointer } from "./timelineLayout";
 import { TimelineClipBlock } from "./TimelineClipBlock";
 import type { TimelineClip } from "./types";
@@ -39,9 +40,8 @@ export function SongVisualEditorTimeline({
   onCutClipAt,
   onCutAtTime,
 }: SongVisualEditorTimelineProps) {
-  const trackRef = useRef<HTMLDivElement>(null);
+  const { trackRef, getTrackRect, refreshTrackRect } = useTimelineTrackRect();
   const [editMode, setEditMode] = useState<TimelineEditMode>("select");
-  const [trackRect, setTrackRect] = useState<DOMRect | null>(null);
 
   const playheadPct = durationSec > 0 ? (currentTimeSec / durationSec) * 100 : 0;
 
@@ -50,14 +50,25 @@ export function SongVisualEditorTimeline({
     [clips],
   );
 
-  function refreshTrackRect() {
-    setTrackRect(trackRef.current?.getBoundingClientRect() ?? null);
+  function cutSecFromPointer(clientX: number) {
+    const rect = getTrackRect();
+    if (!rect) return null;
+    return timeSecFromTimelinePointer(clientX, rect, durationSec);
   }
 
-  function handleTrackCut(event: React.MouseEvent<HTMLDivElement>) {
-    if (editMode !== "cut" || !trackRect) return;
-    if (event.target !== event.currentTarget) return;
-    onCutAtTime(timeSecFromTimelinePointer(event.clientX, trackRect, durationSec));
+  function handleTrackPointerDown(event: ReactPointerEvent<HTMLDivElement>) {
+    refreshTrackRect();
+    if (editMode === "cut") return;
+    if (event.target === event.currentTarget) {
+      onSelectAttachment(null);
+    }
+  }
+
+  function handleTrackPointerUp(event: ReactPointerEvent<HTMLDivElement>) {
+    if (editMode !== "cut") return;
+    const cutSec = cutSecFromPointer(event.clientX);
+    if (cutSec == null) return;
+    onCutAtTime(cutSec);
   }
 
   return (
@@ -86,7 +97,7 @@ export function SongVisualEditorTimeline({
         </div>
         <span className="text-xs text-white/40">
           {editMode === "cut"
-            ? "Click a clip — shorter side is removed"
+            ? "Click a clip or empty lane — shorter side is removed"
             : "Drag grip to move · edges to resize · Ctrl+C/V · Del to remove"}
           {hasClipboard ? " · clipboard ready" : ""}
         </span>
@@ -95,11 +106,8 @@ export function SongVisualEditorTimeline({
       <div
         ref={trackRef}
         className="relative min-h-[5.5rem] rounded-lg border border-white/10 bg-black/30"
-        onPointerEnter={refreshTrackRect}
-        onClick={(event) => {
-          if (event.target === event.currentTarget) onSelectAttachment(null);
-          handleTrackCut(event);
-        }}
+        onPointerDown={handleTrackPointerDown}
+        onPointerUp={handleTrackPointerUp}
       >
         <div className="absolute inset-y-2 left-0 right-0">
           {sortedClips.map((clip, index) => (
@@ -112,7 +120,8 @@ export function SongVisualEditorTimeline({
               isLocked={clipSyncStatus[clip.attachment.id] === "saving"}
               syncStatus={clipSyncStatus[clip.attachment.id]}
               stackOrder={index + 1}
-              trackRect={trackRect}
+              getTrackRect={getTrackRect}
+              onRefreshTrackRect={refreshTrackRect}
               onSelect={() => onSelectAttachment(clip.attachment.id)}
               onMove={(nextStartSec) => onMoveClip(clip.attachment.id, nextStartSec)}
               onResizeEnd={(nextDurationSec) => onResizeClip(clip.attachment.id, nextDurationSec)}

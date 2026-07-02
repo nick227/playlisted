@@ -1,5 +1,5 @@
 import { Loader2, X } from "lucide-react";
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 
 import { useSuppressPlaybackFocus } from "@/lib/playbackFocusSuppression";
 import { useAuth } from "@/providers/AuthProvider";
@@ -10,6 +10,7 @@ import { SongVisualEditorTimeline } from "./SongVisualEditorTimeline";
 import { SongVisualEditorToolbar } from "./SongVisualEditorToolbar";
 import { SongVisualEditorWaveform } from "./SongVisualEditorWaveform";
 import { useAudioWaveformPeaks } from "./hooks/useAudioWaveformPeaks";
+import { useSongVisualEditorHotkeys } from "./hooks/useSongVisualEditorHotkeys";
 import { useSongVisualEditorState } from "./hooks/useSongVisualEditorState";
 import { useSongVisualPreviewPlayback } from "./hooks/useSongVisualPreviewPlayback";
 import { findClipAtTime, type SongVisualEditorRecording } from "./types";
@@ -23,9 +24,33 @@ export function SongVisualEditorModal({ recording, onClose }: SongVisualEditorMo
   useSuppressPlaybackFocus();
   const { accessToken } = useAuth();
 
+  if (!accessToken) {
+    return null;
+  }
+
+  return (
+    <SongVisualEditorModalInner
+      recording={recording}
+      onClose={onClose}
+      accessToken={accessToken}
+    />
+  );
+}
+
+type SongVisualEditorModalInnerProps = {
+  recording: SongVisualEditorRecording;
+  onClose: () => void;
+  accessToken: string;
+};
+
+function SongVisualEditorModalInner({
+  recording,
+  onClose,
+  accessToken,
+}: SongVisualEditorModalInnerProps) {
   const editor = useSongVisualEditorState({
     recordingId: recording.id,
-    accessToken: accessToken ?? "",
+    accessToken,
     durationSeconds: recording.durationSeconds,
   });
 
@@ -38,58 +63,16 @@ export function SongVisualEditorModal({ recording, onClose }: SongVisualEditorMo
     [editor.timelineClips, playback.currentTimeSec],
   );
 
-  useEffect(() => {
-    function onKeyDown(event: KeyboardEvent) {
-      const target = event.target;
-      if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) return;
-      if (target instanceof HTMLButtonElement || target instanceof HTMLSelectElement) return;
-      if (target instanceof HTMLElement && target.isContentEditable) return;
-
-      const key = event.key.toLowerCase();
-      const mod = event.metaKey || event.ctrlKey;
-
-      if (mod && key === "c") {
-        event.preventDefault();
-        editor.copySelectedClip();
-        return;
-      }
-
-      if (mod && key === "v") {
-        event.preventDefault();
-        void editor.pasteClipAt(playback.currentTimeSec);
-        return;
-      }
-
-      if (event.code === "Space" || key === " ") {
-        event.preventDefault();
-        if (!editor.isBusy && durationSec > 0) {
-          playback.togglePlayback();
-        }
-        return;
-      }
-
-      if ((key === "delete" || key === "backspace") && editor.selectedAttachmentId) {
-        event.preventDefault();
-        editor.detachAttachment(editor.selectedAttachmentId);
-      }
-    }
-
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [
-    editor.copySelectedClip,
-    editor.pasteClipAt,
-    editor.detachAttachment,
-    editor.selectedAttachmentId,
-    editor.isBusy,
-    playback.currentTimeSec,
-    playback.togglePlayback,
+  useSongVisualEditorHotkeys({
+    copySelectedClip: editor.copySelectedClip,
+    pasteClipAt: editor.pasteClipAt,
+    detachAttachment: editor.detachAttachment,
+    selectedAttachmentId: editor.selectedAttachmentId,
+    isBusy: editor.isBusy,
+    currentTimeSec: playback.currentTimeSec,
+    togglePlayback: playback.togglePlayback,
     durationSec,
-  ]);
-
-  if (!accessToken) {
-    return null;
-  }
+  });
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-3 backdrop-blur-sm sm:p-4">

@@ -20,7 +20,8 @@ type TimelineClipBlockProps = {
   isLocked: boolean;
   syncStatus?: ClipSyncStatus;
   stackOrder: number;
-  trackRect: DOMRect | null;
+  getTrackRect: () => DOMRect | null;
+  onRefreshTrackRect: () => void;
   onSelect: () => void;
   onMove: (nextStartSec: number) => void;
   onResizeEnd: (nextDurationSec: number) => void;
@@ -44,7 +45,8 @@ export function TimelineClipBlock({
   isLocked,
   syncStatus,
   stackOrder,
-  trackRect,
+  getTrackRect,
+  onRefreshTrackRect,
   onSelect,
   onMove,
   onResizeEnd,
@@ -62,12 +64,14 @@ export function TimelineClipBlock({
   const { attachment } = clip;
 
   function trackTime(clientX: number) {
-    if (!trackRect) return clip.startSec;
-    return timeSecFromTimelinePointer(clientX, trackRect, songDurationSec);
+    const rect = getTrackRect();
+    if (!rect) return clip.startSec;
+    return timeSecFromTimelinePointer(clientX, rect, songDurationSec);
   }
 
   function beginDrag(mode: DragMode, event: ReactPointerEvent<HTMLElement>) {
     if (isLocked) return;
+    onRefreshTrackRect();
     event.stopPropagation();
     event.currentTarget.setPointerCapture(event.pointerId);
     setDrag({ mode, startX: event.clientX, startY: event.clientY });
@@ -75,10 +79,12 @@ export function TimelineClipBlock({
   }
 
   function updateDragPreview(event: ReactPointerEvent<HTMLElement>) {
-    if (!drag || !trackRect) return;
+    if (!drag) return;
+    const rect = getTrackRect();
+    if (!rect) return;
 
     if (drag.mode === "move") {
-      const deltaRatio = (event.clientX - drag.startX) / trackRect.width;
+      const deltaRatio = (event.clientX - drag.startX) / rect.width;
       const next = previewClipMove(attachment, clip, clip.startSec + deltaRatio * songDurationSec, songDurationSec);
       if (next) setPreview(next);
       return;
@@ -116,6 +122,12 @@ export function TimelineClipBlock({
     event.currentTarget.releasePointerCapture(event.pointerId);
   }
 
+  function onCutPointerDown(event: ReactPointerEvent<HTMLDivElement>) {
+    if (isLocked) return;
+    onRefreshTrackRect();
+    event.stopPropagation();
+  }
+
   function onCutPointerUp(event: ReactPointerEvent<HTMLDivElement>) {
     if (isLocked) return;
     event.stopPropagation();
@@ -136,6 +148,7 @@ export function TimelineClipBlock({
         isDragging ? "z-50 scale-[1.02] shadow-lg shadow-emerald-500/20" : "",
       ].join(" ")}
       style={{ left: `${leftPct}%`, width: `${widthPct}%`, zIndex: isDragging ? 50 : stackOrder }}
+      onPointerDown={cutMode ? onCutPointerDown : undefined}
       onPointerUp={cutMode ? onCutPointerUp : undefined}
     >
       <MediaAssetThumb
