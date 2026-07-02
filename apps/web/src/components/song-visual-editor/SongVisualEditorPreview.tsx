@@ -87,20 +87,17 @@ export function SongVisualEditorPreview({
         />
 
         {canPlay ? (
-          <div
-            className={[
-              "pointer-events-none absolute inset-0 z-20 flex items-center justify-center bg-black/30 transition-opacity",
-              isPlaying ? "opacity-0 group-hover/preview:opacity-100" : "opacity-100",
-            ].join(" ")}
-          >
-            <span className="flex h-14 w-14 items-center justify-center rounded-full border border-white/20 bg-black/70 text-white shadow-xl backdrop-blur-sm">
-              {isPlaying ? (
-                <Pause size={24} fill="currentColor" />
-              ) : (
-                <Play size={24} className="ml-0.5" fill="currentColor" />
-              )}
-            </span>
-          </div>
+          isPlaying ? (
+            <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center opacity-0 transition-opacity duration-200 group-hover/preview:opacity-100">
+              <span className="flex h-16 w-16 items-center justify-center rounded-full bg-black/55 text-white shadow-lg backdrop-blur-sm">
+                <Pause size={30} fill="currentColor" />
+              </span>
+            </div>
+          ) : (
+            <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center bg-black/20">
+              <Play size={72} className="ml-2 text-white/95 drop-shadow-[0_4px_24px_rgba(0,0,0,0.65)]" fill="currentColor" strokeWidth={0} />
+            </div>
+          )
         ) : null}
 
         {media ? (
