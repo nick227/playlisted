@@ -10,11 +10,14 @@ import { RecordingActionMenu } from "@/components/media/RecordingActionMenu";
 import { EmptyState } from "@/components/feedback/EmptyState";
 import { Skeleton } from "@/components/feedback/Skeleton";
 import { ContentRow } from "@/components/discovery/ContentRow";
+import { LibraryBrowseLayout } from "@/components/library/LibraryBrowseLayout";
+import { PanelHeader } from "@/components/library/libraryPanels";
 import { PlaybackBars } from "@/features/playback-indicators/PlaybackBars";
 import { coverFallback, playlistPath, playlistRecordingPath, profilePath } from "@/lib/routes";
 import { formatDuration, formatPlayCount } from "@/lib/format";
 import { personalTrackToQueueTrack } from "@/lib/queueTrack";
 import { recordingShareUrl } from "@/lib/shareContent";
+import { favoritesBrowseCrumbs } from "@/lib/browsePaths";
 import { useTrackPlayback } from "@/hooks/useTrackPlayback";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 import { useAuth } from "@/providers/AuthProvider";
@@ -158,15 +161,17 @@ function Section({
   children,
   empty,
   loading,
+  className = "",
 }: {
   title: string;
   subtitle?: string;
   children: React.ReactNode;
   empty?: string;
   loading?: boolean;
+  className?: string;
 }) {
   return (
-    <section className="mb-10">
+    <section className={["mb-8 last:mb-0", className].join(" ")}>
       <div className="mb-4 flex items-end justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold tracking-tight text-white">{title}</h2>
@@ -208,15 +213,17 @@ export function FavoritesPage() {
 
   if (!isAuthed) {
     return (
-      <div className="mx-auto max-w-4xl h-screen flex items-center justify-center">
-        <div className="text-center">
-        <EmptyState
-          title="Sign in to see your music"
-          description="Favorites, play history, and recommendations are saved to your account."
-        />
-        <Link to="/login" className="text-sm text-white hover:underline">Sign in</Link>
+      <LibraryBrowseLayout crumbs={favoritesBrowseCrumbs()}>
+        <div className="flex min-h-[52vh] items-center justify-center">
+          <div className="text-center">
+            <EmptyState
+              title="Sign in to see your music"
+              description="Favorites, play history, and recommendations are saved to your account."
+            />
+            <Link to="/login" className="text-sm text-white hover:underline">Sign in</Link>
+          </div>
         </div>
-      </div>
+      </LibraryBrowseLayout>
     );
   }
 
@@ -227,11 +234,11 @@ export function FavoritesPage() {
   const recentTracks = recentlyPlayed.data?.data ?? [];
 
   return (
-    <div className="mx-auto max-w-4xl">
-
+    <LibraryBrowseLayout crumbs={favoritesBrowseCrumbs()}>
+      <PanelHeader label="Favorites" />
       <Section
-        title="Favorite playlists"
-        subtitle="Collections you've saved"
+        title="Collections"
+        className="mt-4"
         loading={favoritePlaylists.isLoading}
         empty={
           favPlaylistItems.length === 0
@@ -255,35 +262,34 @@ export function FavoritesPage() {
         </div>
       </Section>
 
-{favArtistItems.length > 0 && (
-      <Section
-        title="Favorite artists"
-        subtitle="Artists you've hearted"
-        loading={favoriteArtists.isLoading}
-        empty={
-          favArtistItems.length === 0
-            ? "No favorite artists yet — heart an artist to save them here"
-            : undefined
-        }
-      >
-        <div className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-5">
-          {favArtistItems.map((artist) => (
-            <ArtistCard
-              key={artist.id}
-              id={artist.id}
-              username={artist.username}
-              displayName={artist.displayName}
-              subtitle={`@${artist.username}`}
-              avatarUrl={artist.avatarUrl}
-              className="w-full"
-            />
-          ))}
-        </div>
-      </Section>)}
+      {favArtistItems.length > 0 && (
+        <Section
+          title="Favorite artists"
+          loading={favoriteArtists.isLoading}
+          empty={
+            favArtistItems.length === 0
+              ? "No favorite artists yet — heart an artist to save them here"
+              : undefined
+          }
+        >
+          <div className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-5">
+            {favArtistItems.map((artist) => (
+              <ArtistCard
+                key={artist.id}
+                id={artist.id}
+                username={artist.username}
+                displayName={artist.displayName}
+                subtitle={`@${artist.username}`}
+                avatarUrl={artist.avatarUrl}
+                className="w-full"
+              />
+            ))}
+          </div>
+        </Section>
+      )}
 
       <Section
         title="Favorites"
-        subtitle="Songs you've hearted"
         loading={favorites.isLoading}
         empty={favTracks.length === 0 ? "No favorites yet — heart a song to save it here" : undefined}
       >
@@ -301,7 +307,6 @@ export function FavoritesPage() {
 
       <Section
         title="Most played"
-        subtitle="Your personal top songs"
         loading={mostPlayed.isLoading}
         empty={mostPlayedTracks.length === 0 ? "Play some songs to see your top tracks" : undefined}
       >
@@ -320,7 +325,6 @@ export function FavoritesPage() {
 
       <Section
         title="Recently played"
-        subtitle="Yo."
         loading={recentlyPlayed.isLoading}
         empty={recentTracks.length === 0 ? "Your listening history will appear here" : undefined}
       >
@@ -357,6 +361,6 @@ export function FavoritesPage() {
               />
             ))}
       </ContentRow>
-    </div>
+    </LibraryBrowseLayout>
   );
 }

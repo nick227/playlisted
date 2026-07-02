@@ -55,6 +55,10 @@ export function playlistsBrowseCrumbs(): BrowseCrumb[] {
   return [libraryCrumb(), { label: "Playlists", to: PLAYLISTS_PATH }];
 }
 
+export function favoritesBrowseCrumbs(): BrowseCrumb[] {
+  return [libraryCrumb(), { label: "Favorites", to: FAVORITES_PATH }];
+}
+
 export function playlistBrowseCrumbs(
   owner: { displayName: string; username: string },
   playlistTitle: string,
