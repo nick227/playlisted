@@ -23,6 +23,12 @@ export type AnimationOptions = {
   startOffsetMs?: number
   beatFx?: VisualMediaBeatFx
   mediaAttachmentId?: string
+  timelineSync?: {
+    timelineStartSec: number
+    startOffsetSec?: number
+    loop: boolean
+    naturalDurationSec: number
+  }
   [key: string]: unknown
 }
 

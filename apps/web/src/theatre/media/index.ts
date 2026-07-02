@@ -50,4 +50,15 @@ export {
   pickTimelineClipPresetId,
   resolveTimelinePresetId,
 } from './timelineClipPick'
+export {
+  MEDIA_SEEK_DRIFT_THRESHOLD_SEC,
+  readTimelineSyncOptions,
+  resolveMediaPlaybackTime,
+  shouldSeekMediaTime,
+} from './resolveMediaPlaybackTime'
+export type {
+  MediaPlaybackSyncInput,
+  MediaPlaybackSyncResult,
+  TimelineSyncOptions,
+} from './resolveMediaPlaybackTime'
 export { registerUserMediaEngine, USER_IMAGE_MEDIA_ID, USER_VIDEO_MEDIA_ID } from './userMediaEngine'

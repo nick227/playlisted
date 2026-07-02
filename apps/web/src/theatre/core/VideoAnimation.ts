@@ -1,5 +1,11 @@
 import { AnimationContext, IAnimation } from './IAnimation'
 import {
+  readTimelineSyncOptions,
+  resolveMediaPlaybackTime,
+  shouldSeekMediaTime,
+  type TimelineSyncOptions,
+} from '../media/resolveMediaPlaybackTime'
+import {
   computeVideoBeatFxFrame,
   formatVideoBeatFxFilter,
   formatVideoBeatFxTransform,
@@ -23,6 +29,8 @@ export class VideoAnimation implements IAnimation {
   private initOptions: VideoAnimationInitOptions
   private externallyDriven = false
   private pulseState: VideoBeatFxPulseState = { beatPulse: 0, dropPulse: 0 }
+  private pendingMediaTimeSec: number | null = null
+  private metadataSyncAttached = false
 
   constructor(initOptions: VideoAnimationInitOptions = {}) {
     this.initOptions = initOptions
@@ -36,6 +44,8 @@ export class VideoAnimation implements IAnimation {
     this.containerRef = container
     this.context = context
     this.pulseState = { beatPulse: 0, dropPulse: 0 }
+    this.pendingMediaTimeSec = null
+    this.metadataSyncAttached = false
 
     this.video = document.createElement('video')
     this.video.style.position = 'absolute'
@@ -56,7 +66,8 @@ export class VideoAnimation implements IAnimation {
     if (zIndex !== undefined) this.video.style.zIndex = String(zIndex)
 
     this.video.muted = context.options?.muted ?? true
-    this.video.loop = context.options?.loop ?? true
+    const timelineSync = readTimelineSyncOptions(context.options)
+    this.video.loop = timelineSync ? false : (context.options?.loop ?? true)
     this.video.playsInline = true
     this.video.crossOrigin = 'anonymous'
     this.video.preload = 'metadata'
@@ -71,15 +82,17 @@ export class VideoAnimation implements IAnimation {
       this.video.src = videoUrl
     }
 
-    const startOffsetMs = context.options?.startOffsetMs
-    if (typeof startOffsetMs === 'number' && startOffsetMs > 0) {
-      this.video.addEventListener('loadedmetadata', () => {
-        try {
-          this.video.currentTime = startOffsetMs / 1000
-        } catch {
-          /* ignore seek errors */
-        }
-      }, { once: true })
+    if (!timelineSync) {
+      const startOffsetMs = context.options?.startOffsetMs
+      if (typeof startOffsetMs === 'number' && startOffsetMs > 0) {
+        this.video.addEventListener('loadedmetadata', () => {
+          try {
+            this.video.currentTime = startOffsetMs / 1000
+          } catch {
+            /* ignore seek errors */
+          }
+        }, { once: true })
+      }
     }
 
     container.appendChild(this.video)
@@ -124,6 +137,9 @@ export class VideoAnimation implements IAnimation {
   destroy() {
     this.running = false
     if (this.video) {
+      if (this.metadataSyncAttached) {
+        this.video.removeEventListener('loadedmetadata', this.handleVideoMetadataLoaded)
+      }
       console.info('[Theatre] video destroyed', {
         presetId: this.context?.options?.preset ?? 'unknown',
         currentSrc: this.video.currentSrc,
@@ -138,10 +154,17 @@ export class VideoAnimation implements IAnimation {
       }
     }
     this.pulseState = { beatPulse: 0, dropPulse: 0 }
+    this.pendingMediaTimeSec = null
+    this.metadataSyncAttached = false
   }
 
   renderFrame(context: AnimationContext) {
     if (!this.running || !this.externallyDriven || !this.video) return
+
+    const timelineSync = readTimelineSyncOptions(context.options)
+    if (timelineSync) {
+      this.syncTimelinePlayback(context, timelineSync)
+    }
 
     const beatFx = parseVideoBeatFx(context.options?.beatFx)
     if (!beatFx) return
@@ -169,6 +192,64 @@ export class VideoAnimation implements IAnimation {
     this.video.style.willChange = 'transform, filter'
     this.video.style.transform = formatVideoBeatFxTransform(frame.scale)
     this.video.style.filter = formatVideoBeatFxFilter(frame)
+  }
+
+  private syncTimelinePlayback(context: AnimationContext, timelineSync: TimelineSyncOptions) {
+    const audio = context.audioElement
+    if (!audio || !Number.isFinite(audio.currentTime)) return
+
+    const resolved = resolveMediaPlaybackTime({
+      audioCurrentSec: audio.currentTime,
+      timelineStartSec: timelineSync.timelineStartSec,
+      startOffsetSec: timelineSync.startOffsetSec,
+      loop: timelineSync.loop,
+      naturalDurationSec: timelineSync.naturalDurationSec,
+      videoDurationSec: Number.isFinite(this.video.duration) ? this.video.duration : null,
+    })
+
+    if (!resolved) return
+
+    this.applyMediaTimeSeek(resolved.mediaTimeSec)
+
+    const audioPaused = audio.paused
+    if (audioPaused || !resolved.shouldPlay) {
+      if (!this.video.paused) this.video.pause()
+      return
+    }
+
+    if (this.video.paused) {
+      void this.video.play().catch(() => undefined)
+    }
+  }
+
+  private applyMediaTimeSeek(targetSec: number) {
+    if (!Number.isFinite(targetSec)) return
+
+    if (this.video.readyState < HTMLMediaElement.HAVE_METADATA) {
+      this.pendingMediaTimeSec = targetSec
+      if (!this.metadataSyncAttached) {
+        this.video.addEventListener('loadedmetadata', this.handleVideoMetadataLoaded)
+        this.metadataSyncAttached = true
+      }
+      return
+    }
+
+    if (!shouldSeekMediaTime(this.video.currentTime, targetSec)) {
+      this.pendingMediaTimeSec = null
+      return
+    }
+
+    try {
+      this.video.currentTime = targetSec
+      this.pendingMediaTimeSec = null
+    } catch {
+      this.pendingMediaTimeSec = targetSec
+    }
+  }
+
+  private handleVideoMetadataLoaded = () => {
+    if (this.pendingMediaTimeSec == null) return
+    this.applyMediaTimeSeek(this.pendingMediaTimeSec)
   }
 }
 

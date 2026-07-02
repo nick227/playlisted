@@ -1,5 +1,6 @@
 import type { ScenePresetDef } from '../registry/scenePresets'
 import { ROTATION_HOLD_DEFAULT } from '../registry/presetTuning'
+import { getNaturalDurationSec, readClipPlayback } from './timelineClipLayout'
 import type { VisualMediaAttachment } from './types'
 import { USER_IMAGE_MEDIA_ID, USER_VIDEO_MEDIA_ID } from './userMediaEngine'
 
@@ -11,7 +12,16 @@ export function userMediaPresetId(attachmentId: string): string {
 
 export function attachmentToScenePreset(attachment: VisualMediaAttachment): ScenePresetDef {
   const isVideo = attachment.mediaType === 'video'
-  const playback = attachment.playback ?? {}
+  const playback = readClipPlayback(attachment)
+  const timelineStartSec = playback.timelineStartSec
+  const timelineSync = isVideo && typeof timelineStartSec === 'number'
+    ? {
+      timelineStartSec,
+      startOffsetSec: (playback.startOffsetMs ?? 0) / 1000,
+      loop: playback.loop ?? true,
+      naturalDurationSec: getNaturalDurationSec(attachment),
+    }
+    : undefined
 
   return {
     id: userMediaPresetId(attachment.id),
@@ -34,12 +44,13 @@ export function attachmentToScenePreset(attachment: VisualMediaAttachment): Scen
         opacity: 1,
         videoUrl: isVideo ? attachment.url : undefined,
         imageUrl: !isVideo ? attachment.url : undefined,
-        loop: playback.loop ?? true,
+        loop: timelineSync ? false : (playback.loop ?? true),
         muted: playback.muted ?? true,
         objectFit: playback.objectFit ?? 'cover',
         startOffsetMs: playback.startOffsetMs ?? 0,
         beatFx: attachment.beatFx,
         mediaAttachmentId: attachment.id,
+        timelineSync,
       },
     }],
   }
