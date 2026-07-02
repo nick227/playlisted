@@ -41,6 +41,12 @@ export type SongVisualMediaRecord = {
   attachments: SongVisualAttachmentRecord[];
 };
 
+type VisualUploadMetadata = {
+  durationMs?: number;
+  width?: number;
+  height?: number;
+};
+
 function apiBase() {
   return import.meta.env.VITE_API_BASE_URL ?? "";
 }
@@ -55,6 +61,77 @@ async function parseJson<T>(response: Response): Promise<T> {
     throw new Error(payload?.message ?? `Request failed (${response.status})`);
   }
   return response.json() as Promise<T>;
+}
+
+function appendOptionalNumber(form: FormData, key: keyof VisualUploadMetadata, value: number | undefined) {
+  if (typeof value === "number" && Number.isFinite(value) && value > 0) {
+    form.append(key, String(Math.round(value)));
+  }
+}
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T | null> {
+  return new Promise((resolve) => {
+    const timeoutId = window.setTimeout(() => resolve(null), timeoutMs);
+    promise
+      .then((value) => resolve(value))
+      .catch(() => resolve(null))
+      .finally(() => window.clearTimeout(timeoutId));
+  });
+}
+
+async function readImageUploadMetadata(file: File): Promise<VisualUploadMetadata | null> {
+  if (typeof window === "undefined" || typeof Image === "undefined" || !URL.createObjectURL) return null;
+
+  const url = URL.createObjectURL(file);
+  try {
+    return await withTimeout(new Promise<VisualUploadMetadata>((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => {
+        resolve({
+          width: image.naturalWidth,
+          height: image.naturalHeight,
+        });
+      };
+      image.onerror = () => reject(new Error("image_metadata_failed"));
+      image.src = url;
+    }), 3000);
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+async function readVideoUploadMetadata(file: File): Promise<VisualUploadMetadata | null> {
+  if (typeof window === "undefined" || typeof document === "undefined" || !URL.createObjectURL) return null;
+
+  const url = URL.createObjectURL(file);
+  try {
+    return await withTimeout(new Promise<VisualUploadMetadata>((resolve, reject) => {
+      const video = document.createElement("video");
+      video.preload = "metadata";
+      video.muted = true;
+      video.playsInline = true;
+      video.onloadedmetadata = () => {
+        resolve({
+          durationMs: Number.isFinite(video.duration) && video.duration > 0
+            ? video.duration * 1000
+            : undefined,
+          width: video.videoWidth,
+          height: video.videoHeight,
+        });
+      };
+      video.onerror = () => reject(new Error("video_metadata_failed"));
+      video.src = url;
+      video.load();
+    }), 5000);
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+async function readVisualUploadMetadata(file: File, kind: "video" | "image"): Promise<VisualUploadMetadata | null> {
+  return kind === "video"
+    ? readVideoUploadMetadata(file)
+    : readImageUploadMetadata(file);
 }
 
 export async function listVisualMediaAssets(accessToken: string) {
@@ -73,6 +150,12 @@ export async function uploadVisualMediaFile(
 ) {
   const form = new FormData();
   form.append("file", file);
+  const metadata = await readVisualUploadMetadata(file, kind);
+  if (metadata) {
+    appendOptionalNumber(form, "durationMs", metadata.durationMs);
+    appendOptionalNumber(form, "width", metadata.width);
+    appendOptionalNumber(form, "height", metadata.height);
+  }
 
   const response = await fetch(`${apiBase()}/api/v1/visual-media/upload?kind=${kind}`, {
     method: "POST",

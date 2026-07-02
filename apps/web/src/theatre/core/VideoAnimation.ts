@@ -3,6 +3,7 @@ import {
   readTimelineSyncOptions,
   resolveMediaPlaybackTime,
   shouldSeekMediaTime,
+  shouldThrottleMediaSeek,
   type TimelineSyncOptions,
 } from '../media/resolveMediaPlaybackTime'
 import {
@@ -31,6 +32,10 @@ export class VideoAnimation implements IAnimation {
   private pulseState: VideoBeatFxPulseState = { beatPulse: 0, dropPulse: 0 }
   private pendingMediaTimeSec: number | null = null
   private metadataSyncAttached = false
+  private lastSeekAtMs: number | null = null
+  private mediaUnavailable = false
+  private playPromisePending = false
+  private lastPlayFailureAtMs: number | null = null
 
   constructor(initOptions: VideoAnimationInitOptions = {}) {
     this.initOptions = initOptions
@@ -46,6 +51,10 @@ export class VideoAnimation implements IAnimation {
     this.pulseState = { beatPulse: 0, dropPulse: 0 }
     this.pendingMediaTimeSec = null
     this.metadataSyncAttached = false
+    this.lastSeekAtMs = null
+    this.mediaUnavailable = false
+    this.playPromisePending = false
+    this.lastPlayFailureAtMs = null
 
     this.video = document.createElement('video')
     this.video.style.position = 'absolute'
@@ -82,10 +91,18 @@ export class VideoAnimation implements IAnimation {
       this.video.src = videoUrl
     }
 
+    this.video.addEventListener?.('loadedmetadata', this.handleVideoMetadataLoaded)
+    this.video.addEventListener?.('canplay', this.handleVideoCanPlay)
+    this.video.addEventListener?.('playing', this.handleVideoCanPlay)
+    this.video.addEventListener?.('waiting', this.handleVideoWaiting)
+    this.video.addEventListener?.('stalled', this.handleVideoWaiting)
+    this.video.addEventListener?.('error', this.handleVideoError)
+    this.metadataSyncAttached = true
+
     if (!timelineSync) {
       const startOffsetMs = context.options?.startOffsetMs
       if (typeof startOffsetMs === 'number' && startOffsetMs > 0) {
-        this.video.addEventListener('loadedmetadata', () => {
+        this.video.addEventListener?.('loadedmetadata', () => {
           try {
             this.video.currentTime = startOffsetMs / 1000
           } catch {
@@ -100,13 +117,7 @@ export class VideoAnimation implements IAnimation {
 
   async start() {
     this.running = true
-    if (this.video?.src) {
-      try {
-        await this.video.play()
-      } catch (e) {
-        console.warn('[VideoAnimation] Autoplay prevented or failed:', e)
-      }
-    }
+    await this.safePlay()
   }
 
   pause() {
@@ -120,7 +131,7 @@ export class VideoAnimation implements IAnimation {
     if (!this.running) {
       this.running = true
       if (this.video && this.video.src) {
-        this.video.play().catch(e => console.warn('[VideoAnimation] Resume play failed:', e))
+        void this.safePlay()
       }
     }
   }
@@ -137,9 +148,12 @@ export class VideoAnimation implements IAnimation {
   destroy() {
     this.running = false
     if (this.video) {
-      if (this.metadataSyncAttached) {
-        this.video.removeEventListener('loadedmetadata', this.handleVideoMetadataLoaded)
-      }
+      this.video.removeEventListener?.('loadedmetadata', this.handleVideoMetadataLoaded)
+      this.video.removeEventListener?.('canplay', this.handleVideoCanPlay)
+      this.video.removeEventListener?.('playing', this.handleVideoCanPlay)
+      this.video.removeEventListener?.('waiting', this.handleVideoWaiting)
+      this.video.removeEventListener?.('stalled', this.handleVideoWaiting)
+      this.video.removeEventListener?.('error', this.handleVideoError)
       console.info('[Theatre] video destroyed', {
         presetId: this.context?.options?.preset ?? 'unknown',
         currentSrc: this.video.currentSrc,
@@ -156,6 +170,10 @@ export class VideoAnimation implements IAnimation {
     this.pulseState = { beatPulse: 0, dropPulse: 0 }
     this.pendingMediaTimeSec = null
     this.metadataSyncAttached = false
+    this.lastSeekAtMs = null
+    this.mediaUnavailable = false
+    this.playPromisePending = false
+    this.lastPlayFailureAtMs = null
   }
 
   renderFrame(context: AnimationContext) {
@@ -197,6 +215,7 @@ export class VideoAnimation implements IAnimation {
   private syncTimelinePlayback(context: AnimationContext, timelineSync: TimelineSyncOptions) {
     const audio = context.audioElement
     if (!audio || !Number.isFinite(audio.currentTime)) return
+    if (this.mediaUnavailable || this.video.error) return
 
     const resolved = resolveMediaPlaybackTime({
       audioCurrentSec: audio.currentTime,
@@ -209,26 +228,27 @@ export class VideoAnimation implements IAnimation {
 
     if (!resolved) return
 
-    this.applyMediaTimeSeek(resolved.mediaTimeSec)
-
     const audioPaused = audio.paused
     if (audioPaused || !resolved.shouldPlay) {
+      this.applyMediaTimeSeek(resolved.mediaTimeSec, { force: !resolved.shouldPlay })
       if (!this.video.paused) this.video.pause()
       return
     }
 
+    this.applyMediaTimeSeek(resolved.mediaTimeSec)
+
     if (this.video.paused) {
-      void this.video.play().catch(() => undefined)
+      void this.safePlay()
     }
   }
 
-  private applyMediaTimeSeek(targetSec: number) {
+  private applyMediaTimeSeek(targetSec: number, opts: { force?: boolean } = {}) {
     if (!Number.isFinite(targetSec)) return
 
     if (this.video.readyState < HTMLMediaElement.HAVE_METADATA) {
       this.pendingMediaTimeSec = targetSec
       if (!this.metadataSyncAttached) {
-        this.video.addEventListener('loadedmetadata', this.handleVideoMetadataLoaded)
+        this.video.addEventListener?.('loadedmetadata', this.handleVideoMetadataLoaded)
         this.metadataSyncAttached = true
       }
       return
@@ -239,8 +259,15 @@ export class VideoAnimation implements IAnimation {
       return
     }
 
+    const nowMs = performance.now()
+    if (!opts.force && (this.video.seeking || shouldThrottleMediaSeek(nowMs, this.lastSeekAtMs))) {
+      this.pendingMediaTimeSec = targetSec
+      return
+    }
+
     try {
       this.video.currentTime = targetSec
+      this.lastSeekAtMs = nowMs
       this.pendingMediaTimeSec = null
     } catch {
       this.pendingMediaTimeSec = targetSec
@@ -248,8 +275,40 @@ export class VideoAnimation implements IAnimation {
   }
 
   private handleVideoMetadataLoaded = () => {
+    this.mediaUnavailable = false
     if (this.pendingMediaTimeSec == null) return
-    this.applyMediaTimeSeek(this.pendingMediaTimeSec)
+    this.applyMediaTimeSeek(this.pendingMediaTimeSec, { force: true })
+  }
+
+  private handleVideoCanPlay = () => {
+    this.mediaUnavailable = false
+  }
+
+  private handleVideoWaiting = () => {
+    // Keep state observable for future policy decisions without changing beat FX.
+  }
+
+  private handleVideoError = () => {
+    this.mediaUnavailable = true
+    this.pendingMediaTimeSec = null
+  }
+
+  private async safePlay() {
+    if (!this.video?.src || this.mediaUnavailable || this.video.error) return
+    if (this.playPromisePending) return
+
+    const nowMs = performance.now()
+    if (this.lastPlayFailureAtMs != null && nowMs - this.lastPlayFailureAtMs < 1000) return
+
+    this.playPromisePending = true
+    try {
+      await this.video.play()
+    } catch (e) {
+      this.lastPlayFailureAtMs = performance.now()
+      console.warn('[VideoAnimation] Play failed:', e)
+    } finally {
+      this.playPromisePending = false
+    }
   }
 }
 

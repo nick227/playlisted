@@ -21,6 +21,7 @@ export type TimelineSyncOptions = {
 }
 
 export const MEDIA_SEEK_DRIFT_THRESHOLD_SEC = 0.2
+export const MEDIA_SEEK_MIN_INTERVAL_MS = 250
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value))
@@ -78,6 +79,16 @@ export function shouldSeekMediaTime(
 ): boolean {
   if (!Number.isFinite(currentTimeSec) || !Number.isFinite(targetTimeSec)) return true
   return Math.abs(currentTimeSec - targetTimeSec) > thresholdSec
+}
+
+export function shouldThrottleMediaSeek(
+  nowMs: number,
+  lastSeekAtMs: number | null,
+  minIntervalMs = MEDIA_SEEK_MIN_INTERVAL_MS,
+): boolean {
+  if (lastSeekAtMs == null) return false
+  if (!Number.isFinite(nowMs) || !Number.isFinite(lastSeekAtMs)) return false
+  return nowMs - lastSeekAtMs < minIntervalMs
 }
 
 export function readTimelineSyncOptions(

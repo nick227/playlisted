@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest'
 
 import {
   MEDIA_SEEK_DRIFT_THRESHOLD_SEC,
+  MEDIA_SEEK_MIN_INTERVAL_MS,
   resolveMediaPlaybackTime,
   shouldSeekMediaTime,
+  shouldThrottleMediaSeek,
 } from '../media/resolveMediaPlaybackTime'
 
 describe('resolveMediaPlaybackTime', () => {
@@ -65,5 +67,11 @@ describe('resolveMediaPlaybackTime', () => {
   it('only seeks when drift exceeds threshold', () => {
     expect(shouldSeekMediaTime(1.0, 1.1, MEDIA_SEEK_DRIFT_THRESHOLD_SEC)).toBe(false)
     expect(shouldSeekMediaTime(1.0, 1.35, MEDIA_SEEK_DRIFT_THRESHOLD_SEC)).toBe(true)
+  })
+
+  it('throttles repeated seek writes inside the minimum interval', () => {
+    expect(shouldThrottleMediaSeek(1_000, null)).toBe(false)
+    expect(shouldThrottleMediaSeek(1_100, 1_000, MEDIA_SEEK_MIN_INTERVAL_MS)).toBe(true)
+    expect(shouldThrottleMediaSeek(1_260, 1_000, MEDIA_SEEK_MIN_INTERVAL_MS)).toBe(false)
   })
 })

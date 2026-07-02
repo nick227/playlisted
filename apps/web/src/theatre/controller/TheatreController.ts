@@ -14,11 +14,11 @@ import type { ResolvedRotationPolicy, RotationPolicyState, TheatreTrackContext }
 import { FxSelector } from '../selection/FxSelector'
 import type { PickContext } from '../selection/types'
 import { getOrCreateAudioAnalyserConnection, type AudioAnalyserConnection } from '@/features/playback-indicators/audioAnalyser'
-import { getPreset, listPresets, type ScenePresetDef, type TheatreTransitionKind } from '../registry/scenePresets'
+import { listPresets, type ScenePresetDef, type TheatreTransitionKind } from '../registry/scenePresets'
 import { buildSongVisualPickExtras } from '../media/buildSongVisualPool'
-import { userMediaPresetId } from '../media/attachmentToScenePreset'
-import { findActiveTimelineClip } from '../media/timelineClipLayout'
+import { clearDynamicPresets } from '../media/dynamicPresetStore'
 import { isUserMediaPresetId, resolvePreset } from '../media/resolvePreset'
+import { resolveTimelinePlaybackDecision } from '../media/TimelinePlaybackDirector'
 import { hydrateTrackVisualMedia } from '../media/hydrateTrackVisualMedia'
 import { getPackageIdForPreset } from '../registry/packageRotation'
 import { buildAnimationFrameContext, withTheatreInitContext } from './theatreFrameContext'
@@ -29,6 +29,7 @@ import { TheatreSceneDeck } from './TheatreSceneDeck'
 import { theatreBreadcrumb } from './theatreBreadcrumbs'
 import { isPresetQuarantined, quarantinePreset } from './presetQuarantine'
 import { isObjectTheatrePreset } from '../packages/object-spinner-mover'
+import { USER_VIDEO_MEDIA_ID } from '../media/userMediaEngine'
 
 export type TheatreRotationPolicy = {
   minSceneMs: number
@@ -51,7 +52,10 @@ type PlaybackSourceMeta = { artworkUrl?: string | null }
 type TheatreMode = 'background' | 'immersive'
 
 function isVideoPresetId(presetId: string | null | undefined): boolean {
-  return presetId ? getPackageIdForPreset(presetId) === VIDEO_PACKAGE_ID : false
+  if (!presetId) return false
+  if (getPackageIdForPreset(presetId) === VIDEO_PACKAGE_ID) return true
+  const preset = resolvePreset(presetId)
+  return Boolean(preset?.layers.some(layer => layer.animationId === USER_VIDEO_MEDIA_ID))
 }
 
 class TheatreController extends EventTarget {
@@ -196,8 +200,13 @@ class TheatreController extends EventTarget {
   public setTrackContext(track: TheatreTrackContext | null) {
     this.trackContext = track
     this.lastTimelineClipPresetId = null
+    clearDynamicPresets()
+    this.fxSelector.clearCandidate()
     void hydrateTrackVisualMedia(track).then(() => {
       this.fxSelector.clearCandidate()
+      if (this.state.active && this.state.presetId && isUserMediaPresetId(this.state.presetId) && !resolvePreset(this.state.presetId)) {
+        void this.changeToTimelineFallbackPreset()
+      }
     })
   }
 
@@ -500,29 +509,43 @@ class TheatreController extends EventTarget {
     if (playheadSec == null) return false
 
     const pickCtx = this.buildFxPickContext()
-    if (!pickCtx.timelineClips?.length) return false
+    const decision = resolveTimelinePlaybackDecision({
+      timelineClips: pickCtx.timelineClips,
+      songPlayheadSec: playheadSec,
+      resolvePreset,
+    })
 
-    const activeClip = findActiveTimelineClip(pickCtx.timelineClips, playheadSec)
-    const targetPresetId = activeClip ? userMediaPresetId(activeClip.attachment.id) : null
-
-    if (targetPresetId) {
-      if (targetPresetId !== this.state.presetId && !this.transitioning) {
-        this.lastTimelineClipPresetId = targetPresetId
-        void this.changePresetAuto(targetPresetId)
+    if (decision.kind === 'activeClip' && decision.presetId) {
+      if (decision.presetId !== this.state.presetId && !this.transitioning) {
+        this.lastTimelineClipPresetId = decision.presetId
+        void this.changePresetAuto(decision.presetId)
       } else {
-        this.lastTimelineClipPresetId = targetPresetId
+        this.lastTimelineClipPresetId = decision.presetId
       }
-      return true
+      return decision.suppressTimedRotation
     }
 
-    if (this.lastTimelineClipPresetId && this.state.presetId && isUserMediaPresetId(this.state.presetId) && !this.transitioning) {
+    const activeUserPresetMissing = Boolean(this.state.presetId && !resolvePreset(this.state.presetId))
+    const shouldLeaveUserMedia =
+      this.state.presetId &&
+      isUserMediaPresetId(this.state.presetId) &&
+      (activeUserPresetMissing || this.lastTimelineClipPresetId)
+
+    if ((decision.kind === 'gapFallback' || activeUserPresetMissing) && shouldLeaveUserMedia && !this.transitioning) {
       this.lastTimelineClipPresetId = null
       this.fxSelector.clearCandidate()
       this.resetRotationHold(nowMs)
-      void this.rotateRandomPreset()
+      void this.changeToTimelineFallbackPreset()
     }
 
-    return false
+    return decision.suppressTimedRotation
+  }
+
+  private async changeToTimelineFallbackPreset() {
+    if (!this.state.active || this.transitioning) return
+    const selectedPreset = this.fxSelector.consumeNext(this.buildFxPickContext())
+    if (!selectedPreset || selectedPreset.id === this.state.presetId) return
+    await this.changePresetAuto(selectedPreset.id)
   }
 
   private async togglePlayback() {

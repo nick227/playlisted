@@ -1,6 +1,8 @@
 import type { ScenePresetDef } from '../registry/scenePresets'
 
 const dynamicPresets = new Map<string, ScenePresetDef>()
+// TODO: Scope dynamic presets per theatre session if multiple live theatre/preview
+// runtimes need to coexist. The MVP assumes one active runtime and clears on track changes.
 
 export function registerDynamicPreset(def: ScenePresetDef): void {
   dynamicPresets.set(def.id, def)
