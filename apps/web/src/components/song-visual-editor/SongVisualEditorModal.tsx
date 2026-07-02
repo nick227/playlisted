@@ -84,6 +84,7 @@ function SongVisualEditorModalInner({
   }, []);
 
   useSongVisualEditorHotkeys({
+    timelineClips: editor.timelineClips,
     copySelectedClip: editor.copySelectedClip,
     pasteClipAt: editor.pasteClipAt,
     detachAttachment: editor.detachAttachment,
