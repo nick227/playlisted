@@ -65,13 +65,12 @@ export function SongVisualAssetLibrary({
             Add clips from the library below or upload new media.
           </p>
         ) : (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-5 md:grid-cols-8">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
             {[...timelineClips].sort((left, right) => left.startSec - right.startSec).map((clip) => {
               const { attachment } = clip;
               const selected = attachment.id === selectedAttachmentId;
               const startOffsetMs = readClipStartOffsetMs(attachment);
               const clipSaving = clipSyncStatus[attachment.id] === "saving";
-              const isVideo = attachment.mediaAsset.mediaType === "video";
               const audioPulse = readClipAudioPulse(attachment);
               return (
                 <article
@@ -116,12 +115,12 @@ export function SongVisualAssetLibrary({
                       </label>
                       <label
                         className="inline-flex flex-1 min-w-[4.5rem] items-center gap-1 rounded-md border border-white/10 px-2 py-1 text-[10px] text-white/80"
-                        title={isVideo ? "Scale and brighten clip on beats" : "Beat pulse applies to video clips"}
+                        title="Scale and brighten clip on beats"
                       >
                         <input
                           type="checkbox"
                           checked={audioPulse}
-                          disabled={isBusy || clipSaving || !isVideo}
+                          disabled={isBusy || clipSaving}
                           onChange={(event) => onClipAudioPulseChange(attachment.id, event.target.checked)}
                           className="rounded border-white/20 bg-black/40 text-emerald-500"
                         />
@@ -199,7 +198,7 @@ export function SongVisualAssetLibrary({
             </p>
           </button>
         ) : (
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+          <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
             {assets.map((asset) => (
               <article key={asset.id} className="overflow-hidden rounded-lg border border-white/10 bg-black/30">
                 <MediaAssetThumb asset={asset} className="aspect-video w-full" />

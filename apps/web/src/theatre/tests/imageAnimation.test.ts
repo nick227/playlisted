@@ -104,6 +104,52 @@ describe('ImageAnimation init', () => {
     img?.onerror?.(new Event('error') as Event)
     expect(() => animation.destroy()).not.toThrow()
   })
+
+  it('applies beatFx transforms when pulse is enabled', async () => {
+    const container = createDomContainer()
+    const animation = new ImageAnimation()
+    await animation.init(container, {
+      options: {
+        imageUrl: 'https://cdn.example/photo.jpg',
+        preset: 'tame',
+        beatFx: { enabled: true, intensity: 'subtle', effects: ['scale', 'brightness'] },
+      },
+    })
+    animation.enableExternalDriving()
+    await animation.start()
+
+    const img = container.querySelector('img') as HTMLElement & { style: Record<string, string> }
+    img.onload?.()
+
+    animation.renderFrame({
+      options: {
+        imageUrl: 'https://cdn.example/photo.jpg',
+        preset: 'tame',
+        beatFx: { enabled: true, intensity: 'subtle', effects: ['scale', 'brightness'] },
+      },
+      shared: {
+        reducedMotion: false,
+        lowPower: false,
+        time: { elapsed: 0, delta: 16, frame: 1 },
+        audio: {
+          edges: { beat: true, drop: false, bassHit: false, midsHit: false, highsHit: false, chaosHit: false },
+        },
+        getTriggers: () => ({
+          bassHit: false,
+          midsHit: false,
+          highsHit: false,
+          beat: true,
+          chaosHit: false,
+          energy: 0.6,
+          brightness: 1,
+        }),
+      },
+    })
+
+    expect(img.style.transform).toMatch(/^scale\(1\.\d{4}\)$/)
+    expect(img.style.filter).toContain('brightness(')
+    animation.destroy()
+  })
 })
 
 function albumArtPresetsFromPackage() {

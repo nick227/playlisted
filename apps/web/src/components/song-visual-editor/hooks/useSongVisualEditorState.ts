@@ -366,7 +366,7 @@ export function useSongVisualEditorState({
 
   function setClipAudioPulse(attachmentId: string, enabled: boolean) {
     const attachment = getAttachmentSnapshot(attachmentId);
-    if (!attachment || attachment.mediaAsset.mediaType !== "video") return;
+    if (!attachment) return;
 
     const beatFx = beatFxForAudioPulse(enabled, attachment.beatFx);
     const generation = (commitGeneration.current.get(attachmentId) ?? 0) + 1;

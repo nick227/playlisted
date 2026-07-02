@@ -5,6 +5,14 @@ import {
   formatImageTransform,
   resolveImageUrl,
 } from './imageAnimationUtils'
+import {
+  computeVideoBeatFxFrame,
+  formatVideoBeatFxFilter,
+  formatVideoBeatFxTransform,
+  parseVideoBeatFx,
+  tickVideoBeatFxPulse,
+  type VideoBeatFxPulseState,
+} from './videoBeatFxUtils'
 
 export type ImageAnimationInitOptions = {
   defaultOpacity?: number
@@ -23,6 +31,7 @@ export class ImageAnimation implements IAnimation {
   private containerRef: HTMLElement | null = null
   private context: AnimationContext | null = null
   private initOptions: ImageAnimationInitOptions
+  private pulseState: VideoBeatFxPulseState = { beatPulse: 0, dropPulse: 0 }
 
   constructor(initOptions: ImageAnimationInitOptions = {}) {
     this.initOptions = initOptions
@@ -118,6 +127,7 @@ export class ImageAnimation implements IAnimation {
     this.context = null
     this.resolvedSrc = ''
     this.imageVisible = false
+    this.pulseState = { beatPulse: 0, dropPulse: 0 }
   }
 
   renderFrame(context: AnimationContext) {
@@ -129,9 +139,27 @@ export class ImageAnimation implements IAnimation {
     const triggers = context.shared?.getTriggers?.(preset)
     const energy = triggers?.energy ?? 0
     const beatEdge = Boolean(context.shared?.audio?.edges?.beat)
+    const dropEdge = Boolean(context.shared?.audio?.edges?.drop)
     const elapsedMs = context.shared?.time?.elapsed ?? performance.now()
+    const deltaMs = context.shared?.time?.delta ?? 16
     const reducedMotion = Boolean(context.shared?.reducedMotion)
     const lowPower = Boolean(context.shared?.lowPower)
+
+    const beatFx = parseVideoBeatFx(context.options?.beatFx)
+    if (beatFx) {
+      this.pulseState = tickVideoBeatFxPulse(this.pulseState, { beatEdge, dropEdge, deltaMs })
+      const frame = computeVideoBeatFxFrame({
+        beatFx,
+        reducedMotion,
+        lowPower,
+        energy,
+        beatPulse: this.pulseState.beatPulse,
+        dropPulse: this.pulseState.dropPulse,
+      })
+      this.img.style.transform = formatVideoBeatFxTransform(frame.scale)
+      this.img.style.filter = formatVideoBeatFxFilter(frame)
+      return
+    }
 
     const transform = computeImageFrameTransform({
       elapsedMs,
