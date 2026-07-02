@@ -2,6 +2,7 @@ import { MousePointer2, Scissors } from "lucide-react";
 import { useMemo, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 
 import type { ClipSyncStatus } from "./hooks/optimisticSongVisualCache";
+import { useTimelineSnapGuides } from "./hooks/useTimelineSnapGuides";
 import { useTimelineTrackRect } from "./hooks/useTimelineTrackRect";
 import { timeSecFromTimelinePointer } from "./timelineLayout";
 import { TimelineClipBlock } from "./TimelineClipBlock";
@@ -41,9 +42,15 @@ export function SongVisualEditorTimeline({
   onCutAtTime,
 }: SongVisualEditorTimelineProps) {
   const { trackRef, getTrackRect, refreshTrackRect } = useTimelineTrackRect();
+  const { activeGuide, snapMoveStart, snapResizeStart, snapResizeEnd, clearSnapGuide } = useTimelineSnapGuides({
+    clips,
+    songDurationSec: durationSec,
+    playheadSec: currentTimeSec,
+    getTrackRect,
+  });
   const [editMode, setEditMode] = useState<TimelineEditMode>("select");
 
-  const playheadPct = durationSec > 0 ? (currentTimeSec / durationSec) * 100 : 0;
+  const guidePct = durationSec > 0 && activeGuide ? (activeGuide.timeSec / durationSec) * 100 : null;
 
   const sortedClips = useMemo(
     () => [...clips].sort((left, right) => left.attachment.order - right.attachment.order),
@@ -98,7 +105,7 @@ export function SongVisualEditorTimeline({
         <span className="text-xs text-white/40">
           {editMode === "cut"
             ? "Click a clip or empty lane — shorter side is removed"
-            : "Drag grip to move · edges to resize · Ctrl+C/V · Del to remove"}
+            : "Drag grip to move · edges to resize · snaps to clips & playhead · Ctrl+C/V · Del to remove"}
           {hasClipboard ? " · clipboard ready" : ""}
         </span>
       </div>
@@ -127,13 +134,25 @@ export function SongVisualEditorTimeline({
               onResizeEnd={(nextDurationSec) => onResizeClip(clip.attachment.id, nextDurationSec)}
               onResizeStart={(nextStartSec) => onResizeClipStart(clip.attachment.id, nextStartSec)}
               onCutAt={(cutSec) => onCutClipAt(clip.attachment.id, cutSec)}
+              snapMoveStart={(proposedStartSec) => snapMoveStart(clip.attachment.id, clip, proposedStartSec)}
+              snapResizeStart={(proposedStartSec) => snapResizeStart(clip.attachment.id, proposedStartSec)}
+              snapResizeEnd={(proposedEndSec) => snapResizeEnd(clip.attachment.id, proposedEndSec)}
+              onSnapEnd={clearSnapGuide}
             />
           ))}
         </div>
 
+        {guidePct != null ? (
+          <div
+            className="pointer-events-none absolute inset-y-0 z-[65] w-px bg-amber-300/90 shadow-[0_0_8px_rgba(252,211,77,0.55)]"
+            style={{ left: `${guidePct}%` }}
+            aria-hidden
+          />
+        ) : null}
+
         <div
           className="pointer-events-none absolute inset-y-0 z-[60] w-0.5 bg-emerald-400/70"
-          style={{ left: `${playheadPct}%` }}
+          style={{ left: `${durationSec > 0 ? (currentTimeSec / durationSec) * 100 : 0}%` }}
           aria-hidden
         />
       </div>

@@ -27,6 +27,10 @@ type TimelineClipBlockProps = {
   onResizeEnd: (nextDurationSec: number) => void;
   onResizeStart: (nextStartSec: number) => void;
   onCutAt: (cutSec: number) => void;
+  snapMoveStart: (proposedStartSec: number) => number;
+  snapResizeStart: (proposedStartSec: number) => number;
+  snapResizeEnd: (proposedEndSec: number) => number;
+  onSnapEnd: () => void;
 };
 
 type DragMode = "move" | "resize-start" | "resize-end";
@@ -52,6 +56,10 @@ export function TimelineClipBlock({
   onResizeEnd,
   onResizeStart,
   onCutAt,
+  snapMoveStart,
+  snapResizeStart,
+  snapResizeEnd,
+  onSnapEnd,
 }: TimelineClipBlockProps) {
   const [drag, setDrag] = useState<DragState | null>(null);
   const [preview, setPreview] = useState<{ startSec: number; durationSec: number } | null>(null);
@@ -85,23 +93,29 @@ export function TimelineClipBlock({
 
     if (drag.mode === "move") {
       const deltaRatio = (event.clientX - drag.startX) / rect.width;
-      const next = previewClipMove(attachment, clip, clip.startSec + deltaRatio * songDurationSec, songDurationSec);
+      const rawStartSec = clip.startSec + deltaRatio * songDurationSec;
+      const snappedStartSec = snapMoveStart(rawStartSec);
+      const next = previewClipMove(attachment, clip, snappedStartSec, songDurationSec);
       if (next) setPreview(next);
       return;
     }
 
     if (drag.mode === "resize-end") {
+      const rawEndSec = trackTime(event.clientX);
+      const snappedEndSec = snapResizeEnd(rawEndSec);
       const next = previewClipResizeEnd(
         attachment,
         clip,
-        trackTime(event.clientX) - clip.startSec,
+        snappedEndSec - clip.startSec,
         songDurationSec,
       );
       if (next) setPreview(next);
       return;
     }
 
-    const next = previewClipResizeStart(attachment, clip, trackTime(event.clientX), songDurationSec);
+    const rawStartSec = trackTime(event.clientX);
+    const snappedStartSec = snapResizeStart(rawStartSec);
+    const next = previewClipResizeStart(attachment, clip, snappedStartSec, songDurationSec);
     if (next) setPreview(next);
   }
 
@@ -119,6 +133,7 @@ export function TimelineClipBlock({
 
     setDrag(null);
     setPreview(null);
+    onSnapEnd();
     event.currentTarget.releasePointerCapture(event.pointerId);
   }
 
