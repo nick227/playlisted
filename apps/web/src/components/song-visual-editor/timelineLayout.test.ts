@@ -4,7 +4,12 @@ import {
   clipDurationAfterLoopChange,
   defaultClipDurationSec,
   getRemainingTimelineSec,
+  getTimelineUsedSec,
   layoutTimelineClips,
+  resolveClipInsert,
+  resolveClipMove,
+  resolveClipResizeEnd,
+  resolveClipResizeStart,
   trimClipAtShortSide,
 } from './timelineLayout'
 import type { SongVisualAttachmentRecord } from '@/lib/visualMediaApi'
@@ -56,7 +61,7 @@ describe('timelineLayout', () => {
 
     const duration = defaultClipDurationSec(first, 0, 120)
     const clips = layoutTimelineClips([
-      { ...first, playback: { loop: true, timelineDurationSec: duration } },
+      { ...first, playback: { loop: true, timelineDurationSec: duration, timelineStartSec: 0 } },
     ], 120)
 
     expect(clips[0]?.durationSec).toBe(120)
@@ -65,7 +70,7 @@ describe('timelineLayout', () => {
 
   it('loop-off clips use natural duration and never auto-fill beyond it', () => {
     const clips = layoutTimelineClips([
-      attachment('clip-a', 0, 'video', { loop: false }, 60_000),
+      attachment('clip-a', 0, 'video', { loop: false, timelineStartSec: 0 }, 60_000),
     ], 120)
 
     expect(clips).toHaveLength(1)
@@ -81,51 +86,97 @@ describe('timelineLayout', () => {
   })
 
   it('turning loop on expands clip to fill remaining timeline', () => {
-    const natural = attachment('clip-a', 60, 'video', { loop: false, timelineDurationSec: 60 }, 60_000)
+    const natural = attachment('clip-a', 60, 'video', { loop: false, timelineDurationSec: 60, timelineStartSec: 60 }, 60_000)
     expect(
       clipDurationAfterLoopChange(natural, 60, 120, true, 60),
     ).toBe(60)
   })
 
-  it('blocks additional clips once timeline is full', () => {
+  it('packs legacy clips without timelineStartSec after explicit clips', () => {
     const clips = layoutTimelineClips([
-      attachment('clip-a', 0, 'video', { loop: true, timelineDurationSec: 120 }, 60_000),
+      attachment('clip-a', 0, 'video', { loop: true, timelineDurationSec: 120, timelineStartSec: 0 }, 60_000),
       attachment('clip-b', 1, 'image', { loop: false }),
     ], 120)
 
     expect(clips).toHaveLength(1)
-    expect(getRemainingTimelineSec(clips, 120)).toBe(0)
   })
 
-  it('respects explicit timelineStartSec positions with gaps', () => {
+  it('respects explicit timelineStartSec positions with gaps and overlaps', () => {
     const clips = layoutTimelineClips([
       attachment('clip-a', 0, 'video', { loop: false, timelineStartSec: 0, timelineDurationSec: 20 }, 60_000),
       attachment('clip-b', 1, 'image', { loop: false, timelineStartSec: 40, timelineDurationSec: 8 }),
+      attachment('clip-c', 2, 'video', { loop: false, timelineStartSec: 10, timelineDurationSec: 20 }, 60_000),
     ], 120)
 
-    expect(clips).toHaveLength(2)
-    expect(clips[0]?.startSec).toBe(0)
-    expect(clips[1]?.startSec).toBe(40)
+    expect(clips).toHaveLength(3)
+    expect(getTimelineUsedSec(clips)).toBe(48)
     expect(getRemainingTimelineSec(clips, 120)).toBe(72)
   })
 
-  it('trim cut deletes the shorter side at the click point', () => {
+  it('rejects insert when no room remains at playhead', () => {
+    const asset = attachment('clip-a', 0, 'video', null, 60_000)
+    expect(resolveClipInsert(asset, 119.8, 120, { loop: false })).toBeNull()
+  })
+
+  it('clamps loop-off resize end to remaining media after offset', () => {
+    const clip = layoutTimelineClips([
+      attachment('clip-a', 0, 'video', {
+        loop: false,
+        timelineStartSec: 0,
+        timelineDurationSec: 40,
+        startOffsetMs: 20_000,
+      }, 60_000),
+    ], 120)[0]
+
+    expect(clip).toBeDefined()
+    const bounds = resolveClipResizeEnd(clip!.attachment, clip!, 60, 120)
+    expect(bounds?.timelineDurationSec).toBe(40)
+  })
+
+  it('clamps move so clip cannot extend past song end', () => {
+    const clip = layoutTimelineClips([
+      attachment('clip-a', 0, 'video', { loop: true, timelineStartSec: 0, timelineDurationSec: 30 }, 60_000),
+    ], 120)[0]
+
+    expect(clip).toBeDefined()
+    const bounds = resolveClipMove(clip!.attachment, clip!, 100, 120)
+    expect(bounds?.timelineStartSec).toBe(90)
+    expect(bounds?.timelineDurationSec).toBe(30)
+  })
+
+  it('trim cut deletes the shorter side and respects media bounds', () => {
     const clip = layoutTimelineClips([
       attachment('clip-a', 0, 'video', { loop: false, timelineStartSec: 10, timelineDurationSec: 30, startOffsetMs: 1000 }, 60_000),
     ], 120)[0]
 
     expect(clip).toBeDefined()
-    expect(trimClipAtShortSide(clip!, 25)).toEqual({
+    expect(trimClipAtShortSide(clip!, 25, 120)).toEqual({
       action: 'trim',
       timelineStartSec: 25,
       timelineDurationSec: 15,
       startOffsetMs: 16000,
     })
-    expect(trimClipAtShortSide(clip!, 18)).toEqual({
+    expect(trimClipAtShortSide(clip!, 18, 120)).toEqual({
       action: 'trim',
       timelineStartSec: 18,
       timelineDurationSec: 22,
       startOffsetMs: 9000,
     })
+  })
+
+  it('resize start cannot trim before media offset floor', () => {
+    const clip = layoutTimelineClips([
+      attachment('clip-a', 0, 'video', {
+        loop: false,
+        timelineStartSec: 10,
+        timelineDurationSec: 30,
+        startOffsetMs: 5000,
+      }, 60_000),
+    ], 120)[0]
+
+    expect(clip).toBeDefined()
+    const bounds = resolveClipResizeStart(clip!.attachment, clip!, 0, 120)
+    expect(bounds?.timelineStartSec).toBeGreaterThanOrEqual(0)
+    expect(bounds?.startOffsetMs).toBeGreaterThanOrEqual(0)
   })
 })

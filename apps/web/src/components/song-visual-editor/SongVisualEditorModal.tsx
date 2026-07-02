@@ -40,7 +40,10 @@ export function SongVisualEditorModal({ recording, onClose }: SongVisualEditorMo
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
+      const target = event.target;
+      if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) return;
+      if (target instanceof HTMLButtonElement || target instanceof HTMLSelectElement) return;
+      if (target instanceof HTMLElement && target.isContentEditable) return;
 
       const key = event.key.toLowerCase();
       const mod = event.metaKey || event.ctrlKey;
@@ -57,6 +60,14 @@ export function SongVisualEditorModal({ recording, onClose }: SongVisualEditorMo
         return;
       }
 
+      if (event.code === "Space" || key === " ") {
+        event.preventDefault();
+        if (!editor.isBusy && durationSec > 0) {
+          playback.togglePlayback();
+        }
+        return;
+      }
+
       if ((key === "delete" || key === "backspace") && editor.selectedAttachmentId) {
         event.preventDefault();
         editor.detachAttachment(editor.selectedAttachmentId);
@@ -70,7 +81,10 @@ export function SongVisualEditorModal({ recording, onClose }: SongVisualEditorMo
     editor.pasteClipAt,
     editor.detachAttachment,
     editor.selectedAttachmentId,
+    editor.isBusy,
     playback.currentTimeSec,
+    playback.togglePlayback,
+    durationSec,
   ]);
 
   if (!accessToken) {
@@ -81,10 +95,7 @@ export function SongVisualEditorModal({ recording, onClose }: SongVisualEditorMo
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-3 backdrop-blur-sm sm:p-4">
       <div className="flex h-full max-h-[92vh] w-full max-w-6xl flex-col overflow-hidden rounded-xl border border-white/10 bg-[var(--color-canvas)] shadow-2xl">
         <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-3">
-          <div className="min-w-0">
-            <h2 className="truncate text-lg font-bold text-white">Visual Editor</h2>
-            <p className="truncate text-sm text-white/50">{recording.title}</p>
-          </div>
+          <h2 className="truncate text-lg font-bold text-white/50 justify-center flex-1 text-center w-full">{recording.title}</h2>
           <button
             type="button"
             onClick={onClose}

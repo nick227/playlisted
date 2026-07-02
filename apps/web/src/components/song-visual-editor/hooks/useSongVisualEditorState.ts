@@ -17,17 +17,17 @@ import type { VisualMediaBeatFx } from "@/theatre/media/types";
 import { clearRemoteTrackVisualMedia } from "@/theatre/media/resolveTrackVisualMedia";
 
 import {
+  boundsNearlyEqual,
   buildPlaybackPatch,
-  clampClipStart,
   clipDurationAfterLoopChange,
-  defaultClipDurationSec,
   findTopClipAtTime,
-  getClipLoop,
-  getNaturalDurationSec,
-  MIN_CLIP_SEC,
   readClipPlayback,
-  resolveClipMoveStart,
+  resolveClipInsert,
+  resolveClipMove,
+  resolveClipResizeEnd,
+  resolveClipResizeStart,
   trimClipAtShortSide,
+  type ClipBounds,
 } from "../timelineLayout";
 import { layoutTimelineClips, policyFromIncludeSiteMedia, policyIncludesSiteMedia } from "../types";
 
@@ -152,15 +152,32 @@ export function useSongVisualEditorState({
     return attachments.reduce((max, attachment) => Math.max(max, attachment.order), -1) + 1;
   }
 
-  async function bringClipToFront(attachmentId: string) {
+  async function persistClipBounds(
+    attachmentId: string,
+    bounds: ClipBounds,
+    opts: { order?: number } = {},
+  ) {
     const attachment = attachments.find((item) => item.id === attachmentId);
-    if (!attachment) return;
-    const topOrder = attachments.reduce((max, item) => Math.max(max, item.order), 0);
-    if (attachment.order >= topOrder) return;
+    const clip = timelineClips.find((item) => item.attachment.id === attachmentId);
+    if (!attachment || !clip) return false;
+
+    const currentOffsetMs = readClipPlayback(attachment).startOffsetMs ?? 0;
+    if (boundsNearlyEqual(bounds, clip, currentOffsetMs) && opts.order == null) {
+      return false;
+    }
+
     await updateMutation.mutateAsync({
       attachmentId,
-      body: { order: topOrder + 1 },
+      body: {
+        ...(opts.order != null ? { order: opts.order } : {}),
+        playback: buildPlaybackPatch(attachment, {
+          timelineStartSec: bounds.timelineStartSec,
+          timelineDurationSec: bounds.timelineDurationSec,
+          startOffsetMs: bounds.startOffsetMs,
+        }),
+      },
     });
+    return true;
   }
 
   async function attachAssetToTimeline(
@@ -168,13 +185,16 @@ export function useSongVisualEditorState({
     opts: { loop?: boolean; startSec?: number } = {},
   ) {
     const loop = opts.loop ?? getAssetLoopPref(asset);
-    const startSec = opts.startSec ?? 0;
-    const stubAttachment = {
-      mediaAsset: asset,
-      playback: { loop },
-    } as SongVisualAttachmentRecord;
-    const clipDurationSec = defaultClipDurationSec(stubAttachment, startSec, timelineDurationSec);
+    const requestedStart = opts.startSec ?? 0;
+    const stubAttachment = { mediaAsset: asset } as SongVisualAttachmentRecord;
+    const bounds = resolveClipInsert(stubAttachment, requestedStart, timelineDurationSec, { loop });
 
+    if (!bounds) {
+      setError("No room on the timeline at this position.");
+      return;
+    }
+
+    setError(null);
     await attachMutation.mutateAsync({
       mediaAssetId: asset.id,
       policy: policy === "defaultOnly" ? "preferAttached" : policy,
@@ -182,8 +202,9 @@ export function useSongVisualEditorState({
       label: asset.originalName,
       playback: {
         loop,
-        timelineStartSec: startSec,
-        timelineDurationSec: clipDurationSec,
+        timelineStartSec: bounds.timelineStartSec,
+        timelineDurationSec: bounds.timelineDurationSec,
+        startOffsetMs: bounds.startOffsetMs,
         muted: true,
         objectFit: "cover",
       },
@@ -208,10 +229,8 @@ export function useSongVisualEditorState({
 
   async function setClipLoop(attachmentId: string, loop: boolean) {
     const attachment = attachments.find((item) => item.id === attachmentId);
-    if (!attachment) return;
-
     const clip = timelineClips.find((item) => item.attachment.id === attachmentId);
-    if (!clip) return;
+    if (!attachment || !clip) return;
 
     const nextDurationSec = clipDurationAfterLoopChange(
       attachment,
@@ -220,6 +239,10 @@ export function useSongVisualEditorState({
       loop,
       clip.durationSec,
     );
+    if (nextDurationSec <= 0) {
+      setError("Clip cannot fit at this position with loop off.");
+      return;
+    }
 
     await updateMutation.mutateAsync({
       attachmentId,
@@ -238,19 +261,22 @@ export function useSongVisualEditorState({
     const clip = timelineClips.find((item) => item.attachment.id === attachmentId);
     if (!attachment || !clip) return;
 
-    const resolvedStart = resolveClipMoveStart(clip, timelineClips, nextStartSec, timelineDurationSec);
-    if (Math.abs(resolvedStart - clip.startSec) < 0.01) {
-      await bringClipToFront(attachmentId);
-      return;
-    }
+    const bounds = resolveClipMove(attachment, clip, nextStartSec, timelineDurationSec);
+    if (!bounds) return;
 
-    await updateMutation.mutateAsync({
+    const topOrder = attachments.reduce((max, item) => Math.max(max, item.order), 0);
+    const needsOrderBump = attachment.order < topOrder;
+    const changed = await persistClipBounds(
       attachmentId,
-      body: {
-        order: nextClipOrder(),
-        playback: buildPlaybackPatch(attachment, { timelineStartSec: resolvedStart }),
-      },
-    });
+      bounds,
+      needsOrderBump ? { order: topOrder + 1 } : {},
+    );
+    if (!changed && needsOrderBump) {
+      await updateMutation.mutateAsync({
+        attachmentId,
+        body: { order: topOrder + 1 },
+      });
+    }
   }
 
   async function resizeClipStart(attachmentId: string, nextStartSec: number) {
@@ -258,35 +284,19 @@ export function useSongVisualEditorState({
     const clip = timelineClips.find((item) => item.attachment.id === attachmentId);
     if (!attachment || !clip) return;
 
-    const loop = getClipLoop(attachment);
-    const playback = readClipPlayback(attachment);
-    const endSec = clip.endSec;
-    let startSec = Math.max(0, Math.min(nextStartSec, endSec - MIN_CLIP_SEC));
+    const bounds = resolveClipResizeStart(attachment, clip, nextStartSec, timelineDurationSec);
+    if (!bounds) return;
+    await persistClipBounds(attachmentId, bounds);
+  }
 
-    let durationSec = endSec - startSec;
-    let startOffsetMs = Math.max(0, (playback.startOffsetMs ?? 0) + Math.round((startSec - clip.startSec) * 1000));
+  async function resizeClip(attachmentId: string, nextDurationSec: number) {
+    const attachment = attachments.find((item) => item.id === attachmentId);
+    const clip = timelineClips.find((item) => item.attachment.id === attachmentId);
+    if (!attachment || !clip) return;
 
-    if (!loop) {
-      const maxDuration = getNaturalDurationSec(attachment) - startOffsetMs / 1000;
-      if (durationSec > maxDuration) {
-        durationSec = Math.max(MIN_CLIP_SEC, maxDuration);
-        startSec = endSec - durationSec;
-        startOffsetMs = Math.max(0, (playback.startOffsetMs ?? 0) + Math.round((startSec - clip.startSec) * 1000));
-      }
-    }
-
-    if (durationSec < MIN_CLIP_SEC) return;
-
-    await updateMutation.mutateAsync({
-      attachmentId,
-      body: {
-        playback: buildPlaybackPatch(attachment, {
-          timelineStartSec: startSec,
-          timelineDurationSec: durationSec,
-          startOffsetMs,
-        }),
-      },
-    });
+    const bounds = resolveClipResizeEnd(attachment, clip, nextDurationSec, timelineDurationSec);
+    if (!bounds) return;
+    await persistClipBounds(attachmentId, bounds);
   }
 
   async function applyTrimAt(attachmentId: string, cutSec: number) {
@@ -294,7 +304,7 @@ export function useSongVisualEditorState({
     const clip = timelineClips.find((item) => item.attachment.id === attachmentId);
     if (!attachment || !clip) return;
 
-    const trim = trimClipAtShortSide(clip, cutSec);
+    const trim = trimClipAtShortSide(clip, cutSec, timelineDurationSec);
     if (!trim) {
       setError("Click inside a clip to cut.");
       return;
@@ -306,20 +316,22 @@ export function useSongVisualEditorState({
       return;
     }
 
-    await updateMutation.mutateAsync({
-      attachmentId,
-      body: {
-        playback: buildPlaybackPatch(attachment, {
-          timelineStartSec: trim.timelineStartSec,
-          timelineDurationSec: trim.timelineDurationSec,
-          startOffsetMs: trim.startOffsetMs,
-        }),
-      },
+    await persistClipBounds(attachmentId, {
+      timelineStartSec: trim.timelineStartSec,
+      timelineDurationSec: trim.timelineDurationSec,
+      startOffsetMs: trim.startOffsetMs,
     });
   }
 
   async function cutClipAt(attachmentId: string, cutSec: number) {
-    await bringClipToFront(attachmentId);
+    const topOrder = attachments.reduce((max, item) => Math.max(max, item.order), 0);
+    const attachment = attachments.find((item) => item.id === attachmentId);
+    if (attachment && attachment.order < topOrder) {
+      await updateMutation.mutateAsync({
+        attachmentId,
+        body: { order: topOrder + 1 },
+      });
+    }
     await applyTrimAt(attachmentId, cutSec);
   }
 
@@ -329,29 +341,7 @@ export function useSongVisualEditorState({
       setError("Click on a clip to cut.");
       return;
     }
-    await applyTrimAt(clip.attachment.id, cutSec);
-  }
-
-  async function resizeClip(attachmentId: string, nextDurationSec: number) {
-    const attachment = attachments.find((item) => item.id === attachmentId);
-    const clip = timelineClips.find((item) => item.attachment.id === attachmentId);
-    if (!attachment || !clip) return;
-
-    const loop = getClipLoop(attachment);
-    const maxDuration = loop
-      ? timelineDurationSec - clip.startSec
-      : Math.min(clip.naturalDurationSec - (readClipPlayback(attachment).startOffsetMs ?? 0) / 1000, timelineDurationSec - clip.startSec);
-    const clipDurationSec = Math.min(Math.max(MIN_CLIP_SEC, nextDurationSec), Math.max(MIN_CLIP_SEC, maxDuration));
-
-    await updateMutation.mutateAsync({
-      attachmentId,
-      body: {
-        playback: buildPlaybackPatch(attachment, {
-          timelineStartSec: clip.startSec,
-          timelineDurationSec: clipDurationSec,
-        }),
-      },
-    });
+    await cutClipAt(clip.attachment.id, cutSec);
   }
 
   function copySelectedClip() {
@@ -374,14 +364,25 @@ export function useSongVisualEditorState({
       return;
     }
 
-    const loop = Boolean((clipboard.playback as { loop?: boolean }).loop ?? defaultAssetLoop(asset));
-    const stubAttachment = {
-      mediaAsset: asset,
-      playback: { loop, ...(clipboard.playback as object) },
-    } as SongVisualAttachmentRecord;
-    const clipDurationSec = (clipboard.playback as { timelineDurationSec?: number }).timelineDurationSec
-      ?? defaultClipDurationSec(stubAttachment, startSec, timelineDurationSec);
+    const playback = clipboard.playback as {
+      loop?: boolean;
+      timelineDurationSec?: number;
+      startOffsetMs?: number;
+    };
+    const loop = playback.loop ?? defaultAssetLoop(asset);
+    const stubAttachment = { mediaAsset: asset, playback: { loop, ...playback } } as SongVisualAttachmentRecord;
+    const bounds = resolveClipInsert(stubAttachment, startSec, timelineDurationSec, {
+      loop,
+      durationSec: playback.timelineDurationSec,
+      startOffsetMs: playback.startOffsetMs,
+    });
 
+    if (!bounds) {
+      setError("No room on the timeline at the playhead.");
+      return;
+    }
+
+    setError(null);
     await attachMutation.mutateAsync({
       mediaAssetId: clipboard.mediaAssetId,
       policy: clipboard.policy,
@@ -389,8 +390,10 @@ export function useSongVisualEditorState({
       label: clipboard.label ?? asset.originalName,
       playback: {
         ...clipboard.playback,
-        timelineStartSec: clampClipStart(startSec, clipDurationSec, timelineDurationSec),
-        timelineDurationSec: clipDurationSec,
+        loop,
+        timelineStartSec: bounds.timelineStartSec,
+        timelineDurationSec: bounds.timelineDurationSec,
+        startOffsetMs: bounds.startOffsetMs,
         muted: true,
         objectFit: "cover",
       },
@@ -400,7 +403,6 @@ export function useSongVisualEditorState({
 
   function selectAttachment(attachmentId: string | null) {
     setSelectedAttachmentId(attachmentId);
-    if (attachmentId) void bringClipToFront(attachmentId);
   }
 
   function openUploadPicker() {

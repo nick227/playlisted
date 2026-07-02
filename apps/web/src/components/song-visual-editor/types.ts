@@ -1,6 +1,8 @@
 import type { SongVisualAttachmentRecord } from "@/lib/visualMediaApi";
 import type { SongVisualPolicy } from "@/theatre/media/types";
 
+import { findTopClipAtTime, getRemainingTimelineSec, layoutTimelineClips } from "./timelineLayout";
+
 export type TimelineClip = {
   attachment: SongVisualAttachmentRecord;
   startSec: number;
@@ -34,4 +36,4 @@ export function resolveAssetUrl(url: string) {
   return new URL(url, window.location.origin).href;
 }
 
-export { findClipAtTime, findTopClipAtTime, layoutTimelineClips, getRemainingTimelineSec } from "./timelineLayout";
+export { findTopClipAtTime, getRemainingTimelineSec, layoutTimelineClips };

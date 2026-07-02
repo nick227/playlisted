@@ -103,7 +103,7 @@ export function SongVisualEditorTimeline({
             <TimelineClipBlock
               key={clip.attachment.id}
               clip={clip}
-              durationSec={durationSec}
+              songDurationSec={durationSec}
               selected={clip.attachment.id === selectedAttachmentId}
               cutMode={editMode === "cut"}
               isBusy={isBusy}

@@ -1,6 +1,17 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
+
+import type { VisualMediaAssetRecord } from "@/lib/visualMediaApi";
 
 import { resolveAssetUrl, type TimelineClip } from "./types";
+
+const DEFAULT_ASPECT = 16 / 9;
+const MAX_PREVIEW_ASPECT = 16 / 9;
+
+function previewAspectRatio(media: VisualMediaAssetRecord | null): number {
+  if (!media?.width || !media?.height) return DEFAULT_ASPECT;
+  const native = media.width / media.height;
+  return Math.min(native, MAX_PREVIEW_ASPECT);
+}
 
 type SongVisualEditorPreviewProps = {
   clip: TimelineClip | null;
@@ -40,8 +51,14 @@ export function SongVisualEditorPreview({
     }
   }, [clip, clip?.loop, clip?.naturalDurationSec, clip?.startSec, currentTimeSec, isPlaying, loop, media?.mediaType]);
 
+  const aspectRatio = useMemo(() => previewAspectRatio(media), [media]);
+
   return (
-    <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-white/10 bg-black">
+    <div className="flex justify-center">
+      <div
+        className="relative w-full max-w-xl overflow-hidden rounded-xl border border-white/10 bg-black"
+        style={{ aspectRatio }}
+      >
       {!media ? (
         <div className="flex h-full w-full items-center justify-center px-6 text-center">
           <p className="text-sm text-white/35">Scrub the timeline or add a clip from your library</p>
@@ -50,7 +67,7 @@ export function SongVisualEditorPreview({
         <video
           ref={videoRef}
           src={resolveAssetUrl(media.url)}
-          className="h-full w-full object-cover"
+          className="h-full w-full object-contain"
           muted
           playsInline
           loop={loop}
@@ -59,7 +76,7 @@ export function SongVisualEditorPreview({
         <img
           src={resolveAssetUrl(media.thumbnailUrl ?? media.url)}
           alt={attachment?.label ?? media.originalName}
-          className="h-full w-full object-cover"
+          className="h-full w-full object-contain"
         />
       )}
 
@@ -75,6 +92,7 @@ export function SongVisualEditorPreview({
           </p>
         </div>
       ) : null}
+      </div>
     </div>
   );
 }

@@ -60,7 +60,7 @@ export function SongVisualAssetLibrary({
             Add clips from the library below or upload new media.
           </p>
         ) : (
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-5 md:grid-cols-8">
             {[...timelineClips].sort((left, right) => left.startSec - right.startSec).map((clip) => {
               const { attachment } = clip;
               const selected = attachment.id === selectedAttachmentId;

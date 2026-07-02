@@ -2,12 +2,18 @@ import { GripVertical, Repeat, Scissors } from "lucide-react";
 import { useState, type PointerEvent as ReactPointerEvent } from "react";
 
 import { MediaAssetThumb } from "./MediaAssetThumb";
-import { isPointerDrag, timeSecFromTimelinePointer } from "./timelineLayout";
+import {
+  isPointerDrag,
+  previewClipMove,
+  previewClipResizeEnd,
+  previewClipResizeStart,
+  timeSecFromTimelinePointer,
+} from "./timelineLayout";
 import type { TimelineClip } from "./types";
 
 type TimelineClipBlockProps = {
   clip: TimelineClip;
-  durationSec: number;
+  songDurationSec: number;
   selected: boolean;
   cutMode: boolean;
   isBusy: boolean;
@@ -26,13 +32,11 @@ type DragState = {
   mode: DragMode;
   startX: number;
   startY: number;
-  startSec: number;
-  startDuration: number;
 };
 
 export function TimelineClipBlock({
   clip,
-  durationSec,
+  songDurationSec,
   selected,
   cutMode,
   isBusy,
@@ -49,54 +53,47 @@ export function TimelineClipBlock({
 
   const renderStartSec = preview?.startSec ?? clip.startSec;
   const renderDurationSec = preview?.durationSec ?? clip.durationSec;
-  const leftPct = (renderStartSec / durationSec) * 100;
-  const widthPct = (renderDurationSec / durationSec) * 100;
+  const leftPct = songDurationSec > 0 ? (renderStartSec / songDurationSec) * 100 : 0;
+  const widthPct = songDurationSec > 0 ? (renderDurationSec / songDurationSec) * 100 : 0;
   const isDragging = drag != null;
+  const { attachment } = clip;
 
   function trackTime(clientX: number) {
     if (!trackRect) return clip.startSec;
-    return timeSecFromTimelinePointer(clientX, trackRect, durationSec);
+    return timeSecFromTimelinePointer(clientX, trackRect, songDurationSec);
   }
 
   function beginDrag(mode: DragMode, event: ReactPointerEvent<HTMLElement>) {
     if (isBusy) return;
     event.stopPropagation();
     event.currentTarget.setPointerCapture(event.pointerId);
-    setDrag({
-      mode,
-      startX: event.clientX,
-      startY: event.clientY,
-      startSec: clip.startSec,
-      startDuration: clip.durationSec,
-    });
+    setDrag({ mode, startX: event.clientX, startY: event.clientY });
     onSelect();
   }
 
   function updateDragPreview(event: ReactPointerEvent<HTMLElement>) {
     if (!drag || !trackRect) return;
-    const timeSec = trackTime(event.clientX);
 
     if (drag.mode === "move") {
       const deltaRatio = (event.clientX - drag.startX) / trackRect.width;
-      setPreview({
-        startSec: drag.startSec + deltaRatio * durationSec,
-        durationSec: drag.startDuration,
-      });
+      const next = previewClipMove(attachment, clip, clip.startSec + deltaRatio * songDurationSec, songDurationSec);
+      if (next) setPreview(next);
       return;
     }
 
     if (drag.mode === "resize-end") {
-      setPreview({
-        startSec: drag.startSec,
-        durationSec: timeSec - drag.startSec,
-      });
+      const next = previewClipResizeEnd(
+        attachment,
+        clip,
+        trackTime(event.clientX) - clip.startSec,
+        songDurationSec,
+      );
+      if (next) setPreview(next);
       return;
     }
 
-    setPreview({
-      startSec: timeSec,
-      durationSec: drag.startSec + drag.startDuration - timeSec,
-    });
+    const next = previewClipResizeStart(attachment, clip, trackTime(event.clientX), songDurationSec);
+    if (next) setPreview(next);
   }
 
   function finishDrag(event: ReactPointerEvent<HTMLElement>) {
