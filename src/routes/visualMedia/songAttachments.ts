@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { Prisma } from "@prisma/client";
 
 import { prisma } from "../../lib/prisma.js";
 import { requireAuth } from "../../lib/requireAuth.js";
@@ -13,10 +14,12 @@ import {
   buildSongVisualMediaResponse,
   mapSongVisualAttachment,
 } from "../../lib/visualMedia/mapDto.js";
+import { theatrePolicyToPrisma } from "../../lib/visualMedia/types.js";
 import {
-  theatrePolicyToPrisma,
-  type TheatreSongVisualPolicy,
-} from "../../lib/visualMedia/types.js";
+  formatValidationIssues,
+  validateAttachmentBody,
+  type AttachmentValidationIssue,
+} from "../../lib/visualMedia/validateAttachment.js";
 
 export const songVisualMediaRouter = Router();
 
@@ -24,30 +27,23 @@ function parseSongId(req: { params: { songId?: string } }) {
   return req.params.songId?.trim() ?? "";
 }
 
-function parseAttachmentBody(body: Record<string, unknown>) {
-  const mediaAssetId = typeof body.mediaAssetId === "string" ? body.mediaAssetId.trim() : "";
-  const policy = typeof body.policy === "string" ? body.policy as TheatreSongVisualPolicy : undefined;
-  const weight = typeof body.weight === "number" && Number.isFinite(body.weight) ? Math.max(1, Math.round(body.weight)) : 1;
-  const order = typeof body.order === "number" && Number.isFinite(body.order) ? Math.max(0, Math.round(body.order)) : 0;
-  const label = typeof body.label === "string" ? body.label.trim() : undefined;
-  const enabled = typeof body.enabled === "boolean" ? body.enabled : true;
-  const playback = body.playback && typeof body.playback === "object" ? body.playback : undefined;
-  const rotation = body.rotation && typeof body.rotation === "object" ? body.rotation : undefined;
-  const beatFx = body.beatFx && typeof body.beatFx === "object" ? body.beatFx : undefined;
-  const tags = Array.isArray(body.tags) ? body.tags.filter((tag): tag is string => typeof tag === "string") : undefined;
+function validationErrorResponse(
+  res: Parameters<typeof requireAuth>[1],
+  issues: AttachmentValidationIssue[],
+) {
+  return res.status(400).json({
+    error: "invalid_attachment",
+    message: formatValidationIssues(issues),
+    issues,
+  });
+}
 
-  return {
-    mediaAssetId,
-    policy,
-    weight,
-    order,
-    label,
-    enabled,
-    playback,
-    rotation,
-    beatFx,
-    tags,
-  };
+function toJsonValue(
+  value: Record<string, unknown> | string[] | null | undefined,
+): Prisma.InputJsonValue | typeof Prisma.DbNull | undefined {
+  if (value === undefined) return undefined;
+  if (value === null) return Prisma.DbNull;
+  return value as Prisma.InputJsonValue;
 }
 
 songVisualMediaRouter.get("/:songId/visual-media", async (req, res, next) => {
@@ -76,7 +72,12 @@ songVisualMediaRouter.post("/:songId/visual-media", async (req, res, next) => {
       return res.status(access.status).json({ error: access.error, message: access.message });
     }
 
-    const body = parseAttachmentBody(req.body as Record<string, unknown>);
+    const parsed = validateAttachmentBody(req.body as Record<string, unknown>, "create");
+    if (!parsed.ok) {
+      return validationErrorResponse(res, parsed.issues);
+    }
+
+    const body = parsed.value;
     if (!body.mediaAssetId) {
       return res.status(400).json({
         error: "media_asset_required",
@@ -97,14 +98,14 @@ songVisualMediaRouter.post("/:songId/visual-media", async (req, res, next) => {
         recordingId: songId,
         mediaAssetId: asset.id,
         policy: theatrePolicyToPrisma(body.policy),
-        weight: body.weight,
-        sortOrder: body.order,
-        label: body.label || null,
-        enabled: body.enabled,
-        playbackJson: body.playback,
-        rotationJson: body.rotation,
-        beatFxJson: body.beatFx,
-        tagsJson: body.tags,
+        weight: body.weight ?? 1,
+        sortOrder: body.order ?? 0,
+        label: body.label ?? null,
+        enabled: body.enabled ?? true,
+        playbackJson: toJsonValue(body.playback),
+        rotationJson: toJsonValue(body.rotation),
+        beatFxJson: toJsonValue(body.beatFx),
+        tagsJson: toJsonValue(body.tags),
       },
       include: songVisualAttachmentInclude,
     });
@@ -138,19 +139,24 @@ songVisualMediaRouter.patch("/:songId/visual-media/:attachmentId", async (req, r
       });
     }
 
-    const body = parseAttachmentBody(req.body as Record<string, unknown>);
+    const parsed = validateAttachmentBody(req.body as Record<string, unknown>, "patch");
+    if (!parsed.ok) {
+      return validationErrorResponse(res, parsed.issues);
+    }
+
+    const body = parsed.value;
     const attachment = await prisma.songVisualAttachment.update({
       where: { id: attachmentId },
       data: {
-        ...(body.policy ? { policy: theatrePolicyToPrisma(body.policy) } : {}),
-        ...(req.body && "weight" in (req.body as object) ? { weight: body.weight } : {}),
-        ...(req.body && "order" in (req.body as object) ? { sortOrder: body.order } : {}),
-        ...(req.body && "label" in (req.body as object) ? { label: body.label || null } : {}),
-        ...(req.body && "enabled" in (req.body as object) ? { enabled: body.enabled } : {}),
-        ...(req.body && "playback" in (req.body as object) ? { playbackJson: body.playback ?? null } : {}),
-        ...(req.body && "rotation" in (req.body as object) ? { rotationJson: body.rotation ?? null } : {}),
-        ...(req.body && "beatFx" in (req.body as object) ? { beatFxJson: body.beatFx ?? null } : {}),
-        ...(req.body && "tags" in (req.body as object) ? { tagsJson: body.tags ?? null } : {}),
+        ...(body.policy != null ? { policy: theatrePolicyToPrisma(body.policy) } : {}),
+        ...(body.weight != null ? { weight: body.weight } : {}),
+        ...(body.order != null ? { sortOrder: body.order } : {}),
+        ...("label" in body ? { label: body.label ?? null } : {}),
+        ...(body.enabled != null ? { enabled: body.enabled } : {}),
+        ...("playback" in body ? { playbackJson: toJsonValue(body.playback) } : {}),
+        ...("rotation" in body ? { rotationJson: toJsonValue(body.rotation) } : {}),
+        ...("beatFx" in body ? { beatFxJson: toJsonValue(body.beatFx) } : {}),
+        ...("tags" in body ? { tagsJson: toJsonValue(body.tags) } : {}),
       },
       include: songVisualAttachmentInclude,
     });

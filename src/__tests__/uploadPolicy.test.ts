@@ -26,7 +26,15 @@ describe("uploadPolicy", () => {
 
   it("formats size error messages per kind", () => {
     expect(fileTooLargeMessage("audio")).toContain("100");
-    expect(fileTooLargeMessage("image")).toContain("15");
+    expect(fileTooLargeMessage("image")).toContain("5");
+    expect(fileTooLargeMessage("video")).toContain("25");
+  });
+
+  it("allows studio video mime/extension pairs", () => {
+    expect(isUploadMediaAllowed("video", "video/mp4", ".mp4")).toBe(true);
+    expect(isUploadMediaAllowed("video", "video/webm", ".webm")).toBe(true);
+    expect(isUploadMediaAllowed("video", "video/quicktime", ".mov")).toBe(true);
+    expect(isUploadMediaAllowed("video", "image/jpeg", ".mp4")).toBe(false);
   });
 
   it("caps bulk register batches", () => {

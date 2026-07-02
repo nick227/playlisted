@@ -13,6 +13,7 @@ import {
 import { rejectDisallowedUpload } from "../../lib/uploadValidate.js";
 import { dtoMediaTypeToPrisma } from "../../lib/visualMedia/types.js";
 import { mapVisualMediaAsset } from "../../lib/visualMedia/mapDto.js";
+import { parseVisualUploadMetadata } from "../../lib/visualMedia/validateUploadMetadata.js";
 
 export const visualMediaAssetsRouter = Router();
 
@@ -62,6 +63,8 @@ async function handleVisualUpload(
 
     if (await rejectDisallowedUpload(kind, file, res)) return;
 
+    const metadata = parseVisualUploadMetadata(req.body as Record<string, unknown>, kind);
+
     const subdir = kind === "video" ? "videos" : "images";
     let stored;
     try {
@@ -86,6 +89,9 @@ async function handleVisualUpload(
         originalName: file.originalname,
         mimeType: file.mimetype,
         sizeBytes: file.size,
+        durationMs: metadata.durationMs,
+        width: metadata.width,
+        height: metadata.height,
       },
     });
 
