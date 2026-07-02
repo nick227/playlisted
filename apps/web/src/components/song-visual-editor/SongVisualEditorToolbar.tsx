@@ -6,10 +6,12 @@ type SongVisualEditorToolbarProps = {
   currentTimeSec: number;
   durationSec: number;
   includeSiteMedia: boolean;
+  previewSubtitles: boolean;
   hasAttachments: boolean;
   onTogglePlayback: () => void;
   onUpload: () => void;
   onIncludeSiteMediaChange: (includeSiteMedia: boolean) => void;
+  onPreviewSubtitlesChange: (enabled: boolean) => void;
 };
 
 export function SongVisualEditorToolbar({
@@ -18,10 +20,12 @@ export function SongVisualEditorToolbar({
   currentTimeSec,
   durationSec,
   includeSiteMedia,
+  previewSubtitles,
   hasAttachments,
   onTogglePlayback,
   onUpload,
   onIncludeSiteMediaChange,
+  onPreviewSubtitlesChange,
 }: SongVisualEditorToolbarProps) {
   return (
     <div className="flex flex-wrap items-center gap-2 border-y border-white/10 bg-black/20 px-1 py-2">
@@ -56,7 +60,7 @@ export function SongVisualEditorToolbar({
         ].join(" ")}
         title={
           hasAttachments
-            ? "When enabled, built-in site visuals can appear alongside your attachments"
+            ? "When enabled, built-in site visuals can appear in gaps between your clips"
             : "Add a clip before configuring site media"
         }
       >
@@ -68,6 +72,20 @@ export function SongVisualEditorToolbar({
           className="rounded border-white/20 bg-black/40 text-emerald-500 focus:ring-emerald-400/50"
         />
         Include site media
+      </label>
+
+      <label
+        className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-white/10 px-2 py-1.5 text-xs text-white hover:bg-white/5"
+        title="Show playback focus lane subtitles in the preview, matching site playback UX"
+      >
+        <input
+          type="checkbox"
+          checked={previewSubtitles}
+          disabled={isBusy}
+          onChange={(event) => onPreviewSubtitlesChange(event.target.checked)}
+          className="rounded border-white/20 bg-black/40 text-emerald-500 focus:ring-emerald-400/50"
+        />
+        Preview subtitles
       </label>
     </div>
   );

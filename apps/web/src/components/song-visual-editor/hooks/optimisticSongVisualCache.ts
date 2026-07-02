@@ -1,9 +1,10 @@
 import type { QueryClient } from "@tanstack/react-query";
 
 import type { SongVisualAttachmentRecord, SongVisualMediaRecord } from "@/lib/visualMediaApi";
-import type { VisualMediaBeatFx } from "@/theatre/media/types";
+import type { SongVisualPolicy, VisualMediaBeatFx } from "@/theatre/media/types";
 
 import { buildPlaybackPatch } from "../timelineLayout";
+import { deriveSongVisualPolicy } from "../types";
 import type { ClipBounds } from "../timelineLayout";
 
 export type ClipSyncStatus = "saving" | "error";
@@ -27,6 +28,13 @@ export function cloneAttachment(attachment: SongVisualAttachmentRecord): SongVis
   };
 }
 
+function withDerivedPolicy(data: SongVisualMediaRecord): SongVisualMediaRecord {
+  return {
+    ...data,
+    policy: deriveSongVisualPolicy(data.attachments),
+  };
+}
+
 export function applyAttachmentPatch(
   queryClient: QueryClient,
   recordingId: string,
@@ -34,13 +42,14 @@ export function applyAttachmentPatch(
   patch: {
     playback?: Record<string, unknown> | null;
     beatFx?: VisualMediaBeatFx | null;
+    policy?: SongVisualPolicy;
     order?: number;
     enabled?: boolean;
   },
 ) {
   queryClient.setQueryData<SongVisualMediaRecord>(songVisualQueryKey(recordingId), (current) => {
     if (!current) return current;
-    return {
+    return withDerivedPolicy({
       ...current,
       attachments: current.attachments.map((attachment) => {
         if (attachment.id !== attachmentId) return attachment;
@@ -48,6 +57,7 @@ export function applyAttachmentPatch(
           ...attachment,
           ...(patch.order != null ? { order: patch.order } : {}),
           ...(patch.enabled != null ? { enabled: patch.enabled } : {}),
+          ...(patch.policy != null ? { policy: patch.policy } : {}),
           ...(patch.playback !== undefined
             ? { playback: patch.playback }
             : {}),
@@ -56,6 +66,23 @@ export function applyAttachmentPatch(
             : {}),
         };
       }),
+    });
+  });
+}
+
+export function applyPolicyPatch(
+  queryClient: QueryClient,
+  recordingId: string,
+  policy: SongVisualPolicy,
+) {
+  queryClient.setQueryData<SongVisualMediaRecord>(songVisualQueryKey(recordingId), (current) => {
+    if (!current) return current;
+    return {
+      ...current,
+      policy,
+      attachments: current.attachments.map((attachment) =>
+        attachment.enabled ? { ...attachment, policy } : attachment,
+      ),
     };
   });
 }
@@ -112,10 +139,10 @@ export function removeAttachmentFromCache(
 ) {
   queryClient.setQueryData<SongVisualMediaRecord>(songVisualQueryKey(recordingId), (current) => {
     if (!current) return current;
-    return {
+    return withDerivedPolicy({
       ...current,
       attachments: current.attachments.filter((attachment) => attachment.id !== attachmentId),
-    };
+    });
   });
 }
 
@@ -149,11 +176,11 @@ export function reconcileAttachmentInCache(
 ) {
   queryClient.setQueryData<SongVisualMediaRecord>(songVisualQueryKey(recordingId), (current) => {
     if (!current) return current;
-    return {
+    return withDerivedPolicy({
       ...current,
       attachments: current.attachments.map((attachment) =>
         attachment.id === updated.id ? updated : attachment,
       ),
-    };
+    });
   });
 }

@@ -4,6 +4,7 @@ import type { VisualMediaAssetRecord } from "@/lib/visualMediaApi";
 
 import { useSongVisualTheatrePreview } from "./hooks/useSongVisualTheatrePreview";
 import { readClipAudioPulse } from "./audioPulse";
+import { SongVisualPreviewFocusLane } from "./SongVisualPreviewFocusLane";
 import type { TimelineClip } from "./types";
 
 const DEFAULT_ASPECT = 16 / 9;
@@ -18,12 +19,20 @@ function previewAspectRatio(media: VisualMediaAssetRecord | null): number {
 type SongVisualEditorPreviewProps = {
   clip: TimelineClip | null;
   isPlaying: boolean;
+  currentTimeSec: number;
+  previewSubtitles: boolean;
+  recordingId: string;
+  recordingTitle: string;
   audioRef: RefObject<HTMLAudioElement | null>;
 };
 
 export function SongVisualEditorPreview({
   clip,
   isPlaying,
+  currentTimeSec,
+  previewSubtitles,
+  recordingId,
+  recordingTitle,
   audioRef,
 }: SongVisualEditorPreviewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -54,6 +63,13 @@ export function SongVisualEditorPreview({
         ) : (
           <div ref={containerRef} className="absolute inset-0" />
         )}
+
+        <SongVisualPreviewFocusLane
+          enabled={previewSubtitles}
+          recording={{ id: recordingId, title: recordingTitle }}
+          currentTimeSec={currentTimeSec}
+          isPlaying={isPlaying}
+        />
 
         {media ? (
           <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-4 py-3">

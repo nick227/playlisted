@@ -1,5 +1,5 @@
 import { Loader2, X } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 import { useSuppressPlaybackFocus } from "@/lib/playbackFocusSuppression";
 import { useAuth } from "@/providers/AuthProvider";
@@ -55,6 +55,7 @@ function SongVisualEditorModalInner({
   });
 
   const playback = useSongVisualPreviewPlayback(recording.audioUrl);
+  const [previewSubtitles, setPreviewSubtitles] = useState(true);
   const { data: waveform, loading: waveformLoading, error: waveformError } = useAudioWaveformPeaks(recording.audioUrl);
 
   const durationSec = waveform?.durationSec || playback.durationSec || editor.timelineDurationSec;
@@ -93,6 +94,10 @@ function SongVisualEditorModalInner({
           <SongVisualEditorPreview
             clip={activeClip}
             isPlaying={playback.isPlaying}
+            currentTimeSec={playback.currentTimeSec}
+            previewSubtitles={previewSubtitles}
+            recordingId={recording.id}
+            recordingTitle={recording.title}
             audioRef={playback.audioRef}
           />
 
@@ -102,10 +107,12 @@ function SongVisualEditorModalInner({
             currentTimeSec={playback.currentTimeSec}
             durationSec={durationSec}
             includeSiteMedia={editor.includeSiteMedia}
+            previewSubtitles={previewSubtitles}
             hasAttachments={editor.attachments.some((attachment) => attachment.enabled)}
             onTogglePlayback={playback.togglePlayback}
             onUpload={editor.openUploadPicker}
             onIncludeSiteMediaChange={(includeSiteMedia) => void editor.setIncludeSiteMedia(includeSiteMedia)}
+            onPreviewSubtitlesChange={setPreviewSubtitles}
           />
 
           {waveformLoading ? (

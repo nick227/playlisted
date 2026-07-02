@@ -6,6 +6,7 @@ import type { SongVisualAttachmentRecord, SongVisualMediaRecord } from "@/lib/vi
 import {
   applyBeatFxPatch,
   applyClipBoundsPatch,
+  applyPolicyPatch,
   reconcileAttachmentInCache,
   removeAttachmentFromCache,
   restoreAttachmentInCache,
@@ -114,7 +115,20 @@ describe("optimisticSongVisualCache", () => {
     expect(queryClient.getQueryData<SongVisualMediaRecord>(songVisualQueryKey(recordingId))?.attachments).toHaveLength(1);
   });
 
-  it("reconciles server attachment without full invalidation", () => {
+  it("applies policy optimistically across enabled attachments", () => {
+    const queryClient = new QueryClient();
+    const recordingId = "rec-1";
+    const attachment = makeAttachment("a1", 0);
+    seedCache(queryClient, recordingId, [attachment]);
+
+    applyPolicyPatch(queryClient, recordingId, "attachedOnly");
+
+    const next = queryClient.getQueryData<SongVisualMediaRecord>(songVisualQueryKey(recordingId));
+    expect(next?.policy).toBe("attachedOnly");
+    expect(next?.attachments[0].policy).toBe("attachedOnly");
+  });
+
+  it("reconciles server attachment and refreshes derived policy", () => {
     const queryClient = new QueryClient();
     const recordingId = "rec-1";
     const attachment = makeAttachment("a1", 0);
@@ -122,6 +136,7 @@ describe("optimisticSongVisualCache", () => {
 
     const server = {
       ...attachment,
+      policy: "attachedOnly" as const,
       playback: {
         ...attachment.playback!,
         timelineStartSec: 20,
@@ -131,6 +146,7 @@ describe("optimisticSongVisualCache", () => {
 
     reconcileAttachmentInCache(queryClient, recordingId, server);
     const next = queryClient.getQueryData<SongVisualMediaRecord>(songVisualQueryKey(recordingId));
+    expect(next?.policy).toBe("attachedOnly");
     expect(next?.attachments[0].playback?.timelineStartSec).toBe(20);
     expect(next?.attachments[0].updatedAt).toBe("2026-01-02T00:00:00.000Z");
   });

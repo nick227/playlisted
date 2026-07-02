@@ -35,6 +35,7 @@ import {
   applyBeatFxPatch,
   applyClipBoundsPatch,
   applyLoopPatch,
+  applyPolicyPatch,
   cloneAttachment,
   readSongVisualData,
   reconcileAttachmentInCache,
@@ -306,17 +307,30 @@ export function useSongVisualEditorState({
   }
 
   async function setIncludeSiteMedia(nextIncludeSiteMedia: boolean) {
-    const target = attachments.find((attachment) => attachment.enabled);
-    if (!target) {
+    const enabled = attachments.filter((attachment) => attachment.enabled);
+    if (!enabled.length) {
       setError("Add a clip to the timeline before changing site media.");
       return;
     }
+
+    const nextPolicy = policyFromIncludeSiteMedia(nextIncludeSiteMedia);
+    applyPolicyPatch(queryClient, recordingId, nextPolicy);
     setError(null);
-    await updateMutation.mutateAsync({
-      attachmentId: target.id,
-      body: { policy: policyFromIncludeSiteMedia(nextIncludeSiteMedia) },
-    });
-    clearRemoteTrackVisualMedia(recordingId);
+
+    try {
+      await Promise.all(
+        enabled.map((attachment) =>
+          updateMutation.mutateAsync({
+            attachmentId: attachment.id,
+            body: { policy: nextPolicy },
+          }),
+        ),
+      );
+      clearRemoteTrackVisualMedia(recordingId);
+    } catch (err) {
+      await queryClient.invalidateQueries({ queryKey: songVisualQueryKey(recordingId) });
+      setError(err instanceof Error ? err.message : "Could not update site media setting.");
+    }
   }
 
   function setClipLoop(attachmentId: string, loop: boolean) {

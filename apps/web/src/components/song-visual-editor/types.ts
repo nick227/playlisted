@@ -28,6 +28,11 @@ export function policyFromIncludeSiteMedia(includeSiteMedia: boolean): Exclude<S
   return includeSiteMedia ? "preferAttached" : "attachedOnly";
 }
 
+export function deriveSongVisualPolicy(attachments: SongVisualAttachmentRecord[]): SongVisualPolicy {
+  const enabled = attachments.filter((attachment) => attachment.enabled);
+  return enabled[0]?.policy ?? "defaultOnly";
+}
+
 export function findClipAtTime(clips: TimelineClip[], timeSec: number): TimelineClip | null {
   return findTopClipAtTime(clips, timeSec);
 }
