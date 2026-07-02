@@ -16,6 +16,8 @@ const sleepMs = Number(process.env.SUBTITLES_WORKER_SLEEP_MS ?? 10_000);
 const maxAudioSeconds = Number(process.env.SUBTITLES_MAX_AUDIO_SECONDS ?? 900);
 const maxRuntimeSeconds = Number(process.env.SUBTITLES_MAX_RUNTIME_SECONDS ?? 1_200);
 const staleProcessingMinutes = Number(process.env.SUBTITLES_STALE_PROCESSING_MINUTES ?? 30);
+const maxAttempts = Number(process.env.SUBTITLES_MAX_ATTEMPTS ?? 2);
+const staleQueuedHours = Number(process.env.SUBTITLES_STALE_QUEUED_HOURS ?? 48);
 const whisperModel = process.env.SUBTITLES_WHISPER_MODEL ?? "tiny";
 const whisperDevice = process.env.SUBTITLES_DEVICE ?? "cpu";
 const whisperComputeType = process.env.SUBTITLES_COMPUTE_TYPE ?? "int8";
@@ -71,19 +73,47 @@ async function getAudioDurationSeconds(filePath: string) {
 
 async function resetStaleProcessingRows() {
   const cutoff = new Date(Date.now() - staleProcessingMinutes * 60 * 1000);
-  const result = await prisma.recordingSubtitle.updateMany({
-    where: {
-      status: "PROCESSING",
-      updatedAt: { lt: cutoff },
-    },
-    data: {
-      status: "QUEUED",
-      errorMessage: "Reset after stale processing timeout.",
-    },
+  const staleRows = await prisma.recordingSubtitle.findMany({
+    where: { status: "PROCESSING", updatedAt: { lt: cutoff } },
+    include: { _count: { select: { attempts: true } } },
   });
 
+  if (staleRows.length === 0) return;
+
+  let resetCount = 0;
+  let failedCount = 0;
+  for (const row of staleRows) {
+    if (row._count.attempts >= maxAttempts) {
+      await prisma.recordingSubtitle.update({
+        where: { id: row.id },
+        data: { status: "FAILED", errorMessage: `Exceeded max attempts (${maxAttempts}) after stale processing timeout.` },
+      });
+      failedCount++;
+    } else {
+      await prisma.recordingSubtitle.update({
+        where: { id: row.id },
+        data: { status: "QUEUED", errorMessage: "Reset after stale processing timeout." },
+      });
+      resetCount++;
+    }
+  }
+
+  if (resetCount > 0) log("subtitle.worker.reset_stale", { count: resetCount });
+  if (failedCount > 0) log("subtitle.worker.expired_stale_processing", { count: failedCount, maxAttempts });
+}
+
+async function expireStaleQueuedRows() {
+  const cutoff = new Date(Date.now() - staleQueuedHours * 60 * 60 * 1000);
+  const result = await prisma.recordingSubtitle.updateMany({
+    where: {
+      status: "QUEUED",
+      createdAt: { lt: cutoff },
+      attempts: { none: {} },
+    },
+    data: { status: "FAILED", errorMessage: `Expired: queued but never attempted within ${staleQueuedHours} hours.` },
+  });
   if (result.count > 0) {
-    log("subtitle.worker.reset_stale", { count: result.count });
+    log("subtitle.worker.expired_stale_queued", { count: result.count, staleQueuedHours });
   }
 }
 
@@ -100,10 +130,20 @@ async function processNextSubtitle() {
           durationSeconds: true,
         },
       },
+      _count: { select: { attempts: true } },
     },
   });
 
   if (!next) return false;
+
+  if (next._count.attempts >= maxAttempts) {
+    await prisma.recordingSubtitle.update({
+      where: { id: next.id },
+      data: { status: "FAILED", errorMessage: `Exceeded max attempts (${maxAttempts}).` },
+    });
+    log("subtitle.job.max_attempts_exceeded", { recordingId: next.recordingId, subtitleId: next.id, attempts: next._count.attempts, maxAttempts });
+    return true;
+  }
 
   const claimed = await prisma.recordingSubtitle.updateMany({
     where: { id: next.id, status: "QUEUED" },
@@ -337,6 +377,8 @@ async function main() {
     maxAudioSeconds,
     maxRuntimeSeconds,
     staleProcessingMinutes,
+    maxAttempts,
+    staleQueuedHours,
     whisperModel,
     backfill: "manual_only",
     requireModalProvider,
@@ -346,6 +388,7 @@ async function main() {
   });
 
   await resetStaleProcessingRows();
+  await expireStaleQueuedRows();
 
   const processLimit = parseProcessLimit();
   if (processLimit != null) {
