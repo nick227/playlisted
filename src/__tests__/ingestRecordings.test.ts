@@ -111,7 +111,12 @@ describe("POST /api/v1/ingest/recordings", () => {
     expect(res.body.created).toBe(true);
     expect(res.body.recording.id).toBe("rec-1");
     expect(vi.mocked(prisma.recordingSubtitle.create)).toHaveBeenCalledWith({
-      data: { recordingId: "rec-1", status: "QUEUED" },
+      data: {
+        recordingId: "rec-1",
+        isActive: true,
+        source: "MODAL",
+        status: "QUEUED",
+      },
     });
   });
 

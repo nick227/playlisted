@@ -29,21 +29,10 @@ import { rampagePackage } from '../packages/rampage'
 import { cruisinPackage } from '../packages/cruisin'
 import {
   registerObjectTheatreInSeed,
-  knifeSpiralHorrorPackage,/*
-  osmCalmFloatPackage,
   burgerBounceCarnivalPackage,
-  ghostOrbitMidnightPackage,
-  tacoRainAcidPackage,
-  beeSwarmSunsetPackage,
-  dicePanicCasinoPackage,
-  smileyFloatCandyPackage,
-  ufoTunnelCosmicPackage,
-  discoDuckRavePackage,
+  knifeSpiralHorrorPackage,
   poopWaveSillyPackage,
-  pizzaPortalPosterPackage,
-  hotdogFountainToxicPackage,
-  heartSpotlightPastelPackage,
-  skullIdolGhostsPackage,*/
+  ufoTunnelCosmicPackage,
 } from '../packages/object-spinner-mover'
 
 registerUserMediaEngine()
@@ -54,23 +43,10 @@ registerPreset(ATTACHED_ONLY_BLANK_PRESET)
 // earlier package. Keep quietPulse first so reduced-motion fallbacks can point
 // at it, then register composite dependencies before their presets.
 registerObjectTheatreInSeed([
-  /*
-  osmCalmFloatPackage,
   burgerBounceCarnivalPackage,
-  ghostOrbitMidnightPackage,
-  tacoRainAcidPackage,
-  beeSwarmSunsetPackage,
-  dicePanicCasinoPackage,
-  smileyFloatCandyPackage,
+  knifeSpiralHorrorPackage,
   poopWaveSillyPackage,
   ufoTunnelCosmicPackage,
-  discoDuckRavePackage,
-  pizzaPortalPosterPackage,
-  hotdogFountainToxicPackage,
-  heartSpotlightPastelPackage,
-  skullIdolGhostsPackage,
-  */
-  knifeSpiralHorrorPackage,
 ])
 
 ;[
