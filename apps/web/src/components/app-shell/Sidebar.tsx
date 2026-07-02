@@ -254,7 +254,7 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
                 className={navClass(false, "text-left disabled:opacity-60 cursor-pointer")}
               >
                 <Plus size={20} />
-                {createCollectionMutation.isPending ? "Creating..." : "Add Collection"}
+                {createCollectionMutation.isPending ? "Creating..." : "Add Songs"}
               </button>
               {showCollectionsSignIn && !isAuthenticated ? (
                 <div className="mx-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-3">
