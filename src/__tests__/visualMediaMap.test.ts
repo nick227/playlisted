@@ -87,4 +87,69 @@ describe("visual media dto mapping", () => {
     expect(dto.policy).toBe("attachedOnly");
     expect(dto.beatFx?.enabled).toBe(true);
   });
+
+  it("clamps legacy malformed attachment json on read", () => {
+    const dto = mapSongVisualAttachment({
+      id: "att-legacy",
+      recordingId: "rec-legacy",
+      mediaAssetId: "asset-legacy",
+      policy: "PREFER_ATTACHED",
+      weight: 999_999,
+      sortOrder: -4,
+      label: "  legacy clip  ",
+      playbackJson: {
+        loop: true,
+        timelineStartSec: Number.NaN,
+        timelineDurationSec: -12,
+        startOffsetMs: Number.POSITIVE_INFINITY,
+        hackerField: true,
+      },
+      rotationJson: {
+        minHoldMs: 9000,
+        targetHoldMs: 1000,
+        maxHoldMs: 500,
+        gate: { kind: "flux", threshold: 2 },
+      },
+      beatFxJson: {
+        enabled: true,
+        intensity: "wild",
+        effects: ["scale", "strobe", "brightness"],
+      },
+      tagsJson: [" user-media ", "", 42],
+      enabled: true,
+      createdAt: new Date("2026-01-01T00:00:00.000Z"),
+      updatedAt: new Date("2026-01-01T00:00:00.000Z"),
+      mediaAsset: {
+        id: "asset-legacy",
+        ownerId: "user-1",
+        mediaType: "VIDEO",
+        storageKey: null,
+        url: "/uploads/videos/legacy.mp4",
+        thumbnailUrl: null,
+        originalName: "legacy.mp4",
+        mimeType: "video/mp4",
+        sizeBytes: 512,
+        durationMs: -1000,
+        width: 99_999,
+        height: null,
+        createdAt: new Date("2026-01-01T00:00:00.000Z"),
+      },
+    }, "rec-legacy");
+
+    expect(dto.weight).toBe(1000);
+    expect(dto.order).toBe(0);
+    expect(dto.playback).toEqual({ loop: true });
+    expect(dto.rotation).toEqual({
+      minHoldMs: 500,
+      targetHoldMs: 500,
+      maxHoldMs: 500,
+    });
+    expect(dto.beatFx).toEqual({
+      enabled: true,
+      effects: ["scale", "brightness"],
+    });
+    expect(dto.tags).toEqual(["user-media"]);
+    expect(dto.mediaAsset.durationMs).toBeNull();
+    expect(dto.mediaAsset.width).toBe(16384);
+  });
 });

@@ -53,4 +53,53 @@ describe('mapSongVisualMediaApiResponse', () => {
 
     expect(resolved).toEqual({ attachments: [], policy: 'defaultOnly' })
   })
+
+  it('clamps malformed playback and beatFx fields from legacy API rows', () => {
+    const resolved = mapSongVisualMediaApiResponse({
+      songId: 'rec-1',
+      recordingId: 'rec-1',
+      policy: 'preferAttached',
+      attachments: [
+        {
+          id: 'att-legacy',
+          songId: 'rec-1',
+          recordingId: 'rec-1',
+          mediaAssetId: 'asset-1',
+          policy: 'preferAttached',
+          weight: 2,
+          order: 0,
+          label: 'Legacy clip',
+          enabled: true,
+          playback: {
+            loop: true,
+            timelineStartSec: Number.NaN,
+            timelineDurationSec: -4,
+            startOffsetMs: -500,
+            objectFit: 'stretch' as never,
+          },
+          rotation: null,
+          beatFx: {
+            enabled: true,
+            intensity: 'wild' as never,
+            effects: ['scale', 'strobe' as never],
+          },
+          tags: null,
+          mediaAsset: {
+            id: 'asset-1',
+            mediaType: 'video',
+            url: '/uploads/videos/clip.mp4',
+            thumbnailUrl: null,
+            originalName: 'clip.mp4',
+            durationMs: 60_000,
+          },
+        },
+      ],
+    })
+
+    expect(resolved.attachments[0]?.playback).toEqual({ loop: true })
+    expect(resolved.attachments[0]?.beatFx).toEqual({
+      enabled: true,
+      effects: ['scale'],
+    })
+  })
 })
