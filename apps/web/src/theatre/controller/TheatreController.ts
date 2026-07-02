@@ -16,8 +16,10 @@ import type { PickContext } from '../selection/types'
 import { getOrCreateAudioAnalyserConnection, type AudioAnalyserConnection } from '@/features/playback-indicators/audioAnalyser'
 import { getPreset, listPresets, type ScenePresetDef, type TheatreTransitionKind } from '../registry/scenePresets'
 import { buildSongVisualPickExtras } from '../media/buildSongVisualPool'
+import { userMediaPresetId } from '../media/attachmentToScenePreset'
+import { findActiveTimelineClip } from '../media/timelineClipLayout'
+import { isUserMediaPresetId, resolvePreset } from '../media/resolvePreset'
 import { hydrateTrackVisualMedia } from '../media/hydrateTrackVisualMedia'
-import { resolvePreset } from '../media/resolvePreset'
 import { getPackageIdForPreset } from '../registry/packageRotation'
 import { buildAnimationFrameContext, withTheatreInitContext } from './theatreFrameContext'
 import { detectPolicy } from '../runtime/PerformancePolicy'
@@ -71,6 +73,7 @@ class TheatreController extends EventTarget {
   private rotationState: RotationPolicyState = createRotationPolicyState()
   private rotationPreloadTriggered = false
   private trackContext: TheatreTrackContext | null = null
+  private lastTimelineClipPresetId: string | null = null
   private fxSelector = new FxSelector()
   private manualPresetLatest: string | null = null
   private manualPresetTimerId: number | null = null
@@ -192,6 +195,7 @@ class TheatreController extends EventTarget {
 
   public setTrackContext(track: TheatreTrackContext | null) {
     this.trackContext = track
+    this.lastTimelineClipPresetId = null
     void hydrateTrackVisualMedia(track).then(() => {
       this.fxSelector.clearCandidate()
     })
@@ -470,13 +474,55 @@ class TheatreController extends EventTarget {
     }
   }
 
+  private getSongPlayheadSec(): number | undefined {
+    const audio = this.audioEl ?? this.pickPlaybackElement()
+    if (!audio || !Number.isFinite(audio.currentTime)) return undefined
+    return Math.max(0, audio.currentTime)
+  }
+
   private buildFxPickContext(allowUrlPreset = false): PickContext {
+    const songDurationSec = this._clipDurationMs && this._clipDurationMs > 0
+      ? this._clipDurationMs / 1000
+      : undefined
     return {
       reducedMotion: this.prefersReducedMotion(),
       activePresetId: this.state.presetId,
       allowUrlPreset,
-      ...buildSongVisualPickExtras(this.trackContext),
+      ...buildSongVisualPickExtras(this.trackContext, {
+        songDurationSec,
+        songPlayheadSec: this.getSongPlayheadSec(),
+      }),
     }
+  }
+
+  private syncTimelineClipPlayback(nowMs: number): boolean {
+    const playheadSec = this.getSongPlayheadSec()
+    if (playheadSec == null) return false
+
+    const pickCtx = this.buildFxPickContext()
+    if (!pickCtx.timelineClips?.length) return false
+
+    const activeClip = findActiveTimelineClip(pickCtx.timelineClips, playheadSec)
+    const targetPresetId = activeClip ? userMediaPresetId(activeClip.attachment.id) : null
+
+    if (targetPresetId) {
+      if (targetPresetId !== this.state.presetId && !this.transitioning) {
+        this.lastTimelineClipPresetId = targetPresetId
+        void this.changePresetAuto(targetPresetId)
+      } else {
+        this.lastTimelineClipPresetId = targetPresetId
+      }
+      return true
+    }
+
+    if (this.lastTimelineClipPresetId && isUserMediaPresetId(this.state.presetId) && !this.transitioning) {
+      this.lastTimelineClipPresetId = null
+      this.fxSelector.clearCandidate()
+      this.resetRotationHold(nowMs)
+      void this.rotateRandomPreset()
+    }
+
+    return false
   }
 
   private async togglePlayback() {
@@ -1016,15 +1062,18 @@ class TheatreController extends EventTarget {
       }
       
       if (this.autoRotateEnabled && this.state.active && !this.transitioning) {
-        const resolved = this.resolveActiveRotationPolicy()
-        const decision = this.rotationPolicy.evaluate({
-          nowMs: now,
-          presetStartedAtMs: this.rotationState.presetStartedAtMs,
-          activePresetId: this.state.presetId,
-          audio: audioSnapshot,
-          features: featuresRef,
-        }, resolved)
-        this.handleRotationPolicyDecision(decision, now, resolved)
+        const suppressTimelineRotation = this.syncTimelineClipPlayback(now)
+        if (!suppressTimelineRotation) {
+          const resolved = this.resolveActiveRotationPolicy()
+          const decision = this.rotationPolicy.evaluate({
+            nowMs: now,
+            presetStartedAtMs: this.rotationState.presetStartedAtMs,
+            activePresetId: this.state.presetId,
+            audio: audioSnapshot,
+            features: featuresRef,
+          }, resolved)
+          this.handleRotationPolicyDecision(decision, now, resolved)
+        }
       }
 
       this.deck?.renderFrame(frameCtx)

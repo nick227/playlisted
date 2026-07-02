@@ -1,5 +1,6 @@
 import type { SceneCategory, ScenePresetDef } from '../registry/scenePresets'
 import type { SongVisualPolicy } from '../media/types'
+import type { VisualMediaTimelineClip } from '../media/timelineClipLayout'
 
 export type PickContext = {
   reducedMotion: boolean
@@ -12,4 +13,8 @@ export type PickContext = {
   dynamicPresets?: ScenePresetDef[]
   /** How attached media mixes with built-in theatre presets. */
   songVisualPolicy?: SongVisualPolicy
+  /** Resolved editor timeline clips for the active song. */
+  timelineClips?: VisualMediaTimelineClip[]
+  /** Current song playhead in seconds (audio currentTime). */
+  songPlayheadSec?: number
 }

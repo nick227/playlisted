@@ -2,6 +2,7 @@ import { getPreset, type ScenePresetDef } from '../registry/scenePresets'
 import { isPresetQuarantined } from '../controller/presetQuarantine'
 import { hasDynamicPreset, syncDynamicPresets } from '../media/dynamicPresetStore'
 import { resolvePreset } from '../media/resolvePreset'
+import { isTimelinePlaybackActive, resolveTimelinePresetId } from '../media/timelineClipPick'
 import type { SongVisualPolicy } from '../media/types'
 import {
   avoidFirstPosition,
@@ -283,6 +284,12 @@ export class FxSelector {
   }
 
   private nextBagId(ctx: PickContext, consume: boolean): string | null {
+    if (isTimelinePlaybackActive(ctx)) {
+      const timelineId = resolveTimelinePresetId(ctx)
+      if (timelineId) return timelineId
+      return this.nextBuiltinBagId(ctx, consume)
+    }
+
     const policy = this.resolveSongVisualPolicy(ctx)
 
     if (policy === 'defaultOnly') {

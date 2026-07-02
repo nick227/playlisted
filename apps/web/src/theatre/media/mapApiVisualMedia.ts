@@ -30,6 +30,7 @@ export type SongVisualMediaApiResponse = {
       url: string
       thumbnailUrl: string | null
       originalName: string
+      durationMs?: number | null
     }
   }>
 }
@@ -41,6 +42,8 @@ function mapPlayback(value: VisualMediaPlayback | null | undefined): VisualMedia
     muted: value.muted,
     objectFit: value.objectFit,
     startOffsetMs: value.startOffsetMs,
+    timelineStartSec: value.timelineStartSec,
+    timelineDurationSec: value.timelineDurationSec,
   }
 }
 
@@ -59,6 +62,9 @@ export function mapSongVisualMediaApiResponse(
       thumbnailUrl: item.mediaAsset.thumbnailUrl ?? undefined,
       label: item.label ?? item.mediaAsset.originalName,
       weight: item.weight,
+      order: item.order,
+      enabled: item.enabled,
+      durationMs: item.mediaAsset.durationMs ?? null,
       tags: item.tags ?? undefined,
       playback: mapPlayback(item.playback),
       rotation: item.rotation ?? undefined,

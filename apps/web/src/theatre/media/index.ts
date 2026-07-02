@@ -38,5 +38,16 @@ export {
 } from './resolveTrackVisualMedia'
 
 export { hydrateTrackVisualMedia, fetchSongVisualMedia } from './hydrateTrackVisualMedia'
-export { buildSongVisualPickExtras } from './buildSongVisualPool'
+export { buildSongVisualPickExtras, getTimelineClipsForTrack } from './buildSongVisualPool'
+export type { VisualMediaTimelineClip } from './timelineClipLayout'
+export {
+  findActiveTimelineClip,
+  layoutTimelineClips,
+  localPlayheadSec,
+} from './timelineClipLayout'
+export {
+  isTimelinePlaybackActive,
+  pickTimelineClipPresetId,
+  resolveTimelinePresetId,
+} from './timelineClipPick'
 export { registerUserMediaEngine, USER_IMAGE_MEDIA_ID, USER_VIDEO_MEDIA_ID } from './userMediaEngine'

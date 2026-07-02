@@ -18,6 +18,8 @@ export type VisualMediaPlayback = {
   muted?: boolean
   objectFit?: 'cover' | 'contain'
   startOffsetMs?: number
+  timelineStartSec?: number
+  timelineDurationSec?: number
 }
 
 export type VisualMediaAttachment = {
@@ -32,6 +34,9 @@ export type VisualMediaAttachment = {
   rotation?: RotationOverride
   beatFx?: VisualMediaBeatFx
   weight?: number
+  order?: number
+  enabled?: boolean
+  durationMs?: number | null
   tags?: string[]
 }
 
