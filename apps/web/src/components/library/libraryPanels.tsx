@@ -213,7 +213,7 @@ function GenreSongThumb({ song, queue }: { song: LibrarySong; queue: LibrarySong
       onClick={handlePlay}
       aria-label={`Play ${song.title}`}
       title={`${song.title} by ${song.uploader.displayName}`}
-      className="group/thumb relative aspect-square min-w-0 overflow-hidden rounded-lg border border-white/10 bg-white/[0.04] text-left shadow-[0_14px_40px_rgba(0,0,0,0.22)] transition-all hover:-translate-y-0.5 hover:border-white/25 hover:bg-white/[0.08] sm:aspect-[4/5]"
+      className="group/thumb relative aspect-square min-w-0 overflow-hidden rounded-lg border border-white/10 bg-white/[0.04] text-left shadow-[0_14px_40px_rgba(0,0,0,0.22)] transition-all hover:-translate-y-0.5 hover:border-white/25 hover:bg-white/[0.08]"
     >
       {song.artworkUrl ? (
         <img
@@ -241,46 +241,48 @@ function GenreSongThumb({ song, queue }: { song: LibrarySong; queue: LibrarySong
 }
 
 function GenreCard({ genre }: { genre: LibraryGenre }) {
-  const { data, isLoading } = useLibrarySongs(genre.slug, true, 5);
+  const { data, isLoading } = useLibrarySongs(genre.slug, true, 6);
   const previewSongs = data?.data ?? EMPTY_LIBRARY_SONGS;
   const featuredArtistCount = new Set(previewSongs.map((song) => song.uploaderId)).size;
 
   return (
-    <article className="group relative overflow-hidden rounded-xl border border-white/[0.08] bg-[linear-gradient(145deg,rgba(255,255,255,0.075),rgba(255,255,255,0.025))] p-4 shadow-[0_20px_70px_rgba(0,0,0,0.24)] transition-colors hover:border-white/[0.16] hover:bg-white/[0.055] sm:p-5">
+    <article className="group relative overflow-hidden rounded-xl border border-white/[0.08] bg-[linear-gradient(145deg,rgba(255,255,255,0.075),rgba(255,255,255,0.025))] p-4 shadow-[0_20px_70px_rgba(0,0,0,0.24)] transition-colors hover:border-white/[0.16] hover:bg-white/[0.055] sm:p-5 xl:p-6">
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent opacity-70" />
-      <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
-        <div className="min-w-0">
+      <div className="flex flex-col gap-6">
+        <div className="min-w-0 xl:flex xl:items-end xl:justify-between xl:gap-6">
+          <div className="min-w-0">
+            <Link
+              to={genrePath(genre.slug)}
+              className="block max-w-5xl text-[clamp(1.9rem,4vw,3.75rem)] font-extrabold leading-[0.95] tracking-tighter text-white transition-colors group-hover:text-[var(--color-brand)]"
+            >
+              {genre.name}
+            </Link>
+            <p className="mt-3 text-xs font-medium uppercase text-white/45">
+              {genre.songCount} recording{genre.songCount !== 1 ? "s" : ""}
+              {featuredArtistCount > 0
+                ? ` · ${featuredArtistCount} featured artist${featuredArtistCount !== 1 ? "s" : ""}`
+                : ""}
+            </p>
+          </div>
           <Link
             to={genrePath(genre.slug)}
-            className="block truncate text-[clamp(1.7rem,4vw,3rem)] font-extrabold leading-none tracking-tighter text-white transition-colors group-hover:text-[var(--color-brand)]"
-          >
-            {genre.name}
-          </Link>
-          <p className="mt-2 text-xs font-medium uppercase text-white/45">
-            {genre.songCount} recording{genre.songCount !== 1 ? "s" : ""}
-            {featuredArtistCount > 0
-              ? ` · ${featuredArtistCount} featured artist${featuredArtistCount !== 1 ? "s" : ""}`
-              : ""}
-          </p>
-          <Link
-            to={genrePath(genre.slug)}
-            className="mt-4 inline-flex items-center gap-1 rounded-full border border-white/10 bg-black/20 px-3 py-1.5 text-xs font-semibold text-white/65 transition-colors hover:border-white/25 hover:bg-white/10 hover:text-white"
+            className="mt-4 inline-flex shrink-0 items-center gap-1 rounded-full border border-white/10 bg-black/20 px-3 py-1.5 text-xs font-semibold text-white/65 transition-colors hover:border-white/25 hover:bg-white/10 hover:text-white xl:mt-0"
           >
             All
             <ChevronRight size={14} />
           </Link>
         </div>
 
-        <div className="w-full xl:max-w-[760px]">
+        <div className="w-full">
           {isLoading ? (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Skeleton key={i} className="aspect-square rounded-lg sm:aspect-[4/5]" />
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6 xl:gap-4">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="aspect-square rounded-lg" />
               ))}
             </div>
           ) : previewSongs.length > 0 ? (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-              {previewSongs.slice(0, 5).map((song) => (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6 xl:gap-4">
+              {previewSongs.slice(0, 6).map((song) => (
                 <GenreSongThumb key={song.id} song={song} queue={previewSongs} />
               ))}
             </div>
