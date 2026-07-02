@@ -1,8 +1,14 @@
 import { getPreset, type ScenePresetDef } from '../registry/scenePresets'
 import { isPresetQuarantined } from '../controller/presetQuarantine'
+import { hasDynamicPreset, syncDynamicPresets } from '../media/dynamicPresetStore'
+import { resolvePreset } from '../media/resolvePreset'
+import type { SongVisualPolicy } from '../media/types'
 import {
+  avoidFirstPosition,
   buildFxShuffleBag,
   DEFAULT_BAG_BUILD_STRATEGY,
+  expandWeightedPresetIds,
+  shuffleIds,
   type BagBuildStrategy,
 } from './buildWeightedShuffleBag'
 import {
@@ -23,15 +29,15 @@ import type { PickContext } from './types'
 function presetIdFromUrl(): string | null {
   if (typeof window === 'undefined') return null
   const id = new URLSearchParams(window.location.search).get('theatrePreset')?.trim()
-  if (!id || !getPreset(id)) return null
+  if (!id || !resolvePreset(id)) return null
   return id
 }
 
 function resolvePresetForContext(id: string, ctx: PickContext): ScenePresetDef | null {
-  const preset = getPreset(id)
+  const preset = resolvePreset(id)
   if (!preset) return null
   if (ctx.reducedMotion && preset.reducedMotionPreset) {
-    return getPreset(preset.reducedMotionPreset) ?? preset
+    return resolvePreset(preset.reducedMotionPreset) ?? preset
   }
   return preset
 }
@@ -62,6 +68,8 @@ export class FxSelector {
   private candidate: ScenePresetDef | null = null
   private candidateBagId: string | null = null
   private bagState: FxBagStorageState | null = null
+  private dynamicBag: string[] = []
+  private dynamicBagSignature = ''
   private readonly storage: FxBagStorage
   private readonly isValidPresetId: (id: string) => boolean
   private readonly catalogVersionOverride?: string
@@ -115,7 +123,7 @@ export class FxSelector {
       const bagId = this.candidateBagId ?? cached.id
       this.candidate = null
       this.candidateBagId = null
-      this.removeBagId(bagId, ctx)
+      this.removeConsumedId(bagId, ctx)
       return cached
     }
 
@@ -145,6 +153,61 @@ export class FxSelector {
     }
 
     return this.candidate
+  }
+
+  private resolveSongVisualPolicy(ctx: PickContext): SongVisualPolicy {
+    if (ctx.songVisualPolicy) return ctx.songVisualPolicy
+    if ((ctx.dynamicPresets?.length ?? 0) > 0) return 'preferAttached'
+    return 'defaultOnly'
+  }
+
+  private rebuildDynamicBag(ctx: PickContext): void {
+    const presets = ctx.dynamicPresets ?? []
+    const signature = presets.map(preset => `${preset.id}:${preset.weight ?? 1}`).join('|')
+    if (signature === this.dynamicBagSignature && this.dynamicBag.length > 0) return
+
+    syncDynamicPresets(presets)
+    this.dynamicBagSignature = signature
+    this.dynamicBag = shuffleIds(expandWeightedPresetIds(
+      presets.map(preset => ({ id: preset.id, weight: preset.weight ?? 1 })),
+    ))
+    this.dynamicBag = avoidFirstPosition(this.dynamicBag, buildAvoidFirstIds(ctx, undefined))
+  }
+
+  private peekDynamicBagId(ctx: PickContext): string | null {
+    const policy = this.resolveSongVisualPolicy(ctx)
+    if (policy === 'defaultOnly') return null
+
+    const presets = ctx.dynamicPresets ?? []
+    if (presets.length === 0) return null
+
+    this.rebuildDynamicBag(ctx)
+    const exclude = new Set(buildExcludePresetIds(ctx))
+    return this.dynamicBag.find(candidateId => !exclude.has(candidateId)) ?? null
+  }
+
+  private nextDynamicBagId(ctx: PickContext, consume: boolean): string | null {
+    const id = this.peekDynamicBagId(ctx)
+    if (!id) {
+      if (this.resolveSongVisualPolicy(ctx) === 'attachedOnly') {
+        this.dynamicBagSignature = ''
+        this.rebuildDynamicBag(ctx)
+        const exclude = new Set(buildExcludePresetIds(ctx))
+        const retry = this.dynamicBag.find(candidateId => !exclude.has(candidateId)) ?? null
+        if (!retry) return null
+        if (consume) this.consumeDynamicId(retry)
+        return retry
+      }
+      return null
+    }
+
+    if (consume) this.consumeDynamicId(id)
+    return id
+  }
+
+  private consumeDynamicId(id: string): void {
+    const index = this.dynamicBag.indexOf(id)
+    if (index >= 0) this.dynamicBag.splice(index, 1)
   }
 
   private getCatalogFamilies(): WeightedFamilyCatalogEntry[] {
@@ -196,7 +259,13 @@ export class FxSelector {
     }
   }
 
-  private nextBagId(ctx: PickContext, consume: boolean): string | null {
+  private peekBuiltinBagId(ctx: PickContext): string | null {
+    const state = this.ensureBagState(ctx)
+    const exclude = new Set(buildExcludePresetIds(ctx))
+    return state.bag.find(candidateId => !exclude.has(candidateId) && this.isValidPresetId(candidateId)) ?? null
+  }
+
+  private nextBuiltinBagId(ctx: PickContext, consume: boolean): string | null {
     const state = this.ensureBagState(ctx)
     const exclude = new Set(buildExcludePresetIds(ctx))
     let id = state.bag.find(candidateId => !exclude.has(candidateId) && this.isValidPresetId(candidateId)) ?? null
@@ -209,11 +278,48 @@ export class FxSelector {
     }
 
     if (!id) return null
-    if (consume) this.removeBagId(id, ctx)
+    if (consume) this.removeBuiltinBagId(id, ctx)
     return id
   }
 
-  private removeBagId(id: string, ctx: PickContext) {
+  private nextBagId(ctx: PickContext, consume: boolean): string | null {
+    const policy = this.resolveSongVisualPolicy(ctx)
+
+    if (policy === 'defaultOnly') {
+      return this.nextBuiltinBagId(ctx, consume)
+    }
+
+    if (policy === 'mixAttachedAndDefault') {
+      const dynamicId = this.peekDynamicBagId(ctx)
+      const builtinId = this.peekBuiltinBagId(ctx)
+      if (dynamicId && builtinId) {
+        const pickDynamic = Math.random() < 0.5
+        return pickDynamic
+          ? this.nextDynamicBagId(ctx, consume)
+          : this.nextBuiltinBagId(ctx, consume)
+      }
+      if (dynamicId) return this.nextDynamicBagId(ctx, consume)
+      return this.nextBuiltinBagId(ctx, consume)
+    }
+
+    if (policy === 'attachedOnly') {
+      return this.nextDynamicBagId(ctx, consume)
+    }
+
+    const dynamicId = this.nextDynamicBagId(ctx, consume)
+    if (dynamicId) return dynamicId
+    return this.nextBuiltinBagId(ctx, consume)
+  }
+
+  private removeConsumedId(id: string, ctx: PickContext): void {
+    if (hasDynamicPreset(id)) {
+      this.consumeDynamicId(id)
+      return
+    }
+    this.removeBuiltinBagId(id, ctx)
+  }
+
+  private removeBuiltinBagId(id: string, ctx: PickContext) {
     const state = this.ensureBagState(ctx)
     const index = state.bag.indexOf(id)
     if (index >= 0) state.bag.splice(index, 1)
@@ -235,5 +341,5 @@ export class FxSelector {
 }
 
 function defaultIsValidPresetId(id: string): boolean {
-  return getPreset(id) !== null && !isPresetQuarantined(id)
+  return (getPreset(id) !== null || hasDynamicPreset(id)) && !isPresetQuarantined(id)
 }

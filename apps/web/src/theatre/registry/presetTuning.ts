@@ -3,9 +3,9 @@ import type { RotationOverride } from '../rotation/types'
 
 /** Global timedMusicAware defaults — slightly slower than the original 30/60/120 pass. */
 export const ROTATION_HOLD_DEFAULT: RotationOverride = {
-  minHoldMs: 45_000,
-  targetHoldMs: 90_000,
-  maxHoldMs: 150_000,
+  minHoldMs: 5_000,
+  targetHoldMs: 20_000,
+  maxHoldMs: 50_000,
 }
 
 /** Flagship canvas scenes — linger longer; worth the hold. */
@@ -17,16 +17,16 @@ export const ROTATION_HOLD_FLAGSHIP: RotationOverride = {
 
 /** Lab / novelty scenes — rotate sooner. */
 export const ROTATION_HOLD_LAB: RotationOverride = {
-  minHoldMs: 30_000,
+  minHoldMs: 10_000,
   targetHoldMs: 60_000,
   maxHoldMs: 90_000,
 }
 
 /** Calm backgrounds and song-safe visuals. */
 export const ROTATION_HOLD_CALM: RotationOverride = {
-  minHoldMs: 90_000,
-  targetHoldMs: 180_000,
-  maxHoldMs: 300_000,
+  minHoldMs: 10_000,
+  targetHoldMs: 30_000,
+  maxHoldMs: 100_000,
 }
 
 export const FAMILY_WEIGHT_FLAGSHIP = 4

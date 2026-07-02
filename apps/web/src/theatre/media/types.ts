@@ -1,0 +1,48 @@
+import type { AudioSensitivity } from '../registry/scenePresets'
+import type { RotationOverride } from '../rotation/types'
+
+export type VisualMediaType = 'video' | 'image'
+
+export type BeatFxIntensity = 'subtle' | 'normal' | 'strong'
+
+export type BeatFxEffect = 'scale' | 'brightness' | 'shake' | 'blur' | 'flash'
+
+export type VisualMediaBeatFx = {
+  enabled?: boolean
+  intensity?: BeatFxIntensity
+  effects?: BeatFxEffect[]
+}
+
+export type VisualMediaPlayback = {
+  loop?: boolean
+  muted?: boolean
+  objectFit?: 'cover' | 'contain'
+  startOffsetMs?: number
+}
+
+export type VisualMediaAttachment = {
+  id: string
+  songId?: string
+  trackId?: string
+  mediaType: VisualMediaType
+  url: string
+  thumbnailUrl?: string
+  label?: string
+  playback?: VisualMediaPlayback
+  rotation?: RotationOverride
+  beatFx?: VisualMediaBeatFx
+  weight?: number
+  tags?: string[]
+}
+
+export type SongVisualPolicy =
+  | 'defaultOnly'
+  | 'preferAttached'
+  | 'attachedOnly'
+  | 'mixAttachedAndDefault'
+
+export type TrackVisualMediaResolution = {
+  attachments: VisualMediaAttachment[]
+  policy: SongVisualPolicy
+  audioSensitivity?: AudioSensitivity
+}

@@ -39,15 +39,31 @@ export class VideoAnimation implements IAnimation {
     const zIndex = context.options?.zIndex ?? this.initOptions.defaultZIndex
     if (zIndex !== undefined) this.video.style.zIndex = String(zIndex)
 
-    this.video.muted = true
-    this.video.loop = true
+    this.video.muted = context.options?.muted ?? true
+    this.video.loop = context.options?.loop ?? true
     this.video.playsInline = true
     this.video.crossOrigin = 'anonymous'
     this.video.preload = 'metadata'
 
+    const objectFit = context.options?.objectFit
+    if (objectFit === 'cover' || objectFit === 'contain') {
+      this.video.style.objectFit = objectFit
+    }
+
     const videoUrl = context.options?.videoUrl ?? this.initOptions.defaultVideoUrl
     if (videoUrl) {
       this.video.src = videoUrl
+    }
+
+    const startOffsetMs = context.options?.startOffsetMs
+    if (typeof startOffsetMs === 'number' && startOffsetMs > 0) {
+      this.video.addEventListener('loadedmetadata', () => {
+        try {
+          this.video.currentTime = startOffsetMs / 1000
+        } catch {
+          /* ignore seek errors */
+        }
+      }, { once: true })
     }
 
     container.appendChild(this.video)

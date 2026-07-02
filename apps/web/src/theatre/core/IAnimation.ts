@@ -1,6 +1,7 @@
 import type { Features } from '../audio/AudioFeatureExtractor'
 import type { TheatreAudioSnapshot } from '../audio/TheatreAudioBus'
 import type { TriggerFrame } from '../audio/VisualTriggers'
+import type { VisualMediaBeatFx } from '../media/types'
 
 export type AnimationRole = 'background' | 'subject' | 'foreground' | 'overlay' | 'any'
 export type AnimationLayerType = 'image' | 'video' | 'canvas' | 'ui' | 'hybrid'
@@ -16,6 +17,12 @@ export type AnimationOptions = {
   preset?: 'tame' | 'vivid' | 'chaos' | 'nightmare' | string
   imageUrl?: string
   videoUrl?: string
+  loop?: boolean
+  muted?: boolean
+  objectFit?: 'cover' | 'contain'
+  startOffsetMs?: number
+  beatFx?: VisualMediaBeatFx
+  mediaAttachmentId?: string
   [key: string]: unknown
 }
 

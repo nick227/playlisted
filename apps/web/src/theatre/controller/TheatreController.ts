@@ -15,6 +15,8 @@ import { FxSelector } from '../selection/FxSelector'
 import type { PickContext } from '../selection/types'
 import { getOrCreateAudioAnalyserConnection, type AudioAnalyserConnection } from '@/features/playback-indicators/audioAnalyser'
 import { getPreset, listPresets, type ScenePresetDef, type TheatreTransitionKind } from '../registry/scenePresets'
+import { buildSongVisualPickExtras } from '../media/buildSongVisualPool'
+import { resolvePreset } from '../media/resolvePreset'
 import { getPackageIdForPreset } from '../registry/packageRotation'
 import { buildAnimationFrameContext, withTheatreInitContext } from './theatreFrameContext'
 import { detectPolicy } from '../runtime/PerformancePolicy'
@@ -194,7 +196,7 @@ class TheatreController extends EventTarget {
   private resolveActiveRotationPolicy(): ResolvedRotationPolicy {
     return resolveRotationPolicy({
       activePresetId: this.state.presetId,
-      activePreset: this.state.presetId ? getPreset(this.state.presetId) : null,
+      activePreset: this.state.presetId ? resolvePreset(this.state.presetId) : null,
       track: this.trackContext,
     })
   }
@@ -469,6 +471,7 @@ class TheatreController extends EventTarget {
       reducedMotion: this.prefersReducedMotion(),
       activePresetId: this.state.presetId,
       allowUrlPreset,
+      ...buildSongVisualPickExtras(this.trackContext),
     }
   }
 
@@ -676,7 +679,7 @@ class TheatreController extends EventTarget {
   }
 
   private async changePresetInner(presetId: string, token: number, source: PresetChangeSource) {
-    const selectedPreset = getPreset(presetId)
+    const selectedPreset = resolvePreset(presetId)
     if (!selectedPreset || !this.stillCurrent(token)) return
 
     theatreBreadcrumb(`${source}:preset-inner:start`, { presetId })
@@ -720,7 +723,7 @@ class TheatreController extends EventTarget {
 
   private async changeToPreloadedInner(token: number) {
     const presetId = this.deck?.getNextPresetId()
-    const selectedPreset = presetId ? getPreset(presetId) : null
+    const selectedPreset = presetId ? resolvePreset(presetId) : null
     
     if (!selectedPreset || !this.stillCurrent(token) || !this.deck) return
 
@@ -945,11 +948,7 @@ class TheatreController extends EventTarget {
 
     const { ctx, policy } = this.buildFrameContextWithAudio(0)
 
-    const selectedPreset = this.fxSelector.consumeNext({
-      reducedMotion: this.prefersReducedMotion(),
-      activePresetId: null,
-      allowUrlPreset: true,
-    })
+    const selectedPreset = this.fxSelector.consumeNext(this.buildFxPickContext(true))
     const initialPresetId = selectedPreset?.id ?? null
 
     this.deck = new TheatreSceneDeck(overlay)
