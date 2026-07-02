@@ -1,7 +1,7 @@
 import { trafficHeaders } from "@/lib/trafficIdentity";
 import type { TranscriptEntity } from "@/types/transcript";
 
-export type SubtitleStatus = "MISSING" | "QUEUED" | "PROCESSING" | "READY" | "FAILED";
+export type SubtitleStatus = "MISSING" | "DISABLED" | "QUEUED" | "PROCESSING" | "READY" | "FAILED";
 
 export type SubtitleSegment = {
   start: number;
@@ -92,6 +92,28 @@ export async function updateTranscript(
     body: JSON.stringify(updates),
   });
   if (!response.ok) throw new Error("Failed to update transcript");
+  return response.json();
+}
+
+export async function updateRecordingSubtitlesDisabled(
+  recordingId: string,
+  subtitlesDisabled: boolean,
+  accessToken: string
+): Promise<{ subtitlesDisabled: boolean }> {
+  const base = import.meta.env.VITE_API_BASE_URL ?? "";
+  const response = await fetch(`${base}/api/v1/recordings/${encodeURIComponent(recordingId)}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      ...trafficHeaders(),
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({ subtitlesDisabled }),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => null);
+    throw new Error(err?.message || "Failed to update subtitle settings");
+  }
   return response.json();
 }
 

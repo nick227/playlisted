@@ -194,6 +194,7 @@ model Recording {
   releaseDate         DateTime?
   publishedAt         DateTime?
   playCount           Int           @default(0) @db.UnsignedInt
+  subtitlesDisabled   Boolean       @default(false)
   createdAt           DateTime      @default(now())
   updatedAt           DateTime      @updatedAt
 

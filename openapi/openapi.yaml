@@ -3802,7 +3802,7 @@ components:
 
     SubtitleStatus:
       type: string
-      enum: [ MISSING, QUEUED, PROCESSING, READY, FAILED ]
+      enum: [ MISSING, DISABLED, QUEUED, PROCESSING, READY, FAILED ]
 
     RecordingSubtitleSummary:
       type: object
@@ -4200,6 +4200,8 @@ components:
           format: date-time
         playCount:
           type: integer
+        subtitlesDisabled:
+          type: boolean
         subtitle:
           oneOf:
             - $ref: '#/components/schemas/RecordingSubtitleSummary'
@@ -4320,6 +4322,8 @@ components:
         coverArtUrl:
           type: [ string, 'null' ]
           format: uri-reference
+        subtitlesDisabled:
+          type: boolean
 
     PlaylistSummary:
       type: object

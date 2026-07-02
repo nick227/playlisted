@@ -40,7 +40,8 @@ function mapRecordingSummary(recording: any) {
     releaseDate: recording.releaseDate?.toISOString() ?? null,
     publishedAt: recording.publishedAt?.toISOString() ?? null,
     playCount: recording.playCount,
-    subtitle: mapSubtitleSummary(recording.subtitles),
+    subtitlesDisabled: recording.subtitlesDisabled,
+    subtitle: mapSubtitleSummary(recording.subtitles, recording.subtitlesDisabled),
     createdAt: recording.createdAt.toISOString(),
     updatedAt: recording.updatedAt.toISOString(),
   };
@@ -188,6 +189,7 @@ recordingsRouter.patch("/:recordingId", async (req, res, next) => {
       title?: string;
       artworkUrl?: string | null;
       coverArtUrl?: string | null;
+      subtitlesDisabled?: boolean;
     };
     const data: Record<string, unknown> = {};
 
@@ -204,6 +206,10 @@ recordingsRouter.patch("/:recordingId", async (req, res, next) => {
 
     if (body.artworkUrl !== undefined || body.coverArtUrl !== undefined) {
       data.artworkUrl = body.artworkUrl !== undefined ? body.artworkUrl : body.coverArtUrl;
+    }
+
+    if (body.subtitlesDisabled !== undefined) {
+      data.subtitlesDisabled = Boolean(body.subtitlesDisabled);
     }
 
     const updated = await prisma.recording.update({
@@ -374,7 +380,14 @@ recordingsRouter.get("/:recordingId/subtitles", async (req, res, next) => {
     }
 
     if (!recording.subtitles || recording.subtitles.length === 0) {
+      if (recording.subtitlesDisabled) {
+        return res.json({ status: "DISABLED" });
+      }
       return res.json({ status: "MISSING" });
+    }
+
+    if (recording.subtitlesDisabled) {
+      return res.json({ status: "DISABLED" });
     }
 
     const activeSubtitle =

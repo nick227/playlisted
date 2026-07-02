@@ -130,7 +130,7 @@ function mapRecording(recording: RadioRecording) {
     durationSeconds: recording.durationSeconds,
     artworkUrl: resolveRecordingArtworkUrl(recording, recording.publishedPlaylist),
     explicit: recording.explicit,
-    subtitle: mapSubtitleSummary(recording.subtitles),
+    subtitle: mapSubtitleSummary(recording.subtitles, recording.subtitlesDisabled),
     uploader: {
       id: recording.uploader.id,
       username: recording.uploader.username,

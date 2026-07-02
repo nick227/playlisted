@@ -51,6 +51,7 @@ function mapRecordingWithUploader(r: {
   releaseDate: Date | null;
   publishedAt: Date | null;
   playCount: number;
+  subtitlesDisabled?: boolean;
   createdAt: Date;
   updatedAt: Date;
   uploader: { id: string; username: string; displayName: string; avatarUrl: string | null; role: string };
@@ -81,7 +82,8 @@ function mapRecordingWithUploader(r: {
     releaseDate: r.releaseDate?.toISOString() ?? null,
     publishedAt: r.publishedAt?.toISOString() ?? null,
     playCount: r.playCount,
-    subtitle: mapSubtitleSummary(r.subtitles),
+    subtitlesDisabled: r.subtitlesDisabled,
+    subtitle: mapSubtitleSummary(r.subtitles, r.subtitlesDisabled),
     createdAt: r.createdAt.toISOString(),
     updatedAt: r.updatedAt.toISOString(),
     uploader: r.uploader,

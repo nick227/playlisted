@@ -40,6 +40,7 @@ function mapTopSongItem(
     status: string;
     explicit: boolean;
     playCount: number;
+    subtitlesDisabled?: boolean;
     createdAt: Date;
     updatedAt: Date;
     uploader: { id: string; username: string; displayName: string; avatarUrl: string | null; role: string };
@@ -78,7 +79,7 @@ function mapTopSongItem(
     status: r.status,
     explicit: r.explicit,
     playCount,
-    subtitle: mapSubtitleSummary(r.subtitles),
+    subtitle: mapSubtitleSummary(r.subtitles, r.subtitlesDisabled),
     createdAt: r.createdAt.toISOString(),
     updatedAt: r.updatedAt.toISOString(),
     uploader: r.uploader,

@@ -1585,7 +1585,7 @@ export interface components {
             total: number;
         };
         /** @enum {string} */
-        SubtitleStatus: "MISSING" | "QUEUED" | "PROCESSING" | "READY" | "FAILED";
+        SubtitleStatus: "MISSING" | "DISABLED" | "QUEUED" | "PROCESSING" | "READY" | "FAILED";
         RecordingSubtitleSummary: {
             status: components["schemas"]["SubtitleStatus"];
             language?: string | null;
@@ -1747,6 +1747,7 @@ export interface components {
             /** Format: date-time */
             publishedAt?: string | null;
             playCount: number;
+            subtitlesDisabled?: boolean;
             subtitle?: components["schemas"]["RecordingSubtitleSummary"] | null;
             /** Format: date-time */
             createdAt: string;
@@ -1800,6 +1801,7 @@ export interface components {
             artworkUrl?: string | null;
             /** Format: uri-reference */
             coverArtUrl?: string | null;
+            subtitlesDisabled?: boolean;
         };
         PlaylistSummary: {
             id: string;

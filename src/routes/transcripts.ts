@@ -42,6 +42,13 @@ function mapTranscriptResponse(transcript: {
   };
 }
 
+function subtitlesDisabledResponse(res: any) {
+  return res.status(409).json({
+    error: "subtitles_disabled",
+    message: "Subtitles are disabled for this recording.",
+  });
+}
+
 transcriptsRouter.get("/", async (req, res, next) => {
   try {
     const recordingId = (req.params as any).recordingId;
@@ -88,6 +95,7 @@ transcriptsRouter.post("/", async (req, res, next) => {
     if (recording.uploaderId !== auth.user.id && auth.user.role !== "ADMIN") {
       return res.status(401).json({ error: "unauthorized", message: "Not authorized" });
     }
+    if (recording.subtitlesDisabled) return subtitlesDisabledResponse(res);
 
     if (typeof srtText !== "string" || !srtText.trim()) {
       return res.status(400).json({ error: "bad_request", message: "Transcript text is required" });
@@ -143,6 +151,7 @@ transcriptsRouter.patch("/:transcriptId", async (req, res, next) => {
     if (transcript.recording.uploaderId !== auth.user.id && auth.user.role !== "ADMIN") {
       return res.status(401).json({ error: "unauthorized", message: "Not authorized" });
     }
+    if (transcript.recording.subtitlesDisabled) return subtitlesDisabledResponse(res);
 
     // Process updates
     const updates: any = {};
@@ -193,6 +202,7 @@ transcriptsRouter.post("/upload", upload.single("file"), async (req, res, next) 
     if (recording.uploaderId !== auth.user.id && auth.user.role !== "ADMIN") {
       return res.status(401).json({ error: "unauthorized", message: "Not authorized" });
     }
+    if (recording.subtitlesDisabled) return subtitlesDisabledResponse(res);
 
     if (!req.file) {
       return res.status(400).json({ error: "bad_request", message: "No file uploaded" });
@@ -248,6 +258,7 @@ transcriptsRouter.post("/generate", async (req, res, next) => {
     if (recording.uploaderId !== auth.user.id && auth.user.role !== "ADMIN") {
       return res.status(401).json({ error: "unauthorized", message: "Not authorized" });
     }
+    if (recording.subtitlesDisabled) return subtitlesDisabledResponse(res);
 
     if (process.env.SUBTITLES_ENABLED === "false" || getSubtitleProvider() === "disabled") {
       return res.status(503).json({ error: "service_unavailable", message: "Subtitle generation is currently disabled." });

@@ -25,6 +25,7 @@ export function mapPlaybackHistoryItem(event: {
     status: string;
     explicit: boolean;
     playCount: number;
+    subtitlesDisabled?: boolean;
     createdAt: Date;
     updatedAt: Date;
     subtitles?: {
@@ -59,7 +60,7 @@ export function mapPlaybackHistoryItem(event: {
       status: event.recording.status,
       explicit: event.recording.explicit,
       playCount: event.recording.playCount,
-      subtitle: mapSubtitleSummary(event.recording.subtitles),
+      subtitle: mapSubtitleSummary(event.recording.subtitles, event.recording.subtitlesDisabled),
       createdAt: event.recording.createdAt.toISOString(),
       updatedAt: event.recording.updatedAt.toISOString(),
     },

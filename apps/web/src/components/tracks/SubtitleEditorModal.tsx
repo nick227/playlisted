@@ -2,10 +2,12 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { X, Mic, Upload, MessageSquare, CheckCircle2, Loader2 } from "lucide-react";
 import {
   createManualTranscript,
+  fetchRecordingSubtitles,
   fetchTranscripts,
   updateTranscript,
   uploadTranscript,
   generateTranscript,
+  updateRecordingSubtitlesDisabled,
 } from "@/lib/subtitles";
 import { useSuppressPlaybackFocus } from "@/lib/playbackFocusSuppression";
 import { useAuth } from "@/providers/AuthProvider";
@@ -14,18 +16,20 @@ import type { TranscriptEntity } from "@/types/transcript";
 interface SubtitleEditorModalProps {
   recordingId: string;
   recordingTitle: string;
+  initialSubtitlesDisabled?: boolean;
   onClose: () => void;
 }
 
 type GenerateProvider = "whisper" | "modal";
 
-export function SubtitleEditorModal({ recordingId, recordingTitle, onClose }: SubtitleEditorModalProps) {
+export function SubtitleEditorModal({ recordingId, recordingTitle, initialSubtitlesDisabled = false, onClose }: SubtitleEditorModalProps) {
   useSuppressPlaybackFocus();
   const { accessToken } = useAuth();
 
   const [activeTab, setActiveTab] = useState<"lyrics" | "subtitles">("lyrics");
   const [transcripts, setTranscripts] = useState<TranscriptEntity[]>([]);
   const [loading, setLoading] = useState(true);
+  const [subtitlesDisabled, setSubtitlesDisabled] = useState(initialSubtitlesDisabled);
   
   const [srtDraft, setSrtDraft] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -61,7 +65,13 @@ export function SubtitleEditorModal({ recordingId, recordingTitle, onClose }: Su
       return;
     }
 
-    const data = await fetchTranscripts(recordingId, accessToken);
+    const [data, subtitleStatus] = await Promise.all([
+      fetchTranscripts(recordingId, accessToken),
+      fetchRecordingSubtitles(recordingId, accessToken).catch(() => null),
+    ]);
+    if (subtitleStatus) {
+      setSubtitlesDisabled(subtitleStatus.status === "DISABLED");
+    }
     setTranscripts(data);
     const active =
       data.find((t) => t.isActive && t.status === "READY") ??
@@ -113,6 +123,7 @@ export function SubtitleEditorModal({ recordingId, recordingTitle, onClose }: Su
   }, [hasPendingTranscript, recordingId, accessToken]);
 
   const handleSaveLyrics = async () => {
+    if (subtitlesDisabled) return;
     if (!srtDraft.trim()) return;
     const token = requireAccessToken();
     if (!token) return;
@@ -136,6 +147,7 @@ export function SubtitleEditorModal({ recordingId, recordingTitle, onClose }: Su
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (subtitlesDisabled) return;
     const file = e.target.files?.[0];
     if (!file) return;
     const token = requireAccessToken();
@@ -157,6 +169,7 @@ export function SubtitleEditorModal({ recordingId, recordingTitle, onClose }: Su
   };
 
   const handleSetActive = async (id: string) => {
+    if (subtitlesDisabled) return;
     const token = requireAccessToken();
     if (!token) return;
 
@@ -172,6 +185,7 @@ export function SubtitleEditorModal({ recordingId, recordingTitle, onClose }: Su
   };
 
   const handleGenerate = async (provider: GenerateProvider) => {
+    if (subtitlesDisabled) return;
     const token = requireAccessToken();
     if (!token) return;
 
@@ -192,6 +206,25 @@ export function SubtitleEditorModal({ recordingId, recordingTitle, onClose }: Su
     }
   };
 
+  const handleSubtitlesDisabledChange = async (checked: boolean) => {
+    const token = requireAccessToken();
+    if (!token) return;
+
+    const previous = subtitlesDisabled;
+    setSubtitlesDisabled(checked);
+    setErrorMessage(null);
+    setPendingGenerateProvider(null);
+    setIsSaving(true);
+    try {
+      await updateRecordingSubtitlesDisabled(recordingId, checked, token);
+    } catch (err: unknown) {
+      setSubtitlesDisabled(previous);
+      setErrorMessage(err instanceof Error ? err.message : "Failed to update subtitle settings");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div className="flex h-full max-h-[80vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-white/10 bg-[var(--color-canvas)] shadow-2xl">
@@ -209,30 +242,46 @@ export function SubtitleEditorModal({ recordingId, recordingTitle, onClose }: Su
         {/* Tabs */}
         <div className="flex shrink-0 gap-4 border-b border-white/10 px-4 pt-2">
           <button
-            className={`border-b-2 px-4 pb-2 font-medium transition-colors ${
+            className={`border-b-2 px-4 pb-2 font-medium transition-colors disabled:cursor-not-allowed disabled:text-white/25 ${
               activeTab === "lyrics"
                 ? "border-emerald-400 text-emerald-400"
                 : "border-transparent text-white/50 hover:text-white"
             }`}
             onClick={() => setActiveTab("lyrics")}
+            disabled={subtitlesDisabled}
           >
             Lyrics
           </button>
           <button
-            className={`border-b-2 px-4 pb-2 font-medium transition-colors ${
+            className={`border-b-2 px-4 pb-2 font-medium transition-colors disabled:cursor-not-allowed disabled:text-white/25 ${
               activeTab === "subtitles"
                 ? "border-emerald-400 text-emerald-400"
                 : "border-transparent text-white/50 hover:text-white"
             }`}
             onClick={() => setActiveTab("subtitles")}
+            disabled={subtitlesDisabled}
           >
             Subtitles
           </button>
+          <label className="ml-auto flex items-center gap-2 pb-2 text-sm font-medium text-white/70">
+            <input
+              type="checkbox"
+              className="h-4 w-4 accent-emerald-400"
+              checked={subtitlesDisabled}
+              onChange={(e) => handleSubtitlesDisabledChange(e.target.checked)}
+              disabled={isSaving}
+            />
+            Disable subtitles
+          </label>
         </div>
 
         {/* Body */}
         <div className="flex min-h-0 flex-1 flex-col bg-white/[0.02]">
-          {loading && transcripts.length === 0 ? (
+          {subtitlesDisabled ? (
+            <div className="flex flex-1 items-center justify-center p-6 text-center text-sm text-white/50">
+              Subtitles are disabled for this song.
+            </div>
+          ) : loading && transcripts.length === 0 ? (
             <div className="flex flex-1 items-center justify-center">
               <Loader2 className="animate-spin text-white/30" size={32} />
             </div>
@@ -245,12 +294,13 @@ export function SubtitleEditorModal({ recordingId, recordingTitle, onClose }: Su
 Lyrics in SRT format..."
                 value={srtDraft}
                 onChange={(e) => setSrtDraft(e.target.value)}
+                disabled={subtitlesDisabled}
               />
               <div className="mt-4 flex justify-end">
                 <button
                   className="rounded bg-emerald-500 px-6 py-2 font-semibold text-black hover:bg-emerald-400 disabled:opacity-50"
                   onClick={handleSaveLyrics}
-                  disabled={isSaving || !srtDraft.trim()}
+                  disabled={subtitlesDisabled || isSaving || !srtDraft.trim()}
                 >
                   {isSaving ? "Saving..." : "Save Changes"}
                 </button>
@@ -284,7 +334,7 @@ Lyrics in SRT format..."
                         handleGenerate(pendingGenerateProvider);
                         setPendingGenerateProvider(null);
                       }}
-                      disabled={loading}
+                      disabled={subtitlesDisabled || loading}
                     >
                       Confirm
                     </button>
@@ -295,7 +345,7 @@ Lyrics in SRT format..."
                   <button
                     className="flex flex-col items-center justify-center rounded-lg border border-white/10 bg-white/5 p-4 text-white hover:bg-white/10 transition-colors"
                     onClick={() => setPendingGenerateProvider("whisper")}
-                    disabled={loading}
+                    disabled={subtitlesDisabled || loading}
                     title="Generate with Whisper"
                   >
                     <Mic size={24} className="mb-2" />
@@ -305,7 +355,7 @@ Lyrics in SRT format..."
                   <button
                     className="flex flex-col items-center justify-center rounded-lg border border-emerald-400/30 bg-emerald-400/10 p-4 text-emerald-300 hover:bg-emerald-400/20 transition-colors"
                     onClick={() => setPendingGenerateProvider("modal")}
-                    disabled={loading}
+                    disabled={subtitlesDisabled || loading}
                   >
                     <MessageSquare size={24} className="mb-2" />
                     <span className="text-sm font-medium">Auto Generate</span>
@@ -314,6 +364,7 @@ Lyrics in SRT format..."
                   <button
                     className="flex flex-col items-center justify-center rounded-lg border border-white/10 bg-white/5 p-4 text-white hover:bg-white/10 transition-colors"
                     onClick={() => fileInputRef.current?.click()}
+                    disabled={subtitlesDisabled || loading}
                   >
                     <Upload size={24} className="mb-2 text-white/70" />
                     <span className="text-sm font-medium">Upload File</span>
@@ -398,7 +449,7 @@ Lyrics in SRT format..."
                             <button
                               className="rounded px-3 py-1.5 text-xs font-medium text-white/70 hover:bg-white/10 hover:text-white transition-colors"
                               onClick={() => handleSetActive(t.id)}
-                              disabled={loading}
+                              disabled={subtitlesDisabled || loading}
                             >
                               Set Active
                             </button>

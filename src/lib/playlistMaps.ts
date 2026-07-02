@@ -83,6 +83,7 @@ export function mapRecordingInPlaylist(recording: {
   explicit: boolean;
   releaseDate: Date | null;
   playCount: number;
+  subtitlesDisabled?: boolean;
   publishedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
@@ -119,7 +120,7 @@ export function mapRecordingInPlaylist(recording: {
     explicit: recording.explicit,
     releaseDate: recording.releaseDate?.toISOString() ?? null,
     playCount: recording.playCount,
-    subtitle: mapSubtitleSummary(recording.subtitles),
+    subtitle: mapSubtitleSummary(recording.subtitles, recording.subtitlesDisabled),
     publishedAt: recording.publishedAt?.toISOString() ?? null,
     createdAt: recording.createdAt.toISOString(),
     updatedAt: recording.updatedAt.toISOString(),

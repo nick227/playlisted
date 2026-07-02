@@ -6,7 +6,15 @@ type SubtitleLike = {
   generatedAt: Date | string | null;
 } | null | undefined;
 
-export function mapSubtitleSummary(subtitles: SubtitleLike[] | SubtitleLike) {
+export function mapSubtitleSummary(subtitles: SubtitleLike[] | SubtitleLike, subtitlesDisabled = false) {
+  if (subtitlesDisabled) {
+    return {
+      status: "DISABLED",
+      language: null,
+      generatedAt: null,
+    };
+  }
+
   const subtitle = Array.isArray(subtitles) ? subtitles[0] : subtitles;
   if (!subtitle) return null;
 

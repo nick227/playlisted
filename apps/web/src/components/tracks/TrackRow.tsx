@@ -56,7 +56,7 @@ interface TrackRowProps {
   shareUrl?: string;
 }
 
-function SubtitleStatusBadge({ subtitle }: { subtitle?: SubtitleSummary | null }) {
+function SubtitleStatusBadge({ subtitle, editMode }: { subtitle?: SubtitleSummary | null; editMode?: boolean }) {
   const status = subtitle?.status ?? "NOT_SET";
   const baseClass =
     "inline-flex h-6 min-w-6 shrink-0 items-center justify-center rounded border px-1.5 text-[10px] font-semibold uppercase leading-none";
@@ -88,8 +88,23 @@ function SubtitleStatusBadge({ subtitle }: { subtitle?: SubtitleSummary | null }
     );
   }
 
+  if (status === "DISABLED") {
+    return (
+      <span
+        className={`${baseClass} ${editMode ? "border-white/25 bg-white/10 text-white/50" : "border-white/10 bg-white/[0.03] text-[var(--color-text-subtle)]"}`}
+        title="Subtitles disabled"
+      >
+        <CircleSlash size={13} />
+        <span className="ml-1 hidden sm:inline">Off</span>
+      </span>
+    );
+  }
+
   return (
-    <span className={`${baseClass} border-white/10 bg-white/[0.03] text-[var(--color-text-subtle)]`} title="Transcript not set">
+    <span
+      className={`${baseClass} ${editMode ? "border-white/25 bg-white/10 text-white/50" : "border-white/10 bg-white/[0.03] text-[var(--color-text-subtle)]"}`}
+      title="Transcript not set"
+    >
       <CircleSlash size={13} />
       <span className="ml-1 hidden sm:inline">CC</span>
     </span>
@@ -382,7 +397,7 @@ export function TrackRow({
               className="rounded focus:outline-none focus:ring-1 focus:ring-emerald-400 transition-transform hover:scale-105"
               title="Edit Subtitles"
             >
-              <SubtitleStatusBadge subtitle={subtitle ?? queueTrack?.subtitle} />
+              <SubtitleStatusBadge subtitle={subtitle ?? queueTrack?.subtitle} editMode={editMode} />
             </button>
             <button
               type="button"
@@ -467,6 +482,7 @@ export function TrackRow({
         <SubtitleEditorModal
           recordingId={recordingId}
           recordingTitle={title}
+          initialSubtitlesDisabled={(subtitle ?? queueTrack?.subtitle)?.status === "DISABLED"}
           onClose={() => setSubtitleModalOpen(false)}
         />
       )}
@@ -482,6 +498,7 @@ export function TrackRow({
             artworkUrl,
             description: queueTrack?.description,
             playlistTitle: queueTrack?.playlistTitle ?? playlistTitle,
+            publishedPlaylistId: queueTrack?.publishedPlaylistId,
             recordingType: queueTrack?.recordingType,
             hasSubtitleTrack: subtitle != null,
           }}
