@@ -13,6 +13,13 @@ import type { ClipSyncStatus } from "./hooks/optimisticSongVisualCache";
 import { readClipAudioPulse } from "./audioPulse";
 import type { TimelineClip } from "./types";
 
+const CLIP_TINTS = [
+  { shell: "bg-violet-500/28 border-violet-300/50", selected: "border-violet-200 ring-violet-300/35" },
+  { shell: "bg-emerald-500/28 border-emerald-300/50", selected: "border-emerald-200 ring-emerald-300/35" },
+  { shell: "bg-sky-500/28 border-sky-300/50", selected: "border-sky-200 ring-sky-300/35" },
+  { shell: "bg-amber-500/24 border-amber-300/45", selected: "border-amber-200 ring-amber-300/30" },
+] as const;
+
 type TimelineClipBlockProps = {
   clip: TimelineClip;
   songDurationSec: number;
@@ -21,6 +28,7 @@ type TimelineClipBlockProps = {
   isLocked: boolean;
   syncStatus?: ClipSyncStatus;
   stackOrder: number;
+  tintIndex: number;
   getTrackRect: () => DOMRect | null;
   onRefreshTrackRect: () => void;
   onSelect: () => void;
@@ -50,6 +58,7 @@ export function TimelineClipBlock({
   isLocked,
   syncStatus,
   stackOrder,
+  tintIndex,
   getTrackRect,
   onRefreshTrackRect,
   onSelect,
@@ -72,6 +81,7 @@ export function TimelineClipBlock({
   const isDragging = drag != null;
   const { attachment } = clip;
   const audioPulse = readClipAudioPulse(attachment);
+  const tint = CLIP_TINTS[tintIndex % CLIP_TINTS.length]!;
 
   function trackTime(clientX: number) {
     const rect = getTrackRect();
@@ -154,15 +164,15 @@ export function TimelineClipBlock({
   return (
     <div
       className={[
-        "absolute top-0 flex h-full min-w-[4rem] overflow-hidden rounded-md border text-left text-[11px] transition-shadow",
+        "pointer-events-auto absolute top-0 flex h-full min-w-[4rem] overflow-hidden rounded-md border-2 text-left text-[11px] shadow-sm backdrop-blur-[1px] transition-shadow",
         syncStatus === "error"
-          ? "border-red-400 ring-2 ring-red-400/40 text-white"
+          ? "border-red-400 bg-red-500/25 ring-2 ring-red-400/40 text-white"
           : selected
-            ? "border-emerald-400 ring-2 ring-emerald-400/30 text-white"
-            : "border-white/20 text-white/90 hover:border-white/40",
+            ? `${tint.shell} ${tint.selected} ring-2 text-white`
+            : `${tint.shell} text-white/95 hover:brightness-110`,
         syncStatus === "saving" ? "animate-pulse ring-1 ring-amber-400/50" : "",
         cutMode ? "cursor-crosshair" : isLocked ? "cursor-not-allowed opacity-80" : "cursor-grab",
-        isDragging ? "z-50 scale-[1.02] shadow-lg shadow-emerald-500/20" : "",
+        isDragging ? "z-50 scale-[1.02] shadow-lg shadow-black/40" : "",
       ].join(" ")}
       style={{ left: `${leftPct}%`, width: `${widthPct}%`, zIndex: isDragging ? 50 : stackOrder }}
       onPointerDown={cutMode ? onCutPointerDown : undefined}
@@ -170,9 +180,9 @@ export function TimelineClipBlock({
     >
       <MediaAssetThumb
         asset={clip.attachment.mediaAsset}
-        className="pointer-events-none absolute inset-0 opacity-70"
+        className="pointer-events-none absolute inset-0 opacity-35 mix-blend-luminosity"
       />
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black/55 via-black/35 to-black/55" />
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-black/25" />
 
       {!cutMode ? (
         <button

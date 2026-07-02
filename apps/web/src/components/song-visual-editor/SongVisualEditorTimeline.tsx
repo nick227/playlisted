@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, type PointerEvent as ReactPointerEvent } fr
 import type { ClipSyncStatus } from "./hooks/optimisticSongVisualCache";
 import { useTimelineSnapGuides } from "./hooks/useTimelineSnapGuides";
 import { useTimelineTrackRect } from "./hooks/useTimelineTrackRect";
-import { drawWaveformPeaks, drawWaveformPlayhead } from "./drawWaveformPeaks";
+import { drawWaveformPeaks } from "./drawWaveformPeaks";
 import { timeSecFromTimelinePointer } from "./timelineLayout";
 import { TimelineClipBlock } from "./TimelineClipBlock";
 import type { TimelineEditMode } from "./SongVisualEditorToolbar";
@@ -46,7 +46,6 @@ export function SongVisualEditorTimeline({
   onCutClipAt,
   onCutAtTime,
 }: SongVisualEditorTimelineProps) {
-  const waveformRef = useRef<HTMLDivElement>(null);
   const waveformCanvasRef = useRef<HTMLCanvasElement>(null);
   const { trackRef, getTrackRect, refreshTrackRect } = useTimelineTrackRect();
   const { activeGuide, snapMoveStart, snapResizeStart, snapResizeEnd, clearSnapGuide } = useTimelineSnapGuides({
@@ -66,7 +65,7 @@ export function SongVisualEditorTimeline({
 
   useEffect(() => {
     const canvas = waveformCanvasRef.current;
-    const container = waveformRef.current;
+    const container = trackRef.current;
     if (!canvas || !container || !peaks?.length || durationSec <= 0) return;
 
     const draw = () => {
@@ -85,20 +84,19 @@ export function SongVisualEditorTimeline({
 
       context.setTransform(dpr, 0, 0, dpr, 0, 0);
       context.clearRect(0, 0, width, height);
+      context.fillStyle = "rgba(0, 0, 0, 0.22)";
+      context.fillRect(0, 0, width, height);
       drawWaveformPeaks(context, peaks, width, height);
-      drawWaveformPlayhead(context, width, height, currentTimeSec, durationSec);
     };
 
     draw();
     const observer = new ResizeObserver(draw);
     observer.observe(container);
     return () => observer.disconnect();
-  }, [currentTimeSec, durationSec, peaks]);
+  }, [durationSec, peaks, trackRef]);
 
   function seekFromClientX(clientX: number) {
-    const waveformRect = waveformRef.current?.getBoundingClientRect();
-    const trackRect = getTrackRect();
-    const rect = waveformRect ?? trackRect;
+    const rect = getTrackRect();
     if (!rect || durationSec <= 0) return;
     onSeek(timeSecFromTimelinePointer(clientX, rect, durationSec));
   }
@@ -124,75 +122,82 @@ export function SongVisualEditorTimeline({
     onCutAtTime(cutSec);
   }
 
+  function handleTrackClick(event: ReactPointerEvent<HTMLDivElement>) {
+    if (event.target !== event.currentTarget) return;
+    seekFromClientX(event.clientX);
+  }
+
   return (
-    <div className="overflow-hidden rounded-lg border border-white/10 bg-black/30">
-      <div
-        ref={waveformRef}
-        className="relative h-14 w-full cursor-crosshair border-b border-white/10 bg-black/40"
-        onClick={(event) => seekFromClientX(event.clientX)}
-        role="slider"
-        aria-label="Audio waveform"
-        aria-valuemin={0}
-        aria-valuemax={durationSec}
-        aria-valuenow={currentTimeSec}
-      >
-        {waveformLoading ? (
-          <div className="flex h-full items-center justify-center text-[11px] text-white/35">Loading waveform…</div>
-        ) : peaks?.length ? (
-          <canvas ref={waveformCanvasRef} className="absolute inset-0 h-full w-full" />
-        ) : (
-          <div className="flex h-full items-center justify-center px-4 text-center text-[11px] text-white/35">
-            {waveformError ?? "Audio waveform unavailable for this track."}
-          </div>
-        )}
+    <div
+      ref={trackRef}
+      className="relative h-28 w-full cursor-crosshair overflow-hidden rounded-lg border border-white/10 bg-black/50"
+      onClick={handleTrackClick}
+      onPointerDown={handleTrackPointerDown}
+      onPointerUp={handleTrackPointerUp}
+      role="slider"
+      aria-label="Audio timeline"
+      aria-valuemin={0}
+      aria-valuemax={durationSec}
+      aria-valuenow={currentTimeSec}
+    >
+      {waveformLoading ? (
+        <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center text-[11px] text-white/35">
+          Loading waveform…
+        </div>
+      ) : peaks?.length ? (
+        <canvas ref={waveformCanvasRef} className="pointer-events-none absolute inset-0 z-0 h-full w-full" />
+      ) : (
+        <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center px-4 text-center text-[11px] text-white/35">
+          {waveformError ?? "Audio waveform unavailable for this track."}
+        </div>
+      )}
+
+      <div className="pointer-events-none absolute inset-x-0 inset-y-1.5 z-10">
+        {sortedClips.map((clip, index) => (
+          <TimelineClipBlock
+            key={clip.attachment.id}
+            clip={clip}
+            songDurationSec={durationSec}
+            selected={clip.attachment.id === selectedAttachmentId}
+            cutMode={editMode === "cut"}
+            isLocked={clipSyncStatus[clip.attachment.id] === "saving"}
+            syncStatus={clipSyncStatus[clip.attachment.id]}
+            stackOrder={index + 1}
+            tintIndex={index}
+            getTrackRect={getTrackRect}
+            onRefreshTrackRect={refreshTrackRect}
+            onSelect={() => onSelectAttachment(clip.attachment.id)}
+            onMove={(nextStartSec) => onMoveClip(clip.attachment.id, nextStartSec)}
+            onResizeEnd={(nextDurationSec) => onResizeClip(clip.attachment.id, nextDurationSec)}
+            onResizeStart={(nextStartSec) => onResizeClipStart(clip.attachment.id, nextStartSec)}
+            onCutAt={(cutSec) => onCutClipAt(clip.attachment.id, cutSec)}
+            snapMoveStart={(proposedStartSec) => snapMoveStart(clip.attachment.id, clip, proposedStartSec)}
+            snapResizeStart={(proposedStartSec) => snapResizeStart(clip.attachment.id, proposedStartSec)}
+            snapResizeEnd={(proposedEndSec) => snapResizeEnd(clip.attachment.id, proposedEndSec)}
+            onSnapEnd={clearSnapGuide}
+          />
+        ))}
       </div>
 
-      <div
-        ref={trackRef}
-        className="relative min-h-[5.5rem]"
-        onPointerDown={handleTrackPointerDown}
-        onPointerUp={handleTrackPointerUp}
-      >
-        <div className="absolute inset-y-2 left-0 right-0">
-          {sortedClips.map((clip, index) => (
-            <TimelineClipBlock
-              key={clip.attachment.id}
-              clip={clip}
-              songDurationSec={durationSec}
-              selected={clip.attachment.id === selectedAttachmentId}
-              cutMode={editMode === "cut"}
-              isLocked={clipSyncStatus[clip.attachment.id] === "saving"}
-              syncStatus={clipSyncStatus[clip.attachment.id]}
-              stackOrder={index + 1}
-              getTrackRect={getTrackRect}
-              onRefreshTrackRect={refreshTrackRect}
-              onSelect={() => onSelectAttachment(clip.attachment.id)}
-              onMove={(nextStartSec) => onMoveClip(clip.attachment.id, nextStartSec)}
-              onResizeEnd={(nextDurationSec) => onResizeClip(clip.attachment.id, nextDurationSec)}
-              onResizeStart={(nextStartSec) => onResizeClipStart(clip.attachment.id, nextStartSec)}
-              onCutAt={(cutSec) => onCutClipAt(clip.attachment.id, cutSec)}
-              snapMoveStart={(proposedStartSec) => snapMoveStart(clip.attachment.id, clip, proposedStartSec)}
-              snapResizeStart={(proposedStartSec) => snapResizeStart(clip.attachment.id, proposedStartSec)}
-              snapResizeEnd={(proposedEndSec) => snapResizeEnd(clip.attachment.id, proposedEndSec)}
-              onSnapEnd={clearSnapGuide}
-            />
-          ))}
-        </div>
-
-        {guidePct != null ? (
-          <div
-            className="pointer-events-none absolute inset-y-0 z-[65] w-px bg-amber-300/90 shadow-[0_0_8px_rgba(252,211,77,0.55)]"
-            style={{ left: `${guidePct}%` }}
-            aria-hidden
-          />
-        ) : null}
-
+      {guidePct != null ? (
         <div
-          className="pointer-events-none absolute inset-y-0 z-[60] w-0.5 bg-emerald-400/70"
-          style={{ left: `${playheadPct}%` }}
+          className="pointer-events-none absolute inset-y-0 z-20 w-px bg-amber-300/90 shadow-[0_0_8px_rgba(252,211,77,0.55)]"
+          style={{ left: `${guidePct}%` }}
           aria-hidden
         />
-      </div>
+      ) : null}
+
+      <div
+        className="pointer-events-none absolute inset-y-0 z-30 w-0.5 bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.65)]"
+        style={{ left: `${playheadPct}%` }}
+        aria-hidden
+      />
+
+      {sortedClips.length === 0 ? (
+        <div className="pointer-events-none absolute inset-0 z-[5] flex items-center justify-center text-[11px] text-white/30">
+          Add clips from the library — they will layer over the audio here
+        </div>
+      ) : null}
     </div>
   );
 }
