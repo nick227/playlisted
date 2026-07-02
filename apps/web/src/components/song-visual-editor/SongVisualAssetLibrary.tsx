@@ -1,20 +1,23 @@
-import { Plus, Repeat, Trash2, Upload } from "lucide-react";
+import { Plus, Repeat, RotateCcw, Trash2, Upload } from "lucide-react";
 import { useState, type DragEvent } from "react";
 
 import type { VisualMediaAssetRecord } from "@/lib/visualMediaApi";
 import { VISUAL_UPLOAD_MAX_BYTES } from "@/lib/visualUploadLimits";
 
 import { MediaAssetThumb } from "./MediaAssetThumb";
-import { formatMegabytes } from "./timelineLayout";
+import { formatMediaOffsetMs, formatMegabytes, readClipStartOffsetMs } from "./timelineLayout";
+import type { ClipSyncStatus } from "./hooks/optimisticSongVisualCache";
 import type { TimelineClip } from "./types";
 
 type SongVisualAssetLibraryProps = {
   timelineClips: TimelineClip[];
   assets: VisualMediaAssetRecord[];
   isBusy: boolean;
+  clipSyncStatus: Record<string, ClipSyncStatus>;
   getAssetLoopPref: (asset: VisualMediaAssetRecord) => boolean;
   onAssetLoopPrefChange: (assetId: string, loop: boolean) => void;
   onClipLoopChange: (attachmentId: string, loop: boolean) => void;
+  onResetClipTrim: (attachmentId: string) => void;
   onAddToTimeline: (assetId: string) => void;
   onRemoveClip: (attachmentId: string) => void;
   onSelectClip: (attachmentId: string) => void;
@@ -28,9 +31,11 @@ export function SongVisualAssetLibrary({
   timelineClips,
   assets,
   isBusy,
+  clipSyncStatus,
   getAssetLoopPref,
   onAssetLoopPrefChange,
   onClipLoopChange,
+  onResetClipTrim,
   onAddToTimeline,
   onRemoveClip,
   onSelectClip,
@@ -64,6 +69,8 @@ export function SongVisualAssetLibrary({
             {[...timelineClips].sort((left, right) => left.startSec - right.startSec).map((clip) => {
               const { attachment } = clip;
               const selected = attachment.id === selectedAttachmentId;
+              const startOffsetMs = readClipStartOffsetMs(attachment);
+              const clipSaving = clipSyncStatus[attachment.id] === "saving";
               return (
                 <article
                   key={attachment.id}
@@ -87,6 +94,12 @@ export function SongVisualAssetLibrary({
                     <p className="text-[10px] text-white/40">
                       {clip.startSec.toFixed(1)}s · {clip.durationSec.toFixed(1)}s
                     </p>
+                    <p className={[
+                      "text-[10px]",
+                      selected ? "text-amber-200/90" : "text-white/35",
+                    ].join(" ")}>
+                      Cut-in: {formatMediaOffsetMs(startOffsetMs)}
+                    </p>
                     <div className="flex items-center gap-1">
                       <label className="inline-flex flex-1 items-center gap-1 rounded-md border border-white/10 px-2 py-1 text-[10px] text-white/80">
                         <input
@@ -99,6 +112,18 @@ export function SongVisualAssetLibrary({
                         <Repeat size={10} />
                         Loop
                       </label>
+                      {startOffsetMs > 0 ? (
+                        <button
+                          type="button"
+                          disabled={isBusy || clipSaving}
+                          onClick={() => onResetClipTrim(attachment.id)}
+                          className="rounded-md border border-amber-400/20 px-2 py-1 text-amber-100 hover:bg-amber-400/10 disabled:opacity-40"
+                          aria-label="Reset media cut-in"
+                          title="Reset cut-in to media start"
+                        >
+                          <RotateCcw size={12} />
+                        </button>
+                      ) : null}
                       <button
                         type="button"
                         disabled={isBusy}

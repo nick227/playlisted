@@ -148,6 +148,8 @@ function SongVisualEditorModalInner({
             getAssetLoopPref={editor.getAssetLoopPref}
             onAssetLoopPrefChange={editor.setAssetLoopPref}
             onClipLoopChange={(attachmentId, loop) => void editor.setClipLoop(attachmentId, loop)}
+            onResetClipTrim={(attachmentId) => void editor.resetClipTrim(attachmentId)}
+            clipSyncStatus={editor.clipSyncStatus}
             onAddToTimeline={(assetId) => void editor.attachExistingAsset(assetId, playback.currentTimeSec)}
             onRemoveClip={editor.detachAttachment}
             onSelectClip={editor.selectAttachment}

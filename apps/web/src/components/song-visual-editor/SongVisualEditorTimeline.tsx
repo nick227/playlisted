@@ -105,7 +105,7 @@ export function SongVisualEditorTimeline({
         <span className="text-xs text-white/40">
           {editMode === "cut"
             ? "Click a clip or empty lane — shorter side is removed"
-            : "Drag grip to move · edges to resize · snaps to clips & playhead · Ctrl+C/V · Del to remove"}
+            : "Drag grip to move · left edge trims cut-in · snaps to clips & playhead · Ctrl+C/V · Del to remove"}
           {hasClipboard ? " · clipboard ready" : ""}
         </span>
       </div>

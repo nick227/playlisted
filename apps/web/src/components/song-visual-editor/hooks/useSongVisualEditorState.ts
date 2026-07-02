@@ -26,6 +26,7 @@ import {
   resolveClipMove,
   resolveClipResizeEnd,
   resolveClipResizeStart,
+  resolveClipResetTrim,
   trimClipAtShortSide,
   type ClipBounds,
 } from "../timelineLayout";
@@ -392,6 +393,16 @@ export function useSongVisualEditorState({
     commitClipBounds(attachmentId, bounds);
   }
 
+  function resetClipTrim(attachmentId: string) {
+    const attachment = getAttachmentSnapshot(attachmentId);
+    const clip = timelineClips.find((item) => item.attachment.id === attachmentId);
+    if (!attachment || !clip) return;
+
+    const bounds = resolveClipResetTrim(attachment, clip, timelineDurationSec);
+    if (!bounds) return;
+    commitClipBounds(attachmentId, bounds);
+  }
+
   function resizeClip(attachmentId: string, nextDurationSec: number) {
     const attachment = getAttachmentSnapshot(attachmentId);
     const clip = timelineClips.find((item) => item.attachment.id === attachmentId);
@@ -555,6 +566,7 @@ export function useSongVisualEditorState({
     setClipLoop,
     resizeClip,
     resizeClipStart,
+    resetClipTrim,
     moveClip,
     cutClipAt,
     cutAtTime,

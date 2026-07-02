@@ -30,6 +30,20 @@ export function getClipLoop(attachment: SongVisualAttachmentRecord): boolean {
   return playback.loop ?? attachment.mediaAsset.mediaType === "video";
 }
 
+export function readClipStartOffsetMs(attachment: SongVisualAttachmentRecord): number {
+  const playback = readClipPlayback(attachment);
+  return Math.max(0, playback.startOffsetMs ?? 0);
+}
+
+export function formatMediaOffsetMs(offsetMs: number): string {
+  if (offsetMs <= 0) return "0.0s";
+  const sec = offsetMs / 1000;
+  if (sec < 60) return `${sec.toFixed(1)}s`;
+  const mins = Math.floor(sec / 60);
+  const rem = sec % 60;
+  return `${mins}:${rem.toFixed(1).padStart(4, "0")}`;
+}
+
 export function remainingMediaSec(attachment: SongVisualAttachmentRecord, startOffsetMs: number): number {
   return Math.max(0, getNaturalDurationSec(attachment) - startOffsetMs / 1000);
 }
@@ -158,12 +172,18 @@ export function resolveClipResizeStart(
 
   const loop = getClipLoop(attachment);
   const playback = readClipPlayback(attachment);
+  const currentOffsetMs = playback.startOffsetMs ?? 0;
   const endSec = clip.endSec;
-  let timelineStartSec = Math.max(0, Math.min(nextStartSec, endSec - MIN_CLIP_SEC));
+  const earliestStartSec = clip.startSec - currentOffsetMs / 1000;
+
+  let timelineStartSec = Math.max(
+    earliestStartSec,
+    Math.min(nextStartSec, endSec - MIN_CLIP_SEC),
+  );
   timelineStartSec = clampClipStart(timelineStartSec, endSec - timelineStartSec, songDurationSec);
 
   const deltaSec = timelineStartSec - clip.startSec;
-  let startOffsetMs = Math.max(0, (playback.startOffsetMs ?? 0) + Math.round(deltaSec * 1000));
+  let startOffsetMs = Math.max(0, currentOffsetMs + Math.round(deltaSec * 1000));
 
   let timelineDurationSec = endSec - timelineStartSec;
   timelineDurationSec = clampDurationSec(
@@ -181,9 +201,40 @@ export function resolveClipResizeStart(
     if (timelineDurationSec > maxDuration) {
       timelineDurationSec = Math.max(MIN_CLIP_SEC, maxDuration);
       timelineStartSec = endSec - timelineDurationSec;
-      startOffsetMs = Math.max(0, (playback.startOffsetMs ?? 0) + Math.round((timelineStartSec - clip.startSec) * 1000));
+      startOffsetMs = Math.max(0, currentOffsetMs + Math.round((timelineStartSec - clip.startSec) * 1000));
     }
   }
+
+  timelineStartSec = clampClipStart(timelineStartSec, timelineDurationSec, songDurationSec);
+  if (timelineDurationSec < MIN_CLIP_SEC) return null;
+
+  return { timelineStartSec, timelineDurationSec, startOffsetMs };
+}
+
+export function resolveClipResetTrim(
+  attachment: SongVisualAttachmentRecord,
+  clip: Pick<TimelineClip, "startSec" | "endSec" | "durationSec">,
+  songDurationSec: number,
+): ClipBounds | null {
+  const currentOffsetMs = readClipStartOffsetMs(attachment);
+  if (currentOffsetMs <= 0) return null;
+
+  const loop = getClipLoop(attachment);
+  const endSec = clip.endSec;
+  const offsetSec = currentOffsetMs / 1000;
+  const startOffsetMs = 0;
+
+  let timelineStartSec = Math.max(0, clip.startSec - offsetSec);
+  let timelineDurationSec = endSec - timelineStartSec;
+  timelineDurationSec = clampDurationSec(
+    attachment,
+    timelineStartSec,
+    timelineDurationSec,
+    songDurationSec,
+    loop,
+    startOffsetMs,
+  );
+  if (timelineDurationSec < MIN_CLIP_SEC) return null;
 
   timelineStartSec = clampClipStart(timelineStartSec, timelineDurationSec, songDurationSec);
   if (timelineDurationSec < MIN_CLIP_SEC) return null;

@@ -10,6 +10,7 @@ import {
   resolveClipMove,
   resolveClipResizeEnd,
   resolveClipResizeStart,
+  resolveClipResetTrim,
   trimClipAtShortSide,
 } from './timelineLayout'
 import type { SongVisualAttachmentRecord } from '@/lib/visualMediaApi'
@@ -144,6 +145,22 @@ describe('timelineLayout', () => {
     expect(bounds?.timelineDurationSec).toBe(30)
   })
 
+  it('move preserves media cut-in', () => {
+    const clip = layoutTimelineClips([
+      attachment('clip-a', 0, 'video', {
+        loop: false,
+        timelineStartSec: 10,
+        timelineDurationSec: 20,
+        startOffsetMs: 5000,
+      }, 60_000),
+    ], 120)[0]
+
+    expect(clip).toBeDefined()
+    const bounds = resolveClipMove(clip!.attachment, clip!, 25, 120)
+    expect(bounds?.timelineStartSec).toBe(25)
+    expect(bounds?.startOffsetMs).toBe(5000)
+  })
+
   it('trim cut deletes the shorter side and respects media bounds', () => {
     const clip = layoutTimelineClips([
       attachment('clip-a', 0, 'video', { loop: false, timelineStartSec: 10, timelineDurationSec: 30, startOffsetMs: 1000 }, 60_000),
@@ -164,7 +181,7 @@ describe('timelineLayout', () => {
     })
   })
 
-  it('resize start cannot trim before media offset floor', () => {
+  it('resize start cannot extend before media start', () => {
     const clip = layoutTimelineClips([
       attachment('clip-a', 0, 'video', {
         loop: false,
@@ -176,7 +193,78 @@ describe('timelineLayout', () => {
 
     expect(clip).toBeDefined()
     const bounds = resolveClipResizeStart(clip!.attachment, clip!, 0, 120)
-    expect(bounds?.timelineStartSec).toBeGreaterThanOrEqual(0)
-    expect(bounds?.startOffsetMs).toBeGreaterThanOrEqual(0)
+    expect(bounds?.timelineStartSec).toBe(5)
+    expect(bounds?.timelineDurationSec).toBe(35)
+    expect(bounds?.startOffsetMs).toBe(0)
+  })
+
+  it('left resize right increases media cut-in', () => {
+    const clip = layoutTimelineClips([
+      attachment('clip-a', 0, 'video', {
+        loop: false,
+        timelineStartSec: 10,
+        timelineDurationSec: 20,
+        startOffsetMs: 2000,
+      }, 60_000),
+    ], 120)[0]
+
+    expect(clip).toBeDefined()
+    const bounds = resolveClipResizeStart(clip!.attachment, clip!, 15, 120)
+    expect(bounds).toEqual({
+      timelineStartSec: 15,
+      timelineDurationSec: 15,
+      startOffsetMs: 7000,
+    })
+  })
+
+  it('left resize left decreases media cut-in', () => {
+    const clip = layoutTimelineClips([
+      attachment('clip-a', 0, 'video', {
+        loop: false,
+        timelineStartSec: 10,
+        timelineDurationSec: 20,
+        startOffsetMs: 5000,
+      }, 60_000),
+    ], 120)[0]
+
+    expect(clip).toBeDefined()
+    const bounds = resolveClipResizeStart(clip!.attachment, clip!, 8, 120)
+    expect(bounds).toEqual({
+      timelineStartSec: 8,
+      timelineDurationSec: 22,
+      startOffsetMs: 3000,
+    })
+  })
+
+  it('reset trim clears cut-in and extends clip left', () => {
+    const clip = layoutTimelineClips([
+      attachment('clip-a', 0, 'video', {
+        loop: false,
+        timelineStartSec: 10,
+        timelineDurationSec: 20,
+        startOffsetMs: 5000,
+      }, 60_000),
+    ], 120)[0]
+
+    expect(clip).toBeDefined()
+    expect(resolveClipResetTrim(clip!.attachment, clip!, 120)).toEqual({
+      timelineStartSec: 5,
+      timelineDurationSec: 25,
+      startOffsetMs: 0,
+    })
+  })
+
+  it('reset trim is a no-op when cut-in is already zero', () => {
+    const clip = layoutTimelineClips([
+      attachment('clip-a', 0, 'video', {
+        loop: false,
+        timelineStartSec: 10,
+        timelineDurationSec: 20,
+        startOffsetMs: 0,
+      }, 60_000),
+    ], 120)[0]
+
+    expect(clip).toBeDefined()
+    expect(resolveClipResetTrim(clip!.attachment, clip!, 120)).toBeNull()
   })
 })
