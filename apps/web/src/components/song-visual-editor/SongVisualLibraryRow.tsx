@@ -1,5 +1,6 @@
 import { Plus, Trash2 } from "lucide-react";
 
+import { CommunityFxThumb } from "./CommunityFxThumb";
 import type { VisualLibraryRow } from "./useSongVisualLibraryItems";
 import { MediaAssetThumb } from "./MediaAssetThumb";
 import { resolveAssetUrl } from "./types";
@@ -19,36 +20,42 @@ export function SongVisualLibraryRow({
   onAction,
   onDelete,
 }: SongVisualLibraryRowProps) {
-  const thumbAsset = row.asset ?? {
-    id: row.id,
-    ownerId: "",
-    mediaType: row.mediaType,
-    url: row.importUrl ?? row.thumbUrl ?? "",
-    thumbnailUrl: row.thumbUrl,
-    originalName: row.label,
-    mimeType: row.mediaType === "video" ? "video/mp4" : "image/jpeg",
-    sizeBytes: 0,
-    durationMs: null,
-    width: null,
-    height: null,
-    createdAt: "",
-  };
+  const isCommunityFx = Boolean(row.theatrePresetId);
+  const thumbFrameClass = isCommunityFx
+    ? row.communityKind === "videos"
+      ? "h-16 w-[4.75rem]"
+      : "h-16 w-16"
+    : "h-14 w-14";
 
   return (
-    <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-black/20 px-2 py-1.5">
-      <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md bg-black/40">
-        {row.thumbUrl ? (
+    <div className="flex items-center gap-3 rounded-lg border border-white/10 bg-black/20 px-2.5 py-2">
+      <div className={`${thumbFrameClass} shrink-0 overflow-hidden rounded-md bg-black/50`}>
+        {isCommunityFx ? (
+          <CommunityFxThumb row={row} className="h-full w-full" />
+        ) : row.thumbUrl ? (
           <img src={resolveAssetUrl(row.thumbUrl)} alt="" className="h-full w-full object-cover" />
+        ) : row.asset ? (
+          <MediaAssetThumb asset={row.asset} className="h-full w-full" />
         ) : row.importUrl && row.mediaType === "video" ? (
-          <video
-            src={resolveAssetUrl(row.importUrl)}
-            className="h-full w-full object-cover"
-            muted
-            playsInline
-            preload="metadata"
-          />
+          <CommunityFxThumb row={{ ...row, thumbUrl: row.importUrl, communityKind: "videos" }} className="h-full w-full" />
         ) : (
-          <MediaAssetThumb asset={thumbAsset} className="h-10 w-10" />
+          <MediaAssetThumb
+            asset={{
+              id: row.id,
+              ownerId: "",
+              mediaType: row.mediaType,
+              url: row.importUrl ?? "",
+              thumbnailUrl: row.thumbUrl,
+              originalName: row.label,
+              mimeType: row.mediaType === "video" ? "video/mp4" : "image/jpeg",
+              sizeBytes: 0,
+              durationMs: null,
+              width: null,
+              height: null,
+              createdAt: "",
+            }}
+            className="h-full w-full"
+          />
         )}
       </div>
       <div className="min-w-0 flex-1">
