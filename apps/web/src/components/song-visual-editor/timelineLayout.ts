@@ -48,8 +48,24 @@ export function defaultClipDurationSec(
   const remaining = Math.max(0, songDurationSec - startSec);
   if (remaining <= 0) return 0;
   const natural = getNaturalDurationSec(attachment);
+  // Loop on: fill available timeline from this clip's start (first clip = whole song).
+  // Loop off: never stretch beyond natural media duration.
   if (loop) return remaining;
   return Math.min(natural, remaining);
+}
+
+export function clipDurationAfterLoopChange(
+  attachment: SongVisualAttachmentRecord,
+  startSec: number,
+  songDurationSec: number,
+  loop: boolean,
+  currentDurationSec?: number,
+): number {
+  const maxDuration = maxClipDurationSec(attachment, startSec, songDurationSec, loop);
+  if (loop) return maxDuration;
+  const naturalCap = Math.min(getNaturalDurationSec(attachment), maxDuration);
+  if (currentDurationSec == null) return naturalCap;
+  return Math.min(currentDurationSec, naturalCap);
 }
 
 export function layoutTimelineClips(

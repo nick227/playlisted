@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  clipDurationAfterLoopChange,
   defaultClipDurationSec,
   getRemainingTimelineSec,
 } from './timelineLayout'
@@ -48,7 +49,20 @@ function attachment(
 }
 
 describe('timelineLayout', () => {
-  it('uses natural duration for non-loop video and leaves remaining space', () => {
+  it('first loop-on clip fills the whole song by default', () => {
+    const first = attachment('clip-a', 0, 'video', { loop: true }, 60_000)
+    expect(defaultClipDurationSec(first, 0, 120)).toBe(120)
+
+    const duration = defaultClipDurationSec(first, 0, 120)
+    const clips = layoutTimelineClips([
+      { ...first, playback: { loop: true, timelineDurationSec: duration } },
+    ], 120)
+
+    expect(clips[0]?.durationSec).toBe(120)
+    expect(getRemainingTimelineSec(clips, 120)).toBe(0)
+  })
+
+  it('loop-off clips use natural duration and never auto-fill beyond it', () => {
     const clips = layoutTimelineClips([
       attachment('clip-a', 0, 'video', { loop: false }, 60_000),
     ], 120)
@@ -58,15 +72,18 @@ describe('timelineLayout', () => {
     expect(getRemainingTimelineSec(clips, 120)).toBe(60)
   })
 
-  it('fills remaining timeline when loop is enabled', () => {
-    const first = attachment('clip-a', 0, 'video', { loop: true }, 60_000)
-    const duration = defaultClipDurationSec(first, 0, 120)
-    const clips = layoutTimelineClips([
-      { ...first, playback: { loop: true, timelineDurationSec: duration } },
-    ], 120)
+  it('turning loop off clamps an stretched clip back to natural duration', () => {
+    const stretched = attachment('clip-a', 0, 'video', { loop: true, timelineDurationSec: 120 }, 60_000)
+    expect(
+      clipDurationAfterLoopChange(stretched, 0, 120, false, 120),
+    ).toBe(60)
+  })
 
-    expect(clips[0]?.durationSec).toBe(120)
-    expect(getRemainingTimelineSec(clips, 120)).toBe(0)
+  it('turning loop on expands clip to fill remaining timeline', () => {
+    const natural = attachment('clip-a', 60, 'video', { loop: false, timelineDurationSec: 60 }, 60_000)
+    expect(
+      clipDurationAfterLoopChange(natural, 60, 120, true, 60),
+    ).toBe(60)
   })
 
   it('blocks additional clips once timeline is full', () => {

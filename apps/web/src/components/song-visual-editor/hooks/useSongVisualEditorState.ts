@@ -17,6 +17,7 @@ import { clearRemoteTrackVisualMedia } from "@/theatre/media/resolveTrackVisualM
 
 import {
   buildPlaybackPatch,
+  clipDurationAfterLoopChange,
   defaultClipDurationSec,
   getClipLoop,
   getRemainingTimelineSec,
@@ -182,10 +183,17 @@ export function useSongVisualEditorState({
     const clip = timelineClips.find((item) => item.attachment.id === attachmentId);
     if (!clip) return;
 
-    const playback = buildPlaybackPatch(attachment, { loop });
+    const nextDurationSec = clipDurationAfterLoopChange(
+      attachment,
+      clip.startSec,
+      timelineDurationSec,
+      loop,
+      clip.durationSec,
+    );
+
     await updateMutation.mutateAsync({
       attachmentId,
-      body: { playback },
+      body: { playback: buildPlaybackPatch(attachment, { loop, timelineDurationSec: nextDurationSec }) },
     });
   }
 
