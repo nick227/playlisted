@@ -1,4 +1,4 @@
-import { Loader2, RadioIcon, X } from "lucide-react";
+import { Loader2, RadioIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
@@ -102,32 +102,31 @@ function SongVisualEditorModalInner({
   return createPortal(
     <>
       <div className="fixed inset-0 z-[10000] flex flex-col bg-[var(--color-canvas)]">
-        <header className="relative flex shrink-0 items-center border-b border-white/10 px-4 py-3 md:px-6">
-          <h2 className="pointer-events-none absolute inset-x-0 truncate px-28 text-center text-base font-semibold text-white md:text-lg">
+        <header className="relative flex shrink-0 items-center border-b border-white/10 bg-black/20 px-4 py-3 md:px-6">
+          <h2 className="pointer-events-none absolute inset-x-0 truncate px-40 text-center text-base font-semibold text-white md:px-48 md:text-lg">
             {recording.title}
           </h2>
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex items-center gap-2.5">
+            <button
+              type="button"
+              onClick={handleClose}
+              className="rounded-lg border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white/80 transition hover:border-white/25 hover:bg-white/10 hover:text-white"
+            >
+              Cancel
+            </button>
             <button
               type="button"
               onClick={() => editor.saveChanges()}
               disabled={!editor.isDirty || editor.isSaving}
-              className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-1 text-sm font-semibold text-emerald-100 hover:bg-emerald-500/20 disabled:opacity-40"
+              className="inline-flex min-w-[5.5rem] items-center justify-center gap-1.5 rounded-lg bg-emerald-500 px-5 py-2 text-sm font-bold text-black transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-45"
             >
               {editor.isSaving ? <Loader2 size={14} className="animate-spin" /> : null}
-              Save
-            </button>
-            <button
-              type="button"
-              onClick={handleClose}
-              className="rounded-full p-2 text-white/50 hover:bg-white/10 hover:text-white"
-              aria-label="Close visual editor"
-            >
-              <X size={20} />
+              {editor.isSaving ? "Saving…" : "Save"}
             </button>
           </div>
         </header>
 
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 py-3 md:px-6 md:py-4">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 py-3 md:px-6 md:py-4 max-w-5xl mx-auto">
           <div className="shrink-0 space-y-2.5 md:space-y-3">
             <SongVisualEditorPreview
               clip={activeClip}
