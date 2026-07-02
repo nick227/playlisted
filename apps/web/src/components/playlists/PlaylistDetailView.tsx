@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import type { PlaylistDetail } from "@playlisted/client-sdk";
 
 import { SmartPlaylistCard } from "@/components/cards/SmartPlaylistCard";
@@ -12,6 +12,7 @@ import { useIsMdUp } from "@/hooks/useIsMdUp";
 import { usePlaylistHashTrack } from "@/hooks/usePlaylistHashTrack";
 import { usePlaylists } from "@/hooks/usePlaylists";
 import { BROWSE_LAYOUT_CLASS, playlistBrowseCrumbs } from "@/lib/browsePaths";
+import { recordingHash } from "@/lib/routes";
 import { useAudioPlayer, type QueueTrack } from "@/providers/AudioPlayerProvider";
 import { useAuth } from "@/providers/AuthProvider";
 
@@ -82,9 +83,6 @@ export function PlaylistDetailView({ playlist }: PlaylistDetailViewProps) {
 
   const playRecording = useCallback((recording: CollectionRecording, index: number) => {
     if (currentTrack?.id === recording.id) {
-      if (state === "playing") {
-        return;
-      }
       if (playbackContext.playlistId === playlist.id) {
         togglePlay();
         return;
@@ -124,9 +122,17 @@ export function PlaylistDetailView({ playlist }: PlaylistDetailViewProps) {
     playlist.title,
     queueTracks,
     setQueue,
-    state,
     togglePlay,
   ]);
+
+  useEffect(() => {
+    if (playbackContext.playlistId !== playlist.id || !currentTrack) return;
+    if (!recordings.some((recording) => recording.id === currentTrack.id)) return;
+
+    const nextHash = recordingHash(currentTrack.title);
+    if (window.location.hash === nextHash) return;
+    window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}${nextHash}`);
+  }, [currentTrack, playbackContext.playlistId, playlist.id, recordings]);
 
   const browseCrumbs = playlistBrowseCrumbs(
     { displayName: playlist.owner.displayName, username: playlist.owner.username },

@@ -63,6 +63,11 @@ const ownedRecording = {
   status: "PUBLISHED" as const,
 };
 
+const privateOwnedRecording = {
+  ...ownedRecording,
+  visibility: "PRIVATE" as const,
+};
+
 const mockMediaAsset = {
   id: "asset-1",
   ownerId: "user-1",
@@ -110,6 +115,59 @@ beforeEach(() => {
 });
 
 describe("song visual media routes", () => {
+  it("GET returns public recording attachments without auth", async () => {
+    vi.mocked(prisma.recording.findUnique).mockResolvedValue(ownedRecording as never);
+    vi.mocked(prisma.songVisualAttachment.findMany).mockResolvedValue([
+      { ...mockAttachment, policy: "ATTACHED_ONLY" },
+    ] as never);
+
+    const res = await request(app)
+      .get("/api/v1/songs/rec-1/visual-media");
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({
+      songId: "rec-1",
+      recordingId: "rec-1",
+      policy: "attachedOnly",
+      attachments: [
+        expect.objectContaining({
+          id: "att-1",
+          recordingId: "rec-1",
+          policy: "attachedOnly",
+        }),
+      ],
+    });
+  });
+
+  it("GET returns private owner attachments when bearer auth is present", async () => {
+    vi.mocked(prisma.session.findFirst).mockResolvedValue(mockSession as never);
+    vi.mocked(prisma.session.update).mockResolvedValue({} as never);
+    vi.mocked(prisma.recording.findUnique).mockResolvedValue(privateOwnedRecording as never);
+    vi.mocked(prisma.songVisualAttachment.findMany).mockResolvedValue([
+      { ...mockAttachment, policy: "ATTACHED_ONLY" },
+    ] as never);
+
+    const res = await request(app)
+      .get("/api/v1/songs/rec-1/visual-media")
+      .set("Authorization", "Bearer session-token");
+
+    expect(res.status).toBe(200);
+    expect(res.body.policy).toBe("attachedOnly");
+    expect(prisma.songVisualAttachment.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: { recordingId: "rec-1" },
+    }));
+  });
+
+  it("GET rejects private attachments without auth", async () => {
+    vi.mocked(prisma.recording.findUnique).mockResolvedValue(privateOwnedRecording as never);
+
+    const res = await request(app)
+      .get("/api/v1/songs/rec-1/visual-media");
+
+    expect(res.status).toBe(403);
+    expect(prisma.songVisualAttachment.findMany).not.toHaveBeenCalled();
+  });
+
   it("POST rejects malformed playbackJson with invalid_attachment before create", async () => {
     mockAuthenticatedOwner();
 

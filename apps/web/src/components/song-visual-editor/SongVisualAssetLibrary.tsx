@@ -59,7 +59,7 @@ export function SongVisualAssetLibrary({
   return (
     <div className="space-y-4">
       <section className="space-y-2">
-        <h3 className="text-xs uppercase tracking-wide text-white/40">On timeline</h3>
+        <h3 className="text-xs uppercase tracking-wide text-white/40">Active</h3>
         {timelineClips.length === 0 ? (
           <p className="rounded-lg border border-dashed border-white/10 bg-black/20 px-3 py-4 text-center text-xs text-white/35">
             Add clips from the library below or upload new media.

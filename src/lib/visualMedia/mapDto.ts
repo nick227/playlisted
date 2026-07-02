@@ -14,6 +14,7 @@ import {
 import {
   prismaMediaTypeToDto,
   prismaPolicyToTheatre,
+  type TheatreSongVisualPolicy,
   type SongVisualAttachmentDto,
   type SongVisualMediaResponse,
   type VisualMediaAssetDto,
@@ -62,19 +63,24 @@ export function mapSongVisualAttachment(
   };
 }
 
+function resolveEnabledVisualPolicy(attachments: AttachmentWithAsset[]): TheatreSongVisualPolicy {
+  const enabled = attachments.filter((attachment) => attachment.enabled);
+  if (enabled.length === 0) return "defaultOnly";
+
+  const policies = enabled.map((attachment) => prismaPolicyToTheatre(attachment.policy));
+  if (policies.includes("attachedOnly")) return "attachedOnly";
+  if (policies.includes("mixAttachedAndDefault")) return "mixAttachedAndDefault";
+  return "preferAttached";
+}
+
 export function buildSongVisualMediaResponse(
   recordingId: string,
   attachments: AttachmentWithAsset[],
 ): SongVisualMediaResponse {
-  const enabled = attachments.filter((attachment) => attachment.enabled);
-  const policy = enabled[0]
-    ? prismaPolicyToTheatre(enabled[0].policy)
-    : "defaultOnly";
-
   return {
     songId: recordingId,
     recordingId,
-    policy,
+    policy: resolveEnabledVisualPolicy(attachments),
     attachments: attachments.map((attachment) => mapSongVisualAttachment(attachment, recordingId)),
   };
 }

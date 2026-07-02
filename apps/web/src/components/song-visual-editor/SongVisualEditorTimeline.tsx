@@ -82,7 +82,6 @@ export function SongVisualEditorTimeline({
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <span className="text-xs uppercase tracking-wide text-white/40">Timeline</span>
           <div className="inline-flex rounded-full border border-white/10 p-0.5">
             <ModeButton
               active={editMode === "select"}
@@ -102,12 +101,6 @@ export function SongVisualEditorTimeline({
             </ModeButton>
           </div>
         </div>
-        <span className="text-xs text-white/40">
-          {editMode === "cut"
-            ? "Click a clip or empty lane — shorter side is removed"
-            : "Drag grip to move · left edge trims cut-in · snaps to clips & playhead · Ctrl+C/V · Del to remove"}
-          {hasClipboard ? " · clipboard ready" : ""}
-        </span>
       </div>
 
       <div

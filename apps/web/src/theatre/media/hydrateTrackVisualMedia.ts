@@ -23,9 +23,13 @@ function visualMediaAuthHeaders(): HeadersInit | undefined {
 }
 
 export async function fetchSongVisualMedia(recordingId: string): Promise<TrackVisualMediaResolution> {
-  const response = await fetch(`${apiBase()}/api/v1/songs/${encodeURIComponent(recordingId)}/visual-media`, {
-    headers: visualMediaAuthHeaders(),
+  const url = `${apiBase()}/api/v1/songs/${encodeURIComponent(recordingId)}/visual-media`
+  const headers = visualMediaAuthHeaders()
+
+  const response = await fetch(url, {
+    headers,
     credentials: 'include',
+    cache: 'no-store',
   })
 
   if (response.status === 404) {

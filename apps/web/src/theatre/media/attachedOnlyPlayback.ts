@@ -1,6 +1,6 @@
 import type { PickContext } from '../selection/types'
 
-import { ATTACHED_ONLY_BLANK_PRESET_ID, ensureAttachedOnlyBlankPreset } from './attachedOnlyBlankPreset'
+import { ATTACHED_ONLY_BLANK_PRESET_ID } from './attachedOnlyBlankPreset'
 import { isTimelinePlaybackActive, resolveTimelinePresetId } from './timelineClipPick'
 import type { SongVisualPolicy } from './types'
 
@@ -10,7 +10,7 @@ export function hasAttachedOnlyTimeline(ctx: PickContext): boolean {
 
 export function blocksBuiltinSitePresets(ctx: PickContext): boolean {
   if (ctx.songVisualHydrationPending) return true
-  return hasAttachedOnlyTimeline(ctx)
+  return ctx.songVisualPolicy === 'attachedOnly'
 }
 
 export function resolveAttachedOnlyTimelinePresetId(ctx: PickContext): string | null {
@@ -19,7 +19,6 @@ export function resolveAttachedOnlyTimelinePresetId(ctx: PickContext): string | 
   const activeClipPresetId = resolveTimelinePresetId(ctx)
   if (activeClipPresetId) return activeClipPresetId
 
-  ensureAttachedOnlyBlankPreset()
   return ATTACHED_ONLY_BLANK_PRESET_ID
 }
 
@@ -34,7 +33,7 @@ export function resolveTimelineAwarePresetId(ctx: PickContext): string | null {
 }
 
 export function shouldSuppressSiteRotationInGap(ctx: PickContext): boolean {
-  return hasAttachedOnlyTimeline(ctx)
+  return ctx.songVisualPolicy === 'attachedOnly'
 }
 
 export function isAttachedOnlyPolicy(policy: SongVisualPolicy | undefined): boolean {

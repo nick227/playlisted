@@ -2,17 +2,19 @@ import type { ScenePresetDef } from '../registry/scenePresets'
 import registry from '../registry'
 
 import { BlankTheatreAnimation } from './BlankTheatreAnimation'
-import { registerDynamicPreset } from './dynamicPresetStore'
 
 export const ATTACHED_ONLY_BLANK_PRESET_ID = 'attachedOnlyBlank'
 export const ATTACHED_ONLY_BLANK_ANIMATION_ID = 'attachedOnlyBlankTheatre'
 
-const ATTACHED_ONLY_BLANK_PRESET: ScenePresetDef = {
+// Registered in the static preset registry by seed.ts — never in the dynamic store,
+// so syncDynamicPresets cannot clear it.
+export const ATTACHED_ONLY_BLANK_PRESET: ScenePresetDef = {
   id: ATTACHED_ONLY_BLANK_PRESET_ID,
   label: 'Attached Only Blank',
   category: 'production',
   weight: 1,
-  tags: ['user-media', 'attached-only-blank'],
+  audioSensitivity: 'tame',
+  tags: ['user-media', 'attached-only-blank', 'internal'],
   layers: [{
     animationId: ATTACHED_ONLY_BLANK_ANIMATION_ID,
     role: 'background',
@@ -39,9 +41,10 @@ export function registerAttachedOnlyBlankEngine(): void {
   }
 }
 
+// Kept for call sites that ensure the animation engine is ready before use.
+// Preset registration is now handled once by seed.ts via registerPreset.
 export function ensureAttachedOnlyBlankPreset(): ScenePresetDef {
   registerAttachedOnlyBlankEngine()
-  registerDynamicPreset(ATTACHED_ONLY_BLANK_PRESET)
   return ATTACHED_ONLY_BLANK_PRESET
 }
 

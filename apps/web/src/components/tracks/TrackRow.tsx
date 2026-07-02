@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Captions, ChevronDown, ChevronUp, CircleSlash, ImagePlus, Loader2, Pause, Play, TriangleAlert, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type MouseEvent } from "react";
 
 import { RecordingActionMenu } from "@/components/media/RecordingActionMenu";
 import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
@@ -11,7 +11,7 @@ import { SubtitleEditorModal } from "./SubtitleEditorModal";
 import { useTrackPlayback } from "@/hooks/useTrackPlayback";
 import { formatDuration, formatPlayCount } from "@/lib/format";
 import { MediaCover } from "@/components/cards/MediaCover";
-import type { QueueTrack } from "@/providers/AudioPlayerProvider";
+import { useAudioPlayer, type QueueTrack } from "@/providers/AudioPlayerProvider";
 import { useAuth } from "@/providers/AuthProvider";
 import { Link } from "react-router-dom";
 
@@ -130,7 +130,10 @@ export function TrackRow({
   shareUrl,
 }: TrackRowProps) {
   const { accessToken } = useAuth();
+  const { currentTrack, isPlaying: playerIsPlaying, togglePlay } = useAudioPlayer();
   const { isActive, isPlaying } = useTrackPlayback(recordingId, playbackOrigin);
+  const isCurrentTrack = currentTrack?.id === recordingId;
+  const trackIsPlaying = isPlaying || (isCurrentTrack && playerIsPlaying);
   const showActions = !editMode && queueTrack && shareUrl;
   const [isSubtitleModalOpen, setSubtitleModalOpen] = useState(false);
   const [isVisualEditorOpen, setVisualEditorOpen] = useState(false);
@@ -159,6 +162,32 @@ export function TrackRow({
     onUpdateTags(nextSlug ? [nextSlug] : []);
   }
 
+  function isProtectedClickTarget(target: EventTarget | null) {
+    return target instanceof HTMLElement && Boolean(target.closest("button, input, select, textarea"));
+  }
+
+  function isPlainLeftClick(event: MouseEvent<HTMLElement>) {
+    return !event.defaultPrevented && event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey;
+  }
+
+  function handlePlaybackIntent() {
+    if (!onPlay) return;
+    if (isCurrentTrack) {
+      togglePlay();
+      return;
+    }
+    onPlay();
+  }
+
+  function handleRecordingLinkClick(event: MouseEvent<HTMLAnchorElement>) {
+    if (!onPlay || editMode) return;
+    if (!isPlainLeftClick(event)) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    handlePlaybackIntent();
+  }
+
   function saveTitleDraft() {
     if (!onUpdateTitle) return;
 
@@ -183,26 +212,43 @@ export function TrackRow({
       } items-center gap-2 rounded-lg px-2 py-1.5 transition ${
         isActive ? "bg-[var(--color-surface)]/80" : "hover:bg-[var(--color-surface-hover)]"
       }${onPlay && !editMode ? " cursor-pointer" : ""}`}
+      role={onPlay && !editMode ? "button" : undefined}
+      tabIndex={onPlay && !editMode ? 0 : undefined}
+      aria-label={onPlay && !editMode ? `${trackIsPlaying ? "Pause" : "Play"} ${title}` : undefined}
+      onClickCapture={(e) => {
+        if (!onPlay || editMode || !isPlainLeftClick(e)) return;
+        if (isProtectedClickTarget(e.target)) return;
+        if (!(e.target instanceof HTMLElement) || !e.target.closest("a")) return;
+        e.preventDefault();
+        e.stopPropagation();
+        handlePlaybackIntent();
+      }}
       onClick={(e) => {
         if (!onPlay || editMode) return;
-        if ((e.target as HTMLElement).closest("button, a, input, select")) return;
-        onPlay();
+        if (isProtectedClickTarget(e.target)) return;
+        handlePlaybackIntent();
+      }}
+      onKeyDown={(e) => {
+        if (!onPlay || editMode || e.key !== " ") return;
+        if (isProtectedClickTarget(e.target)) return;
+        e.preventDefault();
+        handlePlaybackIntent();
       }}
     >
       <PlaybackBars active={isActive} playing={isPlaying} />
       {editMode && onPlay ? (
         <button
           type="button"
-          onClick={onPlay}
+          onClick={handlePlaybackIntent}
           className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md transition ${
             isActive
               ? "bg-transparent text-white"
               : "text-[var(--color-text-muted)] hover:bg-white/10 hover:text-white"
           }`}
-          aria-label={isPlaying ? "Pause track" : "Play track"}
-          title={isPlaying ? "Pause" : "Play"}
+          aria-label={trackIsPlaying ? "Pause track" : "Play track"}
+          title={trackIsPlaying ? "Pause" : "Play"}
         >
-          {isPlaying ? (
+          {trackIsPlaying ? (
             <Pause size={15} fill="currentColor" />
           ) : (
             <Play size={15} className="ml-px" fill="currentColor" />
@@ -242,20 +288,18 @@ export function TrackRow({
             <>
               <MediaCover title={title} imageUrl={artworkUrl} />
               {onPlay && (
-                <button
-                  type="button"
-                  onClick={onPlay}
+                <span
+                  aria-hidden="true"
                   className={`absolute inset-0 flex items-center justify-center bg-black/50 transition-opacity ${
-                    isActive ? "opacity-100" : "opacity-0 group-hover/card:opacity-100"
+                    isActive || isCurrentTrack ? "opacity-100" : "opacity-0 group-hover/card:opacity-100"
                   }`}
-                  aria-label={isPlaying ? "Pause" : "Play"}
                 >
-                  {isPlaying ? (
+                  {trackIsPlaying ? (
                     <Pause size={14} className="text-white" fill="currentColor" />
                   ) : (
                     <Play size={14} className="ml-px text-white" fill="currentColor" />
                   )}
-                </button>
+                </span>
               )}
             </>
           )}
@@ -286,6 +330,7 @@ export function TrackRow({
             recordingHref ? (
               <Link
                 to={recordingHref}
+                onClick={handleRecordingLinkClick}
                 className={`block truncate text-sm font-medium hover:underline ${
                   isActive ? "text-[var(--color-brand)]" : "text-white"
                 }`}
@@ -293,7 +338,7 @@ export function TrackRow({
                 {title}
               </Link>
             ) : (
-              <button type="button" onClick={onPlay} className="block min-w-0 text-left">
+              <button type="button" onClick={handlePlaybackIntent} className="block min-w-0 text-left">
                 <p className={`truncate text-sm font-medium ${isActive ? "text-[var(--color-brand)]" : "text-white"}`}>
                   {title}
                 </p>
@@ -432,6 +477,13 @@ export function TrackRow({
             title,
             audioUrl,
             durationSeconds,
+            ownerName: queueTrack?.ownerName ?? creator,
+            ownerUsername: queueTrack?.ownerUsername,
+            artworkUrl,
+            description: queueTrack?.description,
+            playlistTitle: queueTrack?.playlistTitle ?? playlistTitle,
+            recordingType: queueTrack?.recordingType,
+            hasSubtitleTrack: subtitle != null,
           }}
           onClose={() => setVisualEditorOpen(false)}
         />

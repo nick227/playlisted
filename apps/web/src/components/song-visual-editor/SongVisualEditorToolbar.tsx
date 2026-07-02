@@ -43,16 +43,6 @@ export function SongVisualEditorToolbar({
         {formatTime(currentTimeSec)} / {formatTime(durationSec)}
       </span>
 
-      <button
-        type="button"
-        onClick={onUpload}
-        disabled={isBusy}
-        className="inline-flex items-center gap-1 rounded-full border border-white/15 px-3 py-1.5 text-xs font-semibold text-white hover:bg-white/10 disabled:opacity-40"
-      >
-        <Upload size={14} />
-        Upload
-      </button>
-
       <label
         className={[
           "inline-flex items-center gap-2 rounded-lg border border-white/10 px-2 py-1.5 text-xs text-white",

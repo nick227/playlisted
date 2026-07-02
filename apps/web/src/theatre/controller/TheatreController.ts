@@ -13,7 +13,7 @@ import { resolveRotationPolicy } from '../rotation/rotationOverrides'
 import type { ResolvedRotationPolicy, RotationPolicyState, TheatreTrackContext } from '../rotation/types'
 import { FxSelector } from '../selection/FxSelector'
 import type { PickContext } from '../selection/types'
-import { getOrCreateAudioAnalyserConnection, type AudioAnalyserConnection } from '@/features/playback-indicators/audioAnalyser'
+import { getAudioAnalyserConnection, type AudioAnalyserConnection } from '@/features/playback-indicators/audioAnalyser'
 import { listPresets, type ScenePresetDef, type TheatreTransitionKind } from '../registry/scenePresets'
 import { buildSongVisualPickExtras } from '../media/buildSongVisualPool'
 import { ATTACHED_ONLY_BLANK_PRESET_ID } from '../media/attachedOnlyBlankPreset'
@@ -24,7 +24,6 @@ import { resolveTimelinePlaybackDecision } from '../media/TimelinePlaybackDirect
 import { resolveTimelinePresetId } from '../media/timelineClipPick'
 import { hydrateTrackVisualMedia } from '../media/hydrateTrackVisualMedia'
 import { lookupTrackVisualMediaKey } from '../media/resolveTrackVisualMedia'
-import { songVisualDebug } from '../media/songVisualDebug'
 import { getPackageIdForPreset } from '../registry/packageRotation'
 import { buildAnimationFrameContext, mergePresetLayerOptions, withTheatreInitContext } from './theatreFrameContext'
 import { detectPolicy } from '../runtime/PerformancePolicy'
@@ -159,7 +158,6 @@ class TheatreController extends EventTarget {
 
   public setArtwork(artworkUrl: string | null) {
     this.state.artworkUrl = artworkUrl
-    songVisualDebug('setArtwork', { artworkUrl })
     this.dispatchEvent(new Event('change'))
   }
 
@@ -200,7 +198,6 @@ class TheatreController extends EventTarget {
   }
 
   public setAutoRotation(enabled: boolean) {
-    if (import.meta.env.DEV) console.log('[TheatreController] setAutoRotation:', enabled)
     this.autoRotateEnabled = enabled
   }
 
@@ -211,15 +208,6 @@ class TheatreController extends EventTarget {
   public setTrackContext(track: TheatreTrackContext | null) {
     const nextKey = lookupTrackVisualMediaKey(track)
     const prevKey = lookupTrackVisualMediaKey(this.trackContext)
-
-    songVisualDebug('setTrackContext', {
-      track,
-      nextKey,
-      prevKey,
-      activePresetId: this.state.presetId,
-      active: this.state.active,
-      canEnter: this.state.canEnter,
-    })
 
     if (!track) {
       this.trackContext = null
@@ -244,11 +232,6 @@ class TheatreController extends EventTarget {
     this.songVisualHydrationPending = true
     this.visualMediaHydration = hydrateTrackVisualMedia(track, { forceNetwork: true })
       .then(() => {
-        songVisualDebug('hydration:complete', {
-          track,
-          active: this.state.active,
-          presetId: this.state.presetId,
-        })
         this.fxSelector.clearCandidate()
         void this.reconcileVisualMediaAfterHydrate()
       })
@@ -283,6 +266,9 @@ class TheatreController extends EventTarget {
 
     const pickCtx = this.buildFxPickContext()
     if (pickCtx.songVisualPolicy !== 'attachedOnly') return
+
+    // playhead undefined means audio position isn't known yet — not a gap
+    if (pickCtx.songPlayheadSec == null) return
 
     const timelinePresetId = resolveTimelinePresetId(pickCtx)
     if (timelinePresetId) {
@@ -348,13 +334,6 @@ class TheatreController extends EventTarget {
     }
 
     if (decision.action !== 'rotate' || !this.canRotateNow(nowMs, resolved.minHoldMs)) return
-
-    if (import.meta.env.DEV) {
-      const elapsed = nowMs - this.rotationState.presetStartedAtMs
-      console.log(
-        `[TheatreController] autoRotate triggered: reason=${decision.reason}, elapsedMs=${elapsed.toFixed(0)}`,
-      )
-    }
 
     void this.rotateRandomPreset()
   }
@@ -575,16 +554,11 @@ class TheatreController extends EventTarget {
 
     if (!this.audioEl) return null
 
-    try {
-      const connection = getOrCreateAudioAnalyserConnection(this.audioEl)
-      this.analyserConnection = connection
-      if (connection.context.state === 'suspended') {
-        void connection.context.resume().catch(() => {})
-      }
-      return connection.analyser
-    } catch {
-      return null
-    }
+    const connection = getAudioAnalyserConnection(this.audioEl)
+    if (!connection) return null
+
+    this.analyserConnection = connection
+    return connection.analyser
   }
 
   private getSongPlayheadSec(): number | undefined {
@@ -618,14 +592,6 @@ class TheatreController extends EventTarget {
       timelineClips: pickCtx.timelineClips,
       songPlayheadSec: playheadSec,
       resolvePreset,
-    })
-    songVisualDebug('timelineDirector:decision', {
-      playheadSec,
-      policy: pickCtx.songVisualPolicy,
-      kind: decision.kind,
-      activeAttachmentId: decision.activeClip?.attachment.id ?? null,
-      presetId: decision.presetId,
-      suppressTimedRotation: decision.suppressTimedRotation,
     })
 
     if (decision.kind === 'activeClip' && decision.presetId) {
@@ -666,11 +632,6 @@ class TheatreController extends EventTarget {
     if (!this.state.active || this.transitioning) return
     const pickCtx = this.buildFxPickContext()
     if (pickCtx.songVisualPolicy === 'attachedOnly') {
-      songVisualDebug('builtinPreset:blocked', {
-        reason: 'attachedOnlyTimelineFallback',
-        timelineClipCount: pickCtx.timelineClips?.length ?? 0,
-        activePresetId: this.state.presetId,
-      })
       if ((pickCtx.timelineClips?.length ?? 0) > 0) {
         await this.changePresetAuto(ATTACHED_ONLY_BLANK_PRESET_ID)
       }
@@ -707,10 +668,6 @@ class TheatreController extends EventTarget {
 
     const pickCtx = this.buildFxPickContext()
     if (pickCtx.songVisualPolicy === 'attachedOnly') {
-      songVisualDebug('builtinPreset:blocked', {
-        reason: 'rotateRandomPreset',
-        activePresetId: this.state.presetId,
-      })
       await this.syncAttachedOnlyPlaybackAfterHydrate()
       return
     }
@@ -1119,7 +1076,9 @@ class TheatreController extends EventTarget {
         .forEach(appendPresetOption)
     }
 
-    const available = listPresets().filter(preset => !isPresetQuarantined(preset.id))
+    const available = listPresets().filter(
+      preset => !isPresetQuarantined(preset.id) && !preset.tags?.includes('internal'),
+    )
     appendSection('Sticker FX', available.filter(isObjectTheatrePreset))
     appendSection('Other visualizations', available.filter(preset => !isObjectTheatrePreset(preset)))
 
@@ -1194,16 +1153,6 @@ class TheatreController extends EventTarget {
       selectedPreset = resolvePreset(attachedOnlyPresetId)
     }
     const initialPresetId = selectedPreset?.id ?? null
-    songVisualDebug('initialPreset:choice', {
-      mode,
-      initialPresetId,
-      policy: pickCtx.songVisualPolicy,
-      hydrationPending: pickCtx.songVisualHydrationPending,
-      dynamicPresetCount: pickCtx.dynamicPresets?.length ?? 0,
-      timelineClipCount: pickCtx.timelineClips?.length ?? 0,
-      playheadSec: pickCtx.songPlayheadSec,
-      attachedOnlyPresetId,
-    })
 
     const { ctx, policy } = this.buildFrameContextWithAudio(0)
 

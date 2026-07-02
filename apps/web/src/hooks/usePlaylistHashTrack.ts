@@ -20,7 +20,7 @@ function setTrackHighlight(element: HTMLElement, on: boolean) {
 
 function decodeHashSlug(hash: string): string | null {
   if (!hash.startsWith("#")) return null;
-  const value = hash.slice(1).trim();
+  const value = hash.slice(1).split("?")[0]?.trim() ?? "";
   if (!value) return null;
 
   try {

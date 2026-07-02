@@ -56,7 +56,6 @@ export function SongVisualEditorPreview({
       >
         {!media ? (
           <div className="flex h-full w-full items-center justify-center px-6 text-center">
-            <p className="text-sm text-white/35">Scrub the timeline or add a clip from your library</p>
           </div>
         ) : (
           <div ref={containerRef} className="absolute inset-0" />

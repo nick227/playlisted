@@ -97,6 +97,19 @@ function mapPlayback(value: VisualMediaPlayback | null | undefined): VisualMedia
   return Object.keys(next).length > 0 ? next : undefined
 }
 
+function resolveAttachmentPolicy(
+  attachments: SongVisualMediaApiResponse['attachments'],
+  fallback: SongVisualPolicy | null | undefined,
+): SongVisualPolicy {
+  const enabled = attachments.filter(item => item.enabled)
+  if (enabled.length === 0) return 'defaultOnly'
+
+  const policies = enabled.map(item => item.policy)
+  if (policies.includes('attachedOnly')) return 'attachedOnly'
+  if (policies.includes('mixAttachedAndDefault')) return 'mixAttachedAndDefault'
+  return fallback ?? 'preferAttached'
+}
+
 export function mapSongVisualMediaApiResponse(
   response: SongVisualMediaApiResponse,
 ): TrackVisualMediaResolution {
@@ -123,6 +136,6 @@ export function mapSongVisualMediaApiResponse(
 
   return {
     attachments,
-    policy: attachments.length > 0 ? (response.policy ?? 'preferAttached') : 'defaultOnly',
+    policy: resolveAttachmentPolicy(response.attachments, response.policy),
   }
 }

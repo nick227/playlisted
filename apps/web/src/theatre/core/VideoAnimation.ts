@@ -154,11 +154,6 @@ export class VideoAnimation implements IAnimation {
       this.video.removeEventListener?.('waiting', this.handleVideoWaiting)
       this.video.removeEventListener?.('stalled', this.handleVideoWaiting)
       this.video.removeEventListener?.('error', this.handleVideoError)
-      console.info('[Theatre] video destroyed', {
-        presetId: this.context?.options?.preset ?? 'unknown',
-        currentSrc: this.video.currentSrc,
-        readyState: this.video.readyState,
-      })
       this.video.pause()
       this.video.src = ''
       this.video.removeAttribute('src')
@@ -303,9 +298,8 @@ export class VideoAnimation implements IAnimation {
     this.playPromisePending = true
     try {
       await this.video.play()
-    } catch (e) {
+    } catch {
       this.lastPlayFailureAtMs = performance.now()
-      console.warn('[VideoAnimation] Play failed:', e)
     } finally {
       this.playPromisePending = false
     }

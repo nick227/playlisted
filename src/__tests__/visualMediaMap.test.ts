@@ -51,6 +51,83 @@ describe("visual media dto mapping", () => {
     expect(response.attachments[0]?.playback?.loop).toBe(true);
   });
 
+  it("resolves attachedOnly as the aggregate policy when any enabled row blocks site media", () => {
+    const base = {
+      recordingId: "rec-1",
+      mediaAssetId: "asset-1",
+      weight: 1,
+      sortOrder: 0,
+      label: null,
+      playbackJson: null,
+      rotationJson: null,
+      beatFxJson: null,
+      tagsJson: null,
+      enabled: true,
+      createdAt: new Date("2026-01-01T00:00:00.000Z"),
+      updatedAt: new Date("2026-01-01T00:00:00.000Z"),
+      mediaAsset: {
+        id: "asset-1",
+        ownerId: "user-1",
+        mediaType: "VIDEO" as const,
+        storageKey: "videos/demo.mp4",
+        url: "/uploads/videos/demo.mp4",
+        thumbnailUrl: null,
+        originalName: "demo.mp4",
+        mimeType: "video/mp4",
+        sizeBytes: 1024,
+        durationMs: null,
+        width: null,
+        height: null,
+        createdAt: new Date("2026-01-01T00:00:00.000Z"),
+      },
+    };
+
+    const response = buildSongVisualMediaResponse("rec-1", [
+      { ...base, id: "att-1", policy: "PREFER_ATTACHED" as const },
+      { ...base, id: "att-2", policy: "ATTACHED_ONLY" as const },
+    ]);
+
+    expect(response.policy).toBe("attachedOnly");
+  });
+
+  it("ignores disabled rows when resolving aggregate policy", () => {
+    const base = {
+      recordingId: "rec-1",
+      mediaAssetId: "asset-1",
+      weight: 1,
+      sortOrder: 0,
+      label: null,
+      playbackJson: null,
+      rotationJson: null,
+      beatFxJson: null,
+      tagsJson: null,
+      createdAt: new Date("2026-01-01T00:00:00.000Z"),
+      updatedAt: new Date("2026-01-01T00:00:00.000Z"),
+      mediaAsset: {
+        id: "asset-1",
+        ownerId: "user-1",
+        mediaType: "VIDEO" as const,
+        storageKey: "videos/demo.mp4",
+        url: "/uploads/videos/demo.mp4",
+        thumbnailUrl: null,
+        originalName: "demo.mp4",
+        mimeType: "video/mp4",
+        sizeBytes: 1024,
+        durationMs: null,
+        width: null,
+        height: null,
+        createdAt: new Date("2026-01-01T00:00:00.000Z"),
+      },
+    };
+
+    const response = buildSongVisualMediaResponse("rec-1", [
+      { ...base, id: "att-1", enabled: false, policy: "ATTACHED_ONLY" as const },
+      { ...base, id: "att-2", enabled: true, policy: "PREFER_ATTACHED" as const },
+    ]);
+
+    expect(response.policy).toBe("preferAttached");
+  });
+
   it("maps attachment dto with beatFx json", () => {
     const dto = mapSongVisualAttachment({
       id: "att-2",

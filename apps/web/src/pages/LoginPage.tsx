@@ -42,7 +42,6 @@ export function LoginPage() {
 
   return (
     <div>
-      <h2 className="text-3xl font-extrabold tracking-tight text-white">Welcome back</h2>
       <p className="mt-2 text-sm text-[var(--color-text-muted)]">
         Log in to manage uploads, playlists, and your artist tools.
       </p>

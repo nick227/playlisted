@@ -1,7 +1,8 @@
 import registry from './index'
 import { registerAnimationPackage } from './registerAnimationPackage'
+import { registerPreset } from './scenePresets'
 import { registerUserMediaEngine } from '../media/userMediaEngine'
-import { registerAttachedOnlyBlankEngine } from '../media/attachedOnlyBlankPreset'
+import { registerAttachedOnlyBlankEngine, ATTACHED_ONLY_BLANK_PRESET } from '../media/attachedOnlyBlankPreset'
 import { createIndividualVideoPackages, SEED_VIDEO_ENTRIES } from '../packages/createVideoPackage'
 
 import { albumArtPackage } from '../packages/album-art'
@@ -47,6 +48,7 @@ import {
 
 registerUserMediaEngine()
 registerAttachedOnlyBlankEngine()
+registerPreset(ATTACHED_ONLY_BLANK_PRESET)
 
 // Package order matters only when presets reference animations owned by an
 // earlier package. Keep quietPulse first so reduced-motion fallbacks can point
