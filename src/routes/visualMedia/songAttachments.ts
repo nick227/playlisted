@@ -1,22 +1,22 @@
 import { Router } from "express";
 
-import { prisma } from "../lib/prisma.js";
-import { requireAuth } from "../lib/requireAuth.js";
+import { prisma } from "../../lib/prisma.js";
+import { requireAuth } from "../../lib/requireAuth.js";
 import {
   assertRecordingVisualReadAccess,
   assertRecordingVisualWriteAccess,
   listSongVisualAttachments,
   loadOwnedVisualMediaAsset,
   songVisualAttachmentInclude,
-} from "../lib/visualMedia/access.js";
+} from "../../lib/visualMedia/access.js";
 import {
   buildSongVisualMediaResponse,
   mapSongVisualAttachment,
-} from "../lib/visualMedia/mapDto.js";
+} from "../../lib/visualMedia/mapDto.js";
 import {
   theatrePolicyToPrisma,
   type TheatreSongVisualPolicy,
-} from "../lib/visualMedia/types.js";
+} from "../../lib/visualMedia/types.js";
 
 export const songVisualMediaRouter = Router();
 
