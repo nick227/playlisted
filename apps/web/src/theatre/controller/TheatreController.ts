@@ -515,7 +515,7 @@ class TheatreController extends EventTarget {
       return true
     }
 
-    if (this.lastTimelineClipPresetId && isUserMediaPresetId(this.state.presetId) && !this.transitioning) {
+    if (this.lastTimelineClipPresetId && this.state.presetId && isUserMediaPresetId(this.state.presetId) && !this.transitioning) {
       this.lastTimelineClipPresetId = null
       this.fxSelector.clearCandidate()
       this.resetRotationHold(nowMs)
