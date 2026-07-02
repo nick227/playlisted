@@ -1,10 +1,14 @@
-import { MousePointer2, Scissors, Subtitles, Sparkles } from "lucide-react";
+import { Loader2, MousePointer2, Scissors, Sparkles, Subtitles } from "lucide-react";
 import type { ReactNode } from "react";
 
 export type TimelineEditMode = "select" | "cut";
 
+const TOOLBAR_CONTROL_HEIGHT = "h-8";
+
 type SongVisualEditorToolbarProps = {
   isBusy: boolean;
+  isDirty: boolean;
+  isSaving: boolean;
   currentTimeSec: number;
   durationSec: number;
   editMode: TimelineEditMode;
@@ -14,10 +18,14 @@ type SongVisualEditorToolbarProps = {
   onEditModeChange: (mode: TimelineEditMode) => void;
   onIncludeSiteMediaChange: (includeSiteMedia: boolean) => void;
   onPreviewSubtitlesChange: (enabled: boolean) => void;
+  onSave: () => void;
+  onCancel: () => void;
 };
 
 export function SongVisualEditorToolbar({
   isBusy,
+  isDirty,
+  isSaving,
   currentTimeSec,
   durationSec,
   editMode,
@@ -27,14 +35,16 @@ export function SongVisualEditorToolbar({
   onEditModeChange,
   onIncludeSiteMediaChange,
   onPreviewSubtitlesChange,
+  onSave,
+  onCancel,
 }: SongVisualEditorToolbarProps) {
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-lg border border-white/10 bg-black/20 px-2 py-1.5">
-      <span className="min-w-[5.5rem] text-xs tabular-nums text-white/60">
+      <span className={`inline-flex ${TOOLBAR_CONTROL_HEIGHT} min-w-[5.5rem] items-center text-xs tabular-nums text-white/60`}>
         {formatTime(currentTimeSec)} / {formatTime(durationSec)}
       </span>
 
-      <div className="inline-flex rounded-md border border-white/10 p-0.5">
+      <ToolbarButtonGroup>
         <ToolbarIconButton
           active={editMode === "select"}
           disabled={isBusy}
@@ -51,10 +61,10 @@ export function SongVisualEditorToolbar({
         >
           <Scissors size={13} />
         </ToolbarIconButton>
-      </div>
+      </ToolbarButtonGroup>
 
-      <div className="ml-auto flex flex-wrap items-center gap-1.5">
-        <ToolbarToggleButton
+      <ToolbarButtonGroup>
+        <ToolbarIconButton
           active={includeSiteMedia}
           disabled={isBusy || !hasAttachments}
           label="Site media"
@@ -66,8 +76,8 @@ export function SongVisualEditorToolbar({
           onClick={() => onIncludeSiteMediaChange(!includeSiteMedia)}
         >
           <Sparkles size={13} />
-        </ToolbarToggleButton>
-        <ToolbarToggleButton
+        </ToolbarIconButton>
+        <ToolbarIconButton
           active={previewSubtitles}
           disabled={isBusy}
           label="Subtitles"
@@ -75,45 +85,40 @@ export function SongVisualEditorToolbar({
           onClick={() => onPreviewSubtitlesChange(!previewSubtitles)}
         >
           <Subtitles size={13} />
-        </ToolbarToggleButton>
+        </ToolbarIconButton>
+      </ToolbarButtonGroup>
+
+      <div className={`ml-auto flex items-center gap-1.5 ${TOOLBAR_CONTROL_HEIGHT}`}>
+        <button
+          type="button"
+          onClick={onCancel}
+          className={`inline-flex ${TOOLBAR_CONTROL_HEIGHT} items-center rounded-md border border-white/15 bg-white/5 px-3 text-xs font-semibold text-white/80 transition hover:border-white/25 hover:bg-white/10 hover:text-white`}
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={onSave}
+          disabled={!isDirty || isSaving}
+          className={`inline-flex ${TOOLBAR_CONTROL_HEIGHT} min-w-[4.5rem] items-center justify-center gap-1 rounded-md bg-emerald-500 px-3 text-xs font-bold text-black transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-45`}
+        >
+          {isSaving ? <Loader2 size={13} className="animate-spin" /> : null}
+          {isSaving ? "Saving…" : "Save"}
+        </button>
       </div>
     </div>
   );
 }
 
-function ToolbarIconButton({
-  active,
-  disabled,
-  label,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  disabled: boolean;
-  label: string;
-  onClick: () => void;
-  children: ReactNode;
-}) {
+function ToolbarButtonGroup({ children }: { children: ReactNode }) {
   return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={onClick}
-      className={[
-        "inline-flex h-7 w-7 items-center justify-center rounded-md transition",
-        active ? "bg-white/15 text-white" : "text-white/50 hover:bg-white/5 hover:text-white/80",
-        disabled ? "opacity-40" : "",
-      ].join(" ")}
-      aria-pressed={active}
-      aria-label={label}
-      title={label}
-    >
+    <div className={`inline-flex ${TOOLBAR_CONTROL_HEIGHT} items-center rounded-md border border-white/10 p-0.5`}>
       {children}
-    </button>
+    </div>
   );
 }
 
-function ToolbarToggleButton({
+function ToolbarIconButton({
   active,
   disabled,
   label,
@@ -124,7 +129,7 @@ function ToolbarToggleButton({
   active: boolean;
   disabled: boolean;
   label: string;
-  title: string;
+  title?: string;
   onClick: () => void;
   children: ReactNode;
 }) {
@@ -133,18 +138,16 @@ function ToolbarToggleButton({
       type="button"
       disabled={disabled}
       onClick={onClick}
-      title={title}
       className={[
-        "inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-medium transition",
-        active
-          ? "border-emerald-400/35 bg-emerald-500/10 text-emerald-100"
-          : "border-white/10 text-white/55 hover:border-white/20 hover:bg-white/5 hover:text-white/80",
+        `inline-flex h-7 w-7 items-center justify-center rounded-md transition`,
+        active ? "bg-white/15 text-white" : "text-white/50 hover:bg-white/5 hover:text-white/80",
         disabled ? "cursor-not-allowed opacity-40" : "",
       ].join(" ")}
       aria-pressed={active}
+      aria-label={label}
+      title={title ?? label}
     >
       {children}
-      {label}
     </button>
   );
 }
