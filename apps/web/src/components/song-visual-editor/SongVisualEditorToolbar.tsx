@@ -1,4 +1,4 @@
-import { Loader2, MousePointer2, Scissors, Sparkles, Subtitles, Upload } from "lucide-react";
+import { Loader2, MousePointer2, Pause, Play, Scissors, Sparkles, Subtitles, Upload } from "lucide-react";
 import type { ReactNode } from "react";
 
 export type TimelineEditMode = "select" | "cut";
@@ -9,6 +9,8 @@ type SongVisualEditorToolbarProps = {
   isBusy: boolean;
   isDirty: boolean;
   isSaving: boolean;
+  isPlaying: boolean;
+  canPlay: boolean;
   editMode: TimelineEditMode;
   includeSiteMedia: boolean;
   previewSubtitles: boolean;
@@ -16,6 +18,7 @@ type SongVisualEditorToolbarProps = {
   onEditModeChange: (mode: TimelineEditMode) => void;
   onIncludeSiteMediaChange: (includeSiteMedia: boolean) => void;
   onPreviewSubtitlesChange: (enabled: boolean) => void;
+  onTogglePlayback: () => void;
   onUpload: () => void;
   onSave: () => void;
   onCancel: () => void;
@@ -25,6 +28,8 @@ export function SongVisualEditorToolbar({
   isBusy,
   isDirty,
   isSaving,
+  isPlaying,
+  canPlay,
   editMode,
   includeSiteMedia,
   previewSubtitles,
@@ -32,12 +37,26 @@ export function SongVisualEditorToolbar({
   onEditModeChange,
   onIncludeSiteMediaChange,
   onPreviewSubtitlesChange,
+  onTogglePlayback,
   onUpload,
   onSave,
   onCancel,
 }: SongVisualEditorToolbarProps) {
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-white/10 bg-black/20 px-3 py-2">
+      <ToolbarButtonGroup>
+        <ToolbarIconButton
+          active={isPlaying}
+          disabled={isBusy || !canPlay}
+          label={isPlaying ? "Pause preview" : "Play preview"}
+          onClick={onTogglePlayback}
+        >
+          {isPlaying ? <Pause size={13} fill="currentColor" /> : <Play size={13} className="ml-0.5" fill="currentColor" />}
+        </ToolbarIconButton>
+      </ToolbarButtonGroup>
+
+      <ToolbarDivider />
+
       <ToolbarButtonGroup>
         <ToolbarIconButton
           active={editMode === "select"}
