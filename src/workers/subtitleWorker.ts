@@ -108,9 +108,8 @@ async function expireStaleQueuedRows() {
     where: {
       status: "QUEUED",
       createdAt: { lt: cutoff },
-      attempts: { none: {} },
     },
-    data: { status: "FAILED", errorMessage: `Expired: queued but never attempted within ${staleQueuedHours} hours.` },
+    data: { status: "FAILED", errorMessage: `Expired: still queued after ${staleQueuedHours} hours.` },
   });
   if (result.count > 0) {
     log("subtitle.worker.expired_stale_queued", { count: result.count, staleQueuedHours });
