@@ -36,6 +36,7 @@ export function SubtitleEditorModal({ recordingId, recordingTitle, initialSubtit
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [pendingGenerateProvider, setPendingGenerateProvider] = useState<GenerateProvider | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const subtitleDisableTouchedRef = useRef(false);
 
   const effectiveTranscript = useMemo(
     () =>
@@ -69,7 +70,7 @@ export function SubtitleEditorModal({ recordingId, recordingTitle, initialSubtit
       fetchTranscripts(recordingId, accessToken),
       fetchRecordingSubtitles(recordingId, accessToken).catch(() => null),
     ]);
-    if (subtitleStatus) {
+    if (subtitleStatus && !subtitleDisableTouchedRef.current) {
       setSubtitlesDisabled(subtitleStatus.status === "DISABLED");
     }
     setTranscripts(data);
@@ -211,6 +212,7 @@ export function SubtitleEditorModal({ recordingId, recordingTitle, initialSubtit
     if (!token) return;
 
     const previous = subtitlesDisabled;
+    subtitleDisableTouchedRef.current = true;
     setSubtitlesDisabled(checked);
     setErrorMessage(null);
     setPendingGenerateProvider(null);
@@ -277,6 +279,11 @@ export function SubtitleEditorModal({ recordingId, recordingTitle, initialSubtit
 
         {/* Body */}
         <div className="flex min-h-0 flex-1 flex-col bg-white/[0.02]">
+          {errorMessage && (
+            <div className="mx-4 mt-4 rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400">
+              {errorMessage}
+            </div>
+          )}
           {subtitlesDisabled ? (
             <div className="flex flex-1 items-center justify-center p-6 text-center text-sm text-white/50">
               Subtitles are disabled for this song.
@@ -308,11 +315,6 @@ Lyrics in SRT format..."
             </div>
           ) : (
             <div className="flex flex-1 flex-col overflow-y-auto p-4">
-              {errorMessage && (
-                <div className="mb-4 rounded-lg bg-red-500/10 border border-red-500/20 p-3 text-sm text-red-400">
-                  {errorMessage}
-                </div>
-              )}
               {/* Generation Actions */}
               {pendingGenerateProvider ? (
                 <div className="mb-8 flex flex-col items-center justify-center rounded-lg border border-emerald-400/20 bg-emerald-400/5 p-6 text-center">

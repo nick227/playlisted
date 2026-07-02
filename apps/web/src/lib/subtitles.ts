@@ -17,6 +17,13 @@ export type RecordingSubtitlesResponse = {
   errorMessage?: string;
 };
 
+export const RECORDING_SUBTITLES_DISABLED_EVENT = "playlisted:recording-subtitles-disabled-changed";
+
+export type RecordingSubtitlesDisabledEventDetail = {
+  recordingId: string;
+  subtitlesDisabled: boolean;
+};
+
 export async function fetchRecordingSubtitles(recordingId: string, accessToken?: string | null) {
   const base = import.meta.env.VITE_API_BASE_URL ?? "";
   const response = await fetch(`${base}/api/v1/recordings/${encodeURIComponent(recordingId)}/subtitles`, {
@@ -114,7 +121,13 @@ export async function updateRecordingSubtitlesDisabled(
     const err = await response.json().catch(() => null);
     throw new Error(err?.message || "Failed to update subtitle settings");
   }
-  return response.json();
+  const updated = await response.json();
+  window.dispatchEvent(
+    new CustomEvent<RecordingSubtitlesDisabledEventDetail>(RECORDING_SUBTITLES_DISABLED_EVENT, {
+      detail: { recordingId, subtitlesDisabled },
+    }),
+  );
+  return updated;
 }
 
 export async function createManualTranscript(

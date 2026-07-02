@@ -11,7 +11,12 @@ import { buildSyntheticSubtitleCues } from "@/lib/playbackFocus/buildSyntheticCu
 import { resolvePlaybackFocusFixture } from "@/lib/playbackFocus/resolvePlaybackFocusFixture";
 import type { FocusRecording } from "@/lib/playbackFocus/types";
 import { toFocusArtist } from "@/lib/playbackFocus/toFocusRecording";
-import { fetchRecordingSubtitles, type RecordingSubtitlesResponse } from "@/lib/subtitles";
+import {
+  fetchRecordingSubtitles,
+  RECORDING_SUBTITLES_DISABLED_EVENT,
+  type RecordingSubtitlesDisabledEventDetail,
+  type RecordingSubtitlesResponse,
+} from "@/lib/subtitles";
 import { useAuth } from "@/providers/AuthProvider";
 
 type SongVisualPreviewFocusLaneProps = {
@@ -61,6 +66,19 @@ export function SongVisualPreviewFocusLane({
       if (pollTimer !== null) window.clearTimeout(pollTimer);
     };
   }, [accessToken, enabled, recording.id]);
+
+  useEffect(() => {
+    if (!recording.id) return;
+
+    const handleSubtitlesDisabledChange = (event: Event) => {
+      const detail = (event as CustomEvent<RecordingSubtitlesDisabledEventDetail>).detail;
+      if (detail?.recordingId !== recording.id) return;
+      setSubtitles(detail.subtitlesDisabled ? { status: "DISABLED" } : null);
+    };
+
+    window.addEventListener(RECORDING_SUBTITLES_DISABLED_EVENT, handleSubtitlesDisabledChange);
+    return () => window.removeEventListener(RECORDING_SUBTITLES_DISABLED_EVENT, handleSubtitlesDisabledChange);
+  }, [recording.id]);
 
   const activeFixture = useMemo(
     () =>
