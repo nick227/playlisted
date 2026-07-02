@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useMemo, useRef, type RefObject } from "react";
 
 import type { VisualMediaAssetRecord } from "@/lib/visualMediaApi";
 
-import { resolveAssetUrl, type TimelineClip } from "./types";
+import { useSongVisualTheatrePreview } from "./hooks/useSongVisualTheatrePreview";
+import { readClipAudioPulse } from "./audioPulse";
+import type { TimelineClip } from "./types";
 
 const DEFAULT_ASPECT = 16 / 9;
 const MAX_PREVIEW_ASPECT = 16 / 9;
@@ -16,40 +18,26 @@ function previewAspectRatio(media: VisualMediaAssetRecord | null): number {
 type SongVisualEditorPreviewProps = {
   clip: TimelineClip | null;
   isPlaying: boolean;
-  currentTimeSec: number;
+  audioRef: RefObject<HTMLAudioElement | null>;
 };
 
 export function SongVisualEditorPreview({
   clip,
   isPlaying,
-  currentTimeSec,
+  audioRef,
 }: SongVisualEditorPreviewProps) {
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const attachment = clip?.attachment ?? null;
   const media = attachment?.mediaAsset ?? null;
   const loop = clip?.loop ?? true;
+  const audioPulse = attachment ? readClipAudioPulse(attachment) : false;
 
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video || media?.mediaType !== "video") return;
-
-    const clipTimeSec = Math.max(0, currentTimeSec - (clip?.startSec ?? 0));
-    const localTimeSec = loop
-      ? clipTimeSec % Math.max(video.duration || clip?.naturalDurationSec || 1, 0.001)
-      : Math.min(clipTimeSec, clip?.naturalDurationSec ?? clipTimeSec);
-
-    if (Math.abs(video.currentTime - localTimeSec) > 0.25) {
-      video.currentTime = localTimeSec;
-    }
-
-    if (isPlaying && video.paused) {
-      void video.play().catch(() => undefined);
-      return;
-    }
-    if (!isPlaying && !video.paused) {
-      video.pause();
-    }
-  }, [clip, clip?.loop, clip?.naturalDurationSec, clip?.startSec, currentTimeSec, isPlaying, loop, media?.mediaType]);
+  useSongVisualTheatrePreview({
+    containerRef,
+    audioRef,
+    clip,
+    isPlaying,
+  });
 
   const aspectRatio = useMemo(() => previewAspectRatio(media), [media]);
 
@@ -59,39 +47,26 @@ export function SongVisualEditorPreview({
         className="relative w-full max-w-xl overflow-hidden rounded-xl border border-white/10 bg-black"
         style={{ aspectRatio }}
       >
-      {!media ? (
-        <div className="flex h-full w-full items-center justify-center px-6 text-center">
-          <p className="text-sm text-white/35">Scrub the timeline or add a clip from your library</p>
-        </div>
-      ) : media.mediaType === "video" ? (
-        <video
-          ref={videoRef}
-          src={resolveAssetUrl(media.url)}
-          className="h-full w-full object-contain"
-          muted
-          playsInline
-          loop={loop}
-        />
-      ) : (
-        <img
-          src={resolveAssetUrl(media.thumbnailUrl ?? media.url)}
-          alt={attachment?.label ?? media.originalName}
-          className="h-full w-full object-contain"
-        />
-      )}
+        {!media ? (
+          <div className="flex h-full w-full items-center justify-center px-6 text-center">
+            <p className="text-sm text-white/35">Scrub the timeline or add a clip from your library</p>
+          </div>
+        ) : (
+          <div ref={containerRef} className="absolute inset-0" />
+        )}
 
-      {media ? (
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-4 py-3">
-          <p className="truncate text-sm font-medium text-white">
-            {attachment?.label ?? media.originalName}
-          </p>
-          <p className="text-xs text-white/60">
-            {media.mediaType}
-            {loop ? " · loop" : ` · ${clip?.naturalDurationSec.toFixed(0)}s max`}
-            {attachment?.beatFx?.enabled ? " · beat reactive" : ""}
-          </p>
-        </div>
-      ) : null}
+        {media ? (
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-4 py-3">
+            <p className="truncate text-sm font-medium text-white">
+              {attachment?.label ?? media.originalName}
+            </p>
+            <p className="text-xs text-white/60">
+              {media.mediaType}
+              {loop ? " · loop" : ` · ${clip?.naturalDurationSec.toFixed(0)}s max`}
+              {audioPulse ? " · beat reactive" : ""}
+            </p>
+          </div>
+        ) : null}
       </div>
     </div>
   );

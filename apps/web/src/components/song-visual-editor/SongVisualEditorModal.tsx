@@ -93,7 +93,7 @@ function SongVisualEditorModalInner({
           <SongVisualEditorPreview
             clip={activeClip}
             isPlaying={playback.isPlaying}
-            currentTimeSec={playback.currentTimeSec}
+            audioRef={playback.audioRef}
           />
 
           <SongVisualEditorToolbar
