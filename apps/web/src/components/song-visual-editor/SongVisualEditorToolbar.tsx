@@ -210,7 +210,9 @@ function ToolbarLabeledToggle({
 function toolbarToggleClass(active: boolean, disabled: boolean, sizeClass: string) {
   return [
     `inline-flex items-center rounded-md text-[11px] font-medium transition ${sizeClass}`,
-    active ? "bg-white/15 text-white" : "text-white/55 hover:bg-white/5 hover:text-white/85",
+    active
+      ? "bg-emerald-500 text-black hover:bg-emerald-400"
+      : "text-white/55 hover:bg-white/5 hover:text-white/85",
     disabled ? "cursor-not-allowed opacity-40" : "",
   ].join(" ");
 }
