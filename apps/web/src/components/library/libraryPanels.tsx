@@ -1,5 +1,5 @@
 import type { LibraryArtist, LibraryGenre, LibrarySong, PlaylistListResponse } from "@playlisted/client-sdk";
-import { ChevronRight, Pause, Play } from "lucide-react";
+import { ChevronRight, Pause, Play, Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
@@ -190,6 +190,112 @@ function GenrePreviewChip({ genre }: { genre: LibraryGenre }) {
   );
 }
 
+function GenreSongThumb({ song, queue }: { song: LibrarySong; queue: LibrarySong[] }) {
+  const { playTrack, currentTrack, isPlaying, togglePlay } = useAudioPlayer();
+  const isActive = currentTrack?.id === song.id;
+
+  function handlePlay() {
+    if (isActive) {
+      togglePlay();
+      return;
+    }
+    playTrack(
+      librarySongToQueueTrack(song),
+      queue.map((s) => librarySongToQueueTrack(s)),
+      { sourceContext: "library" },
+      { segmentLabel: "Library" },
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handlePlay}
+      aria-label={`Play ${song.title}`}
+      title={`${song.title} by ${song.uploader.displayName}`}
+      className="group/thumb relative aspect-square min-w-0 overflow-hidden rounded-lg border border-white/10 bg-white/[0.04] text-left shadow-[0_14px_40px_rgba(0,0,0,0.22)] transition-all hover:-translate-y-0.5 hover:border-white/25 hover:bg-white/[0.08] sm:aspect-[4/5]"
+    >
+      {song.artworkUrl ? (
+        <img
+          src={song.artworkUrl}
+          alt=""
+          className="h-full w-full object-cover transition-transform duration-300 group-hover/thumb:scale-105"
+        />
+      ) : (
+        <div className="h-full w-full" style={{ background: coverFallback(song.title) }} />
+      )}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
+      <div className="absolute left-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/55 text-white shadow-lg backdrop-blur transition-transform group-hover/thumb:scale-105">
+        {isActive && isPlaying ? (
+          <Pause size={15} fill="currentColor" />
+        ) : (
+          <Play size={15} className="ml-0.5" fill="currentColor" />
+        )}
+      </div>
+      <div className="absolute inset-x-2 bottom-2 min-w-0 sm:inset-x-3 sm:bottom-3">
+        <p className="truncate text-xs font-semibold text-white sm:text-sm">{song.title}</p>
+        <p className="truncate text-[10px] text-white/65 sm:text-xs">{song.uploader.displayName}</p>
+      </div>
+    </button>
+  );
+}
+
+function GenreCard({ genre }: { genre: LibraryGenre }) {
+  const { data, isLoading } = useLibrarySongs(genre.slug, true, 5);
+  const previewSongs = data?.data ?? EMPTY_LIBRARY_SONGS;
+  const featuredArtistCount = new Set(previewSongs.map((song) => song.uploaderId)).size;
+
+  return (
+    <article className="group relative overflow-hidden rounded-xl border border-white/[0.08] bg-[linear-gradient(145deg,rgba(255,255,255,0.075),rgba(255,255,255,0.025))] p-4 shadow-[0_20px_70px_rgba(0,0,0,0.24)] transition-colors hover:border-white/[0.16] hover:bg-white/[0.055] sm:p-5">
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent opacity-70" />
+      <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
+        <div className="min-w-0">
+          <Link
+            to={genrePath(genre.slug)}
+            className="block truncate text-[clamp(1.7rem,4vw,3rem)] font-extrabold leading-none tracking-tighter text-white transition-colors group-hover:text-[var(--color-brand)]"
+          >
+            {genre.name}
+          </Link>
+          <p className="mt-2 text-xs font-medium uppercase text-white/45">
+            {genre.songCount} recording{genre.songCount !== 1 ? "s" : ""}
+            {featuredArtistCount > 0
+              ? ` · ${featuredArtistCount} featured artist${featuredArtistCount !== 1 ? "s" : ""}`
+              : ""}
+          </p>
+          <Link
+            to={genrePath(genre.slug)}
+            className="mt-4 inline-flex items-center gap-1 rounded-full border border-white/10 bg-black/20 px-3 py-1.5 text-xs font-semibold text-white/65 transition-colors hover:border-white/25 hover:bg-white/10 hover:text-white"
+          >
+            All
+            <ChevronRight size={14} />
+          </Link>
+        </div>
+
+        <div className="w-full xl:max-w-[760px]">
+          {isLoading ? (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} className="aspect-square rounded-lg sm:aspect-[4/5]" />
+              ))}
+            </div>
+          ) : previewSongs.length > 0 ? (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+              {previewSongs.slice(0, 5).map((song) => (
+                <GenreSongThumb key={song.id} song={song} queue={previewSongs} />
+              ))}
+            </div>
+          ) : (
+            <div className="flex min-h-28 items-center gap-3 rounded-lg border border-white/[0.08] bg-black/15 px-4 text-sm text-[var(--color-text-subtle)]">
+              <Sparkles size={16} className="shrink-0 text-white/35" />
+              New work will appear here as artists publish it.
+            </div>
+          )}
+        </div>
+      </div>
+    </article>
+  );
+}
+
 function ArtistPreviewChip({ artist }: { artist: LibraryArtist }) {
   return (
     <Link
@@ -314,51 +420,23 @@ export function RootPanel({
 export function GenresPanel() {
   const { data, isLoading } = useLibraryGenres();
   const genres = data?.data ? data.data.filter((g) => g.songCount > 0) : EMPTY_LIBRARY_GENRES;
+  const sortedGenres = useMemo(
+    () => [...genres].sort((a, b) => b.songCount - a.songCount || a.name.localeCompare(b.name)),
+    [genres],
+  );
 
   if (isLoading) return <PanelSkeleton />;
-
-  const byLetter = genres.reduce<Record<string, typeof genres>>((acc, g) => {
-    const letter = g.name.trim()[0]?.toUpperCase() ?? "#";
-    (acc[letter] ??= []).push(g);
-    return acc;
-  }, {});
 
   return (
     <div>
       <PanelHeader label="Genres" count={genres.length} />
-      <div className="mt-10 space-y-8">
-        {Object.entries(byLetter)
-          .sort(([a], [b]) => a.localeCompare(b))
-          .map(([letter, items]) => (
-            <div key={letter}>
-              <div className="mb-4 flex items-center gap-4">
-                <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-white/25">
-                  {letter}
-                </span>
-                <div className="flex-1 border-t border-white/[0.05]" />
-              </div>
-              {items.map((genre) => (
-                <Link
-                  key={genre.slug}
-                  to={genrePath(genre.slug)}
-                  className="group flex w-full items-center justify-between gap-4 py-3 text-left"
-                >
-                  <span className="text-[clamp(1.6rem,3vw,2.4rem)] font-extrabold leading-none tracking-tighter text-[var(--color-text-muted)] transition-colors group-hover:text-white">
-                    {genre.name}
-                  </span>
-                  <div className="flex shrink-0 items-center gap-3">
-                    <span className="tabular-nums text-2xl font-bold text-white/20 transition-colors group-hover:text-white/40">
-                      {genre.songCount}
-                    </span>
-                    <ChevronRight
-                      size={20}
-                      className="text-white/20 transition-all group-hover:translate-x-1 group-hover:text-white/70"
-                    />
-                  </div>
-                </Link>
-              ))}
-            </div>
-          ))}
+      <p className="mt-3 max-w-2xl text-sm italic leading-relaxed text-[var(--color-text-muted)]">
+        Browse the catalog by sound, with quick plays from artists shaping each lane.
+      </p>
+      <div className="mt-10 space-y-4">
+        {sortedGenres.map((genre) => (
+          <GenreCard key={genre.slug} genre={genre} />
+        ))}
       </div>
     </div>
   );

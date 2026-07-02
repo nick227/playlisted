@@ -29,13 +29,13 @@ export function useAuthoringGenres() {
   });
 }
 
-export function useLibrarySongs(genreSlug?: string | null, enabled = true) {
+export function useLibrarySongs(genreSlug?: string | null, enabled = true, pageSize = 50) {
   const genre = genreSlug?.trim() || undefined;
   return useQuery({
-    queryKey: ["library", "songs", genre ?? "all"],
+    queryKey: ["library", "songs", genre ?? "all", { pageSize }],
     queryFn: () =>
       api.library.songs({
-        pageSize: 50,
+        pageSize,
         ...(genre ? { genre } : {}),
     }),
     enabled,
