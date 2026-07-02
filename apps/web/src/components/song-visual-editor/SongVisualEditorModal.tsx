@@ -12,7 +12,7 @@ import { SongVisualEditorWaveform } from "./SongVisualEditorWaveform";
 import { useAudioWaveformPeaks } from "./hooks/useAudioWaveformPeaks";
 import { useSongVisualEditorState } from "./hooks/useSongVisualEditorState";
 import { useSongVisualPreviewPlayback } from "./hooks/useSongVisualPreviewPlayback";
-import { findClipAtTime, type SongVisualEditorRecording } from "./types";
+import { findClipAtTime, policyIncludesSiteMedia, type SongVisualEditorRecording } from "./types";
 
 type SongVisualEditorModalProps = {
   recording: SongVisualEditorRecording;
@@ -39,10 +39,7 @@ export function SongVisualEditorModal({ recording, onClose }: SongVisualEditorMo
     [playback.currentTimeSec, timelineClips],
   );
 
-  const showDefaultLane =
-    editor.policy === "mixAttachedAndDefault" ||
-    editor.policy === "preferAttached" ||
-    editor.policy === "defaultOnly";
+  const showDefaultLane = policyIncludesSiteMedia(editor.policy) || editor.policy === "defaultOnly";
 
   if (!accessToken) {
     return null;
@@ -80,13 +77,14 @@ export function SongVisualEditorModal({ recording, onClose }: SongVisualEditorMo
             isBusy={editor.isBusy}
             currentTimeSec={playback.currentTimeSec}
             durationSec={durationSec}
-            policy={editor.policy}
+            includeSiteMedia={editor.includeSiteMedia}
+            hasAttachments={editor.attachments.some((attachment) => attachment.enabled)}
             assets={editor.assets}
             selectedAttachmentId={editor.selectedAttachmentId}
             onTogglePlayback={playback.togglePlayback}
             onUpload={editor.openUploadPicker}
             onAttachExisting={(assetId) => void editor.attachExistingAsset(assetId)}
-            onApplyPolicy={(policy) => void editor.applyPolicy(policy)}
+            onIncludeSiteMediaChange={(includeSiteMedia) => void editor.setIncludeSiteMedia(includeSiteMedia)}
             onReorderSelected={(direction) => {
               if (!editor.selectedAttachmentId) return;
               void editor.reorderAttachment(editor.selectedAttachmentId, direction);

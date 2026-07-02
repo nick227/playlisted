@@ -13,7 +13,7 @@ import {
 import type { SongVisualPolicy } from "@/theatre/media/types";
 import { clearRemoteTrackVisualMedia } from "@/theatre/media/resolveTrackVisualMedia";
 
-import { layoutTimelineClips } from "../types";
+import { layoutTimelineClips, policyFromIncludeSiteMedia, policyIncludesSiteMedia } from "../types";
 
 type UseSongVisualEditorStateArgs = {
   recordingId: string;
@@ -43,6 +43,7 @@ export function useSongVisualEditorState({
 
   const attachments = attachmentsQuery.data?.attachments ?? [];
   const policy = attachmentsQuery.data?.policy ?? "preferAttached";
+  const includeSiteMedia = policyIncludesSiteMedia(policy);
   const enabledAttachments = attachments.filter((attachment) => attachment.enabled);
   const timelineDurationSec = durationSeconds && durationSeconds > 0
     ? durationSeconds
@@ -109,16 +110,16 @@ export function useSongVisualEditorState({
     onError: (err) => setError(err instanceof Error ? err.message : "Remove failed."),
   });
 
-  async function applyPolicy(nextPolicy: SongVisualPolicy) {
-    if (nextPolicy === "defaultOnly") return;
+  async function setIncludeSiteMedia(includeSiteMedia: boolean) {
     const target = enabledAttachments[0];
     if (!target) {
-      setError("Attach at least one visual before setting policy.");
+      setError("Attach at least one visual before changing site media.");
       return;
     }
+    setError(null);
     await updateMutation.mutateAsync({
       attachmentId: target.id,
-      body: { policy: nextPolicy },
+      body: { policy: policyFromIncludeSiteMedia(includeSiteMedia) },
     });
   }
 
@@ -168,6 +169,7 @@ export function useSongVisualEditorState({
     attachments,
     assets: assetsQuery.data ?? [],
     policy,
+    includeSiteMedia,
     timelineClips,
     timelineDurationSec,
     selectedAttachment,
@@ -177,7 +179,7 @@ export function useSongVisualEditorState({
     fileInputRef,
     openUploadPicker,
     attachExistingAsset,
-    applyPolicy,
+    setIncludeSiteMedia,
     reorderAttachment,
     selectAttachment,
     detachAttachment: detachMutation.mutate,

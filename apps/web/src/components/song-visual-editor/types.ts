@@ -15,11 +15,14 @@ export type SongVisualEditorRecording = {
   artworkUrl?: string | null;
 };
 
-export const POLICY_OPTIONS: Array<{ value: Exclude<SongVisualPolicy, "defaultOnly">; label: string }> = [
-  { value: "preferAttached", label: "Prefer attached" },
-  { value: "mixAttachedAndDefault", label: "Mix with default FX" },
-  { value: "attachedOnly", label: "Attached only" },
-];
+/** Checked = built-in site/theatre visuals may appear alongside attached media. */
+export function policyIncludesSiteMedia(policy: SongVisualPolicy): boolean {
+  return policy !== "attachedOnly";
+}
+
+export function policyFromIncludeSiteMedia(includeSiteMedia: boolean): Exclude<SongVisualPolicy, "defaultOnly"> {
+  return includeSiteMedia ? "preferAttached" : "attachedOnly";
+}
 
 export function layoutTimelineClips(
   attachments: SongVisualAttachmentRecord[],

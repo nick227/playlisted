@@ -1,22 +1,20 @@
 import { ChevronLeft, ChevronRight, Pause, Play, Upload } from "lucide-react";
 
-import type { SongVisualPolicy } from "@/theatre/media/types";
 import type { VisualMediaAssetRecord } from "@/lib/visualMediaApi";
-
-import { POLICY_OPTIONS } from "./types";
 
 type SongVisualEditorToolbarProps = {
   isPlaying: boolean;
   isBusy: boolean;
   currentTimeSec: number;
   durationSec: number;
-  policy: SongVisualPolicy;
+  includeSiteMedia: boolean;
+  hasAttachments: boolean;
   assets: VisualMediaAssetRecord[];
   selectedAttachmentId: string | null;
   onTogglePlayback: () => void;
   onUpload: () => void;
   onAttachExisting: (assetId: string) => void;
-  onApplyPolicy: (policy: SongVisualPolicy) => void;
+  onIncludeSiteMediaChange: (includeSiteMedia: boolean) => void;
   onReorderSelected: (direction: -1 | 1) => void;
 };
 
@@ -25,13 +23,14 @@ export function SongVisualEditorToolbar({
   isBusy,
   currentTimeSec,
   durationSec,
-  policy,
+  includeSiteMedia,
+  hasAttachments,
   assets,
   selectedAttachmentId,
   onTogglePlayback,
   onUpload,
   onAttachExisting,
-  onApplyPolicy,
+  onIncludeSiteMediaChange,
   onReorderSelected,
 }: SongVisualEditorToolbarProps) {
   return (
@@ -81,16 +80,26 @@ export function SongVisualEditorToolbar({
         </select>
       ) : null}
 
-      <select
-        value={policy === "defaultOnly" ? "preferAttached" : policy}
-        disabled={isBusy}
-        onChange={(event) => onApplyPolicy(event.target.value as SongVisualPolicy)}
-        className="rounded-lg border border-white/10 bg-black/30 px-2 py-1.5 text-xs text-white"
+      <label
+        className={[
+          "inline-flex items-center gap-2 rounded-lg border border-white/10 px-2 py-1.5 text-xs text-white",
+          hasAttachments ? "cursor-pointer hover:bg-white/5" : "cursor-not-allowed opacity-40",
+        ].join(" ")}
+        title={
+          hasAttachments
+            ? "When enabled, built-in site visuals can appear alongside your attachments"
+            : "Attach a visual to configure site media"
+        }
       >
-        {POLICY_OPTIONS.map((option) => (
-          <option key={option.value} value={option.value}>{option.label}</option>
-        ))}
-      </select>
+        <input
+          type="checkbox"
+          checked={includeSiteMedia}
+          disabled={isBusy || !hasAttachments}
+          onChange={(event) => onIncludeSiteMediaChange(event.target.checked)}
+          className="rounded border-white/20 bg-black/40 text-emerald-500 focus:ring-emerald-400/50"
+        />
+        Include site media
+      </label>
 
       {selectedAttachmentId ? (
         <div className="ml-auto flex items-center gap-1">
