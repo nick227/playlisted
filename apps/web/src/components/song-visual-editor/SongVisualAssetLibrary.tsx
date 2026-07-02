@@ -1,4 +1,4 @@
-import { Upload } from "lucide-react";
+import { RotateCcw, Trash2, Upload, AudioLines, Repeat } from "lucide-react";
 import { useState, type DragEvent } from "react";
 
 import { VISUAL_UPLOAD_MAX_BYTES } from "@/lib/visualUploadLimits";
@@ -136,77 +136,88 @@ export function SongVisualAssetLibrary({
             Add clips from the library below or upload new media.
           </p>
         ) : (
-          <div className="space-y-1.5">
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
             {[...timelineClips].sort((left, right) => left.startSec - right.startSec).map((clip) => {
               const { attachment } = clip;
               const selected = attachment.id === selectedAttachmentId;
               const startOffsetMs = readClipStartOffsetMs(attachment);
               const audioPulse = readClipAudioPulse(attachment);
               return (
-                <div
+                <article
                   key={attachment.id}
                   className={[
-                    "flex items-center gap-2 rounded-lg border px-2 py-1.5",
-                    selected ? "border-emerald-400/50 bg-emerald-500/5" : "border-white/10 bg-black/20",
+                    "overflow-hidden rounded-lg border bg-black/30",
+                    selected ? "border-emerald-400/50 ring-1 ring-emerald-400/20" : "border-white/10",
                   ].join(" ")}
                 >
                   <button
                     type="button"
                     disabled={isBusy}
                     onClick={() => onSelectClip(attachment.id)}
-                    className="h-10 w-10 shrink-0 overflow-hidden rounded-md"
+                    className="block w-full text-left"
                   >
-                    <MediaAssetThumb asset={attachment.mediaAsset} className="h-10 w-10" />
+                    <MediaAssetThumb asset={attachment.mediaAsset} className="aspect-video w-full" />
                   </button>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-white">
+                  <div className="space-y-1.5 p-2">
+                    <p className="truncate text-xs font-medium text-white">
                       {attachment.label ?? attachment.mediaAsset.originalName}
                     </p>
-                    <p className="text-xs text-white/45">
-                      {clip.startSec.toFixed(1)}s · {clip.durationSec.toFixed(1)}s · cut-in {formatMediaOffsetMs(startOffsetMs)}
+                    <p className="text-[10px] text-white/40">
+                      {clip.startSec.toFixed(1)}s · {clip.durationSec.toFixed(1)}s
                     </p>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-1">
-                    <label className="inline-flex items-center gap-1 rounded-md border border-white/10 px-2 py-1 text-[10px] text-white/80">
-                      <input
-                        type="checkbox"
-                        checked={clip.loop}
-                        disabled={isBusy}
-                        onChange={(event) => onClipLoopChange(attachment.id, event.target.checked)}
-                        className="rounded border-white/20 bg-black/40 text-emerald-500"
-                      />
-                      Loop
-                    </label>
-                    <label className="inline-flex items-center gap-1 rounded-md border border-white/10 px-2 py-1 text-[10px] text-white/80">
-                      <input
-                        type="checkbox"
-                        checked={audioPulse}
-                        disabled={isBusy}
-                        onChange={(event) => onClipAudioPulseChange(attachment.id, event.target.checked)}
-                        className="rounded border-white/20 bg-black/40 text-emerald-500"
-                      />
-                      Pulse
-                    </label>
-                    {startOffsetMs > 0 ? (
+                    <p className={[
+                      "text-[10px]",
+                      selected ? "text-amber-200/90" : "text-white/35",
+                    ].join(" ")}>
+                      Cut-in: {formatMediaOffsetMs(startOffsetMs)}
+                    </p>
+                    <div className="flex flex-wrap items-center gap-1">
+                      <label className="inline-flex min-w-[3.75rem] flex-1 items-center gap-1 rounded-md border border-white/10 px-1.5 py-1 text-[10px] text-white/80">
+                        <input
+                          type="checkbox"
+                          checked={clip.loop}
+                          disabled={isBusy}
+                          onChange={(event) => onClipLoopChange(attachment.id, event.target.checked)}
+                          className="rounded border-white/20 bg-black/40 text-emerald-500"
+                        />
+                        <Repeat size={10} />
+                        Loop
+                      </label>
+                      <label className="inline-flex min-w-[3.75rem] flex-1 items-center gap-1 rounded-md border border-white/10 px-1.5 py-1 text-[10px] text-white/80">
+                        <input
+                          type="checkbox"
+                          checked={audioPulse}
+                          disabled={isBusy}
+                          onChange={(event) => onClipAudioPulseChange(attachment.id, event.target.checked)}
+                          className="rounded border-white/20 bg-black/40 text-emerald-500"
+                        />
+                        <AudioLines size={10} />
+                        Pulse
+                      </label>
+                      {startOffsetMs > 0 ? (
+                        <button
+                          type="button"
+                          disabled={isBusy}
+                          onClick={() => onResetClipTrim(attachment.id)}
+                          className="rounded-md border border-amber-400/20 px-1.5 py-1 text-amber-100 hover:bg-amber-400/10 disabled:opacity-40"
+                          aria-label="Reset media cut-in"
+                          title="Reset cut-in to media start"
+                        >
+                          <RotateCcw size={11} />
+                        </button>
+                      ) : null}
                       <button
                         type="button"
                         disabled={isBusy}
-                        onClick={() => onResetClipTrim(attachment.id)}
-                        className="rounded-md border border-amber-400/20 px-2 py-1 text-[10px] text-amber-100 hover:bg-amber-400/10 disabled:opacity-40"
+                        onClick={() => onRemoveClip(attachment.id)}
+                        className="rounded-md border border-red-500/20 px-1.5 py-1 text-red-200 hover:bg-red-500/10 disabled:opacity-40"
+                        aria-label="Remove clip from timeline"
                       >
-                        Reset
+                        <Trash2 size={11} />
                       </button>
-                    ) : null}
-                    <button
-                      type="button"
-                      disabled={isBusy}
-                      onClick={() => onRemoveClip(attachment.id)}
-                      className="rounded-md border border-red-500/20 px-2 py-1 text-[10px] text-red-200 hover:bg-red-500/10 disabled:opacity-40"
-                    >
-                      Remove
-                    </button>
+                    </div>
                   </div>
-                </div>
+                </article>
               );
             })}
           </div>
