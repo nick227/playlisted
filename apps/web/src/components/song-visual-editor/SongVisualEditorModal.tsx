@@ -145,10 +145,6 @@ function SongVisualEditorModalInner({
             timelineClips={editor.timelineClips}
             assets={editor.assets}
             isBusy={editor.isBusy}
-            getAssetLoopPref={editor.getAssetLoopPref}
-            onAssetLoopPrefChange={editor.setAssetLoopPref}
-            getAssetAudioPulsePref={editor.getAssetAudioPulsePref}
-            onAssetAudioPulsePrefChange={editor.setAssetAudioPulsePref}
             onClipLoopChange={(attachmentId, loop) => void editor.setClipLoop(attachmentId, loop)}
             onClipAudioPulseChange={(attachmentId, enabled) => void editor.setClipAudioPulse(attachmentId, enabled)}
             readClipAudioPulse={editor.readClipAudioPulse}

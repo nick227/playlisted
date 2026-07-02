@@ -14,10 +14,6 @@ type SongVisualAssetLibraryProps = {
   assets: VisualMediaAssetRecord[];
   isBusy: boolean;
   clipSyncStatus: Record<string, ClipSyncStatus>;
-  getAssetLoopPref: (asset: VisualMediaAssetRecord) => boolean;
-  onAssetLoopPrefChange: (assetId: string, loop: boolean) => void;
-  getAssetAudioPulsePref: (asset: VisualMediaAssetRecord) => boolean;
-  onAssetAudioPulsePrefChange: (assetId: string, enabled: boolean) => void;
   onClipLoopChange: (attachmentId: string, loop: boolean) => void;
   onClipAudioPulseChange: (attachmentId: string, enabled: boolean) => void;
   readClipAudioPulse: (attachment: TimelineClip["attachment"]) => boolean;
@@ -36,10 +32,6 @@ export function SongVisualAssetLibrary({
   assets,
   isBusy,
   clipSyncStatus,
-  getAssetLoopPref,
-  onAssetLoopPrefChange,
-  getAssetAudioPulsePref,
-  onAssetAudioPulsePrefChange,
   onClipLoopChange,
   onClipAudioPulseChange,
   readClipAudioPulse,
@@ -122,22 +114,20 @@ export function SongVisualAssetLibrary({
                         <Repeat size={10} />
                         Loop
                       </label>
-                      {isVideo ? (
-                        <label
-                          className="inline-flex flex-1 min-w-[4.5rem] items-center gap-1 rounded-md border border-white/10 px-2 py-1 text-[10px] text-white/80"
-                          title="Scale and brighten clip on beats"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={audioPulse}
-                            disabled={isBusy || clipSaving}
-                            onChange={(event) => onClipAudioPulseChange(attachment.id, event.target.checked)}
-                            className="rounded border-white/20 bg-black/40 text-emerald-500"
-                          />
-                          <AudioLines size={10} />
-                          Pulse
-                        </label>
-                      ) : null}
+                      <label
+                        className="inline-flex flex-1 min-w-[4.5rem] items-center gap-1 rounded-md border border-white/10 px-2 py-1 text-[10px] text-white/80"
+                        title={isVideo ? "Scale and brighten clip on beats" : "Beat pulse applies to video clips"}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={audioPulse}
+                          disabled={isBusy || clipSaving || !isVideo}
+                          onChange={(event) => onClipAudioPulseChange(attachment.id, event.target.checked)}
+                          className="rounded border-white/20 bg-black/40 text-emerald-500"
+                        />
+                        <AudioLines size={10} />
+                        Pulse
+                      </label>
                       {startOffsetMs > 0 ? (
                         <button
                           type="button"
@@ -219,35 +209,6 @@ export function SongVisualAssetLibrary({
                     <p className="text-[10px] uppercase tracking-wide text-white/40">
                       {asset.mediaType} · {formatMegabytes(asset.sizeBytes)}
                     </p>
-                  </div>
-                  <div className="flex flex-wrap gap-1">
-                    <label className="inline-flex items-center gap-1 rounded-md border border-white/10 px-2 py-1 text-[10px] text-white/80">
-                      <input
-                        type="checkbox"
-                        checked={getAssetLoopPref(asset)}
-                        disabled={isBusy}
-                        onChange={(event) => onAssetLoopPrefChange(asset.id, event.target.checked)}
-                        className="rounded border-white/20 bg-black/40 text-emerald-500"
-                      />
-                      <Repeat size={10} />
-                      Loop
-                    </label>
-                    {asset.mediaType === "video" ? (
-                      <label
-                        className="inline-flex items-center gap-1 rounded-md border border-white/10 px-2 py-1 text-[10px] text-white/80"
-                        title="New timeline clips pulse to the beat"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={getAssetAudioPulsePref(asset)}
-                          disabled={isBusy}
-                          onChange={(event) => onAssetAudioPulsePrefChange(asset.id, event.target.checked)}
-                          className="rounded border-white/20 bg-black/40 text-emerald-500"
-                        />
-                        <AudioLines size={10} />
-                        Pulse
-                      </label>
-                    ) : null}
                   </div>
                   <div className="flex gap-1">
                     <button

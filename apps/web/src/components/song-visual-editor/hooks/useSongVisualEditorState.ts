@@ -45,7 +45,6 @@ import {
 } from "./optimisticSongVisualCache";
 import {
   beatFxForAudioPulse,
-  defaultAssetAudioPulse,
   readClipAudioPulse,
 } from "../audioPulse";
 
@@ -79,8 +78,6 @@ export function useSongVisualEditorState({
 
   const [error, setError] = useState<string | null>(null);
   const [selectedAttachmentId, setSelectedAttachmentId] = useState<string | null>(null);
-  const [assetLoopPrefs, setAssetLoopPrefs] = useState<Record<string, boolean>>({});
-  const [assetAudioPulsePrefs, setAssetAudioPulsePrefs] = useState<Record<string, boolean>>({});
   const [clipboard, setClipboard] = useState<ClipClipboard | null>(null);
   const [clipSyncStatus, setClipSyncStatus] = useState<Record<string, ClipSyncStatus>>({});
 
@@ -195,22 +192,6 @@ export function useSongVisualEditorState({
     onError: (err) => setError(err instanceof Error ? err.message : "Delete failed."),
   });
 
-  function getAssetLoopPref(asset: VisualMediaAssetRecord) {
-    return assetLoopPrefs[asset.id] ?? defaultAssetLoop(asset);
-  }
-
-  function setAssetLoopPref(assetId: string, loop: boolean) {
-    setAssetLoopPrefs((current) => ({ ...current, [assetId]: loop }));
-  }
-
-  function getAssetAudioPulsePref(asset: VisualMediaAssetRecord) {
-    return assetAudioPulsePrefs[asset.id] ?? defaultAssetAudioPulse(asset.mediaType);
-  }
-
-  function setAssetAudioPulsePref(assetId: string, enabled: boolean) {
-    setAssetAudioPulsePrefs((current) => ({ ...current, [assetId]: enabled }));
-  }
-
   function nextClipOrder(source = attachments) {
     return source.reduce((max, attachment) => Math.max(max, attachment.order), -1) + 1;
   }
@@ -296,7 +277,7 @@ export function useSongVisualEditorState({
     asset: VisualMediaAssetRecord,
     opts: { loop?: boolean; startSec?: number } = {},
   ) {
-    const loop = opts.loop ?? getAssetLoopPref(asset);
+    const loop = opts.loop ?? defaultAssetLoop(asset);
     const requestedStart = opts.startSec ?? 0;
     const stubAttachment = { mediaAsset: asset } as SongVisualAttachmentRecord;
     const bounds = resolveClipInsert(stubAttachment, requestedStart, timelineDurationSec, { loop });
@@ -320,9 +301,7 @@ export function useSongVisualEditorState({
         muted: true,
         objectFit: "cover",
       },
-      beatFx: asset.mediaType === "video" && getAssetAudioPulsePref(asset)
-        ? beatFxForAudioPulse(true)
-        : undefined,
+      beatFx: undefined,
     });
   }
 
@@ -598,10 +577,6 @@ export function useSongVisualEditorState({
     isSavingTimeline,
     hasClipboard,
     fileInputRef,
-    getAssetLoopPref,
-    setAssetLoopPref,
-    getAssetAudioPulsePref,
-    setAssetAudioPulsePref,
     readClipAudioPulse,
     openUploadPicker,
     uploadFile,
