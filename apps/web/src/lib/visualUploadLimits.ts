@@ -1,7 +1,7 @@
 /** Client-side caps — must stay aligned with backend uploadPolicy. */
 export const VISUAL_UPLOAD_MAX_BYTES = {
-  video: 25 * 1024 * 1024,
-  image: 5 * 1024 * 1024,
+  video: 250 * 1024 * 1024,
+  image: 15 * 1024 * 1024,
   /** Future Lottie JSON — vector animations, small payload, parsed client-side. */
   lottie: 2 * 1024 * 1024,
 } as const;

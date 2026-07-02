@@ -26,8 +26,8 @@ describe("uploadPolicy", () => {
 
   it("formats size error messages per kind", () => {
     expect(fileTooLargeMessage("audio")).toContain("100");
-    expect(fileTooLargeMessage("image")).toContain("5");
-    expect(fileTooLargeMessage("video")).toContain("25");
+    expect(fileTooLargeMessage("image")).toContain("15");
+    expect(fileTooLargeMessage("video")).toContain("250");
   });
 
   it("allows studio video mime/extension pairs", () => {

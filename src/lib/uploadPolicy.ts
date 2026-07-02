@@ -3,8 +3,8 @@ export type UploadMediaKind = "audio" | "image" | "video";
 /** Generous audio cap; visual caps tuned for studio uploads. */
 export const UPLOAD_MAX_BYTES: Record<UploadMediaKind, number> = {
   audio: 100 * 1024 * 1024,
-  image: 5 * 1024 * 1024,
-  video: 25 * 1024 * 1024,
+  image: 15 * 1024 * 1024,
+  video: 250 * 1024 * 1024,
 };
 
 /** Planned cap for Lottie JSON attachments (not wired to upload yet). */

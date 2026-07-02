@@ -25,6 +25,6 @@ export const MAX_MEDIA_DIMENSION_PX = 16_384;
 export const MAX_MEDIA_DURATION_MS = 86_400_000;
 
 export const VISUAL_UPLOAD_LIMITS = {
-  videoBytes: 25 * 1024 * 1024,
-  imageBytes: 5 * 1024 * 1024,
+  videoBytes: 250 * 1024 * 1024,
+  imageBytes: 15 * 1024 * 1024,
 } as const;

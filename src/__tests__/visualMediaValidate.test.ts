@@ -204,7 +204,7 @@ describe("visual upload limits", () => {
   it("matches frontend visual upload caps", () => {
     expect(UPLOAD_MAX_BYTES.video).toBe(VISUAL_UPLOAD_LIMITS.videoBytes);
     expect(UPLOAD_MAX_BYTES.image).toBe(VISUAL_UPLOAD_LIMITS.imageBytes);
-    expect(VISUAL_UPLOAD_LIMITS.videoBytes).toBe(25 * 1024 * 1024);
-    expect(VISUAL_UPLOAD_LIMITS.imageBytes).toBe(5 * 1024 * 1024);
+    expect(VISUAL_UPLOAD_LIMITS.videoBytes).toBe(250 * 1024 * 1024);
+    expect(VISUAL_UPLOAD_LIMITS.imageBytes).toBe(15 * 1024 * 1024);
   });
 });
