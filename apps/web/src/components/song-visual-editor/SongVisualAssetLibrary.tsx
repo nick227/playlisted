@@ -1,140 +1,167 @@
-import { Film, ImageIcon, Plus, Trash2, Upload } from "lucide-react";
+import { Plus, Repeat, Trash2, Upload } from "lucide-react";
 import { useState, type DragEvent } from "react";
 
 import type { VisualMediaAssetRecord } from "@/lib/visualMediaApi";
-import { VISUAL_UPLOAD_MAX_BYTES, visualUploadKindForFile } from "@/lib/visualUploadLimits";
+import { VISUAL_UPLOAD_MAX_BYTES } from "@/lib/visualUploadLimits";
 
+import { MediaAssetThumb } from "./MediaAssetThumb";
 import { formatMegabytes } from "./timelineLayout";
-import { resolveAssetUrl } from "./types";
+import type { TimelineClip } from "./types";
 
 type SongVisualAssetLibraryProps = {
+  timelineClips: TimelineClip[];
   assets: VisualMediaAssetRecord[];
-  attachedAssetIds: ReadonlySet<string>;
-  remainingTimelineSec: number;
   isBusy: boolean;
+  getAssetLoopPref: (asset: VisualMediaAssetRecord) => boolean;
+  onAssetLoopPrefChange: (assetId: string, loop: boolean) => void;
+  onClipLoopChange: (attachmentId: string, loop: boolean) => void;
   onAddToTimeline: (assetId: string) => void;
+  onRemoveClip: (attachmentId: string) => void;
+  onSelectClip: (attachmentId: string) => void;
   onDeleteAsset: (assetId: string) => void;
   onUpload: () => void;
   onUploadFile: (file: File) => void;
+  selectedAttachmentId: string | null;
 };
 
 export function SongVisualAssetLibrary({
+  timelineClips,
   assets,
-  attachedAssetIds,
-  remainingTimelineSec,
   isBusy,
+  getAssetLoopPref,
+  onAssetLoopPrefChange,
+  onClipLoopChange,
   onAddToTimeline,
+  onRemoveClip,
+  onSelectClip,
   onDeleteAsset,
   onUpload,
   onUploadFile,
+  selectedAttachmentId,
 }: SongVisualAssetLibraryProps) {
-  const timelineFull = remainingTimelineSec < 0.5;
   const [isDragOver, setIsDragOver] = useState(false);
-
-  function handleDragOver(event: DragEvent<HTMLDivElement>) {
-    event.preventDefault();
-    if (isBusy) return;
-    setIsDragOver(true);
-  }
-
-  function handleDragLeave(event: DragEvent<HTMLDivElement>) {
-    if (event.currentTarget.contains(event.relatedTarget as Node | null)) return;
-    setIsDragOver(false);
-  }
 
   function handleDrop(event: DragEvent<HTMLDivElement>) {
     event.preventDefault();
     setIsDragOver(false);
     if (isBusy) return;
-
-    const file = Array.from(event.dataTransfer.files).find((candidate) => visualUploadKindForFile(candidate) != null);
+    const file = Array.from(event.dataTransfer.files).find(
+      (candidate) => candidate.type.startsWith("video/") || candidate.type.startsWith("image/"),
+    );
     if (file) onUploadFile(file);
   }
 
-  function handlePanelClick() {
-    if (isBusy) return;
-    onUpload();
-  }
-
   return (
-    <div
-      role="button"
-      tabIndex={isBusy ? -1 : 0}
-      onClick={handlePanelClick}
-      onKeyDown={(event) => {
-        if (isBusy) return;
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          onUpload();
-        }
-      }}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
-      aria-label="Upload videos or images"
-      className={[
-        "rounded-xl border bg-black/20 p-3 transition-colors",
-        isBusy ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:border-white/20 hover:bg-black/30",
-        isDragOver ? "border-emerald-400/50 bg-emerald-500/10" : "border-white/10",
-      ].join(" ")}
-    >
-      {timelineFull ? (
-        <p
-          className="mb-3 rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs text-amber-100"
-          onClick={(event) => event.stopPropagation()}
-        >
-          Timeline is full. Shorten a clip, turn off loop stretch, or remove a clip before adding more.
-        </p>
-      ) : null}
-
-      {assets.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 py-10 text-center">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/50">
-            {isDragOver ? <Plus size={18} /> : <Upload size={18} />}
-          </div>
-          <p className="text-sm text-white/60">
-            {isDragOver ? "Drop to upload" : "Click or drop videos and images here"}
+    <div className="space-y-4">
+      <section className="space-y-2">
+        <h3 className="text-xs uppercase tracking-wide text-white/40">On timeline</h3>
+        {timelineClips.length === 0 ? (
+          <p className="rounded-lg border border-dashed border-white/10 bg-black/20 px-3 py-4 text-center text-xs text-white/35">
+            Add clips from the library below or upload new media.
           </p>
-          <p className="text-xs text-white/35">
-            Up to {formatMegabytes(VISUAL_UPLOAD_MAX_BYTES.video)} video · {formatMegabytes(VISUAL_UPLOAD_MAX_BYTES.image)} image
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
-          {assets.map((asset) => {
-            const onTimeline = attachedAssetIds.has(asset.id);
-            const previewUrl = asset.thumbnailUrl ?? (asset.mediaType === "image" ? asset.url : null);
-
-            return (
-              <article
-                key={asset.id}
-                className="group overflow-hidden rounded-lg border border-white/10 bg-black/30"
-                onClick={(event) => event.stopPropagation()}
-              >
-                <div className="relative aspect-video bg-black">
-                  {previewUrl ? (
-                    asset.mediaType === "video" && !asset.thumbnailUrl ? (
-                      <video
-                        src={resolveAssetUrl(asset.url)}
-                        className="h-full w-full object-cover opacity-80"
-                        muted
-                        playsInline
-                        preload="metadata"
-                      />
-                    ) : (
-                      <img
-                        src={resolveAssetUrl(previewUrl)}
-                        alt={asset.originalName}
-                        className="h-full w-full object-cover"
-                      />
-                    )
-                  ) : (
-                    <div className="flex h-full items-center justify-center text-white/30">
-                      {asset.mediaType === "video" ? <Film size={20} /> : <ImageIcon size={20} />}
+        ) : (
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+            {[...timelineClips].sort((left, right) => left.startSec - right.startSec).map((clip) => {
+              const { attachment } = clip;
+              const selected = attachment.id === selectedAttachmentId;
+              return (
+                <article
+                  key={attachment.id}
+                  className={[
+                    "overflow-hidden rounded-lg border bg-black/30",
+                    selected ? "border-emerald-400/50" : "border-white/10",
+                  ].join(" ")}
+                >
+                  <button
+                    type="button"
+                    disabled={isBusy}
+                    onClick={() => onSelectClip(attachment.id)}
+                    className="block w-full text-left"
+                  >
+                    <MediaAssetThumb asset={attachment.mediaAsset} className="aspect-video w-full" />
+                  </button>
+                  <div className="space-y-2 p-2">
+                    <p className="truncate text-xs font-medium text-white">
+                      {attachment.label ?? attachment.mediaAsset.originalName}
+                    </p>
+                    <p className="text-[10px] text-white/40">
+                      {clip.startSec.toFixed(1)}s · {clip.durationSec.toFixed(1)}s
+                    </p>
+                    <div className="flex items-center gap-1">
+                      <label className="inline-flex flex-1 items-center gap-1 rounded-md border border-white/10 px-2 py-1 text-[10px] text-white/80">
+                        <input
+                          type="checkbox"
+                          checked={clip.loop}
+                          disabled={isBusy}
+                          onChange={(event) => onClipLoopChange(attachment.id, event.target.checked)}
+                          className="rounded border-white/20 bg-black/40 text-emerald-500"
+                        />
+                        <Repeat size={10} />
+                        Loop
+                      </label>
+                      <button
+                        type="button"
+                        disabled={isBusy}
+                        onClick={() => onRemoveClip(attachment.id)}
+                        className="rounded-md border border-red-500/20 px-2 py-1 text-red-200 hover:bg-red-500/10 disabled:opacity-40"
+                        aria-label="Remove clip from timeline"
+                      >
+                        <Trash2 size={12} />
+                      </button>
                     </div>
-                  )}
-                </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </section>
 
+      <section
+        onDragOver={(event) => {
+          event.preventDefault();
+          if (!isBusy) setIsDragOver(true);
+        }}
+        onDragLeave={() => setIsDragOver(false)}
+        onDrop={handleDrop}
+        className={[
+          "rounded-xl border bg-black/20 p-3 transition-colors",
+          isDragOver ? "border-emerald-400/50 bg-emerald-500/10" : "border-white/10",
+        ].join(" ")}
+      >
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <h3 className="text-xs uppercase tracking-wide text-white/40">Library</h3>
+          <button
+            type="button"
+            disabled={isBusy}
+            onClick={onUpload}
+            className="inline-flex items-center gap-1 rounded-full border border-white/15 px-3 py-1 text-[11px] font-semibold text-white hover:bg-white/10 disabled:opacity-40"
+          >
+            <Upload size={12} />
+            Upload
+          </button>
+        </div>
+
+        {assets.length === 0 ? (
+          <button
+            type="button"
+            disabled={isBusy}
+            onClick={onUpload}
+            className="flex w-full flex-col items-center gap-2 py-8 text-center disabled:opacity-40"
+          >
+            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/50">
+              {isDragOver ? <Plus size={18} /> : <Upload size={18} />}
+            </div>
+            <p className="text-sm text-white/60">Click or drop videos and images here</p>
+            <p className="text-xs text-white/35">
+              Up to {formatMegabytes(VISUAL_UPLOAD_MAX_BYTES.video)} video · {formatMegabytes(VISUAL_UPLOAD_MAX_BYTES.image)} image
+            </p>
+          </button>
+        ) : (
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+            {assets.map((asset) => (
+              <article key={asset.id} className="overflow-hidden rounded-lg border border-white/10 bg-black/30">
+                <MediaAssetThumb asset={asset} className="aspect-video w-full" />
                 <div className="space-y-2 p-2">
                   <div className="min-w-0">
                     <p className="truncate text-xs font-medium text-white">{asset.originalName}</p>
@@ -142,28 +169,31 @@ export function SongVisualAssetLibrary({
                       {asset.mediaType} · {formatMegabytes(asset.sizeBytes)}
                     </p>
                   </div>
-
+                  <label className="inline-flex items-center gap-1 rounded-md border border-white/10 px-2 py-1 text-[10px] text-white/80">
+                    <input
+                      type="checkbox"
+                      checked={getAssetLoopPref(asset)}
+                      disabled={isBusy}
+                      onChange={(event) => onAssetLoopPrefChange(asset.id, event.target.checked)}
+                      className="rounded border-white/20 bg-black/40 text-emerald-500"
+                    />
+                    <Repeat size={10} />
+                    Loop
+                  </label>
                   <div className="flex gap-1">
                     <button
                       type="button"
-                      disabled={isBusy || onTimeline || timelineFull}
+                      disabled={isBusy}
                       onClick={() => onAddToTimeline(asset.id)}
-                      className="flex-1 rounded-md border border-white/10 px-2 py-1 text-[11px] text-white hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
-                      title={
-                        onTimeline
-                          ? "Already on timeline"
-                          : timelineFull
-                            ? "Timeline full"
-                            : "Add to timeline"
-                      }
+                      className="flex-1 rounded-md border border-white/10 px-2 py-1 text-[11px] text-white hover:bg-white/10 disabled:opacity-40"
                     >
-                      {onTimeline ? "On timeline" : "Add"}
+                      Add
                     </button>
                     <button
                       type="button"
                       disabled={isBusy}
                       onClick={() => {
-                        if (window.confirm(`Delete "${asset.originalName}" permanently? This removes the file from your library.`)) {
+                        if (window.confirm(`Delete "${asset.originalName}" permanently?`)) {
                           onDeleteAsset(asset.id);
                         }
                       }}
@@ -175,10 +205,10 @@ export function SongVisualAssetLibrary({
                   </div>
                 </div>
               </article>
-            );
-          })}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   );
 }

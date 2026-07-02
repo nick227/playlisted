@@ -1,5 +1,5 @@
 import { Loader2, X } from "lucide-react";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 
 import { useSuppressPlaybackFocus } from "@/lib/playbackFocusSuppression";
 import { useAuth } from "@/providers/AuthProvider";
@@ -37,6 +37,41 @@ export function SongVisualEditorModal({ recording, onClose }: SongVisualEditorMo
     () => findClipAtTime(editor.timelineClips, playback.currentTimeSec),
     [editor.timelineClips, playback.currentTimeSec],
   );
+
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
+
+      const key = event.key.toLowerCase();
+      const mod = event.metaKey || event.ctrlKey;
+
+      if (mod && key === "c") {
+        event.preventDefault();
+        editor.copySelectedClip();
+        return;
+      }
+
+      if (mod && key === "v") {
+        event.preventDefault();
+        void editor.pasteClipAt(playback.currentTimeSec);
+        return;
+      }
+
+      if ((key === "delete" || key === "backspace") && editor.selectedAttachmentId) {
+        event.preventDefault();
+        editor.detachAttachment(editor.selectedAttachmentId);
+      }
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [
+    editor.copySelectedClip,
+    editor.pasteClipAt,
+    editor.detachAttachment,
+    editor.selectedAttachmentId,
+    playback.currentTimeSec,
+  ]);
 
   if (!accessToken) {
     return null;
@@ -99,28 +134,32 @@ export function SongVisualEditorModal({ recording, onClose }: SongVisualEditorMo
           <SongVisualEditorTimeline
             clips={editor.timelineClips}
             durationSec={durationSec}
-            remainingSec={editor.remainingTimelineSec}
             currentTimeSec={playback.currentTimeSec}
             isBusy={editor.isBusy}
+            hasClipboard={editor.hasClipboard}
             selectedAttachmentId={editor.selectedAttachmentId}
             onSelectAttachment={editor.selectAttachment}
-            onRemoveAttachment={editor.detachAttachment}
-            onToggleLoop={(attachmentId, loop) => void editor.setClipLoop(attachmentId, loop)}
             onMoveClip={(attachmentId, nextStartSec) => void editor.moveClip(attachmentId, nextStartSec)}
             onResizeClip={(attachmentId, nextDurationSec) => void editor.resizeClip(attachmentId, nextDurationSec)}
             onResizeClipStart={(attachmentId, nextStartSec) => void editor.resizeClipStart(attachmentId, nextStartSec)}
             onCutClipAt={(attachmentId, cutSec) => void editor.cutClipAt(attachmentId, cutSec)}
+            onCutAtTime={(cutSec) => void editor.cutAtTime(cutSec)}
           />
 
           <SongVisualAssetLibrary
+            timelineClips={editor.timelineClips}
             assets={editor.assets}
-            attachedAssetIds={editor.attachedAssetIds}
-            remainingTimelineSec={editor.remainingTimelineSec}
             isBusy={editor.isBusy}
-            onAddToTimeline={(assetId) => void editor.attachExistingAsset(assetId)}
+            getAssetLoopPref={editor.getAssetLoopPref}
+            onAssetLoopPrefChange={editor.setAssetLoopPref}
+            onClipLoopChange={(attachmentId, loop) => void editor.setClipLoop(attachmentId, loop)}
+            onAddToTimeline={(assetId) => void editor.attachExistingAsset(assetId, playback.currentTimeSec)}
+            onRemoveClip={editor.detachAttachment}
+            onSelectClip={editor.selectAttachment}
             onDeleteAsset={editor.deleteAsset}
             onUpload={editor.openUploadPicker}
             onUploadFile={editor.uploadFile}
+            selectedAttachmentId={editor.selectedAttachmentId}
           />
 
           {editor.error ? (

@@ -111,12 +111,6 @@ songVisualMediaRouter.post("/:songId/visual-media", async (req, res, next) => {
 
     res.status(201).json(mapSongVisualAttachment(attachment, songId));
   } catch (error) {
-    if (error && typeof error === "object" && "code" in error && error.code === "P2002") {
-      return res.status(409).json({
-        error: "attachment_exists",
-        message: "This media asset is already attached to the song.",
-      });
-    }
     next(error);
   }
 });

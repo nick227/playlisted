@@ -1,6 +1,7 @@
-import { Repeat, Scissors } from "lucide-react";
+import { GripVertical, Repeat, Scissors } from "lucide-react";
 import { useState, type PointerEvent as ReactPointerEvent } from "react";
 
+import { MediaAssetThumb } from "./MediaAssetThumb";
 import { isPointerDrag, timeSecFromTimelinePointer } from "./timelineLayout";
 import type { TimelineClip } from "./types";
 
@@ -10,6 +11,7 @@ type TimelineClipBlockProps = {
   selected: boolean;
   cutMode: boolean;
   isBusy: boolean;
+  stackOrder: number;
   trackRect: DOMRect | null;
   onSelect: () => void;
   onMove: (nextStartSec: number) => void;
@@ -34,6 +36,7 @@ export function TimelineClipBlock({
   selected,
   cutMode,
   isBusy,
+  stackOrder,
   trackRect,
   onSelect,
   onMove,
@@ -48,7 +51,7 @@ export function TimelineClipBlock({
   const renderDurationSec = preview?.durationSec ?? clip.durationSec;
   const leftPct = (renderStartSec / durationSec) * 100;
   const widthPct = (renderDurationSec / durationSec) * 100;
-  const mediaType = clip.attachment.mediaAsset.mediaType;
+  const isDragging = drag != null;
 
   function trackTime(clientX: number) {
     if (!trackRect) return clip.startSec;
@@ -122,48 +125,74 @@ export function TimelineClipBlock({
   return (
     <div
       className={[
-        "absolute top-0 flex h-full min-w-[3rem] overflow-hidden rounded-md border text-left text-[11px] transition-colors",
+        "absolute top-0 flex h-full min-w-[4rem] overflow-hidden rounded-md border text-left text-[11px]",
         selected
-          ? "border-emerald-400/60 bg-emerald-400/20 text-white"
-          : "border-white/15 bg-white/10 text-white/80 hover:border-white/30",
-        cutMode ? "cursor-crosshair" : selected ? "cursor-grab active:cursor-grabbing" : "cursor-pointer",
-        preview ? "opacity-90" : "",
+          ? "border-emerald-400 ring-2 ring-emerald-400/30 text-white"
+          : "border-white/20 text-white/90 hover:border-white/40",
+        cutMode ? "cursor-crosshair" : "cursor-grab",
+        isDragging ? "z-50 scale-[1.02] shadow-lg shadow-emerald-500/20" : "",
       ].join(" ")}
-      style={{ left: `${leftPct}%`, width: `${widthPct}%` }}
-      onPointerDown={cutMode ? undefined : (event) => beginDrag("move", event)}
-      onPointerMove={cutMode ? undefined : updateDragPreview}
-      onPointerUp={cutMode ? onCutPointerUp : finishDrag}
+      style={{ left: `${leftPct}%`, width: `${widthPct}%`, zIndex: isDragging ? 50 : stackOrder }}
+      onPointerUp={cutMode ? onCutPointerUp : undefined}
     >
-      {selected && !cutMode ? (
+      <MediaAssetThumb
+        asset={clip.attachment.mediaAsset}
+        className="pointer-events-none absolute inset-0 opacity-70"
+      />
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black/55 via-black/35 to-black/55" />
+
+      {!cutMode ? (
         <button
           type="button"
-          aria-label="Trim clip start"
-          onPointerDown={(event) => beginDrag("resize-start", event)}
+          aria-label="Drag clip"
+          onPointerDown={(event) => beginDrag("move", event)}
           onPointerMove={updateDragPreview}
           onPointerUp={finishDrag}
-          className="w-2 shrink-0 cursor-ew-resize bg-emerald-400/40 hover:bg-emerald-400/70"
-        />
+          className={[
+            "relative z-10 flex w-5 shrink-0 items-center justify-center border-r border-white/10 bg-black/40",
+            isDragging ? "cursor-grabbing" : "cursor-grab",
+          ].join(" ")}
+        >
+          <GripVertical size={12} className="text-white/70" />
+        </button>
       ) : null}
 
-      <div className="flex min-w-0 flex-1 items-center gap-2 px-2 py-1">
-        <span className="truncate font-medium">
+      <button
+        type="button"
+        aria-label="Trim clip start"
+        onPointerDown={(event) => beginDrag("resize-start", event)}
+        onPointerMove={updateDragPreview}
+        onPointerUp={finishDrag}
+        className={[
+          "absolute bottom-0 left-0 top-0 z-20 w-2 cursor-ew-resize bg-emerald-400/30 hover:bg-emerald-400/60",
+          cutMode ? "hidden" : selected || isDragging ? "opacity-100" : "opacity-0 hover:opacity-100",
+        ].join(" ")}
+      />
+
+      <div
+        className="relative z-10 flex min-w-0 flex-1 items-center gap-1 px-1.5 py-1"
+        onPointerDown={cutMode ? undefined : (event) => beginDrag("move", event)}
+        onPointerMove={cutMode ? undefined : updateDragPreview}
+        onPointerUp={cutMode ? undefined : finishDrag}
+      >
+        <span className="truncate font-medium drop-shadow">
           {clip.attachment.label ?? clip.attachment.mediaAsset.originalName}
         </span>
-        <span className="shrink-0 rounded bg-black/30 px-1 py-0.5 uppercase">{mediaType}</span>
-        {clip.loop ? <Repeat size={10} className="shrink-0 opacity-60" /> : null}
-        {cutMode ? <Scissors size={10} className="shrink-0 opacity-60" /> : null}
+        {clip.loop ? <Repeat size={10} className="shrink-0 opacity-80" /> : null}
+        {cutMode ? <Scissors size={10} className="shrink-0 opacity-80" /> : null}
       </div>
 
-      {selected && !cutMode ? (
-        <button
-          type="button"
-          aria-label="Trim clip end"
-          onPointerDown={(event) => beginDrag("resize-end", event)}
-          onPointerMove={updateDragPreview}
-          onPointerUp={finishDrag}
-          className="w-2 shrink-0 cursor-ew-resize bg-emerald-400/40 hover:bg-emerald-400/70"
-        />
-      ) : null}
+      <button
+        type="button"
+        aria-label="Trim clip end"
+        onPointerDown={(event) => beginDrag("resize-end", event)}
+        onPointerMove={updateDragPreview}
+        onPointerUp={finishDrag}
+        className={[
+          "absolute bottom-0 right-0 top-0 z-20 w-2 cursor-ew-resize bg-emerald-400/30 hover:bg-emerald-400/60",
+          cutMode ? "hidden" : selected || isDragging ? "opacity-100" : "opacity-0 hover:opacity-100",
+        ].join(" ")}
+      />
     </div>
   );
 }

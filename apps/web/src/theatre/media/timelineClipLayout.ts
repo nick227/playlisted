@@ -155,7 +155,9 @@ export function findActiveTimelineClip(
   clips: VisualMediaTimelineClip[],
   playheadSec: number,
 ): VisualMediaTimelineClip | null {
-  return clips.find((clip) => playheadSec >= clip.startSec && playheadSec < clip.endSec) ?? null
+  return clips
+    .filter((clip) => playheadSec >= clip.startSec && playheadSec < clip.endSec)
+    .sort((left, right) => (right.attachment.order ?? 0) - (left.attachment.order ?? 0))[0] ?? null
 }
 
 export function getRemainingTimelineSec(clips: VisualMediaTimelineClip[], songDurationSec: number): number {

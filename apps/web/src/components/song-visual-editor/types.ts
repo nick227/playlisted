@@ -27,11 +27,11 @@ export function policyFromIncludeSiteMedia(includeSiteMedia: boolean): Exclude<S
 }
 
 export function findClipAtTime(clips: TimelineClip[], timeSec: number): TimelineClip | null {
-  return clips.find((clip) => timeSec >= clip.startSec && timeSec < clip.endSec) ?? null;
+  return findTopClipAtTime(clips, timeSec);
 }
 
 export function resolveAssetUrl(url: string) {
   return new URL(url, window.location.origin).href;
 }
 
-export { layoutTimelineClips, getRemainingTimelineSec } from "./timelineLayout";
+export { findClipAtTime, findTopClipAtTime, layoutTimelineClips, getRemainingTimelineSec } from "./timelineLayout";

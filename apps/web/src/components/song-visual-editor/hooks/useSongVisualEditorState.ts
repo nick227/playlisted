@@ -13,29 +13,41 @@ import {
   type SongVisualAttachmentRecord,
   type VisualMediaAssetRecord,
 } from "@/lib/visualMediaApi";
+import type { VisualMediaBeatFx } from "@/theatre/media/types";
 import { clearRemoteTrackVisualMedia } from "@/theatre/media/resolveTrackVisualMedia";
 
 import {
   buildPlaybackPatch,
+  clampClipStart,
   clipDurationAfterLoopChange,
   defaultClipDurationSec,
+  findTopClipAtTime,
   getClipLoop,
   getNaturalDurationSec,
-  getRemainingTimelineSec,
   MIN_CLIP_SEC,
   readClipPlayback,
   resolveClipMoveStart,
-  splitClipAt,
+  trimClipAtShortSide,
 } from "../timelineLayout";
 import { layoutTimelineClips, policyFromIncludeSiteMedia, policyIncludesSiteMedia } from "../types";
 
-const MIN_REMAINING_SEC = 0.5;
+type ClipClipboard = {
+  mediaAssetId: string;
+  label: string | null;
+  policy: SongVisualAttachmentRecord["policy"];
+  playback: Record<string, unknown>;
+  beatFx: VisualMediaBeatFx | null;
+};
 
 type UseSongVisualEditorStateArgs = {
   recordingId: string;
   accessToken: string;
   durationSeconds?: number | null;
 };
+
+function defaultAssetLoop(asset: VisualMediaAssetRecord) {
+  return asset.mediaType === "video";
+}
 
 export function useSongVisualEditorState({
   recordingId,
@@ -46,6 +58,8 @@ export function useSongVisualEditorState({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedAttachmentId, setSelectedAttachmentId] = useState<string | null>(null);
+  const [assetLoopPrefs, setAssetLoopPrefs] = useState<Record<string, boolean>>({});
+  const [clipboard, setClipboard] = useState<ClipClipboard | null>(null);
 
   const attachmentsQuery = useQuery({
     queryKey: ["song-visual-media", recordingId],
@@ -65,16 +79,6 @@ export function useSongVisualEditorState({
   const timelineClips = useMemo(
     () => layoutTimelineClips(attachments, timelineDurationSec),
     [attachments, timelineDurationSec],
-  );
-
-  const remainingTimelineSec = useMemo(
-    () => getRemainingTimelineSec(timelineClips, timelineDurationSec),
-    [timelineClips, timelineDurationSec],
-  );
-
-  const attachedAssetIds = useMemo(
-    () => new Set(attachments.filter((attachment) => attachment.enabled).map((attachment) => attachment.mediaAssetId)),
-    [attachments],
   );
 
   const invalidateSong = async () => {
@@ -100,7 +104,7 @@ export function useSongVisualEditorState({
   const uploadMutation = useMutation({
     mutationFn: (file: File) => uploadVisualMediaFile(file, accessToken),
     onSuccess: async (asset) => {
-      await attachAssetToTimeline(asset);
+      await attachAssetToTimeline(asset, { startSec: 0 });
       await invalidateAssets();
     },
     onError: (err) => setError(err instanceof Error ? err.message : "Upload failed."),
@@ -136,20 +140,35 @@ export function useSongVisualEditorState({
     onError: (err) => setError(err instanceof Error ? err.message : "Delete failed."),
   });
 
-  function assertTimelineSpace() {
-    if (remainingTimelineSec < MIN_REMAINING_SEC) {
-      setError("Timeline is full. Shorten, remove a clip, or disable loop stretch on a clip before adding more.");
-      return false;
-    }
-    setError(null);
-    return true;
+  function getAssetLoopPref(asset: VisualMediaAssetRecord) {
+    return assetLoopPrefs[asset.id] ?? defaultAssetLoop(asset);
   }
 
-  async function attachAssetToTimeline(asset: VisualMediaAssetRecord) {
-    if (!assertTimelineSpace()) return;
+  function setAssetLoopPref(assetId: string, loop: boolean) {
+    setAssetLoopPrefs((current) => ({ ...current, [assetId]: loop }));
+  }
 
-    const startSec = timelineClips.at(-1)?.endSec ?? 0;
-    const loop = asset.mediaType === "video";
+  function nextClipOrder() {
+    return attachments.reduce((max, attachment) => Math.max(max, attachment.order), -1) + 1;
+  }
+
+  async function bringClipToFront(attachmentId: string) {
+    const attachment = attachments.find((item) => item.id === attachmentId);
+    if (!attachment) return;
+    const topOrder = attachments.reduce((max, item) => Math.max(max, item.order), 0);
+    if (attachment.order >= topOrder) return;
+    await updateMutation.mutateAsync({
+      attachmentId,
+      body: { order: topOrder + 1 },
+    });
+  }
+
+  async function attachAssetToTimeline(
+    asset: VisualMediaAssetRecord,
+    opts: { loop?: boolean; startSec?: number } = {},
+  ) {
+    const loop = opts.loop ?? getAssetLoopPref(asset);
+    const startSec = opts.startSec ?? 0;
     const stubAttachment = {
       mediaAsset: asset,
       playback: { loop },
@@ -159,7 +178,7 @@ export function useSongVisualEditorState({
     await attachMutation.mutateAsync({
       mediaAssetId: asset.id,
       policy: policy === "defaultOnly" ? "preferAttached" : policy,
-      order: timelineClips.length,
+      order: nextClipOrder(),
       label: asset.originalName,
       playback: {
         loop,
@@ -220,11 +239,15 @@ export function useSongVisualEditorState({
     if (!attachment || !clip) return;
 
     const resolvedStart = resolveClipMoveStart(clip, timelineClips, nextStartSec, timelineDurationSec);
-    if (Math.abs(resolvedStart - clip.startSec) < 0.01) return;
+    if (Math.abs(resolvedStart - clip.startSec) < 0.01) {
+      await bringClipToFront(attachmentId);
+      return;
+    }
 
     await updateMutation.mutateAsync({
       attachmentId,
       body: {
+        order: nextClipOrder(),
         playback: buildPlaybackPatch(attachment, { timelineStartSec: resolvedStart }),
       },
     });
@@ -239,12 +262,9 @@ export function useSongVisualEditorState({
     const playback = readClipPlayback(attachment);
     const endSec = clip.endSec;
     let startSec = Math.max(0, Math.min(nextStartSec, endSec - MIN_CLIP_SEC));
-    const tentativeClip = { ...clip, startSec, durationSec: endSec - startSec };
-    startSec = resolveClipMoveStart(tentativeClip, timelineClips, startSec, timelineDurationSec);
 
     let durationSec = endSec - startSec;
-    const deltaSec = startSec - clip.startSec;
-    let startOffsetMs = Math.max(0, (playback.startOffsetMs ?? 0) + Math.round(deltaSec * 1000));
+    let startOffsetMs = Math.max(0, (playback.startOffsetMs ?? 0) + Math.round((startSec - clip.startSec) * 1000));
 
     if (!loop) {
       const maxDuration = getNaturalDurationSec(attachment) - startOffsetMs / 1000;
@@ -269,43 +289,47 @@ export function useSongVisualEditorState({
     });
   }
 
-  async function cutClipAt(attachmentId: string, cutSec: number) {
+  async function applyTrimAt(attachmentId: string, cutSec: number) {
     const attachment = attachments.find((item) => item.id === attachmentId);
     const clip = timelineClips.find((item) => item.attachment.id === attachmentId);
     if (!attachment || !clip) return;
 
-    const split = splitClipAt(clip, cutSec);
-    if (!split) {
-      setError(`Cut needs at least ${MIN_CLIP_SEC}s on each side of the split.`);
+    const trim = trimClipAtShortSide(clip, cutSec);
+    if (!trim) {
+      setError("Click inside a clip to cut.");
       return;
     }
 
     setError(null);
-    const playback = readClipPlayback(attachment);
+    if (trim.action === "delete") {
+      await detachMutation.mutateAsync(attachmentId);
+      return;
+    }
 
     await updateMutation.mutateAsync({
       attachmentId,
       body: {
         playback: buildPlaybackPatch(attachment, {
-          timelineStartSec: clip.startSec,
-          timelineDurationSec: split.leftDurationSec,
+          timelineStartSec: trim.timelineStartSec,
+          timelineDurationSec: trim.timelineDurationSec,
+          startOffsetMs: trim.startOffsetMs,
         }),
       },
     });
+  }
 
-    await attachMutation.mutateAsync({
-      mediaAssetId: attachment.mediaAssetId,
-      policy: attachment.policy,
-      order: attachment.order + 1,
-      label: attachment.label ?? attachment.mediaAsset.originalName,
-      playback: {
-        ...playback,
-        timelineStartSec: cutSec,
-        timelineDurationSec: split.rightDurationSec,
-        startOffsetMs: split.rightStartOffsetMs,
-      },
-      beatFx: attachment.beatFx ?? undefined,
-    });
+  async function cutClipAt(attachmentId: string, cutSec: number) {
+    await bringClipToFront(attachmentId);
+    await applyTrimAt(attachmentId, cutSec);
+  }
+
+  async function cutAtTime(cutSec: number) {
+    const clip = findTopClipAtTime(timelineClips, cutSec);
+    if (!clip) {
+      setError("Click on a clip to cut.");
+      return;
+    }
+    await applyTrimAt(clip.attachment.id, cutSec);
   }
 
   async function resizeClip(attachmentId: string, nextDurationSec: number) {
@@ -316,8 +340,8 @@ export function useSongVisualEditorState({
     const loop = getClipLoop(attachment);
     const maxDuration = loop
       ? timelineDurationSec - clip.startSec
-      : Math.min(clip.naturalDurationSec, timelineDurationSec - clip.startSec);
-    const clipDurationSec = Math.min(Math.max(0.5, nextDurationSec), maxDuration);
+      : Math.min(clip.naturalDurationSec - (readClipPlayback(attachment).startOffsetMs ?? 0) / 1000, timelineDurationSec - clip.startSec);
+    const clipDurationSec = Math.min(Math.max(MIN_CLIP_SEC, nextDurationSec), Math.max(MIN_CLIP_SEC, maxDuration));
 
     await updateMutation.mutateAsync({
       attachmentId,
@@ -330,8 +354,53 @@ export function useSongVisualEditorState({
     });
   }
 
+  function copySelectedClip() {
+    const attachment = attachments.find((item) => item.id === selectedAttachmentId);
+    if (!attachment) return;
+    setClipboard({
+      mediaAssetId: attachment.mediaAssetId,
+      label: attachment.label,
+      policy: attachment.policy,
+      playback: { ...(attachment.playback ?? {}) },
+      beatFx: attachment.beatFx,
+    });
+  }
+
+  async function pasteClipAt(startSec: number) {
+    if (!clipboard) return;
+    const asset = assetsQuery.data?.find((item) => item.id === clipboard.mediaAssetId);
+    if (!asset) {
+      setError("Copied clip source is no longer in your library.");
+      return;
+    }
+
+    const loop = Boolean((clipboard.playback as { loop?: boolean }).loop ?? defaultAssetLoop(asset));
+    const stubAttachment = {
+      mediaAsset: asset,
+      playback: { loop, ...(clipboard.playback as object) },
+    } as SongVisualAttachmentRecord;
+    const clipDurationSec = (clipboard.playback as { timelineDurationSec?: number }).timelineDurationSec
+      ?? defaultClipDurationSec(stubAttachment, startSec, timelineDurationSec);
+
+    await attachMutation.mutateAsync({
+      mediaAssetId: clipboard.mediaAssetId,
+      policy: clipboard.policy,
+      order: nextClipOrder(),
+      label: clipboard.label ?? asset.originalName,
+      playback: {
+        ...clipboard.playback,
+        timelineStartSec: clampClipStart(startSec, clipDurationSec, timelineDurationSec),
+        timelineDurationSec: clipDurationSec,
+        muted: true,
+        objectFit: "cover",
+      },
+      beatFx: clipboard.beatFx ?? undefined,
+    });
+  }
+
   function selectAttachment(attachmentId: string | null) {
     setSelectedAttachmentId(attachmentId);
+    if (attachmentId) void bringClipToFront(attachmentId);
   }
 
   function openUploadPicker() {
@@ -347,18 +416,11 @@ export function useSongVisualEditorState({
     uploadMutation.mutate(file);
   }
 
-  async function attachExistingAsset(mediaAssetId: string) {
-    if (attachedAssetIds.has(mediaAssetId)) {
-      setError("This asset is already on the timeline.");
-      return;
-    }
+  async function attachExistingAsset(mediaAssetId: string, startSec?: number) {
     const asset = assetsQuery.data?.find((item) => item.id === mediaAssetId);
     if (!asset) return;
-    await attachAssetToTimeline(asset);
+    await attachAssetToTimeline(asset, { startSec });
   }
-
-  const selectedAttachment: SongVisualAttachmentRecord | null =
-    attachments.find((attachment) => attachment.id === selectedAttachmentId) ?? null;
 
   const isBusy =
     attachmentsQuery.isLoading ||
@@ -368,19 +430,21 @@ export function useSongVisualEditorState({
     detachMutation.isPending ||
     deleteAssetMutation.isPending;
 
+  const hasClipboard = clipboard != null;
+
   return {
     attachments,
     assets: assetsQuery.data ?? [],
-    attachedAssetIds,
     includeSiteMedia,
     timelineClips,
     timelineDurationSec,
-    remainingTimelineSec,
-    selectedAttachment,
     selectedAttachmentId,
     error,
     isBusy,
+    hasClipboard,
     fileInputRef,
+    getAssetLoopPref,
+    setAssetLoopPref,
     openUploadPicker,
     uploadFile,
     attachExistingAsset,
@@ -391,6 +455,9 @@ export function useSongVisualEditorState({
     resizeClipStart,
     moveClip,
     cutClipAt,
+    cutAtTime,
+    copySelectedClip,
+    pasteClipAt,
     selectAttachment,
     detachAttachment: detachMutation.mutate,
   };

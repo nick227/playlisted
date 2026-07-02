@@ -5,7 +5,7 @@ import {
   defaultClipDurationSec,
   getRemainingTimelineSec,
   layoutTimelineClips,
-  splitClipAt,
+  trimClipAtShortSide,
 } from './timelineLayout'
 import type { SongVisualAttachmentRecord } from '@/lib/visualMediaApi'
 
@@ -109,17 +109,23 @@ describe('timelineLayout', () => {
     expect(getRemainingTimelineSec(clips, 120)).toBe(72)
   })
 
-  it('splits clip timing for cut operations', () => {
+  it('trim cut deletes the shorter side at the click point', () => {
     const clip = layoutTimelineClips([
       attachment('clip-a', 0, 'video', { loop: false, timelineStartSec: 10, timelineDurationSec: 30, startOffsetMs: 1000 }, 60_000),
     ], 120)[0]
 
     expect(clip).toBeDefined()
-    const split = splitClipAt(clip!, 25)
-    expect(split).toEqual({
-      leftDurationSec: 15,
-      rightDurationSec: 15,
-      rightStartOffsetMs: 16000,
+    expect(trimClipAtShortSide(clip!, 25)).toEqual({
+      action: 'trim',
+      timelineStartSec: 25,
+      timelineDurationSec: 15,
+      startOffsetMs: 16000,
+    })
+    expect(trimClipAtShortSide(clip!, 18)).toEqual({
+      action: 'trim',
+      timelineStartSec: 18,
+      timelineDurationSec: 22,
+      startOffsetMs: 9000,
     })
   })
 })

@@ -155,39 +155,89 @@ export function clampClipStart(
 
 export function resolveClipMoveStart(
   clip: TimelineClip,
-  allClips: TimelineClip[],
+  _allClips: TimelineClip[],
   desiredStartSec: number,
   songDurationSec: number,
 ): number {
-  let startSec = clampClipStart(desiredStartSec, clip.durationSec, songDurationSec);
-  const others = allClips.filter((item) => item.attachment.id !== clip.attachment.id);
+  return clampClipStart(desiredStartSec, clip.durationSec, songDurationSec);
+}
 
-  for (const other of others) {
-    const overlaps = startSec < other.endSec && startSec + clip.durationSec > other.startSec;
-    if (!overlaps) continue;
+export function findClipsAtTime(clips: TimelineClip[], timeSec: number): TimelineClip[] {
+  return clips
+    .filter((clip) => timeSec >= clip.startSec && timeSec < clip.endSec)
+    .sort((left, right) => right.attachment.order - left.attachment.order);
+}
 
-    const snapBefore = other.startSec - clip.durationSec;
-    const snapAfter = other.endSec;
-    startSec = Math.abs(startSec - snapBefore) <= Math.abs(startSec - snapAfter)
-      ? snapBefore
-      : snapAfter;
-    startSec = clampClipStart(startSec, clip.durationSec, songDurationSec);
+export function findTopClipAtTime(clips: TimelineClip[], timeSec: number): TimelineClip | null {
+  return findClipsAtTime(clips, timeSec)[0] ?? null;
+}
+
+export type TrimClipAtResult =
+  | { action: "delete" }
+  | {
+    action: "trim";
+    timelineStartSec: number;
+    timelineDurationSec: number;
+    startOffsetMs: number;
+  };
+
+export function trimClipAtShortSide(clip: TimelineClip, cutSec: number): TrimClipAtResult | null {
+  if (cutSec <= clip.startSec || cutSec >= clip.endSec) return null;
+
+  const playback = readClipPlayback(clip.attachment);
+  const leftDurationSec = cutSec - clip.startSec;
+  const rightDurationSec = clip.endSec - cutSec;
+  const currentOffsetMs = playback.startOffsetMs ?? 0;
+
+  if (leftDurationSec < MIN_CLIP_SEC && rightDurationSec < MIN_CLIP_SEC) {
+    return { action: "delete" };
   }
 
-  return startSec;
+  if (leftDurationSec < MIN_CLIP_SEC) {
+    return {
+      action: "trim",
+      timelineStartSec: cutSec,
+      timelineDurationSec: rightDurationSec,
+      startOffsetMs: currentOffsetMs + Math.round(leftDurationSec * 1000),
+    };
+  }
+
+  if (rightDurationSec < MIN_CLIP_SEC) {
+    return {
+      action: "trim",
+      timelineStartSec: clip.startSec,
+      timelineDurationSec: leftDurationSec,
+      startOffsetMs: currentOffsetMs,
+    };
+  }
+
+  if (leftDurationSec <= rightDurationSec) {
+    return {
+      action: "trim",
+      timelineStartSec: cutSec,
+      timelineDurationSec: rightDurationSec,
+      startOffsetMs: currentOffsetMs + Math.round(leftDurationSec * 1000),
+    };
+  }
+
+  return {
+    action: "trim",
+    timelineStartSec: clip.startSec,
+    timelineDurationSec: leftDurationSec,
+    startOffsetMs: currentOffsetMs,
+  };
 }
 
 export function canCutClipAt(clip: TimelineClip, cutSec: number): boolean {
-  const leftDuration = cutSec - clip.startSec;
-  const rightDuration = clip.endSec - cutSec;
-  return leftDuration >= MIN_CLIP_SEC && rightDuration >= MIN_CLIP_SEC;
+  return trimClipAtShortSide(clip, cutSec) != null;
 }
 
 export function splitClipAt(
   clip: TimelineClip,
   cutSec: number,
 ): { leftDurationSec: number; rightDurationSec: number; rightStartOffsetMs: number } | null {
-  if (!canCutClipAt(clip, cutSec)) return null;
+  const trim = trimClipAtShortSide(clip, cutSec);
+  if (!trim || trim.action === "delete") return null;
 
   const leftDurationSec = cutSec - clip.startSec;
   const rightDurationSec = clip.endSec - cutSec;
