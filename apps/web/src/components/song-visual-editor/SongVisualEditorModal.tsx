@@ -146,7 +146,8 @@ export function SongVisualEditorModal({ recording, onClose }: SongVisualEditorMo
             clips={editor.timelineClips}
             durationSec={durationSec}
             currentTimeSec={playback.currentTimeSec}
-            isBusy={editor.isBusy}
+            isLibraryBusy={editor.isLibraryBusy}
+            clipSyncStatus={editor.clipSyncStatus}
             hasClipboard={editor.hasClipboard}
             selectedAttachmentId={editor.selectedAttachmentId}
             onSelectAttachment={editor.selectAttachment}

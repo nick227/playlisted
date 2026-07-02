@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 
 import { validateVisualUploadFile } from "@/lib/visualUploadLimits";
 import {
@@ -30,6 +30,17 @@ import {
   type ClipBounds,
 } from "../timelineLayout";
 import { layoutTimelineClips, policyFromIncludeSiteMedia, policyIncludesSiteMedia } from "../types";
+import {
+  applyClipBoundsPatch,
+  applyLoopPatch,
+  cloneAttachment,
+  readSongVisualData,
+  reconcileAttachmentInCache,
+  removeAttachmentFromCache,
+  restoreAttachmentInCache,
+  songVisualQueryKey,
+  type ClipSyncStatus,
+} from "./optimisticSongVisualCache";
 
 type ClipClipboard = {
   mediaAssetId: string;
@@ -56,13 +67,17 @@ export function useSongVisualEditorState({
 }: UseSongVisualEditorStateArgs) {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const rollbackSnapshots = useRef<Map<string, SongVisualAttachmentRecord>>(new Map());
+  const commitGeneration = useRef<Map<string, number>>(new Map());
+
   const [error, setError] = useState<string | null>(null);
   const [selectedAttachmentId, setSelectedAttachmentId] = useState<string | null>(null);
   const [assetLoopPrefs, setAssetLoopPrefs] = useState<Record<string, boolean>>({});
   const [clipboard, setClipboard] = useState<ClipClipboard | null>(null);
+  const [clipSyncStatus, setClipSyncStatus] = useState<Record<string, ClipSyncStatus>>({});
 
   const attachmentsQuery = useQuery({
-    queryKey: ["song-visual-media", recordingId],
+    queryKey: songVisualQueryKey(recordingId),
     queryFn: () => fetchSongVisualAttachments(recordingId, accessToken),
   });
 
@@ -81,10 +96,44 @@ export function useSongVisualEditorState({
     [attachments, timelineDurationSec],
   );
 
-  const invalidateSong = async () => {
+  const setClipStatus = useCallback((attachmentId: string, status: ClipSyncStatus | null) => {
+    setClipSyncStatus((current) => {
+      if (status == null) {
+        if (!(attachmentId in current)) return current;
+        const next = { ...current };
+        delete next[attachmentId];
+        return next;
+      }
+      return { ...current, [attachmentId]: status };
+    });
+  }, []);
+
+  const rememberRollback = useCallback((attachment: SongVisualAttachmentRecord) => {
+    rollbackSnapshots.current.set(attachment.id, cloneAttachment(attachment));
+  }, []);
+
+  const rollbackClip = useCallback((attachmentId: string) => {
+    const snapshot = rollbackSnapshots.current.get(attachmentId);
+    if (snapshot) {
+      restoreAttachmentInCache(queryClient, recordingId, snapshot);
+    }
+    rollbackSnapshots.current.delete(attachmentId);
+  }, [queryClient, recordingId]);
+
+  const finishClipSync = useCallback((
+    attachmentId: string,
+    generation: number,
+    updated?: SongVisualAttachmentRecord,
+  ) => {
+    if (commitGeneration.current.get(attachmentId) !== generation) return;
+    if (updated) {
+      reconcileAttachmentInCache(queryClient, recordingId, updated);
+    }
+    rollbackSnapshots.current.delete(attachmentId);
+    commitGeneration.current.delete(attachmentId);
+    setClipStatus(attachmentId, null);
     clearRemoteTrackVisualMedia(recordingId);
-    await queryClient.invalidateQueries({ queryKey: ["song-visual-media", recordingId] });
-  };
+  }, [queryClient, recordingId, setClipStatus]);
 
   const invalidateAssets = async () => {
     await queryClient.invalidateQueries({ queryKey: ["visual-media-assets"] });
@@ -96,7 +145,8 @@ export function useSongVisualEditorState({
     onSuccess: async (attachment) => {
       setError(null);
       setSelectedAttachmentId(attachment.id);
-      await invalidateSong();
+      reconcileAttachmentInCache(queryClient, recordingId, attachment);
+      clearRemoteTrackVisualMedia(recordingId);
     },
     onError: (err) => setError(err instanceof Error ? err.message : "Attach failed."),
   });
@@ -118,24 +168,21 @@ export function useSongVisualEditorState({
       attachmentId: string;
       body: Parameters<typeof updateSongVisualAttachment>[3];
     }) => updateSongVisualAttachment(recordingId, attachmentId, accessToken, body),
-    onSuccess: invalidateSong,
-    onError: (err) => setError(err instanceof Error ? err.message : "Update failed."),
   });
 
   const detachMutation = useMutation({
     mutationFn: (attachmentId: string) => detachSongVisualMedia(recordingId, attachmentId, accessToken),
-    onSuccess: async (_, attachmentId) => {
-      if (selectedAttachmentId === attachmentId) setSelectedAttachmentId(null);
-      await invalidateSong();
-    },
-    onError: (err) => setError(err instanceof Error ? err.message : "Remove failed."),
   });
 
   const deleteAssetMutation = useMutation({
     mutationFn: (assetId: string) => deleteVisualMediaAsset(assetId, accessToken),
     onSuccess: async () => {
       setError(null);
-      await Promise.all([invalidateAssets(), invalidateSong()]);
+      await Promise.all([
+        invalidateAssets(),
+        queryClient.invalidateQueries({ queryKey: songVisualQueryKey(recordingId) }),
+      ]);
+      clearRemoteTrackVisualMedia(recordingId);
     },
     onError: (err) => setError(err instanceof Error ? err.message : "Delete failed."),
   });
@@ -148,25 +195,39 @@ export function useSongVisualEditorState({
     setAssetLoopPrefs((current) => ({ ...current, [assetId]: loop }));
   }
 
-  function nextClipOrder() {
-    return attachments.reduce((max, attachment) => Math.max(max, attachment.order), -1) + 1;
+  function nextClipOrder(source = attachments) {
+    return source.reduce((max, attachment) => Math.max(max, attachment.order), -1) + 1;
   }
 
-  async function persistClipBounds(
+  function getAttachmentSnapshot(attachmentId: string) {
+    const data = readSongVisualData(queryClient, recordingId);
+    return data?.attachments.find((item) => item.id === attachmentId) ?? null;
+  }
+
+  function commitClipBounds(
     attachmentId: string,
     bounds: ClipBounds,
     opts: { order?: number } = {},
   ) {
-    const attachment = attachments.find((item) => item.id === attachmentId);
-    const clip = timelineClips.find((item) => item.attachment.id === attachmentId);
-    if (!attachment || !clip) return false;
+    const attachment = getAttachmentSnapshot(attachmentId);
+    const clip = layoutTimelineClips(
+      readSongVisualData(queryClient, recordingId)?.attachments ?? attachments,
+      timelineDurationSec,
+    ).find((item) => item.attachment.id === attachmentId);
+
+    if (!attachment || !clip) return;
 
     const currentOffsetMs = readClipPlayback(attachment).startOffsetMs ?? 0;
-    if (boundsNearlyEqual(bounds, clip, currentOffsetMs) && opts.order == null) {
-      return false;
-    }
+    if (boundsNearlyEqual(bounds, clip, currentOffsetMs) && opts.order == null) return;
 
-    await updateMutation.mutateAsync({
+    const generation = (commitGeneration.current.get(attachmentId) ?? 0) + 1;
+    commitGeneration.current.set(attachmentId, generation);
+    rememberRollback(attachment);
+    applyClipBoundsPatch(queryClient, recordingId, attachmentId, attachment, bounds, opts.order);
+    setClipStatus(attachmentId, "saving");
+    setError(null);
+
+    void updateMutation.mutateAsync({
       attachmentId,
       body: {
         ...(opts.order != null ? { order: opts.order } : {}),
@@ -176,8 +237,43 @@ export function useSongVisualEditorState({
           startOffsetMs: bounds.startOffsetMs,
         }),
       },
+    }).then((updated) => {
+      finishClipSync(attachmentId, generation, updated);
+    }).catch((err) => {
+      if (commitGeneration.current.get(attachmentId) !== generation) return;
+      rollbackClip(attachmentId);
+      commitGeneration.current.delete(attachmentId);
+      setClipStatus(attachmentId, "error");
+      setError(err instanceof Error ? err.message : "Could not save clip changes.");
+      window.setTimeout(() => setClipStatus(attachmentId, null), 2400);
     });
-    return true;
+  }
+
+  function commitDetach(attachmentId: string) {
+    const attachment = getAttachmentSnapshot(attachmentId);
+    if (!attachment) return;
+
+    const generation = (commitGeneration.current.get(attachmentId) ?? 0) + 1;
+    commitGeneration.current.set(attachmentId, generation);
+    removeAttachmentFromCache(queryClient, recordingId, attachmentId);
+    if (selectedAttachmentId === attachmentId) setSelectedAttachmentId(null);
+    setClipStatus(attachmentId, "saving");
+    setError(null);
+
+    void detachMutation.mutateAsync(attachmentId).then(() => {
+      if (commitGeneration.current.get(attachmentId) !== generation) return;
+      rollbackSnapshots.current.delete(attachmentId);
+      commitGeneration.current.delete(attachmentId);
+      setClipStatus(attachmentId, null);
+      clearRemoteTrackVisualMedia(recordingId);
+    }).catch((err) => {
+      if (commitGeneration.current.get(attachmentId) !== generation) return;
+      rollbackClip(attachmentId);
+      commitGeneration.current.delete(attachmentId);
+      setClipStatus(attachmentId, "error");
+      setError(err instanceof Error ? err.message : "Could not remove clip.");
+      window.setTimeout(() => setClipStatus(attachmentId, null), 2400);
+    });
   }
 
   async function attachAssetToTimeline(
@@ -225,10 +321,11 @@ export function useSongVisualEditorState({
       attachmentId: target.id,
       body: { policy: policyFromIncludeSiteMedia(nextIncludeSiteMedia) },
     });
+    clearRemoteTrackVisualMedia(recordingId);
   }
 
-  async function setClipLoop(attachmentId: string, loop: boolean) {
-    const attachment = attachments.find((item) => item.id === attachmentId);
+  function setClipLoop(attachmentId: string, loop: boolean) {
+    const attachment = getAttachmentSnapshot(attachmentId);
     const clip = timelineClips.find((item) => item.attachment.id === attachmentId);
     if (!attachment || !clip) return;
 
@@ -244,7 +341,14 @@ export function useSongVisualEditorState({
       return;
     }
 
-    await updateMutation.mutateAsync({
+    const generation = (commitGeneration.current.get(attachmentId) ?? 0) + 1;
+    commitGeneration.current.set(attachmentId, generation);
+    rememberRollback(attachment);
+    applyLoopPatch(queryClient, recordingId, attachmentId, attachment, loop, clip.startSec, nextDurationSec);
+    setClipStatus(attachmentId, "saving");
+    setError(null);
+
+    void updateMutation.mutateAsync({
       attachmentId,
       body: {
         playback: buildPlaybackPatch(attachment, {
@@ -253,11 +357,20 @@ export function useSongVisualEditorState({
           timelineDurationSec: nextDurationSec,
         }),
       },
+    }).then((updated) => {
+      finishClipSync(attachmentId, generation, updated);
+    }).catch((err) => {
+      if (commitGeneration.current.get(attachmentId) !== generation) return;
+      rollbackClip(attachmentId);
+      commitGeneration.current.delete(attachmentId);
+      setClipStatus(attachmentId, "error");
+      setError(err instanceof Error ? err.message : "Could not update loop.");
+      window.setTimeout(() => setClipStatus(attachmentId, null), 2400);
     });
   }
 
-  async function moveClip(attachmentId: string, nextStartSec: number) {
-    const attachment = attachments.find((item) => item.id === attachmentId);
+  function moveClip(attachmentId: string, nextStartSec: number) {
+    const attachment = getAttachmentSnapshot(attachmentId);
     const clip = timelineClips.find((item) => item.attachment.id === attachmentId);
     if (!attachment || !clip) return;
 
@@ -266,41 +379,31 @@ export function useSongVisualEditorState({
 
     const topOrder = attachments.reduce((max, item) => Math.max(max, item.order), 0);
     const needsOrderBump = attachment.order < topOrder;
-    const changed = await persistClipBounds(
-      attachmentId,
-      bounds,
-      needsOrderBump ? { order: topOrder + 1 } : {},
-    );
-    if (!changed && needsOrderBump) {
-      await updateMutation.mutateAsync({
-        attachmentId,
-        body: { order: topOrder + 1 },
-      });
-    }
+    commitClipBounds(attachmentId, bounds, needsOrderBump ? { order: topOrder + 1 } : {});
   }
 
-  async function resizeClipStart(attachmentId: string, nextStartSec: number) {
-    const attachment = attachments.find((item) => item.id === attachmentId);
+  function resizeClipStart(attachmentId: string, nextStartSec: number) {
+    const attachment = getAttachmentSnapshot(attachmentId);
     const clip = timelineClips.find((item) => item.attachment.id === attachmentId);
     if (!attachment || !clip) return;
 
     const bounds = resolveClipResizeStart(attachment, clip, nextStartSec, timelineDurationSec);
     if (!bounds) return;
-    await persistClipBounds(attachmentId, bounds);
+    commitClipBounds(attachmentId, bounds);
   }
 
-  async function resizeClip(attachmentId: string, nextDurationSec: number) {
-    const attachment = attachments.find((item) => item.id === attachmentId);
+  function resizeClip(attachmentId: string, nextDurationSec: number) {
+    const attachment = getAttachmentSnapshot(attachmentId);
     const clip = timelineClips.find((item) => item.attachment.id === attachmentId);
     if (!attachment || !clip) return;
 
     const bounds = resolveClipResizeEnd(attachment, clip, nextDurationSec, timelineDurationSec);
     if (!bounds) return;
-    await persistClipBounds(attachmentId, bounds);
+    commitClipBounds(attachmentId, bounds);
   }
 
-  async function applyTrimAt(attachmentId: string, cutSec: number) {
-    const attachment = attachments.find((item) => item.id === attachmentId);
+  function applyTrimAt(attachmentId: string, cutSec: number) {
+    const attachment = getAttachmentSnapshot(attachmentId);
     const clip = timelineClips.find((item) => item.attachment.id === attachmentId);
     if (!attachment || !clip) return;
 
@@ -310,38 +413,31 @@ export function useSongVisualEditorState({
       return;
     }
 
-    setError(null);
     if (trim.action === "delete") {
-      await detachMutation.mutateAsync(attachmentId);
+      commitDetach(attachmentId);
       return;
     }
 
-    await persistClipBounds(attachmentId, {
+    const topOrder = attachments.reduce((max, item) => Math.max(max, item.order), 0);
+    const order = attachment.order < topOrder ? topOrder + 1 : undefined;
+    commitClipBounds(attachmentId, {
       timelineStartSec: trim.timelineStartSec,
       timelineDurationSec: trim.timelineDurationSec,
       startOffsetMs: trim.startOffsetMs,
-    });
+    }, order != null ? { order } : {});
   }
 
-  async function cutClipAt(attachmentId: string, cutSec: number) {
-    const topOrder = attachments.reduce((max, item) => Math.max(max, item.order), 0);
-    const attachment = attachments.find((item) => item.id === attachmentId);
-    if (attachment && attachment.order < topOrder) {
-      await updateMutation.mutateAsync({
-        attachmentId,
-        body: { order: topOrder + 1 },
-      });
-    }
-    await applyTrimAt(attachmentId, cutSec);
+  function cutClipAt(attachmentId: string, cutSec: number) {
+    applyTrimAt(attachmentId, cutSec);
   }
 
-  async function cutAtTime(cutSec: number) {
+  function cutAtTime(cutSec: number) {
     const clip = findTopClipAtTime(timelineClips, cutSec);
     if (!clip) {
       setError("Click on a clip to cut.");
       return;
     }
-    await cutClipAt(clip.attachment.id, cutSec);
+    cutClipAt(clip.attachment.id, cutSec);
   }
 
   function copySelectedClip() {
@@ -424,15 +520,16 @@ export function useSongVisualEditorState({
     await attachAssetToTimeline(asset, { startSec });
   }
 
-  const isBusy =
+  const isLibraryBusy =
     attachmentsQuery.isLoading ||
     uploadMutation.isPending ||
     attachMutation.isPending ||
-    updateMutation.isPending ||
-    detachMutation.isPending ||
     deleteAssetMutation.isPending;
 
+  const isBusy = isLibraryBusy;
+
   const hasClipboard = clipboard != null;
+  const isSavingTimeline = Object.keys(clipSyncStatus).length > 0;
 
   return {
     attachments,
@@ -441,8 +538,11 @@ export function useSongVisualEditorState({
     timelineClips,
     timelineDurationSec,
     selectedAttachmentId,
+    clipSyncStatus,
     error,
     isBusy,
+    isLibraryBusy,
+    isSavingTimeline,
     hasClipboard,
     fileInputRef,
     getAssetLoopPref,
@@ -461,6 +561,6 @@ export function useSongVisualEditorState({
     copySelectedClip,
     pasteClipAt,
     selectAttachment,
-    detachAttachment: detachMutation.mutate,
+    detachAttachment: commitDetach,
   };
 }

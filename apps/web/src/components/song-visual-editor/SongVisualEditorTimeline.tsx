@@ -1,6 +1,7 @@
 import { MousePointer2, Scissors } from "lucide-react";
 import { useMemo, useRef, useState, type ReactNode } from "react";
 
+import type { ClipSyncStatus } from "./hooks/optimisticSongVisualCache";
 import { timeSecFromTimelinePointer } from "./timelineLayout";
 import { TimelineClipBlock } from "./TimelineClipBlock";
 import type { TimelineClip } from "./types";
@@ -11,7 +12,8 @@ type SongVisualEditorTimelineProps = {
   clips: TimelineClip[];
   durationSec: number;
   currentTimeSec: number;
-  isBusy: boolean;
+  isLibraryBusy: boolean;
+  clipSyncStatus: Record<string, ClipSyncStatus>;
   hasClipboard: boolean;
   selectedAttachmentId: string | null;
   onSelectAttachment: (attachmentId: string | null) => void;
@@ -26,7 +28,8 @@ export function SongVisualEditorTimeline({
   clips,
   durationSec,
   currentTimeSec,
-  isBusy,
+  isLibraryBusy,
+  clipSyncStatus,
   hasClipboard,
   selectedAttachmentId,
   onSelectAttachment,
@@ -52,7 +55,7 @@ export function SongVisualEditorTimeline({
   }
 
   function handleTrackCut(event: React.MouseEvent<HTMLDivElement>) {
-    if (editMode !== "cut" || isBusy || !trackRect) return;
+    if (editMode !== "cut" || !trackRect) return;
     if (event.target !== event.currentTarget) return;
     onCutAtTime(timeSecFromTimelinePointer(event.clientX, trackRect, durationSec));
   }
@@ -65,7 +68,7 @@ export function SongVisualEditorTimeline({
           <div className="inline-flex rounded-full border border-white/10 p-0.5">
             <ModeButton
               active={editMode === "select"}
-              disabled={isBusy}
+              disabled={isLibraryBusy}
               label="Select"
               onClick={() => setEditMode("select")}
             >
@@ -73,7 +76,7 @@ export function SongVisualEditorTimeline({
             </ModeButton>
             <ModeButton
               active={editMode === "cut"}
-              disabled={isBusy}
+              disabled={isLibraryBusy}
               label="Cut"
               onClick={() => setEditMode("cut")}
             >
@@ -106,7 +109,8 @@ export function SongVisualEditorTimeline({
               songDurationSec={durationSec}
               selected={clip.attachment.id === selectedAttachmentId}
               cutMode={editMode === "cut"}
-              isBusy={isBusy}
+              isLocked={clipSyncStatus[clip.attachment.id] === "saving"}
+              syncStatus={clipSyncStatus[clip.attachment.id]}
               stackOrder={index + 1}
               trackRect={trackRect}
               onSelect={() => onSelectAttachment(clip.attachment.id)}

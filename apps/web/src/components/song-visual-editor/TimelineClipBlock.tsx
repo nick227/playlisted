@@ -9,6 +9,7 @@ import {
   previewClipResizeStart,
   timeSecFromTimelinePointer,
 } from "./timelineLayout";
+import type { ClipSyncStatus } from "./hooks/optimisticSongVisualCache";
 import type { TimelineClip } from "./types";
 
 type TimelineClipBlockProps = {
@@ -16,7 +17,8 @@ type TimelineClipBlockProps = {
   songDurationSec: number;
   selected: boolean;
   cutMode: boolean;
-  isBusy: boolean;
+  isLocked: boolean;
+  syncStatus?: ClipSyncStatus;
   stackOrder: number;
   trackRect: DOMRect | null;
   onSelect: () => void;
@@ -39,7 +41,8 @@ export function TimelineClipBlock({
   songDurationSec,
   selected,
   cutMode,
-  isBusy,
+  isLocked,
+  syncStatus,
   stackOrder,
   trackRect,
   onSelect,
@@ -64,7 +67,7 @@ export function TimelineClipBlock({
   }
 
   function beginDrag(mode: DragMode, event: ReactPointerEvent<HTMLElement>) {
-    if (isBusy) return;
+    if (isLocked) return;
     event.stopPropagation();
     event.currentTarget.setPointerCapture(event.pointerId);
     setDrag({ mode, startX: event.clientX, startY: event.clientY });
@@ -114,7 +117,7 @@ export function TimelineClipBlock({
   }
 
   function onCutPointerUp(event: ReactPointerEvent<HTMLDivElement>) {
-    if (isBusy) return;
+    if (isLocked) return;
     event.stopPropagation();
     onCutAt(trackTime(event.clientX));
   }
@@ -122,11 +125,14 @@ export function TimelineClipBlock({
   return (
     <div
       className={[
-        "absolute top-0 flex h-full min-w-[4rem] overflow-hidden rounded-md border text-left text-[11px]",
-        selected
-          ? "border-emerald-400 ring-2 ring-emerald-400/30 text-white"
-          : "border-white/20 text-white/90 hover:border-white/40",
-        cutMode ? "cursor-crosshair" : "cursor-grab",
+        "absolute top-0 flex h-full min-w-[4rem] overflow-hidden rounded-md border text-left text-[11px] transition-shadow",
+        syncStatus === "error"
+          ? "border-red-400 ring-2 ring-red-400/40 text-white"
+          : selected
+            ? "border-emerald-400 ring-2 ring-emerald-400/30 text-white"
+            : "border-white/20 text-white/90 hover:border-white/40",
+        syncStatus === "saving" ? "animate-pulse ring-1 ring-amber-400/50" : "",
+        cutMode ? "cursor-crosshair" : isLocked ? "cursor-not-allowed opacity-80" : "cursor-grab",
         isDragging ? "z-50 scale-[1.02] shadow-lg shadow-emerald-500/20" : "",
       ].join(" ")}
       style={{ left: `${leftPct}%`, width: `${widthPct}%`, zIndex: isDragging ? 50 : stackOrder }}
