@@ -11,9 +11,17 @@ type UseSongVisualEditorHotkeysArgs = {
   durationSec: number;
 };
 
-function isEditableTarget(target: EventTarget | null) {
+function isTextEntryTarget(target: EventTarget | null) {
   if (!(target instanceof HTMLElement)) return false;
-  if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) return true;
+  if (target.isContentEditable) return true;
+  const tag = target.tagName;
+  if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
+  return Boolean(target.closest("input, textarea, select, [contenteditable='true']"));
+}
+
+function isNonTextShortcutTarget(target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) return false;
+  if (isTextEntryTarget(target)) return true;
   if (target instanceof HTMLButtonElement || target instanceof HTMLSelectElement) return true;
   return target.isContentEditable;
 }
@@ -30,10 +38,22 @@ export function useSongVisualEditorHotkeys({
 }: UseSongVisualEditorHotkeysArgs) {
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      if (isEditableTarget(event.target)) return;
-
       const key = event.key.toLowerCase();
       const mod = event.metaKey || event.ctrlKey;
+      const isSpace = event.code === "Space" || key === " ";
+
+      if (isSpace) {
+        if (event.repeat || mod || event.altKey) return;
+        if (isTextEntryTarget(event.target)) return;
+        event.preventDefault();
+        event.stopPropagation();
+        if (!isBusy && durationSec > 0) {
+          togglePlayback();
+        }
+        return;
+      }
+
+      if (isNonTextShortcutTarget(event.target)) return;
 
       if (mod && key === "c") {
         event.preventDefault();
@@ -47,22 +67,14 @@ export function useSongVisualEditorHotkeys({
         return;
       }
 
-      if (event.code === "Space" || key === " ") {
-        event.preventDefault();
-        if (!isBusy && durationSec > 0) {
-          togglePlayback();
-        }
-        return;
-      }
-
       if ((key === "delete" || key === "backspace") && selectedAttachmentId) {
         event.preventDefault();
         detachAttachment(selectedAttachmentId);
       }
     }
 
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    window.addEventListener("keydown", onKeyDown, true);
+    return () => window.removeEventListener("keydown", onKeyDown, true);
   }, [
     copySelectedClip,
     pasteClipAt,
