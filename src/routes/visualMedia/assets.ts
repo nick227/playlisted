@@ -1,17 +1,18 @@
 import fs from "node:fs/promises";
 import { Router } from "express";
 
-import { prisma } from "../lib/prisma.js";
-import { requireAuth } from "../lib/requireAuth.js";
-import { persistUploadedFile } from "../lib/storage/uploadStorage.js";
+import { prisma } from "../../lib/prisma.js";
+import { requireAuth } from "../../lib/requireAuth.js";
+import { deleteStoredUpload } from "../../lib/storage/deleteStoredUpload.js";
+import { persistUploadedFile } from "../../lib/storage/uploadStorage.js";
 import {
   handleMulterSingleError,
   studioImageUpload,
   studioVideoUpload,
-} from "../lib/uploadMulter.js";
-import { rejectDisallowedUpload } from "../lib/uploadValidate.js";
-import { dtoMediaTypeToPrisma } from "../lib/visualMedia/types.js";
-import { mapVisualMediaAsset } from "../lib/visualMedia/mapDto.js";
+} from "../../lib/uploadMulter.js";
+import { rejectDisallowedUpload } from "../../lib/uploadValidate.js";
+import { dtoMediaTypeToPrisma } from "../../lib/visualMedia/types.js";
+import { mapVisualMediaAsset } from "../../lib/visualMedia/mapDto.js";
 
 export const visualMediaAssetsRouter = Router();
 
@@ -93,3 +94,35 @@ async function handleVisualUpload(
     next(error);
   }
 }
+
+visualMediaAssetsRouter.delete("/:assetId", async (req, res, next) => {
+  try {
+    const auth = await requireAuth(req, res);
+    if (!auth) return;
+
+    const assetId = req.params.assetId?.trim() ?? "";
+    if (!assetId) {
+      return res.status(400).json({
+        error: "asset_id_required",
+        message: "assetId is required.",
+      });
+    }
+
+    const asset = await prisma.visualMediaAsset.findFirst({
+      where: { id: assetId, ownerId: auth.user.id },
+    });
+    if (!asset) {
+      return res.status(404).json({
+        error: "media_asset_not_found",
+        message: "Visual media asset was not found.",
+      });
+    }
+
+    await deleteStoredUpload(asset.storageKey);
+    await prisma.visualMediaAsset.delete({ where: { id: asset.id } });
+
+    res.status(204).send();
+  } catch (error) {
+    next(error);
+  }
+});

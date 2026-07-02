@@ -1,6 +1,4 @@
-import { ChevronLeft, ChevronRight, Pause, Play, Upload } from "lucide-react";
-
-import type { VisualMediaAssetRecord } from "@/lib/visualMediaApi";
+import { Pause, Play, Upload } from "lucide-react";
 
 type SongVisualEditorToolbarProps = {
   isPlaying: boolean;
@@ -9,13 +7,9 @@ type SongVisualEditorToolbarProps = {
   durationSec: number;
   includeSiteMedia: boolean;
   hasAttachments: boolean;
-  assets: VisualMediaAssetRecord[];
-  selectedAttachmentId: string | null;
   onTogglePlayback: () => void;
   onUpload: () => void;
-  onAttachExisting: (assetId: string) => void;
   onIncludeSiteMediaChange: (includeSiteMedia: boolean) => void;
-  onReorderSelected: (direction: -1 | 1) => void;
 };
 
 export function SongVisualEditorToolbar({
@@ -25,13 +19,9 @@ export function SongVisualEditorToolbar({
   durationSec,
   includeSiteMedia,
   hasAttachments,
-  assets,
-  selectedAttachmentId,
   onTogglePlayback,
   onUpload,
-  onAttachExisting,
   onIncludeSiteMediaChange,
-  onReorderSelected,
 }: SongVisualEditorToolbarProps) {
   return (
     <div className="flex flex-wrap items-center gap-2 border-y border-white/10 bg-black/20 px-1 py-2">
@@ -59,27 +49,6 @@ export function SongVisualEditorToolbar({
         Upload
       </button>
 
-      {assets.length > 0 ? (
-        <select
-          defaultValue=""
-          disabled={isBusy}
-          onChange={(event) => {
-            const assetId = event.target.value;
-            if (!assetId) return;
-            onAttachExisting(assetId);
-            event.currentTarget.value = "";
-          }}
-          className="rounded-lg border border-white/10 bg-black/30 px-2 py-1.5 text-xs text-white"
-        >
-          <option value="">Attach existing…</option>
-          {assets.map((asset) => (
-            <option key={asset.id} value={asset.id}>
-              {asset.originalName} ({asset.mediaType})
-            </option>
-          ))}
-        </select>
-      ) : null}
-
       <label
         className={[
           "inline-flex items-center gap-2 rounded-lg border border-white/10 px-2 py-1.5 text-xs text-white",
@@ -88,7 +57,7 @@ export function SongVisualEditorToolbar({
         title={
           hasAttachments
             ? "When enabled, built-in site visuals can appear alongside your attachments"
-            : "Attach a visual to configure site media"
+            : "Add a clip before configuring site media"
         }
       >
         <input
@@ -100,29 +69,6 @@ export function SongVisualEditorToolbar({
         />
         Include site media
       </label>
-
-      {selectedAttachmentId ? (
-        <div className="ml-auto flex items-center gap-1">
-          <button
-            type="button"
-            disabled={isBusy}
-            onClick={() => onReorderSelected(-1)}
-            className="rounded p-1 text-white/60 hover:bg-white/10 hover:text-white disabled:opacity-40"
-            aria-label="Move clip earlier"
-          >
-            <ChevronLeft size={16} />
-          </button>
-          <button
-            type="button"
-            disabled={isBusy}
-            onClick={() => onReorderSelected(1)}
-            className="rounded p-1 text-white/60 hover:bg-white/10 hover:text-white disabled:opacity-40"
-            aria-label="Move clip later"
-          >
-            <ChevronRight size={16} />
-          </button>
-        </div>
-      ) : null}
     </div>
   );
 }

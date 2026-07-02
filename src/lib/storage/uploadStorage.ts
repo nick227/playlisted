@@ -4,7 +4,7 @@ import { isR2StorageEnabled, uploadFileToR2 } from "./r2Storage.js";
 import { storedUploadUrl } from "../uploadMulter.js";
 
 export async function persistUploadedFile(input: {
-  subdir: "audio" | "images";
+  subdir: "audio" | "images" | "videos";
   filename: string;
   filePath: string;
   mimeType: string;

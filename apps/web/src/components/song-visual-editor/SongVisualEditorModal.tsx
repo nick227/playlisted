@@ -3,8 +3,8 @@ import { useMemo } from "react";
 
 import { useSuppressPlaybackFocus } from "@/lib/playbackFocusSuppression";
 import { useAuth } from "@/providers/AuthProvider";
-import "@/theatre/registry/seed";
 
+import { SongVisualAssetLibrary } from "./SongVisualAssetLibrary";
 import { SongVisualEditorPreview } from "./SongVisualEditorPreview";
 import { SongVisualEditorTimeline } from "./SongVisualEditorTimeline";
 import { SongVisualEditorToolbar } from "./SongVisualEditorToolbar";
@@ -12,7 +12,7 @@ import { SongVisualEditorWaveform } from "./SongVisualEditorWaveform";
 import { useAudioWaveformPeaks } from "./hooks/useAudioWaveformPeaks";
 import { useSongVisualEditorState } from "./hooks/useSongVisualEditorState";
 import { useSongVisualPreviewPlayback } from "./hooks/useSongVisualPreviewPlayback";
-import { findClipAtTime, policyIncludesSiteMedia, type SongVisualEditorRecording } from "./types";
+import { findClipAtTime, type SongVisualEditorRecording } from "./types";
 
 type SongVisualEditorModalProps = {
   recording: SongVisualEditorRecording;
@@ -33,13 +33,10 @@ export function SongVisualEditorModal({ recording, onClose }: SongVisualEditorMo
   const { data: waveform, loading: waveformLoading, error: waveformError } = useAudioWaveformPeaks(recording.audioUrl);
 
   const durationSec = waveform?.durationSec || playback.durationSec || editor.timelineDurationSec;
-  const timelineClips = editor.timelineClips;
   const activeClip = useMemo(
-    () => findClipAtTime(timelineClips, playback.currentTimeSec),
-    [playback.currentTimeSec, timelineClips],
+    () => findClipAtTime(editor.timelineClips, playback.currentTimeSec),
+    [editor.timelineClips, playback.currentTimeSec],
   );
-
-  const showDefaultLane = policyIncludesSiteMedia(editor.policy) || editor.policy === "defaultOnly";
 
   if (!accessToken) {
     return null;
@@ -66,8 +63,6 @@ export function SongVisualEditorModal({ recording, onClose }: SongVisualEditorMo
         <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-4">
           <SongVisualEditorPreview
             clip={activeClip}
-            artworkUrl={recording.artworkUrl}
-            recordingTitle={recording.title}
             isPlaying={playback.isPlaying}
             currentTimeSec={playback.currentTimeSec}
           />
@@ -79,16 +74,9 @@ export function SongVisualEditorModal({ recording, onClose }: SongVisualEditorMo
             durationSec={durationSec}
             includeSiteMedia={editor.includeSiteMedia}
             hasAttachments={editor.attachments.some((attachment) => attachment.enabled)}
-            assets={editor.assets}
-            selectedAttachmentId={editor.selectedAttachmentId}
             onTogglePlayback={playback.togglePlayback}
             onUpload={editor.openUploadPicker}
-            onAttachExisting={(assetId) => void editor.attachExistingAsset(assetId)}
             onIncludeSiteMediaChange={(includeSiteMedia) => void editor.setIncludeSiteMedia(includeSiteMedia)}
-            onReorderSelected={(direction) => {
-              if (!editor.selectedAttachmentId) return;
-              void editor.reorderAttachment(editor.selectedAttachmentId, direction);
-            }}
           />
 
           {waveformLoading ? (
@@ -109,14 +97,26 @@ export function SongVisualEditorModal({ recording, onClose }: SongVisualEditorMo
           )}
 
           <SongVisualEditorTimeline
-            clips={timelineClips}
+            clips={editor.timelineClips}
             durationSec={durationSec}
+            remainingSec={editor.remainingTimelineSec}
             currentTimeSec={playback.currentTimeSec}
             selectedAttachmentId={editor.selectedAttachmentId}
-            showDefaultLane={showDefaultLane}
             onSelectAttachment={editor.selectAttachment}
             onSeek={playback.seekTo}
             onRemoveAttachment={editor.detachAttachment}
+            onToggleLoop={(attachmentId, loop) => void editor.setClipLoop(attachmentId, loop)}
+            onResizeClip={(attachmentId, nextDurationSec) => void editor.resizeClip(attachmentId, nextDurationSec)}
+          />
+
+          <SongVisualAssetLibrary
+            assets={editor.assets}
+            attachedAssetIds={editor.attachedAssetIds}
+            remainingTimelineSec={editor.remainingTimelineSec}
+            isBusy={editor.isBusy}
+            onAddToTimeline={(assetId) => void editor.attachExistingAsset(assetId)}
+            onDeleteAsset={editor.deleteAsset}
+            onUpload={editor.openUploadPicker}
           />
 
           {editor.error ? (

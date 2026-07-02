@@ -1,11 +1,14 @@
 export type UploadMediaKind = "audio" | "image" | "video";
 
-/** Generous audio cap; image cap blocks accidental huge covers. */
+/** Generous audio cap; visual caps tuned for studio uploads. */
 export const UPLOAD_MAX_BYTES: Record<UploadMediaKind, number> = {
   audio: 100 * 1024 * 1024,
-  image: 15 * 1024 * 1024,
-  video: 200 * 1024 * 1024,
+  image: 5 * 1024 * 1024,
+  video: 25 * 1024 * 1024,
 };
+
+/** Planned cap for Lottie JSON attachments (not wired to upload yet). */
+export const LOTTIE_UPLOAD_MAX_BYTES = 2 * 1024 * 1024;
 
 export const BULK_REGISTER_MAX_FILES = 50;
 

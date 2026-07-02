@@ -432,7 +432,6 @@ export function TrackRow({
             title,
             audioUrl,
             durationSeconds,
-            artworkUrl,
           }}
           onClose={() => setVisualEditorOpen(false)}
         />

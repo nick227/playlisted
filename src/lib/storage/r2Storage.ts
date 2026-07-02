@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 
 function requireEnv(name: string) {
   const value = process.env[name];
@@ -65,4 +65,13 @@ export async function uploadFileToR2(input: {
     key: input.key,
     url: r2PublicUrlForKey(input.key),
   };
+}
+
+export async function deleteObjectFromR2(key: string) {
+  await getClient().send(
+    new DeleteObjectCommand({
+      Bucket: requireEnv("R2_BUCKET_NAME"),
+      Key: key,
+    }),
+  );
 }

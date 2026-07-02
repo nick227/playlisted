@@ -103,6 +103,7 @@ export async function attachSongVisualMedia(
     order?: number;
     label?: string;
     beatFx?: VisualMediaBeatFx;
+    playback?: Record<string, unknown>;
   },
 ) {
   const response = await fetch(`${apiBase()}/api/v1/songs/${encodeURIComponent(recordingId)}/visual-media`, {
@@ -127,6 +128,7 @@ export async function updateSongVisualAttachment(
     order: number;
     enabled: boolean;
     beatFx: VisualMediaBeatFx | null;
+    playback: Record<string, unknown> | null;
   }>,
 ) {
   const response = await fetch(
@@ -157,6 +159,17 @@ export async function detachSongVisualMedia(
       credentials: "include",
     },
   );
+  if (!response.ok && response.status !== 204) {
+    await parseJson(response);
+  }
+}
+
+export async function deleteVisualMediaAsset(assetId: string, accessToken: string) {
+  const response = await fetch(`${apiBase()}/api/v1/visual-media/${encodeURIComponent(assetId)}`, {
+    method: "DELETE",
+    headers: authHeaders(accessToken),
+    credentials: "include",
+  });
   if (!response.ok && response.status !== 204) {
     await parseJson(response);
   }
