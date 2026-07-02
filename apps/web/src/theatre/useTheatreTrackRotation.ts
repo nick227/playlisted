@@ -11,6 +11,13 @@ export function useTheatreTrackRotation(
   const prevSegmentIdRef = useRef<string | null>(null);
 
   useEffect(() => {
+    theatreController.setTrackContext(
+      enabled && segmentId ? { segmentId, trackId: segmentId } : null,
+    );
+    return () => theatreController.setTrackContext(null);
+  }, [segmentId, enabled]);
+
+  useEffect(() => {
     if (!enabled || !segmentId) {
       if (!enabled) prevSegmentIdRef.current = null;
       return;
@@ -20,14 +27,7 @@ export function useTheatreTrackRotation(
 
     const isSegmentChange = prevSegmentIdRef.current !== null;
     prevSegmentIdRef.current = segmentId;
-    if (isSegmentChange) void theatreController.rotateRandomPreset();
-  }, [segmentId, enabled]);
-
-  useEffect(() => {
-    theatreController.setTrackContext(
-      enabled && segmentId ? { segmentId, trackId: segmentId } : null,
-    );
-    return () => theatreController.setTrackContext(null);
+    if (isSegmentChange) void theatreController.onPlaybackSegmentChanged();
   }, [segmentId, enabled]);
 
   useEffect(() => {

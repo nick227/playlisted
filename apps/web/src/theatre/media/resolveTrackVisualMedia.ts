@@ -33,6 +33,14 @@ export function setRemoteTrackVisualMedia(key: string, resolution: TrackVisualMe
   REMOTE_CACHE.set(key, resolution)
 }
 
+export function getRemoteTrackVisualMedia(key: string): TrackVisualMediaResolution | undefined {
+  return REMOTE_CACHE.get(key)
+}
+
+export function hasLocalTrackVisualMediaOverride(key: string): boolean {
+  return (LOCAL_ATTACHMENT_MAP.get(key) ?? []).length > 0
+}
+
 export function clearRemoteTrackVisualMedia(key?: string): void {
   if (key) {
     REMOTE_CACHE.delete(key)

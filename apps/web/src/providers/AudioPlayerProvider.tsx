@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from "react";
 
+import { prefetchTrackVisualMedia } from "@/theatre/media/hydrateTrackVisualMedia";
 import theatreController from "@/theatre/controller/lazyController";
 import {
   getRadioPlaybackActive,
@@ -214,21 +215,26 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     theatreController.setArtwork(currentTrack.artworkUrl);
   }, [currentTrack?.artworkUrl]);
 
+  useEffect(() => {
+    if (!currentTrack?.id) return;
+    prefetchTrackVisualMedia({ segmentId: currentTrack.id, trackId: currentTrack.id });
+  }, [currentTrack?.id]);
+
   const playerShellActive = playerBarVisible || playerDismissSnapshot !== null;
   const isPlaying = currentTrack !== null && (state === "playing" || state === "loading");
   const playbackActive = isPlaying || radioPlaying;
 
   useEffect(() => subscribeRadioPlayback(setRadioPlaying), []);
 
-  useEffect(() => {
-    theatreController.setCanEnter(playbackActive);
-  }, [playbackActive]);
-
   useTheatreTrackRotation(
     currentTrack?.id,
     playbackActive,
     transportDuration ? transportDuration * 1000 : null
   );
+
+  useEffect(() => {
+    theatreController.setCanEnter(playbackActive);
+  }, [playbackActive]);
 
   const queueRef = useRef(queue);
   const queueIndexRef = useRef(queueIndex);

@@ -29,6 +29,7 @@ interface RealTheatreController extends EventTarget {
   exit(opts?: { rearmBackground?: boolean }): Promise<void>
   changePreset(id: string): void
   rotateRandomPreset(): Promise<void>
+  onPlaybackSegmentChanged(): Promise<void>
   setAutoRotation(enabled: boolean): void
   setClipDuration(durationMs: number | null): void
   setTrackContext(track: { segmentId?: string | null; trackId?: string | null } | null): void
@@ -248,6 +249,11 @@ class LazyTheatreController extends EventTarget {
     if (this._real) return this._real.rotateRandomPreset()
     if (!this.state.active) return
     return (await this._load()).rotateRandomPreset()
+  }
+
+  public async onPlaybackSegmentChanged() {
+    if (this._real) return this._real.onPlaybackSegmentChanged()
+    return (await this._load()).onPlaybackSegmentChanged()
   }
 }
 

@@ -289,7 +289,7 @@ export class FxSelector {
   }
 
   private nextBagId(ctx: PickContext, consume: boolean): string | null {
-    if (ctx.songVisualHydrationPending && ctx.songVisualPolicy === 'attachedOnly') {
+    if (ctx.songVisualHydrationPending) {
       return null
     }
 

@@ -9,9 +9,7 @@ export function hasAttachedOnlyTimeline(ctx: PickContext): boolean {
 }
 
 export function blocksBuiltinSitePresets(ctx: PickContext): boolean {
-  if (ctx.songVisualHydrationPending && ctx.songVisualPolicy === 'attachedOnly') {
-    return true
-  }
+  if (ctx.songVisualHydrationPending) return true
   return hasAttachedOnlyTimeline(ctx)
 }
 

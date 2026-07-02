@@ -17,7 +17,7 @@ import { getOrCreateAudioAnalyserConnection, type AudioAnalyserConnection } from
 import { listPresets, type ScenePresetDef, type TheatreTransitionKind } from '../registry/scenePresets'
 import { buildSongVisualPickExtras } from '../media/buildSongVisualPool'
 import { ATTACHED_ONLY_BLANK_PRESET_ID } from '../media/attachedOnlyBlankPreset'
-import { hasAttachedOnlyTimeline, shouldSuppressSiteRotationInGap } from '../media/attachedOnlyPlayback'
+import { hasAttachedOnlyTimeline, resolveAttachedOnlyTimelinePresetId, shouldSuppressSiteRotationInGap } from '../media/attachedOnlyPlayback'
 import { clearDynamicPresets } from '../media/dynamicPresetStore'
 import { isUserMediaPresetId, resolvePreset } from '../media/resolvePreset'
 import { resolveTimelinePlaybackDecision } from '../media/TimelinePlaybackDirector'
@@ -215,7 +215,7 @@ class TheatreController extends EventTarget {
     }
 
     this.songVisualHydrationPending = true
-    this.visualMediaHydration = hydrateTrackVisualMedia(track)
+    this.visualMediaHydration = hydrateTrackVisualMedia(track, { forceNetwork: true })
       .then(() => {
         this.fxSelector.clearCandidate()
         if (!this.state.active) return
@@ -285,11 +285,18 @@ class TheatreController extends EventTarget {
     return nowMs - this.rotationState.presetStartedAtMs >= minHoldMs
   }
 
+  private shouldSuppressSiteFxRotation(): boolean {
+    const pickCtx = this.buildFxPickContext()
+    return pickCtx.songVisualPolicy === 'attachedOnly' || hasAttachedOnlyTimeline(pickCtx)
+  }
+
   private handleRotationPolicyDecision(
     decision: ReturnType<RotationPolicy['evaluate']>,
     nowMs: number,
     resolved: ResolvedRotationPolicy,
   ) {
+    if (this.shouldSuppressSiteFxRotation()) return
+
     if (decision.action === 'preload') {
       if (
         !this.rotationPreloadTriggered &&
@@ -634,6 +641,20 @@ class TheatreController extends EventTarget {
     this.deck?.pause()
   }
 
+  public async onPlaybackSegmentChanged() {
+    if (!this.state.active || this.transitioning) return
+
+    await this.ensureVisualMediaHydrated()
+
+    const pickCtx = this.buildFxPickContext()
+    if (pickCtx.songVisualPolicy === 'attachedOnly') {
+      await this.syncAttachedOnlyPlaybackAfterHydrate()
+      return
+    }
+
+    await this.rotateRandomPreset()
+  }
+
   public async rotateRandomPreset() {
     if (!this.state.active) return
     if (this.transitioning) return
@@ -642,6 +663,10 @@ class TheatreController extends EventTarget {
     await this.ensureVisualMediaHydrated()
 
     const pickCtx = this.buildFxPickContext()
+    if (pickCtx.songVisualPolicy === 'attachedOnly') {
+      await this.syncAttachedOnlyPlaybackAfterHydrate()
+      return
+    }
 
     if (this.deck?.getNextPresetId()) {
       this.fxSelector.consumeNext(pickCtx)
@@ -908,6 +933,7 @@ class TheatreController extends EventTarget {
   private async runPreloadNext() {
     if (!this.state.active || !this.deck || this.deck.getNextPresetId() || this.transitioning) return
     if (this.isManualChangeCooldownActive() || this.manualPresetLatest) return
+    if (this.shouldSuppressSiteFxRotation()) return
 
     const nextPreset = this.fxSelector.peekNext(this.buildFxPickContext())
     if (!nextPreset) return
@@ -1090,10 +1116,15 @@ class TheatreController extends EventTarget {
 
     await this.ensureVisualMediaHydrated()
 
-    const { ctx, policy } = this.buildFrameContextWithAudio(0)
-
-    const selectedPreset = this.fxSelector.consumeNext(this.buildFxPickContext(true))
+    const pickCtx = this.buildFxPickContext(true)
+    let selectedPreset = this.fxSelector.consumeNext(pickCtx)
+    const attachedOnlyPresetId = resolveAttachedOnlyTimelinePresetId(pickCtx)
+    if (attachedOnlyPresetId && selectedPreset?.id !== attachedOnlyPresetId) {
+      selectedPreset = resolvePreset(attachedOnlyPresetId)
+    }
     const initialPresetId = selectedPreset?.id ?? null
+
+    const { ctx, policy } = this.buildFrameContextWithAudio(0)
 
     this.deck = new TheatreSceneDeck(overlay)
 

@@ -147,7 +147,7 @@ describe('attachedOnly theatre playback', () => {
     expect(resolvePreset(ATTACHED_ONLY_BLANK_PRESET_ID)).not.toBeNull()
   })
 
-  it('attachedOnly hydration pending → no builtin', () => {
+  it('hydration pending → no builtin regardless of policy', () => {
     const memory = createMemoryStorage({
       version: TEST_VERSION,
       bag: ['alpha', 'beta'],
@@ -158,7 +158,7 @@ describe('attachedOnly theatre playback', () => {
     expect(selector.consumeNext({
       reducedMotion: false,
       activePresetId: null,
-      songVisualPolicy: 'attachedOnly',
+      songVisualPolicy: 'defaultOnly',
       songVisualHydrationPending: true,
       dynamicPresets: [],
       timelineClips: [],
