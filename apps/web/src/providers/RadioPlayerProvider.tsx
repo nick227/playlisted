@@ -65,12 +65,14 @@ export function RadioPlayerProvider({ children }: { children: ReactNode }) {
     return listenerIdRef.current;
   }, []);
 
+  // Radio data is only consumed while radio audio is playing or radio UI is
+  // on screen; without this gate the poll fires every 10s on every page.
+  const radioActive = playing || uiMounted;
   const radioQuery = useQuery({
     queryKey: ["radio", "public"],
     queryFn: () => api.radio.get(),
-    // Only keep polling live while radio audio is actually playing or the
-    // radio UI is on screen — otherwise this fires every 10s on every page.
-    refetchInterval: playing || uiMounted ? 10_000 : false,
+    enabled: radioActive,
+    refetchInterval: radioActive ? 10_000 : false,
   });
   const refetchRadio = radioQuery.refetch;
 

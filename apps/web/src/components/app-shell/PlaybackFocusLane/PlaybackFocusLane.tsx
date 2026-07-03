@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 
 import { useFocusLanePlayback } from "@/hooks/useFocusLanePlayback";
@@ -32,7 +33,7 @@ export function PlaybackFocusLane({ focusState }: PlaybackFocusLaneProps) {
   const { accessToken } = useAuth();
   const { subtitlesEnabled } = useSubtitleDisplay();
   const { track, isPlaying, currentTime } = useFocusLanePlayback();
-  const [subtitles, setSubtitles] = useState<RecordingSubtitlesResponse | null>(null);
+  const queryClient = useQueryClient();
 
   const recording = useMemo(() => toFocusRecording(track), [track]);
   const artist = useMemo(() => (recording ? toFocusArtist(recording) : null), [recording]);
@@ -43,54 +44,45 @@ export function PlaybackFocusLane({ focusState }: PlaybackFocusLaneProps) {
 
   const canLoadSubtitles = Boolean(subtitlesEnabled && isPlaying && recording?.id);
 
-  useEffect(() => {
-    if (!canLoadSubtitles || !recording?.id) {
-      setSubtitles(null);
-      return;
-    }
+  const subtitlesQuery = useQuery({
+    queryKey: ["subtitles", recording?.id, accessToken ? "auth" : "guest"],
+    queryFn: () => fetchRecordingSubtitles(recording!.id, accessToken),
+    enabled: canLoadSubtitles,
+    refetchInterval: (query) => {
+      const status = query.state.data?.status;
+      if (status !== "QUEUED" && status !== "PROCESSING") return false;
+      // Give up on a stuck job instead of polling for the whole playback.
+      return query.state.dataUpdateCount < SUBTITLE_POLL_MAX_ATTEMPTS
+        ? SUBTITLE_POLL_INTERVAL_MS
+        : false;
+    },
+  });
 
-    let cancelled = false;
-    let pollTimer: number | null = null;
-    let attempts = 0;
-
-    const fetchSubs = () => {
-      fetchRecordingSubtitles(recording.id, accessToken)
-        .then((data) => {
-          if (cancelled) return;
-          setSubtitles(data);
-          attempts += 1;
-          if (
-            (data.status === "QUEUED" || data.status === "PROCESSING") &&
-            attempts < SUBTITLE_POLL_MAX_ATTEMPTS
-          ) {
-            pollTimer = window.setTimeout(fetchSubs, SUBTITLE_POLL_INTERVAL_MS);
-          }
-        })
-        .catch(() => {
-          if (!cancelled) setSubtitles({ status: "FAILED", errorMessage: "Subtitles unavailable" });
-        });
-    };
-
-    fetchSubs();
-
-    return () => {
-      cancelled = true;
-      if (pollTimer !== null) window.clearTimeout(pollTimer);
-    };
-  }, [accessToken, canLoadSubtitles, recording?.id]);
+  const subtitles: RecordingSubtitlesResponse | null = !canLoadSubtitles
+    ? null
+    : subtitlesQuery.data ??
+      (subtitlesQuery.isError ? { status: "FAILED", errorMessage: "Subtitles unavailable" } : null);
 
   useEffect(() => {
-    if (!recording?.id) return;
+    const recordingId = recording?.id;
+    if (!recordingId) return;
 
     const handleSubtitlesDisabledChange = (event: Event) => {
       const detail = (event as CustomEvent<RecordingSubtitlesDisabledEventDetail>).detail;
-      if (detail?.recordingId !== recording.id) return;
-      setSubtitles(detail.subtitlesDisabled ? { status: "DISABLED" } : null);
+      if (detail?.recordingId !== recordingId) return;
+      if (detail.subtitlesDisabled) {
+        queryClient.setQueryData<RecordingSubtitlesResponse>(
+          ["subtitles", recordingId, accessToken ? "auth" : "guest"],
+          { status: "DISABLED" },
+        );
+      } else {
+        void queryClient.invalidateQueries({ queryKey: ["subtitles", recordingId] });
+      }
     };
 
     window.addEventListener(RECORDING_SUBTITLES_DISABLED_EVENT, handleSubtitlesDisabledChange);
     return () => window.removeEventListener(RECORDING_SUBTITLES_DISABLED_EVENT, handleSubtitlesDisabledChange);
-  }, [recording?.id]);
+  }, [accessToken, queryClient, recording?.id]);
 
   const currentTimeMs = currentTime * 1000;
 
