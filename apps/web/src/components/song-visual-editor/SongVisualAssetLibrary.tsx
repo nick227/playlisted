@@ -1,7 +1,8 @@
-import { RotateCcw, Trash2, Upload, AudioLines, Repeat } from "lucide-react";
+import { RotateCcw, Trash2, Upload, AudioLines, Repeat, Loader2 } from "lucide-react";
 import { useState, type DragEvent } from "react";
 
 import { VISUAL_UPLOAD_MAX_BYTES } from "@/lib/visualUploadLimits";
+import type { VisualUploadProgress } from "@/lib/visualMediaApi";
 
 import { editorToggleClass } from "./editorToggle";
 import { EditorSection } from "./EditorSection";
@@ -23,6 +24,8 @@ type SongVisualAssetLibraryProps = {
   timelineClips: TimelineClip[];
   assets: VisualMediaAssetRecord[];
   isBusy: boolean;
+  isUploading: boolean;
+  uploadProgress: VisualUploadProgress | null;
   onClipLoopChange: (attachmentId: string, loop: boolean) => void;
   onClipAudioPulseChange: (attachmentId: string, enabled: boolean) => void;
   readClipAudioPulse: (attachment: TimelineClip["attachment"]) => boolean;
@@ -134,6 +137,8 @@ export function SongVisualAssetLibrary({
   timelineClips,
   assets,
   isBusy,
+  isUploading,
+  uploadProgress,
   onClipLoopChange,
   onClipAudioPulseChange,
   readClipAudioPulse,
@@ -251,7 +256,6 @@ export function SongVisualAssetLibrary({
                           title="Loop clip"
                         >
                           <Repeat size={10} />
-                          loop
                         </button>
                         <button
                           type="button"
@@ -262,9 +266,7 @@ export function SongVisualAssetLibrary({
                           title="Beat reactive pulse"
                         >
                           <AudioLines size={10} />
-                          pulse
                         </button>
-                      </div>
                       {startOffsetMs > 0 ? (
                         <button
                           type="button"
@@ -281,11 +283,12 @@ export function SongVisualAssetLibrary({
                         type="button"
                         disabled={isBusy}
                         onClick={() => onRemoveClip(attachment.id)}
-                        className="rounded-md border border-red-500/20 px-1.5 py-1 text-red-200 hover:bg-red-500/10 disabled:opacity-40"
+                        className="rounded-md px-1.5 py-1 hover:bg-red-500/10 disabled:opacity-40"
                         aria-label="Remove clip from timeline"
                       >
                         <Trash2 size={11} />
                       </button>
+                      </div>
                     </div>
                   </div>
                 </article>
@@ -321,10 +324,21 @@ export function SongVisualAssetLibrary({
           onDragLeave={() => setIsDragOver(false)}
           onDrop={handleDrop}
           className={[
-            "min-h-[11rem] rounded-lg border bg-black/30 p-2 transition-colors",
+            "relative min-h-[11rem] rounded-lg border bg-black/30 p-2 transition-colors",
             isDragOver ? "border-emerald-400/50 bg-emerald-500/10" : "border-white/10",
           ].join(" ")}
         >
+          {isUploading ? (
+            <div className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 rounded-lg bg-black/70 px-4 text-center backdrop-blur-[1px]">
+              <Loader2 size={22} className="animate-spin text-sky-300" />
+              <p className="text-sm font-medium text-white">
+                {uploadOverlayTitle(uploadProgress)}
+              </p>
+              {uploadProgress?.fileName ? (
+                <p className="max-w-full truncate text-xs text-white/50">{uploadProgress.fileName}</p>
+              ) : null}
+            </div>
+          ) : null}
           {visibleRows.length === 0 ? (
             activeTab === "mine" ? (
               <button
@@ -382,4 +396,12 @@ export function SongVisualAssetLibrary({
       </EditorSection>
     </div>
   );
+}
+
+function uploadOverlayTitle(progress: VisualUploadProgress | null) {
+  if (!progress) return "Uploading…";
+  if (progress.phase === "preparing") return "Preparing upload…";
+  if (progress.phase === "processing") return "Saving on server…";
+  if (progress.percent != null) return `Uploading ${progress.percent}%`;
+  return "Uploading…";
 }

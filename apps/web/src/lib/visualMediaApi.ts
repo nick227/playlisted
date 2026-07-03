@@ -1,5 +1,7 @@
 import type { SongVisualPolicy, VisualMediaBeatFx } from "@/theatre/media/types";
 
+import { visualUploadKindForFile } from "@/lib/visualUploadLimits";
+
 export type VisualMediaAssetRecord = {
   id: string;
   ownerId: string;
@@ -46,6 +48,18 @@ type VisualUploadMetadata = {
   width?: number;
   height?: number;
 };
+
+export type VisualUploadPhase = "preparing" | "uploading" | "processing";
+
+export type VisualUploadProgress = {
+  phase: VisualUploadPhase;
+  fileName: string;
+  /** 0–100 when known; null for indeterminate (e.g. metadata read). */
+  percent: number | null;
+};
+
+const VISUAL_UPLOAD_TIMEOUT_MS = 30 * 60 * 1000;
+const METADATA_PREPARE_BUDGET_MS = 750;
 
 function apiBase() {
   return import.meta.env.VITE_API_BASE_URL ?? "";
@@ -129,9 +143,85 @@ async function readVideoUploadMetadata(file: File): Promise<VisualUploadMetadata
 }
 
 async function readVisualUploadMetadata(file: File, kind: "video" | "image"): Promise<VisualUploadMetadata | null> {
-  return kind === "video"
-    ? readVideoUploadMetadata(file)
-    : readImageUploadMetadata(file);
+  return Promise.race([
+    kind === "video" ? readVideoUploadMetadata(file) : readImageUploadMetadata(file),
+    new Promise<null>((resolve) => {
+      window.setTimeout(() => resolve(null), METADATA_PREPARE_BUDGET_MS);
+    }),
+  ]);
+}
+
+function xhrErrorMessage(xhr: XMLHttpRequest): string {
+  if (xhr.status === 0) {
+    return "Upload could not reach the server. Check your connection and try a smaller file.";
+  }
+  if (xhr.status === 413) {
+    return "File exceeds the server upload limit.";
+  }
+  if (xhr.status === 415) {
+    return "Unsupported file type for visual upload.";
+  }
+  if (xhr.status === 429) {
+    return "Too many uploads. Wait a moment and try again.";
+  }
+  try {
+    const payload = JSON.parse(xhr.responseText) as { message?: string };
+    if (payload?.message) return payload.message;
+  } catch {
+    // ignore parse errors
+  }
+  return `Upload failed (${xhr.status}).`;
+}
+
+function postVisualUploadForm(
+  url: string,
+  form: FormData,
+  accessToken: string,
+  onProgress?: (progress: VisualUploadProgress) => void,
+  fileName = "file",
+): Promise<VisualMediaAssetRecord> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", url);
+    xhr.setRequestHeader("Authorization", `Bearer ${accessToken}`);
+    xhr.withCredentials = true;
+    xhr.timeout = VISUAL_UPLOAD_TIMEOUT_MS;
+
+    xhr.upload.onprogress = (event) => {
+      if (!onProgress) return;
+      if (event.lengthComputable && event.total > 0) {
+        const percent = Math.min(100, Math.round((event.loaded / event.total) * 100));
+        onProgress({ phase: "uploading", fileName, percent });
+        return;
+      }
+      onProgress({ phase: "uploading", fileName, percent: null });
+    };
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        onProgress?.({ phase: "processing", fileName, percent: 100 });
+        try {
+          resolve(JSON.parse(xhr.responseText) as VisualMediaAssetRecord);
+          return;
+        } catch {
+          reject(new Error("Server returned an invalid upload response."));
+          return;
+        }
+      }
+      reject(new Error(xhrErrorMessage(xhr)));
+    };
+
+    xhr.onerror = () => {
+      reject(new Error("Network error during upload."));
+    };
+
+    xhr.ontimeout = () => {
+      reject(new Error("Upload timed out. Try a smaller file or a faster connection."));
+    };
+
+    onProgress?.({ phase: "uploading", fileName, percent: 0 });
+    xhr.send(form);
+  });
 }
 
 export async function importVisualMediaVideoFromUrl(
@@ -217,8 +307,11 @@ export async function listVisualMediaAssets(accessToken: string) {
 export async function uploadVisualMediaFile(
   file: File,
   accessToken: string,
-  kind: "video" | "image" = file.type.startsWith("video/") ? "video" : "image",
+  kind: "video" | "image" = visualUploadKindForFile(file) ?? (file.type.startsWith("video/") ? "video" : "image"),
+  onProgress?: (progress: VisualUploadProgress) => void,
 ) {
+  onProgress?.({ phase: "preparing", fileName: file.name, percent: null });
+
   const form = new FormData();
   form.append("file", file);
   const metadata = await readVisualUploadMetadata(file, kind);
@@ -228,14 +321,13 @@ export async function uploadVisualMediaFile(
     appendOptionalNumber(form, "height", metadata.height);
   }
 
-  const response = await fetch(`${apiBase()}/api/v1/visual-media/upload?kind=${kind}`, {
-    method: "POST",
-    headers: authHeaders(accessToken),
-    body: form,
-    credentials: "include",
-  });
-
-  return parseJson<VisualMediaAssetRecord>(response);
+  return postVisualUploadForm(
+    `${apiBase()}/api/v1/visual-media/upload?kind=${kind}`,
+    form,
+    accessToken,
+    onProgress,
+    file.name,
+  );
 }
 
 export async function fetchSongVisualAttachments(recordingId: string, accessToken?: string | null) {

@@ -49,6 +49,9 @@ async function handleVisualUpload(
   next: (error: unknown) => void,
   kind: "video" | "image",
 ) {
+  const startedAt = Date.now();
+  let uploadLabel = "unknown";
+
   try {
     const auth = await requireAuth(req, res);
     if (!auth) return;
@@ -60,6 +63,15 @@ async function handleVisualUpload(
         message: "Multipart field 'file' is required.",
       });
     }
+
+    uploadLabel = file.originalname;
+    console.info("[visual-upload] received", {
+      kind,
+      name: file.originalname,
+      bytes: file.size,
+      mimeType: file.mimetype,
+      userId: auth.user.id,
+    });
 
     if (await rejectDisallowedUpload(kind, file, res)) return;
 
@@ -76,6 +88,13 @@ async function handleVisualUpload(
       });
     } catch (storageErr) {
       await fs.unlink(file.path).catch(() => undefined);
+      console.error("[visual-upload] storage failed", {
+        kind,
+        name: file.originalname,
+        bytes: file.size,
+        userId: auth.user.id,
+        error: storageErr,
+      });
       return next(storageErr);
     }
 
@@ -95,8 +114,23 @@ async function handleVisualUpload(
       },
     });
 
+    console.info("[visual-upload] complete", {
+      kind,
+      name: uploadLabel,
+      assetId: asset.id,
+      provider: stored.provider,
+      ms: Date.now() - startedAt,
+      userId: auth.user.id,
+    });
+
     res.status(201).json(mapVisualMediaAsset(asset));
   } catch (error) {
+    console.error("[visual-upload] failed", {
+      kind,
+      name: uploadLabel,
+      ms: Date.now() - startedAt,
+      error,
+    });
     next(error);
   }
 }

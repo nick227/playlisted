@@ -12,6 +12,7 @@ import {
   uploadVisualMediaFile,
   type SongVisualAttachmentRecord,
   type VisualMediaAssetRecord,
+  type VisualUploadProgress,
 } from "@/lib/visualMediaApi";
 import type { VisualMediaBeatFx } from "@/theatre/media/types";
 import { clearRemoteTrackVisualMedia } from "@/theatre/media/resolveTrackVisualMedia";
@@ -77,6 +78,7 @@ export function useSongVisualEditorState({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [error, setError] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<VisualUploadProgress | null>(null);
   const [selectedAttachmentId, setSelectedAttachmentId] = useState<string | null>(null);
   const [clipboard, setClipboard] = useState<ClipClipboard | null>(null);
   const [draftAttachments, setDraftAttachments] = useState<SongVisualAttachmentRecord[] | null>(null);
@@ -120,12 +122,14 @@ export function useSongVisualEditorState({
   }, []);
 
   const uploadMutation = useMutation({
-    mutationFn: (file: File) => uploadVisualMediaFile(file, accessToken),
+    mutationFn: (file: File) =>
+      uploadVisualMediaFile(file, accessToken, undefined, (progress) => setUploadProgress(progress)),
     onSuccess: async (asset) => {
       await attachAssetToTimeline(asset, { startSec: 0 });
       await queryClient.invalidateQueries({ queryKey: ["visual-media-assets"] });
     },
     onError: (err) => setError(err instanceof Error ? err.message : "Upload failed."),
+    onSettled: () => setUploadProgress(null),
   });
 
   const saveMutation = useMutation({
@@ -460,6 +464,8 @@ export function useSongVisualEditorState({
       setError(validationError);
       return;
     }
+    setError(null);
+    setUploadProgress({ phase: "preparing", fileName: file.name, percent: null });
     uploadMutation.mutate(file);
   }
 
@@ -515,9 +521,10 @@ export function useSongVisualEditorState({
     setError(null);
   }
 
+  const isUploading = uploadMutation.isPending;
   const isLibraryBusy =
     attachmentsQuery.isLoading ||
-    uploadMutation.isPending ||
+    isUploading ||
     deleteAssetMutation.isPending;
 
   const isBusy = isLibraryBusy || saveMutation.isPending;
@@ -533,6 +540,8 @@ export function useSongVisualEditorState({
     clipSyncStatus: {} as Record<string, never>,
     error,
     isBusy,
+    isUploading,
+    uploadProgress,
     isLibraryBusy,
     isSaving: saveMutation.isPending,
     isDirty,

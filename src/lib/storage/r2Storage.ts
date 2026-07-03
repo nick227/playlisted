@@ -1,3 +1,4 @@
+import { createReadStream } from "node:fs";
 import fs from "node:fs/promises";
 
 import { DeleteObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
@@ -51,12 +52,13 @@ export async function uploadFileToR2(input: {
   filePath: string;
   contentType: string;
 }) {
-  const body = await fs.readFile(input.filePath);
+  const stat = await fs.stat(input.filePath);
   await getClient().send(
     new PutObjectCommand({
       Bucket: requireEnv("R2_BUCKET_NAME"),
       Key: input.key,
-      Body: body,
+      Body: createReadStream(input.filePath),
+      ContentLength: stat.size,
       ContentType: input.contentType,
     }),
   );

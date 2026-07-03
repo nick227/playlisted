@@ -124,6 +124,8 @@ function SongVisualEditorModalInner({
 
             <SongVisualEditorToolbar
               isBusy={editor.isBusy}
+              isUploading={editor.isUploading}
+              uploadProgress={editor.uploadProgress}
               isDirty={editor.isDirty}
               isSaving={editor.isSaving}
               isPlaying={playback.isPlaying}
@@ -140,6 +142,12 @@ function SongVisualEditorModalInner({
               onSave={() => editor.saveChanges()}
               onCancel={handleClose}
             />
+
+            {editor.error ? (
+              <p className="rounded-md border border-red-400/25 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+                {editor.error}
+              </p>
+            ) : null}
 
             <SongVisualEditorTimeline
               clips={editor.timelineClips}
@@ -166,6 +174,8 @@ function SongVisualEditorModalInner({
               timelineClips={editor.timelineClips}
               assets={editor.assets}
               isBusy={editor.isBusy}
+              isUploading={editor.isUploading}
+              uploadProgress={editor.uploadProgress}
               onClipLoopChange={(attachmentId, loop) => editor.setClipLoop(attachmentId, loop)}
               onClipAudioPulseChange={(attachmentId, enabled) => editor.setClipAudioPulse(attachmentId, enabled)}
               readClipAudioPulse={editor.readClipAudioPulse}
@@ -179,9 +189,6 @@ function SongVisualEditorModalInner({
               selectedAttachmentId={editor.selectedAttachmentId}
             />
 
-            {editor.error ? (
-              <p className="mt-3 text-sm text-red-300">{editor.error}</p>
-            ) : null}
           </div>
         </div>
 

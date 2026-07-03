@@ -2,12 +2,16 @@ import { Loader2, MousePointer2, Pause, Play, Scissors, Sparkles, Subtitles, Upl
 import type { ReactNode } from "react";
 import { editorToggleClass } from "./editorToggle";
 
+import type { VisualUploadProgress } from "@/lib/visualMediaApi";
+
 export type TimelineEditMode = "select" | "cut";
 
 const TOOLBAR_CONTROL_HEIGHT = "h-8";
 
 type SongVisualEditorToolbarProps = {
   isBusy: boolean;
+  isUploading: boolean;
+  uploadProgress: VisualUploadProgress | null;
   isDirty: boolean;
   isSaving: boolean;
   isPlaying: boolean;
@@ -27,6 +31,8 @@ type SongVisualEditorToolbarProps = {
 
 export function SongVisualEditorToolbar({
   isBusy,
+  isUploading,
+  uploadProgress,
   isDirty,
   isSaving,
   isPlaying,
@@ -110,10 +116,15 @@ export function SongVisualEditorToolbar({
         type="button"
         disabled={isBusy}
         onClick={onUpload}
-        className={`inline-flex ${TOOLBAR_CONTROL_HEIGHT} items-center gap-1.5 rounded-md border border-white/15 bg-white/5 px-3 text-[11px] font-semibold text-white/85 transition hover:border-white/25 hover:bg-white/10 hover:text-white disabled:opacity-40`}
+        className={`inline-flex ${TOOLBAR_CONTROL_HEIGHT} items-center gap-1.5 rounded-md border px-3 text-[11px] font-semibold transition disabled:opacity-40 ${
+          isUploading
+            ? "border-sky-400/30 bg-sky-500/15 text-sky-100"
+            : "border-white/15 bg-white/5 text-white/85 hover:border-white/25 hover:bg-white/10 hover:text-white"
+        }`}
+        aria-busy={isUploading}
       >
-        <Upload size={13} />
-        Upload
+        {isUploading ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
+        {uploadButtonLabel(isUploading, uploadProgress)}
       </button>
 
       <div className={`ml-auto flex items-center gap-2 ${TOOLBAR_CONTROL_HEIGHT}`}>
@@ -136,6 +147,15 @@ export function SongVisualEditorToolbar({
       </div>
     </div>
   );
+}
+
+function uploadButtonLabel(isUploading: boolean, progress: VisualUploadProgress | null) {
+  if (!isUploading) return "Upload";
+  if (!progress) return "Uploading…";
+  if (progress.phase === "preparing") return "Preparing…";
+  if (progress.phase === "processing") return "Finishing…";
+  if (progress.percent != null) return `Uploading ${progress.percent}%`;
+  return "Uploading…";
 }
 
 function ToolbarDivider() {
