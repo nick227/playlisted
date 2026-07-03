@@ -24,14 +24,14 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
   const { status, user, accessToken } = useAuth();
   const { releasePlayback } = useAudioPlayer();
   const {
-    audioRef,
     playing,
+    volume: radioVolume,
+    setVolume: setRadioVolume,
     togglePlayback,
     radioQuery,
     station,
     nowPlaying,
     isLive,
-    transferToSitePlayer,
     registerRadioUi,
     unregisterRadioUi,
   } = useRadioPlayer();
@@ -39,7 +39,6 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const location = useLocation();
-  const [radioVolume, setRadioVolume] = useState(1);
   const [volumeOpen, setVolumeOpen] = useState(false);
 
   usePageMeta({ title: "Radio" });
@@ -73,14 +72,12 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
     return unregisterRadioUi;
   }, [registerRadioUi, unregisterRadioUi]);
 
-  useEffect(() => {
-    if (isEmbedded) return;
-    releasePlayback();
-  }, [isEmbedded, releasePlayback]);
-
-  useEffect(() => {
-    if (audioRef.current) audioRef.current.volume = radioVolume;
-  }, [audioRef, radioVolume]);
+  function handleRadioPlayback() {
+    if (!playing) {
+      releasePlayback();
+    }
+    void togglePlayback();
+  }
 
   const submissionCollectionMutation = useMutation({
     mutationFn: () =>
@@ -105,19 +102,6 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
 
     if (submissionCollectionMutation.isPending) return;
     submissionCollectionMutation.mutate();
-  }
-
-  async function handlePlaylistNavigation(e: React.MouseEvent<HTMLAnchorElement>) {
-    if (!playlistUrl || e.defaultPrevented || e.button !== 0 || e.metaKey || e.altKey || e.ctrlKey || e.shiftKey) {
-      return;
-    }
-
-    e.preventDefault();
-    try {
-      await transferToSitePlayer();
-    } finally {
-      navigate(playlistUrl);
-    }
   }
 
   const pageMinHeight = isEmbedded
@@ -158,7 +142,6 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
           {playlistUrl ? (
             <Link
               to={playlistUrl}
-              onClick={(e) => void handlePlaylistNavigation(e)}
               className={`${artworkClassName} block transition duration-300 hover:scale-[1.012] hover:brightness-105`}
               style={artStyle}
               aria-label={`Go to playlist: ${nowPlaying?.playlist.title}`}
@@ -169,7 +152,7 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
         </div>
 
         <div className="mt-7 flex min-h-[8.75rem] w-full flex-col items-center justify-start text-center sm:min-h-[9.35rem]">
-          <p className="mb-3 flex h-5 max-w-full items-center gap-2 truncate text-xs font-semibold uppercase text-white/42 bg-[var(--color-surface)] px-2 py-1 rounded-full">
+          <p className="mb-3 flex h-5 max-w-full items-center gap-2 truncate text-xs font-semibold uppercase text-white/42 bg-[var(--color-canvas)] px-2 py-1 rounded-full">
             <Radio size={13} className="shrink-0 text-[var(--color-brand)]" />
             <span className="truncate">{station?.name ?? "Playlisted Radio"}</span>
           </p>
@@ -177,19 +160,18 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
             {playlistUrl ? (
               <Link
                 to={playlistUrl}
-                onClick={(e) => void handlePlaylistNavigation(e)}
-                className="overflow-hidden transition hover:text-[var(--color-brand)] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] bg-[var(--color-surface)]/80 rounded-sm"
+                className="overflow-hidden transition hover:text-[var(--color-brand)] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] bg-[var(--color-canvas)]/80 rounded-sm"
               >
                 {nowPlaying?.title ?? "Radio"}
               </Link>
             ) : (
-              <span className="overflow-hidden [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] bg-[var(--color-surface)]/80 rounded-sm">
+              <span className="overflow-hidden [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] bg-[var(--color-canvas)]/80 rounded-sm">
                 {nowPlaying?.title ?? "Radio"}
               </span>
             )}
           </h1>
 
-          <p className="mt-3 h-7 max-w-full truncate text-base leading-7 text-[var(--color-text-muted)] bg-[var(--color-surface)]/80 rounded-sm px-4">
+          <p className="mt-3 h-7 max-w-full truncate text-base leading-7 text-[var(--color-text-muted)] bg-[var(--color-canvas)]/80 rounded-sm px-4">
             {description}
           </p>
         </div>
@@ -246,7 +228,7 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
 
           <button
             type="button"
-            onClick={() => void togglePlayback()}
+            onClick={handleRadioPlayback}
             disabled={!nowPlaying?.audioUrl}
             className="inline-flex h-16 w-16 items-center justify-center rounded-full text-white shadow-[0_18px_46px_rgba(0,0,0,0.42)] transition hover:scale-105 disabled:cursor-not-allowed disabled:opacity-40 bg-[var(--color-surface)]/80 rounded-full"
             aria-label={playing ? "Pause radio" : "Play radio"}
