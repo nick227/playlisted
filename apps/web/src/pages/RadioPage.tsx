@@ -39,7 +39,6 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const location = useLocation();
-  const isChatPage = location.pathname === "/chat";
   const [radioVolume, setRadioVolume] = useState(1);
   const [volumeOpen, setVolumeOpen] = useState(false);
 
@@ -143,7 +142,7 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
           </div>
         ) : null}
 
-        <div className="mb-5 flex h-8 items-center justify-center gap-2 rounded-full border border-white/[0.08] bg-black/24 px-3 text-xs font-semibold uppercase text-white/78 shadow-lg shadow-black/20 backdrop-blur-md">
+        <div className="mb-5 flex h-8 items-center justify-center gap-2 rounded-full border border-white/[0.08] px-3 text-xs font-semibold uppercase text-white/78">
           <PlaybackBars active={isLive} playing={playing} variant="thumb" barCount={7} />
           <span className="text-[var(--color-brand)]">{statusLabel}</span>
           {isLive && station?.listenerCount != null ? (
@@ -170,7 +169,7 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
         </div>
 
         <div className="mt-7 flex min-h-[8.75rem] w-full flex-col items-center justify-start text-center sm:min-h-[9.35rem]">
-          <p className="mb-3 flex h-5 max-w-full items-center gap-2 truncate text-xs font-semibold uppercase text-white/42">
+          <p className="mb-3 flex h-5 max-w-full items-center gap-2 truncate text-xs font-semibold uppercase text-white/42 bg-[var(--color-surface)] px-2 py-1 rounded-full">
             <Radio size={13} className="shrink-0 text-[var(--color-brand)]" />
             <span className="truncate">{station?.name ?? "Playlisted Radio"}</span>
           </p>
@@ -179,18 +178,18 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
               <Link
                 to={playlistUrl}
                 onClick={(e) => void handlePlaylistNavigation(e)}
-                className="overflow-hidden transition hover:text-[var(--color-brand)] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
+                className="overflow-hidden transition hover:text-[var(--color-brand)] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] bg-[var(--color-surface)]/80 rounded-sm"
               >
                 {nowPlaying?.title ?? "Radio"}
               </Link>
             ) : (
-              <span className="overflow-hidden [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
+              <span className="overflow-hidden [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] bg-[var(--color-surface)]/80 rounded-sm">
                 {nowPlaying?.title ?? "Radio"}
               </span>
             )}
           </h1>
 
-          <p className="mt-3 h-7 max-w-full truncate text-base leading-7 text-[var(--color-text-muted)]">
+          <p className="mt-3 h-7 max-w-full truncate text-base leading-7 text-[var(--color-text-muted)] bg-[var(--color-surface)]/80 rounded-sm px-4">
             {description}
           </p>
         </div>
@@ -237,7 +236,7 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
             <button
               type="button"
               onClick={() => setVolumeOpen((open) => !open)}
-              className="flex h-11 w-11 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.06] text-white/72 shadow-lg shadow-black/20 transition hover:border-white/20 hover:bg-white/[0.09] hover:text-white"
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-white/[0.08] text-white/72 shadow-lg shadow-black/20 transition hover:border-white/20 hover:bg-white/[0.09] hover:text-white bg-[var(--color-surface)]/80 rounded-full"
               aria-label="Adjust radio volume"
               aria-expanded={volumeOpen}
             >
@@ -249,7 +248,7 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
             type="button"
             onClick={() => void togglePlayback()}
             disabled={!nowPlaying?.audioUrl}
-            className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-white text-black shadow-[0_18px_46px_rgba(0,0,0,0.42)] transition hover:scale-105 disabled:cursor-not-allowed disabled:opacity-40"
+            className="inline-flex h-16 w-16 items-center justify-center rounded-full text-white shadow-[0_18px_46px_rgba(0,0,0,0.42)] transition hover:scale-105 disabled:cursor-not-allowed disabled:opacity-40 bg-[var(--color-surface)]/80 rounded-full"
             aria-label={playing ? "Pause radio" : "Play radio"}
           >
             {playing ? (
@@ -265,33 +264,31 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
               id={nowPlaying.id}
               variant="inline"
               inlineAlwaysVisible
-              className="flex h-11 w-11 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.06] p-0 text-white/72 shadow-lg shadow-black/20 transition hover:border-rose-400/35 hover:bg-white/[0.09] hover:text-rose-400"
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-white/[0.08] p-0 text-white/72 shadow-lg shadow-black/20 transition hover:border-rose-400/35 hover:bg-white/[0.09] hover:text-rose-400 bg-[var(--color-surface)]/80"
             />
           ) : (
             <span className="h-11 w-11" aria-hidden="true" />
           )}
         </div>
 
-        {!isChatPage ? (
-          <div className="mt-8 flex items-center justify-center gap-2">
-            <button
-              type="button"
-              onClick={handleSubmitSong}
-              disabled={status === "loading" || submissionCollectionMutation.isPending}
-              className="flex h-11 w-11 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.055] text-white shadow-lg shadow-black/25 backdrop-blur transition hover:border-[var(--color-brand)]/40 hover:bg-white/[0.09] disabled:cursor-not-allowed disabled:opacity-60"
-              aria-label="Submit a song"
-            >
-              <Upload size={17} className="text-[var(--color-brand)]" />
-            </button>
-            <Link
-              to="/chat"
-              className="flex h-11 w-11 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.055] text-white shadow-lg shadow-black/25 backdrop-blur transition hover:border-[var(--color-brand)]/40 hover:bg-white/[0.09]"
-              aria-label="Open radio chat"
-            >
-              <MessageCircle size={17} className="text-[var(--color-brand)]" />
-            </Link>
-          </div>
-        ) : null}
+        <div className="mt-8 flex items-center justify-center gap-2">
+          <button
+            type="button"
+            onClick={handleSubmitSong}
+            disabled={status === "loading" || submissionCollectionMutation.isPending}
+            className="flex h-11 w-11 items-center justify-center rounded-full text-white shadow-lg shadow-black/25 backdrop-blur transition hover:border-[var(--color-brand)]/40 hover:bg-white/[0.09] disabled:cursor-not-allowed disabled:opacity-60 bg-[var(--color-surface)]/80"
+            aria-label="Submit a song"
+          >
+            <Upload size={17} className="text-[var(--color-brand)]" />
+          </button>
+          <Link
+            to="/chat"
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-white/[0.08] text-white shadow-lg shadow-black/25 backdrop-blur transition hover:border-[var(--color-brand)]/40 hover:bg-white/[0.09] bg-[var(--color-surface)]/80 rounded-full"
+            aria-label="Open radio chat"
+          >
+            <MessageCircle size={17} className="text-[var(--color-brand)]" />
+          </Link>
+        </div>
       </div>
     </div>
   );
