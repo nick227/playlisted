@@ -1462,6 +1462,9 @@ export interface components {
             /** Format: uri-reference */
             artworkUrl?: string | null;
             explicit: boolean;
+            /** @enum {string} */
+            subtitlePosition?: "top" | "middle" | "bottom";
+            subtitleStyleId?: string;
             uploader: components["schemas"]["RadioOwnerSummary"];
             playlist: components["schemas"]["RadioRecordingPlaylist"];
             subtitle?: components["schemas"]["RecordingSubtitleSummary"] | null;
@@ -1603,6 +1606,9 @@ export interface components {
             segments?: components["schemas"]["SubtitleSegment"][];
             vttText?: string;
             errorMessage?: string;
+            /** @enum {string} */
+            subtitlePosition?: "top" | "middle" | "bottom";
+            subtitleStyleId?: string;
         };
         /** @enum {string} */
         HomepageTargetType: "PLAYLIST" | "USER" | "EDITORIAL_POST" | "RECORDING";
@@ -1748,6 +1754,9 @@ export interface components {
             publishedAt?: string | null;
             playCount: number;
             subtitlesDisabled?: boolean;
+            /** @enum {string} */
+            subtitlePosition?: "top" | "middle" | "bottom";
+            subtitleStyleId?: string;
             subtitle?: components["schemas"]["RecordingSubtitleSummary"] | null;
             /** Format: date-time */
             createdAt: string;
@@ -1802,6 +1811,9 @@ export interface components {
             /** Format: uri-reference */
             coverArtUrl?: string | null;
             subtitlesDisabled?: boolean;
+            /** @enum {string} */
+            subtitlePosition?: "top" | "middle" | "bottom";
+            subtitleStyleId?: string;
         };
         PlaylistSummary: {
             id: string;
@@ -2008,6 +2020,10 @@ export interface components {
             status: components["schemas"]["PublishStatus"];
             explicit: boolean;
             playCount: number;
+            /** @enum {string} */
+            subtitlePosition?: "top" | "middle" | "bottom";
+            subtitleStyleId?: string;
+            subtitle?: components["schemas"]["RecordingSubtitleSummary"] | null;
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
@@ -2504,6 +2520,9 @@ export interface components {
             explicit: boolean;
             playCount: number;
             subtitle?: components["schemas"]["RecordingSubtitleSummary"] | null;
+            /** @enum {string} */
+            subtitlePosition?: "top" | "middle" | "bottom";
+            subtitleStyleId?: string;
             savesCount: number;
             /** Format: date-time */
             publishedAt?: string | null;

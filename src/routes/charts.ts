@@ -10,6 +10,7 @@ import { ACTIVE_USER } from "../lib/publicUserFilter.js";
 import { prisma } from "../lib/prisma.js";
 import { sendCachedPublicJson } from "../lib/publicJsonCache.js";
 import { mapSubtitleSummary, subtitleInclude } from "../lib/subtitles/summary.js";
+import { mapRecordingSubtitleStyle } from "../lib/subtitles/styleSettings.js";
 
 export const chartsRouter = Router();
 
@@ -41,6 +42,8 @@ function mapTopSongItem(
     explicit: boolean;
     playCount: number;
     subtitlesDisabled?: boolean;
+    subtitlePosition?: string | null;
+    subtitleStyleId?: string | null;
     createdAt: Date;
     updatedAt: Date;
     uploader: { id: string; username: string; displayName: string; avatarUrl: string | null; role: string };
@@ -79,6 +82,7 @@ function mapTopSongItem(
     status: r.status,
     explicit: r.explicit,
     playCount,
+    ...mapRecordingSubtitleStyle(r),
     subtitle: mapSubtitleSummary(r.subtitles, r.subtitlesDisabled),
     createdAt: r.createdAt.toISOString(),
     updatedAt: r.updatedAt.toISOString(),

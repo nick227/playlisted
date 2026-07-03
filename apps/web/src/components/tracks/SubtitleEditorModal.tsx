@@ -8,12 +8,15 @@ import {
   uploadTranscript,
   generateTranscript,
   updateRecordingSubtitlesDisabled,
+  updateRecordingSubtitleStyle,
 } from "@/lib/subtitles";
 import { useSuppressPlaybackFocus } from "@/lib/playbackFocusSuppression";
 import { useAuth } from "@/providers/AuthProvider";
 import {
   DEFAULT_SUBTITLE_POSITION,
   DEFAULT_SUBTITLE_STYLE_ID,
+  normalizeSubtitlePosition,
+  normalizeSubtitleStyleId,
   type SubtitlePosition,
 } from "@/lib/subtitleStylePresets";
 import type { TranscriptEntity } from "@/types/transcript";
@@ -24,24 +27,38 @@ interface SubtitleEditorModalProps {
   recordingId: string;
   recordingTitle: string;
   initialSubtitlesDisabled?: boolean;
+  initialSubtitlePosition?: SubtitlePosition;
+  initialSubtitleStyleId?: string;
   onClose: () => void;
 }
 
 type GenerateProvider = "whisper" | "modal";
 
-export function SubtitleEditorModal({ recordingId, recordingTitle, initialSubtitlesDisabled = false, onClose }: SubtitleEditorModalProps) {
+export function SubtitleEditorModal({
+  recordingId,
+  recordingTitle,
+  initialSubtitlesDisabled = false,
+  initialSubtitlePosition = DEFAULT_SUBTITLE_POSITION,
+  initialSubtitleStyleId = DEFAULT_SUBTITLE_STYLE_ID,
+  onClose,
+}: SubtitleEditorModalProps) {
   useSuppressPlaybackFocus();
   const { accessToken } = useAuth();
 
   const [activeTab, setActiveTab] = useState<"lyrics" | "subtitles" | "style">("lyrics");
-  const [subtitlePosition, setSubtitlePosition] = useState<SubtitlePosition>(DEFAULT_SUBTITLE_POSITION);
-  const [subtitleStyleId, setSubtitleStyleId] = useState(DEFAULT_SUBTITLE_STYLE_ID);
+  const [subtitlePosition, setSubtitlePosition] = useState<SubtitlePosition>(initialSubtitlePosition);
+  const [subtitleStyleId, setSubtitleStyleId] = useState(initialSubtitleStyleId);
+  const savedStyleRef = useRef({
+    position: initialSubtitlePosition,
+    styleId: initialSubtitleStyleId,
+  });
   const [transcripts, setTranscripts] = useState<TranscriptEntity[]>([]);
   const [loading, setLoading] = useState(true);
   const [subtitlesDisabled, setSubtitlesDisabled] = useState(initialSubtitlesDisabled);
   
   const [srtDraft, setSrtDraft] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingStyle, setIsSavingStyle] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [pendingGenerateProvider, setPendingGenerateProvider] = useState<GenerateProvider | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -63,11 +80,24 @@ export function SubtitleEditorModal({ recordingId, recordingTitle, initialSubtit
     [transcripts],
   );
 
+  const styleDirty =
+    subtitlePosition !== savedStyleRef.current.position ||
+    subtitleStyleId !== savedStyleRef.current.styleId;
+
   const requireAccessToken = useCallback(() => {
     if (accessToken) return accessToken;
     setErrorMessage("You must be signed in to manage subtitles.");
     return null;
   }, [accessToken]);
+
+  useEffect(() => {
+    savedStyleRef.current = {
+      position: initialSubtitlePosition,
+      styleId: initialSubtitleStyleId,
+    };
+    setSubtitlePosition(initialSubtitlePosition);
+    setSubtitleStyleId(initialSubtitleStyleId);
+  }, [initialSubtitlePosition, initialSubtitleStyleId]);
 
   const fetchAndSetTranscripts = useCallback(async () => {
     if (!accessToken) {
@@ -81,6 +111,13 @@ export function SubtitleEditorModal({ recordingId, recordingTitle, initialSubtit
     ]);
     if (subtitleStatus && !subtitleDisableTouchedRef.current) {
       setSubtitlesDisabled(subtitleStatus.status === "DISABLED");
+    }
+    if (subtitleStatus?.subtitlePosition) {
+      const position = normalizeSubtitlePosition(subtitleStatus.subtitlePosition);
+      const styleId = normalizeSubtitleStyleId(subtitleStatus.subtitleStyleId);
+      setSubtitlePosition(position);
+      setSubtitleStyleId(styleId);
+      savedStyleRef.current = { position, styleId };
     }
     setTranscripts(data);
     const active =
@@ -216,6 +253,31 @@ export function SubtitleEditorModal({ recordingId, recordingTitle, initialSubtit
     }
   };
 
+  const handleSaveStyle = async () => {
+    const token = requireAccessToken();
+    if (!token) return;
+
+    setIsSavingStyle(true);
+    setErrorMessage(null);
+    try {
+      const saved = await updateRecordingSubtitleStyle(
+        recordingId,
+        { subtitlePosition, subtitleStyleId },
+        token,
+      );
+      savedStyleRef.current = {
+        position: normalizeSubtitlePosition(saved.subtitlePosition),
+        styleId: normalizeSubtitleStyleId(saved.subtitleStyleId),
+      };
+      setSubtitlePosition(savedStyleRef.current.position);
+      setSubtitleStyleId(savedStyleRef.current.styleId);
+    } catch (err: unknown) {
+      setErrorMessage(err instanceof Error ? err.message : "Failed to update subtitle style");
+    } finally {
+      setIsSavingStyle(false);
+    }
+  };
+
   const handleSubtitlesDisabledChange = async (checked: boolean) => {
     const token = requireAccessToken();
     if (!token) return;
@@ -308,8 +370,11 @@ export function SubtitleEditorModal({ recordingId, recordingTitle, initialSubtit
               position={subtitlePosition}
               styleId={subtitleStyleId}
               previewText={srtDraft.trim() ? "Lyrics preview from your transcript" : undefined}
+              isSaving={isSavingStyle}
+              saveDisabled={!styleDirty}
               onPositionChange={setSubtitlePosition}
               onStyleChange={setSubtitleStyleId}
+              onSave={handleSaveStyle}
             />
           ) : subtitlesDisabled ? (
             <div className="flex flex-1 items-center justify-center p-6 text-center text-sm text-white/50">

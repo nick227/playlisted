@@ -7,6 +7,7 @@ import { parsePageSize, parsePositivePage } from "../lib/pagination.js";
 import { requireAuth } from "../lib/requireAuth.js";
 import { prisma } from "../lib/prisma.js";
 import { mapSubtitleSummary, subtitleInclude } from "../lib/subtitles/summary.js";
+import { mapRecordingSubtitleStyle } from "../lib/subtitles/styleSettings.js";
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_PAGE_SIZE = 50;
@@ -52,6 +53,8 @@ function mapRecordingWithUploader(r: {
   publishedAt: Date | null;
   playCount: number;
   subtitlesDisabled?: boolean;
+  subtitlePosition?: string | null;
+  subtitleStyleId?: string | null;
   createdAt: Date;
   updatedAt: Date;
   uploader: { id: string; username: string; displayName: string; avatarUrl: string | null; role: string };
@@ -83,6 +86,7 @@ function mapRecordingWithUploader(r: {
     publishedAt: r.publishedAt?.toISOString() ?? null,
     playCount: r.playCount,
     subtitlesDisabled: r.subtitlesDisabled,
+    ...mapRecordingSubtitleStyle(r),
     subtitle: mapSubtitleSummary(r.subtitles, r.subtitlesDisabled),
     createdAt: r.createdAt.toISOString(),
     updatedAt: r.updatedAt.toISOString(),

@@ -6,6 +6,7 @@ import { clearPublicCatalogCaches } from "../../lib/publicCatalogCache.js";
 import { prisma } from "../../lib/prisma.js";
 import { requireAdmin } from "../../lib/requireAdmin.js";
 import { mapSubtitleSummary, subtitleInclude } from "../../lib/subtitles/summary.js";
+import { mapRecordingSubtitleStyle } from "../../lib/subtitles/styleSettings.js";
 
 const VALID_VISIBILITY = new Set<string>(["PUBLIC", "UNLISTED", "PRIVATE"]);
 const VALID_STATUS = new Set<string>(["DRAFT", "PUBLISHED", "ARCHIVED"]);
@@ -84,6 +85,7 @@ function mapSong(r: any) {
     explicit: r.explicit,
     playCount: r.playCount,
     subtitlesDisabled: r.subtitlesDisabled,
+    ...mapRecordingSubtitleStyle(r),
     subtitle: mapSubtitleSummary(r.subtitles, r.subtitlesDisabled),
     publishedAt: r.publishedAt?.toISOString() ?? null,
     createdAt: r.createdAt.toISOString(),

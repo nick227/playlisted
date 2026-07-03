@@ -1,22 +1,31 @@
 import type { components, LibrarySong, TopSongItem } from "@playlisted/client-sdk";
 
 import { recordingShareUrl } from "@/lib/shareContent";
+import { normalizeSubtitlePosition, normalizeSubtitleStyleId } from "@/lib/subtitleStylePresets";
 import type { PlaybackContext, QueueTrack } from "@/providers/AudioPlayerProvider";
 
 type RecordingSummary = components["schemas"]["RecordingSummary"];
 
-export function librarySongToQueueTrack(song: LibrarySong, context?: string): QueueTrack {
+export function withQueueTrackSubtitleStyle<T extends Partial<RecordingSummary>>(track: T): T & Pick<RecordingSummary, "subtitlePosition" | "subtitleStyleId"> {
   return {
+    ...track,
+    subtitlePosition: normalizeSubtitlePosition(track.subtitlePosition),
+    subtitleStyleId: normalizeSubtitleStyleId(track.subtitleStyleId),
+  };
+}
+
+export function librarySongToQueueTrack(song: LibrarySong, context?: string): QueueTrack {
+  return withQueueTrackSubtitleStyle({
     ...song,
     ownerName: song.uploader.displayName,
     ownerUsername: song.uploader.username,
     playlistTitle: context ?? song.playlist.title,
     playlistSlug: song.playlist.slug,
-  };
+  });
 }
 
 export function topSongToQueueTrack(item: TopSongItem, context?: string): QueueTrack {
-  return {
+  return withQueueTrackSubtitleStyle({
     id: item.recordingId,
     uploaderId: item.uploaderId,
     publishedPlaylistId: item.publishedPlaylistId,
@@ -29,13 +38,16 @@ export function topSongToQueueTrack(item: TopSongItem, context?: string): QueueT
     status: item.status,
     explicit: item.explicit,
     playCount: item.playCount,
+    subtitle: item.subtitle ?? null,
+    subtitlePosition: item.subtitlePosition,
+    subtitleStyleId: item.subtitleStyleId,
     createdAt: item.createdAt,
     updatedAt: item.updatedAt,
     ownerName: item.uploader.displayName,
     ownerUsername: item.uploader.username,
     playlistTitle: context ?? item.playlist.title,
     playlistSlug: item.playlist.slug,
-  };
+  });
 }
 
 export function chartItemPlaybackContext(item: TopSongItem): PlaybackContext {
@@ -51,24 +63,24 @@ export function recordingSummaryToQueueTrack(
   recording: RecordingSummary,
   context?: { playlistTitle?: string; ownerName?: string; ownerUsername?: string; playlistSlug?: string },
 ): QueueTrack {
-  return {
+  return withQueueTrackSubtitleStyle({
     ...recording,
     ownerName: context?.ownerName,
     ownerUsername: context?.ownerUsername,
     playlistTitle: context?.playlistTitle,
     playlistSlug: context?.playlistSlug,
-  };
+  });
 }
 
 export function personalTrackToQueueTrack(
   track: RecordingSummary & { uploader: { displayName: string; username?: string }; playlist?: { slug?: string } },
 ): QueueTrack {
-  return {
+  return withQueueTrackSubtitleStyle({
     ...track,
     ownerName: track.uploader.displayName,
     ownerUsername: track.uploader.username,
     playlistSlug: track.playlist?.slug,
-  };
+  });
 }
 
 export type PlaylistTrackContext = {

@@ -1,6 +1,7 @@
 import { getPlaylistHref } from "./playlistHref.js";
 import { normalizeUploadUrl, resolveRecordingArtworkUrl } from "./mediaUrls.js";
 import { mapSubtitleSummary, subtitleInclude } from "./subtitles/summary.js";
+import { mapRecordingSubtitleStyle } from "./subtitles/styleSettings.js";
 
 export function mapPlaylistSummary(playlist: {
   id: string;
@@ -84,6 +85,8 @@ export function mapRecordingInPlaylist(recording: {
   releaseDate: Date | null;
   playCount: number;
   subtitlesDisabled?: boolean;
+  subtitlePosition?: string | null;
+  subtitleStyleId?: string | null;
   publishedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
@@ -120,6 +123,8 @@ export function mapRecordingInPlaylist(recording: {
     explicit: recording.explicit,
     releaseDate: recording.releaseDate?.toISOString() ?? null,
     playCount: recording.playCount,
+    subtitlesDisabled: recording.subtitlesDisabled,
+    ...mapRecordingSubtitleStyle(recording),
     subtitle: mapSubtitleSummary(recording.subtitles, recording.subtitlesDisabled),
     publishedAt: recording.publishedAt?.toISOString() ?? null,
     createdAt: recording.createdAt.toISOString(),

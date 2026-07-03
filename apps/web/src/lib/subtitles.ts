@@ -15,13 +15,22 @@ export type RecordingSubtitlesResponse = {
   segments?: SubtitleSegment[];
   vttText?: string;
   errorMessage?: string;
+  subtitlePosition?: string;
+  subtitleStyleId?: string;
 };
 
 export const RECORDING_SUBTITLES_DISABLED_EVENT = "playlisted:recording-subtitles-disabled-changed";
+export const RECORDING_SUBTITLE_STYLE_CHANGED_EVENT = "playlisted:recording-subtitle-style-changed";
 
 export type RecordingSubtitlesDisabledEventDetail = {
   recordingId: string;
   subtitlesDisabled: boolean;
+};
+
+export type RecordingSubtitleStyleChangedEventDetail = {
+  recordingId: string;
+  subtitlePosition: string;
+  subtitleStyleId: string;
 };
 
 export async function fetchRecordingSubtitles(recordingId: string, accessToken?: string | null) {
@@ -128,6 +137,39 @@ export async function updateRecordingSubtitlesDisabled(
     }),
   );
   return updated;
+}
+
+export async function updateRecordingSubtitleStyle(
+  recordingId: string,
+  style: { subtitlePosition: string; subtitleStyleId: string },
+  accessToken: string,
+): Promise<{ subtitlePosition: string; subtitleStyleId: string }> {
+  const base = import.meta.env.VITE_API_BASE_URL ?? "";
+  const response = await fetch(`${base}/api/v1/recordings/${encodeURIComponent(recordingId)}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      ...trafficHeaders(),
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(style),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => null);
+    throw new Error(err?.message || "Failed to update subtitle style");
+  }
+  const updated = await response.json();
+  const detail = {
+    recordingId,
+    subtitlePosition: updated.subtitlePosition,
+    subtitleStyleId: updated.subtitleStyleId,
+  };
+  window.dispatchEvent(
+    new CustomEvent<RecordingSubtitleStyleChangedEventDetail>(RECORDING_SUBTITLE_STYLE_CHANGED_EVENT, {
+      detail,
+    }),
+  );
+  return detail;
 }
 
 export async function createManualTranscript(

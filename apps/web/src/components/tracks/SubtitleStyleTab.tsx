@@ -1,19 +1,21 @@
-import type { CSSProperties } from "react";
 import { AlignVerticalJustifyCenter, AlignVerticalJustifyEnd, AlignVerticalJustifyStart } from "lucide-react";
 
 import {
   getSubtitleStylePreset,
   SUBTITLE_STYLE_PRESETS,
   type SubtitlePosition,
-  type SubtitleStylePreset,
 } from "@/lib/subtitleStylePresets";
+import { subtitleStylePresetToCss } from "@/lib/subtitleStyleToCss";
 
 type SubtitleStyleTabProps = {
   position: SubtitlePosition;
   styleId: string;
   previewText?: string;
+  isSaving?: boolean;
+  saveDisabled?: boolean;
   onPositionChange: (position: SubtitlePosition) => void;
   onStyleChange: (styleId: string) => void;
+  onSave: () => void;
 };
 
 const POSITION_OPTIONS: Array<{
@@ -26,18 +28,8 @@ const POSITION_OPTIONS: Array<{
   { value: "bottom", label: "Bottom", icon: AlignVerticalJustifyEnd },
 ];
 
-function stylePreviewCss(preset: SubtitleStylePreset): CSSProperties {
-  return {
-    fontFamily: preset.fontFamily,
-    fontSize: preset.fontSize,
-    fontWeight: preset.fontWeight,
-    color: preset.color,
-    backgroundColor: preset.backgroundColor,
-    backgroundImage: preset.backgroundImage,
-    textShadow: preset.textShadow,
-    borderRadius: preset.borderRadius,
-    letterSpacing: preset.letterSpacing,
-  };
+function stylePreviewCss(preset: ReturnType<typeof getSubtitleStylePreset>) {
+  return subtitleStylePresetToCss(preset);
 }
 
 function positionAlignClass(position: SubtitlePosition): string {
@@ -50,8 +42,11 @@ export function SubtitleStyleTab({
   position,
   styleId,
   previewText = "Sing along with the lyrics here",
+  isSaving = false,
+  saveDisabled = false,
   onPositionChange,
   onStyleChange,
+  onSave,
 }: SubtitleStyleTabProps) {
   const activeStyle = getSubtitleStylePreset(styleId);
 
@@ -125,6 +120,17 @@ export function SubtitleStyleTab({
           })}
         </div>
       </section>
+
+      <div className="flex justify-end">
+        <button
+          type="button"
+          className="rounded bg-emerald-500 px-6 py-2 font-semibold text-black hover:bg-emerald-400 disabled:opacity-50"
+          onClick={onSave}
+          disabled={isSaving || saveDisabled}
+        >
+          {isSaving ? "Saving..." : "Save Style"}
+        </button>
+      </div>
     </div>
   );
 }

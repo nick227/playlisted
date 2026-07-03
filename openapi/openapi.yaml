@@ -3487,6 +3487,11 @@ components:
           format: uri-reference
         explicit:
           type: boolean
+        subtitlePosition:
+          type: string
+          enum: [top, middle, bottom]
+        subtitleStyleId:
+          type: string
         uploader:
           $ref: '#/components/schemas/RadioOwnerSummary'
         playlist:
@@ -3846,6 +3851,11 @@ components:
           type: string
         errorMessage:
           type: string
+        subtitlePosition:
+          type: string
+          enum: [top, middle, bottom]
+        subtitleStyleId:
+          type: string
 
     HomepageTargetType:
       type: string
@@ -4202,6 +4212,11 @@ components:
           type: integer
         subtitlesDisabled:
           type: boolean
+        subtitlePosition:
+          type: string
+          enum: [top, middle, bottom]
+        subtitleStyleId:
+          type: string
         subtitle:
           oneOf:
             - $ref: '#/components/schemas/RecordingSubtitleSummary'
@@ -4324,6 +4339,12 @@ components:
           format: uri-reference
         subtitlesDisabled:
           type: boolean
+        subtitlePosition:
+          type: string
+          enum: [top, middle, bottom]
+        subtitleStyleId:
+          type: string
+          maxLength: 32
 
     PlaylistSummary:
       type: object
@@ -4834,6 +4855,15 @@ components:
           type: boolean
         playCount:
           type: integer
+        subtitlePosition:
+          type: string
+          enum: [top, middle, bottom]
+        subtitleStyleId:
+          type: string
+        subtitle:
+          oneOf:
+            - $ref: '#/components/schemas/RecordingSubtitleSummary'
+            - type: 'null'
         createdAt:
           type: string
           format: date-time
@@ -6089,6 +6119,11 @@ components:
           oneOf:
             - $ref: '#/components/schemas/RecordingSubtitleSummary'
             - type: 'null'
+        subtitlePosition:
+          type: string
+          enum: [top, middle, bottom]
+        subtitleStyleId:
+          type: string
         savesCount:
           type: integer
         publishedAt:

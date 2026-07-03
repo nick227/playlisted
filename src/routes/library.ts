@@ -8,6 +8,7 @@ import {
 } from "../lib/effectiveGenres.js";
 import { prisma } from "../lib/prisma.js";
 import { mapSubtitleSummary, subtitleInclude } from "../lib/subtitles/summary.js";
+import { mapRecordingSubtitleStyle } from "../lib/subtitles/styleSettings.js";
 import { resolveRecordingArtworkUrl } from "../lib/mediaUrls.js";
 import { BROWSABLE_RECORDING } from "../lib/publicRecordingFilter.js";
 import { PUBLIC_PUBLISHED_PLAYLIST } from "../lib/publicPlaylistFilter.js";
@@ -153,6 +154,7 @@ libraryRouter.get("/songs", async (req, res, next) => {
         playCount: r.playCount,
         favoriteCount: r._count.saves,
         subtitlesDisabled: r.subtitlesDisabled,
+        ...mapRecordingSubtitleStyle(r),
         subtitle: mapSubtitleSummary(r.subtitles, r.subtitlesDisabled),
         createdAt: r.createdAt.toISOString(),
         updatedAt: r.updatedAt.toISOString(),

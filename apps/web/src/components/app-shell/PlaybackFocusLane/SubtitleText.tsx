@@ -1,9 +1,12 @@
+import type { CSSProperties } from "react";
+
 import type { PlaybackFocusFixture } from "@/lib/playbackFocus/types";
 
 type SubtitleTextProps = {
   text: string;
   variant: "subtitle" | "fallbackSubtitle";
   source?: "title-intro" | "artist-info" | "song-info" | "system";
+  customStyle?: CSSProperties;
 };
 
 type FinalFallbackTextProps = {
@@ -20,14 +23,17 @@ export function FinalFallbackText({ title, artistName }: FinalFallbackTextProps)
   );
 }
 
-export function SubtitleText({ text, variant, source }: SubtitleTextProps) {
+export function SubtitleText({ text, variant, source, customStyle }: SubtitleTextProps) {
   const isTitleIntro = variant === "fallbackSubtitle" && source === "title-intro";
 
   return (
     <p
       className={`focus-lane__text${
         variant === "fallbackSubtitle" ? " focus-lane__text--fallback" : ""
-      }${isTitleIntro ? " focus-lane__text--title-intro" : ""}`}
+      }${isTitleIntro ? " focus-lane__text--title-intro" : ""}${
+        variant === "subtitle" && customStyle ? " focus-lane__text--custom" : ""
+      }`}
+      style={variant === "subtitle" ? customStyle : undefined}
     >
       {text}
     </p>

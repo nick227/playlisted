@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 
+import { withQueueTrackSubtitleStyle } from "@/lib/queueTrack";
 import { useAudioPlayer, type QueueTrack } from "@/providers/AudioPlayerProvider";
 
 import type { PlaylistDetailWithTags } from "./types";
@@ -9,11 +10,13 @@ export function useStudioCollectionPlaybackQueue(collection: PlaylistDetailWithT
 
   const queueTracks: QueueTrack[] = useMemo(
     () =>
-      collection?.recordings.map((recording) => ({
-        ...recording,
-        playlistTitle: collection.title,
-        ownerName: collection.owner.displayName,
-      })) ?? [],
+      collection?.recordings.map((recording) =>
+        withQueueTrackSubtitleStyle({
+          ...recording,
+          playlistTitle: collection.title,
+          ownerName: collection.owner.displayName,
+        }),
+      ) ?? [],
     [collection?.recordings, collection?.title, collection?.owner.displayName],
   );
 

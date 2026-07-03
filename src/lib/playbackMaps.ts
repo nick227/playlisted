@@ -1,5 +1,6 @@
 import { resolveRecordingArtworkUrl } from "./mediaUrls.js";
 import { mapSubtitleSummary } from "./subtitles/summary.js";
+import { mapRecordingSubtitleStyle } from "./subtitles/styleSettings.js";
 
 export function mapPlaybackHistoryItem(event: {
   id: bigint;
@@ -26,6 +27,8 @@ export function mapPlaybackHistoryItem(event: {
     explicit: boolean;
     playCount: number;
     subtitlesDisabled?: boolean;
+    subtitlePosition?: string | null;
+    subtitleStyleId?: string | null;
     createdAt: Date;
     updatedAt: Date;
     subtitles?: {
@@ -60,6 +63,7 @@ export function mapPlaybackHistoryItem(event: {
       status: event.recording.status,
       explicit: event.recording.explicit,
       playCount: event.recording.playCount,
+      ...mapRecordingSubtitleStyle(event.recording),
       subtitle: mapSubtitleSummary(event.recording.subtitles, event.recording.subtitlesDisabled),
       createdAt: event.recording.createdAt.toISOString(),
       updatedAt: event.recording.updatedAt.toISOString(),

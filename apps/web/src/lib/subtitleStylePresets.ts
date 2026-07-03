@@ -157,3 +157,13 @@ export const SUBTITLE_STYLE_PRESETS: SubtitleStylePreset[] = [
 export function getSubtitleStylePreset(id: string): SubtitleStylePreset {
   return SUBTITLE_STYLE_PRESETS.find((preset) => preset.id === id) ?? SUBTITLE_STYLE_PRESETS[0];
 }
+
+export function normalizeSubtitlePosition(value: unknown): SubtitlePosition {
+  return value === "top" || value === "middle" || value === "bottom" ? value : DEFAULT_SUBTITLE_POSITION;
+}
+
+export function normalizeSubtitleStyleId(value: unknown): string {
+  return typeof value === "string" && SUBTITLE_STYLE_PRESETS.some((preset) => preset.id === value)
+    ? value
+    : DEFAULT_SUBTITLE_STYLE_ID;
+}

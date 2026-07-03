@@ -8,6 +8,7 @@ import { SongVisualEditorModal, SongVisualStatusBadge } from "@/components/song-
 import { PlaybackBars } from "@/features/playback-indicators/PlaybackBars";
 import { fetchSongVisualAttachments } from "@/lib/visualMediaApi";
 import { SubtitleEditorModal } from "./SubtitleEditorModal";
+import { normalizeSubtitlePosition, normalizeSubtitleStyleId } from "@/lib/subtitleStylePresets";
 import { useTrackPlayback } from "@/hooks/useTrackPlayback";
 import { formatDuration, formatPlayCount } from "@/lib/format";
 import { MediaCover } from "@/components/cards/MediaCover";
@@ -483,6 +484,8 @@ export function TrackRow({
           recordingId={recordingId}
           recordingTitle={title}
           initialSubtitlesDisabled={(subtitle ?? queueTrack?.subtitle)?.status === "DISABLED"}
+          initialSubtitlePosition={normalizeSubtitlePosition(queueTrack?.subtitlePosition)}
+          initialSubtitleStyleId={normalizeSubtitleStyleId(queueTrack?.subtitleStyleId)}
           onClose={() => setSubtitleModalOpen(false)}
         />
       )}

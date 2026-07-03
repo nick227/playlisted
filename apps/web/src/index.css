@@ -124,6 +124,23 @@ body {
   display: contents;
 }
 
+.focus-lane--position-top {
+  place-items: start center;
+}
+
+.focus-lane--position-middle {
+  place-items: center;
+}
+
+.focus-lane--position-bottom {
+  place-items: end center;
+}
+
+.focus-lane__text--custom {
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
 .subtitle-layer__text,
 .focus-lane__text {
   width: min(58rem, 100%);

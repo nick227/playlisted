@@ -31,6 +31,8 @@ export type FocusRecording = {
   genreLabel?: string | null;
   durationSeconds?: number | null;
   hasSubtitleTrack?: boolean;
+  subtitlePosition?: string;
+  subtitleStyleId?: string;
 };
 
 export type FocusArtist = {

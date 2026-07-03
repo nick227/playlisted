@@ -10,6 +10,7 @@ import { requireAuth } from "../lib/requireAuth.js";
 import { prisma } from "../lib/prisma.js";
 import { parsePageSize, parsePositivePage } from "../lib/pagination.js";
 import { mapSubtitleSummary, subtitleInclude } from "../lib/subtitles/summary.js";
+import { mapRecordingSubtitleStyle, isSubtitlePosition, isSubtitleStyleId } from "../lib/subtitles/styleSettings.js";
 import { srtToSegments, vttToSrt } from "../lib/subtitles/srtUtils.js";
 import { transcriptsRouter } from "./transcripts.js";
 
@@ -41,6 +42,7 @@ function mapRecordingSummary(recording: any) {
     publishedAt: recording.publishedAt?.toISOString() ?? null,
     playCount: recording.playCount,
     subtitlesDisabled: recording.subtitlesDisabled,
+    ...mapRecordingSubtitleStyle(recording),
     subtitle: mapSubtitleSummary(recording.subtitles, recording.subtitlesDisabled),
     createdAt: recording.createdAt.toISOString(),
     updatedAt: recording.updatedAt.toISOString(),
@@ -190,6 +192,8 @@ recordingsRouter.patch("/:recordingId", async (req, res, next) => {
       artworkUrl?: string | null;
       coverArtUrl?: string | null;
       subtitlesDisabled?: boolean;
+      subtitlePosition?: string;
+      subtitleStyleId?: string;
     };
     const data: Record<string, unknown> = {};
 
@@ -210,6 +214,33 @@ recordingsRouter.patch("/:recordingId", async (req, res, next) => {
 
     if (body.subtitlesDisabled !== undefined) {
       data.subtitlesDisabled = Boolean(body.subtitlesDisabled);
+    }
+
+    if (body.subtitlePosition !== undefined) {
+      if (typeof body.subtitlePosition !== "string" || !isSubtitlePosition(body.subtitlePosition)) {
+        return res.status(400).json({
+          error: "invalid_subtitle_position",
+          message: "subtitlePosition must be one of: top, middle, bottom.",
+        });
+      }
+      data.subtitlePosition = body.subtitlePosition;
+    }
+
+    if (body.subtitleStyleId !== undefined) {
+      if (typeof body.subtitleStyleId !== "string" || !isSubtitleStyleId(body.subtitleStyleId)) {
+        return res.status(400).json({
+          error: "invalid_subtitle_style",
+          message: "subtitleStyleId is not a supported subtitle style.",
+        });
+      }
+      data.subtitleStyleId = body.subtitleStyleId;
+    }
+
+    if (Object.keys(data).length === 0) {
+      return res.status(400).json({
+        error: "invalid_request",
+        message: "No supported fields were provided to update.",
+      });
     }
 
     const updated = await prisma.recording.update({
@@ -379,15 +410,17 @@ recordingsRouter.get("/:recordingId/subtitles", async (req, res, next) => {
       });
     }
 
+    const subtitleStyle = mapRecordingSubtitleStyle(recording);
+
     if (!recording.subtitles || recording.subtitles.length === 0) {
       if (recording.subtitlesDisabled) {
-        return res.json({ status: "DISABLED" });
+        return res.json({ status: "DISABLED", ...subtitleStyle });
       }
-      return res.json({ status: "MISSING" });
+      return res.json({ status: "MISSING", ...subtitleStyle });
     }
 
     if (recording.subtitlesDisabled) {
-      return res.json({ status: "DISABLED" });
+      return res.json({ status: "DISABLED", ...subtitleStyle });
     }
 
     const activeSubtitle =
@@ -407,6 +440,7 @@ recordingsRouter.get("/:recordingId/subtitles", async (req, res, next) => {
 
       return res.json({
         status: activeSubtitle.status,
+        ...subtitleStyle,
         ...(activeSubtitle.status === "FAILED"
           ? { errorMessage: canSeeRawError ? activeSubtitle.errorMessage ?? "Subtitles unavailable" : "Subtitles unavailable" }
           : {}),
@@ -427,6 +461,7 @@ recordingsRouter.get("/:recordingId/subtitles", async (req, res, next) => {
       language: activeSubtitle.language,
       segments,
       vttText: activeSubtitle.vttText ?? "",
+      ...subtitleStyle,
     });
   } catch (error) {
     return next(error);

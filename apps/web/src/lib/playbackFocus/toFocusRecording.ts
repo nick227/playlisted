@@ -3,8 +3,17 @@ import type { components } from "@playlisted/client-sdk";
 import type { QueueTrack } from "@/providers/AudioPlayerProvider";
 import type { FocusArtist, FocusRecording } from "@/lib/playbackFocus/types";
 import { buildArtistInfoLine } from "@/lib/playbackFocus/formatFocusText";
+import { normalizeSubtitlePosition, normalizeSubtitleStyleId } from "@/lib/subtitleStylePresets";
 
 type RadioNowPlaying = components["schemas"]["RadioNowPlaying"];
+
+function mapTrackSubtitleStyle(track: ActiveTrack) {
+  const source = track as { subtitlePosition?: string; subtitleStyleId?: string } | null | undefined;
+  return {
+    subtitlePosition: normalizeSubtitlePosition(source?.subtitlePosition),
+    subtitleStyleId: normalizeSubtitleStyleId(source?.subtitleStyleId),
+  };
+}
 
 type ActiveTrack = QueueTrack | RadioNowPlaying | null | undefined;
 
@@ -27,6 +36,7 @@ export function toFocusRecording(track: ActiveTrack): FocusRecording | null {
       playlistTitle: track.playlist.title,
       durationSeconds: track.durationSeconds,
       hasSubtitleTrack: track.subtitle != null,
+      ...mapTrackSubtitleStyle(track),
     };
   }
 
@@ -41,6 +51,7 @@ export function toFocusRecording(track: ActiveTrack): FocusRecording | null {
     recordingType: track.recordingType,
     durationSeconds: track.durationSeconds,
     hasSubtitleTrack: track.subtitle != null,
+    ...mapTrackSubtitleStyle(track),
   };
 }
 

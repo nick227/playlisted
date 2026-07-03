@@ -3,6 +3,7 @@ import type { AdminSong, AdminTag } from "@playlisted/client-sdk";
 import { authedApi } from "@/lib/authedApi";
 import { useAuth } from "@/providers/AuthProvider";
 import { usePageMeta } from "@/hooks/usePageMeta";
+import { withQueueTrackSubtitleStyle } from "@/lib/queueTrack";
 import { useAudioPlayer, type QueueTrack } from "@/providers/AudioPlayerProvider";
 import { AdminInlineTitleEditor } from "./AdminInlineTitleEditor";
 import { AdminSongGenreCell } from "./AdminSongGenreCell";
@@ -95,7 +96,7 @@ function DeleteButton({
 }
 
 function adminSongToQueueTrack(song: AdminSong): QueueTrack {
-  return {
+  return withQueueTrackSubtitleStyle({
     id: song.id,
     title: song.title,
     description: song.description ?? null,
@@ -107,6 +108,9 @@ function adminSongToQueueTrack(song: AdminSong): QueueTrack {
     status: song.status,
     explicit: song.explicit,
     playCount: song.playCount,
+    subtitle: song.subtitle ?? null,
+    subtitlePosition: song.subtitlePosition,
+    subtitleStyleId: song.subtitleStyleId,
     publishedAt: song.publishedAt ?? null,
     createdAt: song.createdAt,
     updatedAt: song.updatedAt,
@@ -116,7 +120,7 @@ function adminSongToQueueTrack(song: AdminSong): QueueTrack {
     ownerUsername: song.uploader.username,
     playlistTitle: song.playlist.title,
     playlistSlug: song.playlist.slug,
-  };
+  });
 }
 
 function SongPlayButton({ song }: { song: AdminSong }) {

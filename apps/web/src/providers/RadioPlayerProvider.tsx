@@ -21,6 +21,7 @@ import {
 import { api } from "@/lib/api";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 import type { QueueTrack } from "@/providers/AudioPlayerProvider";
+import { withQueueTrackSubtitleStyle } from "@/lib/queueTrack";
 import theatreController from "@/theatre/controller/lazyController";
 import { setRadioPlaybackActive } from "@/theatre/radioPlaybackBridge";
 import { useTheatreTrackRotation } from "@/theatre/useTheatreTrackRotation";
@@ -286,13 +287,15 @@ export function RadioPlayerProvider({ children }: { children: ReactNode }) {
     if (!track?.audioUrl || !audio || audio.paused || audio.ended) return false;
 
     const playlist = await api.playlists.getById(track.playlist.id);
-    const queue: QueueTrack[] = playlist.recordings.map((recording) => ({
-      ...recording,
-      playlistTitle: playlist.title,
-      ownerName: playlist.owner.displayName,
-      ownerUsername: playlist.owner.username,
-      playlistSlug: playlist.slug,
-    }));
+    const queue: QueueTrack[] = playlist.recordings.map((recording) =>
+      withQueueTrackSubtitleStyle({
+        ...recording,
+        playlistTitle: playlist.title,
+        ownerName: playlist.owner.displayName,
+        ownerUsername: playlist.owner.username,
+        playlistSlug: playlist.slug,
+      }),
+    );
     const index = queue.findIndex((item) => item.id === track.id);
     if (index < 0) return false;
 
