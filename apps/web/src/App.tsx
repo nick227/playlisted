@@ -13,6 +13,7 @@ const HomePage = lazy(() => import("@/pages/HomePage").then((mod) => ({ default:
 const ChartsPage = lazy(() => import("@/pages/ChartsPage").then((mod) => ({ default: mod.ChartsPage })));
 const SearchPage = lazy(() => import("@/pages/SearchPage").then((mod) => ({ default: mod.SearchPage })));
 const RadioPage = lazy(() => import("@/pages/RadioPage").then((mod) => ({ default: mod.RadioPage })));
+const ChatPage = lazy(() => import("@/pages/ChatPage").then((mod) => ({ default: mod.ChatPage })));
 const CanonicalPlaylistPage = lazy(() =>
   import("@/pages/CanonicalPlaylistPage").then((mod) => ({ default: mod.CanonicalPlaylistPage })),
 );
@@ -117,6 +118,7 @@ function MainRoutes() {
         <Route path="/charts" element={<ChartsPage />} />
         <Route path="/search" element={<SearchPage />} />
         <Route path="/radio" element={<RadioPage />} />
+        <Route path="/chat" element={<ChatPage />} />
         <Route path="/@:username" element={<LegacyProfileRedirect />} />
         <Route path="/@/:username/:slug" element={<CanonicalPlaylistPage />} />
         <Route path="/playlists" element={<LibraryPlaylistsPage />} />

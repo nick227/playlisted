@@ -11,6 +11,15 @@ export function getSubtitleProvider(): SubtitleProviderName {
   throw new Error(`Unsupported SUBTITLES_PROVIDER: ${provider}`);
 }
 
+/**
+ * Whether automatic generation should queue jobs at all. When this is false,
+ * creating QUEUED rows only manufactures guaranteed failures — skip them and
+ * let creators add subtitles manually.
+ */
+export function isSubtitleGenerationEnabled(): boolean {
+  return process.env.SUBTITLES_ENABLED !== "false" && getSubtitleProvider() !== "disabled";
+}
+
 export async function runSubtitleProvider(input: SubtitleProviderInput): Promise<SubtitleProviderResult> {
   const provider = getSubtitleProvider();
 

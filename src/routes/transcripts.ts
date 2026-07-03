@@ -277,6 +277,14 @@ transcriptsRouter.post("/generate", async (req, res, next) => {
     const source = provider === "whisper" ? "WHISPER" : "MODAL";
     const resolvedProvider = source === "WHISPER" ? "whisper" : getSubtitleProvider();
 
+    if (resolvedProvider === "disabled") {
+      // Fail fast instead of queuing a row no worker will ever pick up.
+      return res.status(503).json({
+        error: "service_unavailable",
+        message: "Subtitle generation is not configured. Add subtitles manually instead.",
+      });
+    }
+
     if (resolvedProvider === "local-python") {
       try {
         checkLocalPythonProvider();

@@ -12,6 +12,7 @@ import {
   studioAudioUpload,
   studioImageUpload,
 } from "../lib/uploadMulter.js";
+import { isSubtitleGenerationEnabled } from "../lib/subtitles/providers/index.js";
 import { rejectDisallowedUpload, resolveUploadMimeType } from "../lib/uploadValidate.js";
 import { persistUploadedFile } from "../lib/storage/uploadStorage.js";
 
@@ -196,12 +197,14 @@ uploadsRouter.post("/audio/bulk-register", async (req, res, next) => {
           },
         });
 
-        await tx.recordingSubtitle.create({
-          data: {
-            recordingId: createdRecording.id,
-            status: "QUEUED",
-          },
-        });
+        if (isSubtitleGenerationEnabled()) {
+          await tx.recordingSubtitle.create({
+            data: {
+              recordingId: createdRecording.id,
+              status: "QUEUED",
+            },
+          });
+        }
 
         const maxPosition = await tx.playlistItem.aggregate({
           where: { playlistId: playlist.id },

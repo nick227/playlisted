@@ -5,6 +5,7 @@ import { requireApiKeyAuth } from "../../lib/apiKeyAuth.js";
 import { resolveUploadAsset } from "../../lib/ingestAsset.js";
 import { prisma } from "../../lib/prisma.js";
 import { syncPlaylistStats } from "../../lib/playlistStats.js";
+import { isSubtitleGenerationEnabled } from "../../lib/subtitles/providers/index.js";
 
 export const ingestRecordingsRouter = Router();
 
@@ -145,7 +146,7 @@ ingestRecordingsRouter.post("/", async (req, res, next) => {
         select: RECORDING_SELECT,
       });
 
-      if (audioChanged) {
+      if (audioChanged && isSubtitleGenerationEnabled()) {
         const activeSub = await prisma.recordingSubtitle.findFirst({
           where: { recordingId: existing.id, isActive: true },
         });
@@ -204,14 +205,16 @@ ingestRecordingsRouter.post("/", async (req, res, next) => {
             select: RECORDING_SELECT,
           });
 
-          await tx.recordingSubtitle.create({
-            data: {
-              recordingId: created.id,
-              isActive: true,
-              source: "MODAL",
-              status: "QUEUED",
-            },
-          });
+          if (isSubtitleGenerationEnabled()) {
+            await tx.recordingSubtitle.create({
+              data: {
+                recordingId: created.id,
+                isActive: true,
+                source: "MODAL",
+                status: "QUEUED",
+              },
+            });
+          }
 
           const maxPos = await tx.playlistItem.aggregate({
             where: { playlistId: playlist.id },

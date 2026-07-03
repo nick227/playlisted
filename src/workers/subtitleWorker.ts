@@ -10,14 +10,11 @@ import {
   checkLocalPythonProvider,
   getProjectRoot,
 } from "../lib/subtitles/providers/localPythonProvider.js";
+import { SUBTITLES_PROCESSING_STALE_MS } from "../lib/subtitles/staleness.js";
 import { segmentsToVtt } from "../lib/subtitles/vtt.js";
 
 const sleepMs = Number(process.env.SUBTITLES_WORKER_SLEEP_MS ?? 10_000);
 const maxAudioSeconds = Number(process.env.SUBTITLES_MAX_AUDIO_SECONDS ?? 900);
-const maxRuntimeSeconds = Number(process.env.SUBTITLES_MAX_RUNTIME_SECONDS ?? 1_200);
-const staleProcessingMinutes = Number(process.env.SUBTITLES_STALE_PROCESSING_MINUTES ?? 30);
-const maxAttempts = Number(process.env.SUBTITLES_MAX_ATTEMPTS ?? 2);
-const staleQueuedHours = Number(process.env.SUBTITLES_STALE_QUEUED_HOURS ?? 48);
 const whisperModel = process.env.SUBTITLES_WHISPER_MODEL ?? "tiny";
 const whisperDevice = process.env.SUBTITLES_DEVICE ?? "cpu";
 const whisperComputeType = process.env.SUBTITLES_COMPUTE_TYPE ?? "int8";
@@ -71,48 +68,21 @@ async function getAudioDurationSeconds(filePath: string) {
   return metadata.format.duration ?? null;
 }
 
-async function resetStaleProcessingRows() {
-  const cutoff = new Date(Date.now() - staleProcessingMinutes * 60 * 1000);
-  const staleRows = await prisma.recordingSubtitle.findMany({
-    where: { status: "PROCESSING", updatedAt: { lt: cutoff } },
-    include: { _count: { select: { attempts: true } } },
-  });
-
-  if (staleRows.length === 0) return;
-
-  let resetCount = 0;
-  let failedCount = 0;
-  for (const row of staleRows) {
-    if (row._count.attempts >= maxAttempts) {
-      await prisma.recordingSubtitle.update({
-        where: { id: row.id },
-        data: { status: "FAILED", errorMessage: `Exceeded max attempts (${maxAttempts}) after stale processing timeout.` },
-      });
-      failedCount++;
-    } else {
-      await prisma.recordingSubtitle.update({
-        where: { id: row.id },
-        data: { status: "QUEUED", errorMessage: "Reset after stale processing timeout." },
-      });
-      resetCount++;
-    }
-  }
-
-  if (resetCount > 0) log("subtitle.worker.reset_stale", { count: resetCount });
-  if (failedCount > 0) log("subtitle.worker.expired_stale_processing", { count: failedCount, maxAttempts });
-}
-
-async function expireStaleQueuedRows() {
-  const cutoff = new Date(Date.now() - staleQueuedHours * 60 * 60 * 1000);
+/**
+ * One-shot pipeline: a PROCESSING row past the staleness window means a
+ * worker died mid-job. Fail it — never requeue.
+ */
+async function failStaleProcessingRows() {
+  const cutoff = new Date(Date.now() - SUBTITLES_PROCESSING_STALE_MS);
   const result = await prisma.recordingSubtitle.updateMany({
-    where: {
-      status: "QUEUED",
-      createdAt: { lt: cutoff },
+    where: { status: "PROCESSING", updatedAt: { lt: cutoff } },
+    data: {
+      status: "FAILED",
+      errorMessage: "Subtitle generation did not finish. Add subtitles manually or regenerate.",
     },
-    data: { status: "FAILED", errorMessage: `Expired: still queued after ${staleQueuedHours} hours.` },
   });
   if (result.count > 0) {
-    log("subtitle.worker.expired_stale_queued", { count: result.count, staleQueuedHours });
+    log("subtitle.worker.failed_stale_processing", { count: result.count });
   }
 }
 
@@ -129,48 +99,29 @@ async function processNextSubtitle() {
           durationSeconds: true,
         },
       },
-      _count: { select: { attempts: true } },
     },
   });
 
   if (!next) return false;
 
-  if (next._count.attempts >= maxAttempts) {
-    await prisma.recordingSubtitle.update({
-      where: { id: next.id },
-      data: { status: "FAILED", errorMessage: `Exceeded max attempts (${maxAttempts}).` },
-    });
-    log("subtitle.job.max_attempts_exceeded", { recordingId: next.recordingId, subtitleId: next.id, attempts: next._count.attempts, maxAttempts });
-    return true;
-  }
-
+  // One shot: claim QUEUED → PROCESSING. The row never returns to QUEUED;
+  // the only outcomes from here are READY or FAILED.
   const claimed = await prisma.recordingSubtitle.updateMany({
     where: { id: next.id, status: "QUEUED" },
-    data: {
-      status: "PROCESSING",
-      errorMessage: null,
-    },
+    data: { status: "PROCESSING", errorMessage: null },
   });
 
   if (claimed.count !== 1) return true;
 
   log("subtitle.job.claimed", { recordingId: next.recordingId, subtitleId: next.id });
   const provider = next.source === "WHISPER" ? "whisper" : getSubtitleProvider();
-  const attempt = await prisma.recordingSubtitleAttempt.create({
-    data: {
-      subtitleId: next.id,
-      provider,
-      status: "PROCESSING",
-    },
-  });
-  const attemptStartedAt = Date.now();
+  const startedAt = new Date();
   let inputBytes: bigint | null = null;
   let inputDurationSeconds: number | null = null;
   let cleanupAudioFile: (() => Promise<void>) | null = null;
   let attemptMetadata: Record<string, unknown> = {
     worker: {
       maxAudioSeconds,
-      maxRuntimeSeconds,
       whisperModel,
       whisperDevice,
       whisperComputeType,
@@ -187,16 +138,6 @@ async function processNextSubtitle() {
     if (fileStat.size <= 0) {
       throw new Error("Resolved audio file is empty.");
     }
-
-    log("subtitle.audio.resolved", {
-      recordingId: next.recordingId,
-      audioUrl: next.recording.audioUrl,
-      resolvedPath: audioPath,
-      source: preparedAudio.source,
-      exists: true,
-      bytes: fileStat.size,
-      downloadedBytes: preparedAudio.downloadedBytes,
-    });
 
     const measuredDuration = next.recording.durationSeconds == null
       ? await getAudioDurationSeconds(audioPath)
@@ -230,20 +171,8 @@ async function processNextSubtitle() {
       resolvedAudioPath: audioPath,
       source: preparedAudio.source,
       downloadedBytes: preparedAudio.downloadedBytes,
-      exists: true,
       fileBytes: fileStat.size,
       durationSeconds,
-      measuredDurationSeconds: measuredDuration,
-    });
-
-    await prisma.recordingSubtitleAttempt.update({
-      where: { id: attempt.id },
-      data: {
-        modelName: whisperModel,
-        inputBytes,
-        inputDurationSeconds,
-        metadata: jsonObject(attemptMetadata),
-      },
     });
 
     if (durationSeconds > maxAudioSeconds) {
@@ -260,7 +189,7 @@ async function processNextSubtitle() {
       throw new Error("Transcription completed but produced no subtitle segments.");
     }
     const vttText = segmentsToVtt(result.segments);
-    const durationMs = Date.now() - attemptStartedAt;
+    const durationMs = Date.now() - startedAt.getTime();
 
     await prisma.$transaction([
       prisma.recordingSubtitle.update({
@@ -274,9 +203,10 @@ async function processNextSubtitle() {
           generatedAt: new Date(),
         },
       }),
-      prisma.recordingSubtitleAttempt.update({
-        where: { id: attempt.id },
+      prisma.recordingSubtitleAttempt.create({
         data: {
+          subtitleId: next.id,
+          provider: result.provider,
           status: "READY",
           modelName: result.modelName ?? whisperModel,
           language: result.language ?? null,
@@ -293,6 +223,7 @@ async function processNextSubtitle() {
               segmentCount: result.segments.length,
             },
           }),
+          startedAt,
           endedAt: new Date(),
         },
       }),
@@ -309,7 +240,7 @@ async function processNextSubtitle() {
     });
   } catch (error) {
     const message = cleanError(error);
-    const durationMs = Date.now() - attemptStartedAt;
+    const durationMs = Date.now() - startedAt.getTime();
     await prisma.$transaction([
       prisma.recordingSubtitle.update({
         where: { id: next.id },
@@ -318,9 +249,10 @@ async function processNextSubtitle() {
           errorMessage: message,
         },
       }),
-      prisma.recordingSubtitleAttempt.update({
-        where: { id: attempt.id },
+      prisma.recordingSubtitleAttempt.create({
         data: {
+          subtitleId: next.id,
+          provider,
           status: "FAILED",
           modelName: whisperModel,
           inputBytes,
@@ -328,6 +260,7 @@ async function processNextSubtitle() {
           durationMs,
           error: message,
           metadata: jsonObject(attemptMetadata),
+          startedAt,
           endedAt: new Date(),
         },
       }),
@@ -374,20 +307,15 @@ async function main() {
     provider,
     sleepMs,
     maxAudioSeconds,
-    maxRuntimeSeconds,
-    staleProcessingMinutes,
-    maxAttempts,
-    staleQueuedHours,
     whisperModel,
-    backfill: "manual_only",
+    mode: "one-shot",
     requireModalProvider,
     ...(localPythonCommand
       ? { localPythonCommand, projectRoot: getProjectRoot() }
       : {}),
   });
 
-  await resetStaleProcessingRows();
-  await expireStaleQueuedRows();
+  await failStaleProcessingRows();
 
   const processLimit = parseProcessLimit();
   if (processLimit != null) {

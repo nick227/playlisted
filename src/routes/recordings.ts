@@ -9,6 +9,8 @@ import { canViewerAccessPlaylist } from "../lib/publicPlaylistFilter.js";
 import { requireAuth } from "../lib/requireAuth.js";
 import { prisma } from "../lib/prisma.js";
 import { parsePageSize, parsePositivePage } from "../lib/pagination.js";
+import { isSubtitleGenerationEnabled } from "../lib/subtitles/providers/index.js";
+import { failSubtitleIfStale } from "../lib/subtitles/staleness.js";
 import { mapSubtitleSummary, subtitleInclude } from "../lib/subtitles/summary.js";
 import { mapRecordingSubtitleStyle, isSubtitlePosition, isSubtitleStyleId } from "../lib/subtitles/styleSettings.js";
 import { srtToSegments, vttToSrt } from "../lib/subtitles/srtUtils.js";
@@ -327,11 +329,7 @@ recordingsRouter.post("/", async (req, res, next) => {
         },
       });
 
-      const subtitlesEnabled =
-        process.env.SUBTITLES_ENABLED !== "false" &&
-        (process.env.SUBTITLES_PROVIDER ?? "disabled") !== "disabled";
-
-      if (subtitlesEnabled) {
+      if (isSubtitleGenerationEnabled()) {
         await tx.recordingSubtitle.create({
           data: { recordingId: recording.id, status: "QUEUED" },
         });
@@ -381,6 +379,7 @@ recordingsRouter.get("/:recordingId/subtitles", async (req, res, next) => {
         subtitles: {
           orderBy: [{ isActive: "desc" }, { createdAt: "desc" }],
           select: {
+            id: true,
             status: true,
             language: true,
             segments: true,
@@ -388,6 +387,7 @@ recordingsRouter.get("/:recordingId/subtitles", async (req, res, next) => {
             errorMessage: true,
             isActive: true,
             createdAt: true,
+            updatedAt: true,
           },
         },
       },
@@ -423,7 +423,7 @@ recordingsRouter.get("/:recordingId/subtitles", async (req, res, next) => {
       return res.json({ status: "DISABLED", ...subtitleStyle });
     }
 
-    const activeSubtitle =
+    let activeSubtitle =
       recording.subtitles.find((subtitle) => subtitle.isActive && subtitle.status === "READY") ??
       recording.subtitles.find((subtitle) => subtitle.status === "READY") ??
       recording.subtitles.find(
@@ -432,6 +432,15 @@ recordingsRouter.get("/:recordingId/subtitles", async (req, res, next) => {
       ) ??
       recording.subtitles.find((subtitle) => subtitle.status === "PROCESSING" || subtitle.status === "QUEUED") ??
       recording.subtitles[0];
+
+    if (activeSubtitle.status === "QUEUED" || activeSubtitle.status === "PROCESSING") {
+      // One-shot pipeline: pending rows past the staleness window will never
+      // complete, so fail them at read time instead of letting clients wait.
+      const staleReason = await failSubtitleIfStale(activeSubtitle);
+      if (staleReason) {
+        activeSubtitle = { ...activeSubtitle, status: "FAILED", errorMessage: staleReason };
+      }
+    }
 
     if (activeSubtitle.status !== "READY") {
       const canSeeRawError =

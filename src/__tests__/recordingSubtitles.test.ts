@@ -109,6 +109,60 @@ hello there`,
     });
   });
 
+  it("fails a stale QUEUED row at read time instead of reporting it pending forever", async () => {
+    vi.mocked(prisma.recording.findUnique).mockResolvedValue({
+      ...publicRecording,
+      subtitles: [
+        {
+          id: "sub-stale",
+          status: "QUEUED",
+          language: null,
+          segments: null,
+          vttText: null,
+          errorMessage: null,
+          isActive: true,
+          createdAt: new Date(Date.now() - 60 * 60 * 1000),
+          updatedAt: new Date(Date.now() - 60 * 60 * 1000),
+        },
+      ],
+    } as never);
+    vi.mocked(prisma.recordingSubtitle.updateMany).mockResolvedValue({ count: 1 } as never);
+
+    const res = await request(app).get("/api/v1/recordings/rec-1/subtitles");
+
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe("FAILED");
+    expect(prisma.recordingSubtitle.updateMany).toHaveBeenCalledWith({
+      where: { id: "sub-stale", status: "QUEUED" },
+      data: expect.objectContaining({ status: "FAILED" }),
+    });
+  });
+
+  it("keeps a fresh QUEUED row pending", async () => {
+    vi.mocked(prisma.recording.findUnique).mockResolvedValue({
+      ...publicRecording,
+      subtitles: [
+        {
+          id: "sub-fresh",
+          status: "QUEUED",
+          language: null,
+          segments: null,
+          vttText: null,
+          errorMessage: null,
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ],
+    } as never);
+
+    const res = await request(app).get("/api/v1/recordings/rec-1/subtitles");
+
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe("QUEUED");
+    expect(prisma.recordingSubtitle.updateMany).not.toHaveBeenCalled();
+  });
+
   it("returns MISSING when a recording has no subtitle rows", async () => {
     vi.mocked(prisma.recording.findUnique).mockResolvedValue({
       ...publicRecording,
@@ -118,7 +172,7 @@ hello there`,
     const res = await request(app).get("/api/v1/recordings/rec-1/subtitles");
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ status: "MISSING" });
+    expect(res.body).toMatchObject({ status: "MISSING" });
   });
 
   it("creates a manual ready transcript from pasted SRT text", async () => {
