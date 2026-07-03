@@ -1,10 +1,12 @@
+import type React from "react";
+
 type ArtistVisualProps = {
-  artistName: string;
+  artistName?: string;
   imageUrl?: string;
-  bioLine?: string;
+  subtitleNode?: React.ReactNode;
 };
 
-export function ArtistVisual({ artistName, imageUrl, bioLine }: ArtistVisualProps) {
+export function ArtistVisual({ artistName, imageUrl, subtitleNode }: ArtistVisualProps) {
   const imageStyle = imageUrl
     ? { backgroundImage: `url(${imageUrl})` }
     : undefined;
@@ -17,8 +19,8 @@ export function ArtistVisual({ artistName, imageUrl, bioLine }: ArtistVisualProp
         aria-hidden
       />
       <div className="focus-lane__artist-copy">
-        <p className="focus-lane__artist-name">{artistName}</p>
-        {bioLine ? <p className="focus-lane__artist-bio">{bioLine}</p> : null}
+        {artistName ? <p className="focus-lane__artist-name">{artistName}</p> : null}
+        {subtitleNode ? <div className="focus-lane__artist-subtitle">{subtitleNode}</div> : null}
       </div>
     </div>
   );

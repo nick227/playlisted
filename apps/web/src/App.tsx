@@ -62,12 +62,6 @@ const StudioAnalyticsPage = lazy(() =>
 const StudioHistoryPage = lazy(() =>
   import("@/pages/studio/StudioHistoryPage").then((mod) => ({ default: mod.StudioHistoryPage })),
 );
-const StudioProfilePage = lazy(() =>
-  import("@/pages/studio/StudioProfilePage").then((mod) => ({ default: mod.StudioProfilePage })),
-);
-const StudioLinksPage = lazy(() =>
-  import("@/pages/studio/StudioLinksPage").then((mod) => ({ default: mod.StudioLinksPage })),
-);
 const StudioDeveloperPage = lazy(() =>
   import("@/pages/studio/StudioDeveloperPage").then((mod) => ({ default: mod.StudioDeveloperPage })),
 );
@@ -88,11 +82,11 @@ const AdminPlaylistsPage = lazy(() =>
 const AdminUsersPage = lazy(() =>
   import("@/pages/admin/AdminUsersPage").then((mod) => ({ default: mod.AdminUsersPage })),
 );
-const AdminHomepagePage = lazy(() =>
-  import("@/pages/admin/AdminHomepagePage").then((mod) => ({ default: mod.AdminHomepagePage })),
-);
 const AdminTagsPage = lazy(() =>
   import("@/pages/admin/AdminTagsPage").then((mod) => ({ default: mod.AdminTagsPage })),
+);
+const AdminTheatrePage = lazy(() =>
+  import("@/pages/admin/AdminTheatrePage").then((mod) => ({ default: mod.AdminTheatrePage })),
 );
 const AdminApiKeysPage = lazy(() =>
   import("@/pages/admin/AdminApiKeysPage").then((mod) => ({ default: mod.AdminApiKeysPage })),
@@ -186,7 +180,7 @@ function MainRoutes() {
           path="/studio/profile"
           element={
             <ProtectedRoute roles={["CREATOR", "ADMIN", "LISTENER"]}>
-              <StudioProfilePage />
+              <Navigate to="/studio" replace />
             </ProtectedRoute>
           }
         />
@@ -194,7 +188,7 @@ function MainRoutes() {
           path="/studio/links"
           element={
             <ProtectedRoute roles={["CREATOR", "ADMIN", "LISTENER"]}>
-              <StudioLinksPage />
+              <Navigate to="/studio" replace />
             </ProtectedRoute>
           }
         />
@@ -219,7 +213,7 @@ function MainRoutes() {
           <Route path="songs" element={<AdminSongsPage />} />
           <Route path="playlists" element={<AdminPlaylistsPage />} />
           <Route path="users" element={<AdminUsersPage />} />
-          <Route path="homepage" element={<AdminHomepagePage />} />
+          <Route path="theatre" element={<AdminTheatrePage />} />
           <Route path="tags" element={<AdminTagsPage />} />
           <Route path="api-keys" element={<AdminApiKeysPage />} />
           <Route

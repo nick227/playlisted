@@ -24,9 +24,10 @@ type PlaylistSummary = UserDetail["publicPlaylists"][number];
 type ArtistProfileCollectionPanelProps = {
   playlist: PlaylistSummary;
   owner: UserDetail;
+  editHref?: string;
 };
 
-export function ArtistProfileCollectionPanel({ playlist, owner }: ArtistProfileCollectionPanelProps) {
+export function ArtistProfileCollectionPanel({ playlist, owner, editHref }: ArtistProfileCollectionPanelProps) {
   const pendingPlayRef = useRef(false);
   const { user, status } = useAuth();
   const requireAuth = useAuthAction();
@@ -159,11 +160,21 @@ export function ArtistProfileCollectionPanel({ playlist, owner }: ArtistProfileC
         </button>
 
         <div className="min-w-0 flex-1">
-          <h3 className="text-lg font-medium">
-            <Link to={href} className="text-white transition hover:text-[var(--color-brand)] hover:underline">
-              {playlist.title}
-            </Link>
-          </h3>
+          <div className="flex items-start justify-between gap-3">
+            <h3 className="min-w-0 text-lg font-medium">
+              <Link to={href} className="break-words text-white transition hover:text-[var(--color-brand)] hover:underline">
+                {playlist.title}
+              </Link>
+            </h3>
+            {isOwner && editHref ? (
+              <Link
+                to={editHref}
+                className="shrink-0 rounded-full border border-white/15 px-3 py-1 text-xs font-semibold text-white transition hover:border-[var(--color-brand)] hover:text-[var(--color-brand)]"
+              >
+                Edit
+              </Link>
+            ) : null}
+          </div>
           <p className="mt-1 text-sm text-[var(--color-text-muted)]">
             {playlist.itemCount} tracks
             {!isLoading && recordings.length > 0

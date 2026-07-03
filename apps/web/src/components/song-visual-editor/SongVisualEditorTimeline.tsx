@@ -145,7 +145,7 @@ export function SongVisualEditorTimeline({
 
         <div
           ref={trackRef}
-          className="relative h-36 min-h-[9rem] w-full shrink-0"
+          className="relative h-[5.5rem] min-h-[5.5rem] w-full shrink-0"
           onPointerDown={handleTrackPointerDown}
           onPointerUp={handleTrackPointerUp}
         >

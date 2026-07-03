@@ -7,6 +7,7 @@ import {
   Mic2,
   PanelsTopLeft,
   Plus,
+  MessageCircle,
   Settings,
   Tags,
   RadioIcon,
@@ -27,6 +28,7 @@ import {
   FAVORITES_PATH,
   GENRES_PATH,
   SONGS_PATH,
+  CHAT_PATH,
 } from "@/lib/browsePaths";
 import { ADMIN_PATH, panelPathForRole, playlistPath, studioCollectionEditPath } from "@/lib/routes";
 import { useAuth } from "@/providers/AuthProvider";
@@ -176,7 +178,7 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
             <NavLink to="/" onClick={onClose} className="flex items-center gap-2 text-4xl font-bold tracking-tight text-white">
               Play<span className="text-[var(--color-brand)]">listed</span> <RadioIcon size={20} />
             </NavLink>
-            <div className={`flex flex-col gap-0.5 bg-[var(--color-canvas)]/90 rounded-lg p-2 ${navDimmed ? "opacity-0" : "opacity-100"} transition-opacity`}>
+            <div className={`flex flex-col gap-0.5 bg-[var(--color-canvas)]/90 -ml-4 mt-2 p-2 ${navDimmed ? "opacity-0" : "opacity-100"} transition-opacity`}>
               {discoverLinks.map((link) => (
                 <NavItem key={link.to} {...link} onClick={onClose} />
               ))}
@@ -185,6 +187,7 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
               <NavItem to={ARTISTS_PATH} label="Artists" icon={Mic2} onClick={onClose} />
               <NavItem to={GENRES_PATH} label="Genres" icon={Tags} onClick={onClose} />
               <NavItem to={SONGS_PATH} label="Songs" icon={AudioLines} onClick={onClose} />
+              <NavItem to={CHAT_PATH} label="Chat" icon={MessageCircle} onClick={onClose} />
               
           {panelPath === ADMIN_PATH ? (
               <NavLink

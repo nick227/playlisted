@@ -3,6 +3,8 @@ import { useSearchParams } from "react-router-dom";
 
 import { ChartsFilterBar } from "@/components/charts/ChartsFilterBar";
 import { ChartsList } from "@/components/charts/ChartsList";
+import { LibraryBrowseLayout } from "@/components/library/LibraryBrowseLayout";
+import { PanelHeader } from "@/components/library/libraryPanels";
 import { useLibraryGenres } from "@/hooks/useLibrary";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import {
@@ -10,8 +12,7 @@ import {
   parseChartsPageState,
   type ChartsPageState,
 } from "@/lib/chartsPageState";
-
-const CHARTS_LAYOUT_CLASS = "mx-auto min-h-[72vh] max-w-5xl px-4 py-6 sm:px-6 bg-[var(--color-surface)]/80 rounded-lg p-4";
+import { chartsBrowseCrumbs } from "@/lib/browsePaths";
 
 export function ChartsPage() {
   const [params, setSearchParams] = useSearchParams();
@@ -34,12 +35,10 @@ export function ChartsPage() {
   );
 
   return (
-    <div className={CHARTS_LAYOUT_CLASS}>
-      <header className="mb-4">
-        <h1 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl">Charts</h1>
-      </header>
+    <LibraryBrowseLayout crumbs={chartsBrowseCrumbs()}>
+      <PanelHeader label="Charts" />
 
-      <div className="overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]">
+      <div className="mt-10 overflow-hidden rounded-xl border border-[var(--color-border)]">
         <ChartsFilterBar
           tab={state.tab}
           range={state.range}
@@ -51,6 +50,6 @@ export function ChartsPage() {
         />
         <ChartsList tab={state.tab} range={state.range} genre={state.genre} />
       </div>
-    </div>
+    </LibraryBrowseLayout>
   );
 }

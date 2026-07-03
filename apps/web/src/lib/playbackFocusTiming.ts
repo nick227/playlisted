@@ -7,13 +7,13 @@ export const playbackFocusTiming = {
   },
 
   body: {
-    delayMs: 4000,
+    delayMs: 50400,
     restoreDelayMs: 6000,
     fadeOutMs: 2000,
   },
 
   focusLane: {
-    delayMs: 0,
+    delayMs: 1200,
     fadeInMs: 200,
     fadeOutMs: 450,
     exitBufferMs: 180,
@@ -46,7 +46,7 @@ export const playbackFocusTiming = {
   },
 
   sidebarNav: {
-    blurDelayMs: 3500,
+    blurDelayMs: 3000,
     fadeMs: 620,
   },
 

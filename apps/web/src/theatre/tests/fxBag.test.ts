@@ -1,11 +1,15 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import {
+  avoidEarlyPositions,
   buildFamilyWeightedShuffleBag,
   buildFxShuffleBag,
   buildPresetWeightedShuffleBag,
+  buildUniformShuffleBag,
   countFamilyRepresentation,
   expandWeightedPresetIds,
+  FRESH_BAG_AVOID_WINDOW,
+  RECENT_PRESET_MEMORY,
 } from '../selection/buildWeightedShuffleBag'
 import {
   buildCatalogVersionPayload,
@@ -160,6 +164,64 @@ describe('buildFamilyWeightedShuffleBag', () => {
   })
 })
 
+describe('buildUniformShuffleBag', () => {
+  it('includes every preset across all families exactly once', () => {
+    const families: WeightedFamilyCatalogEntry[] = [
+      {
+        familyId: 'flagship',
+        familyWeight: 4,
+        presets: [
+          { id: 'heavy', weight: 4 },
+          { id: 'light', weight: 1 },
+        ],
+      },
+      {
+        familyId: 'videos',
+        familyWeight: 1,
+        presets: Array.from({ length: 60 }, (_, index) => ({
+          id: `video${index + 1}`,
+          weight: 1,
+        })),
+      },
+    ]
+
+    const bag = buildUniformShuffleBag(families, [], () => 0.42)
+
+    expect(bag).toHaveLength(62)
+    expect(new Set(bag).size).toBe(62)
+    expect(bag.filter(id => id === 'heavy')).toHaveLength(1)
+    expect(bag.filter(id => id.startsWith('video'))).toHaveLength(60)
+  })
+
+  it('avoids placing the active preset first', () => {
+    const bag = buildUniformShuffleBag(TEST_FAMILIES, ['alpha', 'beta'], () => 0.1)
+    expect(bag[0]).not.toBe('alpha')
+    expect(bag[0]).not.toBe('beta')
+  })
+})
+
+describe('avoidEarlyPositions', () => {
+  it('sweeps avoid ids out of the front window without dropping any', () => {
+    const bag = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
+    const result = avoidEarlyPositions(bag, ['a', 'c'], 4)
+
+    expect(result.slice(0, 4)).not.toContain('a')
+    expect(result.slice(0, 4)).not.toContain('c')
+    expect(result.slice().sort()).toEqual(bag.slice().sort())
+  })
+
+  it('gives up gracefully when the bag is mostly avoid ids', () => {
+    const bag = ['a', 'b', 'c']
+    const result = avoidEarlyPositions(bag, ['a', 'b', 'c'], 4)
+    expect(result.slice().sort()).toEqual(['a', 'b', 'c'])
+  })
+
+  it('returns the bag unchanged when nothing to avoid', () => {
+    const bag = ['a', 'b', 'c']
+    expect(avoidEarlyPositions(bag, [], 4)).toEqual(bag)
+  })
+})
+
 describe('buildFxShuffleBag strategies', () => {
   it('supports presetWeighted behavior', () => {
     const entries = TEST_FAMILIES[0]!.presets.map(preset => ({ id: preset.id, weight: preset.weight }))
@@ -172,13 +234,23 @@ describe('buildFxShuffleBag strategies', () => {
     expect(bag).toHaveLength(5)
   })
 
-  it('defaults to familyWeighted', () => {
+  it('supports familyWeighted behavior', () => {
     const bag = buildFxShuffleBag({
+      strategy: 'familyWeighted',
       families: TEST_FAMILIES,
       rng: () => 0.5,
     })
 
     expect(bag).toHaveLength(3)
+  })
+
+  it('defaults to uniformShuffle — one copy per preset regardless of weight', () => {
+    const bag = buildFxShuffleBag({
+      families: TEST_FAMILIES,
+      rng: () => 0.5,
+    })
+
+    expect(bag.slice().sort()).toEqual(['alpha', 'beta', 'gamma'])
   })
 })
 
@@ -275,6 +347,40 @@ describe('FxSelector weighted bag', () => {
 
     selector.consumeNext(ctx(null))
     expect(memory.get()?.bag.length).toBeGreaterThan(0)
+  })
+
+  it('tracks recent consumption and keeps it out of the front of a fresh bag', () => {
+    const presetIds = Array.from({ length: 16 }, (_, index) => `fx${index + 1}`)
+    const families: WeightedFamilyCatalogEntry[] = [{
+      familyId: 'catalog',
+      familyWeight: 1,
+      presets: presetIds.map(id => ({ id, weight: 1 })),
+    }]
+    const memory = createMemoryStorage(null)
+    const selector = new FxSelector({
+      storage: memory.storage,
+      catalogVersion: TEST_VERSION,
+      getCatalogFamilies: () => families,
+      isValidPresetId: id => presetIds.includes(id),
+    })
+
+    const consumed: string[] = []
+    for (let i = 0; i < presetIds.length; i++) {
+      const preset = selector.consumeNext(ctx(null))
+      expect(preset).not.toBeNull()
+      consumed.push(preset!.id)
+    }
+
+    const state = memory.get()
+    const recent = consumed.slice(-RECENT_PRESET_MEMORY)
+    expect(state?.recentPresetIds).toEqual(recent)
+
+    // Draining the bag triggered a refill — its front must avoid the recent tail.
+    const freshFront = state!.bag.slice(0, FRESH_BAG_AVOID_WINDOW)
+    for (const id of recent) {
+      expect(freshFront).not.toContain(id)
+    }
+    expect(state!.bag.slice().sort()).toEqual(presetIds.slice().sort())
   })
 
   it('clearCandidate does not wipe the bag', () => {

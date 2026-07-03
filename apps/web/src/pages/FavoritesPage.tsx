@@ -79,7 +79,7 @@ function PersonalTrackRow({
     <div
       className={[
         "group/card flex items-center gap-2 rounded-xl px-3 py-2.5 transition",
-        isActive ? "bg-white/[0.08]" : "hover:bg-white/[0.04]",
+        isActive ? "bg-white/[0.08]" : "hover:bg-white/[0.04] bg-[--cover-canvas]/90",
       ].join(" ")}
     >
       <PlaybackBars active={isActive} playing={isPlaying} />

@@ -23,9 +23,16 @@ export type ArtistProfilePreview = Partial<Pick<UserDetail, "displayName" | "use
 type ArtistProfileViewProps = {
   user: UserDetail;
   preview?: ArtistProfilePreview;
+  showRelatedArtists?: boolean;
+  collectionEditHref?: (playlist: UserDetail["publicPlaylists"][number]) => string;
 };
 
-export function ArtistProfileView({ user, preview }: ArtistProfileViewProps) {
+export function ArtistProfileView({
+  user,
+  preview,
+  showRelatedArtists = true,
+  collectionEditHref,
+}: ArtistProfileViewProps) {
   const relatedArtistLimit = 6;
   const { data: related } = useTopArtists("30d", relatedArtistLimit + 1);
   const { user: authUser } = useAuth();
@@ -49,10 +56,11 @@ export function ArtistProfileView({ user, preview }: ArtistProfileViewProps) {
     [displayName, tracks],
   );
   const relatedArtists = useMemo(() => {
+    if (!showRelatedArtists) return [];
     return (related?.data ?? [])
       .filter((item: TopArtistItem) => item.userId !== user.id)
       .slice(0, relatedArtistLimit);
-  }, [related?.data, user.id]);
+  }, [related?.data, showRelatedArtists, user.id]);
 
   const sortedPlaylists = useMemo(() => {
     return [...user.publicPlaylists].sort((a, b) => {
@@ -95,7 +103,7 @@ export function ArtistProfileView({ user, preview }: ArtistProfileViewProps) {
         <BrowseBreadcrumbs crumbs={browseCrumbs} />
       </div>
 
-      <div className="space-y-10">
+      <div className="space-y-10 mb-32">
         <ArtistProfileHero
           user={user}
           genreNames={genreNames}
@@ -110,7 +118,12 @@ export function ArtistProfileView({ user, preview }: ArtistProfileViewProps) {
         {sortedPlaylists.length > 0 ? (
           <section>
             {sortedPlaylists.map((playlist) => (
-              <ArtistProfileCollectionPanel key={playlist.id} playlist={playlist} owner={user} />
+              <ArtistProfileCollectionPanel
+                key={playlist.id}
+                playlist={playlist}
+                owner={user}
+                editHref={collectionEditHref?.(playlist)}
+              />
             ))}
           </section>
         ) : null}

@@ -7,7 +7,7 @@ const NAV = [
   { to: "/admin/songs", label: "Songs" },
   { to: "/admin/playlists", label: "Playlists" },
   { to: "/admin/users", label: "Users" },
-  { to: "/admin/homepage", label: "Homepage" },
+  { to: "/admin/theatre", label: "Theatre" },
   { to: "/admin/tags", label: "Tags" },
   { to: "/admin/api-keys", label: "API Keys" },
   { to: "/admin/radio", label: "Radio", roles: ["ADMIN"] },
@@ -17,7 +17,7 @@ export function AdminPage() {
   const { user } = useAuth();
 
   return (
-    <div className="mx-auto max-w-5xl space-y-8">
+    <div className="mx-auto max-w-5xl space-y-8 bg-black/90 p-4 rounded-lg min-h-screen">
       <div>
         <p className="text-xs font-semibold uppercase tracking-wider text-amber-400">Administration</p>
         <h1 className="mt-1 text-4xl font-extrabold tracking-tight text-white">Control center</h1>
@@ -33,7 +33,7 @@ export function AdminPage() {
             to={item.to}
             end={(item as any).end}
             className={({ isActive }) =>
-              `px-4 py-2.5 text-sm font-medium transition border-b-2 -mb-px whitespace-nowrap ${
+              `px-4 py-2.5 text-sm font-medium transition border-b-2 -mb-px whitespace-nowrap bg-black ${
                 isActive
                   ? "border-amber-400 text-white"
                   : "border-transparent text-[var(--color-text-muted)] hover:text-white"

@@ -2,6 +2,7 @@ import { profilePath } from "@/lib/routes";
 
 export const LIBRARY_PATH = "/library";
 export const SONGS_PATH = "/songs";
+export const CHAT_PATH = "/chat";
 export const GENRES_PATH = "/genres";
 export const ARTISTS_PATH = "/artists";
 export const PLAYLISTS_PATH = "/playlists";
@@ -57,6 +58,10 @@ export function playlistsBrowseCrumbs(): BrowseCrumb[] {
 
 export function favoritesBrowseCrumbs(): BrowseCrumb[] {
   return [libraryCrumb(), { label: "Favorites", to: FAVORITES_PATH }];
+}
+
+export function chartsBrowseCrumbs(): BrowseCrumb[] {
+  return [libraryCrumb(), { label: "Charts", to: CHARTS_PATH }];
 }
 
 export function playlistBrowseCrumbs(

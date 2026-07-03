@@ -9,10 +9,13 @@ import { resolvePreset } from '../media/resolvePreset'
 import { isTimelinePlaybackActive } from '../media/timelineClipPick'
 import type { SongVisualPolicy } from '../media/types'
 import {
+  avoidEarlyPositions,
   avoidFirstPosition,
   buildFxShuffleBag,
   DEFAULT_BAG_BUILD_STRATEGY,
   expandWeightedPresetIds,
+  FRESH_BAG_AVOID_WINDOW,
+  RECENT_PRESET_MEMORY,
   shuffleIds,
   type BagBuildStrategy,
 } from './buildWeightedShuffleBag'
@@ -225,7 +228,9 @@ export class FxSelector {
 
   private getCatalogVersion(): string {
     if (this.catalogVersionOverride) return this.catalogVersionOverride
-    return computeCatalogVersion(this.getCatalogFamilies())
+    // Strategy is part of the version so persisted bags built under a
+    // different strategy are discarded rather than drained first.
+    return `${computeCatalogVersion(this.getCatalogFamilies())}:${this.bagStrategy}`
   }
 
   private ensureBagState(ctx: PickContext): FxBagStorageState {
@@ -238,7 +243,12 @@ export class FxSelector {
 
     this.bagState.bag = this.bagState.bag.filter(id => this.isValidPresetId(id))
     if (this.bagState.bag.length === 0) {
-      this.bagState = this.createFreshBagState(version, ctx, this.bagState.lastPresetId)
+      this.bagState = this.createFreshBagState(
+        version,
+        ctx,
+        this.bagState.lastPresetId,
+        this.bagState.recentPresetIds,
+      )
       this.persistBag()
     }
 
@@ -249,17 +259,24 @@ export class FxSelector {
     version: string,
     ctx: PickContext,
     lastPresetId?: string,
+    recentPresetIds: string[] = [],
   ): FxBagStorageState {
-    const bag = buildFxShuffleBag({
-      strategy: this.bagStrategy,
-      families: this.getCatalogFamilies(),
-      entries: this.getCatalogEntries(),
-      avoidFirstIds: buildAvoidFirstIds(ctx, lastPresetId),
-    })
+    const avoidFirstIds = buildAvoidFirstIds(ctx, lastPresetId)
+    const bag = avoidEarlyPositions(
+      buildFxShuffleBag({
+        strategy: this.bagStrategy,
+        families: this.getCatalogFamilies(),
+        entries: this.getCatalogEntries(),
+        avoidFirstIds,
+      }),
+      [...avoidFirstIds, ...recentPresetIds],
+      FRESH_BAG_AVOID_WINDOW,
+    )
     return {
       version,
       bag,
       lastPresetId,
+      recentPresetIds,
       updatedAt: Date.now(),
     }
   }
@@ -277,7 +294,7 @@ export class FxSelector {
     let id = state.bag.find(candidateId => !exclude.has(candidateId) && this.isValidPresetId(candidateId)) ?? null
 
     if (!id) {
-      this.bagState = this.createFreshBagState(state.version, ctx, state.lastPresetId)
+      this.bagState = this.createFreshBagState(state.version, ctx, state.lastPresetId, state.recentPresetIds)
       this.persistBag()
       id = this.bagState.bag.find(candidateId => !exclude.has(candidateId) && this.isValidPresetId(candidateId)) ?? null
       if (!id) id = this.bagState.bag[0] ?? null
@@ -342,10 +359,14 @@ export class FxSelector {
     if (index >= 0) state.bag.splice(index, 1)
 
     state.lastPresetId = id
+    state.recentPresetIds = [
+      ...(state.recentPresetIds ?? []).filter(recentId => recentId !== id),
+      id,
+    ].slice(-RECENT_PRESET_MEMORY)
     state.updatedAt = Date.now()
 
     if (state.bag.length === 0) {
-      this.bagState = this.createFreshBagState(state.version, ctx, id)
+      this.bagState = this.createFreshBagState(state.version, ctx, id, state.recentPresetIds)
     }
 
     this.persistBag()

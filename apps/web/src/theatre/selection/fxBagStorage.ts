@@ -4,6 +4,8 @@ export type FxBagStorageState = {
   version: string
   bag: string[]
   lastPresetId?: string
+  /** Most recent consumed preset ids, oldest first — kept away from the front of fresh bags. */
+  recentPresetIds?: string[]
   updatedAt: number
 }
 

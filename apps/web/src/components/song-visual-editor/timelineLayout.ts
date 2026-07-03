@@ -13,7 +13,7 @@ export function readClipPlayback(attachment: SongVisualAttachmentRecord): Visual
   timelineDurationSec?: number;
 } {
   const playback = attachment.playback;
-  if (!playback || typeof playback !== "object") return { loop: attachment.mediaAsset.mediaType === "video" };
+  if (!playback || typeof playback !== "object") return { loop: true };
   return playback as VisualMediaPlayback & { timelineDurationSec?: number };
 }
 
@@ -25,9 +25,9 @@ export function getNaturalDurationSec(attachment: SongVisualAttachmentRecord): n
   return mediaAsset.mediaType === "video" ? VIDEO_FALLBACK_NATURAL_SEC : IMAGE_NATURAL_SEC;
 }
 
-export function getClipLoop(attachment: SongVisualAttachmentRecord): boolean {
-  const playback = readClipPlayback(attachment);
-  return playback.loop ?? attachment.mediaAsset.mediaType === "video";
+// All media loops on the timeline; stored `playback.loop` is ignored for editing.
+export function getClipLoop(_attachment: SongVisualAttachmentRecord): boolean {
+  return true;
 }
 
 export function readClipStartOffsetMs(attachment: SongVisualAttachmentRecord): number {
@@ -70,24 +70,6 @@ export function defaultClipDurationSec(
   if (maxDuration < MIN_CLIP_SEC) return 0;
   if (loop) return maxDuration;
   return Math.min(getNaturalDurationSec(attachment), maxDuration);
-}
-
-export function clipDurationAfterLoopChange(
-  attachment: SongVisualAttachmentRecord,
-  startSec: number,
-  songDurationSec: number,
-  loop: boolean,
-  currentDurationSec?: number,
-): number {
-  const playback = readClipPlayback(attachment);
-  const startOffsetMs = playback.startOffsetMs ?? 0;
-  const maxDuration = maxClipDurationSec(attachment, startSec, songDurationSec, loop, startOffsetMs);
-  if (maxDuration < MIN_CLIP_SEC) return 0;
-  if (loop) return maxDuration;
-  if (currentDurationSec == null) {
-    return Math.min(remainingMediaSec(attachment, startOffsetMs), maxDuration);
-  }
-  return Math.min(currentDurationSec, maxDuration);
 }
 
 export type ClipBounds = {

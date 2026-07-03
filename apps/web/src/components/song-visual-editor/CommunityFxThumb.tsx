@@ -19,6 +19,35 @@ type CommunityFxThumbProps = {
 };
 
 export function CommunityFxThumb({ row, className = "" }: CommunityFxThumbProps) {
+  const [isVisible, setIsVisible] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "300px" }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  if (!isVisible) {
+    return (
+      <div ref={containerRef} className={["h-full w-full", className].join(" ")}>
+        <CommunityFxFallback kind={row.communityKind ?? "animations"} className="h-full w-full" />
+      </div>
+    );
+  }
+
   if (row.communityKind === "videos" && row.thumbUrl) {
     return <CommunityVideoThumb url={row.thumbUrl} label={row.label} className={className} />;
   }

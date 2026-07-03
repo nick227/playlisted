@@ -121,13 +121,13 @@ export function useStudioCollectionDraftAutosave({
       await queryClient.invalidateQueries({ queryKey: ["me", "playlists"] });
       await queryClient.invalidateQueries({ queryKey: ["playlists"] });
       await queryClient.invalidateQueries({ queryKey: ["playlist", playlistId] });
-      window.location.href = "/studio/collections";
+      window.location.href = "/studio";
     },
     onError: async (err) => {
       if (err instanceof PlaylistedApiError && err.status === 404) {
         await queryClient.invalidateQueries({ queryKey: ["me", "playlists"] });
         await queryClient.invalidateQueries({ queryKey: ["playlists"] });
-        window.location.href = "/studio/collections";
+        window.location.href = "/studio";
         return;
       }
       setUploadError(err instanceof Error ? err.message : "Failed to delete collection.");

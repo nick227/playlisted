@@ -18,12 +18,30 @@ export function FocusLaneSubtitleContent({ fixture, customSubtitleStyle }: Focus
   const style = customSubtitleStyle && usesCustomSubtitleStyle(fixture) ? customSubtitleStyle : undefined;
   const subtitleProps = fixtureToSubtitleProps(fixture);
 
-  if (fixture.type === "artistVisual") {
+  const isTitleIntro = fixture.type === "fallbackSubtitle" && fixture.source === "title-intro";
+  const isCombinedView = (fixture.type === "fallbackSubtitle" || fixture.type === "finalFallback") && !isTitleIntro;
+
+  if (isCombinedView) {
+    const artist = (fixture.type === "fallbackSubtitle" || fixture.type === "finalFallback") ? fixture.artist : null;
+    
+    let subtitleNode = null;
+    if (fixture.type === "finalFallback") {
+      subtitleNode = (
+        <FinalFallbackText
+          title={fixture.title}
+          artistName={fixture.artistName}
+          customStyle={style}
+        />
+      );
+    } else if (subtitleProps) {
+      subtitleNode = <SubtitleText {...subtitleProps} customStyle={style} />;
+    }
+
     return (
       <ArtistVisual
-        artistName={fixture.artistName}
-        imageUrl={fixture.imageUrl}
-        bioLine={fixture.bioLine}
+        artistName={artist?.artistName || (fixture.type === "finalFallback" ? fixture.artistName ?? undefined : undefined)}
+        imageUrl={artist?.imageUrl ?? undefined}
+        subtitleNode={subtitleNode}
       />
     );
   }

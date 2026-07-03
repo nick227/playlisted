@@ -9,6 +9,7 @@ import { resolveAssetUrl } from "./types";
 
 type SongVisualLibraryCardProps = {
   row: VisualLibraryRow;
+  active?: boolean;
   disabled?: boolean;
   onAction: () => void;
   onDelete?: () => void;
@@ -16,6 +17,7 @@ type SongVisualLibraryCardProps = {
 
 export function SongVisualLibraryCard({
   row,
+  active,
   disabled,
   onAction,
   onDelete,
@@ -27,7 +29,11 @@ export function SongVisualLibraryCard({
     <article
       className={[
         "overflow-hidden rounded-lg border bg-black/30",
-        isPending ? "border-sky-400/30 ring-1 ring-sky-400/20" : "border-white/10",
+        isPending
+          ? "border-sky-400/30 ring-1 ring-sky-400/20"
+          : active
+            ? "border-emerald-400/50 ring-1 ring-emerald-400/20"
+            : "border-white/10",
       ].join(" ")}
     >
       <div className="relative aspect-video w-full bg-black/50">
@@ -66,6 +72,12 @@ export function SongVisualLibraryCard({
               {formatVisualUploadProgressLabel(row.uploadProgress ?? null, "overlay")}
             </p>
           </div>
+        ) : null}
+
+        {!isPending && active ? (
+          <span className="absolute left-1.5 top-1.5 rounded-full bg-emerald-500/85 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-black">
+            Active
+          </span>
         ) : null}
       </div>
       <div className="space-y-1.5 p-2">

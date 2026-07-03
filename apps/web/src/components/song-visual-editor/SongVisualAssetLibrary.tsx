@@ -1,4 +1,4 @@
-import { RotateCcw, Trash2, Upload, AudioLines, Repeat, Loader2 } from "lucide-react";
+import { RotateCcw, Trash2, Upload, AudioLines, Loader2 } from "lucide-react";
 import { useEffect, useState, type DragEvent } from "react";
 
 import { VISUAL_UPLOAD_MAX_BYTES } from "@/lib/visualUploadLimits";
@@ -8,8 +8,8 @@ import { formatVisualUploadProgressLabel, type VisualUploadProgress } from "@/li
 import { editorToggleClass } from "./editorToggle";
 import { EditorSection } from "./EditorSection";
 import { SongVisualLibraryCard } from "./SongVisualLibraryCard";
-import { MediaAssetThumb } from "./MediaAssetThumb";
-import { formatMegabytes, readClipStartOffsetMs } from "./timelineLayout";
+import { readTheatrePresetIdFromTags } from "./theatreFxLibrary";
+import { formatMegabytes, formatTimelineTime, readClipStartOffsetMs } from "./timelineLayout";
 import type { TimelineClip } from "./types";
 import type { VisualMediaAssetRecord } from "@/lib/visualMediaApi";
 import {
@@ -29,7 +29,6 @@ type SongVisualAssetLibraryProps = {
   uploadProgress: VisualUploadProgress | null;
   libraryFocusMineKind: MineMediaKind | null;
   onLibraryFocusHandled: () => void;
-  onClipLoopChange: (attachmentId: string, loop: boolean) => void;
   onClipAudioPulseChange: (attachmentId: string, enabled: boolean) => void;
   readClipAudioPulse: (attachment: TimelineClip["attachment"]) => boolean;
   onResetClipTrim: (attachmentId: string) => void;
@@ -146,7 +145,6 @@ export function SongVisualAssetLibrary({
   uploadProgress,
   libraryFocusMineKind,
   onLibraryFocusHandled,
-  onClipLoopChange,
   onClipAudioPulseChange,
   readClipAudioPulse,
   onResetClipTrim,
@@ -229,92 +227,102 @@ export function SongVisualAssetLibrary({
 
   const sortedClips = [...timelineClips].sort((left, right) => left.startSec - right.startSec);
 
+  const activeAssetIds = new Set(timelineClips.map((clip) => clip.attachment.mediaAssetId));
+  const activePresetIds = new Set(
+    timelineClips
+      .map((clip) => readTheatrePresetIdFromTags(clip.attachment.tags))
+      .filter((presetId): presetId is string => presetId != null),
+  );
+
+  function isRowActive(row: VisualLibraryRow): boolean {
+    if (row.theatrePresetId) return activePresetIds.has(row.theatrePresetId);
+    return row.asset ? activeAssetIds.has(row.asset.id) : false;
+  }
+
   return (
     <div className="space-y-3">
-      <EditorSection title="Active">
+      <div className="overflow-hidden rounded-lg border border-white/10 bg-black/25">
+        <div className="flex items-center justify-between border-b border-white/5 px-2.5 py-1.5">
+          <span className="text-[10px] font-semibold uppercase tracking-wide text-white/40">Active</span>
+          <span className="text-[10px] tabular-nums text-white/30">
+            {sortedClips.length} {sortedClips.length === 1 ? "clip" : "clips"}
+          </span>
+        </div>
         {sortedClips.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-white/10 bg-black/30 px-3 py-6 text-center text-xs text-white/35">
-            Add clips from your library below.
-          </p>
+          <p className="px-2.5 py-2 text-xs text-white/35">Add clips from the library below.</p>
         ) : (
-          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+          <ul className="divide-y divide-white/5">
             {sortedClips.map((clip) => {
               const { attachment } = clip;
               const selected = attachment.id === selectedAttachmentId;
+              const isCommunity = readTheatrePresetIdFromTags(attachment.tags) != null;
               const startOffsetMs = readClipStartOffsetMs(attachment);
               const audioPulse = readClipAudioPulse(attachment);
               return (
-                <article
+                <li
                   key={attachment.id}
                   className={[
-                    "overflow-hidden rounded-lg border bg-black/30",
-                    selected ? "border-emerald-400/50 ring-1 ring-emerald-400/20" : "border-white/10",
+                    "flex items-center gap-1 px-1.5 py-1",
+                    selected ? "bg-emerald-500/10" : "hover:bg-white/5",
                   ].join(" ")}
                 >
                   <button
                     type="button"
                     disabled={isBusy}
                     onClick={() => onSelectClip(attachment.id)}
-                    className="block w-full text-left"
+                    className="flex min-w-0 flex-1 items-center gap-2 px-1 py-0.5 text-left disabled:opacity-40"
                   >
-                    <MediaAssetThumb asset={attachment.mediaAsset} className="aspect-video w-full" />
-                  </button>
-                  <div className="space-y-1.5 p-2">
-                    <p className="truncate text-xs font-medium text-white">
+                    <span
+                      className={[
+                        "h-1.5 w-1.5 shrink-0 rounded-full",
+                        isCommunity ? "bg-cyan-400" : "bg-violet-400",
+                      ].join(" ")}
+                      title={isCommunity ? "Community" : "Yours"}
+                    />
+                    <span className="truncate text-xs font-medium text-white">
                       {attachment.label ?? attachment.mediaAsset.originalName}
-                    </p>
-                    <div className="flex flex-wrap items-center gap-1">
-                      <div className="inline-flex h-7 items-center gap-0.5 rounded-md border border-white/10 bg-black/25 p-0.5">
-                        <button
-                          type="button"
-                          disabled={isBusy}
-                          onClick={() => onClipLoopChange(attachment.id, !clip.loop)}
-                          className={editorToggleClass(clip.loop, isBusy, "h-6 gap-1 px-1.5 text-[10px]")}
-                          aria-pressed={clip.loop}
-                          title="Loop clip"
-                        >
-                          <Repeat size={10} />
-                        </button>
-                        <button
-                          type="button"
-                          disabled={isBusy}
-                          onClick={() => onClipAudioPulseChange(attachment.id, !audioPulse)}
-                          className={editorToggleClass(audioPulse, isBusy, "h-6 gap-1 px-1.5 text-[10px]")}
-                          aria-pressed={audioPulse}
-                          title="Beat reactive pulse"
-                        >
-                          <AudioLines size={10} />
-                        </button>
-                      {startOffsetMs > 0 ? (
-                        <button
-                          type="button"
-                          disabled={isBusy}
-                          onClick={() => onResetClipTrim(attachment.id)}
-                          className="rounded-md border border-amber-400/20 px-1.5 py-1 text-amber-100 hover:bg-amber-400/10 disabled:opacity-40"
-                          aria-label="Reset media cut-in"
-                          title="Reset cut-in to media start"
-                        >
-                          <RotateCcw size={11} />
-                        </button>
-                      ) : null}
-                      <button
-                        type="button"
-                        disabled={isBusy}
-                        onClick={() => onRemoveClip(attachment.id)}
-                        className="rounded-md px-1.5 py-1 hover:bg-red-500/10 disabled:opacity-40"
-                        aria-label="Remove clip from timeline"
-                      >
-                        <Trash2 size={11} />
-                      </button>
-                      </div>
-                    </div>
-                  </div>
-                </article>
+                    </span>
+                    <span className="shrink-0 text-[10px] tabular-nums text-white/40">
+                      {formatTimelineTime(clip.startSec)}–{formatTimelineTime(clip.endSec)}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isBusy}
+                    onClick={() => onClipAudioPulseChange(attachment.id, !audioPulse)}
+                    className={editorToggleClass(audioPulse, isBusy, "h-6 gap-1 px-1.5 text-[10px]")}
+                    aria-pressed={audioPulse}
+                    title="Beat reactive pulse"
+                  >
+                    <AudioLines size={11} />
+                  </button>
+                  {startOffsetMs > 0 ? (
+                    <button
+                      type="button"
+                      disabled={isBusy}
+                      onClick={() => onResetClipTrim(attachment.id)}
+                      className="rounded-md border border-amber-400/20 px-1.5 py-1 text-amber-100 hover:bg-amber-400/10 disabled:opacity-40"
+                      aria-label="Reset media cut-in"
+                      title="Reset cut-in to media start"
+                    >
+                      <RotateCcw size={11} />
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    disabled={isBusy}
+                    onClick={() => onRemoveClip(attachment.id)}
+                    className="rounded-md px-1.5 py-1 text-white/60 hover:bg-red-500/10 hover:text-red-200 disabled:opacity-40"
+                    aria-label="Remove clip from timeline"
+                  >
+                    <Trash2 size={11} />
+                  </button>
+                </li>
               );
             })}
-          </div>
+          </ul>
         )}
-      </EditorSection>
+      </div>
 
       <EditorSection
         title="Library"
@@ -387,11 +395,12 @@ export function SongVisualAssetLibrary({
               </p>
             )
           ) : (
-            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">
               {visibleRows.map((row) => (
                 <SongVisualLibraryCard
                   key={row.id}
                   row={row}
+                  active={isRowActive(row)}
                   disabled={isBusy}
                   onAction={() => {
                     if (row.pending) return;

@@ -47,7 +47,6 @@ export function SongVisualEditorPreview({
   const containerRef = useRef<HTMLDivElement>(null);
   const attachment = clip?.attachment ?? null;
   const media = attachment?.mediaAsset ?? null;
-  const loop = clip?.loop ?? true;
   const audioPulse = attachment ? readClipAudioPulse(attachment) : false;
 
   useSongVisualTheatrePreview({
@@ -107,7 +106,6 @@ export function SongVisualEditorPreview({
             </p>
             <p className="text-xs text-white/60">
               {media.mediaType}
-              {loop ? " · loop" : ` · ${clip?.naturalDurationSec.toFixed(0)}s max`}
               {audioPulse ? " · beat reactive" : ""}
             </p>
           </div>

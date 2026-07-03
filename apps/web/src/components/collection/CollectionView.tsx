@@ -387,7 +387,7 @@ export function CollectionView({
   }
 
   return (
-    <div className={`mx-auto flex ${isEdit ? "max-w-3xl" : "w-full"} flex-col justify-center bg-[var(--color-surface)]/80 rounded-lg p-4`}>
+    <div className={`mx-auto flex ${isEdit ? "max-w-3xl" : "w-full"} flex-col justify-center bg-[var(--color-canvas)]/80 rounded-lg p-4`}>
       {isEdit && editToolbar ? (
         <div className="mb-6 flex flex-wrap items-center gap-3">{editToolbar}</div>
       ) : null}

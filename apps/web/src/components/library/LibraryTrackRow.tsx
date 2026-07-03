@@ -36,7 +36,6 @@ export function LibraryTrackRow({ song, onPlay, queueTrack }: LibraryTrackRowPro
       id={`track-${song.id}`}
       className={[
         "group/card flex items-center gap-2 rounded-lg px-2 py-1.5 transition",
-        isActive ? "bg-white/10" : "hover:bg-[var(--color-surface-hover)]",
       ].join(" ")}
     >
       <PlaybackBars active={isActive} playing={isPlaying} />

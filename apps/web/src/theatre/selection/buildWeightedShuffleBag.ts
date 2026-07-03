@@ -3,9 +3,9 @@ import type {
   WeightedPresetEntry,
 } from './catalogVersion'
 
-export type BagBuildStrategy = 'presetWeighted' | 'familyWeighted'
+export type BagBuildStrategy = 'presetWeighted' | 'familyWeighted' | 'uniformShuffle'
 
-export const DEFAULT_BAG_BUILD_STRATEGY: BagBuildStrategy = 'familyWeighted'
+export const DEFAULT_BAG_BUILD_STRATEGY: BagBuildStrategy = 'uniformShuffle'
 
 export type BuildFxShuffleBagOptions = {
   strategy?: BagBuildStrategy
@@ -48,6 +48,32 @@ export function shuffleIds(ids: string[], rng: () => number = Math.random): stri
     ;[bag[i], bag[j]] = [bag[j], bag[i]]
   }
   return bag
+}
+
+/** How many recently consumed presets a fresh bag keeps away from its front. */
+export const RECENT_PRESET_MEMORY = 6
+export const FRESH_BAG_AVOID_WINDOW = 6
+
+/**
+ * Swap any of `avoidIds` out of the first `windowSize` slots so a fresh bag
+ * doesn't open with presets the user just watched at the end of the old bag.
+ * Gives up on slots it can't fill when the bag is mostly avoid ids.
+ */
+export function avoidEarlyPositions(bag: string[], avoidIds: string[], windowSize: number): string[] {
+  const avoid = new Set(avoidIds.filter(Boolean))
+  if (avoid.size === 0 || bag.length <= 1) return bag
+
+  const next = [...bag]
+  const window = Math.min(windowSize, next.length)
+  let swapFrom = window
+  for (let i = 0; i < window; i++) {
+    if (!avoid.has(next[i]!)) continue
+    while (swapFrom < next.length && avoid.has(next[swapFrom]!)) swapFrom++
+    if (swapFrom >= next.length) break
+    ;[next[i], next[swapFrom]] = [next[swapFrom]!, next[i]!]
+    swapFrom++
+  }
+  return next
 }
 
 export function avoidFirstPosition(bag: string[], avoidFirstIds: string[]): string[] {
@@ -109,6 +135,28 @@ export function buildFamilyWeightedShuffleBag(
   return avoidFirstPosition(shuffled, avoidFirstIds)
 }
 
+/**
+ * Every preset exactly once per bag, shuffled — ignores family and preset
+ * weights so all fx get equal rotation time. The bag pointer (front of the
+ * persisted bag) guarantees a full cycle through the catalog before any repeat.
+ */
+export function buildUniformShuffleBag(
+  families: WeightedFamilyCatalogEntry[],
+  avoidFirstIds: string[] = [],
+  rng: () => number = Math.random,
+): string[] {
+  const seen = new Set<string>()
+  const ids: string[] = []
+  for (const family of families) {
+    for (const preset of family.presets) {
+      if (seen.has(preset.id)) continue
+      seen.add(preset.id)
+      ids.push(preset.id)
+    }
+  }
+  return avoidFirstPosition(shuffleIds(ids, rng), avoidFirstIds)
+}
+
 /** @deprecated Use buildPresetWeightedShuffleBag or buildFxShuffleBag. */
 export function buildWeightedShuffleBag(
   entries: WeightedPresetEntry[],
@@ -131,7 +179,11 @@ export function buildFxShuffleBag(options: BuildFxShuffleBagOptions = {}): strin
     return buildPresetWeightedShuffleBag(entries, avoidFirstIds, rng)
   }
 
-  return buildFamilyWeightedShuffleBag(families, avoidFirstIds, rng)
+  if (strategy === 'familyWeighted') {
+    return buildFamilyWeightedShuffleBag(families, avoidFirstIds, rng)
+  }
+
+  return buildUniformShuffleBag(families, avoidFirstIds, rng)
 }
 
 export function countFamilyRepresentation(bag: string[], familyOf: (presetId: string) => string | null) {

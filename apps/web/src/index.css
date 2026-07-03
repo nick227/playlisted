@@ -3,6 +3,8 @@
 @theme {
   --font-sans: Inter, ui-sans-serif, system-ui, sans-serif;
 
+  --container-8xl: 96rem;
+
   --color-canvas: #0c1016;
   --color-canvas-alt: #11161d;
   --color-surface: #151a22;
@@ -263,23 +265,26 @@ body {
 
 .focus-lane__artist {
   display: flex;
+  flex-direction: column;
   width: min(34rem, 100%);
   align-items: center;
-  gap: 1rem;
-  border-radius: 0.75rem;
-  background: rgba(0, 0, 0, 0.72);
-  padding: 0.85rem 1rem;
-  box-shadow: 0 18px 52px rgba(0, 0, 0, 0.35);
-  backdrop-filter: blur(10px) saturate(120%);
+  text-align: center;
+  gap: 1.5rem;
+  border-radius: 1.25rem;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 2.5rem 2rem;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(16px) saturate(140%);
 }
 
 .focus-lane__artist-image {
-  width: 4.5rem;
-  height: 4.5rem;
-  flex: 0 0 4.5rem;
-  border-radius: 0.65rem;
+  width: 12rem;
+  height: 12rem;
+  flex: 0 0 12rem;
+  border-radius: 1rem;
   background-position: center;
   background-size: cover;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5);
 }
 
 .focus-lane__artist-image--fallback {
@@ -288,21 +293,23 @@ body {
 
 .focus-lane__artist-copy {
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .focus-lane__artist-name {
   margin: 0;
   color: #fff;
-  font-size: clamp(1.2rem, 3vw, 1.8rem);
-  font-weight: 700;
+  font-size: clamp(1.5rem, 4vw, 2.25rem);
+  font-weight: 800;
   line-height: 1.2;
 }
 
-.focus-lane__artist-bio {
-  margin: 0.35rem 0 0;
-  color: rgba(255, 255, 255, 0.72);
-  font-size: clamp(0.9rem, 2.2vw, 1.05rem);
-  line-height: 1.35;
+.focus-lane__artist-subtitle {
+  margin: 0;
+  opacity: 0.9;
 }
 
 .theatre-crossfade {
@@ -384,17 +391,13 @@ body {
   --bar-gap: 3px;
   --bar-active-opacity: 0.88;
   --bar-inactive-opacity: 0.34;
-  position: absolute;
-  left: 9px;
-  right: auto;
-  bottom: 9px;
   z-index: 28;
   width: 30px;
   height: 24px;
   padding: 3px;
   border-radius: 999px;
-  background: rgba(0, 0, 0, 0.38);
   backdrop-filter: blur(8px);
+  margin-bottom: 0.38rem;
 }
 
 .playback-thumb-glow {

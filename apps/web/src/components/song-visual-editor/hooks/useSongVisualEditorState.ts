@@ -37,8 +37,6 @@ import {
 } from "../audioPulse";
 import {
   boundsNearlyEqual,
-  buildPlaybackPatch,
-  clipDurationAfterLoopChange,
   findTopClipAtTime,
   readClipPlayback,
   resolveClipInsert,
@@ -65,10 +63,6 @@ type UseSongVisualEditorStateArgs = {
   accessToken: string;
   durationSeconds?: number | null;
 };
-
-function defaultAssetLoop(asset: VisualMediaAssetRecord) {
-  return asset.mediaType === "video";
-}
 
 export function useSongVisualEditorState({
   recordingId,
@@ -250,13 +244,12 @@ export function useSongVisualEditorState({
   async function attachAssetToTimeline(
     asset: VisualMediaAssetRecord,
     opts: {
-      loop?: boolean;
       startSec?: number;
       label?: string;
       tags?: string[] | null;
     } = {},
   ) {
-    const loop = opts.loop ?? defaultAssetLoop(asset);
+    const loop = true;
     const requestedStart = opts.startSec ?? 0;
     const stubAttachment = { mediaAsset: asset } as SongVisualAttachmentRecord;
     const bounds = resolveClipInsert(stubAttachment, requestedStart, timelineDurationSec, { loop });
@@ -301,35 +294,6 @@ export function useSongVisualEditorState({
     setDraftPolicy(policyFromIncludeSiteMedia(nextIncludeSiteMedia));
     updateDraft((current) =>
       applyDraftPolicy(current, policyFromIncludeSiteMedia(nextIncludeSiteMedia)),
-    );
-    setError(null);
-  }
-
-  function setClipLoop(attachmentId: string, loop: boolean) {
-    const attachment = getAttachmentSnapshot(attachmentId);
-    const clip = timelineClips.find((item) => item.attachment.id === attachmentId);
-    if (!attachment || !clip) return;
-
-    const nextDurationSec = clipDurationAfterLoopChange(
-      attachment,
-      clip.startSec,
-      timelineDurationSec,
-      loop,
-      clip.durationSec,
-    );
-    if (nextDurationSec <= 0) {
-      setError("Clip cannot fit at this position with loop off.");
-      return;
-    }
-
-    updateDraft((current) =>
-      patchDraftAttachment(current, attachmentId, {
-        playback: buildPlaybackPatch(attachment, {
-          loop,
-          timelineStartSec: clip.startSec,
-          timelineDurationSec: nextDurationSec,
-        }),
-      }),
     );
     setError(null);
   }
@@ -445,11 +409,10 @@ export function useSongVisualEditorState({
     }
 
     const playback = clipboard.playback as {
-      loop?: boolean;
       timelineDurationSec?: number;
       startOffsetMs?: number;
     };
-    const loop = playback.loop ?? defaultAssetLoop(asset);
+    const loop = true;
     const stubAttachment = { mediaAsset: asset, playback: { loop, ...playback } } as unknown as SongVisualAttachmentRecord;
     const bounds = resolveClipInsert(stubAttachment, startSec, timelineDurationSec, {
       loop,
@@ -525,7 +488,6 @@ export function useSongVisualEditorState({
     await attachAssetToTimeline(placeholder, {
       startSec,
       label,
-      loop: true,
       tags: [theatrePresetTag(presetId)],
     });
   }
@@ -601,7 +563,6 @@ export function useSongVisualEditorState({
     attachLibraryRow,
     deleteAsset: deleteAssetMutation.mutate,
     setIncludeSiteMedia,
-    setClipLoop,
     setClipAudioPulse,
     resizeClip,
     resizeClipStart,

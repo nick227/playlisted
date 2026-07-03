@@ -39,7 +39,6 @@ function resolveSyntheticFixture(input: {
   artist: FocusArtist | null;
 }): PlaybackFocusFixture | null {
   const { focusLaneElapsedMs, syntheticCues, artist } = input;
-  const { artistStart, artistEnd } = getFocusLaneSequenceWindows();
 
   const titleCue = findActiveSyntheticCue(syntheticCues, focusLaneElapsedMs, "title-intro");
   if (titleCue?.text.trim()) {
@@ -48,19 +47,7 @@ function resolveSyntheticFixture(input: {
       text: titleCue.text.trim(),
       key: titleCue.id,
       source: titleCue.source,
-    };
-  }
-
-  if (
-    focusLaneElapsedMs >= artistStart &&
-    focusLaneElapsedMs < artistEnd &&
-    artist?.artistName
-  ) {
-    return {
-      type: "artistVisual",
-      artistName: artist.artistName,
-      imageUrl: artist.imageUrl ?? undefined,
-      bioLine: artist.bioLine ?? undefined,
+      artist: artist,
     };
   }
 
@@ -71,6 +58,7 @@ function resolveSyntheticFixture(input: {
       text: fallbackCue.text.trim(),
       key: fallbackCue.id,
       source: fallbackCue.source,
+      artist: artist,
     };
   }
 
@@ -124,6 +112,7 @@ export function resolvePlaybackFocusFixture(input: ResolvePlaybackFocusInput): P
       key: `final-song-title:${recording?.id ?? title}`,
       title,
       artistName: recording?.ownerName?.trim() || null,
+      artist: artist,
     };
   }
 
@@ -135,13 +124,10 @@ export function getFixtureFadeOutMs(fixture: PlaybackFocusFixture): number {
   if (fixture.type === "subtitle") {
     return playbackFocusTiming.focusLane.fadeOutMs + playbackFocusTiming.focusLane.exitBufferMs;
   }
-  if (fixture.type === "artistVisual") {
-    return playbackFocusTiming.artistVisual.fadeOutMs;
-  }
   if (fixture.type === "finalFallback") {
     return playbackFocusTiming.fallbackSubtitle.fadeOutMs;
   }
-  if (fixture.source === "title-intro") {
+  if (fixture.type === "fallbackSubtitle" && fixture.source === "title-intro") {
     return playbackFocusTiming.titleIntro.fadeOutMs;
   }
   return playbackFocusTiming.fallbackSubtitle.fadeOutMs;
@@ -150,7 +136,6 @@ export function getFixtureFadeOutMs(fixture: PlaybackFocusFixture): number {
 export function getFixtureFadeInMs(fixture: PlaybackFocusFixture): number {
   if (fixture.type === "none") return 0;
   if (fixture.type === "subtitle") return playbackFocusTiming.focusLane.fadeInMs;
-  if (fixture.type === "artistVisual") return playbackFocusTiming.artistVisual.fadeInMs;
   if (fixture.type === "finalFallback") {
     return playbackFocusTiming.fallbackSubtitle.fadeInMs;
   }

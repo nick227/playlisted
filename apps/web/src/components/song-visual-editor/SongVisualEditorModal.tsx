@@ -1,7 +1,6 @@
-import { RadioIcon } from "lucide-react";
+import { X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { Link } from "react-router-dom";
 
 import { useSuppressPlaybackFocus } from "@/lib/playbackFocusSuppression";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
@@ -100,16 +99,37 @@ function SongVisualEditorModalInner({
     onClose();
   }
 
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") handleClose();
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  });
+
   return createPortal(
-    <>
-      <div className="fixed inset-0 z-[10000] flex flex-col bg-[var(--color-canvas)]">
-        <header className="relative flex shrink-0 items-center justify-center border-b border-white/10 bg-black/20 px-4 py-3 md:px-6">
+    <div
+      className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/70 backdrop-blur-sm md:p-4"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) handleClose();
+      }}
+    >
+      <div className="flex h-full max-h-screen w-full max-w-8xl flex-col overflow-hidden border border-white/10 bg-[var(--color-canvas)] shadow-2xl md:rounded-2xl">
+        <header className="relative flex shrink-0 items-center justify-center border-b border-white/10 bg-black/20 px-12 py-3 md:px-14">
           <h2 className="truncate text-center text-base font-semibold text-white md:text-lg">
             {recording.title}
           </h2>
+          <button
+            type="button"
+            onClick={handleClose}
+            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md border border-white/10 p-1.5 text-white/60 transition hover:bg-white/10 hover:text-white"
+            aria-label="Close visual editor"
+          >
+            <X size={16} />
+          </button>
         </header>
 
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 py-3 md:px-6 md:py-4 max-w-5xl mx-auto">
+        <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden px-4 py-3 md:px-6 md:py-4">
           <div className="shrink-0 space-y-2.5 md:space-y-3">
             <SongVisualEditorPreview
               clip={activeClip}
@@ -170,7 +190,7 @@ function SongVisualEditorModalInner({
             />
           </div>
 
-          <div className="mt-3 min-h-0 flex-1 overflow-y-auto md:mt-4">
+          <div className="mt-3 min-h-0 flex-1 overflow-y-auto [scrollbar-gutter:stable] md:mt-4">
             <SongVisualAssetLibrary
               timelineClips={editor.timelineClips}
               assets={editor.assets}
@@ -181,7 +201,6 @@ function SongVisualEditorModalInner({
               onLibraryFocusHandled={editor.clearLibraryFocus}
               pendingUpload={editor.pendingUpload}
               onCancelUpload={editor.cancelUpload}
-              onClipLoopChange={(attachmentId, loop) => editor.setClipLoop(attachmentId, loop)}
               onClipAudioPulseChange={(attachmentId, enabled) => editor.setClipAudioPulse(attachmentId, enabled)}
               readClipAudioPulse={editor.readClipAudioPulse}
               onResetClipTrim={(attachmentId) => editor.resetClipTrim(attachmentId)}
@@ -215,16 +234,7 @@ function SongVisualEditorModalInner({
           className="hidden"
         />
       </div>
-
-      <Link
-        to="/"
-        className="fixed left-4 top-3 z-[10001] flex items-center gap-1.5 rounded-lg border border-white/10 bg-[var(--color-canvas)]/95 px-2.5 py-1.5 text-xl font-bold tracking-tight text-white shadow-lg backdrop-blur-md md:left-6 md:text-2xl"
-        aria-label="Playlisted home"
-      >
-        Play<span className="text-[var(--color-brand)]">listed</span>
-        <RadioIcon size={16} className="text-[var(--color-brand)]" />
-      </Link>
-    </>,
+    </div>,
     document.body,
   );
 }

@@ -210,7 +210,7 @@ function GenreSongThumb({ song, queue }: { song: LibrarySong; queue: LibrarySong
       onClick={handlePlay}
       aria-label={`Play ${song.title}`}
       title={`${song.title} by ${song.uploader.displayName}`}
-      className="group/thumb relative aspect-square min-w-0 overflow-hidden rounded-lg border border-white/10 bg-white/[0.04] text-left shadow-[0_14px_40px_rgba(0,0,0,0.22)] transition-all hover:-translate-y-0.5 hover:border-white/25 hover:bg-white/[0.08]"
+      className="group/thumb relative aspect-square min-w-0 overflow-hidden rounded-lg text-left shadow-[0_14px_40px_rgba(0,0,0,0.22)] transition-all hover:-translate-y-0.5"
     >
       {song.artworkUrl ? (
         <img
@@ -243,7 +243,7 @@ function GenreCard({ genre }: { genre: LibraryGenre }) {
   const featuredArtistCount = new Set(previewSongs.map((song) => song.uploaderId)).size;
 
   return (
-    <article className="group relative overflow-hidden rounded-xl border border-white/[0.08] bg-[linear-gradient(145deg,rgba(255,255,255,0.075),rgba(255,255,255,0.025))] p-4 shadow-[0_20px_70px_rgba(0,0,0,0.24)] transition-colors hover:border-white/[0.16] hover:bg-white/[0.055] sm:p-5 xl:p-6">
+    <article className="group relative overflow-hidden rounded-xl sm:p-5 xl:p-6">
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent opacity-70" />
       <div className="flex flex-col gap-6">
         <div className="min-w-0 xl:flex xl:items-end xl:justify-between xl:gap-6">
