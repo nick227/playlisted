@@ -11,7 +11,14 @@ import {
 } from "@/lib/subtitles";
 import { useSuppressPlaybackFocus } from "@/lib/playbackFocusSuppression";
 import { useAuth } from "@/providers/AuthProvider";
+import {
+  DEFAULT_SUBTITLE_POSITION,
+  DEFAULT_SUBTITLE_STYLE_ID,
+  type SubtitlePosition,
+} from "@/lib/subtitleStylePresets";
 import type { TranscriptEntity } from "@/types/transcript";
+
+import { SubtitleStyleTab } from "./SubtitleStyleTab";
 
 interface SubtitleEditorModalProps {
   recordingId: string;
@@ -26,7 +33,9 @@ export function SubtitleEditorModal({ recordingId, recordingTitle, initialSubtit
   useSuppressPlaybackFocus();
   const { accessToken } = useAuth();
 
-  const [activeTab, setActiveTab] = useState<"lyrics" | "subtitles">("lyrics");
+  const [activeTab, setActiveTab] = useState<"lyrics" | "subtitles" | "style">("lyrics");
+  const [subtitlePosition, setSubtitlePosition] = useState<SubtitlePosition>(DEFAULT_SUBTITLE_POSITION);
+  const [subtitleStyleId, setSubtitleStyleId] = useState(DEFAULT_SUBTITLE_STYLE_ID);
   const [transcripts, setTranscripts] = useState<TranscriptEntity[]>([]);
   const [loading, setLoading] = useState(true);
   const [subtitlesDisabled, setSubtitlesDisabled] = useState(initialSubtitlesDisabled);
@@ -265,6 +274,16 @@ export function SubtitleEditorModal({ recordingId, recordingTitle, initialSubtit
           >
             Subtitles
           </button>
+          <button
+            className={`border-b-2 px-4 pb-2 font-medium transition-colors ${
+              activeTab === "style"
+                ? "border-emerald-400 text-emerald-400"
+                : "border-transparent text-white/50 hover:text-white"
+            }`}
+            onClick={() => setActiveTab("style")}
+          >
+            Style
+          </button>
           <label className="ml-auto flex items-center gap-2 pb-2 text-sm font-medium text-white/70">
             <input
               type="checkbox"
@@ -284,7 +303,15 @@ export function SubtitleEditorModal({ recordingId, recordingTitle, initialSubtit
               {errorMessage}
             </div>
           )}
-          {subtitlesDisabled ? (
+          {activeTab === "style" ? (
+            <SubtitleStyleTab
+              position={subtitlePosition}
+              styleId={subtitleStyleId}
+              previewText={srtDraft.trim() ? "Lyrics preview from your transcript" : undefined}
+              onPositionChange={setSubtitlePosition}
+              onStyleChange={setSubtitleStyleId}
+            />
+          ) : subtitlesDisabled ? (
             <div className="flex flex-1 items-center justify-center p-6 text-center text-sm text-white/50">
               Subtitles are disabled for this song.
             </div>
@@ -313,7 +340,7 @@ Lyrics in SRT format..."
                 </button>
               </div>
             </div>
-          ) : (
+          ) : activeTab === "subtitles" ? (
             <div className="flex flex-1 flex-col overflow-y-auto p-4">
               {/* Generation Actions */}
               {pendingGenerateProvider ? (
@@ -355,13 +382,13 @@ Lyrics in SRT format..."
                     <span className="mt-1 text-[10px] text-white/40 uppercase tracking-wider">Fast & Accurate</span>
                   </button>
                   <button
-                    className="flex flex-col items-center justify-center rounded-lg border border-emerald-400/30 bg-emerald-400/10 p-4 text-emerald-300 hover:bg-emerald-400/20 transition-colors"
+                    className="flex flex-col items-center justify-center rounded-lg border border-white/10 bg-white/5 p-4 text-white hover:bg-white/10 transition-colors"
                     onClick={() => setPendingGenerateProvider("modal")}
                     disabled={subtitlesDisabled || loading}
                   >
                     <MessageSquare size={24} className="mb-2" />
                     <span className="text-sm font-medium">Auto Generate</span>
-                    <span className="mt-1 text-[10px] text-emerald-300/50 uppercase tracking-wider">Playlisted Modal</span>
+                    <span className="mt-1 text-[10px] text-white/40 uppercase tracking-wider">Playlisted Modal</span>
                   </button>
                   <button
                     className="flex flex-col items-center justify-center rounded-lg border border-white/10 bg-white/5 p-4 text-white hover:bg-white/10 transition-colors"
@@ -473,7 +500,7 @@ Lyrics in SRT format..."
                 </div>
               </div>
             </div>
-          )}
+          ) : null}
         </div>
       </div>
     </div>
