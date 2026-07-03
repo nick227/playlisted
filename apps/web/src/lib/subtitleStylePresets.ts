@@ -14,7 +14,7 @@ export type SubtitleStylePreset = {
   backgroundImage?: string;
 };
 
-export const DEFAULT_SUBTITLE_POSITION: SubtitlePosition = "bottom";
+export const DEFAULT_SUBTITLE_POSITION: SubtitlePosition = "middle";
 export const DEFAULT_SUBTITLE_STYLE_ID = "classic";
 
 export const SUBTITLE_STYLE_PRESETS: SubtitleStylePreset[] = [

@@ -195,7 +195,7 @@ model Recording {
   publishedAt         DateTime?
   playCount           Int           @default(0) @db.UnsignedInt
   subtitlesDisabled   Boolean       @default(false)
-  subtitlePosition    String        @default("bottom") @db.VarChar(16)
+  subtitlePosition    String        @default("middle") @db.VarChar(16)
   subtitleStyleId     String        @default("classic") @db.VarChar(32)
   createdAt           DateTime      @default(now())
   updatedAt           DateTime      @updatedAt

@@ -1,6 +1,6 @@
 export type SubtitlePosition = "top" | "middle" | "bottom";
 
-export const DEFAULT_SUBTITLE_POSITION: SubtitlePosition = "bottom";
+export const DEFAULT_SUBTITLE_POSITION: SubtitlePosition = "middle";
 export const DEFAULT_SUBTITLE_STYLE_ID = "classic";
 
 const VALID_POSITIONS = new Set<SubtitlePosition>(["top", "middle", "bottom"]);
