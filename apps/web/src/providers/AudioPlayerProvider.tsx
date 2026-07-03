@@ -131,6 +131,8 @@ interface AudioPlayerContextValue {
   updateQueuePlaylistSlug: (playlistId: string, slug: string) => void;
   /** Pause, dismiss the bar (with fade), and clear the active track; queue is kept. */
   releasePlayback: () => void;
+  /** Pause site audio and dismiss the bar only when it is currently visible. */
+  yieldPlaybackToRadio: () => void;
   /** Resume the current audio element when it was paused without clearing the queue. */
   resumePlaybackIfPaused: () => void;
 }
@@ -244,8 +246,23 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
 
   const queueRef = useRef(queue);
   const queueIndexRef = useRef(queueIndex);
+  const stateRef = useRef(state);
   queueRef.current = queue;
   queueIndexRef.current = queueIndex;
+  stateRef.current = state;
+
+  const isPlayerBarUpNow = useCallback(() => {
+    const idx = queueIndexRef.current;
+    const track = idx >= 0 ? queueRef.current[idx] : null;
+    const playerState = stateRef.current;
+    return (
+      track !== null &&
+      (playerState === "playing" ||
+        playerState === "paused" ||
+        playerState === "loading" ||
+        playerState === "error")
+    );
+  }, []);
 
   const setAutoplayEnabled = useCallback((enabled: boolean) => {
     autoplayRef.current = enabled;
@@ -722,11 +739,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     }
     audio?.pause();
 
-    const wasBarUp =
-      track !== null &&
-      (state === "playing" || state === "paused" || state === "loading" || state === "error");
-
-    if (wasBarUp && track) {
+    if (isPlayerBarUpNow() && track) {
       setPlayerDismissSnapshot({
         track,
         playbackContext: { ...playbackContextRef.current },
@@ -750,7 +763,13 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     setQueueIndex(-1);
     setState("idle");
     setQueueOpen(false);
-  }, [transportDuration, flushPlayback, state]);
+  }, [transportDuration, flushPlayback, isPlayerBarUpNow]);
+
+  const yieldPlaybackToRadio = useCallback(() => {
+    audioRef.current?.pause();
+    if (!isPlayerBarUpNow()) return;
+    releasePlayback();
+  }, [isPlayerBarUpNow, releasePlayback]);
 
   const resumePlaybackIfPaused = useCallback(() => {
     const audio = audioRef.current;
@@ -943,6 +962,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       updateQueuePlaylistTitle,
       updateQueuePlaylistSlug,
       releasePlayback,
+      yieldPlaybackToRadio,
       resumePlaybackIfPaused,
     }),
     [
@@ -983,6 +1003,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       updateQueuePlaylistTitle,
       updateQueuePlaylistSlug,
       releasePlayback,
+      yieldPlaybackToRadio,
       resumePlaybackIfPaused,
     ],
   );

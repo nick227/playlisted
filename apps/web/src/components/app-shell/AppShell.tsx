@@ -57,6 +57,7 @@ export function AppShell({ children }: AppShellProps) {
     playing: radioPlaying,
     nowPlaying: radioNowPlaying,
     audioRef: radioAudioRef,
+    radioUiMounted,
   } = useRadioPlayer();
   const { currentTime: siteCurrentTime } = usePlaybackTransport();
   const currentTimeMsRef = useRef(0);
@@ -230,7 +231,8 @@ export function AppShell({ children }: AppShellProps) {
     playFocusActive && bodyFocusHidden && !playbackFocusSuppressed && !bodyFadeDisabled;
   const miniViewMode = playFocusActive && miniViewVisible && !playbackFocusSuppressed;
   const revealShieldVisible = bodyFocusMode || snapReveal;
-  const radioShellActive = radioPlaying && Boolean(radioNowPlaying) && location.pathname !== "/radio";
+  const radioShellActive =
+    radioPlaying && Boolean(radioNowPlaying) && location.pathname !== "/radio" && !radioUiMounted;
   const shellHasPlayer = playerShellActive || radioShellActive;
   const isChatPage = location.pathname === "/chat";
   const playFocusHasPlayer = shellHasPlayer;

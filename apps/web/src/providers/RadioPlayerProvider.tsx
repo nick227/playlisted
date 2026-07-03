@@ -33,6 +33,7 @@ interface RadioPlayerContextValue {
   pauseRadio: () => void;
   registerRadioUi: () => void;
   unregisterRadioUi: () => void;
+  radioUiMounted: boolean;
   registerChatUi: () => void;
   unregisterChatUi: () => void;
   listenerId: string;
@@ -46,8 +47,7 @@ const RadioPlayerContext = createContext<RadioPlayerContextValue | null>(null);
 
 export function RadioPlayerProvider({ children }: { children: ReactNode }) {
   const {
-    releasePlayback,
-    playerBarVisible,
+    yieldPlaybackToRadio,
     isPlaying: sitePlayerPlaying,
     currentTrack: siteCurrentTrack,
   } = useAudioPlayer();
@@ -57,6 +57,7 @@ export function RadioPlayerProvider({ children }: { children: ReactNode }) {
   const transitionRetryTimerRef = useRef<number | null>(null);
   const suppressNextSitePauseRef = useRef(false);
   const siteControlledRef = useRef(false);
+  const radioSyncingRef = useRef(false);
   const uiMountCountRef = useRef(0);
   const chatMountCountRef = useRef(0);
 
@@ -182,23 +183,24 @@ export function RadioPlayerProvider({ children }: { children: ReactNode }) {
       const audio = audioRef.current;
       if (!audio || !track.audioUrl) return false;
 
-      const nextSrc = getAudioHref(track.audioUrl);
-      const needsSource = audio.src !== nextSrc;
-      if (!needsSource && audio.ended && isRadioElapsedAtEnd(track.elapsedSeconds, track.durationSeconds)) {
-        return false;
-      }
-
-      if (needsSource) {
-        audio.src = track.audioUrl;
-        audio.load();
-      }
-
-      const target = getRadioSeekTime(track.elapsedSeconds, track.durationSeconds);
-      if (needsSource || audio.ended || Math.abs(audio.currentTime - target) > 3) {
-        audio.currentTime = target;
-      }
-
+      radioSyncingRef.current = true;
       try {
+        const nextSrc = getAudioHref(track.audioUrl);
+        const needsSource = audio.src !== nextSrc;
+        if (!needsSource && audio.ended && isRadioElapsedAtEnd(track.elapsedSeconds, track.durationSeconds)) {
+          return false;
+        }
+
+        if (needsSource) {
+          audio.src = track.audioUrl;
+          audio.load();
+        }
+
+        const target = getRadioSeekTime(track.elapsedSeconds, track.durationSeconds);
+        if (needsSource || audio.ended || Math.abs(audio.currentTime - target) > 3) {
+          audio.currentTime = target;
+        }
+
         await audio.play();
         setPlaying(true);
         return true;
@@ -206,6 +208,8 @@ export function RadioPlayerProvider({ children }: { children: ReactNode }) {
         setPlaying(false);
         unbindTheatreFromRadio();
         return false;
+      } finally {
+        radioSyncingRef.current = false;
       }
     },
     [unbindTheatreFromRadio],
@@ -297,16 +301,14 @@ export function RadioPlayerProvider({ children }: { children: ReactNode }) {
     siteControlledRef.current = false;
     suppressNextSitePauseRef.current = true;
     try {
-      if (playerBarVisible) {
-        releasePlayback();
-      }
+      yieldPlaybackToRadio();
       await syncAndPlayRadio(nowPlaying);
     } finally {
       window.setTimeout(() => {
         suppressNextSitePauseRef.current = false;
       }, 0);
     }
-  }, [nowPlaying, pauseRadio, playerBarVisible, playing, releasePlayback, syncAndPlayRadio]);
+  }, [nowPlaying, pauseRadio, playing, syncAndPlayRadio, yieldPlaybackToRadio]);
 
   function handleRadioPlay(el: HTMLAudioElement) {
     if (siteControlledRef.current) return;
@@ -316,6 +318,7 @@ export function RadioPlayerProvider({ children }: { children: ReactNode }) {
 
   function handleRadioPause(e: React.SyntheticEvent<HTMLAudioElement>) {
     if (siteControlledRef.current) return;
+    if (radioSyncingRef.current) return;
     if (e.currentTarget.ended) return;
     setPlaying(false);
     unbindTheatreFromRadio();
@@ -337,6 +340,7 @@ export function RadioPlayerProvider({ children }: { children: ReactNode }) {
       pauseRadio,
       registerRadioUi,
       unregisterRadioUi,
+      radioUiMounted: uiMounted,
       registerChatUi,
       unregisterChatUi,
       listenerId,
@@ -345,7 +349,7 @@ export function RadioPlayerProvider({ children }: { children: ReactNode }) {
       nowPlaying,
       isLive,
     }),
-    [playing, volume, setVolume, togglePlayback, pauseRadio, registerRadioUi, unregisterRadioUi, registerChatUi, unregisterChatUi, listenerId, radioQuery, station, nowPlaying, isLive],
+    [playing, volume, setVolume, togglePlayback, pauseRadio, registerRadioUi, unregisterRadioUi, uiMounted, registerChatUi, unregisterChatUi, listenerId, radioQuery, station, nowPlaying, isLive],
   );
 
   return (

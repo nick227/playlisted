@@ -10,9 +10,9 @@ import {
   Volume2,
   VolumeX,
 } from "lucide-react";
-import { useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
 import { formatDuration } from "@/lib/format";
@@ -20,6 +20,18 @@ import { coverFallback, playlistPath, playlistRecordingPath, profilePath } from 
 import { usePlaybackTransport } from "@/hooks/usePlaybackTransport";
 import { useSubtitleDisplay } from "@/lib/subtitleDisplay";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
+import { useRadioPlayer } from "@/providers/RadioPlayerProvider";
+
+type PlayerDisplayTrack = {
+  id: string;
+  title: string;
+  artworkUrl?: string | null;
+  ownerName?: string | null;
+  ownerUsername?: string | null;
+  playlistTitle?: string | null;
+  playlistSlug?: string | null;
+  publishedPlaylistId?: string | null;
+};
 
 const playerFooterClass =
   "fixed inset-x-0 bottom-0 z-[10000] w-full isolate border-t border-[var(--color-border)] bg-[var(--color-canvas-alt)] pb-[env(safe-area-inset-bottom,0px)] md:pb-0";
@@ -31,6 +43,7 @@ const mobileActionButtonClass =
   "grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white/5 text-[var(--color-text-muted)] transition hover:bg-white/10 hover:text-white";
 
 export function BottomPlayer() {
+  const location = useLocation();
   const {
     currentTrack,
     playerDismissSnapshot,
@@ -52,27 +65,73 @@ export function BottomPlayer() {
     volume,
     setVolume,
   } = useAudioPlayer();
+  const {
+    playing: radioPlaying,
+    nowPlaying: radioNowPlaying,
+    audioRef: radioAudioRef,
+    radioUiMounted,
+    togglePlayback: toggleRadioPlayback,
+    volume: radioVolume,
+    setVolume: setRadioVolume,
+  } = useRadioPlayer();
   const { currentTime, duration, seek } = usePlaybackTransport();
   const { subtitlesEnabled, toggleSubtitlesEnabled } = useSubtitleDisplay();
 
   const prevVolumeRef = useRef(1);
+  const [radioCurrentTime, setRadioCurrentTime] = useState(0);
+
+  const radioShellActive =
+    radioPlaying && Boolean(radioNowPlaying) && location.pathname !== "/radio" && !radioUiMounted;
+  const radioDisplayTrack = useMemo<PlayerDisplayTrack | null>(() => {
+    if (!radioShellActive || !radioNowPlaying) return null;
+    return {
+      id: radioNowPlaying.id,
+      title: radioNowPlaying.title,
+      artworkUrl: radioNowPlaying.artworkUrl,
+      ownerName: radioNowPlaying.uploader.displayName,
+      ownerUsername: radioNowPlaying.uploader.username,
+      playlistTitle: radioNowPlaying.playlist.title,
+      playlistSlug: radioNowPlaying.playlist.slug,
+      publishedPlaylistId: radioNowPlaying.playlist.id,
+    };
+  }, [radioNowPlaying, radioShellActive]);
+
+  useEffect(() => {
+    if (!radioShellActive) return;
+
+    const updateTime = () => {
+      setRadioCurrentTime(radioAudioRef.current?.currentTime ?? radioNowPlaying?.elapsedSeconds ?? 0);
+    };
+    updateTime();
+    const timer = window.setInterval(updateTime, 500);
+    return () => window.clearInterval(timer);
+  }, [radioAudioRef, radioNowPlaying?.elapsedSeconds, radioShellActive]);
 
   const dismiss = playerDismissSnapshot;
-  const displayTrack = currentTrack ?? dismiss?.track ?? null;
+  const displayTrack: PlayerDisplayTrack | null = currentTrack ?? dismiss?.track ?? radioDisplayTrack;
   const shellPlaybackContext =
     dismiss && !currentTrack ? dismiss.playbackContext : playbackContext;
-  const shellCurrentTime = dismiss && !currentTrack ? dismiss.currentTime : currentTime;
-  const shellDuration = dismiss && !currentTrack ? dismiss.duration : duration;
-  const shellIsPlaying = dismiss && !currentTrack ? false : isPlaying;
+  const shellCurrentTime = radioDisplayTrack
+    ? radioCurrentTime
+    : dismiss && !currentTrack ? dismiss.currentTime : currentTime;
+  const shellDuration = radioDisplayTrack
+    ? (radioNowPlaying?.durationSeconds ?? 0)
+    : dismiss && !currentTrack ? dismiss.duration : duration;
+  const shellIsPlaying = radioDisplayTrack
+    ? radioPlaying
+    : dismiss && !currentTrack ? false : isPlaying;
   const progress = shellDuration > 0 ? (shellCurrentTime / shellDuration) * 100 : 0;
-  const canShowCaptions = currentTrack?.subtitle?.status === "READY";
+  const canShowCaptions = !radioDisplayTrack && currentTrack?.subtitle?.status === "READY";
+  const activeVolume = radioDisplayTrack ? radioVolume : volume;
+  const setActiveVolume = radioDisplayTrack ? setRadioVolume : setVolume;
+  const showQueueControls = !radioDisplayTrack && !playerBarExiting;
 
   function handleVolumeMute() {
-    if (volume > 0) {
-      prevVolumeRef.current = volume;
-      setVolume(0);
+    if (activeVolume > 0) {
+      prevVolumeRef.current = activeVolume;
+      setActiveVolume(0);
     } else {
-      setVolume(prevVolumeRef.current);
+      setActiveVolume(prevVolumeRef.current);
     }
   }
 
@@ -114,7 +173,7 @@ export function BottomPlayer() {
 
   const firstUpNext = upNextPipeline[0];
   const upNextName = firstUpNext?.label ?? autoplayNextSegment?.label;
-  const canSkipToUpNext = upNextPipeline.length > 0 || autoplayEnabled;
+  const canSkipToUpNext = showQueueControls && (upNextPipeline.length > 0 || autoplayEnabled);
   const upNextText =
     upNextPipeline.length > 1
       ? `${upNextPipeline.length} queued`
@@ -214,12 +273,16 @@ export function BottomPlayer() {
           </div>
           <div className="bottom-player__section bottom-player__section--controls flex flex-col items-center justify-center gap-1 md:gap-1.5">
             <div className="flex items-center gap-4 md:gap-4">
-              <button type="button" onClick={playPrevious} className="text-[var(--color-text-muted)] hover:text-white">
-                <SkipBack size={20} />
-              </button>
+              {showQueueControls ? (
+                <button type="button" onClick={playPrevious} className="text-[var(--color-text-muted)] hover:text-white">
+                  <SkipBack size={20} />
+                </button>
+              ) : (
+                <span className="h-5 w-5" aria-hidden />
+              )}
               <button
                 type="button"
-                onClick={togglePlay}
+                onClick={radioDisplayTrack ? () => void toggleRadioPlayback() : togglePlay}
                 aria-label={shellIsPlaying ? "Pause" : "Play"}
                 className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-black"
                 disabled={playerBarExiting}
@@ -230,9 +293,13 @@ export function BottomPlayer() {
                   <Play size={20} fill="currentColor" className="ml-0.5" />
                 )}
               </button>
-              <button type="button" onClick={playNext} className="text-[var(--color-text-muted)] hover:text-white">
-                <SkipForward size={20} />
-              </button>
+              {showQueueControls ? (
+                <button type="button" onClick={playNext} className="text-[var(--color-text-muted)] hover:text-white">
+                  <SkipForward size={20} />
+                </button>
+              ) : (
+                <span className="h-5 w-5" aria-hidden />
+              )}
             </div>
             <div className="flex items-center gap-2 text-[11px] leading-none text-[var(--color-text-subtle)] md:text-xs md:leading-normal">
               <span>{formatDuration(shellCurrentTime)}</span>
@@ -241,9 +308,11 @@ export function BottomPlayer() {
                 min={0}
                 max={shellDuration || 100}
                 value={shellCurrentTime}
-                onChange={(e) => seek(Number(e.target.value))}
+                onChange={(e) => {
+                  if (!radioDisplayTrack) seek(Number(e.target.value));
+                }}
                 className="hidden w-48 md:block accent-[var(--color-brand)]"
-                disabled={playerBarExiting}
+                disabled={playerBarExiting || Boolean(radioDisplayTrack)}
               />
               <span>{formatDuration(shellDuration)}</span>
             </div>
@@ -260,45 +329,49 @@ export function BottomPlayer() {
                 <Captions size={18} />
               </button>
             ) : null}
-            <button
-              type="button"
-              onClick={toggleShuffle}
-              aria-pressed={shuffle}
-              aria-label="Shuffle"
-              className={`${mobileActionButtonClass} ${shuffle ? "!text-[var(--color-brand)]" : ""}`}
-            >
-              <Shuffle size={17} />
-            </button>
-            <button
-              type="button"
-              onClick={() => setQueueOpen(true)}
-              className={mobileActionButtonClass}
-              aria-label="Open up next"
-            >
-              <ListMusic size={18} />
-            </button>
+            {showQueueControls ? (
+              <>
+                <button
+                  type="button"
+                  onClick={toggleShuffle}
+                  aria-pressed={shuffle}
+                  aria-label="Shuffle"
+                  className={`${mobileActionButtonClass} ${shuffle ? "!text-[var(--color-brand)]" : ""}`}
+                >
+                  <Shuffle size={17} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setQueueOpen(true)}
+                  className={mobileActionButtonClass}
+                  aria-label="Open up next"
+                >
+                  <ListMusic size={18} />
+                </button>
+              </>
+            ) : null}
           </div>
           <div className="bottom-player__section bottom-player__section--actions bottom-player__actions-desktop">
             <button
               type="button"
               onClick={handleVolumeMute}
               className="shrink-0 text-[var(--color-text-muted)] transition hover:text-white"
-              aria-label={volume === 0 ? "Unmute" : "Mute"}
+              aria-label={activeVolume === 0 ? "Unmute" : "Mute"}
             >
-              {volume === 0 ? <VolumeX size={18} /> : <Volume2 size={18} />}
+              {activeVolume === 0 ? <VolumeX size={18} /> : <Volume2 size={18} />}
             </button>
             <input
               type="range"
               min={0}
               max={1}
               step={0.02}
-              value={volume}
-              onChange={(e) => setVolume(Number(e.target.value))}
+              value={activeVolume}
+              onChange={(e) => setActiveVolume(Number(e.target.value))}
               className="w-20 accent-[var(--color-brand)]"
               aria-label="Volume"
             />
 
-            <div className="mx-1 h-4 w-px bg-white/10" />
+            {showQueueControls ? <div className="mx-1 h-4 w-px bg-white/10" /> : null}
 
             {canShowCaptions ? (
               <button
@@ -312,38 +385,42 @@ export function BottomPlayer() {
               </button>
             ) : null}
 
-            <button
-              type="button"
-              onClick={toggleShuffle}
-              aria-pressed={shuffle}
-              aria-label="Shuffle"
-              className={`transition ${shuffle ? "text-[var(--color-brand)]" : "text-[var(--color-text-muted)] hover:text-white"}`}
-            >
-              <Shuffle size={18} />
-            </button>
+            {showQueueControls ? (
+              <>
+                <button
+                  type="button"
+                  onClick={toggleShuffle}
+                  aria-pressed={shuffle}
+                  aria-label="Shuffle"
+                  className={`transition ${shuffle ? "text-[var(--color-brand)]" : "text-[var(--color-text-muted)] hover:text-white"}`}
+                >
+                  <Shuffle size={18} />
+                </button>
 
-            <button
-              type="button"
-              onClick={cycleRepeat}
-              aria-label="Repeat"
-              className={`relative transition ${repeatMode !== "off" ? "text-[var(--color-brand)]" : "text-[var(--color-text-muted)] hover:text-white"}`}
-            >
-              <Repeat size={18} />
-              {repeatMode === "one" && (
-                <span className="absolute -right-1 -top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[var(--color-brand)] text-[8px] font-bold leading-none text-white">
-                  1
-                </span>
-              )}
-            </button>
+                <button
+                  type="button"
+                  onClick={cycleRepeat}
+                  aria-label="Repeat"
+                  className={`relative transition ${repeatMode !== "off" ? "text-[var(--color-brand)]" : "text-[var(--color-text-muted)] hover:text-white"}`}
+                >
+                  <Repeat size={18} />
+                  {repeatMode === "one" && (
+                    <span className="absolute -right-1 -top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[var(--color-brand)] text-[8px] font-bold leading-none text-white">
+                      1
+                    </span>
+                  )}
+                </button>
 
-            <button
-              type="button"
-              onClick={() => setQueueOpen(true)}
-              className="text-[var(--color-text-muted)] transition hover:text-white"
-              aria-label="Open queue"
-            >
-              <ListMusic size={20} />
-            </button>
+                <button
+                  type="button"
+                  onClick={() => setQueueOpen(true)}
+                  className="text-[var(--color-text-muted)] transition hover:text-white"
+                  aria-label="Open queue"
+                >
+                  <ListMusic size={20} />
+                </button>
+              </>
+            ) : null}
           </div>
         </div>
       </div>
