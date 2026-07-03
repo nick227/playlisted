@@ -141,6 +141,12 @@ body {
   backdrop-filter: none;
 }
 
+.focus-lane__text--custom .focus-lane__final-title,
+.focus-lane__text--custom .focus-lane__final-artist {
+  color: inherit;
+  text-shadow: inherit;
+}
+
 .subtitle-layer__text,
 .focus-lane__text {
   width: min(58rem, 100%);
@@ -197,6 +203,30 @@ body {
   inset: 0;
   z-index: 2;
   padding: 0.65rem;
+}
+
+.song-visual-preview__focus-lane.focus-lane--position-top {
+  place-items: start center;
+}
+
+.song-visual-preview__focus-lane.focus-lane--position-middle {
+  place-items: center;
+}
+
+.song-visual-preview__focus-lane.focus-lane--position-bottom {
+  place-items: end center;
+}
+
+.song-visual-preview__focus-lane .focus-lane__text--custom {
+  width: min(100%, 28rem);
+  font-size: clamp(0.75rem, 3.2vw, 1.15rem);
+  padding: 0.45rem 0.65rem;
+}
+
+.song-visual-preview__focus-lane .focus-lane__text--custom.focus-lane__text--final-fallback {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
 }
 
 .song-visual-preview__focus-lane .focus-lane__text {

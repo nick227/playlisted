@@ -12,11 +12,17 @@ type SubtitleTextProps = {
 type FinalFallbackTextProps = {
   title: string;
   artistName?: string | null;
+  customStyle?: CSSProperties;
 };
 
-export function FinalFallbackText({ title, artistName }: FinalFallbackTextProps) {
+export function FinalFallbackText({ title, artistName, customStyle }: FinalFallbackTextProps) {
   return (
-    <div className="focus-lane__text focus-lane__text--fallback focus-lane__text--final-fallback">
+    <div
+      className={`focus-lane__text focus-lane__text--fallback focus-lane__text--final-fallback${
+        customStyle ? " focus-lane__text--custom" : ""
+      }`}
+      style={customStyle}
+    >
       <p className="focus-lane__final-title">{title}</p>
       {artistName ? <p className="focus-lane__final-artist">{artistName}</p> : null}
     </div>
@@ -25,15 +31,16 @@ export function FinalFallbackText({ title, artistName }: FinalFallbackTextProps)
 
 export function SubtitleText({ text, variant, source, customStyle }: SubtitleTextProps) {
   const isTitleIntro = variant === "fallbackSubtitle" && source === "title-intro";
+  const usesCustomStyle = Boolean(customStyle);
 
   return (
     <p
       className={`focus-lane__text${
-        variant === "fallbackSubtitle" ? " focus-lane__text--fallback" : ""
-      }${isTitleIntro ? " focus-lane__text--title-intro" : ""}${
-        variant === "subtitle" && customStyle ? " focus-lane__text--custom" : ""
+        variant === "fallbackSubtitle" && !usesCustomStyle ? " focus-lane__text--fallback" : ""
+      }${isTitleIntro && !usesCustomStyle ? " focus-lane__text--title-intro" : ""}${
+        usesCustomStyle ? " focus-lane__text--custom" : ""
       }`}
-      style={variant === "subtitle" ? customStyle : undefined}
+      style={usesCustomStyle ? customStyle : undefined}
     >
       {text}
     </p>

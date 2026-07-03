@@ -1,16 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 
-import { ArtistVisual } from "@/components/app-shell/PlaybackFocusLane/ArtistVisual";
-import {
-  FinalFallbackText,
-  fixtureToSubtitleProps,
-  SubtitleText,
-} from "@/components/app-shell/PlaybackFocusLane/SubtitleText";
+import { FocusLaneSubtitleContent } from "@/components/app-shell/PlaybackFocusLane/FocusLaneSubtitleContent";
 import { useFocusLaneVisibility } from "@/components/app-shell/PlaybackFocusLane/useFocusLaneVisibility";
+import { useRecordingSubtitleStyle } from "@/hooks/useRecordingSubtitleStyle";
 import { buildSyntheticSubtitleCues } from "@/lib/playbackFocus/buildSyntheticCues";
 import { resolvePlaybackFocusFixture } from "@/lib/playbackFocus/resolvePlaybackFocusFixture";
 import type { FocusRecording } from "@/lib/playbackFocus/types";
 import { toFocusArtist } from "@/lib/playbackFocus/toFocusRecording";
+import { subtitlePositionClassName } from "@/lib/subtitleStyleToCss";
 import {
   fetchRecordingSubtitles,
   RECORDING_SUBTITLES_DISABLED_EVENT,
@@ -35,6 +32,12 @@ export function SongVisualPreviewFocusLane({
 
   const syntheticCues = useMemo(() => buildSyntheticSubtitleCues(recording), [recording]);
   const artist = useMemo(() => toFocusArtist(recording), [recording]);
+
+  const { subtitlePosition, customSubtitleStyle } = useRecordingSubtitleStyle(
+    recording.id,
+    recording,
+    subtitles,
+  );
 
   useEffect(() => {
     if (!enabled || !recording.id) {
@@ -113,23 +116,6 @@ export function SongVisualPreviewFocusLane({
     return null;
   }
 
-  const subtitleProps = fixtureToSubtitleProps(displayFixture);
-  const laneContent =
-    displayFixture.type === "artistVisual" ? (
-      <ArtistVisual
-        artistName={displayFixture.artistName}
-        imageUrl={displayFixture.imageUrl}
-        bioLine={displayFixture.bioLine}
-      />
-    ) : displayFixture.type === "finalFallback" ? (
-      <FinalFallbackText
-        title={displayFixture.title}
-        artistName={displayFixture.artistName}
-      />
-    ) : subtitleProps ? (
-      <SubtitleText {...subtitleProps} />
-    ) : null;
-
   return (
     <div
       data-focus-lane
@@ -137,11 +123,12 @@ export function SongVisualPreviewFocusLane({
         "song-visual-preview__focus-lane focus-lane",
         layerVisible ? "is-visible" : "",
         variantClass,
+        subtitlePositionClassName(subtitlePosition).trim(),
       ].join(" ")}
       aria-hidden={!layerVisible}
     >
       <div key={displayKey} className="focus-lane__content">
-        {laneContent}
+        <FocusLaneSubtitleContent fixture={displayFixture} customSubtitleStyle={customSubtitleStyle} />
       </div>
     </div>
   );

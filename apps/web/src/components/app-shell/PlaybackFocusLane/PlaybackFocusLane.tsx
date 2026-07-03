@@ -1,8 +1,9 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 
 import { useFocusLanePlayback } from "@/hooks/useFocusLanePlayback";
+import { useRecordingSubtitleStyle } from "@/hooks/useRecordingSubtitleStyle";
 import { buildSyntheticSubtitleCues } from "@/lib/playbackFocus/buildSyntheticCues";
 import { resolvePlaybackFocusFixture } from "@/lib/playbackFocus/resolvePlaybackFocusFixture";
 import { toFocusArtist, toFocusRecording } from "@/lib/playbackFocus/toFocusRecording";
@@ -10,18 +11,14 @@ import type { PlaybackFocusState } from "@/lib/playbackFocus/types";
 import {
   fetchRecordingSubtitles,
   RECORDING_SUBTITLES_DISABLED_EVENT,
-  RECORDING_SUBTITLE_STYLE_CHANGED_EVENT,
   type RecordingSubtitlesDisabledEventDetail,
-  type RecordingSubtitleStyleChangedEventDetail,
   type RecordingSubtitlesResponse,
 } from "@/lib/subtitles";
-import { normalizeSubtitlePosition, normalizeSubtitleStyleId } from "@/lib/subtitleStylePresets";
-import { subtitlePositionClassName, subtitleStyleIdToCss } from "@/lib/subtitleStyleToCss";
+import { subtitlePositionClassName } from "@/lib/subtitleStyleToCss";
 import { useSubtitleDisplay } from "@/lib/subtitleDisplay";
 import { useAuth } from "@/providers/AuthProvider";
 
-import { ArtistVisual } from "./ArtistVisual";
-import { FinalFallbackText, fixtureToSubtitleProps, SubtitleText } from "./SubtitleText";
+import { FocusLaneSubtitleContent } from "./FocusLaneSubtitleContent";
 import { useFocusLaneVisibility } from "./useFocusLaneVisibility";
 
 type PlaybackFocusLaneProps = {
@@ -38,7 +35,6 @@ export function PlaybackFocusLane({ focusState }: PlaybackFocusLaneProps) {
   const { subtitlesEnabled } = useSubtitleDisplay();
   const { track, isPlaying, currentTime } = useFocusLanePlayback();
   const queryClient = useQueryClient();
-  const [styleOverride, setStyleOverride] = useState<RecordingSubtitleStyleChangedEventDetail | null>(null);
 
   const recording = useMemo(() => toFocusRecording(track), [track]);
   const artist = useMemo(() => (recording ? toFocusArtist(recording) : null), [recording]);
@@ -89,43 +85,11 @@ export function PlaybackFocusLane({ focusState }: PlaybackFocusLaneProps) {
     return () => window.removeEventListener(RECORDING_SUBTITLES_DISABLED_EVENT, handleSubtitlesDisabledChange);
   }, [accessToken, queryClient, recording?.id]);
 
-  useEffect(() => {
-    const recordingId = recording?.id;
-    if (!recordingId) return;
-
-    const handleSubtitleStyleChange = (event: Event) => {
-      const detail = (event as CustomEvent<RecordingSubtitleStyleChangedEventDetail>).detail;
-      if (detail?.recordingId !== recordingId) return;
-      setStyleOverride(detail);
-    };
-
-    window.addEventListener(RECORDING_SUBTITLE_STYLE_CHANGED_EVENT, handleSubtitleStyleChange);
-    return () => window.removeEventListener(RECORDING_SUBTITLE_STYLE_CHANGED_EVENT, handleSubtitleStyleChange);
-  }, [recording?.id]);
-
-  useEffect(() => {
-    setStyleOverride(null);
-  }, [recording?.id]);
-
-  const subtitlePosition = useMemo(() => {
-    if (styleOverride && styleOverride.recordingId === recording?.id) {
-      return normalizeSubtitlePosition(styleOverride.subtitlePosition);
-    }
-    if (subtitles?.subtitlePosition) {
-      return normalizeSubtitlePosition(subtitles.subtitlePosition);
-    }
-    return normalizeSubtitlePosition(recording?.subtitlePosition);
-  }, [recording?.id, recording?.subtitlePosition, styleOverride, subtitles?.subtitlePosition]);
-
-  const subtitleStyleId = useMemo(() => {
-    if (styleOverride && styleOverride.recordingId === recording?.id) {
-      return normalizeSubtitleStyleId(styleOverride.subtitleStyleId);
-    }
-    if (subtitles?.subtitleStyleId) {
-      return normalizeSubtitleStyleId(subtitles.subtitleStyleId);
-    }
-    return normalizeSubtitleStyleId(recording?.subtitleStyleId);
-  }, [recording?.id, recording?.subtitleStyleId, styleOverride, subtitles?.subtitleStyleId]);
+  const { subtitlePosition, customSubtitleStyle } = useRecordingSubtitleStyle(
+    recording?.id,
+    recording,
+    subtitles,
+  );
 
   const currentTimeMs = currentTime * 1000;
 
@@ -159,26 +123,6 @@ export function PlaybackFocusLane({ focusState }: PlaybackFocusLaneProps) {
     return null;
   }
 
-  const subtitleProps = fixtureToSubtitleProps(displayFixture);
-  const customSubtitleStyle =
-    displayFixture.type === "subtitle" ? subtitleStyleIdToCss(subtitleStyleId) : undefined;
-
-  const laneContent =
-    displayFixture.type === "artistVisual" ? (
-      <ArtistVisual
-        artistName={displayFixture.artistName}
-        imageUrl={displayFixture.imageUrl}
-        bioLine={displayFixture.bioLine}
-      />
-    ) : displayFixture.type === "finalFallback" ? (
-      <FinalFallbackText
-        title={displayFixture.title}
-        artistName={displayFixture.artistName}
-      />
-    ) : subtitleProps ? (
-      <SubtitleText {...subtitleProps} customStyle={customSubtitleStyle} />
-    ) : null;
-
   return createPortal(
     <div
       data-focus-lane
@@ -186,7 +130,7 @@ export function PlaybackFocusLane({ focusState }: PlaybackFocusLaneProps) {
       aria-hidden={!layerVisible}
     >
       <div key={displayKey} className="focus-lane__content">
-        {laneContent}
+        <FocusLaneSubtitleContent fixture={displayFixture} customSubtitleStyle={customSubtitleStyle} />
       </div>
     </div>,
     document.body,

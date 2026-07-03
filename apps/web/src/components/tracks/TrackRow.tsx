@@ -504,6 +504,8 @@ export function TrackRow({
             publishedPlaylistId: queueTrack?.publishedPlaylistId,
             recordingType: queueTrack?.recordingType,
             hasSubtitleTrack: subtitle != null,
+            subtitlePosition: normalizeSubtitlePosition(queueTrack?.subtitlePosition),
+            subtitleStyleId: normalizeSubtitleStyleId(queueTrack?.subtitleStyleId),
           }}
           onClose={() => setVisualEditorOpen(false)}
         />
