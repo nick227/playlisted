@@ -126,6 +126,7 @@ describe("radio public API", () => {
     expect(sent.body).toMatchObject({
       listenerId: "listener-chat-2",
       displayName: "Test User",
+      avatarUrl: null,
       message: "signed in chat",
     });
   });

@@ -1478,6 +1478,7 @@ export interface components {
             id: string;
             listenerId: string;
             displayName: string;
+            avatarUrl?: string | null;
             message: string;
             /** Format: date-time */
             createdAt: string;

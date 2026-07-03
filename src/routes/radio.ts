@@ -19,6 +19,7 @@ type ChatMessage = {
   id: string;
   listenerId: string;
   displayName: string;
+  avatarUrl: string | null;
   message: string;
   createdAt: string;
 };
@@ -80,25 +81,32 @@ function normalizeStationSlug(_value: unknown) {
   return DEFAULT_STATION_SLUG;
 }
 
-async function resolveChatDisplayName(
+async function resolveChatAuthor(
   req: Request,
   bodyDisplayName: unknown,
   listenerId: string,
 ) {
   const auth = await getAuthContextFromRequest(req);
   if (auth) {
-    return (
-      cleanChatText(auth.user.displayName, 40) ||
-      cleanChatText(auth.user.username, 40) ||
-      "Listener"
-    );
+    return {
+      displayName:
+        cleanChatText(auth.user.displayName, 40) ||
+        cleanChatText(auth.user.username, 40) ||
+        "Listener",
+      avatarUrl: auth.user.avatarUrl ?? null,
+    };
   }
 
   const guestName = cleanChatText(bodyDisplayName, 40);
-  if (guestName) return guestName;
+  if (guestName) {
+    return { displayName: guestName, avatarUrl: null };
+  }
 
   const id = cleanChatText(listenerId, 120);
-  return id ? `anon-${id.slice(0, 4)}` : "Listener";
+  return {
+    displayName: id ? `anon-${id.slice(0, 4)}` : "Listener",
+    avatarUrl: null,
+  };
 }
 
 async function getRadioRecordings() {
@@ -243,7 +251,7 @@ radioRouter.post("/chat", radioChatLimiter, async (req, res, next) => {
     };
     const stationSlug = normalizeStationSlug(body.station);
     const listenerId = cleanChatText(body.listenerId, 120) || crypto.randomUUID();
-    const displayName = await resolveChatDisplayName(req, body.displayName, listenerId);
+    const author = await resolveChatAuthor(req, body.displayName, listenerId);
     const message = cleanChatText(body.message, MAX_CHAT_MESSAGE_LENGTH);
 
     if (!message) {
@@ -258,7 +266,8 @@ radioRouter.post("/chat", radioChatLimiter, async (req, res, next) => {
     const chatMessage = {
       id: crypto.randomUUID(),
       listenerId,
-      displayName,
+      displayName: author.displayName,
+      avatarUrl: author.avatarUrl,
       message,
       createdAt: new Date().toISOString(),
     };

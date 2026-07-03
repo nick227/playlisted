@@ -3525,6 +3525,9 @@ components:
           type: string
         displayName:
           type: string
+        avatarUrl:
+          type: string
+          nullable: true
         message:
           type: string
         createdAt:
