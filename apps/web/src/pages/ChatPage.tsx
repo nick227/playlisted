@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { ChatComposer } from "@/components/chat/ChatComposer";
@@ -15,7 +15,6 @@ export function ChatPage() {
   const { playerShellActive } = useAudioPlayer();
   const { listenerId, station, radioPlaying, nowPlaying, registerRadioUi, unregisterRadioUi } = useRadioPlayer();
 
-  const chatBottomRef = useRef<HTMLDivElement | null>(null);
   const chatScrollRef = useRef<HTMLDivElement | null>(null);
   const queryClient = useQueryClient();
 
@@ -34,8 +33,14 @@ export function ChatPage() {
   const shellHasPlayer = playerShellActive || (radioPlaying && Boolean(nowPlaying));
 
   const shellHeightClass = shellHasPlayer
-    ? "min-h-[calc(100dvh-var(--spacing-topbar)-var(--spacing-player-safe-mobile))] -mb-6 md:min-h-[calc(100dvh-var(--spacing-topbar)-var(--spacing-player))]"
-    : "min-h-[calc(100dvh-var(--spacing-topbar)-1.5rem)]";
+    ? "h-[calc(100dvh-var(--spacing-topbar)-var(--spacing-player-safe-mobile))] md:h-[calc(100dvh-var(--spacing-topbar)-var(--spacing-player))]"
+    : "h-[calc(100dvh-var(--spacing-topbar))]";
+
+  const scrollMessagesToBottom = useCallback((behavior: ScrollBehavior = "instant") => {
+    const el = chatScrollRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior });
+  }, []);
 
   useEffect(() => {
     registerRadioUi();
@@ -43,21 +48,22 @@ export function ChatPage() {
   }, [registerRadioUi, unregisterRadioUi]);
 
   useEffect(() => {
-    requestAnimationFrame(() =>
-      chatBottomRef.current?.scrollIntoView({ behavior: "instant" }),
-    );
-  }, []);
+    requestAnimationFrame(() => scrollMessagesToBottom());
+  }, [scrollMessagesToBottom]);
 
   const prevMsgCountRef = useRef(chatMessages.length);
   useEffect(() => {
     if (chatMessages.length === prevMsgCountRef.current) return;
     prevMsgCountRef.current = chatMessages.length;
+
     const el = chatScrollRef.current;
     if (!el) return;
-    if (el.scrollHeight - el.scrollTop - el.clientHeight < 120) {
-      chatBottomRef.current?.scrollIntoView({ behavior: "smooth" });
+
+    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+    if (nearBottom) {
+      requestAnimationFrame(() => scrollMessagesToBottom("smooth"));
     }
-  }, [chatMessages.length]);
+  }, [chatMessages.length, scrollMessagesToBottom]);
 
   const chatMutation = useMutation({
     mutationFn: ({ message, stationSlug }: { message: string; stationSlug: string }) =>
@@ -70,6 +76,7 @@ export function ChatPage() {
     onSuccess: () => {
       setChatMessage("");
       queryClient.invalidateQueries({ queryKey: ["radio", "public"] });
+      requestAnimationFrame(() => scrollMessagesToBottom("smooth"));
     },
   });
 
@@ -80,14 +87,14 @@ export function ChatPage() {
   }
 
   return (
-    <div className={`-mx-4 flex flex-col md:-mx-8 ${shellHeightClass}`}>
+    <div className={`-mx-4 flex min-h-0 flex-col md:-mx-8 ${shellHeightClass}`}>
       <div
         ref={chatScrollRef}
-        className="flex min-h-0 flex-1 flex-col overflow-y-auto"
+        className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain"
       >
-        <div className="mx-auto w-full max-w-3xl flex-1 px-4 py-8 md:px-6">
+        <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col justify-end px-4 py-4 md:px-6">
           {chatMessages.length === 0 ? (
-            <p className="pt-[20vh] text-center text-sm text-[var(--color-text-subtle)]">
+            <p className="pb-2 text-center text-sm text-[var(--color-text-subtle)]">
               No messages yet — say hi!
             </p>
           ) : (
@@ -97,7 +104,6 @@ export function ChatPage() {
               ))}
             </div>
           )}
-          <div ref={chatBottomRef} className="h-4" />
         </div>
       </div>
 

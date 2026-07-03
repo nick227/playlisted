@@ -181,7 +181,9 @@ export function AppShell({ children }: AppShellProps) {
     if (!playFocusActive) return;
 
     const onUserActivity = () => {
-      armPlayFocus("activity");
+      // restoreDelayMs only applies when activity revealed a hidden body;
+      // while still visible, activity restarts the full initial delay.
+      armPlayFocus(bodyFocusHidden ? "activity" : "initial");
     };
 
     window.addEventListener("pointermove", onUserActivity, { passive: true });
@@ -194,7 +196,7 @@ export function AppShell({ children }: AppShellProps) {
       window.removeEventListener("wheel", onUserActivity);
       window.removeEventListener("keydown", onUserActivity);
     };
-  }, [armPlayFocus, playFocusActive]);
+  }, [armPlayFocus, bodyFocusHidden, playFocusActive]);
 
   useLayoutEffect(() => {
     if (location.hash) return;
@@ -228,7 +230,10 @@ export function AppShell({ children }: AppShellProps) {
     playFocusActive && bodyFocusHidden && !playbackFocusSuppressed && !bodyFadeDisabled;
   const miniViewMode = playFocusActive && miniViewVisible && !playbackFocusSuppressed;
   const revealShieldVisible = bodyFocusMode || snapReveal;
-  const playFocusHasPlayer = playerShellActive;
+  const radioShellActive = radioPlaying && Boolean(radioNowPlaying) && location.pathname !== "/radio";
+  const shellHasPlayer = playerShellActive || radioShellActive;
+  const isChatPage = location.pathname === "/chat";
+  const playFocusHasPlayer = shellHasPlayer;
   const focusState = useMemo(
     () => ({
       playFocusActive: playFocusActive && !playbackFocusSuppressed,
@@ -250,14 +255,18 @@ export function AppShell({ children }: AppShellProps) {
         <main
           ref={mainRef}
           key={location.pathname}
-          className={`player-shell-transition play-focus-content flex-1 min-w-0 max-w-full overflow-x-clip overflow-y-auto px-4 md:px-8 ${
+          className={`player-shell-transition play-focus-content flex-1 min-w-0 max-w-full overflow-x-clip px-4 md:px-8 ${
             bodyFocusMode ? "is-play-focus-hidden" : ""
           } ${
             snapReveal ? "is-play-focus-revealing" : ""
           } ${
-            playerShellActive
-              ? "pb-[calc(var(--spacing-player-safe-mobile)+1.5rem)] md:pb-[calc(var(--spacing-player)+1.5rem)]"
-              : "pb-6"
+            isChatPage
+              ? "flex min-h-0 flex-col overflow-hidden pb-0"
+              : `overflow-y-auto ${
+                  shellHasPlayer
+                    ? "pb-[calc(var(--spacing-player-safe-mobile)+1.5rem)] md:pb-[calc(var(--spacing-player)+1.5rem)]"
+                    : "pb-6"
+                }`
           }`}
         >
           {children}
