@@ -176,6 +176,8 @@ function SongVisualEditorModalInner({
               isBusy={editor.isBusy}
               isUploading={editor.isUploading}
               uploadProgress={editor.uploadProgress}
+              libraryFocusMineKind={editor.libraryFocusMineKind}
+              onLibraryFocusHandled={editor.clearLibraryFocus}
               onClipLoopChange={(attachmentId, loop) => editor.setClipLoop(attachmentId, loop)}
               onClipAudioPulseChange={(attachmentId, enabled) => editor.setClipAudioPulse(attachmentId, enabled)}
               readClipAudioPulse={editor.readClipAudioPulse}

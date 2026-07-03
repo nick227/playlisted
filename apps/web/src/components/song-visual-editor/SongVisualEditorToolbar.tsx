@@ -2,7 +2,8 @@ import { Loader2, MousePointer2, Pause, Play, Scissors, Sparkles, Subtitles, Upl
 import type { ReactNode } from "react";
 import { editorToggleClass } from "./editorToggle";
 
-import type { VisualUploadProgress } from "@/lib/visualMediaApi";
+import { formatVisualUploadProgressLabel } from "@/lib/visualUploadProgress";
+import type { VisualUploadProgress } from "@/lib/visualUploadProgress";
 
 export type TimelineEditMode = "select" | "cut";
 
@@ -124,7 +125,7 @@ export function SongVisualEditorToolbar({
         aria-busy={isUploading}
       >
         {isUploading ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
-        {uploadButtonLabel(isUploading, uploadProgress)}
+        {isUploading ? formatVisualUploadProgressLabel(uploadProgress, "button") : "Upload"}
       </button>
 
       <div className={`ml-auto flex items-center gap-2 ${TOOLBAR_CONTROL_HEIGHT}`}>
@@ -147,15 +148,6 @@ export function SongVisualEditorToolbar({
       </div>
     </div>
   );
-}
-
-function uploadButtonLabel(isUploading: boolean, progress: VisualUploadProgress | null) {
-  if (!isUploading) return "Upload";
-  if (!progress) return "Uploading…";
-  if (progress.phase === "preparing") return "Preparing…";
-  if (progress.phase === "processing") return "Finishing…";
-  if (progress.percent != null) return `Uploading ${progress.percent}%`;
-  return "Uploading…";
 }
 
 function ToolbarDivider() {

@@ -29,7 +29,7 @@ import {
 } from "../draftSongVisualAttachments";
 import { saveSongVisualDraft } from "../saveSongVisualDraft";
 import { theatrePresetTag } from "../theatreFxLibrary";
-import type { VisualLibraryRow } from "../useSongVisualLibraryItems";
+import type { VisualLibraryRow, MineMediaKind } from "../useSongVisualLibraryItems";
 import {
   beatFxForAudioPulse,
   readClipAudioPulse,
@@ -79,6 +79,7 @@ export function useSongVisualEditorState({
 
   const [error, setError] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState<VisualUploadProgress | null>(null);
+  const [libraryFocusMineKind, setLibraryFocusMineKind] = useState<MineMediaKind | null>(null);
   const [selectedAttachmentId, setSelectedAttachmentId] = useState<string | null>(null);
   const [clipboard, setClipboard] = useState<ClipClipboard | null>(null);
   const [draftAttachments, setDraftAttachments] = useState<SongVisualAttachmentRecord[] | null>(null);
@@ -123,8 +124,11 @@ export function useSongVisualEditorState({
 
   const uploadMutation = useMutation({
     mutationFn: (file: File) =>
-      uploadVisualMediaFile(file, accessToken, undefined, (progress) => setUploadProgress(progress)),
+      uploadVisualMediaFile(file, accessToken, {
+        onProgress: setUploadProgress,
+      }),
     onSuccess: async (asset) => {
+      setLibraryFocusMineKind(asset.mediaType === "video" ? "video" : "image");
       await attachAssetToTimeline(asset, { startSec: 0 });
       await queryClient.invalidateQueries({ queryKey: ["visual-media-assets"] });
     },
@@ -465,9 +469,12 @@ export function useSongVisualEditorState({
       return;
     }
     setError(null);
-    setUploadProgress({ phase: "preparing", fileName: file.name, percent: null });
     uploadMutation.mutate(file);
   }
+
+  const clearLibraryFocus = useCallback(() => {
+    setLibraryFocusMineKind(null);
+  }, []);
 
   async function attachExistingAsset(mediaAssetId: string, startSec?: number) {
     const asset = assetsQuery.data?.find((item) => item.id === mediaAssetId);
@@ -542,6 +549,8 @@ export function useSongVisualEditorState({
     isBusy,
     isUploading,
     uploadProgress,
+    libraryFocusMineKind,
+    clearLibraryFocus,
     isLibraryBusy,
     isSaving: saveMutation.isPending,
     isDirty,

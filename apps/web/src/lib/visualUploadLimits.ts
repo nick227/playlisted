@@ -1,4 +1,4 @@
-/** Client-side caps — must stay aligned with backend uploadPolicy. */
+/** Client-side caps — keep extensions aligned with `UPLOAD_ALLOWED` in uploadPolicy.ts. */
 export const VISUAL_UPLOAD_MAX_BYTES = {
   video: 250 * 1024 * 1024,
   image: 15 * 1024 * 1024,

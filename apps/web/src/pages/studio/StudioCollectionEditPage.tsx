@@ -19,6 +19,9 @@ import { usePageMeta } from "@/hooks/usePageMeta";
 import { useAuth } from "@/providers/AuthProvider";
 
 const SUBTITLE_REFRESH_MS = 5_000;
+// Stop refreshing for a stuck QUEUED/PROCESSING job after this long instead
+// of polling the whole playlist for as long as the edit page stays open.
+const SUBTITLE_REFRESH_MAX_MS = 2 * 60_000;
 const ACTIVE_SUBTITLE_STATUSES = new Set(["QUEUED", "PROCESSING"]);
 
 export function StudioCollectionEditPage() {
@@ -145,12 +148,22 @@ export function StudioCollectionEditPage() {
     }
   }, [playlist?.recordings.length]);
 
+  const subtitlePollStartedAtRef = useRef<number | null>(null);
   useEffect(() => {
     if (!playlistId || !playlist) return;
     const shouldRefresh = playlist.recordings.some((recording) =>
       ACTIVE_SUBTITLE_STATUSES.has(recording.subtitle?.status ?? ""),
     );
-    if (!shouldRefresh) return;
+    if (!shouldRefresh) {
+      subtitlePollStartedAtRef.current = null;
+      return;
+    }
+
+    if (subtitlePollStartedAtRef.current === null) {
+      subtitlePollStartedAtRef.current = Date.now();
+    } else if (Date.now() - subtitlePollStartedAtRef.current > SUBTITLE_REFRESH_MAX_MS) {
+      return;
+    }
 
     const timer = window.setInterval(() => {
       void client.playlists.getById(playlistId).then((updated) => {

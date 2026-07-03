@@ -33,13 +33,16 @@ visualMediaAssetsRouter.get("/", async (req, res, next) => {
   }
 });
 
-visualMediaAssetsRouter.post("/upload", (req, res, next) => {
+visualMediaAssetsRouter.post("/upload", async (req, res, next) => {
+  const auth = await requireAuth(req, res);
+  if (!auth) return;
+
   const kind = req.query.kind === "video" ? "video" : "image";
   const upload = kind === "video" ? studioVideoUpload : studioImageUpload;
 
   upload.single("file")(req, res, async (multerErr) => {
     if (handleMulterSingleError(multerErr, kind, res, next)) return;
-    return handleVisualUpload(req, res, next, kind);
+    return handleVisualUpload(req, res, next, kind, auth);
   });
 });
 
@@ -48,15 +51,14 @@ async function handleVisualUpload(
   res: Parameters<typeof requireAuth>[1],
   next: (error: unknown) => void,
   kind: "video" | "image",
+  auth: NonNullable<Awaited<ReturnType<typeof requireAuth>>>,
 ) {
   const startedAt = Date.now();
   let uploadLabel = "unknown";
+  let stored: Awaited<ReturnType<typeof persistUploadedFile>> | null = null;
+  const file = req.file;
 
   try {
-    const auth = await requireAuth(req, res);
-    if (!auth) return;
-
-    const file = req.file;
     if (!file) {
       return res.status(400).json({
         error: "file_required",
@@ -78,7 +80,6 @@ async function handleVisualUpload(
     const metadata = parseVisualUploadMetadata(req.body as Record<string, unknown>, kind);
 
     const subdir = kind === "video" ? "videos" : "images";
-    let stored;
     try {
       stored = await persistUploadedFile({
         subdir,
@@ -125,6 +126,11 @@ async function handleVisualUpload(
 
     res.status(201).json(mapVisualMediaAsset(asset));
   } catch (error) {
+    if (stored) {
+      await deleteStoredUpload(stored.storageKey).catch(() => undefined);
+    } else if (file) {
+      await fs.unlink(file.path).catch(() => undefined);
+    }
     console.error("[visual-upload] failed", {
       kind,
       name: uploadLabel,

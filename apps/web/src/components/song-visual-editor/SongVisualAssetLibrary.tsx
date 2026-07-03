@@ -1,8 +1,9 @@
 import { RotateCcw, Trash2, Upload, AudioLines, Repeat, Loader2 } from "lucide-react";
-import { useState, type DragEvent } from "react";
+import { useEffect, useState, type DragEvent } from "react";
 
 import { VISUAL_UPLOAD_MAX_BYTES } from "@/lib/visualUploadLimits";
-import type { VisualUploadProgress } from "@/lib/visualMediaApi";
+import { formatVisualUploadProgressLabel } from "@/lib/visualUploadProgress";
+import type { VisualUploadProgress } from "@/lib/visualUploadProgress";
 
 import { editorToggleClass } from "./editorToggle";
 import { EditorSection } from "./EditorSection";
@@ -26,6 +27,8 @@ type SongVisualAssetLibraryProps = {
   isBusy: boolean;
   isUploading: boolean;
   uploadProgress: VisualUploadProgress | null;
+  libraryFocusMineKind: MineMediaKind | null;
+  onLibraryFocusHandled: () => void;
   onClipLoopChange: (attachmentId: string, loop: boolean) => void;
   onClipAudioPulseChange: (attachmentId: string, enabled: boolean) => void;
   readClipAudioPulse: (attachment: TimelineClip["attachment"]) => boolean;
@@ -139,6 +142,8 @@ export function SongVisualAssetLibrary({
   isBusy,
   isUploading,
   uploadProgress,
+  libraryFocusMineKind,
+  onLibraryFocusHandled,
   onClipLoopChange,
   onClipAudioPulseChange,
   readClipAudioPulse,
@@ -162,6 +167,13 @@ export function SongVisualAssetLibrary({
     communityImages: LIBRARY_BATCH_SIZE,
   });
   const [isDragOver, setIsDragOver] = useState(false);
+
+  useEffect(() => {
+    if (!libraryFocusMineKind) return;
+    setActiveTab("mine");
+    setMineKind(libraryFocusMineKind);
+    onLibraryFocusHandled();
+  }, [libraryFocusMineKind, onLibraryFocusHandled]);
 
   const { imageRows, videoRows, communityAnimations, communityVideos, communityImages } =
     useSongVisualLibraryItems({
@@ -332,7 +344,7 @@ export function SongVisualAssetLibrary({
             <div className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 rounded-lg bg-black/70 px-4 text-center backdrop-blur-[1px]">
               <Loader2 size={22} className="animate-spin text-sky-300" />
               <p className="text-sm font-medium text-white">
-                {uploadOverlayTitle(uploadProgress)}
+                {formatVisualUploadProgressLabel(uploadProgress, "overlay")}
               </p>
               {uploadProgress?.fileName ? (
                 <p className="max-w-full truncate text-xs text-white/50">{uploadProgress.fileName}</p>
@@ -396,12 +408,4 @@ export function SongVisualAssetLibrary({
       </EditorSection>
     </div>
   );
-}
-
-function uploadOverlayTitle(progress: VisualUploadProgress | null) {
-  if (!progress) return "Uploading…";
-  if (progress.phase === "preparing") return "Preparing upload…";
-  if (progress.phase === "processing") return "Saving on server…";
-  if (progress.percent != null) return `Uploading ${progress.percent}%`;
-  return "Uploading…";
 }

@@ -68,7 +68,9 @@ export function RadioPlayerProvider({ children }: { children: ReactNode }) {
   const radioQuery = useQuery({
     queryKey: ["radio", "public"],
     queryFn: () => api.radio.get(),
-    refetchInterval: 10_000,
+    // Only keep polling live while radio audio is actually playing or the
+    // radio UI is on screen — otherwise this fires every 10s on every page.
+    refetchInterval: playing || uiMounted ? 10_000 : false,
   });
   const refetchRadio = radioQuery.refetch;
 

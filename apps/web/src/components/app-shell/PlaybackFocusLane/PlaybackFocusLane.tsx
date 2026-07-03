@@ -23,6 +23,11 @@ type PlaybackFocusLaneProps = {
   focusState: PlaybackFocusState;
 };
 
+const SUBTITLE_POLL_INTERVAL_MS = 3000;
+// Give up on a stuck QUEUED/PROCESSING job after ~1 minute instead of
+// polling for the entire duration of playback.
+const SUBTITLE_POLL_MAX_ATTEMPTS = 20;
+
 export function PlaybackFocusLane({ focusState }: PlaybackFocusLaneProps) {
   const { accessToken } = useAuth();
   const { subtitlesEnabled } = useSubtitleDisplay();
@@ -46,14 +51,19 @@ export function PlaybackFocusLane({ focusState }: PlaybackFocusLaneProps) {
 
     let cancelled = false;
     let pollTimer: number | null = null;
+    let attempts = 0;
 
     const fetchSubs = () => {
       fetchRecordingSubtitles(recording.id, accessToken)
         .then((data) => {
           if (cancelled) return;
           setSubtitles(data);
-          if (data.status === "QUEUED" || data.status === "PROCESSING") {
-            pollTimer = window.setTimeout(fetchSubs, 3000);
+          attempts += 1;
+          if (
+            (data.status === "QUEUED" || data.status === "PROCESSING") &&
+            attempts < SUBTITLE_POLL_MAX_ATTEMPTS
+          ) {
+            pollTimer = window.setTimeout(fetchSubs, SUBTITLE_POLL_INTERVAL_MS);
           }
         })
         .catch(() => {
