@@ -1,4 +1,5 @@
 import { trafficHeaders } from "@/lib/trafficIdentity";
+import { rememberRecordingSubtitleStyle } from "@/lib/subtitleStyleMemory";
 import type { TranscriptEntity } from "@/types/transcript";
 
 export type SubtitleStatus = "MISSING" | "DISABLED" | "QUEUED" | "PROCESSING" | "READY" | "FAILED";
@@ -164,6 +165,7 @@ export async function updateRecordingSubtitleStyle(
     subtitlePosition: updated.subtitlePosition,
     subtitleStyleId: updated.subtitleStyleId,
   };
+  rememberRecordingSubtitleStyle(detail);
   window.dispatchEvent(
     new CustomEvent<RecordingSubtitleStyleChangedEventDetail>(RECORDING_SUBTITLE_STYLE_CHANGED_EVENT, {
       detail,

@@ -112,7 +112,7 @@ export function SubtitleEditorModal({
     if (subtitleStatus && !subtitleDisableTouchedRef.current) {
       setSubtitlesDisabled(subtitleStatus.status === "DISABLED");
     }
-    if (subtitleStatus?.subtitlePosition) {
+    if (subtitleStatus && (subtitleStatus.subtitlePosition != null || subtitleStatus.subtitleStyleId != null)) {
       const position = normalizeSubtitlePosition(subtitleStatus.subtitlePosition);
       const styleId = normalizeSubtitleStyleId(subtitleStatus.subtitleStyleId);
       setSubtitlePosition(position);

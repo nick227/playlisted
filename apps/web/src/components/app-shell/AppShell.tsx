@@ -5,10 +5,12 @@ import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 import { useRadioPlayer } from "@/providers/RadioPlayerProvider";
 import { usePlaybackTransport } from "@/hooks/usePlaybackTransport";
 import { playbackFocusTiming } from "@/lib/playbackFocusTiming";
-import { isPlaybackFocusBodyFadeDisabled } from "@/lib/playbackFocusBodyFade";
+import { isPlaybackFocusBodyFadeSuppressed } from "@/lib/playbackFocusBodyFade";
 import { usePlaybackFocusSuppressed } from "@/lib/playbackFocusSuppression";
+import { useSubtitleDisplay } from "@/lib/subtitleDisplay";
 
 import { BackgroundLayer } from "./BackgroundLayer";
+import { useTheatreMode } from "./useTheatreMode";
 
 import { BottomPlayer } from "./BottomPlayer";
 import { PlaybackFocusLayer, type PlaybackFocusTrack } from "./PlaybackFocusLayer";
@@ -35,8 +37,14 @@ export function AppShell({ children }: AppShellProps) {
   const [miniViewVisible, setMiniViewVisible] = useState(false);
   const [snapReveal, setSnapReveal] = useState(false);
   const playbackFocusSuppressed = usePlaybackFocusSuppressed();
+  const { subtitlesEnabled } = useSubtitleDisplay();
+  const { theatreFxEnabled } = useTheatreMode();
   const location = useLocation();
-  const bodyFadeDisabled = isPlaybackFocusBodyFadeDisabled(location.pathname);
+  const bodyFadeDisabled = isPlaybackFocusBodyFadeSuppressed({
+    pathname: location.pathname,
+    subtitlesEnabled,
+    theatreFxEnabled,
+  });
   const {
     currentTrack,
     isPlaying,
