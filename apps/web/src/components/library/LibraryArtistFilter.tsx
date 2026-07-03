@@ -5,26 +5,19 @@ import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import { matchArtistsByQuery } from "@/components/library/libraryFilterUtils";
 import { coverFallback } from "@/lib/routes";
 
-type LibraryArtistFilterSelectProps = {
-  mode?: "select";
+type LibraryArtistFilterProps = {
+  artists: LibraryArtist[];
+  suggestedArtists: LibraryArtist[];
   selectedArtistId: string | null;
   onSelect: (artistId: string | null) => void;
 };
 
-type LibraryArtistFilterBrowseProps = {
-  mode: "filter";
-  filterQuery: string;
-  onFilterQueryChange: (query: string) => void;
-};
-
-type LibraryArtistFilterProps = {
-  artists: LibraryArtist[];
-  suggestedArtists: LibraryArtist[];
-} & (LibraryArtistFilterSelectProps | LibraryArtistFilterBrowseProps);
-
-export function LibraryArtistFilter(props: LibraryArtistFilterProps) {
-  const { artists, suggestedArtists } = props;
-
+export function LibraryArtistFilter({
+  artists,
+  suggestedArtists,
+  selectedArtistId,
+  onSelect,
+}: LibraryArtistFilterProps) {
   const listboxId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -32,13 +25,11 @@ export function LibraryArtistFilter(props: LibraryArtistFilterProps) {
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
 
-  const selectedArtist =
-    props.mode !== "filter" && props.selectedArtistId
-      ? (artists.find((artist) => artist.id === props.selectedArtistId) ?? null)
-      : null;
-  const displayQuery = props.mode === "filter" ? props.filterQuery : query;
-  const matches = matchArtistsByQuery(artists, displayQuery);
-  const showDropdown = open && displayQuery.trim().length > 0;
+  const selectedArtist = selectedArtistId
+    ? (artists.find((artist) => artist.id === selectedArtistId) ?? null)
+    : null;
+  const matches = matchArtistsByQuery(artists, query);
+  const showDropdown = open && query.trim().length > 0;
 
   useEffect(() => {
     if (!showDropdown) return;
@@ -52,36 +43,15 @@ export function LibraryArtistFilter(props: LibraryArtistFilterProps) {
     return () => document.removeEventListener("mousedown", onPointerDown);
   }, [showDropdown]);
 
-  function applyQuery(value: string) {
-    if (props.mode === "filter") {
-      props.onFilterQueryChange(value);
-      return;
-    }
-    setQuery(value);
-  }
-
   function pickArtist(artist: LibraryArtist) {
-    if (props.mode === "filter") {
-      applyQuery(artist.displayName);
-      setOpen(false);
-      setActiveIndex(-1);
-      return;
-    }
-    props.onSelect(artist.id);
+    onSelect(artist.id);
     setQuery(artist.displayName);
     setOpen(false);
     setActiveIndex(-1);
   }
 
   function clearArtist() {
-    if (props.mode === "filter") {
-      applyQuery("");
-      setOpen(false);
-      setActiveIndex(-1);
-      inputRef.current?.focus();
-      return;
-    }
-    props.onSelect(null);
+    onSelect(null);
     setQuery("");
     setOpen(false);
     setActiveIndex(-1);
@@ -90,7 +60,7 @@ export function LibraryArtistFilter(props: LibraryArtistFilterProps) {
 
   function onKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     if (!showDropdown) {
-      if (event.key === "ArrowDown" && displayQuery.trim()) setOpen(true);
+      if (event.key === "ArrowDown" && query.trim()) setOpen(true);
       return;
     }
     if (event.key === "Escape") {
@@ -114,18 +84,12 @@ export function LibraryArtistFilter(props: LibraryArtistFilterProps) {
     }
   }
 
-  const inputValue =
-    props.mode !== "filter" && selectedArtist && !open ? selectedArtist.displayName : displayQuery;
-  const sectionLabel = props.mode === "filter" ? "Search" : "Artist";
-  const hasValue =
-    props.mode === "filter" ? Boolean(displayQuery.trim()) : Boolean(selectedArtist || query);
-  const activeSuggestedId = props.mode !== "filter" ? props.selectedArtistId : null;
+  const inputValue = selectedArtist && !open ? selectedArtist.displayName : query;
+  const hasValue = Boolean(selectedArtist || query);
 
   return (
     <div className="mt-8">
-      <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-white/25">
-        {sectionLabel}
-      </p>
+      <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-white/25">Artist</p>
 
       <div ref={rootRef} className="relative max-w-md">
         <Search
@@ -137,10 +101,10 @@ export function LibraryArtistFilter(props: LibraryArtistFilterProps) {
           type="search"
           value={inputValue}
           onChange={(event) => {
-            applyQuery(event.target.value);
+            setQuery(event.target.value);
             setOpen(true);
             setActiveIndex(-1);
-            if (props.mode !== "filter" && props.selectedArtistId) props.onSelect(null);
+            if (selectedArtistId) onSelect(null);
           }}
           onFocus={() => setOpen(true)}
           onKeyDown={onKeyDown}
@@ -206,21 +170,12 @@ export function LibraryArtistFilter(props: LibraryArtistFilterProps) {
       {suggestedArtists.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-2">
           {suggestedArtists.map((artist) => {
-            const active =
-              props.mode === "filter"
-                ? displayQuery.trim().toLowerCase() === artist.displayName.trim().toLowerCase()
-                : activeSuggestedId === artist.id;
+            const active = selectedArtistId === artist.id;
             return (
               <button
                 key={artist.id}
                 type="button"
-                onClick={() =>
-                  active
-                    ? clearArtist()
-                    : props.mode === "filter"
-                      ? applyQuery(artist.displayName)
-                      : pickArtist(artist)
-                }
+                onClick={() => (active ? clearArtist() : pickArtist(artist))}
                 className={[
                   "flex items-center gap-2 rounded-full border py-1.5 pl-1.5 pr-3 text-xs transition-colors",
                   active

@@ -17,7 +17,6 @@ import {
   EMPTY_LIBRARY_SONGS,
   EMPTY_PLAYLISTS,
   filterArtistsByGenre,
-  filterArtistsByQuery,
   filterPlaylistsByQuery,
   filterSongsByArtist,
   genresFromArtists,
@@ -27,12 +26,10 @@ import {
   sortLibrarySongs,
   topArtistsBySongCount,
   topPlaylistsByItemCount,
-  type ArtistSortKey,
   type PlaylistSortKey,
   type SortDirection,
   type SongSortKey,
 } from "@/components/library/libraryFilterUtils";
-import { LibraryArtistSortBar } from "@/components/library/LibraryArtistSortBar";
 import { LibraryPlaylistFilter } from "@/components/library/LibraryPlaylistFilter";
 import { LibraryPlaylistSortBar } from "@/components/library/LibraryPlaylistSortBar";
 import { LibrarySongSortBar } from "@/components/library/LibrarySongSortBar";
@@ -432,9 +429,6 @@ export function GenresPanel() {
   return (
     <div>
       <PanelHeader label="Genres" count={genres.length} />
-      <p className="mt-3 max-w-2xl text-sm italic leading-relaxed text-[var(--color-text-muted)]">
-        Browse the catalog by sound, with quick plays from artists shaping each lane.
-      </p>
       <div className="mt-10 space-y-4">
         {sortedGenres.map((genre) => (
           <GenreCard key={genre.slug} genre={genre} />
@@ -448,24 +442,11 @@ export function GenreDetailPanel({ slug, name }: { slug: string; name: string })
   const { data, isLoading } = useLibrarySongs(slug);
   const songs = data?.data ?? EMPTY_LIBRARY_SONGS;
 
-  const curatorNote = useMemo(() => {
-    if (!songs.length) return null;
-    const artists = [...new Set(songs.map((s) => s.uploader.displayName))];
-    const topArtists = artists.slice(0, 3).join(", ");
-    const suffix = artists.length > 3 ? ` and ${artists.length - 3} more` : "";
-    return `${songs.length} recording${songs.length !== 1 ? "s" : ""} · artists include ${topArtists}${suffix}`;
-  }, [songs]);
-
   if (isLoading) return <PanelSkeleton />;
 
   return (
     <div>
       <PanelHeader label={name} count={songs.length} unit="recording" />
-      {curatorNote && (
-        <p className="mt-3 max-w-2xl text-sm italic leading-relaxed text-[var(--color-text-muted)]">
-          {curatorNote}
-        </p>
-      )}
       <div className="mt-10">
         {songs.length === 0 ? (
           <p className="text-sm text-[var(--color-text-subtle)]">No recordings in this genre yet.</p>
@@ -479,13 +460,9 @@ export function GenreDetailPanel({ slug, name }: { slug: string; name: string })
 
 export function ArtistsPanel() {
   const genreStore = useMemo(() => createLibraryGenreSelectionStore(), []);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [sortKey, setSortKey] = useState<ArtistSortKey>("name");
-  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const { data, isLoading } = useLibraryArtists();
   const allArtists = data?.data ?? EMPTY_LIBRARY_ARTISTS;
   const genres = useMemo(() => genresFromArtists(allArtists), [allArtists]);
-  const suggestedArtists = useMemo(() => topArtistsBySongCount(allArtists, 4), [allArtists]);
 
   if (isLoading) return <PanelSkeleton />;
 
@@ -493,26 +470,7 @@ export function ArtistsPanel() {
     <div>
       <PanelHeader label="Artists" count={allArtists.length} />
       <LibraryGenreFilter genres={genres} store={genreStore} />
-      <LibraryArtistFilter
-        mode="filter"
-        artists={allArtists}
-        suggestedArtists={suggestedArtists}
-        filterQuery={searchQuery}
-        onFilterQueryChange={setSearchQuery}
-      />
-      <LibraryArtistSortBar
-        sortKey={sortKey}
-        sortDirection={sortDirection}
-        onSortKeyChange={setSortKey}
-        onSortDirectionChange={setSortDirection}
-      />
-      <ArtistResults
-        artists={allArtists}
-        genreStore={genreStore}
-        searchQuery={searchQuery}
-        sortDirection={sortDirection}
-        sortKey={sortKey}
-      />
+      <ArtistResults artists={allArtists} genreStore={genreStore} />
     </div>
   );
 }
@@ -520,27 +478,15 @@ export function ArtistsPanel() {
 function ArtistResults({
   artists,
   genreStore,
-  searchQuery,
-  sortDirection,
-  sortKey,
 }: {
   artists: LibraryArtist[];
   genreStore: LibraryGenreSelectionStore;
-  searchQuery: string;
-  sortDirection: SortDirection;
-  sortKey: ArtistSortKey;
 }) {
   const genreSlug = useLibraryGenreSelection(genreStore);
-  const filteredArtists = useMemo(() => {
-    const byGenre = filterArtistsByGenre(artists, genreSlug);
-    const byQuery = filterArtistsByQuery(byGenre, searchQuery);
-    return sortLibraryArtists(byQuery, sortKey, sortDirection);
-  }, [artists, genreSlug, searchQuery, sortKey, sortDirection]);
-
-  const curatorNote =
-    filteredArtists.length > 0
-      ? `${filteredArtists.length} artist${filteredArtists.length !== 1 ? "s" : ""} · ${filteredArtists.reduce((sum, artist) => sum + artist.songCount, 0)} recordings`
-      : null;
+  const filteredArtists = useMemo(
+    () => sortLibraryArtists(filterArtistsByGenre(artists, genreSlug), "name", "asc"),
+    [artists, genreSlug],
+  );
 
   if (filteredArtists.length === 0) {
     return (
@@ -549,12 +495,6 @@ function ArtistResults({
   }
 
   return (
-    <>
-      {curatorNote && (
-        <p className="mt-3 max-w-2xl text-sm italic leading-relaxed text-[var(--color-text-muted)]">
-          {curatorNote}
-        </p>
-      )}
     <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
       {filteredArtists.map((artist) => (
         <Link
@@ -581,7 +521,6 @@ function ArtistResults({
         </Link>
       ))}
     </div>
-    </>
   );
 }
 
@@ -666,11 +605,6 @@ function PlaylistResults({
     return sortLibraryPlaylists(byQuery, sortKey, sortDirection);
   }, [data?.data, searchQuery, sortKey, sortDirection]);
 
-  const curatorNote =
-    playlists.length > 0
-      ? `${playlists.length} playlist${playlists.length !== 1 ? "s" : ""} · ${playlists.reduce((sum, playlist) => sum + playlist.itemCount, 0)} tracks`
-      : null;
-
   if (isLoading) return <ResultGridSkeleton />;
 
   if (playlists.length === 0) {
@@ -678,12 +612,6 @@ function PlaylistResults({
   }
 
   return (
-    <>
-      {curatorNote && (
-        <p className="mt-3 max-w-2xl text-sm italic leading-relaxed text-[var(--color-text-muted)]">
-          {curatorNote}
-        </p>
-      )}
     <div className="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
       {playlists.map((playlist) => (
         <Link
@@ -710,7 +638,6 @@ function PlaylistResults({
         </Link>
       ))}
     </div>
-    </>
   );
 }
 
@@ -779,11 +706,6 @@ function SongResults({
     return sortLibrarySongs(filtered, sortKey, sortDirection);
   }, [sourceSongs, artistId, sortKey, sortDirection]);
 
-  const curatorNote =
-    songs.length > 0
-      ? `${songs.length} recording${songs.length !== 1 ? "s" : ""} from ${new Set(songs.map((s) => s.uploaderId)).size} artists`
-      : null;
-
   if (genreSlug && genreSongsQuery.isLoading) {
     return (
       <div className="mt-10 space-y-2">
@@ -795,19 +717,12 @@ function SongResults({
   }
 
   return (
-    <>
-      {curatorNote && (
-        <p className="mt-3 max-w-2xl text-sm italic leading-relaxed text-[var(--color-text-muted)]">
-          {curatorNote}
-        </p>
+    <div className="mt-10">
+      {songs.length === 0 ? (
+        <p className="text-sm text-[var(--color-text-subtle)]">No recordings match these filters.</p>
+      ) : (
+        <TracksList songs={songs} />
       )}
-      <div className="mt-10">
-        {songs.length === 0 ? (
-          <p className="text-sm text-[var(--color-text-subtle)]">No recordings match these filters.</p>
-        ) : (
-          <TracksList songs={songs} />
-        )}
-      </div>
-    </>
+    </div>
   );
 }

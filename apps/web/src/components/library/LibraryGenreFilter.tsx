@@ -44,131 +44,134 @@ interface LibraryGenreFilterProps {
   store: LibraryGenreSelectionStore;
 }
 
+type GenreChip = {
+  key: string;
+  slug: string | null;
+  name: string;
+};
+
 const chipClass =
   "rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs text-white/60 transition-colors hover:border-white/20 hover:bg-white/[0.07] hover:text-white/90 data-[active=true]:border-[var(--color-brand)]/50 data-[active=true]:bg-[var(--color-brand)]/15 data-[active=true]:text-white";
 
-function setActiveChip(root: HTMLDivElement | null, slug: string | null) {
-  root?.querySelectorAll<HTMLButtonElement>("[data-genre-slug]").forEach((chip) => {
-    const active = chip.dataset.genreSlug === (slug ?? "");
-    chip.dataset.active = String(active);
-    chip.setAttribute("aria-pressed", String(active));
-  });
+const chipRowClass = "flex w-full flex-wrap gap-2";
+
+function chipsFromGenres(genres: LibraryGenre[]): GenreChip[] {
+  return [
+    { key: "all", slug: null, name: "All" },
+    ...genres.map((genre) => ({ key: genre.slug, slug: genre.slug, name: genre.name })),
+  ];
+}
+
+function countFirstRowChips(root: HTMLElement): number {
+  const chips = Array.from(root.children).filter(
+    (child): child is HTMLElement => child instanceof HTMLElement,
+  );
+  if (chips.length === 0) return 0;
+
+  const firstTop = chips[0].offsetTop;
+  let count = 1;
+  for (let index = 1; index < chips.length; index++) {
+    if (Math.abs(chips[index].offsetTop - firstTop) > 1) break;
+    count++;
+  }
+  return count;
 }
 
 export const LibraryGenreFilter = memo(function LibraryGenreFilter({
   genres,
   store,
 }: LibraryGenreFilterProps) {
-  const rootRef = useRef<HTMLDivElement>(null);
+  const measureRef = useRef<HTMLDivElement>(null);
   const selectedGenreRef = useRef(store.getSnapshot());
   const [expanded, setExpanded] = useState(false);
-  const [canExpand, setCanExpand] = useState(false);
-  const [collapsedHeight, setCollapsedHeight] = useState<number | null>(null);
+  const [firstRowCount, setFirstRowCount] = useState<number | null>(null);
 
-  const measureRows = useCallback(() => {
-    const root = rootRef.current;
+  const selectedGenre = useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot);
+  const chips = chipsFromGenres(genres);
+  const canExpand = firstRowCount != null && firstRowCount < chips.length;
+  const visibleCount = expanded || !canExpand ? chips.length : firstRowCount;
+
+  const measureFirstRow = useCallback(() => {
+    const root = measureRef.current;
     if (!root) return;
-
-    const chips = Array.from(root.children).filter(
-      (child): child is HTMLElement => child instanceof HTMLElement,
-    );
-    const rowTops = [...new Set(chips.map((chip) => chip.offsetTop))].sort((a, b) => a - b);
-    const hasMoreThanTwoRows = rowTops.length > 2;
-
-    setCanExpand(hasMoreThanTwoRows);
-    setCollapsedHeight(() => {
-      if (!hasMoreThanTwoRows || rowTops[1] == null) return null;
-
-      const secondRowTop = rowTops[1];
-      const secondRowBottom = chips
-        .filter((chip) => chip.offsetTop === secondRowTop)
-        .reduce((bottom, chip) => Math.max(bottom, chip.offsetTop + chip.offsetHeight), 0);
-
-      return secondRowBottom;
-    });
+    setFirstRowCount(countFirstRowChips(root));
   }, []);
 
   const selectGenre = useCallback(
     (slug: string | null) => {
       const nextSlug = selectedGenreRef.current === slug ? null : slug;
       selectedGenreRef.current = nextSlug;
-      setActiveChip(rootRef.current, nextSlug);
       store.setValue(nextSlug);
     },
     [store],
   );
 
   useEffect(() => {
-    selectedGenreRef.current = store.getSnapshot();
-    setActiveChip(rootRef.current, selectedGenreRef.current);
-  }, [genres, store]);
+    selectedGenreRef.current = selectedGenre;
+  }, [selectedGenre]);
 
   useEffect(() => {
     setExpanded(false);
   }, [genres]);
 
   useLayoutEffect(() => {
-    measureRows();
+    measureFirstRow();
 
-    const root = rootRef.current;
+    const root = measureRef.current;
     if (!root) return;
 
-    const observer = new ResizeObserver(measureRows);
+    const observer = new ResizeObserver(measureFirstRow);
     observer.observe(root);
-    Array.from(root.children).forEach((child) => observer.observe(child));
-
     return () => observer.disconnect();
-  }, [genres, measureRows]);
+  }, [genres, measureFirstRow]);
 
   if (genres.length === 0) return null;
 
-  const selectedGenre = store.getSnapshot();
+  function renderChip(chip: GenreChip) {
+    const active = selectedGenre === chip.slug;
+    return (
+      <button
+        key={chip.key}
+        type="button"
+        data-active={String(active)}
+        aria-pressed={active}
+        onClick={() => selectGenre(chip.slug)}
+        className={chipClass}
+      >
+        {chip.name}
+      </button>
+    );
+  }
 
   return (
     <div className="mt-8">
       <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-white/25">Genre</p>
-      <div
-        ref={rootRef}
-        className="flex max-w-2xl flex-wrap gap-2 overflow-hidden"
-        style={
-          canExpand && !expanded && collapsedHeight != null
-            ? { maxHeight: collapsedHeight }
-            : undefined
-        }
-      >
-        <button
-          type="button"
-          data-active={String(selectedGenre === null)}
-          data-genre-slug=""
-          aria-pressed={selectedGenre === null}
-          onClick={() => selectGenre(null)}
-          className={chipClass}
+
+      <div className="relative max-w-2xl">
+        <div
+          ref={measureRef}
+          aria-hidden="true"
+          inert
+          className={`${chipRowClass} pointer-events-none invisible absolute inset-0 -z-10`}
         >
-          All
-        </button>
-        {genres.map((genre) => (
-          <button
-            key={genre.slug}
-            type="button"
-            data-active={String(selectedGenre === genre.slug)}
-            data-genre-slug={genre.slug}
-            aria-pressed={selectedGenre === genre.slug}
-            onClick={() => selectGenre(genre.slug)}
-            className={chipClass}
-          >
-            {genre.name}
-          </button>
-        ))}
+          {chips.map(renderChip)}
+        </div>
+
+        <div className={chipRowClass}>{chips.slice(0, visibleCount).map(renderChip)}</div>
       </div>
+
       {canExpand && (
+        <div className="flex justify-center">
+          
         <button
           type="button"
           onClick={() => setExpanded((value) => !value)}
           className="mt-2 text-xs font-medium text-white/40 transition-colors hover:text-white/75"
           aria-expanded={expanded}
         >
-          {expanded ? "Hide genres" : "Show all genres"}
+          {expanded ? "Show less" : "Show more"}
         </button>
+        </div>
       )}
     </div>
   );

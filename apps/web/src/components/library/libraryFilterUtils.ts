@@ -15,16 +15,6 @@ export function filterArtistsByGenre(artists: LibraryArtist[], genreSlug: string
   return artists.filter((artist) => artist.genres.some((genre) => genre.slug === genreSlug));
 }
 
-export function filterArtistsByQuery(artists: LibraryArtist[], query: string): LibraryArtist[] {
-  const term = query.trim().toLowerCase();
-  if (!term) return artists;
-  return artists.filter(
-    (artist) =>
-      artist.displayName.toLowerCase().includes(term) ||
-      artist.username.toLowerCase().includes(term),
-  );
-}
-
 export function filterSongsByArtist(songs: LibrarySong[], artistId: string | null): LibrarySong[] {
   if (!artistId) return songs;
   return songs.filter((song) => song.uploaderId === artistId);
