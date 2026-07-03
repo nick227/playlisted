@@ -1,5 +1,5 @@
-import { Captions, Check, ChevronDown, ChevronUp, Film, MoreVertical, Trash2 } from "lucide-react";
-import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { Captions, Check, ChevronDown, ChevronUp, Film, MoreVertical, Search, Trash2 } from "lucide-react";
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 
 import type { GenreOption } from "@/components/studio/studioCollectionUtils";
 import type { QueueTrack } from "@/providers/AudioPlayerProvider";
@@ -90,13 +90,36 @@ export function TrackEditActionMenu({
   onRemove,
 }: TrackEditActionMenuProps) {
   const [open, setOpen] = useState(false);
+  const [genreSearch, setGenreSearch] = useState("");
   const rootRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
   const genreDisabled = saving || genreLoading;
   const showGenre = Boolean(onGenreSelect && genreOptions);
 
+  const defaultGenreName = playlistGenreSlug
+    ? genreOptions?.find((genre) => genre.slug === playlistGenreSlug)?.name ?? playlistGenreSlug
+    : "playlist default";
+
+  const genreQuery = genreSearch.trim().toLowerCase();
+  const filteredGenres = useMemo(() => {
+    if (!genreOptions) return [];
+    if (!genreQuery) return genreOptions;
+    return genreOptions.filter(
+      (genre) =>
+        genre.name.toLowerCase().includes(genreQuery) || genre.slug.toLowerCase().includes(genreQuery),
+    );
+  }, [genreOptions, genreQuery]);
+
+  const showDefaultGenre =
+    !genreQuery ||
+    "default".includes(genreQuery) ||
+    defaultGenreName.toLowerCase().includes(genreQuery);
+
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      setGenreSearch("");
+      return;
+    }
 
     function onPointerDown(event: MouseEvent) {
       if (!rootRef.current?.contains(event.target as Node)) {
@@ -125,10 +148,6 @@ export function TrackEditActionMenu({
     if (genreDisabled || nextSlug === genreSelectValue) return;
     runAction(() => onGenreSelect?.(nextSlug));
   }
-
-  const defaultGenreName = playlistGenreSlug
-    ? genreOptions?.find((genre) => genre.slug === playlistGenreSlug)?.name ?? playlistGenreSlug
-    : "playlist default";
 
   return (
     <div ref={rootRef} className="relative">
@@ -169,40 +188,6 @@ export function TrackEditActionMenu({
             onClick={() => runAction(onEditVisuals)}
           />
 
-          {showGenre ? (
-            <>
-              <MenuDivider />
-              <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--color-text-subtle)]">
-                Genre
-              </p>
-              <MenuButton
-                label={`Default (${defaultGenreName})`}
-                icon={<span className="inline-block w-4" />}
-                disabled={genreDisabled}
-                trailing={
-                  genreSelectValue === "" ? (
-                    <Check size={14} className="shrink-0 text-[var(--color-brand)]" />
-                  ) : null
-                }
-                onClick={() => handleGenreSelect("")}
-              />
-              {genreOptions?.map((genre) => (
-                <MenuButton
-                  key={genre.id}
-                  label={genre.name}
-                  icon={<span className="inline-block w-4" />}
-                  disabled={genreDisabled}
-                  trailing={
-                    genreSelectValue === genre.slug ? (
-                      <Check size={14} className="shrink-0 text-[var(--color-brand)]" />
-                    ) : null
-                  }
-                  onClick={() => handleGenreSelect(genre.slug)}
-                />
-              ))}
-            </>
-          ) : null}
-
           <MenuDivider />
           <MenuButton
             label="Move up"
@@ -224,6 +209,63 @@ export function TrackEditActionMenu({
             destructive
             onClick={() => runAction(() => onRemove?.())}
           />
+
+          {showGenre ? (
+            <>
+              <MenuDivider />
+              <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--color-text-subtle)]">
+                Genre
+              </p>
+              <div className="px-2 pb-1">
+                <label className="relative block">
+                  <Search
+                    size={14}
+                    className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--color-text-subtle)]"
+                  />
+                  <input
+                    type="search"
+                    value={genreSearch}
+                    onChange={(event) => setGenreSearch(event.target.value)}
+                    onClick={(event) => event.stopPropagation()}
+                    onKeyDown={(event) => event.stopPropagation()}
+                    placeholder="Search genres…"
+                    aria-label="Search genres"
+                    className="w-full rounded-md border border-white/10 bg-black/30 py-2 pl-8 pr-2 text-sm text-white placeholder:text-[var(--color-text-subtle)] outline-none focus:border-[var(--color-brand)]"
+                  />
+                </label>
+              </div>
+              {showDefaultGenre ? (
+                <MenuButton
+                  label={`Default (${defaultGenreName})`}
+                  icon={<span className="inline-block w-4" />}
+                  disabled={genreDisabled}
+                  trailing={
+                    genreSelectValue === "" ? (
+                      <Check size={14} className="shrink-0 text-[var(--color-brand)]" />
+                    ) : null
+                  }
+                  onClick={() => handleGenreSelect("")}
+                />
+              ) : null}
+              {filteredGenres.map((genre) => (
+                <MenuButton
+                  key={genre.id}
+                  label={genre.name}
+                  icon={<span className="inline-block w-4" />}
+                  disabled={genreDisabled}
+                  trailing={
+                    genreSelectValue === genre.slug ? (
+                      <Check size={14} className="shrink-0 text-[var(--color-brand)]" />
+                    ) : null
+                  }
+                  onClick={() => handleGenreSelect(genre.slug)}
+                />
+              ))}
+              {genreQuery && !showDefaultGenre && filteredGenres.length === 0 ? (
+                <p className="px-3 py-2 text-sm text-[var(--color-text-muted)]">No genres found</p>
+              ) : null}
+            </>
+          ) : null}
         </div>
       ) : null}
     </div>
