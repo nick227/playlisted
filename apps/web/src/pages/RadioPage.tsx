@@ -128,7 +128,7 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
     "aspect-square w-full rounded-[1.4rem] border border-white/[0.08] bg-white/5 bg-cover bg-center shadow-[0_26px_80px_rgba(0,0,0,0.44)]";
 
   return (
-    <div className={`relative isolate -mx-4 overflow-hidden px-4 py-6 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 ${pageMinHeight}`}>
+    <div className={`flex justify-center items-center relative isolate -mx-4 px-4 py-6 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 ${pageMinHeight}`}>
       <div className="mx-auto flex w-full max-w-[30rem] flex-col items-center">
         {radioQuery.isError ? (
           <div className="mb-5 w-full rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-center text-sm text-red-200 shadow-lg shadow-black/20 backdrop-blur">
