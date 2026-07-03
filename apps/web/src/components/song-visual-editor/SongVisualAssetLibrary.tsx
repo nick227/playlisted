@@ -3,6 +3,7 @@ import { useState, type DragEvent } from "react";
 
 import { VISUAL_UPLOAD_MAX_BYTES } from "@/lib/visualUploadLimits";
 
+import { editorToggleClass } from "./editorToggle";
 import { EditorSection } from "./EditorSection";
 import { SongVisualLibraryCard } from "./SongVisualLibraryCard";
 import { MediaAssetThumb } from "./MediaAssetThumb";
@@ -240,28 +241,30 @@ export function SongVisualAssetLibrary({
                       {attachment.label ?? attachment.mediaAsset.originalName}
                     </p>
                     <div className="flex flex-wrap items-center gap-1">
-                      <label className="inline-flex min-w-[3.75rem] flex-1 items-center gap-1 rounded-md border border-white/10 px-1.5 py-1 text-[10px] text-white/80">
-                        <input
-                          type="checkbox"
-                          checked={clip.loop}
+                      <div className="inline-flex h-7 items-center gap-0.5 rounded-md border border-white/10 bg-black/25 p-0.5">
+                        <button
+                          type="button"
                           disabled={isBusy}
-                          onChange={(event) => onClipLoopChange(attachment.id, event.target.checked)}
-                          className="rounded border-white/20 bg-black/40 text-emerald-500"
-                        />
-                        <Repeat size={10} />
-                        Loop
-                      </label>
-                      <label className="inline-flex min-w-[3.75rem] flex-1 items-center gap-1 rounded-md border border-white/10 px-1.5 py-1 text-[10px] text-white/80">
-                        <input
-                          type="checkbox"
-                          checked={audioPulse}
+                          onClick={() => onClipLoopChange(attachment.id, !clip.loop)}
+                          className={editorToggleClass(clip.loop, isBusy, "h-6 gap-1 px-1.5 text-[10px]")}
+                          aria-pressed={clip.loop}
+                          title="Loop clip"
+                        >
+                          <Repeat size={10} />
+                          loop
+                        </button>
+                        <button
+                          type="button"
                           disabled={isBusy}
-                          onChange={(event) => onClipAudioPulseChange(attachment.id, event.target.checked)}
-                          className="rounded border-white/20 bg-black/40 text-emerald-500"
-                        />
-                        <AudioLines size={10} />
-                        Pulse
-                      </label>
+                          onClick={() => onClipAudioPulseChange(attachment.id, !audioPulse)}
+                          className={editorToggleClass(audioPulse, isBusy, "h-6 gap-1 px-1.5 text-[10px]")}
+                          aria-pressed={audioPulse}
+                          title="Beat reactive pulse"
+                        >
+                          <AudioLines size={10} />
+                          pulse
+                        </button>
+                      </div>
                       {startOffsetMs > 0 ? (
                         <button
                           type="button"

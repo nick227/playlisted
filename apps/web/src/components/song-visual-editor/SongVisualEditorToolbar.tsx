@@ -1,5 +1,6 @@
 import { Loader2, MousePointer2, Pause, Play, Scissors, Sparkles, Subtitles, Upload } from "lucide-react";
 import type { ReactNode } from "react";
+import { editorToggleClass } from "./editorToggle";
 
 export type TimelineEditMode = "select" | "cut";
 
@@ -167,7 +168,7 @@ function ToolbarIconButton({
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className={toolbarToggleClass(active, disabled, "h-7 w-7 justify-center px-0")}
+      className={editorToggleClass(active, disabled, "h-7 w-7 justify-center px-0 text-[11px]")}
       aria-pressed={active}
       aria-label={label}
       title={label}
@@ -197,7 +198,7 @@ function ToolbarLabeledToggle({
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className={toolbarToggleClass(active, disabled, "h-7 gap-1.5 px-2.5")}
+      className={editorToggleClass(active, disabled, "h-7 gap-1.5 px-2.5 text-[11px]")}
       aria-pressed={active}
       title={title ?? label}
     >
@@ -205,14 +206,4 @@ function ToolbarLabeledToggle({
       <span>{label}</span>
     </button>
   );
-}
-
-function toolbarToggleClass(active: boolean, disabled: boolean, sizeClass: string) {
-  return [
-    `inline-flex items-center rounded-md text-[11px] font-medium transition ${sizeClass}`,
-    active
-      ? "bg-sky-600 text-white ring-1 ring-inset ring-sky-400/50 hover:bg-sky-500"
-      : "text-white/55 hover:bg-white/5 hover:text-white/85",
-    disabled ? "cursor-not-allowed opacity-40" : "",
-  ].join(" ");
 }
