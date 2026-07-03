@@ -13,7 +13,7 @@ import { useRadioPlayer } from "@/providers/RadioPlayerProvider";
 export function ChatPage() {
   const { user, accessToken } = useAuth();
   const { playerShellActive } = useAudioPlayer();
-  const { listenerId, station, registerRadioUi, unregisterRadioUi } = useRadioPlayer();
+  const { listenerId, station, radioPlaying, nowPlaying, registerRadioUi, unregisterRadioUi } = useRadioPlayer();
 
   const chatBottomRef = useRef<HTMLDivElement | null>(null);
   const chatScrollRef = useRef<HTMLDivElement | null>(null);
@@ -31,8 +31,10 @@ export function ChatPage() {
 
   const chatMessages = station?.chatMessages ?? [];
 
-  const shellHeightClass = playerShellActive
-    ? "min-h-[calc(100dvh-var(--spacing-topbar)-var(--spacing-player-safe-mobile)-1.5rem)] md:min-h-[calc(100dvh-var(--spacing-topbar)-var(--spacing-player)-1.5rem)]"
+  const shellHasPlayer = playerShellActive || (radioPlaying && Boolean(nowPlaying));
+
+  const shellHeightClass = shellHasPlayer
+    ? "min-h-[calc(100dvh-var(--spacing-topbar)-var(--spacing-player-safe-mobile))] -mb-6 md:min-h-[calc(100dvh-var(--spacing-topbar)-var(--spacing-player))]"
     : "min-h-[calc(100dvh-var(--spacing-topbar)-1.5rem)]";
 
   useEffect(() => {
