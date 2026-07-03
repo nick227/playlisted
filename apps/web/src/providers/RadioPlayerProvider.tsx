@@ -47,6 +47,7 @@ const RadioPlayerContext = createContext<RadioPlayerContextValue | null>(null);
 export function RadioPlayerProvider({ children }: { children: ReactNode }) {
   const {
     releasePlayback,
+    playerBarVisible,
     isPlaying: sitePlayerPlaying,
     currentTrack: siteCurrentTrack,
   } = useAudioPlayer();
@@ -296,14 +297,16 @@ export function RadioPlayerProvider({ children }: { children: ReactNode }) {
     siteControlledRef.current = false;
     suppressNextSitePauseRef.current = true;
     try {
-      releasePlayback();
+      if (playerBarVisible) {
+        releasePlayback();
+      }
       await syncAndPlayRadio(nowPlaying);
     } finally {
       window.setTimeout(() => {
         suppressNextSitePauseRef.current = false;
       }, 0);
     }
-  }, [nowPlaying, pauseRadio, playing, releasePlayback, syncAndPlayRadio]);
+  }, [nowPlaying, pauseRadio, playerBarVisible, playing, releasePlayback, syncAndPlayRadio]);
 
   function handleRadioPlay(el: HTMLAudioElement) {
     if (siteControlledRef.current) return;

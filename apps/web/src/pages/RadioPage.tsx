@@ -9,7 +9,6 @@ import { authedApi } from "@/lib/authedApi";
 import { coverFallback, playlistPath, studioCollectionEditPath } from "@/lib/routes";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { useAuth } from "@/providers/AuthProvider";
-import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 import { useRadioPlayer } from "@/providers/RadioPlayerProvider";
 
 function formatTime(totalSeconds?: number | null) {
@@ -22,7 +21,6 @@ function formatTime(totalSeconds?: number | null) {
 
 export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
   const { status, user, accessToken } = useAuth();
-  const { releasePlayback } = useAudioPlayer();
   const {
     playing,
     volume: radioVolume,
@@ -71,13 +69,6 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
     registerRadioUi();
     return unregisterRadioUi;
   }, [registerRadioUi, unregisterRadioUi]);
-
-  function handleRadioPlayback() {
-    if (!playing) {
-      releasePlayback();
-    }
-    void togglePlayback();
-  }
 
   const submissionCollectionMutation = useMutation({
     mutationFn: () =>
@@ -228,7 +219,7 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
 
           <button
             type="button"
-            onClick={handleRadioPlayback}
+            onClick={() => void togglePlayback()}
             disabled={!nowPlaying?.audioUrl}
             className="inline-flex h-16 w-16 items-center justify-center rounded-full text-white shadow-[0_18px_46px_rgba(0,0,0,0.42)] transition hover:scale-105 disabled:cursor-not-allowed disabled:opacity-40 bg-[var(--color-surface)]/80 rounded-full"
             aria-label={playing ? "Pause radio" : "Play radio"}
