@@ -60,9 +60,9 @@ export function SubtitleStyleTab({
       <section>
         <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-white/40">Preview</h3>
         <div className="overflow-hidden rounded-xl border border-white/10 bg-gradient-to-b from-zinc-900 to-black">
-          <div className={`flex h-44 px-4 ${positionAlignClass(position)}`}>
+          <div className={`flex h-44 w-full justify-center px-4 ${positionAlignClass(position)}`}>
             <p
-              className="max-w-[88%] px-3 py-2 text-center leading-snug"
+              className="mx-auto max-w-[88%] px-3 py-2 text-center leading-snug"
               style={stylePreviewCss(activeStyle)}
             >
               {previewText}
