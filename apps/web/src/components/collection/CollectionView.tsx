@@ -564,21 +564,6 @@ export function CollectionView({
         </div>
       </div>
 
-
-
-      <div className="flex w-full justify-center">
-        {isEdit && onAddTracks ? (
-          <button
-            type="button"
-            onClick={onAddTracks}
-            className="mt-6 inline-flex items-center gap-2 rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-black"
-          >
-            <Upload size={18} />
-            Add tracks
-          </button>
-        ) : null}
-      </div>
-
       <div className="mt-4 max-w-3xl">
         {isEdit ? (
           <div className="min-h-[16px]">
@@ -621,6 +606,19 @@ export function CollectionView({
             onPlay={handlePlayRecording}
           />
         )}
+      </div>
+      
+      <div className="flex w-full justify-center">
+        {isEdit && onAddTracks ? (
+          <button
+            type="button"
+            onClick={onAddTracks}
+            className="mt-6 inline-flex items-center gap-2 rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-black cursor-pointer hover:opacity-90"
+          >
+            <Upload size={18} />
+            Add tracks
+          </button>
+        ) : null}
       </div>
     </div>
   );

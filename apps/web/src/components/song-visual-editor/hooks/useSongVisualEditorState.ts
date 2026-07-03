@@ -11,6 +11,7 @@ import {
   listVisualMediaAssets,
   uploadVisualMediaFile,
   type SongVisualAttachmentRecord,
+  type SongVisualMediaRecord,
   type VisualMediaAssetRecord,
   type VisualUploadProgress,
   type PendingVisualUpload,
@@ -20,7 +21,6 @@ import { clearRemoteTrackVisualMedia } from "@/theatre/media/resolveTrackVisualM
 
 import {
   applyDraftClipBounds,
-  applyDraftPolicy,
   attachmentsListEqual,
   cloneAttachments,
   createDraftAttachment,
@@ -47,13 +47,12 @@ import {
   trimClipAtShortSide,
   type ClipBounds,
 } from "../timelineLayout";
-import { layoutTimelineClips, policyFromIncludeSiteMedia, policyIncludesSiteMedia } from "../types";
+import { layoutTimelineClips } from "../types";
 import { songVisualQueryKey } from "./optimisticSongVisualCache";
 
 type ClipClipboard = {
   mediaAssetId: string;
   label: string | null;
-  policy: SongVisualAttachmentRecord["policy"];
   playback: Record<string, unknown>;
   beatFx: VisualMediaBeatFx | null;
 };
@@ -63,6 +62,23 @@ type UseSongVisualEditorStateArgs = {
   accessToken: string;
   durationSeconds?: number | null;
 };
+
+const EDITOR_VISUAL_POLICY: SongVisualAttachmentRecord["policy"] = "attachedOnly";
+
+function draftPolicyForEditor(data: SongVisualMediaRecord | undefined): SongVisualAttachmentRecord["policy"] {
+  if (!data?.attachments.some((attachment) => attachment.enabled)) {
+    return draftPolicyFromServer(data);
+  }
+  return EDITOR_VISUAL_POLICY;
+}
+
+function draftAttachmentsForEditor(data: SongVisualMediaRecord): SongVisualAttachmentRecord[] {
+  const attachments = cloneAttachments(data.attachments);
+  if (!attachments.some((attachment) => attachment.enabled)) return attachments;
+  return attachments.map((attachment) =>
+    attachment.enabled ? { ...attachment, policy: EDITOR_VISUAL_POLICY } : attachment,
+  );
+}
 
 export function useSongVisualEditorState({
   recordingId,
@@ -94,14 +110,12 @@ export function useSongVisualEditorState({
 
   useEffect(() => {
     if (!attachmentsQuery.data || draftAttachments != null) return;
-    setDraftAttachments(cloneAttachments(attachmentsQuery.data.attachments));
-    setDraftPolicy(draftPolicyFromServer(attachmentsQuery.data));
+    setDraftAttachments(draftAttachmentsForEditor(attachmentsQuery.data));
+    setDraftPolicy(draftPolicyForEditor(attachmentsQuery.data));
   }, [attachmentsQuery.data, draftAttachments]);
 
   const serverData = attachmentsQuery.data;
   const attachments = draftAttachments ?? serverData?.attachments ?? [];
-  const policy = draftPolicy ?? draftPolicyFromServer(serverData);
-  const includeSiteMedia = policyIncludesSiteMedia(policy);
   const timelineDurationSec = durationSeconds && durationSeconds > 0 ? durationSeconds : 120;
 
   const timelineClips = useMemo(
@@ -111,7 +125,7 @@ export function useSongVisualEditorState({
 
   const isDirty = useMemo(() => {
     if (!serverData || draftAttachments == null || draftPolicy == null) return false;
-    if (draftPolicy !== draftPolicyFromServer(serverData)) return true;
+    if (draftPolicy !== draftPolicyForEditor(serverData)) return true;
     return !attachmentsListEqual(draftAttachments, serverData.attachments);
   }, [draftAttachments, draftPolicy, serverData]);
 
@@ -177,8 +191,8 @@ export function useSongVisualEditorState({
     },
     onSuccess: (fresh) => {
       setError(null);
-      setDraftAttachments(cloneAttachments(fresh.attachments));
-      setDraftPolicy(fresh.policy);
+      setDraftAttachments(draftAttachmentsForEditor(fresh));
+      setDraftPolicy(draftPolicyForEditor(fresh));
       clearRemoteTrackVisualMedia(recordingId);
     },
     onError: (err) => setError(err instanceof Error ? err.message : "Save failed."),
@@ -259,7 +273,7 @@ export function useSongVisualEditorState({
       return;
     }
 
-    const nextPolicy = policy === "defaultOnly" ? "preferAttached" : policy;
+    const nextPolicy = EDITOR_VISUAL_POLICY;
     const draftAttachment = createDraftAttachment({
       recordingId,
       asset,
@@ -279,22 +293,7 @@ export function useSongVisualEditorState({
 
     setDraftAttachments((current) => [...(current ?? []), draftAttachment]);
     setSelectedAttachmentId(draftAttachment.id);
-    if (policy === "defaultOnly") {
-      setDraftPolicy(nextPolicy);
-    }
-    setError(null);
-  }
-
-  function setIncludeSiteMedia(nextIncludeSiteMedia: boolean) {
-    const enabled = attachments.filter((attachment) => attachment.enabled);
-    if (!enabled.length) {
-      setError("Add a clip to the timeline before changing site media.");
-      return;
-    }
-    setDraftPolicy(policyFromIncludeSiteMedia(nextIncludeSiteMedia));
-    updateDraft((current) =>
-      applyDraftPolicy(current, policyFromIncludeSiteMedia(nextIncludeSiteMedia)),
-    );
+    setDraftPolicy(nextPolicy);
     setError(null);
   }
 
@@ -394,7 +393,6 @@ export function useSongVisualEditorState({
     setClipboard({
       mediaAssetId: attachment.mediaAssetId,
       label: attachment.label,
-      policy: attachment.policy,
       playback: { ...(attachment.playback ?? {}) },
       beatFx: attachment.beatFx,
     });
@@ -428,7 +426,7 @@ export function useSongVisualEditorState({
     const draftAttachment = createDraftAttachment({
       recordingId,
       asset,
-      policy: clipboard.policy,
+      policy: EDITOR_VISUAL_POLICY,
       order: nextClipOrder(),
       label: clipboard.label ?? asset.originalName,
       playback: {
@@ -445,6 +443,7 @@ export function useSongVisualEditorState({
 
     setDraftAttachments((current) => [...(current ?? []), draftAttachment]);
     setSelectedAttachmentId(draftAttachment.id);
+    setDraftPolicy(EDITOR_VISUAL_POLICY);
     setError(null);
   }
 
@@ -521,8 +520,8 @@ export function useSongVisualEditorState({
 
   function discardChanges() {
     if (!serverData) return;
-    setDraftAttachments(cloneAttachments(serverData.attachments));
-    setDraftPolicy(serverData.policy);
+    setDraftAttachments(draftAttachmentsForEditor(serverData));
+    setDraftPolicy(draftPolicyForEditor(serverData));
     setError(null);
   }
 
@@ -538,7 +537,6 @@ export function useSongVisualEditorState({
   return {
     attachments,
     assets: assetsQuery.data ?? [],
-    includeSiteMedia,
     timelineClips,
     timelineDurationSec,
     selectedAttachmentId,
@@ -562,7 +560,6 @@ export function useSongVisualEditorState({
     attachExistingAsset,
     attachLibraryRow,
     deleteAsset: deleteAssetMutation.mutate,
-    setIncludeSiteMedia,
     setClipAudioPulse,
     resizeClip,
     resizeClipStart,

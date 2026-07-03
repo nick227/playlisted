@@ -3,10 +3,9 @@ import { useEffect, useMemo, useState } from "react";
 import { FocusLaneSubtitleContent } from "@/components/app-shell/PlaybackFocusLane/FocusLaneSubtitleContent";
 import { useFocusLaneVisibility } from "@/components/app-shell/PlaybackFocusLane/useFocusLaneVisibility";
 import { useRecordingSubtitleStyle } from "@/hooks/useRecordingSubtitleStyle";
-import { buildSyntheticSubtitleCues } from "@/lib/playbackFocus/buildSyntheticCues";
 import { resolvePlaybackFocusFixture } from "@/lib/playbackFocus/resolvePlaybackFocusFixture";
 import type { FocusRecording } from "@/lib/playbackFocus/types";
-import { toFocusArtist } from "@/lib/playbackFocus/toFocusRecording";
+import { useSubtitleDisplay } from "@/lib/subtitleDisplay";
 import { subtitlePositionClassName } from "@/lib/subtitleStyleToCss";
 import {
   fetchRecordingSubtitles,
@@ -28,10 +27,9 @@ export function SongVisualPreviewFocusLane({
   currentTimeSec,
 }: SongVisualPreviewFocusLaneProps) {
   const { accessToken } = useAuth();
+  const { subtitlesEnabled } = useSubtitleDisplay();
   const [subtitles, setSubtitles] = useState<RecordingSubtitlesResponse | null>(null);
-
-  const syntheticCues = useMemo(() => buildSyntheticSubtitleCues(recording), [recording]);
-  const artist = useMemo(() => toFocusArtist(recording), [recording]);
+  const canLoadSubtitles = Boolean(enabled && subtitlesEnabled && recording.hasSubtitleTrack && recording.id);
 
   const { subtitlePosition, customSubtitleStyle } = useRecordingSubtitleStyle(
     recording.id,
@@ -40,7 +38,7 @@ export function SongVisualPreviewFocusLane({
   );
 
   useEffect(() => {
-    if (!enabled || !recording.id) {
+    if (!canLoadSubtitles) {
       setSubtitles(null);
       return;
     }
@@ -68,7 +66,7 @@ export function SongVisualPreviewFocusLane({
       cancelled = true;
       if (pollTimer !== null) window.clearTimeout(pollTimer);
     };
-  }, [accessToken, enabled, recording.id]);
+  }, [accessToken, canLoadSubtitles, recording.id]);
 
   useEffect(() => {
     if (!recording.id) return;
@@ -89,30 +87,28 @@ export function SongVisualPreviewFocusLane({
         currentTimeMs: currentTimeSec * 1000,
         subtitleSegments: subtitles?.segments,
         subtitleReady: subtitles?.status === "READY",
-        syntheticCues,
-        artist,
-        recording,
+        syntheticCues: [],
+        artist: null,
+        recording: null,
         focusState: {
-          playFocusActive: enabled,
-          hasBodyFaded: enabled,
-          bodyFadedAtTrackMs: enabled ? 0 : null,
+          playFocusActive: canLoadSubtitles,
+          hasBodyFaded: canLoadSubtitles,
+          bodyFadedAtTrackMs: canLoadSubtitles ? 0 : null,
         },
-        subtitlesEnabled: true,
+        subtitlesEnabled,
       }),
     [
-      artist,
+      canLoadSubtitles,
       currentTimeSec,
-      enabled,
-      recording,
       subtitles?.segments,
       subtitles?.status,
-      syntheticCues,
+      subtitlesEnabled,
     ],
   );
 
   const { displayFixture, displayKey, layerVisible, variantClass } = useFocusLaneVisibility(activeFixture);
 
-  if (!enabled || !displayFixture || displayFixture.type === "none") {
+  if (!canLoadSubtitles || !displayFixture || displayFixture.type === "none") {
     return null;
   }
 

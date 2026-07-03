@@ -1,5 +1,5 @@
 import type { ProfileLink } from "@playlisted/client-sdk";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowUpRight, Plus, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
@@ -64,6 +64,11 @@ export function StudioPage() {
   }, [user]);
 
   const profileQuery = useUserByUsername(user?.username);
+  
+  const analyticsQuery = useQuery({
+    queryKey: ["me", "analytics", "summary"],
+    queryFn: () => client.analytics.summary(),
+  });
 
   const saveMutation = useMutation({
     mutationFn: () =>
@@ -164,6 +169,22 @@ export function StudioPage() {
               <span className="truncate">@{username || user.username}</span>
               <ArrowUpRight size={14} />
             </Link>
+            <div className="p-2 artist-stats text-sm font-medium text-white/80">
+              <ul className="grid grid-cols-3 divide-x divide-white/10 rounded-lg border border-white/10 bg-black/20 text-center">
+                <li className="p-2 flex flex-col">
+                  <span className="text-xs uppercase tracking-wider text-white/50">Views</span>
+                  <span className="text-lg font-bold text-white">{analyticsQuery.data?.summary.totalPageViews.current.toLocaleString() ?? "-"}</span>
+                </li>
+                <li className="p-2 flex flex-col">
+                  <span className="text-xs uppercase tracking-wider text-white/50">Likes</span>
+                  <span className="text-lg font-bold text-white">{analyticsQuery.data?.summary.totalLikes.current.toLocaleString() ?? "-"}</span>
+                </li>
+                <li className="p-2 flex flex-col">
+                  <span className="text-xs uppercase tracking-wider text-white/50">Hours</span>
+                  <span className="text-lg font-bold text-white">{analyticsQuery.data ? (analyticsQuery.data.summary.totalPlaySeconds.current / 3600).toFixed(1) : "-"}</span>
+                </li>
+              </ul>
+            </div>
           </div>
 
           <form

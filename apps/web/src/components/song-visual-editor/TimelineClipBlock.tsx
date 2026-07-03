@@ -1,5 +1,5 @@
 import { GripVertical, Scissors, AudioLines } from "lucide-react";
-import { useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 
 import { MediaAssetThumb } from "./MediaAssetThumb";
 import {
@@ -46,9 +46,12 @@ type DragMode = "move" | "resize-start" | "resize-end";
 
 type DragState = {
   mode: DragMode;
+  pointerId: number;
   startX: number;
   startY: number;
 };
+
+type DragPreview = { startSec: number; durationSec: number };
 
 export function TimelineClipBlock({
   clip,
@@ -72,7 +75,15 @@ export function TimelineClipBlock({
   onSnapEnd,
 }: TimelineClipBlockProps) {
   const [drag, setDrag] = useState<DragState | null>(null);
-  const [preview, setPreview] = useState<{ startSec: number; durationSec: number } | null>(null);
+  const [preview, setPreviewState] = useState<DragPreview | null>(null);
+  // React state can lag one pointer event behind; commits read this ref so the
+  // final pointermove before pointerup is never dropped.
+  const previewRef = useRef<DragPreview | null>(null);
+
+  function setPreview(next: DragPreview | null) {
+    previewRef.current = next;
+    setPreviewState(next);
+  }
 
   const renderStartSec = preview?.startSec ?? clip.startSec;
   const renderDurationSec = preview?.durationSec ?? clip.durationSec;
@@ -90,16 +101,23 @@ export function TimelineClipBlock({
   }
 
   function beginDrag(mode: DragMode, event: ReactPointerEvent<HTMLElement>) {
-    if (isLocked) return;
+    if (isLocked || drag) return;
     onRefreshTrackRect();
     event.stopPropagation();
-    event.currentTarget.setPointerCapture(event.pointerId);
-    setDrag({ mode, startX: event.clientX, startY: event.clientY });
+    try {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    } catch {
+      // Pointer already released/invalid — without capture the drag would lose
+      // events as soon as the cursor leaves the handle, so don't start one.
+      return;
+    }
+    setPreview(null);
+    setDrag({ mode, pointerId: event.pointerId, startX: event.clientX, startY: event.clientY });
     onSelect();
   }
 
   function updateDragPreview(event: ReactPointerEvent<HTMLElement>) {
-    if (!drag) return;
+    if (!drag || event.pointerId !== drag.pointerId) return;
     const rect = getTrackRect();
     if (!rect) return;
 
@@ -131,22 +149,42 @@ export function TimelineClipBlock({
     if (next) setPreview(next);
   }
 
-  function finishDrag(event: ReactPointerEvent<HTMLElement>) {
-    if (!drag) return;
+  function endDrag(event: ReactPointerEvent<HTMLElement>) {
+    setDrag(null);
+    setPreview(null);
+    onSnapEnd();
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      try {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      } catch {
+        // Capture already gone — nothing to release.
+      }
+    }
+  }
 
+  function finishDrag(event: ReactPointerEvent<HTMLElement>) {
+    if (!drag || event.pointerId !== drag.pointerId) return;
+
+    const finalPreview = previewRef.current;
     const dragged = isPointerDrag(event.clientX - drag.startX, event.clientY - drag.startY);
-    if (dragged && preview) {
-      if (drag.mode === "move") onMove(preview.startSec);
-      else if (drag.mode === "resize-end") onResizeEnd(preview.durationSec);
-      else onResizeStart(preview.startSec);
+    if (dragged && finalPreview) {
+      if (drag.mode === "move") onMove(finalPreview.startSec);
+      else if (drag.mode === "resize-end") onResizeEnd(finalPreview.durationSec);
+      else onResizeStart(finalPreview.startSec);
     } else if (!dragged && drag.mode === "move") {
       onSelect();
     }
 
-    setDrag(null);
-    setPreview(null);
-    onSnapEnd();
-    event.currentTarget.releasePointerCapture(event.pointerId);
+    endDrag(event);
+  }
+
+  // Fired on pointercancel (touch scroll, browser gesture takeover) and on
+  // lostpointercapture — without this a cancelled drag leaves the block stuck
+  // in drag mode, tracking hover moves and committing bogus positions on the
+  // next click.
+  function cancelDrag(event: ReactPointerEvent<HTMLElement>) {
+    if (!drag || event.pointerId !== drag.pointerId) return;
+    endDrag(event);
   }
 
   function onCutPointerDown(event: ReactPointerEvent<HTMLDivElement>) {
@@ -164,7 +202,7 @@ export function TimelineClipBlock({
   return (
     <div
       className={[
-        "pointer-events-auto absolute top-0 flex h-full min-w-[4rem] overflow-hidden rounded-md border-2 text-left text-[11px] shadow-sm backdrop-blur-[1px] transition-shadow",
+        "pointer-events-auto absolute top-0 flex h-full min-w-[4rem] touch-none select-none overflow-hidden rounded-md border-2 text-left text-[11px] shadow-sm backdrop-blur-[1px] transition-shadow",
         syncStatus === "error"
           ? "border-red-400 bg-red-500/25 ring-2 ring-red-400/40 text-white"
           : selected
@@ -191,6 +229,8 @@ export function TimelineClipBlock({
           onPointerDown={(event) => beginDrag("move", event)}
           onPointerMove={updateDragPreview}
           onPointerUp={finishDrag}
+          onPointerCancel={cancelDrag}
+          onLostPointerCapture={cancelDrag}
           className={[
             "relative z-10 flex w-5 shrink-0 items-center justify-center border-r border-white/10 bg-black/40",
             isDragging ? "cursor-grabbing" : "cursor-grab",
@@ -206,6 +246,8 @@ export function TimelineClipBlock({
         onPointerDown={(event) => beginDrag("resize-start", event)}
         onPointerMove={updateDragPreview}
         onPointerUp={finishDrag}
+        onPointerCancel={cancelDrag}
+        onLostPointerCapture={cancelDrag}
         className={[
           "absolute bottom-0 left-0 top-0 z-20 w-2 cursor-ew-resize bg-emerald-400/30 hover:bg-emerald-400/60",
           cutMode ? "hidden" : selected || isDragging ? "opacity-100" : "opacity-0 hover:opacity-100",
@@ -217,6 +259,8 @@ export function TimelineClipBlock({
         onPointerDown={cutMode ? undefined : (event) => beginDrag("move", event)}
         onPointerMove={cutMode ? undefined : updateDragPreview}
         onPointerUp={cutMode ? undefined : finishDrag}
+        onPointerCancel={cutMode ? undefined : cancelDrag}
+        onLostPointerCapture={cutMode ? undefined : cancelDrag}
       >
         <span className="truncate font-medium drop-shadow">
           {clip.attachment.label ?? clip.attachment.mediaAsset.originalName}
@@ -231,6 +275,8 @@ export function TimelineClipBlock({
         onPointerDown={(event) => beginDrag("resize-end", event)}
         onPointerMove={updateDragPreview}
         onPointerUp={finishDrag}
+        onPointerCancel={cancelDrag}
+        onLostPointerCapture={cancelDrag}
         className={[
           "absolute bottom-0 right-0 top-0 z-20 w-2 cursor-ew-resize bg-emerald-400/30 hover:bg-emerald-400/60",
           cutMode ? "hidden" : selected || isDragging ? "opacity-100" : "opacity-0 hover:opacity-100",

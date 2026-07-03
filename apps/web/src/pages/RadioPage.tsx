@@ -95,6 +95,24 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
     submissionCollectionMutation.mutate();
   }
 
+  function calculateFontSize(text: string): number {
+    const minFontSize = 24;
+    const maxFontSize = 70;
+    const minChars = 25;
+    const maxChars = 40;
+
+    const length = Math.max(minChars, Math.min(maxChars, text.length));
+    const ratio = (length - minChars) / (maxChars - minChars);
+    
+    return maxFontSize - (ratio * (maxFontSize - minFontSize));
+  }
+
+  function MagicFont({ children }: { children: string }) {
+    const text = children || "";
+    const fontSize = calculateFontSize(text);
+    return <span style={{ fontSize: `${fontSize}px`, display: "block", lineHeight: "1" }}>{text}</span>;
+  }
+
   const pageMinHeight = isEmbedded
     ? "min-h-[calc(100svh-var(--spacing-topbar)-2rem)]"
     : "min-h-[calc(100svh-var(--spacing-topbar)-3rem)]";
@@ -147,13 +165,13 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
             <Radio size={13} className="shrink-0 text-[var(--color-brand)]" />
             <span className="truncate">{station?.name ?? "Playlisted Radio"}</span>
           </p>
-          <h1 className="grid min-h-[4.9rem] max-w-full place-items-center overflow-hidden text-balance text-[clamp(2rem,8vw,3.75rem)] font-black leading-[0.98] text-white">
+          <h1 className="grid min-h-[4.9rem] max-w-full place-items-center overflow-hidden text-balance text-[clamp(2rem,8vw,3.75rem)] font-black leading-[0.98] text-white line-height-none">
             {playlistUrl ? (
               <Link
                 to={playlistUrl}
-                className="overflow-hidden transition hover:text-[var(--color-brand)] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] bg-[var(--color-canvas)]/80 rounded-sm"
+                className="overflow-hidden transition hover:text-[var(--color-brand)] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] bg-[var(--color-canvas)]/80 rounded-sm p-2"
               >
-                {nowPlaying?.title ?? "Radio"}
+                <MagicFont>{nowPlaying?.title ?? "Radio"}</MagicFont>
               </Link>
             ) : (
               <span className="overflow-hidden [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] bg-[var(--color-canvas)]/80 rounded-sm">

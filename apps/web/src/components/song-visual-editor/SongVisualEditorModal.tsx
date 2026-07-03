@@ -52,18 +52,20 @@ function SongVisualEditorModalInner({
 }: SongVisualEditorModalInnerProps) {
   const { releasePlayback } = useAudioPlayer();
   const { pauseRadio } = useRadioPlayer();
-  const editor = useSongVisualEditorState({
-    recordingId: recording.id,
-    accessToken,
-    durationSeconds: recording.durationSeconds,
-  });
-
   const playback = useSongVisualPreviewPlayback(recording.audioUrl);
-  const [previewSubtitles, setPreviewSubtitles] = useState(true);
   const [editMode, setEditMode] = useState<TimelineEditMode>("select");
   const { data: waveform, loading: waveformLoading, error: waveformError } = useAudioWaveformPeaks(recording.audioUrl);
 
-  const durationSec = waveform?.durationSec || playback.durationSec || editor.timelineDurationSec;
+  // Single source of truth for song duration: the editor state must resolve clip
+  // bounds against the same duration the timeline renders with, otherwise drag
+  // previews and commits disagree and moves silently snap back.
+  const editor = useSongVisualEditorState({
+    recordingId: recording.id,
+    accessToken,
+    durationSeconds: waveform?.durationSec || playback.durationSec || recording.durationSeconds,
+  });
+
+  const durationSec = editor.timelineDurationSec;
   const activeClip = useMemo(
     () => findClipAtTime(editor.timelineClips, playback.currentTimeSec),
     [editor.timelineClips, playback.currentTimeSec],
@@ -135,7 +137,6 @@ function SongVisualEditorModalInner({
               clip={activeClip}
               isPlaying={playback.isPlaying}
               currentTimeSec={playback.currentTimeSec}
-              previewSubtitles={previewSubtitles}
               recording={recording}
               audioRef={playback.audioRef}
               onTogglePlayback={playback.togglePlayback}
@@ -151,12 +152,7 @@ function SongVisualEditorModalInner({
               isPlaying={playback.isPlaying}
               canPlay={Boolean(recording.audioUrl) && durationSec > 0}
               editMode={editMode}
-              includeSiteMedia={editor.includeSiteMedia}
-              previewSubtitles={previewSubtitles}
-              hasAttachments={editor.attachments.some((attachment) => attachment.enabled)}
               onEditModeChange={setEditMode}
-              onIncludeSiteMediaChange={(includeSiteMedia) => editor.setIncludeSiteMedia(includeSiteMedia)}
-              onPreviewSubtitlesChange={setPreviewSubtitles}
               onTogglePlayback={playback.togglePlayback}
               onUpload={editor.openUploadPicker}
               onCancelUpload={editor.cancelUpload}

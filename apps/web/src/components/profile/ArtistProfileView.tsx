@@ -103,7 +103,7 @@ export function ArtistProfileView({
         <BrowseBreadcrumbs crumbs={browseCrumbs} />
       </div>
 
-      <div className="space-y-10 mb-32">
+      <div className="space-y-10">
         <ArtistProfileHero
           user={user}
           genreNames={genreNames}
@@ -141,7 +141,7 @@ export function ArtistProfileView({
       </div>
 
       {relatedArtists.length > 0 ? (
-        <div className={`${ARTIST_PROFILE_LAYOUT_CLASS} mt-4`}>
+        <div className={`${ARTIST_PROFILE_LAYOUT_CLASS} mt-32`}>
           <ContentRow title="More Artists">
             {relatedArtists.map((item: TopArtistItem) => (
               <ArtistCard

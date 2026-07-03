@@ -1,4 +1,4 @@
-import { Loader2, MousePointer2, Pause, Play, Scissors, Sparkles, Subtitles, Upload } from "lucide-react";
+import { Loader2, MousePointer2, Pause, Play, Scissors, Upload } from "lucide-react";
 import type { ReactNode } from "react";
 import { editorToggleClass } from "./editorToggle";
 
@@ -18,12 +18,7 @@ type SongVisualEditorToolbarProps = {
   isPlaying: boolean;
   canPlay: boolean;
   editMode: TimelineEditMode;
-  includeSiteMedia: boolean;
-  previewSubtitles: boolean;
-  hasAttachments: boolean;
   onEditModeChange: (mode: TimelineEditMode) => void;
-  onIncludeSiteMediaChange: (includeSiteMedia: boolean) => void;
-  onPreviewSubtitlesChange: (enabled: boolean) => void;
   onTogglePlayback: () => void;
   onUpload: () => void;
   onCancelUpload: () => void;
@@ -40,12 +35,7 @@ export function SongVisualEditorToolbar({
   isPlaying,
   canPlay,
   editMode,
-  includeSiteMedia,
-  previewSubtitles,
-  hasAttachments,
   onEditModeChange,
-  onIncludeSiteMediaChange,
-  onPreviewSubtitlesChange,
   onTogglePlayback,
   onUpload,
   onCancelUpload,
@@ -85,35 +75,6 @@ export function SongVisualEditorToolbar({
           <Scissors size={13} />
         </ToolbarIconButton>
       </ToolbarButtonGroup>
-
-      <ToolbarDivider />
-
-      <ToolbarButtonGroup>
-        <ToolbarLabeledToggle
-          active={includeSiteMedia}
-          disabled={isBusy || !hasAttachments}
-          label="site media"
-          title={
-            hasAttachments
-              ? "Built-in site visuals can appear in gaps between your clips"
-              : "Add a clip before enabling site media"
-          }
-          onClick={() => onIncludeSiteMediaChange(!includeSiteMedia)}
-        >
-          <Sparkles size={13} />
-        </ToolbarLabeledToggle>
-        <ToolbarLabeledToggle
-          active={previewSubtitles}
-          disabled={isBusy}
-          label="preview subtitles"
-          title="Show playback focus lane subtitles in the preview"
-          onClick={() => onPreviewSubtitlesChange(!previewSubtitles)}
-        >
-          <Subtitles size={13} />
-        </ToolbarLabeledToggle>
-      </ToolbarButtonGroup>
-
-      <ToolbarDivider />
 
       <button
         type="button"
@@ -198,36 +159,6 @@ function ToolbarIconButton({
       title={label}
     >
       {children}
-    </button>
-  );
-}
-
-function ToolbarLabeledToggle({
-  active,
-  disabled,
-  label,
-  title,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  disabled: boolean;
-  label: string;
-  title?: string;
-  onClick: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={onClick}
-      className={editorToggleClass(active, disabled, "h-7 gap-1.5 px-2.5 text-[11px]")}
-      aria-pressed={active}
-      title={title ?? label}
-    >
-      {children}
-      <span>{label}</span>
     </button>
   );
 }

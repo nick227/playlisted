@@ -27,7 +27,6 @@ type SongVisualEditorPreviewProps = {
   clip: TimelineClip | null;
   isPlaying: boolean;
   currentTimeSec: number;
-  previewSubtitles: boolean;
   recording: SongVisualEditorRecording;
   audioRef: RefObject<HTMLAudioElement | null>;
   onTogglePlayback: () => void;
@@ -38,7 +37,6 @@ export function SongVisualEditorPreview({
   clip,
   isPlaying,
   currentTimeSec,
-  previewSubtitles,
   recording,
   audioRef,
   onTogglePlayback,
@@ -80,7 +78,7 @@ export function SongVisualEditorPreview({
         )}
 
         <SongVisualPreviewFocusLane
-          enabled={previewSubtitles}
+          enabled={isPlaying}
           recording={recording}
           currentTimeSec={currentTimeSec}
         />

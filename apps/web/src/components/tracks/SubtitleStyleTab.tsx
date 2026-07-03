@@ -66,6 +66,18 @@ export function SubtitleStyleTab({
         </div>
       </section>
 
+      
+      <div className="flex justify-center">
+        <button
+          type="button"
+          className="rounded bg-emerald-500 px-6 py-2 font-semibold text-black hover:bg-emerald-400 disabled:opacity-50"
+          onClick={onSave}
+          disabled={isSaving || saveDisabled}
+        >
+          {isSaving ? "Saving..." : "Save Style"}
+        </button>
+      </div>
+
       <section>
         <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-white/40">Position</h3>
         <div className="grid grid-cols-3 gap-2">
@@ -121,16 +133,6 @@ export function SubtitleStyleTab({
         </div>
       </section>
 
-      <div className="flex justify-end">
-        <button
-          type="button"
-          className="rounded bg-emerald-500 px-6 py-2 font-semibold text-black hover:bg-emerald-400 disabled:opacity-50"
-          onClick={onSave}
-          disabled={isSaving || saveDisabled}
-        >
-          {isSaving ? "Saving..." : "Save Style"}
-        </button>
-      </div>
     </div>
   );
 }

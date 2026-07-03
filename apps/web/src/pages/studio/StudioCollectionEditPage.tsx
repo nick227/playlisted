@@ -289,7 +289,7 @@ export function StudioCollectionEditPage() {
                     className={[
                       "rounded-full px-4 py-1.5 text-sm font-semibold transition",
                       effectiveVisibility === "PUBLIC" ? "bg-white text-black" : "text-white",
-                      hasNoTracks ? "opacity-40 cursor-not-allowed" : "hover:bg-white/10",
+                      hasNoTracks ? "opacity-40 cursor-not-allowed" : "hover:bg-white/90",
                     ].join(" ")}
                   >
                     Public
@@ -301,7 +301,7 @@ export function StudioCollectionEditPage() {
                     className={[
                       "rounded-full px-4 py-1.5 text-sm font-semibold transition",
                       effectiveVisibility === "PRIVATE" ? "bg-white text-black" : "text-white",
-                      hasNoTracks ? "opacity-40 cursor-not-allowed" : "hover:bg-white/10",
+                      hasNoTracks ? "opacity-40 cursor-not-allowed" : "hover:bg-black/90",
                     ].join(" ")}
                   >
                     Private
