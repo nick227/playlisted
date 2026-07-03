@@ -33,6 +33,7 @@ function stylePreviewCss(preset: SubtitleStylePreset): CSSProperties {
     fontWeight: preset.fontWeight,
     color: preset.color,
     backgroundColor: preset.backgroundColor,
+    backgroundImage: preset.backgroundImage,
     textShadow: preset.textShadow,
     borderRadius: preset.borderRadius,
     letterSpacing: preset.letterSpacing,

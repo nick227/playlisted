@@ -11,6 +11,7 @@ export type SubtitleStylePreset = {
   textShadow?: string;
   borderRadius?: string;
   letterSpacing?: string;
+  backgroundImage?: string;
 };
 
 export const DEFAULT_SUBTITLE_POSITION: SubtitlePosition = "bottom";
@@ -124,6 +125,32 @@ export const SUBTITLE_STYLE_PRESETS: SubtitleStylePreset[] = [
     backgroundColor: "rgba(3, 20, 12, 0.82)",
     textShadow: "0 0 16px rgba(134, 239, 172, 0.7)",
     borderRadius: "0.45rem",
+  },
+  {
+    id: "vaporwave",
+    name: "Vaporwave",
+    fontFamily: '"Impact", "Arial Black", sans-serif',
+    fontSize: "1.05rem",
+    fontWeight: 400,
+    color: "#ff71ce",
+    backgroundColor: "rgba(45, 12, 72, 0.92)",
+    backgroundImage: "linear-gradient(135deg, rgba(45, 12, 72, 0.95), rgba(12, 28, 68, 0.95))",
+    textShadow: "2px 2px 0 #01cdfe, -2px -2px 0 #b967ff, 0 0 18px rgba(255, 113, 206, 0.55)",
+    letterSpacing: "0.14em",
+    borderRadius: "0",
+  },
+  {
+    id: "glitch",
+    name: "Glitch",
+    fontFamily: '"Courier New", monospace',
+    fontSize: "0.92rem",
+    fontWeight: 700,
+    color: "#f8fafc",
+    backgroundColor: "rgba(2, 6, 23, 0.94)",
+    textShadow:
+      "3px 0 #ef4444, -3px 0 #22d3ee, 1px 1px 0 #a855f7, 0 0 12px rgba(239, 68, 68, 0.4), 0 0 12px rgba(34, 211, 238, 0.35)",
+    letterSpacing: "0.08em",
+    borderRadius: "0.1rem",
   },
 ];
 
