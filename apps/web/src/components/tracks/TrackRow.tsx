@@ -1,13 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
-import { Captions, ChevronDown, ChevronUp, CircleSlash, ImagePlus, Loader2, Pause, Play, TriangleAlert, X } from "lucide-react";
+import { ImagePlus, Pause, Play } from "lucide-react";
 import { useEffect, useRef, useState, type MouseEvent } from "react";
 
 import { RecordingActionMenu } from "@/components/media/RecordingActionMenu";
 import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
-import { SongVisualEditorModal, SongVisualStatusBadge } from "@/components/song-visual-editor";
+import { SongVisualEditorModal } from "@/components/song-visual-editor";
 import { PlaybackBars } from "@/features/playback-indicators/PlaybackBars";
 import { fetchSongVisualAttachments } from "@/lib/visualMediaApi";
 import { SubtitleEditorModal } from "./SubtitleEditorModal";
+import { TrackEditActionMenu } from "./TrackEditActionMenu";
 import { normalizeSubtitlePosition, normalizeSubtitleStyleId } from "@/lib/subtitleStylePresets";
 import { useTrackPlayback } from "@/hooks/useTrackPlayback";
 import { formatDuration, formatPlayCount } from "@/lib/format";
@@ -55,61 +56,6 @@ interface TrackRowProps {
   queueTrack?: QueueTrack;
   subtitle?: SubtitleSummary | null;
   shareUrl?: string;
-}
-
-function SubtitleStatusBadge({ subtitle, editMode }: { subtitle?: SubtitleSummary | null; editMode?: boolean }) {
-  const status = subtitle?.status ?? "NOT_SET";
-  const baseClass =
-    "inline-flex h-6 min-w-6 shrink-0 items-center justify-center rounded border px-1.5 text-[10px] font-semibold uppercase leading-none";
-
-  if (status === "READY") {
-    return (
-      <span className={`${baseClass} border-emerald-400/30 bg-emerald-400/10 text-emerald-200`} title="Transcript ready">
-        <Captions size={13} />
-        <span className="ml-1 hidden sm:inline">CC</span>
-      </span>
-    );
-  }
-
-  if (status === "QUEUED" || status === "PROCESSING") {
-    return (
-      <span className={`${baseClass} border-amber-300/30 bg-amber-300/10 text-amber-200`} title="Transcript processing">
-        <Loader2 size={13} className="animate-spin" />
-        <span className="ml-1 hidden sm:inline">CC</span>
-      </span>
-    );
-  }
-
-  if (status === "FAILED") {
-    return (
-      <span className={`${baseClass} border-red-400/30 bg-red-400/10 text-red-200`} title="Transcript failed">
-        <TriangleAlert size={13} />
-        <span className="ml-1 hidden sm:inline">CC</span>
-      </span>
-    );
-  }
-
-  if (status === "DISABLED") {
-    return (
-      <span
-        className={`${baseClass} ${editMode ? "border-white/25 bg-white/10 text-white/50" : "border-white/10 bg-white/[0.03] text-[var(--color-text-subtle)]"}`}
-        title="Subtitles disabled"
-      >
-        <CircleSlash size={13} />
-        <span className="ml-1 hidden sm:inline">Off</span>
-      </span>
-    );
-  }
-
-  return (
-    <span
-      className={`${baseClass} ${editMode ? "border-white/25 bg-white/10 text-white/50" : "border-white/10 bg-white/[0.03] text-[var(--color-text-subtle)]"}`}
-      title="Transcript not set"
-    >
-      <CircleSlash size={13} />
-      <span className="ml-1 hidden sm:inline">CC</span>
-    </span>
-  );
 }
 
 export function TrackRow({
@@ -387,85 +333,26 @@ export function TrackRow({
             {formatPlayCount(playCount)} plays
           </span>
         )}
-        {editMode ? (
-          <>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setSubtitleModalOpen(true);
-              }}
-              className="rounded focus:outline-none focus:ring-1 focus:ring-emerald-400 transition-transform hover:scale-105"
-              title="Edit Subtitles"
-            >
-              <SubtitleStatusBadge subtitle={subtitle ?? queueTrack?.subtitle} editMode={editMode} />
-            </button>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setVisualEditorOpen(true);
-              }}
-              className="rounded focus:outline-none focus:ring-1 focus:ring-emerald-400 transition-transform hover:scale-105"
-              title="Edit Visuals"
-            >
-              <SongVisualStatusBadge attachmentCount={visualAttachmentCount} />
-            </button>
-          </>
-        ) : null}
         <span className="text-xs text-[var(--color-text-muted)]">{formatDuration(durationSeconds)}</span>
         {editMode ? (
-          <>
-            {onUpdateTags && genreOptions ? (
-              <select
-                value={genreSelectValue}
-                onChange={(event) => handleGenreSelect(event.target.value)}
-                disabled={saving || genreLoading}
-                title={
-                  genreSelectValue
-                    ? "Custom genre for this track"
-                    : playlistGenreSlug
-                      ? `Uses playlist genre (${genreOptions.find((g) => g.slug === playlistGenreSlug)?.name ?? playlistGenreSlug})`
-                      : "Uses playlist genre"
-                }
-                aria-label="Track genre"
-                className="max-w-[4rem] md:max-w-[6.5rem] truncate rounded border border-white/10 bg-black px-1.5 py-0.5 text-xs text-white outline-none focus:border-[var(--color-brand)] disabled:opacity-50"
-              >
-                <option value="">Default</option>
-                {genreOptions.map((genre) => (
-                  <option key={genre.id} value={genre.slug}>
-                    {genre.name}
-                  </option>
-                ))}
-              </select>
-            ) : null}
-            <button
-              type="button"
-              disabled={!canMoveUp}
-              onClick={onMoveUp}
-              className="rounded p-1 text-[var(--color-text-muted)] hover:bg-white/10 hover:text-white disabled:opacity-30"
-              aria-label="Move up"
-            >
-              <ChevronUp size={16} />
-            </button>
-            <button
-              type="button"
-              disabled={!canMoveDown}
-              onClick={onMoveDown}
-              className="rounded p-1 text-[var(--color-text-muted)] hover:bg-white/10 hover:text-white disabled:opacity-30"
-              aria-label="Move down"
-            >
-              <ChevronDown size={16} />
-            </button>
-            <button
-              type="button"
-              onClick={onRemove}
-              className="rounded p-1 text-red-400 hover:bg-red-500/20"
-              aria-label="Remove track"
-            >
-              <X size={16} />
-            </button>
-          </>
+          <TrackEditActionMenu
+            title={title}
+            subtitle={subtitle ?? queueTrack?.subtitle}
+            visualAttachmentCount={visualAttachmentCount}
+            genreOptions={genreOptions}
+            genreSelectValue={genreSelectValue}
+            playlistGenreSlug={playlistGenreSlug}
+            genreLoading={genreLoading}
+            saving={saving}
+            canMoveUp={canMoveUp}
+            canMoveDown={canMoveDown}
+            onEditSubtitles={() => setSubtitleModalOpen(true)}
+            onEditVisuals={() => setVisualEditorOpen(true)}
+            onGenreSelect={onUpdateTags ? handleGenreSelect : undefined}
+            onMoveUp={onMoveUp}
+            onMoveDown={onMoveDown}
+            onRemove={onRemove}
+          />
         ) : showActions ? (
           <>
             <FavoriteHeartButton target="recording" id={recordingId} variant="inline" inlineAlwaysVisible />
