@@ -58,6 +58,34 @@ export function createDiskMulter(kind: UploadMediaKind) {
 export const studioAudioUpload = createDiskMulter("audio");
 export const studioImageUpload = createDiskMulter("image");
 export const studioVideoUpload = createDiskMulter("video");
+
+const visualVideoStorage = multer.diskStorage({
+  destination: async (_req, file, cb) => {
+    try {
+      const subdir = file.fieldname === "thumbnail" ? "images" : "videos";
+      const dest = path.join(uploadsDir, subdir);
+      await fs.mkdir(dest, { recursive: true });
+      cb(null, dest);
+    } catch (err) {
+      cb(err as Error, "");
+    }
+  },
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase() || (file.fieldname === "thumbnail" ? ".jpg" : ".bin");
+    const base = slugify(path.basename(file.originalname, path.extname(file.originalname))) || file.fieldname;
+    const rand = crypto.randomBytes(8).toString("hex");
+    cb(null, `${base}-${rand}${ext}`);
+  },
+});
+
+export const studioVisualVideoUpload = multer({
+  storage: visualVideoStorage,
+  limits: { fileSize: UPLOAD_MAX_BYTES.video },
+}).fields([
+  { name: "file", maxCount: 1 },
+  { name: "thumbnail", maxCount: 1 },
+]);
+
 export const ingestAudioUpload = createDiskMulter("audio");
 export const ingestImageUpload = createDiskMulter("image");
 export const ingestVideoUpload = createDiskMulter("video");

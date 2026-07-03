@@ -26,6 +26,7 @@ type SongVisualEditorToolbarProps = {
   onPreviewSubtitlesChange: (enabled: boolean) => void;
   onTogglePlayback: () => void;
   onUpload: () => void;
+  onCancelUpload: () => void;
   onSave: () => void;
   onCancel: () => void;
 };
@@ -47,6 +48,7 @@ export function SongVisualEditorToolbar({
   onPreviewSubtitlesChange,
   onTogglePlayback,
   onUpload,
+  onCancelUpload,
   onSave,
   onCancel,
 }: SongVisualEditorToolbarProps) {
@@ -127,6 +129,16 @@ export function SongVisualEditorToolbar({
         {isUploading ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
         {isUploading ? formatVisualUploadProgressLabel(uploadProgress, "button") : "Upload"}
       </button>
+
+      {isUploading ? (
+        <button
+          type="button"
+          onClick={onCancelUpload}
+          className={`inline-flex ${TOOLBAR_CONTROL_HEIGHT} items-center rounded-md border border-white/15 px-3 text-[11px] font-semibold text-white/75 hover:bg-white/10 hover:text-white`}
+        >
+          Cancel
+        </button>
+      ) : null}
 
       <div className={`ml-auto flex items-center gap-2 ${TOOLBAR_CONTROL_HEIGHT}`}>
         <button

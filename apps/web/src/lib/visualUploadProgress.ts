@@ -7,6 +7,14 @@ export type VisualUploadProgress = {
   percent: number | null;
 };
 
+export type PendingVisualUpload = {
+  id: string;
+  fileName: string;
+  mediaType: "image" | "video";
+  sizeBytes: number;
+  previewUrl: string;
+};
+
 type ProgressLabelStyle = "button" | "overlay";
 
 export function formatVisualUploadProgressLabel(

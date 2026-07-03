@@ -2,6 +2,10 @@ import { createReadStream } from "node:fs";
 import fs from "node:fs/promises";
 
 import { DeleteObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { Upload } from "@aws-sdk/lib-storage";
+
+/** Use multipart upload for large files (slow uplinks, R2/S3 reliability). */
+const R2_MULTIPART_THRESHOLD_BYTES = 8 * 1024 * 1024;
 
 function requireEnv(name: string) {
   const value = process.env[name];
@@ -53,15 +57,35 @@ export async function uploadFileToR2(input: {
   contentType: string;
 }) {
   const stat = await fs.stat(input.filePath);
-  await getClient().send(
-    new PutObjectCommand({
-      Bucket: requireEnv("R2_BUCKET_NAME"),
-      Key: input.key,
-      Body: createReadStream(input.filePath),
-      ContentLength: stat.size,
-      ContentType: input.contentType,
-    }),
-  );
+  const bucket = requireEnv("R2_BUCKET_NAME");
+  const client = getClient();
+  const body = createReadStream(input.filePath);
+
+  if (stat.size >= R2_MULTIPART_THRESHOLD_BYTES) {
+    const upload = new Upload({
+      client,
+      params: {
+        Bucket: bucket,
+        Key: input.key,
+        Body: body,
+        ContentType: input.contentType,
+      },
+      queueSize: 4,
+      partSize: 8 * 1024 * 1024,
+      leavePartsOnError: false,
+    });
+    await upload.done();
+  } else {
+    await client.send(
+      new PutObjectCommand({
+        Bucket: bucket,
+        Key: input.key,
+        Body: body,
+        ContentLength: stat.size,
+        ContentType: input.contentType,
+      }),
+    );
+  }
 
   return {
     key: input.key,

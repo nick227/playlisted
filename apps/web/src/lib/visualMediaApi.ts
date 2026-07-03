@@ -1,7 +1,7 @@
 import { uploadVisualMediaFile } from "@/lib/visualMediaUpload";
 import type { SongVisualPolicy, VisualMediaBeatFx } from "@/theatre/media/types";
 
-export type { VisualUploadPhase, VisualUploadProgress } from "@/lib/visualUploadProgress";
+export type { VisualUploadPhase, VisualUploadProgress, PendingVisualUpload } from "@/lib/visualUploadProgress";
 export { uploadVisualMediaFile, type VisualUploadOptions } from "@/lib/visualMediaUpload";
 
 export type VisualMediaAssetRecord = {

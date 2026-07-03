@@ -13,8 +13,9 @@
   },
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsc -p tsconfig.json",
-    "build:prod": "prisma generate && npm run build && npm run web:build",
+    "build": "npm run upload-policy:build && tsc -p tsconfig.json",
+    "upload-policy:build": "npm --prefix packages/upload-policy run build",
+    "build:prod": "npm run upload-policy:build && prisma generate && npm run build && npm run web:build",
     "start": "node dist/server.js",
     "start:prod": "node dist/server.js",
     "postinstall": "prisma generate",
@@ -59,12 +60,14 @@
     "dev:wsl": "npx concurrently -k -n api,web,worker -c blue,green,magenta \"SERVE_WEB_DIST=1 npm run dev\" \"npm run web:dev\" \"npm run subtitles:worker:dev\"",
     "dev:wsl:no-worker": "npx concurrently -k -n api,web -c blue,green \"SERVE_WEB_DIST=1 npm run dev\" \"npm run web:dev\"",
     "dev:worker": "npm run subtitles:worker",
-    "test": "vitest run",
+    "test": "npm run upload-policy:build && vitest run",
     "test:watch": "vitest",
     "test:api": "vitest run src/__tests__/apiKeys.test.ts src/__tests__/ingestUploads.test.ts src/__tests__/ingestPlaylists.test.ts src/__tests__/ingestRecordings.test.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1075.0",
+    "@aws-sdk/lib-storage": "^3.1075.0",
+    "@playlisted/upload-policy": "*",
     "@prisma/client": "^6.8.2",
     "bcryptjs": "^2.4.3",
     "compression": "^1.8.1",

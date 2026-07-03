@@ -17,14 +17,14 @@ import { persistUploadedFile } from "../lib/storage/uploadStorage.js";
 
 export const uploadsRouter = Router();
 
-uploadsRouter.post("/audio", (req, res, next) => {
+uploadsRouter.post("/audio", async (req, res, next) => {
+  const auth = await requireAuth(req, res);
+  if (!auth) return;
+
   studioAudioUpload.single("file")(req, res, async (multerErr) => {
     if (handleMulterSingleError(multerErr, "audio", res, next)) return;
 
     try {
-      const auth = await requireAuth(req, res);
-      if (!auth) return;
-
       const file = req.file;
       if (!file) {
         return res.status(400).json({
@@ -61,14 +61,14 @@ uploadsRouter.post("/audio", (req, res, next) => {
   });
 });
 
-uploadsRouter.post("/images", (req, res, next) => {
+uploadsRouter.post("/images", async (req, res, next) => {
+  const auth = await requireAuth(req, res);
+  if (!auth) return;
+
   studioImageUpload.single("file")(req, res, async (multerErr) => {
     if (handleMulterSingleError(multerErr, "image", res, next)) return;
 
     try {
-      const auth = await requireAuth(req, res);
-      if (!auth) return;
-
       const file = req.file;
       if (!file) {
         return res.status(400).json({

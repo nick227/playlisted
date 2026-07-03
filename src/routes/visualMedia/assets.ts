@@ -1,14 +1,15 @@
 import fs from "node:fs/promises";
+import type { Express } from "express";
 import { Router } from "express";
 
 import { prisma } from "../../lib/prisma.js";
 import { requireAuth } from "../../lib/requireAuth.js";
-import { deleteStoredUpload } from "../../lib/storage/deleteStoredUpload.js";
+import { deleteStoredUpload, storageKeyFromUploadUrl } from "../../lib/storage/deleteStoredUpload.js";
 import { persistUploadedFile } from "../../lib/storage/uploadStorage.js";
 import {
   handleMulterSingleError,
   studioImageUpload,
-  studioVideoUpload,
+  studioVisualVideoUpload,
 } from "../../lib/uploadMulter.js";
 import { rejectDisallowedUpload } from "../../lib/uploadValidate.js";
 import { dtoMediaTypeToPrisma } from "../../lib/visualMedia/types.js";
@@ -38,13 +39,29 @@ visualMediaAssetsRouter.post("/upload", async (req, res, next) => {
   if (!auth) return;
 
   const kind = req.query.kind === "video" ? "video" : "image";
-  const upload = kind === "video" ? studioVideoUpload : studioImageUpload;
 
-  upload.single("file")(req, res, async (multerErr) => {
-    if (handleMulterSingleError(multerErr, kind, res, next)) return;
-    return handleVisualUpload(req, res, next, kind, auth);
+  if (kind === "video") {
+    studioVisualVideoUpload(req, res, async (multerErr) => {
+      if (handleMulterSingleError(multerErr, "video", res, next)) return;
+      const files = req.files as { file?: Express.Multer.File[]; thumbnail?: Express.Multer.File[] } | undefined;
+      return handleVisualUpload(req, res, next, "video", auth, {
+        file: files?.file?.[0],
+        thumbnail: files?.thumbnail?.[0],
+      });
+    });
+    return;
+  }
+
+  studioImageUpload.single("file")(req, res, async (multerErr) => {
+    if (handleMulterSingleError(multerErr, "image", res, next)) return;
+    return handleVisualUpload(req, res, next, "image", auth, { file: req.file ?? undefined });
   });
 });
+
+type VisualUploadFiles = {
+  file?: Express.Multer.File;
+  thumbnail?: Express.Multer.File;
+};
 
 async function handleVisualUpload(
   req: Parameters<typeof requireAuth>[0],
@@ -52,11 +69,13 @@ async function handleVisualUpload(
   next: (error: unknown) => void,
   kind: "video" | "image",
   auth: NonNullable<Awaited<ReturnType<typeof requireAuth>>>,
+  files: VisualUploadFiles,
 ) {
   const startedAt = Date.now();
   let uploadLabel = "unknown";
   let stored: Awaited<ReturnType<typeof persistUploadedFile>> | null = null;
-  const file = req.file;
+  let thumbStored: Awaited<ReturnType<typeof persistUploadedFile>> | null = null;
+  const { file, thumbnail } = files;
 
   try {
     if (!file) {
@@ -72,14 +91,15 @@ async function handleVisualUpload(
       name: file.originalname,
       bytes: file.size,
       mimeType: file.mimetype,
+      hasThumbnail: Boolean(thumbnail),
       userId: auth.user.id,
     });
 
     if (await rejectDisallowedUpload(kind, file, res)) return;
 
     const metadata = parseVisualUploadMetadata(req.body as Record<string, unknown>, kind);
-
     const subdir = kind === "video" ? "videos" : "images";
+
     try {
       stored = await persistUploadedFile({
         subdir,
@@ -99,13 +119,32 @@ async function handleVisualUpload(
       return next(storageErr);
     }
 
+    if (thumbnail) {
+      if (await rejectDisallowedUpload("image", thumbnail, res)) {
+        await deleteStoredUpload(stored.storageKey).catch(() => undefined);
+        return;
+      }
+      try {
+        thumbStored = await persistUploadedFile({
+          subdir: "images",
+          filename: thumbnail.filename,
+          filePath: thumbnail.path,
+          mimeType: thumbnail.mimetype,
+        });
+      } catch (storageErr) {
+        await deleteStoredUpload(stored.storageKey).catch(() => undefined);
+        await fs.unlink(thumbnail.path).catch(() => undefined);
+        return next(storageErr);
+      }
+    }
+
     const asset = await prisma.visualMediaAsset.create({
       data: {
         ownerId: auth.user.id,
         mediaType: dtoMediaTypeToPrisma(kind),
         storageKey: stored.storageKey ?? null,
         url: stored.url,
-        thumbnailUrl: kind === "image" ? stored.url : null,
+        thumbnailUrl: kind === "image" ? stored.url : thumbStored?.url ?? null,
         originalName: file.originalname,
         mimeType: file.mimetype,
         sizeBytes: file.size,
@@ -126,10 +165,16 @@ async function handleVisualUpload(
 
     res.status(201).json(mapVisualMediaAsset(asset));
   } catch (error) {
+    if (thumbStored) {
+      await deleteStoredUpload(thumbStored.storageKey).catch(() => undefined);
+    }
     if (stored) {
       await deleteStoredUpload(stored.storageKey).catch(() => undefined);
     } else if (file) {
       await fs.unlink(file.path).catch(() => undefined);
+    }
+    if (thumbnail && !thumbStored) {
+      await fs.unlink(thumbnail.path).catch(() => undefined);
     }
     console.error("[visual-upload] failed", {
       kind,
@@ -165,6 +210,12 @@ visualMediaAssetsRouter.delete("/:assetId", async (req, res, next) => {
     }
 
     await deleteStoredUpload(asset.storageKey);
+    if (asset.thumbnailUrl && asset.thumbnailUrl !== asset.url) {
+      const thumbKey = storageKeyFromUploadUrl(asset.thumbnailUrl);
+      if (thumbKey) {
+        await deleteStoredUpload(thumbKey).catch(() => undefined);
+      }
+    }
     await prisma.visualMediaAsset.delete({ where: { id: asset.id } });
 
     res.status(204).send();

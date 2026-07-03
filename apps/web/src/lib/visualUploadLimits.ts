@@ -1,13 +1,16 @@
-/** Client-side caps — keep extensions aligned with `UPLOAD_ALLOWED` in uploadPolicy.ts. */
+import {
+  UPLOAD_ALLOWED_EXTENSIONS,
+  UPLOAD_MAX_BYTES,
+  visualUploadKindForExtension,
+} from "@playlisted/upload-policy";
+
+/** Client-side caps — sourced from @playlisted/upload-policy. */
 export const VISUAL_UPLOAD_MAX_BYTES = {
-  video: 250 * 1024 * 1024,
-  image: 15 * 1024 * 1024,
+  video: UPLOAD_MAX_BYTES.video,
+  image: UPLOAD_MAX_BYTES.image,
   /** Future Lottie JSON — vector animations, small payload, parsed client-side. */
   lottie: 2 * 1024 * 1024,
 } as const;
-
-const VIDEO_EXTENSIONS = new Set([".mp4", ".webm", ".mov"]);
-const IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp"]);
 
 function extensionForFile(file: File) {
   const match = /\.[^.]+$/.exec(file.name.toLowerCase());
@@ -17,15 +20,15 @@ function extensionForFile(file: File) {
 export function visualUploadKindForFile(file: File): "video" | "image" | null {
   if (file.type.startsWith("video/")) return "video";
   if (file.type.startsWith("image/")) return "image";
-  const ext = extensionForFile(file);
-  if (VIDEO_EXTENSIONS.has(ext)) return "video";
-  if (IMAGE_EXTENSIONS.has(ext)) return "image";
-  return null;
+  return visualUploadKindForExtension(extensionForFile(file));
 }
 
 export function validateVisualUploadFile(file: File): string | null {
   const kind = visualUploadKindForFile(file);
-  if (!kind) return "Only video and image files are supported.";
+  if (!kind) {
+    const allowed = [...UPLOAD_ALLOWED_EXTENSIONS.image, ...UPLOAD_ALLOWED_EXTENSIONS.video].join(", ");
+    return `Only video and image files are supported (${allowed}).`;
+  }
   const maxBytes = VISUAL_UPLOAD_MAX_BYTES[kind];
   if (file.size > maxBytes) {
     const maxMb = maxBytes / (1024 * 1024);

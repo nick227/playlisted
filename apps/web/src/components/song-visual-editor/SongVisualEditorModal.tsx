@@ -139,6 +139,7 @@ function SongVisualEditorModalInner({
               onPreviewSubtitlesChange={setPreviewSubtitles}
               onTogglePlayback={playback.togglePlayback}
               onUpload={editor.openUploadPicker}
+              onCancelUpload={editor.cancelUpload}
               onSave={() => editor.saveChanges()}
               onCancel={handleClose}
             />
@@ -178,6 +179,8 @@ function SongVisualEditorModalInner({
               uploadProgress={editor.uploadProgress}
               libraryFocusMineKind={editor.libraryFocusMineKind}
               onLibraryFocusHandled={editor.clearLibraryFocus}
+              pendingUpload={editor.pendingUpload}
+              onCancelUpload={editor.cancelUpload}
               onClipLoopChange={(attachmentId, loop) => editor.setClipLoop(attachmentId, loop)}
               onClipAudioPulseChange={(attachmentId, enabled) => editor.setClipAudioPulse(attachmentId, enabled)}
               readClipAudioPulse={editor.readClipAudioPulse}

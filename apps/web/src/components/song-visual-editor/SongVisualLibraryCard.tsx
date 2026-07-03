@@ -1,4 +1,6 @@
-import { Plus, Trash2 } from "lucide-react";
+import { Loader2, Plus, Trash2 } from "lucide-react";
+
+import { formatVisualUploadProgressLabel } from "@/lib/visualUploadProgress";
 
 import { CommunityFxThumb } from "./CommunityFxThumb";
 import { MediaAssetThumb } from "./MediaAssetThumb";
@@ -19,10 +21,16 @@ export function SongVisualLibraryCard({
   onDelete,
 }: SongVisualLibraryCardProps) {
   const isCommunityFx = Boolean(row.theatrePresetId);
+  const isPending = Boolean(row.pending);
 
   return (
-    <article className="overflow-hidden rounded-lg border border-white/10 bg-black/30">
-      <div className="aspect-video w-full bg-black/50">
+    <article
+      className={[
+        "overflow-hidden rounded-lg border bg-black/30",
+        isPending ? "border-sky-400/30 ring-1 ring-sky-400/20" : "border-white/10",
+      ].join(" ")}
+    >
+      <div className="relative aspect-video w-full bg-black/50">
         {isCommunityFx ? (
           <CommunityFxThumb row={row} className="h-full w-full" />
         ) : row.thumbUrl ? (
@@ -50,32 +58,43 @@ export function SongVisualLibraryCard({
             className="h-full w-full"
           />
         )}
+
+        {isPending ? (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-black/55 px-2 text-center">
+            <Loader2 size={18} className="animate-spin text-sky-300" />
+            <p className="text-[10px] font-medium text-sky-100">
+              {formatVisualUploadProgressLabel(row.uploadProgress ?? null, "overlay")}
+            </p>
+          </div>
+        ) : null}
       </div>
       <div className="space-y-1.5 p-2">
         <p className="truncate text-xs font-medium text-white">{row.label}</p>
         <p className="truncate text-[10px] text-white/45">{row.detail}</p>
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            disabled={disabled}
-            onClick={onAction}
-            className="inline-flex flex-1 items-center justify-center gap-1 rounded-md border border-white/15 px-2 py-1 text-[10px] font-medium text-white hover:bg-white/10 disabled:opacity-40"
-          >
-            <Plus size={11} />
-            Add
-          </button>
-          {onDelete ? (
+        {!isPending ? (
+          <div className="flex items-center gap-1">
             <button
               type="button"
               disabled={disabled}
-              onClick={onDelete}
-              className="rounded-md border border-red-500/20 px-1.5 py-1 text-red-200 hover:bg-red-500/10 disabled:opacity-40"
-              aria-label={`Delete ${row.label}`}
+              onClick={onAction}
+              className="inline-flex flex-1 items-center justify-center gap-1 rounded-md border border-white/15 px-2 py-1 text-[10px] font-medium text-white hover:bg-white/10 disabled:opacity-40"
             >
-              <Trash2 size={11} />
+              <Plus size={11} />
+              Add
             </button>
-          ) : null}
-        </div>
+            {onDelete ? (
+              <button
+                type="button"
+                disabled={disabled}
+                onClick={onDelete}
+                className="rounded-md border border-red-500/20 px-1.5 py-1 text-red-200 hover:bg-red-500/10 disabled:opacity-40"
+                aria-label={`Delete ${row.label}`}
+              >
+                <Trash2 size={11} />
+              </button>
+            ) : null}
+          </div>
+        ) : null}
       </div>
     </article>
   );

@@ -2,8 +2,8 @@ import { RotateCcw, Trash2, Upload, AudioLines, Repeat, Loader2 } from "lucide-r
 import { useEffect, useState, type DragEvent } from "react";
 
 import { VISUAL_UPLOAD_MAX_BYTES } from "@/lib/visualUploadLimits";
-import { formatVisualUploadProgressLabel } from "@/lib/visualUploadProgress";
-import type { VisualUploadProgress } from "@/lib/visualUploadProgress";
+import type { PendingVisualUpload } from "@/lib/visualMediaApi";
+import { formatVisualUploadProgressLabel, type VisualUploadProgress } from "@/lib/visualUploadProgress";
 
 import { editorToggleClass } from "./editorToggle";
 import { EditorSection } from "./EditorSection";
@@ -39,6 +39,8 @@ type SongVisualAssetLibraryProps = {
   onDeleteAsset: (assetId: string) => void;
   onUpload: () => void;
   onUploadFile: (file: File) => void;
+  onCancelUpload: () => void;
+  pendingUpload: PendingVisualUpload | null;
   selectedAttachmentId: string | null;
 };
 
@@ -154,6 +156,8 @@ export function SongVisualAssetLibrary({
   onDeleteAsset,
   onUpload,
   onUploadFile,
+  onCancelUpload,
+  pendingUpload,
   selectedAttachmentId,
 }: SongVisualAssetLibraryProps) {
   const [activeTab, setActiveTab] = useState<LibraryTabId>("mine");
@@ -179,6 +183,8 @@ export function SongVisualAssetLibrary({
     useSongVisualLibraryItems({
       assets,
       attachments: timelineClips.map((clip) => clip.attachment),
+      pendingUpload,
+      uploadProgress,
     });
 
   const communityByKind: Record<CommunityKind, VisualLibraryRow[]> = {
@@ -349,6 +355,13 @@ export function SongVisualAssetLibrary({
               {uploadProgress?.fileName ? (
                 <p className="max-w-full truncate text-xs text-white/50">{uploadProgress.fileName}</p>
               ) : null}
+              <button
+                type="button"
+                onClick={onCancelUpload}
+                className="pointer-events-auto mt-1 rounded-md border border-white/20 px-2.5 py-1 text-[11px] font-medium text-white/80 hover:bg-white/10"
+              >
+                Cancel upload
+              </button>
             </div>
           ) : null}
           {visibleRows.length === 0 ? (
@@ -380,7 +393,10 @@ export function SongVisualAssetLibrary({
                   key={row.id}
                   row={row}
                   disabled={isBusy}
-                  onAction={() => onAddRow(row)}
+                  onAction={() => {
+                    if (row.pending) return;
+                    onAddRow(row);
+                  }}
                   onDelete={
                     row.asset && activeTab === "mine"
                       ? () => {

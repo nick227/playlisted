@@ -1,7 +1,8 @@
 import { useMemo } from "react";
 
-import type { VisualMediaAssetRecord } from "@/lib/visualMediaApi";
+import type { PendingVisualUpload, VisualMediaAssetRecord } from "@/lib/visualMediaApi";
 import type { SongVisualAttachmentRecord } from "@/lib/visualMediaApi";
+import type { VisualUploadProgress } from "@/lib/visualUploadProgress";
 
 import { formatMegabytes } from "./timelineLayout";
 import { buildCommunityLibraryRows } from "./theatreFxLibrary";
@@ -23,27 +24,36 @@ export type VisualLibraryRow = {
   importUrl?: string;
   theatrePresetId?: string;
   communityKind?: CommunityKind;
+  pending?: boolean;
+  uploadProgress?: VisualUploadProgress | null;
 };
 
 type UseSongVisualLibraryItemsArgs = {
   assets: VisualMediaAssetRecord[];
   attachments: SongVisualAttachmentRecord[];
+  pendingUpload?: PendingVisualUpload | null;
+  uploadProgress?: VisualUploadProgress | null;
 };
 
-export function useSongVisualLibraryItems({ assets, attachments }: UseSongVisualLibraryItemsArgs) {
+export function useSongVisualLibraryItems({
+  assets,
+  attachments,
+  pendingUpload,
+  uploadProgress,
+}: UseSongVisualLibraryItemsArgs) {
   const onSongAssetIds = useMemo(
     () => new Set(attachments.map((attachment) => attachment.mediaAssetId)),
     [attachments],
   );
 
   const imageRows = useMemo(
-    () => buildUploadRows(assets, "image", onSongAssetIds),
-    [assets, onSongAssetIds],
+    () => buildUploadRows(assets, "image", onSongAssetIds, pendingUpload, uploadProgress),
+    [assets, onSongAssetIds, pendingUpload, uploadProgress],
   );
 
   const videoRows = useMemo(
-    () => buildUploadRows(assets, "video", onSongAssetIds),
-    [assets, onSongAssetIds],
+    () => buildUploadRows(assets, "video", onSongAssetIds, pendingUpload, uploadProgress),
+    [assets, onSongAssetIds, pendingUpload, uploadProgress],
   );
 
   const community = useMemo(() => buildCommunityLibraryRows(), []);
@@ -61,8 +71,10 @@ function buildUploadRows(
   assets: VisualMediaAssetRecord[],
   mediaType: "image" | "video",
   onSongAssetIds: Set<string>,
+  pendingUpload?: PendingVisualUpload | null,
+  uploadProgress?: VisualUploadProgress | null,
 ): VisualLibraryRow[] {
-  return assets
+  const rows: VisualLibraryRow[] = assets
     .filter((asset) => asset.mediaType === mediaType)
     .map((asset) => ({
       id: asset.id,
@@ -72,11 +84,25 @@ function buildUploadRows(
       mediaType,
       asset,
       rank: onSongAssetIds.has(asset.id) ? 0 : 1,
-    }))
-    .sort((left, right) => {
-      if (left.rank !== right.rank) return left.rank - right.rank;
-      const leftCreated = left.asset?.createdAt ?? "";
-      const rightCreated = right.asset?.createdAt ?? "";
-      return rightCreated.localeCompare(leftCreated);
+    }));
+
+  if (pendingUpload?.mediaType === mediaType) {
+    rows.unshift({
+      id: pendingUpload.id,
+      label: pendingUpload.fileName,
+      detail: `Uploading · ${formatMegabytes(pendingUpload.sizeBytes)}`,
+      thumbUrl: pendingUpload.previewUrl,
+      mediaType,
+      rank: -1,
+      pending: true,
+      uploadProgress: uploadProgress ?? null,
     });
+  }
+
+  return rows.sort((left, right) => {
+    if (left.rank !== right.rank) return left.rank - right.rank;
+    const leftCreated = left.asset?.createdAt ?? "";
+    const rightCreated = right.asset?.createdAt ?? "";
+    return rightCreated.localeCompare(leftCreated);
+  });
 }

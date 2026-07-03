@@ -37,6 +37,7 @@ export function findClipAtTime(clips: TimelineClip[], timeSec: number): Timeline
 }
 
 export function resolveAssetUrl(url: string) {
+  if (url.startsWith("blob:") || url.startsWith("data:")) return url;
   return new URL(url, window.location.origin).href;
 }
 

@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { validateVisualUploadFile } from "@/lib/visualUploadLimits";
+import { validateVisualUploadFile, visualUploadKindForFile } from "@/lib/visualUploadLimits";
 import {
   deleteVisualMediaAsset,
   ensureTheatrePlaceholderAsset,
@@ -13,6 +13,7 @@ import {
   type SongVisualAttachmentRecord,
   type VisualMediaAssetRecord,
   type VisualUploadProgress,
+  type PendingVisualUpload,
 } from "@/lib/visualMediaApi";
 import type { VisualMediaBeatFx } from "@/theatre/media/types";
 import { clearRemoteTrackVisualMedia } from "@/theatre/media/resolveTrackVisualMedia";
@@ -76,9 +77,11 @@ export function useSongVisualEditorState({
 }: UseSongVisualEditorStateArgs) {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const uploadAbortRef = useRef<AbortController | null>(null);
 
   const [error, setError] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState<VisualUploadProgress | null>(null);
+  const [pendingUpload, setPendingUpload] = useState<PendingVisualUpload | null>(null);
   const [libraryFocusMineKind, setLibraryFocusMineKind] = useState<MineMediaKind | null>(null);
   const [selectedAttachmentId, setSelectedAttachmentId] = useState<string | null>(null);
   const [clipboard, setClipboard] = useState<ClipClipboard | null>(null);
@@ -123,17 +126,45 @@ export function useSongVisualEditorState({
   }, []);
 
   const uploadMutation = useMutation({
-    mutationFn: (file: File) =>
-      uploadVisualMediaFile(file, accessToken, {
+    mutationFn: (file: File) => {
+      const controller = new AbortController();
+      uploadAbortRef.current = controller;
+      return uploadVisualMediaFile(file, accessToken, {
         onProgress: setUploadProgress,
-      }),
+        signal: controller.signal,
+      });
+    },
+    onMutate: (file) => {
+      const kind = visualUploadKindForFile(file);
+      if (!kind) return;
+      setPendingUpload({
+        id: `pending-${crypto.randomUUID()}`,
+        fileName: file.name,
+        mediaType: kind,
+        sizeBytes: file.size,
+        previewUrl: URL.createObjectURL(file),
+      });
+    },
     onSuccess: async (asset) => {
       setLibraryFocusMineKind(asset.mediaType === "video" ? "video" : "image");
       await attachAssetToTimeline(asset, { startSec: 0 });
       await queryClient.invalidateQueries({ queryKey: ["visual-media-assets"] });
     },
-    onError: (err) => setError(err instanceof Error ? err.message : "Upload failed."),
-    onSettled: () => setUploadProgress(null),
+    onError: (err) => {
+      if (err instanceof DOMException && err.name === "AbortError") {
+        setError(null);
+        return;
+      }
+      setError(err instanceof Error ? err.message : "Upload failed.");
+    },
+    onSettled: () => {
+      setUploadProgress(null);
+      uploadAbortRef.current = null;
+      setPendingUpload((current) => {
+        if (current?.previewUrl) URL.revokeObjectURL(current.previewUrl);
+        return null;
+      });
+    },
   });
 
   const saveMutation = useMutation({
@@ -462,6 +493,11 @@ export function useSongVisualEditorState({
     fileInputRef.current?.click();
   }
 
+  function cancelUpload() {
+    uploadAbortRef.current?.abort();
+    uploadMutation.reset();
+  }
+
   function uploadFile(file: File) {
     const validationError = validateVisualUploadFile(file);
     if (validationError) {
@@ -549,6 +585,8 @@ export function useSongVisualEditorState({
     isBusy,
     isUploading,
     uploadProgress,
+    pendingUpload,
+    cancelUpload,
     libraryFocusMineKind,
     clearLibraryFocus,
     isLibraryBusy,
