@@ -13,7 +13,7 @@ import { useRadioPlayer } from "@/providers/RadioPlayerProvider";
 export function ChatPage() {
   const { user, accessToken } = useAuth();
   const { playerShellActive } = useAudioPlayer();
-  const { listenerId, station, radioPlaying, nowPlaying, registerRadioUi, unregisterRadioUi } = useRadioPlayer();
+  const { listenerId, station, playing, nowPlaying, registerRadioUi, unregisterRadioUi } = useRadioPlayer();
 
   const chatScrollRef = useRef<HTMLDivElement | null>(null);
   const queryClient = useQueryClient();
@@ -30,7 +30,7 @@ export function ChatPage() {
 
   const chatMessages = station?.chatMessages ?? [];
 
-  const shellHasPlayer = playerShellActive || (radioPlaying && Boolean(nowPlaying));
+  const shellHasPlayer = playerShellActive || (playing && Boolean(nowPlaying));
 
   const shellHeightClass = shellHasPlayer
     ? "h-[calc(100dvh-var(--spacing-topbar)-var(--spacing-player-safe-mobile))] md:h-[calc(100dvh-var(--spacing-topbar)-var(--spacing-player))]"
