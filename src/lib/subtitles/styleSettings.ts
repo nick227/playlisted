@@ -18,6 +18,20 @@ const VALID_STYLE_IDS = new Set([
   "glow",
   "vaporwave",
   "glitch",
+  "broadcast",
+  "documentary",
+  "studio",
+  "closed-caption",
+  "frost",
+  "slate",
+  "editorial",
+  "prestige",
+  "corporate",
+  "stream",
+  "lecture",
+  "legal",
+  "conference",
+  "night-mode",
 ]);
 
 export function isSubtitlePosition(value: string): value is SubtitlePosition {
