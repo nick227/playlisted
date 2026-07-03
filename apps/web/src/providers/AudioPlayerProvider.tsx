@@ -330,6 +330,14 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const restoreSiteAudioElement = useCallback(() => {
+    if (!adoptedAudioRef.current) return;
+    adoptedAudioRef.current = null;
+    audioRef.current = siteAudioRef.current;
+    setActiveAudio(siteAudioRef.current);
+    if (siteAudioRef.current) siteAudioRef.current.volume = volumeRef.current;
+  }, []);
+
   /** Keep playback running when re-anchoring queue/context to the same audio source. */
   const tryContinueSameSource = useCallback(
     (track: QueueTrack): boolean => {
@@ -362,9 +370,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
 
     if (adoptedAudioRef.current) {
       adoptedAudioRef.current.pause();
-      adoptedAudioRef.current = null;
-      audioRef.current = siteAudioRef.current;
-      setActiveAudio(siteAudioRef.current);
+      restoreSiteAudioElement();
     }
 
     const audio = audioRef.current;
@@ -382,7 +388,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
         theatreController.setCanEnter(true);
       }
     }).catch(() => setState("paused"));
-  }, [logPlaybackStart]);
+  }, [logPlaybackStart, restoreSiteAudioElement]);
 
   const completeAutoplaySegmentIfNeeded = useCallback(() => {
     const segment = currentSegmentRef.current;
@@ -766,10 +772,16 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   }, [transportDuration, flushPlayback, isPlayerBarUpNow]);
 
   const yieldPlaybackToRadio = useCallback(() => {
-    audioRef.current?.pause();
-    if (!isPlayerBarUpNow()) return;
-    releasePlayback();
-  }, [isPlayerBarUpNow, releasePlayback]);
+    const ownedAudio = audioRef.current;
+    ownedAudio?.pause();
+    siteAudioRef.current?.pause();
+    if (isPlayerBarUpNow()) {
+      releasePlayback();
+      restoreSiteAudioElement();
+      return;
+    }
+    restoreSiteAudioElement();
+  }, [isPlayerBarUpNow, releasePlayback, restoreSiteAudioElement]);
 
   const resumePlaybackIfPaused = useCallback(() => {
     const audio = audioRef.current;

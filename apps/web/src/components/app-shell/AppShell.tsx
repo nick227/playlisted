@@ -173,10 +173,15 @@ export function AppShell({ children }: AppShellProps) {
     if (!resumeAfterNavRef.current) return;
     resumeAfterNavRef.current = false;
     const timer = window.setTimeout(() => {
+      if (radioPlaying) return;
       resumePlaybackIfPaused();
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [location.pathname, resumePlaybackIfPaused]);
+  }, [location.pathname, radioPlaying, resumePlaybackIfPaused]);
+
+  useEffect(() => {
+    if (radioPlaying) resumeAfterNavRef.current = false;
+  }, [radioPlaying]);
 
   useEffect(() => {
     if (!playFocusActive) return;

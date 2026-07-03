@@ -9,6 +9,7 @@ import { authedApi } from "@/lib/authedApi";
 import { coverFallback, playlistPath, studioCollectionEditPath } from "@/lib/routes";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { useAuth } from "@/providers/AuthProvider";
+import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 import { useRadioPlayer } from "@/providers/RadioPlayerProvider";
 
 function formatTime(totalSeconds?: number | null) {
@@ -34,10 +35,15 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
     unregisterRadioUi,
   } = useRadioPlayer();
 
+  const { playerShellActive } = useAudioPlayer();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const location = useLocation();
   const [volumeOpen, setVolumeOpen] = useState(false);
+
+  const shellHasPlayer =
+    playerShellActive ||
+    (playing && Boolean(nowPlaying) && location.pathname !== "/radio" && !isEmbedded);
 
   usePageMeta({ title: "Radio" });
 
@@ -113,17 +119,19 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
     return <span style={{ fontSize: `${fontSize}px`, display: "block", lineHeight: "1" }}>{text}</span>;
   }
 
-  const pageMinHeight = isEmbedded
-    ? "min-h-[calc(100svh-var(--spacing-topbar)-2rem)]"
-    : "min-h-[calc(100svh-var(--spacing-topbar)-3rem)]";
+  const pageHeight = shellHasPlayer
+    ? "h-[calc(100dvh-var(--spacing-topbar)-1rem-var(--spacing-player-safe-mobile)-1.5rem)] max-h-[calc(100dvh-var(--spacing-topbar)-1rem-var(--spacing-player-safe-mobile)-1.5rem)] md:h-[calc(100dvh-var(--spacing-topbar)-1rem-var(--spacing-player)-1.5rem)] md:max-h-[calc(100dvh-var(--spacing-topbar)-1rem-var(--spacing-player)-1.5rem)]"
+    : "h-[calc(100dvh-var(--spacing-topbar)-1rem-1.5rem)] max-h-[calc(100dvh-var(--spacing-topbar)-1rem-1.5rem)]";
   const artworkClassName =
-    "aspect-square w-full rounded-[1.4rem] border border-white/[0.08] bg-white/5 bg-cover bg-center shadow-[0_26px_80px_rgba(0,0,0,0.44)]";
+    "aspect-square max-h-full w-full max-w-full rounded-[1.4rem] border border-white/[0.08] bg-white/5 bg-cover bg-center shadow-[0_26px_80px_rgba(0,0,0,0.44)]";
 
   return (
-    <div className={`flex justify-center items-center relative isolate -mx-4 px-4 py-6 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 ${pageMinHeight}`}>
-      <div className="mx-auto flex w-full max-w-[30rem] flex-col items-center">
+    <div
+      className={`relative isolate -mx-4 flex items-center justify-center px-4 py-3 sm:-mx-6 sm:px-6 sm:py-6 lg:-mx-8 lg:px-8 ${pageHeight}`}
+    >
+      <div className="mx-auto flex h-full min-h-0 w-full max-w-[30rem] flex-col items-center justify-between gap-2 sm:justify-center sm:gap-0">
         {radioQuery.isError ? (
-          <div className="mb-5 w-full rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-center text-sm text-red-200 shadow-lg shadow-black/20 backdrop-blur">
+          <div className="w-full shrink-0 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-center text-sm text-red-200 shadow-lg shadow-black/20 backdrop-blur">
             Couldn&apos;t load radio.{" "}
             <button
               type="button"
@@ -135,7 +143,7 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
           </div>
         ) : null}
 
-        <div className="mb-5 flex h-8 items-center justify-center gap-2 rounded-full border border-white/[0.08] px-3 text-xs font-semibold uppercase text-white/78">
+        <div className="flex h-8 shrink-0 items-center justify-center gap-2 rounded-full border border-white/[0.08] px-3 text-xs font-semibold uppercase text-white/78 sm:mb-5">
           <PlaybackBars active={isLive} playing={playing} variant="thumb" barCount={7} />
           <span className="text-[var(--color-brand)]">{statusLabel}</span>
           {isLive && station?.listenerCount != null ? (
@@ -146,7 +154,7 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
           ) : null}
         </div>
 
-        <div className="relative w-full max-w-[min(74vw,23rem)]">
+        <div className="relative flex min-h-0 w-full max-w-[min(74vw,23rem)] flex-1 items-center justify-center">
           <div className="absolute -inset-4 -z-10 rounded-[2rem] bg-white/[0.035] blur-xl" />
           {playlistUrl ? (
             <Link
@@ -160,12 +168,12 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
           )}
         </div>
 
-        <div className="mt-7 flex min-h-[8.75rem] w-full flex-col items-center justify-start text-center sm:min-h-[9.35rem]">
-          <p className="mb-3 flex h-5 max-w-full items-center gap-2 truncate text-xs font-semibold uppercase text-white/42 bg-[var(--color-canvas)] px-2 py-1 rounded-full">
+        <div className="flex w-full shrink-0 flex-col items-center justify-start text-center sm:mt-7 sm:min-h-[9.35rem]">
+          <p className="mb-1 flex h-5 max-w-full items-center gap-2 truncate text-xs font-semibold uppercase text-white/42 bg-[var(--color-canvas)] px-2 py-1 rounded-full sm:mb-3">
             <Radio size={13} className="shrink-0 text-[var(--color-brand)]" />
             <span className="truncate">{station?.name ?? "Playlisted Radio"}</span>
           </p>
-          <h1 className="grid min-h-[4.9rem] max-w-full place-items-center overflow-hidden text-balance text-[clamp(2rem,8vw,3.75rem)] font-black leading-[0.98] text-white line-height-none">
+          <h1 className="grid max-w-full place-items-center overflow-hidden text-balance text-[clamp(1.5rem,7vw,3.75rem)] font-black leading-[0.98] text-white line-height-none sm:min-h-[4.9rem]">
             {playlistUrl ? (
               <Link
                 to={playlistUrl}
@@ -180,12 +188,12 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
             )}
           </h1>
 
-          <p className="mt-3 h-7 max-w-full truncate text-base leading-7 text-[var(--color-text-muted)] bg-[var(--color-canvas)]/80 rounded-sm px-4">
+          <p className="mt-1 h-7 max-w-full truncate text-base leading-7 text-[var(--color-text-muted)] bg-[var(--color-canvas)]/80 rounded-sm px-4 sm:mt-3">
             {description}
           </p>
         </div>
 
-        <div className="mt-1 w-full max-w-[min(74vw,23rem)]">
+        <div className="w-full max-w-[min(74vw,23rem)] shrink-0 sm:mt-1">
           <div className="flex h-5 items-center justify-between text-[0.7rem] font-medium text-white/36">
             <span>{elapsedLabel ?? "Live"}</span>
             <span>{durationLabel ?? "On air"}</span>
@@ -202,7 +210,7 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
           </div>
         </div>
 
-        <div className="mt-8 flex h-16 items-center justify-center gap-4">
+        <div className="flex h-16 shrink-0 items-center justify-center gap-4 sm:mt-8">
           <div
             className="group/volume relative flex h-11 w-11 items-center justify-center"
             onMouseEnter={() => setVolumeOpen(true)}
@@ -262,7 +270,7 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
           )}
         </div>
 
-        <div className="mt-8 flex items-center justify-center gap-2">
+        <div className="flex shrink-0 items-center justify-center gap-2 sm:mt-8">
           <button
             type="button"
             onClick={handleSubmitSong}
