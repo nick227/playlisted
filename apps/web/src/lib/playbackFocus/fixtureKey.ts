@@ -5,5 +5,6 @@ export function focusLaneFixtureKey(fixture: PlaybackFocusFixture | null): strin
   if (fixture.type === "subtitle") return `subtitle:${fixture.cueId}`;
   if (fixture.type === "fallbackSubtitle") return `fallback:${fixture.key}`;
   if (fixture.type === "finalFallback") return `final:${fixture.key}`;
-  return `artist:${fixture.artistName}:${fixture.imageUrl ?? "none"}`;
+  const _exhaustive: never = fixture;
+  return _exhaustive;
 }

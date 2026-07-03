@@ -1,5 +1,5 @@
 import { playbackFocusTiming } from "@/lib/playbackFocusTiming";
-import { getFocusLaneElapsedMs, getFocusLaneSequenceWindows } from "@/lib/playbackFocus/focusLaneSequence";
+import { getFocusLaneElapsedMs } from "@/lib/playbackFocus/focusLaneSequence";
 import type { SubtitleSegment } from "@/lib/subtitles";
 import type {
   FocusArtist,

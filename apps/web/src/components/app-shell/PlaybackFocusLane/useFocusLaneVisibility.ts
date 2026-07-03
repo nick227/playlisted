@@ -7,7 +7,6 @@ import type { PlaybackFocusFixture } from "@/lib/playbackFocus/types";
 function fixtureVariantClass(fixture: PlaybackFocusFixture | null): string {
   if (!fixture || fixture.type === "none") return "";
   if (fixture.type === "subtitle") return " focus-lane--subtitle";
-  if (fixture.type === "artistVisual") return " focus-lane--artist-visual";
   if (fixture.type === "finalFallback") return " focus-lane--fallback";
   if (fixture.source === "title-intro") return " focus-lane--title-intro";
   return " focus-lane--fallback";

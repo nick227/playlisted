@@ -46,16 +46,6 @@ export function FocusLaneSubtitleContent({ fixture, customSubtitleStyle }: Focus
     );
   }
 
-  if (fixture.type === "finalFallback") {
-    return (
-      <FinalFallbackText
-        title={fixture.title}
-        artistName={fixture.artistName}
-        customStyle={style}
-      />
-    );
-  }
-
   if (subtitleProps) {
     return <SubtitleText {...subtitleProps} customStyle={style} />;
   }

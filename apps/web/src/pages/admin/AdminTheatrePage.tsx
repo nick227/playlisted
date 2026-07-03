@@ -133,13 +133,15 @@ function PresetCard({ row }: { row: VisualLibraryRow }) {
           <div className="flex flex-col gap-0.5">
             <span>{row.detail}</span>
           </div>
-          <Link
-            to={`/?theatrePreset=${encodeURIComponent(row.theatrePresetId)}`}
-            target="_blank"
-            className="rounded-lg bg-white/10 px-3 py-1.5 font-semibold text-white transition hover:bg-white/20"
-          >
-            Preview
-          </Link>
+          {row.theatrePresetId ? (
+            <Link
+              to={`/?theatrePreset=${encodeURIComponent(row.theatrePresetId)}`}
+              target="_blank"
+              className="rounded-lg bg-white/10 px-3 py-1.5 font-semibold text-white transition hover:bg-white/20"
+            >
+              Preview
+            </Link>
+          ) : null}
         </div>
       </div>
     </div>
