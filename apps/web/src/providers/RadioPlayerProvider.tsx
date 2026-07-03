@@ -20,8 +20,6 @@ import {
 } from "@/lib/radio/radioPlayback";
 import { api } from "@/lib/api";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
-import type { QueueTrack } from "@/providers/AudioPlayerProvider";
-import { withQueueTrackSubtitleStyle } from "@/lib/queueTrack";
 import theatreController from "@/theatre/controller/lazyController";
 import { setRadioPlaybackActive } from "@/theatre/radioPlaybackBridge";
 import { useTheatreTrackRotation } from "@/theatre/useTheatreTrackRotation";
@@ -29,11 +27,14 @@ import { useTheatreTrackRotation } from "@/theatre/useTheatreTrackRotation";
 interface RadioPlayerContextValue {
   audioRef: RefObject<HTMLAudioElement | null>;
   playing: boolean;
+  volume: number;
+  setVolume: (volume: number) => void;
   togglePlayback: () => Promise<void>;
   pauseRadio: () => void;
-  transferToSitePlayer: () => Promise<boolean>;
   registerRadioUi: () => void;
   unregisterRadioUi: () => void;
+  registerChatUi: () => void;
+  unregisterChatUi: () => void;
   listenerId: string;
   radioQuery: ReturnType<typeof useQuery<Awaited<ReturnType<typeof api.radio.get>>>>;
   station: Awaited<ReturnType<typeof api.radio.get>> | undefined;
@@ -46,7 +47,6 @@ const RadioPlayerContext = createContext<RadioPlayerContextValue | null>(null);
 export function RadioPlayerProvider({ children }: { children: ReactNode }) {
   const {
     releasePlayback,
-    adoptExternalPlayback,
     isPlaying: sitePlayerPlaying,
     currentTrack: siteCurrentTrack,
   } = useAudioPlayer();
@@ -57,23 +57,27 @@ export function RadioPlayerProvider({ children }: { children: ReactNode }) {
   const suppressNextSitePauseRef = useRef(false);
   const siteControlledRef = useRef(false);
   const uiMountCountRef = useRef(0);
+  const chatMountCountRef = useRef(0);
 
   const [playing, setPlaying] = useState(false);
+  const [volume, setVolumeState] = useState(1);
   const [uiMounted, setUiMounted] = useState(false);
+  const [chatMounted, setChatMounted] = useState(false);
 
   const listenerId = useMemo(() => {
     if (!listenerIdRef.current) listenerIdRef.current = getListenerId();
     return listenerIdRef.current;
   }, []);
 
-  // Radio data is only consumed while radio audio is playing or radio UI is
-  // on screen; without this gate the poll fires every 10s on every page.
-  const radioActive = playing || uiMounted;
+  // Fetch radio state when playback, radio UI, or chat UI needs it.
+  // Poll only while audio is playing (track sync) or the user is on /chat.
+  const radioDataNeeded = playing || uiMounted || chatMounted;
+  const radioPollInterval = playing || chatMounted ? 10_000 : false;
   const radioQuery = useQuery({
     queryKey: ["radio", "public"],
     queryFn: () => api.radio.get(),
-    enabled: radioActive,
-    refetchInterval: radioActive ? 10_000 : false,
+    enabled: radioDataNeeded,
+    refetchInterval: radioPollInterval,
   });
   const refetchRadio = radioQuery.refetch;
 
@@ -124,6 +128,26 @@ export function RadioPlayerProvider({ children }: { children: ReactNode }) {
     uiMountCountRef.current = Math.max(0, uiMountCountRef.current - 1);
     setUiMounted(uiMountCountRef.current > 0);
   }, []);
+
+  const registerChatUi = useCallback(() => {
+    chatMountCountRef.current += 1;
+    setChatMounted(true);
+  }, []);
+
+  const unregisterChatUi = useCallback(() => {
+    chatMountCountRef.current = Math.max(0, chatMountCountRef.current - 1);
+    setChatMounted(chatMountCountRef.current > 0);
+  }, []);
+
+  const setVolume = useCallback((nextVolume: number) => {
+    const clamped = Math.max(0, Math.min(1, nextVolume));
+    setVolumeState(clamped);
+    if (audioRef.current) audioRef.current.volume = clamped;
+  }, []);
+
+  useEffect(() => {
+    if (audioRef.current) audioRef.current.volume = volume;
+  }, [volume]);
 
   useEffect(() => {
     setRadioPlaybackActive(playing);
@@ -250,7 +274,7 @@ export function RadioPlayerProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!isLive) return;
-    if (!playing && !uiMounted) return;
+    if (!playing && !chatMounted) return;
 
     const sendHeartbeat = () => {
       void api.radio.heartbeat({ listenerId, station: station?.slug ?? "main" });
@@ -258,7 +282,7 @@ export function RadioPlayerProvider({ children }: { children: ReactNode }) {
     sendHeartbeat();
     const interval = window.setInterval(sendHeartbeat, 25_000);
     return () => window.clearInterval(interval);
-  }, [isLive, listenerId, playing, uiMounted, station?.slug]);
+  }, [isLive, listenerId, playing, chatMounted, station?.slug]);
 
   const togglePlayback = useCallback(async () => {
     if (!nowPlaying?.audioUrl) return;
@@ -280,54 +304,6 @@ export function RadioPlayerProvider({ children }: { children: ReactNode }) {
       }, 0);
     }
   }, [nowPlaying, pauseRadio, playing, releasePlayback, syncAndPlayRadio]);
-
-  const transferToSitePlayer = useCallback(async () => {
-    const track = nowPlaying;
-    const audio = audioRef.current;
-    if (!track?.audioUrl || !audio || audio.paused || audio.ended) return false;
-
-    const playlist = await api.playlists.getById(track.playlist.id);
-    const queue: QueueTrack[] = playlist.recordings.map((recording) =>
-      withQueueTrackSubtitleStyle({
-        ...recording,
-        playlistTitle: playlist.title,
-        ownerName: playlist.owner.displayName,
-        ownerUsername: playlist.owner.username,
-        playlistSlug: playlist.slug,
-      }),
-    );
-    const index = queue.findIndex((item) => item.id === track.id);
-    if (index < 0) return false;
-
-    siteControlledRef.current = true;
-    suppressNextSitePauseRef.current = true;
-    clearTransitionRetry();
-    const adopted = adoptExternalPlayback(
-      audio,
-      queue,
-      index,
-      {
-        playlistId: playlist.id,
-        playlistOwnerUsername: playlist.owner.username,
-        playlistSlug: playlist.slug,
-        sourceContext: "playlist",
-      },
-      { segmentLabel: playlist.title },
-    );
-
-    if (!adopted) {
-      siteControlledRef.current = false;
-      suppressNextSitePauseRef.current = false;
-      return false;
-    }
-
-    setPlaying(false);
-    setRadioPlaybackActive(false);
-    window.setTimeout(() => {
-      suppressNextSitePauseRef.current = false;
-    }, 0);
-    return true;
-  }, [adoptExternalPlayback, clearTransitionRetry, nowPlaying]);
 
   function handleRadioPlay(el: HTMLAudioElement) {
     if (siteControlledRef.current) return;
@@ -352,18 +328,21 @@ export function RadioPlayerProvider({ children }: { children: ReactNode }) {
     () => ({
       audioRef,
       playing,
+      volume,
+      setVolume,
       togglePlayback,
       pauseRadio,
-      transferToSitePlayer,
       registerRadioUi,
       unregisterRadioUi,
+      registerChatUi,
+      unregisterChatUi,
       listenerId,
       radioQuery,
       station,
       nowPlaying,
       isLive,
     }),
-    [playing, togglePlayback, pauseRadio, transferToSitePlayer, registerRadioUi, unregisterRadioUi, listenerId, radioQuery, station, nowPlaying, isLive],
+    [playing, volume, setVolume, togglePlayback, pauseRadio, registerRadioUi, unregisterRadioUi, registerChatUi, unregisterChatUi, listenerId, radioQuery, station, nowPlaying, isLive],
   );
 
   return (
