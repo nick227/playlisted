@@ -97,9 +97,9 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
 
   function calculateFontSize(text: string): number {
     const minFontSize = 24;
-    const maxFontSize = 70;
+    const maxFontSize = 64;
     const minChars = 25;
-    const maxChars = 40;
+    const maxChars = 35;
 
     const length = Math.max(minChars, Math.min(maxChars, text.length));
     const ratio = (length - minChars) / (maxChars - minChars);
