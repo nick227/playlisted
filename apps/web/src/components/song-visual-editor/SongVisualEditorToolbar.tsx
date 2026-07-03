@@ -121,7 +121,7 @@ export function SongVisualEditorToolbar({
           onClick={onCancel}
           className={`inline-flex ${TOOLBAR_CONTROL_HEIGHT} items-center rounded-md border border-white/15 bg-white/5 px-3.5 text-xs font-semibold text-white/80 transition hover:border-white/25 hover:bg-white/10 hover:text-white`}
         >
-          Cancel
+          Exit
         </button>
         <button
           type="button"
