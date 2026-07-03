@@ -12,7 +12,7 @@ import {
   studioAudioUpload,
   studioImageUpload,
 } from "../lib/uploadMulter.js";
-import { rejectDisallowedUpload } from "../lib/uploadValidate.js";
+import { rejectDisallowedUpload, resolveUploadMimeType } from "../lib/uploadValidate.js";
 import { persistUploadedFile } from "../lib/storage/uploadStorage.js";
 
 export const uploadsRouter = Router();
@@ -33,15 +33,16 @@ uploadsRouter.post("/audio", async (req, res, next) => {
         });
       }
 
-      if (await rejectDisallowedUpload("audio", file, res)) return;
+      if (await rejectDisallowedUpload("audio", file, res, { allowExtensionFallback: true })) return;
 
+      const mimeType = resolveUploadMimeType("audio", file);
       let stored;
       try {
         stored = await persistUploadedFile({
           subdir: "audio",
           filename: file.filename,
           filePath: file.path,
-          mimeType: file.mimetype,
+          mimeType,
         });
       } catch (storageErr) {
         await fs.unlink(file.path).catch(() => undefined);
@@ -51,7 +52,7 @@ uploadsRouter.post("/audio", async (req, res, next) => {
 
       res.status(201).json({
         url: stored.url,
-        mimeType: file.mimetype,
+        mimeType,
         bytes: file.size,
         title,
       });
@@ -77,7 +78,7 @@ uploadsRouter.post("/images", async (req, res, next) => {
         });
       }
 
-      if (await rejectDisallowedUpload("image", file, res)) return;
+      if (await rejectDisallowedUpload("image", file, res, { allowExtensionFallback: true })) return;
       let optimized;
       try {
         optimized = await optimizeImageFile(file.path);

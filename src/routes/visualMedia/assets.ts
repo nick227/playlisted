@@ -11,7 +11,7 @@ import {
   studioImageUpload,
   studioVisualVideoUpload,
 } from "../../lib/uploadMulter.js";
-import { rejectDisallowedUpload } from "../../lib/uploadValidate.js";
+import { rejectDisallowedUpload, resolveUploadMimeType } from "../../lib/uploadValidate.js";
 import { dtoMediaTypeToPrisma } from "../../lib/visualMedia/types.js";
 import { mapVisualMediaAsset } from "../../lib/visualMedia/mapDto.js";
 import { parseVisualUploadMetadata } from "../../lib/visualMedia/validateUploadMetadata.js";
@@ -95,17 +95,18 @@ async function handleVisualUpload(
       userId: auth.user.id,
     });
 
-    if (await rejectDisallowedUpload(kind, file, res)) return;
+    if (await rejectDisallowedUpload(kind, file, res, { allowExtensionFallback: true })) return;
 
     const metadata = parseVisualUploadMetadata(req.body as Record<string, unknown>, kind);
     const subdir = kind === "video" ? "videos" : "images";
+    const mimeType = resolveUploadMimeType(kind, file);
 
     try {
       stored = await persistUploadedFile({
         subdir,
         filename: file.filename,
         filePath: file.path,
-        mimeType: file.mimetype,
+        mimeType,
       });
     } catch (storageErr) {
       await fs.unlink(file.path).catch(() => undefined);
@@ -120,7 +121,7 @@ async function handleVisualUpload(
     }
 
     if (thumbnail) {
-      if (await rejectDisallowedUpload("image", thumbnail, res)) {
+      if (await rejectDisallowedUpload("image", thumbnail, res, { allowExtensionFallback: true })) {
         await deleteStoredUpload(stored.storageKey).catch(() => undefined);
         return;
       }
@@ -129,7 +130,7 @@ async function handleVisualUpload(
           subdir: "images",
           filename: thumbnail.filename,
           filePath: thumbnail.path,
-          mimeType: thumbnail.mimetype,
+          mimeType: resolveUploadMimeType("image", thumbnail),
         });
       } catch (storageErr) {
         await deleteStoredUpload(stored.storageKey).catch(() => undefined);
@@ -146,7 +147,7 @@ async function handleVisualUpload(
         url: stored.url,
         thumbnailUrl: kind === "image" ? stored.url : thumbStored?.url ?? null,
         originalName: file.originalname,
-        mimeType: file.mimetype,
+        mimeType,
         sizeBytes: file.size,
         durationMs: metadata.durationMs,
         width: metadata.width,

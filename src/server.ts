@@ -7,6 +7,10 @@ import { isApiDocsEnabled } from "./lib/apiDocs.js";
 const port = Number(process.env.PORT ?? 4000);
 const host = process.env.HOST ?? "0.0.0.0";
 const shutdownMs = Number(process.env.SHUTDOWN_TIMEOUT_MS ?? 10_000);
+// Node's default requestTimeout (5 min) covers the entire request body, which
+// kills 250 MB video uploads on slow uplinks mid-transfer with no response.
+// Match the web client's 30-minute upload budget.
+const requestTimeoutMs = Number(process.env.REQUEST_TIMEOUT_MS ?? 30 * 60_000);
 
 let vite: ViteDevServer | undefined;
 let server: ReturnType<ReturnType<typeof createApp>["listen"]>;
@@ -30,6 +34,7 @@ async function start() {
       console.log(`OpenAPI docs at http://localhost:${port}/docs`);
     }
   });
+  server.requestTimeout = requestTimeoutMs;
 }
 
 function shutdown(signal: string) {
