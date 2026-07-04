@@ -62,6 +62,9 @@ export type MostPlayedItem = components["schemas"]["MostPlayedItem"];
 export type MostPlayedResponse = components["schemas"]["MostPlayedResponse"];
 export type RecentlyPlayedItem = components["schemas"]["RecentlyPlayedItem"];
 export type RecentlyPlayedResponse = components["schemas"]["RecentlyPlayedResponse"];
+export type RecordingReactionKind = components["schemas"]["RecordingReactionKind"];
+export type RecordingReactionsResponse = components["schemas"]["RecordingReactionsResponse"];
+export type RecordingReactionSavedResponse = components["schemas"]["RecordingReactionSavedResponse"];
 export type LibraryGenre = components["schemas"]["LibraryGenre"];
 export type LibrarySong = components["schemas"]["LibrarySong"];
 export type LibraryGenresResponse = components["schemas"]["LibraryGenresResponse"];
@@ -208,6 +211,9 @@ export interface PlaylistedApi {
     unfollowArtist(artistId: string): Promise<void>;
     mostPlayed(query?: { limit?: number }): Promise<MostPlayedResponse>;
     recentlyPlayed(query?: { limit?: number }): Promise<RecentlyPlayedResponse>;
+    recordingReactions(recordingId: string): Promise<RecordingReactionsResponse>;
+    addRecordingReaction(recordingId: string, kind: RecordingReactionKind): Promise<RecordingReactionSavedResponse>;
+    removeRecordingReaction(recordingId: string, kind: RecordingReactionKind): Promise<void>;
   };
   playlists: {
     list(query?: ListPlaylistsQuery): Promise<PlaylistListResponse>;
@@ -733,6 +739,30 @@ export function createPlaylistedApi(options: PlaylistedClientOptions = {}): Play
           raw.GET("/api/v1/me/recently-played", { params: { query } }),
           "Failed to load recently played.",
         );
+      },
+      recordingReactions(recordingId) {
+        return unwrap(
+          raw.GET("/api/v1/me/reactions/recordings/{recordingId}", {
+            params: { path: { recordingId } },
+          }),
+          "Failed to load recording reactions.",
+        );
+      },
+      addRecordingReaction(recordingId, kind) {
+        return unwrap(
+          raw.POST("/api/v1/me/reactions/recordings/{recordingId}/{kind}", {
+            params: { path: { recordingId, kind } },
+          }),
+          "Failed to add reaction.",
+        );
+      },
+      removeRecordingReaction(recordingId, kind) {
+        return unwrap(
+          raw.DELETE("/api/v1/me/reactions/recordings/{recordingId}/{kind}", {
+            params: { path: { recordingId, kind } },
+          }),
+          "Failed to remove reaction.",
+        ).then(() => undefined);
       },
     },
     playlists: {

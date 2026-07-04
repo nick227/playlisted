@@ -132,7 +132,7 @@ export function ArtistVisual({
               {artistName}
             </p>
           ) : null}
-          <PlaybackFocusReactionBar />
+          <PlaybackFocusReactionBar recordingId={recording?.id} />
           {artistBio || recording?.genreLabel ? (
             <div className="flex min-w-0 items-center gap-2 text-sm font-medium text-white/70 drop-shadow-sm sm:text-base">
               {recording?.genreLabel ? (

@@ -1,28 +1,18 @@
-import { Flame, Heart, Sparkles, ThumbsUp, type LucideIcon } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { useRecordingReactions } from "@/hooks/useRecordingReactions";
+import { RECORDING_REACTIONS, type RecordingReactionId } from "@/lib/reactions/recordingReactions";
 import { stopPlaybackFocusBubble } from "@/lib/playbackFocus/interactiveTarget";
-
-type ReactionId = "love" | "fire" | "sparkle" | "thumbs";
-
-type ReactionDef = {
-  id: ReactionId;
-  label: string;
-  icon: LucideIcon;
-};
-
-const REACTIONS: ReactionDef[] = [
-  { id: "love", label: "Love", icon: Heart },
-  { id: "fire", label: "Fire", icon: Flame },
-  { id: "sparkle", label: "Sparkle", icon: Sparkles },
-  { id: "thumbs", label: "Thumbs up", icon: ThumbsUp },
-];
 
 const POP_MS = 420;
 
-export function PlaybackFocusReactionBar() {
-  const [activeReaction, setActiveReaction] = useState<ReactionId | null>(null);
-  const [popReaction, setPopReaction] = useState<ReactionId | null>(null);
+type PlaybackFocusReactionBarProps = {
+  recordingId?: string;
+};
+
+export function PlaybackFocusReactionBar({ recordingId }: PlaybackFocusReactionBarProps) {
+  const { activeIds, toggleReaction } = useRecordingReactions(recordingId);
+  const [popReaction, setPopReaction] = useState<RecordingReactionId | null>(null);
   const popTimerRef = useRef<number | null>(null);
 
   const clearPopTimer = useCallback(() => {
@@ -33,8 +23,8 @@ export function PlaybackFocusReactionBar() {
 
   useEffect(() => clearPopTimer, [clearPopTimer]);
 
-  const handleReactionClick = (reactionId: ReactionId) => {
-    setActiveReaction((current) => (current === reactionId ? null : reactionId));
+  const handleReactionClick = (reactionId: RecordingReactionId) => {
+    toggleReaction(reactionId);
     setPopReaction(reactionId);
     clearPopTimer();
     popTimerRef.current = window.setTimeout(() => {
@@ -51,8 +41,8 @@ export function PlaybackFocusReactionBar() {
       onPointerDown={stopPlaybackFocusBubble}
       onClick={stopPlaybackFocusBubble}
     >
-      {REACTIONS.map(({ id, label, icon: Icon }) => {
-        const isActive = activeReaction === id;
+      {RECORDING_REACTIONS.map(({ id, label, icon: Icon }) => {
+        const isActive = activeIds.has(id);
         const isPopping = popReaction === id;
 
         return (
@@ -68,6 +58,7 @@ export function PlaybackFocusReactionBar() {
               .join(" ")}
             aria-label={label}
             aria-pressed={isActive}
+            disabled={!recordingId}
             onClick={() => handleReactionClick(id)}
           >
             <Icon size={16} strokeWidth={isActive ? 2.4 : 2} aria-hidden />

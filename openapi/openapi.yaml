@@ -339,6 +339,115 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /api/v1/me/reactions/recordings/{recordingId}:
+    get:
+      tags: [ Me ]
+      operationId: listRecordingReactions
+      summary: List the current user's reactions for a recording
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: recordingId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Recording reactions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecordingReactionsResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Recording not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/me/reactions/recordings/{recordingId}/{kind}:
+    post:
+      tags: [ Me ]
+      operationId: addRecordingReaction
+      summary: Add a reaction to a recording
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: recordingId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: kind
+          required: true
+          schema:
+            $ref: '#/components/schemas/RecordingReactionKind'
+      responses:
+        '201':
+          description: Reaction saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecordingReactionSavedResponse'
+        '400':
+          description: Invalid reaction kind
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Recording not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags: [ Me ]
+      operationId: removeRecordingReaction
+      summary: Remove a reaction from a recording
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: recordingId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: kind
+          required: true
+          schema:
+            $ref: '#/components/schemas/RecordingReactionKind'
+      responses:
+        '204':
+          description: Removed
+        '400':
+          description: Invalid reaction kind
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /api/v1/me/collections/playlists:
     get:
       tags: [ Me ]
@@ -5523,6 +5632,37 @@ components:
         recordingId:
           type: string
         savedAt:
+          type: string
+          format: date-time
+
+    RecordingReactionKind:
+      type: string
+      enum: [ LOVE, FIRE, SPARKLE, THUMBS ]
+
+    RecordingReactionsResponse:
+      type: object
+      additionalProperties: false
+      required: [ recordingId, kinds ]
+      properties:
+        recordingId:
+          type: string
+        kinds:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecordingReactionKind'
+
+    RecordingReactionSavedResponse:
+      type: object
+      additionalProperties: false
+      required: [ id, recordingId, kind, reactedAt ]
+      properties:
+        id:
+          type: string
+        recordingId:
+          type: string
+        kind:
+          $ref: '#/components/schemas/RecordingReactionKind'
+        reactedAt:
           type: string
           format: date-time
 

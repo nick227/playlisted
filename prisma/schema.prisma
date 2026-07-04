@@ -52,6 +52,13 @@ enum SaveKind {
   FAVORITE
 }
 
+enum RecordingReactionKind {
+  LOVE
+  FIRE
+  SPARKLE
+  THUMBS
+}
+
 enum TagKind {
   GENRE
   MOOD
@@ -117,6 +124,7 @@ model User {
   playlistItemsAdded     PlaylistItem[]     @relation("PlaylistItemAddedBy")
   playlistSaves          PlaylistSave[]
   recordingSaves         RecordingSave[]
+  recordingReactions     RecordingReaction[]
   playbackEvents         PlaybackEvent[]
   editorialPosts         EditorialPost[]    @relation("EditorialPostAuthor")
   homepageFeatures       HomepageFeature[]  @relation("HomepageFeatureTargetUser")
@@ -204,6 +212,7 @@ model Recording {
   publishedPlaylist Playlist           @relation("RecordingPrimaryPlaylist", fields: [publishedPlaylistId], references: [id], onDelete: Cascade)
   playlistItems     PlaylistItem[]
   saves             RecordingSave[]
+  reactions         RecordingReaction[]
   playbackEvents    PlaybackEvent[]
   tags              RecordingTag[]
   subtitles         RecordingSubtitle[]
@@ -256,6 +265,20 @@ model RecordingSave {
   recordingId String   @db.VarChar(191)
   kind        SaveKind
   createdAt   DateTime @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recording Recording @relation(fields: [recordingId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, recordingId, kind])
+  @@index([recordingId, kind])
+}
+
+model RecordingReaction {
+  id          String                @id @default(cuid()) @db.VarChar(191)
+  userId      String                @db.VarChar(191)
+  recordingId String                @db.VarChar(191)
+  kind        RecordingReactionKind
+  createdAt   DateTime              @default(now())
 
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   recording Recording @relation(fields: [recordingId], references: [id], onDelete: Cascade)

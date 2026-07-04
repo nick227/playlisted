@@ -226,6 +226,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/reactions/recordings/{recordingId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the current user's reactions for a recording */
+        get: operations["listRecordingReactions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/reactions/recordings/{recordingId}/{kind}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add a reaction to a recording */
+        post: operations["addRecordingReaction"];
+        /** Remove a reaction from a recording */
+        delete: operations["removeRecordingReaction"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me/collections/playlists": {
         parameters: {
             query?: never;
@@ -2277,6 +2312,19 @@ export interface components {
             /** Format: date-time */
             savedAt: string;
         };
+        /** @enum {string} */
+        RecordingReactionKind: "LOVE" | "FIRE" | "SPARKLE" | "THUMBS";
+        RecordingReactionsResponse: {
+            recordingId: string;
+            kinds: components["schemas"]["RecordingReactionKind"][];
+        };
+        RecordingReactionSavedResponse: {
+            id: string;
+            recordingId: string;
+            kind: components["schemas"]["RecordingReactionKind"];
+            /** Format: date-time */
+            reactedAt: string;
+        };
         FavoritePlaylistItem: components["schemas"]["PlaylistSummary"] & {
             /** Format: date-time */
             savedAt: string;
@@ -3315,6 +3363,135 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listRecordingReactions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recordingId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Recording reactions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordingReactionsResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Recording not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    addRecordingReaction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recordingId: string;
+                kind: components["schemas"]["RecordingReactionKind"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Reaction saved */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordingReactionSavedResponse"];
+                };
+            };
+            /** @description Invalid reaction kind */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Recording not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    removeRecordingReaction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recordingId: string;
+                kind: components["schemas"]["RecordingReactionKind"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Removed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Invalid reaction kind */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
             };
             /** @description Unauthorized */
             401: {

@@ -8,6 +8,7 @@ import { requireAuth } from "../lib/requireAuth.js";
 import { prisma } from "../lib/prisma.js";
 import { mapSubtitleSummary, subtitleInclude } from "../lib/subtitles/summary.js";
 import { mapRecordingSubtitleStyle } from "../lib/subtitles/styleSettings.js";
+import { parseRecordingReactionKind } from "../lib/recordingReactions.js";
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_PAGE_SIZE = 50;
@@ -729,6 +730,101 @@ meRouter.delete("/follows/artists/:artistId", async (req, res, next) => {
 
     await prisma.userFollow.deleteMany({
       where: { followerId: auth.user.id, followingId: req.params.artistId },
+    });
+
+    return res.status(204).send();
+  } catch (error) {
+    return next(error);
+  }
+});
+
+// ── recording reactions ───────────────────────────────────────────────────────
+
+meRouter.get("/reactions/recordings/:recordingId", async (req, res, next) => {
+  try {
+    const auth = await requireAuth(req, res);
+    if (!auth) return;
+
+    const { recordingId } = req.params;
+    const recording = await prisma.recording.findUnique({
+      where: { id: recordingId },
+      select: { id: true },
+    });
+
+    if (!recording) {
+      return res.status(404).json({ error: "recording_not_found", message: "Recording not found." });
+    }
+
+    const reactions = await prisma.recordingReaction.findMany({
+      where: { userId: auth.user.id, recordingId },
+      select: { kind: true },
+      orderBy: { createdAt: "asc" },
+    });
+
+    return res.json({
+      recordingId,
+      kinds: reactions.map((reaction) => reaction.kind),
+    });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+meRouter.post("/reactions/recordings/:recordingId/:kind", async (req, res, next) => {
+  try {
+    const auth = await requireAuth(req, res);
+    if (!auth) return;
+
+    const { recordingId } = req.params;
+    const kind = parseRecordingReactionKind(req.params.kind);
+    if (!kind) {
+      return res.status(400).json({ error: "invalid_reaction_kind", message: "Invalid reaction kind." });
+    }
+
+    const recording = await prisma.recording.findUnique({
+      where: { id: recordingId },
+      select: { id: true },
+    });
+
+    if (!recording) {
+      return res.status(404).json({ error: "recording_not_found", message: "Recording not found." });
+    }
+
+    const reaction = await prisma.recordingReaction.upsert({
+      where: {
+        userId_recordingId_kind: { userId: auth.user.id, recordingId, kind },
+      },
+      create: { userId: auth.user.id, recordingId, kind },
+      update: {},
+    });
+
+    return res.status(201).json({
+      id: reaction.id,
+      recordingId: reaction.recordingId,
+      kind: reaction.kind,
+      reactedAt: reaction.createdAt.toISOString(),
+    });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+meRouter.delete("/reactions/recordings/:recordingId/:kind", async (req, res, next) => {
+  try {
+    const auth = await requireAuth(req, res);
+    if (!auth) return;
+
+    const kind = parseRecordingReactionKind(req.params.kind);
+    if (!kind) {
+      return res.status(400).json({ error: "invalid_reaction_kind", message: "Invalid reaction kind." });
+    }
+
+    await prisma.recordingReaction.deleteMany({
+      where: {
+        userId: auth.user.id,
+        recordingId: req.params.recordingId,
+        kind,
+      },
     });
 
     return res.status(204).send();
