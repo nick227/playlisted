@@ -14,6 +14,7 @@ import { drawAtmosphere } from './render/atmosphere'
 import { drawIndustrialVents } from './render/industrialVents'
 import { drawStreetFurniture } from './render/streetFurniture'
 import { drawWaterfrontLandmarks } from './render/waterfrontLandmarks'
+import { drawGraphicNovelBlocks } from './render/graphicNovelBlocks'
 import { drawHeroLandmarks } from './render/heroLandmarks'
 import { drawLocalizedEvents } from './render/localizedEvents'
 import { drawCinematicGrade } from './render/cinematicGrade'
@@ -103,7 +104,11 @@ export function metropolisFactory(): IAnimation {
         this.ctx, this.grid, cam, w, h, this.pixelRatio, layoutKey,
         elapsed, audio, reduced, this.director,
       )
-      drawHeroLandmarks(this.ctx, this.grid, cam, elapsed, reduced)
+      if (METRO_SETTINGS.renderMode === 'graphicNovel') {
+        drawGraphicNovelBlocks(this.ctx, this.grid.composedBlocks, cam, elapsed, reduced)
+      } else {
+        drawHeroLandmarks(this.ctx, this.grid, cam, elapsed, reduced)
+      }
       drawLocalizedEvents(this.ctx, this.grid, cam, w, h, this.director, elapsed, reduced)
       drawWaterfrontLandmarks(this.ctx, this.grid.landmarks, cam, elapsed, reduced)
       drawStreetFurniture(this.ctx, this.grid.streetProps, cam, elapsed, reduced)

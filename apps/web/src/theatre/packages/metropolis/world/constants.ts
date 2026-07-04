@@ -12,8 +12,10 @@ export const METRO_SETTINGS = {
   floorElev: 0.82,
   /** Minimum building wall height in screen pixels (boosts low/short blocks). */
   minWallPx: 20,
-  /** Camera frames this downtown core — not the full 128×128 sprawl. */
-  viewBounds: { gx0: 44, gy0: 32, gx1: 84, gy1: 72 },
+  /** Graphic novel = curated blocks; simcity = per-tile sprawl (legacy). */
+  renderMode: 'graphicNovel' as const,
+  /** Camera frames the composed street panel. */
+  viewBounds: { gx0: 42, gy0: 36, gx1: 74, gy1: 58 },
   cameraDriftX: 0.014,
   cameraDriftY: 0.009,
   audioSwayMaxPx: 28,
@@ -22,8 +24,8 @@ export const METRO_SETTINGS = {
   maxZoom: 1.45,
   targetHoldMs: 120_000,
   loopDurationMs: 120_000,
-  trafficCount: 120,
-  pedestrianCount: 64,
+  trafficCount: 14,
+  pedestrianCount: 18,
   trainTrackGy: 32,
 } as const
 

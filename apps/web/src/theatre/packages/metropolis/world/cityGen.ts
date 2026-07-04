@@ -1,6 +1,7 @@
 import { METRO_SETTINGS } from './constants'
 import { generateLandmarks, generateStreetProps } from './cityProps'
 import { generateHeroLandmarks } from './heroLandmarks'
+import { buildComposedScene, heroesFromBlocks } from './composedScene'
 import { archetypeById, pickArchetypeId } from './buildingArchetypes'
 import { districtAt, DISTRICTS } from './districts'
 import { isRail, isRoad, isWater } from './roads'
@@ -8,6 +9,7 @@ import { rand01 } from './rng'
 import type { CityCell } from './types'
 import type { Landmark, StreetProp } from './cityProps'
 import type { HeroLandmark } from './heroLandmarks'
+import type { ComposedBlock } from './composedScene'
 
 export type CityGrid = {
   size: number
@@ -15,6 +17,7 @@ export type CityGrid = {
   streetProps: StreetProp[]
   landmarks: Landmark[]
   heroes: HeroLandmark[]
+  composedBlocks: ComposedBlock[]
 }
 
 export function generateCity(seed: number, size: number = METRO_SETTINGS.citySize): CityGrid {
@@ -39,12 +42,21 @@ export function generateCity(seed: number, size: number = METRO_SETTINGS.citySiz
     }
     cells.push(row)
   }
+
+  const composedBlocks = METRO_SETTINGS.renderMode === 'graphicNovel'
+    ? buildComposedScene(cells, seed)
+    : []
+  const heroes = METRO_SETTINGS.renderMode === 'graphicNovel'
+    ? heroesFromBlocks(composedBlocks)
+    : generateHeroLandmarks(cells, size)
+
   return {
     size,
     cells,
     streetProps: generateStreetProps(cells, size),
     landmarks: generateLandmarks(cells, size),
-    heroes: generateHeroLandmarks(cells, size),
+    heroes,
+    composedBlocks,
   }
 }
 

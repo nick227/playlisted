@@ -18,7 +18,7 @@ describe('metropolis human drama', () => {
   it('spawns queues, rooftops, and wanderers', () => {
     const grid = generateCity(METRO_SETTINGS.citySeed, 64)
     const drama = spawnHumanDrama(grid)
-    expect(drama.figures.length).toBeGreaterThan(20)
+    expect(drama.figures.length).toBeGreaterThan(8)
     expect(drama.figures.some((f) => f.role === 'queue')).toBe(true)
     expect(drama.figures.some((f) => f.role === 'rooftop')).toBe(true)
     expect(drama.figures.some((f) => f.role === 'wanderer')).toBe(true)

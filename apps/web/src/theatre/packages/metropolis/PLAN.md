@@ -3,8 +3,8 @@
 **Codename:** `metropolis`  
 **Preset target:** `metropolisNight` (lab → production when ready)  
 **Package type:** Internal engine (not public Author SDK v1)  
-**View:** 3/4 aerial oblique — SimCity / GTA night map energy, Playlisted gritty culture  
-**Aesthetic:** Rich **16–24-bit pixel metropolis** — deep palettes, dense detail, not photoreal 3D
+**View:** 3/4 aerial oblique — **graphic novel street panel** (curated landmarks), not SimCity sprawl  
+**Aesthetic:** Rich **16–24-bit pixel** — bold silhouettes, neon signs, negative space; a few blocks that read like panels
 
 ---
 

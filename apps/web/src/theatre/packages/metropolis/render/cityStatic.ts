@@ -1,5 +1,6 @@
 import { buildingElevation } from '../world/coords'
 import { buildVisibleChunks, iterateVisibleCells } from '../world/chunks'
+import { METRO_SETTINGS } from '../world/constants'
 import type { CityGrid } from '../world/cityGen'
 import type { CameraState } from '../world/types'
 import { drawArchetypeShell } from './archetypeShell'
@@ -30,7 +31,7 @@ export function drawCityStatic(
     if (cell.water) fillQuad(ctx, tileCorners(gx, gy, 0, cam), WATER.mid)
     else if (cell.rail) fillQuad(ctx, tileCorners(gx, gy, 0, cam), ROAD.rail)
     else if (cell.road) drawRoadCell(ctx, gx, gy, cam, grid.size)
-    else if (cell.floors > 0) drawBuildingStatic(ctx, gx, gy, cell, cam)
+    else if (cell.floors > 0 && METRO_SETTINGS.renderMode !== 'graphicNovel') drawBuildingStatic(ctx, gx, gy, cell, cam)
     else {
       fillQuad(ctx, tileCorners(gx, gy, 0, cam), '#0a0a10')
       drawLotDressing(ctx, gx, gy, cell, cam)

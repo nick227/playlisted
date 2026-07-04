@@ -1,3 +1,4 @@
+import { METRO_SETTINGS } from '../world/constants'
 import { buildingElevation } from '../world/coords'
 import { buildVisibleChunks, iterateVisibleCells } from '../world/chunks'
 import {
@@ -22,6 +23,7 @@ export function drawLocalizedEvents(
   reducedMotion: boolean,
 ) {
   if (director.strobe <= 0 && director.horror <= 0) return
+  if (METRO_SETTINGS.renderMode === 'graphicNovel') return
   const visible = buildVisibleChunks(grid.size, cam, cssW, cssH)
   iterateVisibleCells(grid.size, visible, (gx, gy) => {
     const cell = grid.cells[gy][gx]

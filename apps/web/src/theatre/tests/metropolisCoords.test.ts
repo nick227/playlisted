@@ -50,7 +50,7 @@ describe('metropolis cityGen', () => {
     expect(a.cells[8][8].archetypeId).toBe(b.cells[8][8].archetypeId)
   })
 
-  it('includes roads and buildings', () => {
+  it('includes roads and composed blocks', () => {
     const grid = generateCity(METRO_SETTINGS.citySeed, 24)
     let roads = 0
     let buildings = 0
@@ -61,7 +61,7 @@ describe('metropolis cityGen', () => {
       }
     }
     expect(roads).toBeGreaterThan(10)
-    expect(buildings).toBeGreaterThan(10)
+    expect(grid.composedBlocks.length).toBeGreaterThan(0)
   })
 
   it('produces stable fingerprint for full city seed', () => {

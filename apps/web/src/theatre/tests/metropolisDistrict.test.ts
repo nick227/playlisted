@@ -27,8 +27,10 @@ describe('metropolis district audio', () => {
 })
 
 describe('metropolis hero landmarks', () => {
-  it('generates hero landmarks for full city', () => {
+  it('derives heroes from composed panel blocks', () => {
     const grid = generateCity(METRO_SETTINGS.citySeed, 64)
-    expect(grid.heroes.length).toBeGreaterThanOrEqual(6)
+    expect(grid.composedBlocks.length).toBeGreaterThanOrEqual(7)
+    expect(grid.heroes.length).toBeGreaterThanOrEqual(4)
+    expect(grid.heroes.some((h) => h.kind === 'grandTheatre')).toBe(true)
   })
 })

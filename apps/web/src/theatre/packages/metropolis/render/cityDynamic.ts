@@ -1,3 +1,4 @@
+import { METRO_SETTINGS } from '../world/constants'
 import { districtAudioPulse, districtNeonBoost, districtChaosFlicker, isWaterfrontDistrict } from '../world/districtAudio'
 import { buildVisibleChunks, iterateVisibleCells } from '../world/chunks'
 import { archetypeById } from '../world/buildingArchetypes'
@@ -38,7 +39,7 @@ export function drawCityDynamic(
     const dim = blackoutDim(gx, gy, grid.size, director.blackoutWave, director.blackoutRolling, director.blackout)
     if (cell.water) drawWaterShimmer(ctx, gx, gy, cell.district, cam, elapsed, audio, reducedMotion, dim)
     else if (cell.road || cell.rail) drawWetRoad(ctx, gx, gy, cam, elapsed, reducedMotion, dim)
-    else if (cell.floors > 0) {
+    else if (cell.floors > 0 && METRO_SETTINGS.renderMode !== 'graphicNovel') {
       drawBuildingDynamic(ctx, gx, gy, cell, cam, elapsed, audio, reducedMotion, dim, director)
     }
   })
