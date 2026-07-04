@@ -110,7 +110,7 @@ function shade(hex: string, amt: number): string {
 function drawWindows(
   ctx: CanvasRenderingContext2D,
   gx: number,
-  gy: number,
+  _gy: number,
   floors: number,
   style: (typeof DISTRICTS)[keyof typeof DISTRICTS],
   seed: number,
