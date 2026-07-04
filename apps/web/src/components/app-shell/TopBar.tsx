@@ -47,10 +47,20 @@ export function TopBar({ onMenuClick, cinematicBgTransparent = false }: TopBarPr
         <>
           <div className="min-w-0 flex-1 sm:hidden" aria-hidden />
           <div className="flex shrink-0 items-center gap-1.5 sm:contents sm:gap-3">
-            <TopBarSearch
-              mobileSearchOpen={mobileSearchOpen}
-              onMobileSearchOpenChange={setMobileSearchOpen}
-            />
+            <div className="hidden sm:pointer-events-none sm:absolute sm:left-1/2 sm:flex sm:w-full sm:max-w-xl sm:-translate-x-1/2 sm:px-4">
+              <div className="pointer-events-auto w-full">
+                <TopBarSearch
+                  mobileSearchOpen={mobileSearchOpen}
+                  onMobileSearchOpenChange={setMobileSearchOpen}
+                />
+              </div>
+            </div>
+            <div className="sm:hidden">
+              <TopBarSearch
+                mobileSearchOpen={mobileSearchOpen}
+                onMobileSearchOpenChange={setMobileSearchOpen}
+              />
+            </div>
             <TopBarActions mobileSearchOpen={mobileSearchOpen} />
           </div>
         </>

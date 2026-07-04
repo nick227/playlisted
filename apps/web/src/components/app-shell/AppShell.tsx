@@ -16,7 +16,8 @@ import { useRadioPlayer } from "@/providers/RadioPlayerProvider";
 import { usePlaybackTransport } from "@/hooks/usePlaybackTransport";
 import { playbackFocusTiming } from "@/lib/playbackFocusTiming";
 import { isPlaybackFocusBodyFadeSuppressed } from "@/lib/playbackFocusBodyFade";
-import { usePlaybackFocusSuppressed } from "@/lib/playbackFocusSuppression";
+import { isPlaybackFocusSuppressed, usePlaybackFocusSuppressed } from "@/lib/playbackFocusSuppression";
+import { isPlayerShortcutSuppressed } from "@/lib/playerKeyboard";
 import { useSubtitleDisplay } from "@/lib/subtitleDisplay";
 
 import { BackgroundLayer } from "./BackgroundLayer";
@@ -64,12 +65,14 @@ export function AppShell({ children }: AppShellProps) {
     playerShellActive,
     state,
     resumePlaybackIfPaused,
+    togglePlay,
   } = useAudioPlayer();
   const {
     playing: radioPlaying,
     nowPlaying: radioNowPlaying,
     audioRef: radioAudioRef,
     radioUiMounted,
+    togglePlayback: toggleRadioPlayback,
   } = useRadioPlayer();
   const { currentTime: siteCurrentTime } = usePlaybackTransport();
   const currentTimeMsRef = useRef(0);
@@ -201,6 +204,28 @@ export function AppShell({ children }: AppShellProps) {
   useEffect(() => {
     if (radioPlaying) resumeAfterNavRef.current = false;
   }, [radioPlaying]);
+
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.code !== "Space" && event.key !== " ") return;
+      if (event.repeat || event.ctrlKey || event.metaKey || event.altKey) return;
+      if (isPlaybackFocusSuppressed()) return;
+      if (isPlayerShortcutSuppressed(event)) return;
+
+      if (radioPlaying || (!currentTrack && radioNowPlaying?.audioUrl)) {
+        event.preventDefault();
+        void toggleRadioPlayback();
+        return;
+      }
+
+      if (!currentTrack) return;
+      event.preventDefault();
+      togglePlay();
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [currentTrack, radioNowPlaying?.audioUrl, radioPlaying, togglePlay, toggleRadioPlayback]);
 
   useEffect(() => {
     if (!playFocusActive) return;

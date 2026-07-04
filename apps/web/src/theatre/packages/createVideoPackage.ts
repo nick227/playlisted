@@ -30,7 +30,7 @@ export type VideoPackageEntry = {
 
 /** One package per video — each gets an equal rotation slot via per-package pick. */
 export const SEED_VIDEO_ENTRIES: VideoPackageEntry[] = [
-  ...Array.from({ length: 61 }, (_, index) => {
+  ...Array.from({ length: 63 }, (_, index) => {
     const n = index + 1
     return { id: `video${n}`, label: `Video ${n}`, videoUrl: `/${n}.mp4` }
   }),

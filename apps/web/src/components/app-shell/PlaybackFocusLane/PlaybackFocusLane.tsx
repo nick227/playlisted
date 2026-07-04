@@ -85,7 +85,7 @@ export function PlaybackFocusLane({ focusState }: PlaybackFocusLaneProps) {
     return () => window.removeEventListener(RECORDING_SUBTITLES_DISABLED_EVENT, handleSubtitlesDisabledChange);
   }, [accessToken, queryClient, recording?.id]);
 
-  const { subtitlePosition, customSubtitleStyle } = useRecordingSubtitleStyle(
+  const { subtitlePosition, subtitleStyleId, customSubtitleStyle } = useRecordingSubtitleStyle(
     recording?.id,
     recording,
     subtitles,
@@ -133,6 +133,7 @@ export function PlaybackFocusLane({ focusState }: PlaybackFocusLaneProps) {
         <FocusLaneSubtitleContent
           fixture={displayFixture}
           customSubtitleStyle={customSubtitleStyle}
+          subtitleStyleId={subtitleStyleId}
           currentTimeSec={currentTime}
           isPlaying={isPlaying}
         />

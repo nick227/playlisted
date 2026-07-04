@@ -45,7 +45,7 @@ export function SongVisualPreviewFocusLane({
 
   const canRenderTextOverlay = Boolean(focusLaneActive && textOverlaysEnabled);
 
-  const { subtitlePosition, customSubtitleStyle } = useRecordingSubtitleStyle(
+  const { subtitlePosition, subtitleStyleId, customSubtitleStyle } = useRecordingSubtitleStyle(
     recording.id,
     recording,
     subtitles,
@@ -142,6 +142,7 @@ export function SongVisualPreviewFocusLane({
         <FocusLaneSubtitleContent
           fixture={displayFixture}
           customSubtitleStyle={customSubtitleStyle}
+          subtitleStyleId={subtitleStyleId}
           currentTimeSec={currentTimeSec}
           isPlaying={enabled}
         />

@@ -20,7 +20,7 @@ import { usePlaylists } from "@/hooks/usePlaylists";
 import { authedApi } from "@/lib/authedApi";
 import { playbackFocusTiming } from "@/lib/playbackFocusTiming";
 import { usePlaybackFocusSuppressed } from "@/lib/playbackFocusSuppression";
-import { CHARTS_PATH, FAVORITES_PATH, LIBRARY_PATH, CHAT_PATH } from "@/lib/browsePaths";
+import { CHARTS_PATH, FAVORITES_PATH, CHAT_PATH } from "@/lib/browsePaths";
 import { ADMIN_PATH, panelPathForRole, playlistPath, studioCollectionEditPath } from "@/lib/routes";
 import { useAuth } from "@/providers/AuthProvider";
 
@@ -175,7 +175,6 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
               ))}
               
               <NavItem to={FAVORITES_PATH} label="Favorites" icon={Heart} onClick={onClose} />
-              <NavItem to={LIBRARY_PATH} label="Library" icon={Mic2} onClick={onClose} />
               <NavItem to={CHAT_PATH} label="Chat" icon={MessageCircle} onClick={onClose} />
               
           {panelPath === ADMIN_PATH ? (
@@ -196,7 +195,7 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
                 className={({ isActive }) => navClass(isActive)}
               >
                 <PanelsTopLeft size={18} />
-                My Studio
+                Studio
               </NavLink>
           ) : null}
               
@@ -215,7 +214,7 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
                 className={navClass(false, "text-left disabled:opacity-60 cursor-pointer")}
               >
                 <Plus size={20} />
-                {createCollectionMutation.isPending ? "Creating..." : "Add Songs"}
+                {createCollectionMutation.isPending ? "Creating..." : "Upload"}
               </button>
               {showCollectionsSignIn && !isAuthenticated ? (
                 <div className="mx-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-3">

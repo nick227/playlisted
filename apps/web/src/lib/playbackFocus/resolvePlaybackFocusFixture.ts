@@ -1,5 +1,5 @@
 import { playbackFocusTiming } from "@/lib/playbackFocusTiming";
-import { getFocusLaneElapsedMs } from "@/lib/playbackFocus/focusLaneSequence";
+import { getFocusLaneElapsedMs, getFocusLaneSequenceWindows } from "@/lib/playbackFocus/focusLaneSequence";
 import type { SubtitleSegment } from "@/lib/subtitles";
 import type {
   FocusArtist,
@@ -109,8 +109,10 @@ export function resolvePlaybackFocusFixture(input: ResolvePlaybackFocusInput): P
     return synthetic;
   }
 
+  const { fallbackStart } = getFocusLaneSequenceWindows();
+
   const title = recording?.title?.trim();
-  if (title) {
+  if (title && focusLaneElapsedMs >= fallbackStart) {
     return {
       type: "finalFallback",
       key: `final-song-title:${recording?.id ?? title}`,

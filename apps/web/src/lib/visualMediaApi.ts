@@ -19,6 +19,13 @@ export type VisualMediaAssetRecord = {
   createdAt: string;
 };
 
+export type UserLibraryImageRecord = {
+  url: string;
+  label: string;
+  source: "avatar" | "hero" | "playlist" | "recording";
+  updatedAt: string;
+};
+
 export type SongVisualAttachmentRecord = {
   id: string;
   songId: string;
@@ -138,6 +145,15 @@ export async function listVisualMediaAssets(accessToken: string) {
     credentials: "include",
   });
   const payload = await parseJson<{ items: VisualMediaAssetRecord[] }>(response);
+  return payload.items;
+}
+
+export async function fetchUserLibraryImages(accessToken: string) {
+  const response = await fetch(`${apiBase()}/api/v1/visual-media/library-images`, {
+    headers: authHeaders(accessToken),
+    credentials: "include",
+  });
+  const payload = await parseJson<{ items: UserLibraryImageRecord[] }>(response);
   return payload.items;
 }
 

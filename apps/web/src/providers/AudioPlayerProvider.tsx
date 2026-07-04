@@ -33,8 +33,6 @@ import { prefetchAutoplayNext, type PrefetchedPlaylistNext } from "@/lib/upNext/
 import { resolveAutopilotSegment } from "@/lib/upNext/resolveAutopilot";
 import { readAutoplayEnabled, writeAutoplayEnabled } from "@/lib/upNext/storage";
 import type { BeginSegmentOptions, UpNextSegment } from "@/lib/upNext/types";
-import { isPlaybackFocusSuppressed } from "@/lib/playbackFocusSuppression";
-import { isPlayerShortcutSuppressed } from "@/lib/playerKeyboard";
 import { postPlaybackEvent } from "@/lib/playbackEvents";
 import { readPlayerVolume, writePlayerVolume } from "@/lib/playerVolumeStorage";
 import { useAuth } from "@/providers/AuthProvider";
@@ -918,20 +916,6 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       cancelled = true;
     };
   }, [autoplayEnabled, playbackContext.playlistId, segmentLabel, upNextPipeline.length]);
-
-  useEffect(() => {
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.code !== "Space" && event.key !== " ") return;
-      if (event.repeat || event.ctrlKey || event.metaKey || event.altKey) return;
-      if (isPlaybackFocusSuppressed()) return;
-      if (isPlayerShortcutSuppressed(event)) return;
-      if (!currentTrack) return;
-      event.preventDefault();
-      togglePlay();
-    }
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [currentTrack, togglePlay]);
 
   const sessionValue = useMemo<AudioPlayerContextValue>(
     () => ({

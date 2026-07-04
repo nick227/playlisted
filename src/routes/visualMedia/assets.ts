@@ -13,6 +13,7 @@ import {
 } from "../../lib/uploadMulter.js";
 import { rejectDisallowedUpload, resolveUploadMimeType } from "../../lib/uploadValidate.js";
 import { dtoMediaTypeToPrisma } from "../../lib/visualMedia/types.js";
+import { listUserLibraryImages } from "../../lib/visualMedia/listUserLibraryImages.js";
 import { mapVisualMediaAsset } from "../../lib/visualMedia/mapDto.js";
 import { parseVisualUploadMetadata } from "../../lib/visualMedia/validateUploadMetadata.js";
 
@@ -29,6 +30,18 @@ visualMediaAssetsRouter.get("/", async (req, res, next) => {
     });
 
     res.json({ items: assets.map(mapVisualMediaAsset) });
+  } catch (error) {
+    next(error);
+  }
+});
+
+visualMediaAssetsRouter.get("/library-images", async (req, res, next) => {
+  try {
+    const auth = await requireAuth(req, res);
+    if (!auth) return;
+
+    const items = await listUserLibraryImages(auth.user.id);
+    res.json({ items });
   } catch (error) {
     next(error);
   }

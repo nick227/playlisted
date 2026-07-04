@@ -7,6 +7,7 @@ const VALID_POSITIONS = new Set<SubtitlePosition>(["top", "middle", "bottom"]);
 
 const VALID_STYLE_IDS = new Set([
   "classic",
+  "super-giant",
   "cinema",
   "neon",
   "karaoke",

@@ -12,6 +12,7 @@ export type SubtitleStylePreset = {
   borderRadius?: string;
   letterSpacing?: string;
   backgroundImage?: string;
+  dynamicSize?: boolean;
 };
 
 export const DEFAULT_SUBTITLE_POSITION: SubtitlePosition = "middle";
@@ -39,6 +40,17 @@ export const SUBTITLE_STYLE_PRESETS: SubtitleStylePreset[] = [
     backgroundColor: "rgba(8, 8, 8, 0.88)",
     letterSpacing: "0.04em",
     borderRadius: "0.25rem",
+  },
+  {
+    id: "super-giant",
+    name: "Super Giant",
+    fontFamily: '"Impact", "Arial Black", sans-serif',
+    fontSize: "4rem",
+    fontWeight: 900,
+    color: "#ffffff",
+    backgroundColor: "transparent",
+    textShadow: "0 4px 24px rgba(0, 0, 0, 0.9), 0 0 40px rgba(0,0,0,0.5)",
+    dynamicSize: true,
   },
   {
     id: "neon",

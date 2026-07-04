@@ -190,6 +190,7 @@ function SongVisualEditorModalInner({
             <SongVisualAssetLibrary
               timelineClips={editor.timelineClips}
               assets={editor.assets}
+              userLibraryImages={editor.userLibraryImages}
               isBusy={editor.isBusy}
               isUploading={editor.isUploading}
               uploadProgress={editor.uploadProgress}

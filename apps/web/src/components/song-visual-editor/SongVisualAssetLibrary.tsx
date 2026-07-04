@@ -2,7 +2,7 @@ import { RotateCcw, Trash2, Upload, AudioLines, Loader2 } from "lucide-react";
 import { useEffect, useState, type DragEvent } from "react";
 
 import { VISUAL_UPLOAD_MAX_BYTES } from "@/lib/visualUploadLimits";
-import type { PendingVisualUpload } from "@/lib/visualMediaApi";
+import type { PendingVisualUpload, VisualMediaAssetRecord, UserLibraryImageRecord } from "@/lib/visualMediaApi";
 import { formatVisualUploadProgressLabel, type VisualUploadProgress } from "@/lib/visualUploadProgress";
 
 import { editorToggleClass } from "./editorToggle";
@@ -11,7 +11,6 @@ import { SongVisualLibraryCard } from "./SongVisualLibraryCard";
 import { readTheatrePresetIdFromTags } from "./theatreFxLibrary";
 import { formatMegabytes, formatTimelineTime, readClipStartOffsetMs } from "./timelineLayout";
 import type { TimelineClip } from "./types";
-import type { VisualMediaAssetRecord } from "@/lib/visualMediaApi";
 import {
   LIBRARY_BATCH_SIZE,
   useSongVisualLibraryItems,
@@ -24,6 +23,7 @@ import {
 type SongVisualAssetLibraryProps = {
   timelineClips: TimelineClip[];
   assets: VisualMediaAssetRecord[];
+  userLibraryImages: UserLibraryImageRecord[];
   isBusy: boolean;
   isUploading: boolean;
   uploadProgress: VisualUploadProgress | null;
@@ -140,6 +140,7 @@ function FilterChips<T extends string>({
 export function SongVisualAssetLibrary({
   timelineClips,
   assets,
+  userLibraryImages,
   isBusy,
   isUploading,
   uploadProgress,
@@ -180,6 +181,7 @@ export function SongVisualAssetLibrary({
   const { imageRows, videoRows, communityAnimations, communityVideos, communityImages } =
     useSongVisualLibraryItems({
       assets,
+      userLibraryImages,
       attachments: timelineClips.map((clip) => clip.attachment),
       pendingUpload,
       uploadProgress,

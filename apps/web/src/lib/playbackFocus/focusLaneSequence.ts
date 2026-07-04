@@ -4,8 +4,8 @@ export function getFocusLaneSequenceWindows() {
   const { titleIntro, artistVisual } = playbackFocusTiming;
 
   const titleStart = titleIntro.delayMs;
-  const titleEnd = titleStart + titleIntro.minVisibleMs + titleIntro.fadeOutMs;
-  const fallbackStart = titleEnd + artistVisual.gapAfterTitleIntroMs;
+  const titleEnd = titleStart + titleIntro.minVisibleMs;
+  const fallbackStart = titleEnd + titleIntro.fadeOutMs + artistVisual.gapAfterTitleIntroMs;
 
   return { titleStart, titleEnd, fallbackStart };
 }

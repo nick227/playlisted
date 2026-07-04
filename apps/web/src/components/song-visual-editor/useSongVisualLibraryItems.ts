@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 
-import type { PendingVisualUpload, VisualMediaAssetRecord } from "@/lib/visualMediaApi";
+import type { PendingVisualUpload, VisualMediaAssetRecord, UserLibraryImageRecord } from "@/lib/visualMediaApi";
 import type { SongVisualAttachmentRecord } from "@/lib/visualMediaApi";
 import type { VisualUploadProgress } from "@/lib/visualUploadProgress";
 
@@ -30,13 +30,32 @@ export type VisualLibraryRow = {
 
 type UseSongVisualLibraryItemsArgs = {
   assets: VisualMediaAssetRecord[];
+  userLibraryImages: UserLibraryImageRecord[];
   attachments: SongVisualAttachmentRecord[];
   pendingUpload?: PendingVisualUpload | null;
   uploadProgress?: VisualUploadProgress | null;
 };
 
+function normalizeImageUrl(url: string): string {
+  try {
+    const parsed = new URL(url, window.location.origin);
+    if (parsed.pathname.startsWith("/uploads/")) return parsed.pathname;
+    return parsed.href;
+  } catch {
+    return url;
+  }
+}
+
+function sourceDetail(source: UserLibraryImageRecord["source"]): string {
+  if (source === "avatar") return "Profile · Avatar";
+  if (source === "hero") return "Profile · Hero";
+  if (source === "playlist") return "Playlist cover";
+  return "Track artwork";
+}
+
 export function useSongVisualLibraryItems({
   assets,
+  userLibraryImages,
   attachments,
   pendingUpload,
   uploadProgress,
@@ -46,9 +65,29 @@ export function useSongVisualLibraryItems({
     [attachments],
   );
 
+  const knownAssetUrls = useMemo(
+    () =>
+      new Set(
+        assets
+          .filter((asset) => asset.mediaType === "image")
+          .flatMap((asset) => [asset.url, asset.thumbnailUrl].filter(Boolean) as string[])
+          .map(normalizeImageUrl),
+      ),
+    [assets],
+  );
+
+  const importedImageRows = useMemo(
+    () => buildImportedImageRows(userLibraryImages, knownAssetUrls),
+    [userLibraryImages, knownAssetUrls],
+  );
+
   const imageRows = useMemo(
-    () => buildUploadRows(assets, "image", onSongAssetIds, pendingUpload, uploadProgress),
-    [assets, onSongAssetIds, pendingUpload, uploadProgress],
+    () =>
+      mergeImageRows(
+        buildUploadRows(assets, "image", onSongAssetIds, pendingUpload, uploadProgress),
+        importedImageRows,
+      ),
+    [assets, onSongAssetIds, pendingUpload, uploadProgress, importedImageRows],
   );
 
   const videoRows = useMemo(
@@ -100,6 +139,32 @@ function buildUploadRows(
   }
 
   return rows.sort((left, right) => {
+    if (left.rank !== right.rank) return left.rank - right.rank;
+    const leftCreated = left.asset?.createdAt ?? "";
+    const rightCreated = right.asset?.createdAt ?? "";
+    return rightCreated.localeCompare(leftCreated);
+  });
+}
+
+function buildImportedImageRows(
+  userLibraryImages: UserLibraryImageRecord[],
+  knownAssetUrls: Set<string>,
+): VisualLibraryRow[] {
+  return userLibraryImages
+    .filter((image) => !knownAssetUrls.has(normalizeImageUrl(image.url)))
+    .map((image) => ({
+      id: `import-${image.url}`,
+      label: image.label,
+      detail: sourceDetail(image.source),
+      thumbUrl: image.url,
+      importUrl: image.url,
+      mediaType: "image" as const,
+      rank: 2,
+    }));
+}
+
+function mergeImageRows(uploadRows: VisualLibraryRow[], importedRows: VisualLibraryRow[]): VisualLibraryRow[] {
+  return [...uploadRows, ...importedRows].sort((left, right) => {
     if (left.rank !== right.rank) return left.rank - right.rank;
     const leftCreated = left.asset?.createdAt ?? "";
     const rightCreated = right.asset?.createdAt ?? "";

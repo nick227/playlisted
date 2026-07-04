@@ -6,6 +6,7 @@ import {
   deleteVisualMediaAsset,
   ensureTheatrePlaceholderAsset,
   fetchSongVisualAttachments,
+  fetchUserLibraryImages,
   importVisualMediaImageFromUrl,
   importVisualMediaVideoFromUrl,
   listVisualMediaAssets,
@@ -106,6 +107,11 @@ export function useSongVisualEditorState({
   const assetsQuery = useQuery({
     queryKey: ["visual-media-assets"],
     queryFn: () => listVisualMediaAssets(accessToken),
+  });
+
+  const userLibraryImagesQuery = useQuery({
+    queryKey: ["user-library-images"],
+    queryFn: () => fetchUserLibraryImages(accessToken),
   });
 
   useEffect(() => {
@@ -537,6 +543,7 @@ export function useSongVisualEditorState({
   return {
     attachments,
     assets: assetsQuery.data ?? [],
+    userLibraryImages: userLibraryImagesQuery.data ?? [],
     timelineClips,
     timelineDurationSec,
     selectedAttachmentId,
