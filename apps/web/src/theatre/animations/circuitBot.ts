@@ -1,4 +1,5 @@
-import { AnimationContext, IAnimation } from '../core/IAnimation'
+import { IAnimation } from '../core/IAnimation'
+import type { PublicAnimationContext } from '../author/types'
 import CanvasAnimation from '../core/CanvasAnimation'
 
 function rrect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): void {
@@ -24,7 +25,7 @@ export function circuitBotFactory(): IAnimation {
       super({ useEffects: true, defaultBlendMode: 'normal', defaultZIndex: 101 })
     }
 
-    protected draw(context: AnimationContext): void {
+    protected draw(context: PublicAnimationContext): void {
       const w = this.cssWidth; const h = this.cssHeight
       this.ctx.clearRect(0, 0, w, h)
       this.ctx.fillStyle = '#030508'; this.ctx.fillRect(0, 0, w, h)

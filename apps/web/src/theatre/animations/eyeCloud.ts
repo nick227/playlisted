@@ -1,4 +1,5 @@
-import { AnimationContext, IAnimation } from '../core/IAnimation'
+import { IAnimation } from '../core/IAnimation'
+import type { PublicAnimationContext } from '../author/types'
 import CanvasAnimation from '../core/CanvasAnimation'
 
 // Relative positions/sizes of the 6 eyes (fraction of bodyR)
@@ -39,7 +40,7 @@ export function eyeCloudFactory(): IAnimation {
       }))
     }
 
-    protected draw(context: AnimationContext): void {
+    protected draw(context: PublicAnimationContext): void {
       const w = this.cssWidth; const h = this.cssHeight
       this.ensureState()
       this.ctx.clearRect(0, 0, w, h)

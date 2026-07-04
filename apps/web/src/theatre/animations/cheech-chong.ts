@@ -1,4 +1,5 @@
-import { AnimationContext, IAnimation } from '../core/IAnimation'
+import { IAnimation } from '../core/IAnimation'
+import type { PublicAnimationContext } from '../author/types'
 import CanvasAnimation from '../core/CanvasAnimation'
 
 const CHEECH_PALETTE = [
@@ -582,7 +583,7 @@ export function cheechChongFactory(): IAnimation {
       ctx.restore()
     }
 
-    protected draw(context: AnimationContext) {
+    protected draw(context: PublicAnimationContext) {
       const { ctx } = this
       const triggers: any = context.shared?.getTriggers?.() || { bassHit: false, beat: false, energy: 0, kick: false, snare: false, hat: false }
       const w = this.cssWidth

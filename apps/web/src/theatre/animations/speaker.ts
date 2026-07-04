@@ -1,4 +1,5 @@
-import { AnimationContext, IAnimation } from '../core/IAnimation'
+import { IAnimation } from '../core/IAnimation'
+import type { PublicAnimationContext } from '../author/types'
 import CanvasAnimation from '../core/CanvasAnimation'
 import { frameHold, stepped } from '../stopMotion/stopMotion'
 import { generateShapeDescriptor, renderShape } from '../stopMotion/shapeGenerator'
@@ -16,7 +17,7 @@ export function speakerFactory(): IAnimation {
       super({ defaultOpacity: 0.97, defaultZIndex: 101, defaultBlendMode: 'normal', useEffects: true })
     }
 
-    protected draw(context: AnimationContext) {
+    protected draw(context: PublicAnimationContext) {
       const w = this.cssWidth
       const h = this.cssHeight
       this.ctx.clearRect(0, 0, w, h)

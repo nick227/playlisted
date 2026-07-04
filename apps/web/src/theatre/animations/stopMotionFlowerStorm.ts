@@ -1,4 +1,5 @@
 import { AnimationContext, IAnimation } from '../core/IAnimation'
+import type { PublicAnimationContext } from '../author/types'
 import CanvasAnimation from '../core/CanvasAnimation'
 import { loadAnimationProgress, saveAnimationProgress } from '../controller/animationProgressStorage'
 import { ScriptRunner, type ScriptRunnerSnapshot } from '../stopMotion/stopMotionScript'
@@ -203,7 +204,7 @@ export function stopMotionFlowerStormFactory(): IAnimation {
       }
     }
 
-    protected draw(context: AnimationContext) {
+    protected draw(context: PublicAnimationContext) {
       const w = this.cssWidth
       const h = this.cssHeight
       const now = context.shared?.time?.elapsed ?? performance.now()

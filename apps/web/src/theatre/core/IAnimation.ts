@@ -2,19 +2,16 @@ import type { Features } from '../audio/AudioFeatureExtractor'
 import type { TheatreAudioSnapshot } from '../audio/TheatreAudioBus'
 import type { TriggerFrame } from '../audio/VisualTriggers'
 import type { VisualMediaBeatFx } from '../media/types'
+import type { TheatreLayerOptions } from '../author/types'
+
+export type { TheatreLayerOptions } from '../author/types'
 
 export type AnimationRole = 'background' | 'subject' | 'foreground' | 'overlay' | 'any'
 export type AnimationLayerType = 'image' | 'video' | 'canvas' | 'ui' | 'hybrid'
 export type AnimationMood = 'calm' | 'dynamic' | 'chaos' | 'nightmare'
 
-export type AnimationOptions = {
-  role?: AnimationRole
-  opacity?: number
-  zIndex?: number
-  blendMode?: string
-  sensitivity?: number
-  intensity?: number
-  preset?: 'tame' | 'vivid' | 'chaos' | 'nightmare' | string
+/** Platform/runtime layer options — extends public layer options with internal keys. */
+export type InternalAnimationOptions = TheatreLayerOptions & {
   imageUrl?: string
   videoUrl?: string
   loop?: boolean
@@ -29,8 +26,15 @@ export type AnimationOptions = {
     loop: boolean
     naturalDurationSec: number
   }
+  objectTheatrePresetId?: string
+  objectTheatre?: unknown
+  switchMs?: number
+  fadeMs?: number
   [key: string]: unknown
 }
+
+/** @deprecated Prefer TheatreLayerOptions for author code; InternalAnimationOptions for platform code. */
+export type AnimationOptions = InternalAnimationOptions
 
 export type SharedContext = {
   features?: Features
@@ -47,13 +51,15 @@ export type SharedContext = {
   getTriggers?: (preset?: string) => TriggerFrame
 }
 
+/** Full runtime context — internal. Authors receive PublicAnimationContext in draw(). */
 export type AnimationContext = {
   audioElement?: HTMLMediaElement | null
+  /** @internal Platform-only. Not exposed to public author draw(). */
   analyser?: AnalyserNode | null
   mediaSrc?: string
   artworkUrl?: string
   metadata?: { title?: string; artist?: string }
-  options?: AnimationOptions
+  options?: InternalAnimationOptions
   signals?: AbortSignal
   shared?: SharedContext
 }
@@ -77,14 +83,6 @@ export type SceneLayer = {
   id: string
   type: AnimationLayerType
   factory: AnimationFactory
-}
-
-export type ScenePreset = {
-  id: string
-  label: string
-  layers: SceneLayer[]
-  runToEnd?: boolean
-  meta?: any
 }
 
 export type RegistryEntry = Omit<SceneLayer, 'type'> & {

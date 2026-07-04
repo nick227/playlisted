@@ -1,6 +1,6 @@
 import CanvasAnimation from '../../core/CanvasAnimation'
+import type { PublicAnimationContext } from '../../author/types'
 import type { AnimationContext, IAnimation } from '../../core/IAnimation'
-import { getVisualTriggers } from '../../audio/VisualTriggers'
 import { humanRig } from './rig/humanRig'
 import { PuppetRigSolver } from './rig/PuppetRigSolver'
 import { defaultHumanSkin } from './skins/defaultHumanSkin'
@@ -56,23 +56,24 @@ export class PuppetDancerScene extends CanvasAnimation {
     super.destroy()
   }
 
-  protected draw(context: AnimationContext): void {
+  protected draw(context: PublicAnimationContext): void {
     const w = this.cssWidth
     const h = this.cssHeight
     if (w <= 0 || h <= 0 || !this.renderer) return
 
     const shared = context.shared
-    const reducedMotion = Boolean(shared?.reducedMotion || context.options?.reducedMotion)
-    const lowPower = Boolean(shared?.lowPower)
-    const elapsed = shared?.time?.elapsed ?? performance.now()
-    const delta = Math.min(80, shared?.time?.delta ?? Math.max(16, elapsed - this.lastElapsed))
+    const internalOptions = this.context?.options
+    const reducedMotion = Boolean(shared.reducedMotion || internalOptions?.reducedMotion)
+    const lowPower = shared.lowPower
+    const elapsed = shared.time.elapsed
+    const delta = Math.min(80, shared.time.delta || Math.max(16, elapsed - this.lastElapsed))
     this.lastElapsed = elapsed
 
-    const danceId = this.selectedDanceId ?? context.options?.sequence
+    const danceId = this.selectedDanceId ?? internalOptions?.sequence
     this.activateDance(typeof danceId === 'string' ? danceId : dynamicRandomSequenceId, reducedMotion)
-    const triggerPreset = String(context.options?.preset ?? (reducedMotion ? 'tame' : 'vivid'))
-    const triggers = shared?.getTriggers?.(triggerPreset) ?? getVisualTriggers(shared?.features, triggerPreset)
-    this.updateAutoDance(delta, shared?.features, triggers, reducedMotion)
+    const triggerPreset = String(context.options.preset ?? (reducedMotion ? 'tame' : 'vivid'))
+    const triggers = shared.getTriggers(triggerPreset)
+    this.updateAutoDance(delta, shared.features, triggers, reducedMotion)
     const pose = this.player.update(delta, triggers, reducedMotion)
 
     const bands = this.readBands(context)
@@ -87,7 +88,7 @@ export class PuppetDancerScene extends CanvasAnimation {
     this.ctx.clearRect(0, 0, w, h)
     this.renderer.drawStage(w, h, energy, lowPower, stageY)
     this.renderer.drawPuppet(joints, pose, stageScale)
-    if (context.options?.debug || context.options?.theatreDev) {
+    if (internalOptions?.debug || internalOptions?.theatreDev) {
       this.renderer.drawDebug(joints, this.player.getDebugState(), pose)
     }
   }

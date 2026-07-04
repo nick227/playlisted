@@ -1,4 +1,5 @@
-import { AnimationContext, IAnimation } from '../core/IAnimation'
+import { IAnimation } from '../core/IAnimation'
+import type { PublicAnimationContext } from '../author/types'
 import CanvasAnimation from '../core/CanvasAnimation'
 
 const N = 8  // blob anchor points
@@ -23,7 +24,7 @@ export function goopyFactory(): IAnimation {
       this.stateReady = true
     }
 
-    protected draw(context: AnimationContext): void {
+    protected draw(context: PublicAnimationContext): void {
       const w = this.cssWidth; const h = this.cssHeight
       this.ensureState()
       this.ctx.clearRect(0, 0, w, h)

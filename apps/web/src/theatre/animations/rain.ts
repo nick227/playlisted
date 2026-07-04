@@ -1,4 +1,5 @@
-import { AnimationContext, IAnimation } from '../core/IAnimation'
+import { IAnimation } from '../core/IAnimation'
+import type { PublicAnimationContext } from '../author/types'
 import CanvasAnimation from '../core/CanvasAnimation'
 
 type Rgb = [number, number, number]
@@ -127,7 +128,7 @@ export function rainFactory(): IAnimation {
       super({ defaultZIndex: 100 })
     }
 
-    protected draw(context: AnimationContext) {
+    protected draw(context: PublicAnimationContext) {
       const w = this.cssWidth
       const h = this.cssHeight
       if (w <= 0 || h <= 0) return

@@ -1,4 +1,5 @@
-import { AnimationContext, IAnimation } from '../core/IAnimation'
+import { IAnimation } from '../core/IAnimation'
+import type { PublicAnimationContext } from '../author/types'
 import CanvasAnimation from '../core/CanvasAnimation'
 import { frameHold, stepped } from '../stopMotion/stopMotion'
 import { OrganismStateMachine } from './signalOrganism/state'
@@ -29,7 +30,7 @@ export function signalOrganismFactory(): IAnimation {
       super({ defaultOpacity: 0.98, defaultZIndex: 101, defaultBlendMode: 'normal', useEffects: true })
     }
 
-    protected draw(context: AnimationContext) {
+    protected draw(context: PublicAnimationContext) {
       const w = this.cssWidth
       const h = this.cssHeight
       if (w !== this.lastW || h !== this.lastH) {

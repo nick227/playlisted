@@ -1,4 +1,5 @@
 import type { TriggerFrame } from '../audio/VisualTriggers'
+import type { PublicAnimationContext } from '../author/types'
 import { AnimationContext, IAnimation } from '../core/IAnimation'
 import CanvasAnimation from '../core/CanvasAnimation'
 import { loadAnimationProgress, saveAnimationProgress } from '../controller/animationProgressStorage'
@@ -141,7 +142,7 @@ export function impossibleAquariumFactory(): IAnimation {
       } satisfies AquariumProgress)
     }
 
-    protected draw(context: AnimationContext) {
+    protected draw(context: PublicAnimationContext) {
       const w = this.cssWidth
       const h = this.cssHeight
       if (w <= 0 || h <= 0) return

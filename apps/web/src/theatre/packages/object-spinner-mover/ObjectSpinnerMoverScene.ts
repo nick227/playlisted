@@ -1,4 +1,5 @@
 import { AnimationContext, IAnimation } from '../../core/IAnimation'
+import type { PublicAnimationContext } from '../../author/types'
 import CanvasAnimation from '../../core/CanvasAnimation'
 import type { ObjectTheatrePreset, EngineFrame } from './engine/types'
 import { getPalette, pickObjectColor } from './engine/palettes'
@@ -154,12 +155,10 @@ export function objectSpinnerMoverFactory(ctx?: AnimationContext): IAnimation {
       this.ctx.restore()
     }
 
-    private buildFrame(context: AnimationContext, now: number, delta: number) {
+    private buildFrame(context: PublicAnimationContext, now: number, delta: number) {
       const w = this.cssWidth; const h = this.cssHeight
       const bands = this.readBands(context)
-      const triggers = context.shared?.getTriggers?.(context.options?.preset as string) ?? {
-        bassHit: false, midsHit: false, beat: false, chaosHit: false, energy: 0,
-      }
+      const triggers = context.shared.getTriggers(context.options.preset ?? 'vivid')
 
       return {
         w, h, cx: w / 2, cy: h / 2, time: now, delta,
@@ -169,12 +168,12 @@ export function objectSpinnerMoverFactory(ctx?: AnimationContext): IAnimation {
         chaosHit: triggers.chaosHit,
         bgFlash: this.beatState.bgFlash,
         dropBurst: this.beatState.dropBurst,
-        particleScale: context.shared?.particleScale ?? 1,
-        reducedMotion: Boolean(context.shared?.reducedMotion),
+        particleScale: context.shared.particleScale,
+        reducedMotion: context.shared.reducedMotion,
       }
     }
 
-    protected draw(context: AnimationContext) {
+    protected draw(context: PublicAnimationContext) {
       const w = this.cssWidth; const h = this.cssHeight
       if (w === 0 || h === 0) return
       this.ensurePool(context)
@@ -215,9 +214,9 @@ export function objectSpinnerMoverFactory(ctx?: AnimationContext): IAnimation {
       })
 
       let eqPulse = 1
-      if (perf.useEqWave) {
-        this.ensureFreqBuf(context)
-        updateEqWave(this.eqWave, context.analyser, this.freqBuf, {
+      if (perf.useEqWave && this.context) {
+        this.ensureFreqBuf(this.context)
+        updateEqWave(this.eqWave, this.context.analyser, this.freqBuf, {
           time: now,
           bass: frame.bass,
           mids: frame.mids,

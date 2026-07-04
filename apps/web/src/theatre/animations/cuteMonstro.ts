@@ -1,4 +1,5 @@
-import { AnimationContext, IAnimation } from '../core/IAnimation'
+import { IAnimation } from '../core/IAnimation'
+import type { PublicAnimationContext } from '../author/types'
 import CanvasAnimation from '../core/CanvasAnimation'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -434,7 +435,7 @@ export function cuteMonstroFactory(): IAnimation {
       })
     }
 
-    protected draw(context: AnimationContext): void {
+    protected draw(context: PublicAnimationContext): void {
       const w = this.cssWidth; const h = this.cssHeight
       this.ctx.clearRect(0, 0, w, h)
       this.ctx.fillStyle = '#060810'; this.ctx.fillRect(0, 0, w, h)

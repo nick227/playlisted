@@ -1,4 +1,5 @@
-import { AnimationContext, IAnimation } from '../core/IAnimation'
+import { IAnimation } from '../core/IAnimation'
+import type { PublicAnimationContext } from '../author/types'
 import CanvasAnimation from '../core/CanvasAnimation'
 import { stepped, frameHold } from '../stopMotion/stopMotion'
 
@@ -8,7 +9,7 @@ export function bioMachineFactory(): IAnimation {
       super({ useEffects: true, defaultZIndex: 100 })
     }
 
-    protected draw(context: AnimationContext) {
+    protected draw(context: PublicAnimationContext) {
       const w = this.cssWidth
       const h = this.cssHeight
       this.ctx.clearRect(0, 0, w, h)

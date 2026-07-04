@@ -1,4 +1,5 @@
-import { AnimationContext, IAnimation } from '../../../core/IAnimation'
+import { IAnimation } from '../../../core/IAnimation'
+import type { PublicAnimationContext } from '../../../author/types'
 import CanvasAnimation from '../../../core/CanvasAnimation'
 import { buildWallDecals, queueCorridorDecals, queueWallDecals } from '../room/decals'
 import { doorThresholdState, queueDoor } from '../room/doors'
@@ -48,12 +49,12 @@ export function liminalDoomFactory(): IAnimation {
 
     // ── Audio ───────────────────────────────────────────────────────────────
 
-    private readAudio(context: AnimationContext): AudioReact {
+    private readAudio(context: PublicAnimationContext): AudioReact {
       const bands = this.readBands(context)
-      const features = context.shared?.features
-      const triggers = context.shared?.getTriggers?.('vivid')
-      const sensitivity = context.options?.sensitivity ?? 1
-      const intensity = context.options?.intensity ?? 1
+      const features = context.shared.features
+      const triggers = context.shared.getTriggers('vivid')
+      const sensitivity = context.options.sensitivity ?? 1
+      const intensity = context.options.intensity ?? 1
       this._audioReact.bass = clamp(bands.bass * sensitivity * intensity, 0, 1)
       this._audioReact.mids = clamp(bands.mids * sensitivity * intensity * 0.85, 0, 1)
       this._audioReact.highs = clamp(bands.highs * sensitivity * intensity * 0.65, 0, 1)
@@ -72,17 +73,17 @@ export function liminalDoomFactory(): IAnimation {
 
     // ── Main draw ───────────────────────────────────────────────────────────
 
-    protected draw(context: AnimationContext) {
+    protected draw(context: PublicAnimationContext) {
       const w = this.cssWidth
       const h = this.cssHeight
       if (w < 8 || h < 8) return
 
-      const nowMs = context.shared?.time?.elapsed ?? performance.now()
+      const nowMs = context.shared.time.elapsed
       const dtMs  = Math.min(nowMs - this.prevTime, 100)
       this.prevTime = nowMs
 
-      const rm = context.shared?.reducedMotion ?? false
-      const lp = context.shared?.lowPower      ?? false
+      const rm = context.shared.reducedMotion
+      const lp = context.shared.lowPower
       const audio = this.readAudio(context)
 
       const dtSec = dtMs / 1000

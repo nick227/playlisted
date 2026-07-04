@@ -1,6 +1,8 @@
 import { AnimationContext, IAnimation } from './IAnimation'
+import { bandsFromPublicContext, toPublicAnimationContext } from '../author/publicContext'
+import type { PublicAnimationContext } from '../author/types'
 import EffectsManager from '../runtime/MicroEffects'
-import { bandsFromContext, type AudioBands } from '../audio/getAudioBands'
+import type { AudioBands } from '../audio/getAudioBands'
 import { resolveDevicePixelRatio } from '../runtime/resolveDpr'
 
 export type CanvasAnimationInitOptions = {
@@ -82,8 +84,11 @@ export abstract class CanvasAnimation implements IAnimation {
   renderFrame(ctx: AnimationContext) {
     if (!this.running || !this.context) return
     if (ctx.shared) this.context.shared = ctx.shared
+    if (ctx.options) this.context.options = { ...this.context.options, ...ctx.options }
+    if (ctx.artworkUrl !== undefined) this.context.artworkUrl = ctx.artworkUrl
+    if (ctx.metadata) this.context.metadata = ctx.metadata
     this.syncEffectsPolicy(this.context)
-    this.draw(this.context)
+    this.draw(toPublicAnimationContext(this.context))
   }
 
   async start() {
@@ -97,7 +102,7 @@ export abstract class CanvasAnimation implements IAnimation {
     cancelAnimationFrame(this.raf)
     const loop = () => {
       if (!this.running) return
-      if (this.context) this.draw(this.context)
+      if (this.context) this.draw(toPublicAnimationContext(this.context))
       this.raf = requestAnimationFrame(loop)
     }
     this.raf = requestAnimationFrame(loop)
@@ -145,11 +150,11 @@ export abstract class CanvasAnimation implements IAnimation {
     )
   }
 
-  protected readBands(context: AnimationContext): AudioBands {
-    return bandsFromContext(context)
+  protected readBands(context: PublicAnimationContext): AudioBands {
+    return bandsFromPublicContext(context)
   }
 
-  protected allowsShake(context: AnimationContext): boolean {
+  protected allowsShake(context: PublicAnimationContext): boolean {
     const shared = context.shared
     if (!shared || shared.reducedMotion) return false
     if ((shared.particleScale ?? 1) <= 0) return false
@@ -157,15 +162,15 @@ export abstract class CanvasAnimation implements IAnimation {
     return true
   }
 
-  protected allowsHeavyParticles(context: AnimationContext): boolean {
-    return (context.shared?.particleScale ?? 1) > 0
+  protected allowsHeavyParticles(context: PublicAnimationContext): boolean {
+    return context.shared.particleScale > 0
   }
 
-  protected particleScale(context: AnimationContext): number {
-    return context.shared?.particleScale ?? 1
+  protected particleScale(context: PublicAnimationContext): number {
+    return context.shared.particleScale
   }
 
-  protected abstract draw(context: AnimationContext): void
+  protected abstract draw(context: PublicAnimationContext): void
 }
 
 export default CanvasAnimation

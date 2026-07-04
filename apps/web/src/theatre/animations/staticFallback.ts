@@ -1,4 +1,5 @@
 import { IAnimation, AnimationContext } from '../core/IAnimation'
+import type { PublicAnimationContext } from '../author/types'
 import CanvasAnimation from '../core/CanvasAnimation'
 
 /** Minimal fallback: dark gradient with a single slow-breathing glow. No audio dependency. */
@@ -10,7 +11,7 @@ export class StaticFallback extends CanvasAnimation {
     super({ useEffects: false, defaultOpacity: 1, defaultZIndex: 100 })
   }
 
-  protected draw(context: AnimationContext) {
+  protected draw(context: PublicAnimationContext) {
     const w = this.cssWidth
     const h = this.cssHeight
     const now = context.shared?.time?.elapsed ?? performance.now()

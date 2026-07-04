@@ -1,4 +1,5 @@
 import { AnimationContext, IAnimation } from '../core/IAnimation'
+import type { PublicAnimationContext } from '../author/types'
 import CanvasAnimation from '../core/CanvasAnimation'
 
 const BARS       = 96
@@ -109,7 +110,18 @@ export function eqBarsFactory(): IAnimation {
       return g
     }
 
-    protected draw(context: AnimationContext) {
+    protected draw(_context: PublicAnimationContext) {
+      // Internal FFT path — see renderFrame override.
+    }
+
+    renderFrame(ctx: AnimationContext) {
+      if (!this.running || !this.context) return
+      if (ctx.shared) this.context.shared = ctx.shared
+      if (ctx.options) this.context.options = { ...this.context.options, ...ctx.options }
+      this.drawInternal(this.context)
+    }
+
+    private drawInternal(context: AnimationContext) {
       const W = this.cssWidth
       const H = this.cssHeight
       if (!W || !H) return
