@@ -2,7 +2,7 @@ import type { CityGrid } from '../world/cityGen'
 import type { HeroLandmark } from '../world/heroLandmarks'
 import { cellAt } from '../world/cityGen'
 import { rand01 } from '../world/rng'
-import type { HumanFigure, HumanDramaState, HumanRole } from './humanFigure'
+import type { HumanFigure, HumanDramaState, HumanRole } from '../entities/humanFigure'
 import { METRO_SETTINGS } from '../world/constants'
 
 const QUEUE_HEROES = new Set(['clubFacade', 'grandTheatre', 'motelNeon'])
@@ -62,7 +62,7 @@ function spawnRooftops(out: HumanFigure[], id: number, grid: CityGrid): number {
     for (let gx = 2; gx < size - 2 && count < 8; gx++) {
       const cell = cells[gy][gx]
       if (cell.floors < 4 || cell.road || cell.water) continue
-      if (rand01(cell.seed, 21) > 0.94) continue
+      if (rand01(cell.seed, gx, gy) > 0.94) continue
       const n = 1 + (cell.seed % 2)
       for (let i = 0; i < n; i++) {
         id = pushFigure(out, id, gx + 0.35 + i * 0.25, gy + 0.35, 'rooftop', cell.seed + i, {

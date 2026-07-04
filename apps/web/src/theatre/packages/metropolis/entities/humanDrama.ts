@@ -64,8 +64,6 @@ export function updateHumanDrama(state: HumanDramaState, ctx: HumanBeatContext) 
 function updateWanderer(fig: HumanFigure, grid: CityGrid, deltaMs: number, audio: MetropolisAudio) {
   const dt = deltaMs / 16.667
   const speedMul = 0.3 + audio.energy * 0.7
-  const ix = Math.floor(fig.gx)
-  const iy = Math.floor(fig.gy)
   let nx = fig.gx
   let ny = fig.gy
   if (fig.dir === 0 || fig.dir === 2) nx += fig.speed * speedMul * dt * (fig.dir === 2 ? -1 : 1)
