@@ -17,6 +17,7 @@ export function drawSky(
   horizonY: number,
   cityGlow: number,
   reducedMotion: boolean,
+  moonCover = 0,
 ) {
   const grad = ctx.createLinearGradient(0, 0, 0, horizonY)
   grad.addColorStop(0, SKY.top)
@@ -33,8 +34,8 @@ export function drawSky(
   ctx.fillRect(0, horizonY - 60, w, 140)
 
   drawStars(ctx, w, horizonY, elapsed, reducedMotion)
-  drawMoon(ctx, w, horizonY, elapsed, reducedMotion)
-  drawClouds(ctx, w, horizonY, elapsed, reducedMotion)
+  drawMoon(ctx, w, horizonY, elapsed, reducedMotion, moonCover)
+  drawClouds(ctx, w, horizonY, elapsed, reducedMotion, moonCover)
 }
 
 const STAR_SEED = 0x5a751
@@ -63,21 +64,25 @@ function drawMoon(
   horizonY: number,
   elapsed: number,
   reducedMotion: boolean,
+  moonCover: number,
 ) {
   const mx = w * 0.78 + (reducedMotion ? 0 : Math.sin(elapsed * 0.00008) * 12)
   const my = horizonY * 0.22
   const r = 22
+  const vis = 1 - moonCover * 0.85
   const glow = ctx.createRadialGradient(mx, my, r * 0.2, mx, my, r * 3.5)
-  glow.addColorStop(0, SKY.moonGlow)
+  glow.addColorStop(0, SKY.moonGlow.replace('0.25', String(0.25 * vis)))
   glow.addColorStop(1, 'rgba(0,0,0,0)')
   ctx.fillStyle = glow
   ctx.beginPath()
   ctx.arc(mx, my, r * 3.5, 0, Math.PI * 2)
   ctx.fill()
+  ctx.globalAlpha = vis
   ctx.fillStyle = SKY.moon
   ctx.beginPath()
   ctx.arc(mx, my, r, 0, Math.PI * 2)
   ctx.fill()
+  ctx.globalAlpha = 1
 }
 
 function drawClouds(
@@ -86,14 +91,16 @@ function drawClouds(
   horizonY: number,
   elapsed: number,
   reducedMotion: boolean,
+  moonCover: number,
 ) {
   const drift = reducedMotion ? 0 : elapsed * 0.008
-  for (let c = 0; c < 5; c++) {
+  const density = 5 + Math.floor(moonCover * 4)
+  for (let c = 0; c < density; c++) {
     const cx = ((c * 280 + drift * (0.4 + c * 0.1)) % (w + 200)) - 100
     const cy = horizonY * (0.12 + c * 0.06)
-    ctx.fillStyle = `rgba(30, 28, 48, ${0.25 + c * 0.04})`
+    ctx.fillStyle = `rgba(30, 28, 48, ${0.25 + c * 0.04 + moonCover * 0.15})`
     ctx.beginPath()
-    ctx.ellipse(cx, cy, 90 + c * 20, 18 + c * 4, 0, 0, Math.PI * 2)
+    ctx.ellipse(cx, cy, 90 + c * 20 + moonCover * 30, 18 + c * 4, 0, 0, Math.PI * 2)
     ctx.fill()
   }
 }

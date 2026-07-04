@@ -17,7 +17,9 @@ export type CityCell = {
   floors: number
   road: boolean
   water: boolean
+  rail: boolean
   seed: number
+  archetypeId: number
 }
 
 export type ScreenPoint = { sx: number; sy: number }
@@ -39,6 +41,16 @@ export type CarState = {
   dir: 0 | 1 | 2 | 3
   speed: number
   headlight: boolean
+  trailX: number
+  trailY: number
+}
+
+export type PedestrianState = {
+  id: number
+  gx: number
+  gy: number
+  dir: 0 | 1 | 2 | 3
+  speed: number
 }
 
 export type MetropolisAudio = {

@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { fitCameraToCity, projectTile, depthKey } from '../packages/metropolis/world/coords'
-import { generateCity } from '../packages/metropolis/world/cityGen'
-import { METRO_SETTINGS } from '../packages/metropolis/world/constants'
+import { BUILDING_ARCHETYPES } from '../packages/metropolis/world/buildingArchetypes'
+import { buildVisibleChunks } from '../packages/metropolis/world/chunks'
+import { fitCameraToCity, projectTile, depthKey, computeAutoZoom } from '../packages/metropolis/world/coords'
+import { generateCity, cityFingerprint } from '../packages/metropolis/world/cityGen'
+import { METRO_SETTINGS, ARCHETYPE_COUNT } from '../packages/metropolis/world/constants'
 
 describe('metropolis coords', () => {
   const cam = { originX: 400, originY: 300, zoom: 1, swayX: 0, swayY: 0 }
@@ -19,9 +21,16 @@ describe('metropolis coords', () => {
   })
 
   it('fits camera without throwing for full city', () => {
-    const fit = fitCameraToCity(METRO_SETTINGS.citySize, 1280, 720, 0.95)
+    const fit = fitCameraToCity(METRO_SETTINGS.citySize, 1280, 720, 0.5)
     expect(Number.isFinite(fit.originX)).toBe(true)
     expect(Number.isFinite(fit.originY)).toBe(true)
+  })
+
+  it('auto zoom fits 128 city in viewport', () => {
+    const zoom = computeAutoZoom(128, 1280, 720)
+    expect(zoom).toBeGreaterThanOrEqual(METRO_SETTINGS.minZoom)
+    expect(zoom).toBeLessThanOrEqual(METRO_SETTINGS.maxZoom)
+    expect(zoom).toBeLessThan(0.85)
   })
 })
 
@@ -31,6 +40,7 @@ describe('metropolis cityGen', () => {
     const b = generateCity(42, 16)
     expect(a.cells[8][8].district).toBe(b.cells[8][8].district)
     expect(a.cells[8][8].floors).toBe(b.cells[8][8].floors)
+    expect(a.cells[8][8].archetypeId).toBe(b.cells[8][8].archetypeId)
   })
 
   it('includes roads and buildings', () => {
@@ -45,5 +55,28 @@ describe('metropolis cityGen', () => {
     }
     expect(roads).toBeGreaterThan(10)
     expect(buildings).toBeGreaterThan(10)
+  })
+
+  it('produces stable fingerprint for full city seed', () => {
+    const a = generateCity(METRO_SETTINGS.citySeed, 32)
+    const b = generateCity(METRO_SETTINGS.citySeed, 32)
+    expect(cityFingerprint(a)).toBe(cityFingerprint(b))
+  })
+})
+
+describe('metropolis archetypes', () => {
+  it('defines 48 building variants', () => {
+    expect(BUILDING_ARCHETYPES.length).toBe(ARCHETYPE_COUNT)
+    const ids = new Set(BUILDING_ARCHETYPES.map((a) => a.id))
+    expect(ids.size).toBe(48)
+  })
+})
+
+describe('metropolis chunks', () => {
+  it('culls off-screen chunks when zoomed in', () => {
+    const cam = { originX: 200, originY: 500, zoom: 1.05, swayX: 0, swayY: 0 }
+    const visible = buildVisibleChunks(128, cam, 1280, 720)
+    expect(visible.size).toBeGreaterThan(0)
+    expect(visible.size).toBeLessThan(128)
   })
 })

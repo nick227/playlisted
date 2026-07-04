@@ -43,7 +43,7 @@ export class CityStaticCache {
     if (key !== this.cacheKey && this.cacheCtx && this.canvas) {
       this.cacheCtx.setTransform(dpr, 0, 0, dpr, 0, 0)
       this.cacheCtx.clearRect(0, 0, cssW, cssH)
-      drawCityStatic(this.cacheCtx, grid, this.bakeCam(cam, grid.size, cssW, cssH))
+      drawCityStatic(this.cacheCtx, grid, this.bakeCam(cam, grid.size, cssW, cssH), cssW, cssH)
       this.cacheKey = key
     }
 

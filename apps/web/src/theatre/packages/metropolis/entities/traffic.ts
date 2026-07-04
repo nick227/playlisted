@@ -12,24 +12,32 @@ export function spawnTraffic(grid: CityGrid, count: number): CarState[] {
     for (let gx = 0; gx < grid.size && cars.length < count; gx++) {
       const cell = grid.cells[gy][gx]
       if (!cell.road) continue
-      if ((gx + gy + id) % 5 !== 0) continue
+      if ((gx + gy + id) % 4 !== 0) continue
+      const gx0 = gx + 0.5
+      const gy0 = gy + 0.5
       cars.push({
         id: id++,
-        gx: gx + 0.5,
-        gy: gy + 0.5,
+        gx: gx0,
+        gy: gy0,
         dir: (gx % 2 === 0 ? 1 : 0) as 0 | 1,
         speed: 0.015 + (id % 4) * 0.004,
         headlight: id % 3 !== 0,
+        trailX: gx0,
+        trailY: gy0,
       })
     }
   }
   return cars
 }
 
-export function updateTraffic(cars: CarState[], grid: CityGrid, dt: number) {
+export function updateTraffic(cars: CarState[], grid: CityGrid, dt: number, densityBoost = 0) {
+  const speedMul = 1 + densityBoost * 0.35
   for (const car of cars) {
-    if (car.dir === 0 || car.dir === 2) car.gx += car.speed * dt * (car.dir === 2 ? -1 : 1)
-    else car.gy += car.speed * dt * (car.dir === 3 ? -1 : 1)
+    car.trailX = car.gx
+    car.trailY = car.gy
+    const spd = car.speed * speedMul
+    if (car.dir === 0 || car.dir === 2) car.gx += spd * dt * (car.dir === 2 ? -1 : 1)
+    else car.gy += spd * dt * (car.dir === 3 ? -1 : 1)
 
     const ix = Math.floor(car.gx)
     const iy = Math.floor(car.gy)
@@ -54,6 +62,15 @@ export function drawTraffic(
 ) {
   for (const car of cars) {
     const p = projectTile(car.gx, car.gy, 0.05, cam)
+    const t = projectTile(car.trailX, car.trailY, 0.05, cam)
+    if (car.headlight) {
+      ctx.strokeStyle = 'rgba(255,220,160,0.35)'
+      ctx.lineWidth = 2
+      ctx.beginPath()
+      ctx.moveTo(t.sx, t.sy)
+      ctx.lineTo(p.sx, p.sy)
+      ctx.stroke()
+    }
     const color = CAR_COLORS[car.id % CAR_COLORS.length]
     ctx.fillStyle = color
     ctx.fillRect(p.sx - 3, p.sy - 2, 6, 3)

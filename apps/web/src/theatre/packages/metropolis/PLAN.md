@@ -319,11 +319,18 @@ packages/metropolis/
 - [x] B2 Static city layer cache (zoom-keyed bake, drift/sway via translate)
 - [x] B3 Building detail — fire escapes, roof clutter, neon signs, theatre marquees
 - [x] B4 Wet road shimmer + animated water reflections
-- [x] D2 Train pass event (track gy=12, headlight beam)
+- [x] C4 Building archetype library (12 types × 4 variants = 48)
+- [x] C5 Facade generator — archetype roof styles, billboards, window density
+- [x] C6 City seed reproducibility test (fingerprint)
+- [x] C1–C3 Scale to 128×128 + tiered road network (highway/arterial/local)
+- [x] D2 Train pass on dedicated rail row
 - [x] F2 Rolling blackout wave (projects → core district sweep)
-- [x] E5 Smog particles + neon bleed + vignette atmosphere pass
-- [ ] C4–C6 Scale to 128×128, 48+ building variants, full road network
-- [ ] H1 Chunk visibility culling
+- [x] F3 Expanded timeline — horror cascade, neon surge, moon cover (8 events)
+- [x] E2 Headlight trails on traffic
+- [x] E5 Pedestrians (LOD via particleScale)
+- [x] E6 Industrial vent smoke particles
+- [x] H1 Chunk visibility culling
+- [ ] H3 Dev overlay pass timings / entity counts
 
 ---
 

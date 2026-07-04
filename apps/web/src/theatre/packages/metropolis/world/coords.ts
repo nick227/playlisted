@@ -52,3 +52,31 @@ export function fitCameraToCity(
   const originY = skyBand + (cssH - skyBand - pad - mapH) / 2 - minY
   return { originX, originY }
 }
+
+/** Zoom that fits the full city footprint in the viewport. */
+export function computeAutoZoom(citySize: number, cssW: number, cssH: number): number {
+  const probe = { originX: 0, originY: 0, zoom: 1, swayX: 0, swayY: 0 }
+  const corners = [
+    projectTile(0, 0, 0, probe),
+    projectTile(citySize, 0, 0, probe),
+    projectTile(0, citySize, 0, probe),
+    projectTile(citySize, citySize, 0, probe),
+  ]
+  let minX = Infinity
+  let maxX = -Infinity
+  let minY = Infinity
+  let maxY = -Infinity
+  for (const c of corners) {
+    minX = Math.min(minX, c.sx)
+    maxX = Math.max(maxX, c.sx)
+    minY = Math.min(minY, c.sy)
+    maxY = Math.max(maxY, c.sy)
+  }
+  const mapW = maxX - minX
+  const mapH = maxY - minY
+  const pad = 48
+  const skyBand = cssH * 0.28
+  const fitX = (cssW - pad) / mapW
+  const fitY = (cssH - skyBand - pad) / mapH
+  return Math.min(METRO_SETTINGS.maxZoom, Math.max(METRO_SETTINGS.minZoom, Math.min(fitX, fitY) * 0.96))
+}

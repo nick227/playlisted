@@ -1,22 +1,13 @@
 import { METRO_SETTINGS } from './constants'
+import { archetypeById, pickArchetypeId } from './buildingArchetypes'
 import { districtAt, DISTRICTS } from './districts'
+import { isRail, isRoad, isWater } from './roads'
 import { rand01 } from './rng'
 import type { CityCell } from './types'
 
 export type CityGrid = {
   size: number
   cells: CityCell[][]
-}
-
-function isRoad(gx: number, gy: number, size: number): boolean {
-  if (gx === 0 || gy === 0 || gx === size - 1 || gy === size - 1) return true
-  if (gx % 4 === 0 || gy % 4 === 0) return true
-  if (gx === Math.floor(size / 2) || gy === Math.floor(size / 2)) return true
-  return false
-}
-
-function isWater(gx: number, gy: number, size: number): boolean {
-  return gx >= size - 8 && gy < 10
 }
 
 export function generateCity(seed: number, size: number = METRO_SETTINGS.citySize): CityGrid {
@@ -27,13 +18,17 @@ export function generateCity(seed: number, size: number = METRO_SETTINGS.citySiz
       const district = districtAt(gx, gy, size)
       const style = DISTRICTS[district]
       const cellSeed = seed + gx * 928371 + gy * 689287
-      const road = isRoad(gx, gy, size)
+      const road = isRoad(gx, gy, size) || isRail(gx, gy)
       const water = !road && isWater(gx, gy, size)
+      const rail = isRail(gx, gy)
       const r = rand01(cellSeed, gx, gy)
-      const floors = road || water || style.maxFloors === 0
+      const archetypeId = pickArchetypeId(district, cellSeed)
+      const arch = archetypeById(archetypeId)
+      const rawFloors = road || water || style.maxFloors === 0
         ? 0
         : 1 + Math.floor(r * style.maxFloors)
-      row.push({ district, floors, road, water, seed: cellSeed })
+      const floors = rawFloors > 0 ? Math.max(1, Math.round(rawFloors * arch.floorMul)) : 0
+      row.push({ district, floors, road, water, rail, seed: cellSeed, archetypeId })
     }
     cells.push(row)
   }
@@ -43,4 +38,15 @@ export function generateCity(seed: number, size: number = METRO_SETTINGS.citySiz
 export function cellAt(grid: CityGrid, gx: number, gy: number): CityCell | null {
   if (gx < 0 || gy < 0 || gx >= grid.size || gy >= grid.size) return null
   return grid.cells[gy][gx]
+}
+
+export function cityFingerprint(grid: CityGrid): string {
+  let h = 0
+  for (const row of grid.cells) {
+    for (const c of row) {
+      h = (h * 31 + c.archetypeId) | 0
+      h = (h * 31 + c.floors) | 0
+    }
+  }
+  return `${grid.size}:${h}`
 }

@@ -1,9 +1,9 @@
-import { fitCameraToCity } from '../world/coords'
+import { fitCameraToCity, computeAutoZoom } from '../world/coords'
 import { METRO_SETTINGS } from '../world/constants'
 import type { CameraState, MetropolisAudio } from '../world/types'
 
 export function createCamera(): CameraState {
-  return { originX: 0, originY: 0, zoom: 0.95, swayX: 0, swayY: 0 }
+  return { originX: 0, originY: 0, zoom: METRO_SETTINGS.minZoom, swayX: 0, swayY: 0 }
 }
 
 export function updateCamera(
@@ -19,9 +19,10 @@ export function updateCamera(
   const swayX = reducedMotion ? 0 : audio.bass * METRO_SETTINGS.audioSwayMaxPx
   const swayY = reducedMotion ? 0 : audio.mids * METRO_SETTINGS.audioSwayMaxPx * 0.35
   const zoomPulse = reducedMotion ? 0 : audio.energy * METRO_SETTINGS.audioZoomPulse
+  const baseZoom = computeAutoZoom(citySize, cssW, cssH)
   const zoom = Math.min(
     METRO_SETTINGS.maxZoom,
-    Math.max(METRO_SETTINGS.minZoom, 0.95 + zoomPulse),
+    Math.max(METRO_SETTINGS.minZoom, baseZoom + zoomPulse),
   )
   const base = fitCameraToCity(citySize, cssW, cssH, zoom)
   return {

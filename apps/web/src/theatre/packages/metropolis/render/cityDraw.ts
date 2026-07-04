@@ -20,9 +20,11 @@ export function drawCity(
   director: DirectorState,
 ) {
   cache.draw(ctx, grid, cam, cssW, cssH, dpr, layoutKey)
-  drawCityDynamic(ctx, grid, cam, elapsed, audio, reducedMotion, {
+  drawCityDynamic(ctx, grid, cam, cssW, cssH, elapsed, audio, reducedMotion, {
     blackout: director.blackout,
     blackoutWave: director.blackoutWave,
     blackoutRolling: director.blackoutRolling,
+    horror: director.horror,
+    neonSurge: director.neonSurge,
   })
 }

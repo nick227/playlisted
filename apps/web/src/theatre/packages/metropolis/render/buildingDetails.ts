@@ -79,13 +79,14 @@ export function drawNeonSign(
   rightWall: Pt[],
   elapsed: number,
   reducedMotion: boolean,
+  boost = 1,
 ) {
   if (!NEON_DISTRICTS.includes(district) || rand01(seed, 5) < 0.35) return
   const style = DISTRICTS[district]
   const t = 0.35
   const sx = rightWall[0].sx + (rightWall[3].sx - rightWall[0].sx) * t
   const sy = rightWall[0].sy + (rightWall[3].sy - rightWall[0].sy) * t - floors * 0.8
-  const flicker = reducedMotion ? 1 : 0.75 + 0.25 * Math.sin(elapsed * 0.008 + seed)
+  const flicker = (reducedMotion ? 1 : 0.75 + 0.25 * Math.sin(elapsed * 0.008 + seed)) * boost
   const w = 6 + Math.floor(rand01(seed, 6) * 4)
 
   ctx.fillStyle = style.glow
