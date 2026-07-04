@@ -18,11 +18,11 @@ export function TitleIntroVisual({
 
   return (
     <div
-      className="focus-lane__title-intro flex items-center gap-6 rounded-3xl bg-black/50 p-4 pr-10 shadow-2xl backdrop-blur-xl border border-white/10 mx-auto max-w-2xl transform transition-all"
+      className="focus-lane__title-intro mx-auto flex w-full min-w-0 max-w-2xl items-center gap-3 rounded-2xl border border-white/10 bg-black/50 p-3 shadow-2xl backdrop-blur-xl transition-all sm:gap-5 sm:rounded-3xl sm:p-4"
       style={customStyle}
     >
       {imageUrl ? (
-        <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.5)]">
+        <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.5)] sm:h-24 sm:w-24 sm:rounded-2xl">
           <img
             src={imageUrl}
             alt={title}
@@ -30,19 +30,19 @@ export function TitleIntroVisual({
           />
         </div>
       ) : (
-        <div className="h-24 w-24 shrink-0 rounded-2xl bg-white/5 shadow-inner" />
+        <div className="h-16 w-16 shrink-0 rounded-xl bg-white/5 shadow-inner sm:h-24 sm:w-24 sm:rounded-2xl" />
       )}
-      <div className="flex flex-col justify-center overflow-hidden">
+      <div className="flex min-w-0 flex-1 flex-col justify-center overflow-hidden">
         {recording?.recordingType || recording?.genreLabel ? (
-          <p className="mb-1 truncate text-xs font-semibold uppercase tracking-widest text-white/50">
+          <p className="mb-1 truncate text-[10px] font-semibold uppercase tracking-widest text-white/50 sm:text-xs">
             {[recording.recordingType, recording.genreLabel].filter(Boolean).join(" • ")}
           </p>
         ) : null}
-        <h2 className="truncate text-3xl font-extrabold tracking-tight text-white drop-shadow-md">
+        <h2 className="truncate text-xl font-extrabold tracking-tight text-white drop-shadow-md sm:text-3xl">
           {title}
         </h2>
         {artistName ? (
-          <p className="mt-1 truncate text-xl font-medium text-white/70 drop-shadow-sm">
+          <p className="mt-1 truncate text-base font-medium text-white/70 drop-shadow-sm sm:text-xl">
             {artistName}
           </p>
         ) : null}

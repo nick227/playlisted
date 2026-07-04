@@ -73,9 +73,10 @@ export function ArtistVisual({
         // Brighten and intensify border opacity
         containerRef.current.style.borderColor = `hsla(${hue}, 80%, ${60 + energyBoost * 25}%, ${0.5 + energyBoost * 0.5})`;
         
-        // Much wider and more opaque outline rings for pronounced impact
-        const spread1 = 2 + energyBoost * 15;
-        const spread2 = spread1 + 4 + energyBoost * 25;
+        const isMobile = window.matchMedia("(max-width: 639px)").matches;
+        const spreadScale = isMobile ? 0.45 : 1;
+        const spread1 = (2 + energyBoost * 15) * spreadScale;
+        const spread2 = (spread1 + 4 + energyBoost * 25) * spreadScale;
         
         containerRef.current.style.boxShadow = [
           `0 0 0 ${spread1.toFixed(1)}px hsla(${hue}, 80%, 65%, ${0.3 + energyBoost * 0.7})`,
@@ -108,33 +109,33 @@ export function ArtistVisual({
   const currentStr = formatDuration(currentTimeSec);
 
   return (
-    <div 
+    <div
       ref={containerRef}
-      className="focus-lane__artist flex flex-col gap-4 rounded-3xl bg-black/40 p-6 shadow-2xl backdrop-blur-xl border border-white/10 mx-auto max-w-2xl"
+      className="focus-lane__artist mx-auto flex w-full min-w-0 max-w-2xl flex-col gap-3 rounded-2xl border border-white/10 bg-black/40 p-4 shadow-2xl backdrop-blur-xl sm:gap-4 sm:rounded-3xl sm:p-6"
     >
       {/* Tier 1: Artist Focus */}
-      <div className="flex items-center gap-6">
+      <div className="flex min-w-0 items-center gap-3 sm:gap-5">
         <div
-          className={`h-28 w-28 shrink-0 overflow-hidden rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.5)] border-2 border-white/10 bg-cover bg-center${
+          className={`h-20 w-20 shrink-0 overflow-hidden rounded-full border-2 border-white/10 bg-cover bg-center shadow-[0_8px_30px_rgb(0,0,0,0.5)] sm:h-28 sm:w-28${
             imageUrl ? "" : " focus-lane__artist-image--fallback"
           }`}
           style={imageStyle}
           aria-hidden
         />
-        <div className="flex flex-col justify-center overflow-hidden">
+        <div className="flex min-w-0 flex-1 flex-col justify-center overflow-hidden">
           {artistName ? (
-            <p className="truncate text-4xl font-extrabold tracking-tight text-white drop-shadow-md">
+            <p className="truncate text-2xl font-extrabold tracking-tight text-white drop-shadow-md sm:text-4xl">
               {artistName}
             </p>
           ) : null}
           {artistBio || recording?.genreLabel ? (
-            <div className="mt-1 flex items-center gap-2 text-lg font-medium text-white/70 drop-shadow-sm">
+            <div className="mt-1 flex min-w-0 items-center gap-2 text-sm font-medium text-white/70 drop-shadow-sm sm:text-lg">
               {recording?.genreLabel ? (
-               <span className="rounded-md bg-white/10 px-2 py-0.5 text-xs font-semibold uppercase tracking-wider">
-                 {recording.genreLabel}
-               </span>
+                <span className="shrink-0 rounded-md bg-white/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider sm:text-xs">
+                  {recording.genreLabel}
+                </span>
               ) : null}
-              {artistBio ? <span className="truncate">{artistBio}</span> : null}
+              {artistBio ? <span className="min-w-0 truncate">{artistBio}</span> : null}
             </div>
           ) : null}
         </div>
@@ -142,34 +143,34 @@ export function ArtistVisual({
 
       {/* Tier 2: Currently Playing */}
       {recording ? (
-        <div className="mt-2 flex items-center rounded-xl bg-black/30 px-4 py-3 border border-white/5">
-          <div className="flex items-center gap-4 overflow-hidden">
+        <div className="mt-1 flex min-w-0 items-center rounded-xl border border-white/5 bg-black/30 px-3 py-2.5 sm:mt-2 sm:px-4 sm:py-3">
+          <div className="flex min-w-0 flex-1 items-center gap-3 overflow-hidden sm:gap-4">
             {recording.artworkUrl ? (
               <img
                 src={recording.artworkUrl}
                 alt={recording.title}
-                className="h-10 w-10 shrink-0 rounded-md object-cover shadow-md"
+                className="h-9 w-9 shrink-0 rounded-md object-cover shadow-md sm:h-10 sm:w-10"
               />
             ) : (
-              <div className="h-10 w-10 shrink-0 rounded-md bg-white/10 shadow-md" />
+              <div className="h-9 w-9 shrink-0 rounded-md bg-white/10 shadow-md sm:h-10 sm:w-10" />
             )}
-            <div className="flex flex-col overflow-hidden">
+            <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
               <span className="truncate text-sm font-semibold text-white/90">
                 {recording.title}
               </span>
-              <div className="flex items-center gap-2 mt-0.5">
+              <div className="mt-0.5 flex min-w-0 items-center gap-1.5 sm:gap-2">
                 <PlaybackBars
                   active={true}
                   playing={isPlaying}
-                  className="scale-75 origin-left"
+                  className="origin-left shrink-0 scale-[0.65] sm:scale-75"
                 />
-                <span className="text-xs font-medium text-white/50 tracking-wider">
+                <span className="hidden shrink-0 text-[10px] font-medium tracking-wider text-white/50 sm:inline sm:text-xs">
                   NOW PLAYING
                 </span>
-                <span className="text-xs font-medium text-white/50 px-0.5">
+                <span className="hidden shrink-0 px-0.5 text-xs font-medium text-white/50 sm:inline">
                   •
                 </span>
-                <span className="text-xs font-medium text-white/50 tabular-nums">
+                <span className="min-w-0 truncate text-[10px] font-medium tabular-nums text-white/50 sm:text-xs">
                   {currentStr} / {durationStr}
                 </span>
               </div>
