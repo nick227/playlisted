@@ -14,6 +14,7 @@ type FocusLaneSubtitleContentProps = {
   subtitleStyleId?: string;
   currentTimeSec?: number;
   isPlaying?: boolean;
+  onReturnBody?: () => void;
 };
 
 function usesCustomSubtitleStyle(fixture: PlaybackFocusFixture): boolean {
@@ -36,6 +37,7 @@ export function FocusLaneSubtitleContent({
   subtitleStyleId,
   currentTimeSec,
   isPlaying,
+  onReturnBody,
 }: FocusLaneSubtitleContentProps) {
   let style = customSubtitleStyle && usesCustomSubtitleStyle(fixture) ? { ...customSubtitleStyle } : undefined;
   const subtitleProps = fixtureToSubtitleProps(fixture);
@@ -84,6 +86,7 @@ export function FocusLaneSubtitleContent({
         recording={recording}
         currentTimeSec={currentTimeSec}
         isPlaying={isPlaying}
+        onReturnBody={onReturnBody}
       />
     );
   }

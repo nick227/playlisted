@@ -23,6 +23,7 @@ import { useFocusLaneVisibility } from "./useFocusLaneVisibility";
 
 type PlaybackFocusLaneProps = {
   focusState: PlaybackFocusState;
+  onReturnBody?: () => void;
 };
 
 const SUBTITLE_POLL_INTERVAL_MS = 3000;
@@ -30,7 +31,7 @@ const SUBTITLE_POLL_INTERVAL_MS = 3000;
 // polling for the entire duration of playback.
 const SUBTITLE_POLL_MAX_ATTEMPTS = 20;
 
-export function PlaybackFocusLane({ focusState }: PlaybackFocusLaneProps) {
+export function PlaybackFocusLane({ focusState, onReturnBody }: PlaybackFocusLaneProps) {
   const { accessToken } = useAuth();
   const { subtitlesEnabled } = useSubtitleDisplay();
   const { track, isPlaying, currentTime } = useFocusLanePlayback();
@@ -136,6 +137,7 @@ export function PlaybackFocusLane({ focusState }: PlaybackFocusLaneProps) {
           subtitleStyleId={subtitleStyleId}
           currentTimeSec={currentTime}
           isPlaying={isPlaying}
+          onReturnBody={onReturnBody}
         />
       </div>
     </div>,

@@ -1,9 +1,15 @@
-import { useEffect, useRef } from "react";
+import { CornerUpLeft } from "lucide-react";
+import { useEffect, useMemo, useRef } from "react";
 import type { FocusRecording } from "@/lib/playbackFocus/types";
-import { PLAYBACK_FOCUS_INTERACTIVE_ATTR } from "@/lib/playbackFocus/interactiveTarget";
+import { PLAYBACK_FOCUS_INTERACTIVE_ATTR, stopPlaybackFocusBubble } from "@/lib/playbackFocus/interactiveTarget";
 import { PlaybackBars } from "@/features/playback-indicators/PlaybackBars";
 import { useAudioAnalyser } from "@/features/playback-indicators/useAudioAnalyser";
+import { useArtistTracks } from "@/hooks/useArtistTracks";
+import { useLibraryArtists } from "@/hooks/useLibrary";
+import { useUser } from "@/hooks/useUser";
+import { formatPlayCount, formatProfileDate } from "@/lib/format";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
+import { getProfileLinkPlatform } from "@/components/profile/profileLinks";
 
 import { PlaybackFocusReactionBar } from "./PlaybackFocusReactionBar";
 
@@ -14,12 +20,17 @@ type ArtistVisualProps = {
   recording?: FocusRecording | null;
   currentTimeSec?: number;
   isPlaying?: boolean;
+  onReturnBody?: () => void;
 };
 
 function formatDuration(seconds: number): string {
   const mins = Math.floor(seconds / 60);
   const secs = Math.floor(seconds % 60);
   return `${mins}:${secs.toString().padStart(2, "0")}`;
+}
+
+function formatCompactCount(count: number): string {
+  return formatPlayCount(count) || "0";
 }
 
 export function ArtistVisual({
@@ -29,10 +40,56 @@ export function ArtistVisual({
   recording,
   currentTimeSec = 0,
   isPlaying = false,
+  onReturnBody,
 }: ArtistVisualProps) {
   const { audioRef } = useAudioPlayer();
   const { analyser, frequencyData, connected } = useAudioAnalyser(audioRef);
   const containerRef = useRef<HTMLDivElement>(null);
+  const artistId = recording?.ownerId ?? undefined;
+  const artistQuery = useUser(artistId);
+  const libraryArtistsQuery = useLibraryArtists();
+  const { tracks: artistTracks } = useArtistTracks(artistId);
+
+  const artistFacts = useMemo(() => {
+    const user = artistQuery.data;
+    const libraryArtist = (libraryArtistsQuery.data?.data ?? []).find((artist) => artist.id === artistId);
+    const publicPlaylists = user?.publicPlaylists ?? [];
+    const songCountFromCollections = publicPlaylists.reduce((sum, playlist) => sum + playlist.itemCount, 0);
+    const songCount = libraryArtist?.songCount ?? Math.max(songCountFromCollections, artistTracks.length);
+    const collectionCount = publicPlaylists.length;
+    const listens = artistTracks.reduce((sum, track) => sum + (track.playCount ?? 0), 0);
+    const likes = artistTracks.reduce((sum, track) => sum + (track.favoriteCount ?? 0), 0);
+    const genreNames = (
+      libraryArtist?.genres.length
+        ? libraryArtist.genres.map((genre) => genre.name)
+        : Array.from(
+            new Map(
+              artistTracks
+                .flatMap((track) => track.genres)
+                .map((genre) => [genre.slug, genre.name] as const),
+            ).values(),
+          )
+    ).slice(0, 1);
+    const profileLinks = (user?.profileLinks ?? []).filter((link) => link.url).slice(0, 4);
+
+    return {
+      stats: [
+        songCount > 0 ? { label: "songs", value: formatCompactCount(songCount) } : null,
+        collectionCount > 0 ? { label: "collections", value: formatCompactCount(collectionCount) } : null,
+        listens > 0 ? { label: "listens", value: formatCompactCount(listens) } : null,
+        likes > 0 ? { label: "likes", value: formatCompactCount(likes) } : null,
+      ].filter(Boolean) as Array<{ label: string; value: string }>,
+      joined: user?.createdAt ? formatProfileDate(user.createdAt) : "",
+      genres: genreNames,
+      profileLinks,
+    };
+  }, [artistId, artistQuery.data, artistTracks, libraryArtistsQuery.data?.data]);
+
+  const hasArtistFacts =
+    artistFacts.stats.length > 0 ||
+    artistFacts.joined ||
+    artistFacts.genres.length > 0 ||
+    artistFacts.profileLinks.length > 0;
 
   useEffect(() => {
     let cancelled = false;
@@ -111,8 +168,23 @@ export function ArtistVisual({
     <div
       ref={containerRef}
       {...{ [PLAYBACK_FOCUS_INTERACTIVE_ATTR]: "" }}
-      className="focus-lane__artist focus-lane__interactive mx-auto flex w-full min-w-0 max-w-2xl flex-col gap-3 rounded-2xl border border-white/10 bg-black/40 p-4 shadow-2xl backdrop-blur-xl sm:gap-4 sm:rounded-3xl sm:p-6"
+      className="focus-lane__artist focus-lane__interactive relative mx-auto flex w-full min-w-0 max-w-2xl flex-col gap-3 rounded-2xl border border-white/10 bg-black/40 p-4 shadow-2xl backdrop-blur-xl sm:gap-4 sm:rounded-3xl sm:p-6"
     >
+      {onReturnBody ? (
+        <button
+          type="button"
+          className="focus-lane__artist-return"
+          title="Return to page"
+          aria-label="Return to page"
+          onPointerDown={stopPlaybackFocusBubble}
+          onClick={(event) => {
+            stopPlaybackFocusBubble(event);
+            onReturnBody();
+          }}
+        >
+          <CornerUpLeft size={16} aria-hidden />
+        </button>
+      ) : null}
       <div className="flex min-w-0 items-start gap-3 sm:gap-5">
         {imageUrl ? (
           <img
@@ -128,9 +200,57 @@ export function ArtistVisual({
         )}
         <div className="flex min-w-0 flex-1 flex-col gap-2 overflow-hidden pt-0.5 sm:gap-2.5">
           {artistName ? (
-            <p className="truncate text-2xl font-extrabold leading-none tracking-tight text-white drop-shadow-md sm:text-4xl">
-              {artistName}
-            </p>
+            <>
+              <p className="truncate text-2xl font-extrabold leading-none tracking-tight text-white drop-shadow-md sm:text-4xl">
+                {artistName}
+              </p>
+              {artistFacts.genres.map((genre) => (
+                <span key={genre} className="text-xs">
+                  {genre}
+                </span>
+              ))}
+            </>
+          ) : null}
+          {hasArtistFacts ? (
+            <div className="flex min-w-0 flex-col gap-2 px-3 py-2">
+              {artistFacts.stats.length > 0 ? (
+                <div className="grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-4">
+                  {artistFacts.stats.map((stat) => (
+                    <div key={stat.label} className="min-w-0">
+                      <div className="truncate text-sm font-extrabold leading-none text-white sm:text-base">
+                        {stat.value}
+                      </div>
+                      <div className="mt-0.5 truncate text-[9px] font-bold uppercase tracking-wider text-white/45 sm:text-[10px]">
+                        {stat.label}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+              <div className="flex min-w-0 flex-wrap items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-white/60 sm:text-xs">
+                
+                {artistFacts.profileLinks.map((link) => {
+                  const platform = getProfileLinkPlatform(link.platform);
+                  const Icon = platform.icon;
+
+                  return (
+                    <a
+                      key={link.id}
+                      href={link.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex max-w-32 items-center gap-1 rounded-md bg-white/10 px-2 py-1 text-white/75 transition hover:bg-white/20 hover:text-white"
+                      title={link.label || platform.label}
+                      onPointerDown={stopPlaybackFocusBubble}
+                      onClick={stopPlaybackFocusBubble}
+                    >
+                      <Icon size={12} aria-hidden />
+                      <span className="min-w-0 truncate">{link.label || platform.label}</span>
+                    </a>
+                  );
+                })}
+              </div>
+            </div>
           ) : null}
           <PlaybackFocusReactionBar recordingId={recording?.id} />
           {artistBio || recording?.genreLabel ? (
