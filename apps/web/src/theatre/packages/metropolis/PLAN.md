@@ -306,7 +306,7 @@ packages/metropolis/
 
 ## Progress
 
-### M1 — Vertical slice (in progress)
+### M1 — Vertical slice ✅
 - [x] A1–A4 Coords, projection, camera, scene shell
 - [x] D1 Sky (stars, moon, clouds, light pollution)
 - [x] C1–C3 District map, roads, lots/buildings (48×48)
@@ -314,8 +314,16 @@ packages/metropolis/
 - [x] F1 Timeline director (blackout, strobe, siren, fireworks)
 - [x] G1 Audio → camera sway + window pulse + events
 - [x] Dev preset `metropolisNight` registered
-- [ ] M1 visual polish pass
-- [ ] Chunk bake / LOD (H1–H2)
+
+### M2 — City scale (in progress)
+- [x] B2 Static city layer cache (zoom-keyed bake, drift/sway via translate)
+- [x] B3 Building detail — fire escapes, roof clutter, neon signs, theatre marquees
+- [x] B4 Wet road shimmer + animated water reflections
+- [x] D2 Train pass event (track gy=12, headlight beam)
+- [x] F2 Rolling blackout wave (projects → core district sweep)
+- [x] E5 Smog particles + neon bleed + vignette atmosphere pass
+- [ ] C4–C6 Scale to 128×128, 48+ building variants, full road network
+- [ ] H1 Chunk visibility culling
 
 ---
 

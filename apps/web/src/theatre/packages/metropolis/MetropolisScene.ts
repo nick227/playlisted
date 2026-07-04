@@ -4,9 +4,11 @@ import type { IAnimation } from '../../core/IAnimation'
 
 import { createDirector, drawDirectorFx, updateDirector } from './director/MetropolisDirector'
 import { spawnTraffic, updateTraffic, drawTraffic } from './entities/traffic'
+import { createTrain, drawTrain, updateTrain } from './entities/train'
 import { createCamera, updateCamera } from './render/camera'
 import { drawCity } from './render/cityDraw'
 import { drawSky } from './render/sky'
+import { drawAtmosphere } from './render/atmosphere'
 import { METRO_SETTINGS } from './world/constants'
 import { generateCity } from './world/cityGen'
 import type { MetropolisAudio } from './world/types'
@@ -16,6 +18,7 @@ export function metropolisFactory(): IAnimation {
     private grid = generateCity(METRO_SETTINGS.citySeed, METRO_SETTINGS.citySize)
     private cam = createCamera()
     private director = createDirector()
+    private train = createTrain()
     private cars = spawnTraffic(this.grid, 48)
     private lastElapsed = 0
     private layoutKey = ''
@@ -51,20 +54,33 @@ export function metropolisFactory(): IAnimation {
       const audio = this.readAudio(context)
       const reduced = context.shared.reducedMotion
       const layoutKey = `${w}|${h}`
-      if (layoutKey !== this.layoutKey) {
-        this.layoutKey = layoutKey
-        this.cam = updateCamera(elapsed, w, h, this.grid.size, audio, reduced)
-      }
+      if (layoutKey !== this.layoutKey) this.layoutKey = layoutKey
+
       this.cam = updateCamera(elapsed, w, h, this.grid.size, audio, reduced)
       this.director = updateDirector(this.director, delta, audio, reduced)
+      this.train = updateTrain(this.train, delta, this.director.train)
       updateTraffic(this.cars, this.grid, delta * 0.06)
 
       const horizonY = h * 0.34
       const cityGlow = audio.energy + audio.bass * 0.5
 
       drawSky(this.ctx, w, h, elapsed, horizonY, cityGlow, reduced)
-      drawCity(this.ctx, this.grid, this.cam, elapsed, audio, reduced)
+      drawCity(
+        this.ctx,
+        this.grid,
+        this.cam,
+        w,
+        h,
+        this.pixelRatio,
+        layoutKey,
+        elapsed,
+        audio,
+        reduced,
+        this.director,
+      )
+      drawTrain(this.ctx, this.grid, this.cam, this.train)
       drawTraffic(this.ctx, this.cars, this.cam)
+      drawAtmosphere(this.ctx, w, h, elapsed, cityGlow, reduced, context.shared.particleScale)
       drawDirectorFx(this.ctx, w, h, this.director)
 
       if (this.effects && !reduced && context.shared.particleScale > 0) {
