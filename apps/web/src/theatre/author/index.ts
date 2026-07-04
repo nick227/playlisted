@@ -6,10 +6,12 @@
  *
  * Scope: single-layer canvas scenes extending `CanvasAnimation`.
  * Not supported in v1: composites, video/image layers, object-spinner engines, story DSL.
+ *
+ * Public import path: `@/theatre/author` only. Do not import runtime modules in author packages.
  */
 export { defineAnimationPackage } from './defineAnimationPackage'
 export type { DefineAnimationPackageOptions } from './defineAnimationPackage'
-export { bandsFromPublicContext, toPublicAnimationContext, toPublicSharedContext } from './publicContext'
+export { bandsFromPublicContext } from './publicContext'
 export type {
   PublicAnimationContext,
   PublicSharedContext,

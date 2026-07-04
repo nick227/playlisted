@@ -1,7 +1,8 @@
 # Playlisted Theatre Author SDK — Specification v1
 
 **Status:** Current  
-**Import path:** `@/theatre/author`  
+**Public import path:** `@/theatre/author` — the **only** import path for scene authors  
+**Package location:** `apps/web/src/theatre/packages/<name>/` (repo path, not an import)  
 **Runtime:** Unchanged — this spec defines the author-facing contract only.
 
 ---
@@ -10,7 +11,13 @@
 
 The Theatre Author SDK lets contributors build **audio-reactive canvas animations** that run in Playlisted’s fullscreen theatre overlay during playback.
 
+**The SDK is for scene authors, not engine authors.** It exposes a stable per-frame drawing API. Internal platform engines (object-spinner, eqBars FFT, composite orchestrators) may use lower-level runtime APIs; public authors must not.
+
 v1 is intentionally narrow: one canvas layer, one preset, curated registration. The runtime (controller, audio extraction, performance policy, preset rotation) is platform-owned. Authors implement visual behavior only.
+
+### Public imports
+
+Scene authors import **only** from `@/theatre/author`. Do not import from `@/theatre/core`, `@/theatre/registry`, or other runtime modules in author package code. Maintainer registration in `registry/seed.ts` uses internal paths; that is platform wiring, not the author API.
 
 ---
 
@@ -109,7 +116,7 @@ export const myScenePackage = defineAnimationPackage({
 Authors implement visual behavior through `CanvasAnimation`. The platform owns timing and audio.
 
 ```
-init(container, context)   → create canvas, read init options
+init(container, context)   → platform-managed setup (canvas, resize)
 start()                    → mark running (no private RAF loop)
 renderFrame(context)       → platform calls each frame; invokes draw(publicContext)
 pause() / resume()         → playback sync
@@ -121,7 +128,7 @@ stop() / destroy()         → cleanup
 1. **Do not start a private `requestAnimationFrame` loop.** After `enableExternalDriving()` (called by the platform), the controller drives all frames.
 2. **Do not query page layout** inside `draw()`. Use `this.cssWidth`, `this.cssHeight`, and `this.ctx` only.
 3. **Keep state on the class instance.** Do not store mutable data on the context object.
-4. **`init()` receives full runtime context** (including internal options). **`draw()` receives `PublicAnimationContext` only.**
+4. **`draw(PublicAnimationContext)` is the stable author API.** Lifecycle methods (`init`, `start`, etc.) are managed by the platform. Public authors should not depend on runtime-only context fields — implement all per-frame logic in `draw()`.
 
 ---
 
@@ -357,11 +364,21 @@ Returns an `AnimationPackage`:
 
 ### Factory signature
 
+Public v1 authors should use a zero-argument factory:
+
 ```ts
-type AnimationFactory = (ctx: AnimationContext) => IAnimation
+function mySceneFactory() {
+  return new MyScene()
+}
 ```
 
-The factory may receive init context at construction time. Most v1 scenes ignore it and return `new MyScene()`. Per-layer options are injected at `init()` by the platform.
+At the type level, factories are declared as:
+
+```ts
+type AnimationFactory = (ctx?: AnimationContext) => IAnimation
+```
+
+The platform may pass runtime context when constructing internal/engine packages. **Public v1 authors should ignore it** and return `new MyScene()`. Per-layer options are injected at `init()` by the platform — authors read them via `draw()` → `context.options`.
 
 ---
 
@@ -403,13 +420,15 @@ Append `?theatreDev=1` to any page URL to open the theatre dev panel (layer list
 ## 13. Submission checklist (PR)
 
 1. Package lives under `apps/web/src/theatre/packages/<name>/`
-2. Uses `defineAnimationPackage()` from `@/theatre/author`
-3. Scene extends `CanvasAnimation`, implements `draw(PublicAnimationContext)`
-4. Registered in `registry/seed.ts`
-5. Unique `id`, `animationId`, and `presetId` (grep existing IDs first)
-6. `category: 'lab'` unless explicitly approved for production
-7. `reducedMotionPreset` set when using vivid/chaos/nightmare trigger preset
-8. No access to internal runtime APIs in author code
+2. Author code imports **only** from `@/theatre/author`
+3. Uses `defineAnimationPackage()` from `@/theatre/author`
+4. Scene extends `CanvasAnimation`, implements `draw(PublicAnimationContext)`
+5. Registered in `registry/seed.ts`
+6. Unique `id`, `animationId`, and `presetId` (grep existing IDs first)
+7. `category: 'lab'` unless explicitly approved for production
+8. `reducedMotionPreset` set when using vivid/chaos/nightmare trigger preset
+9. Factory returns `new MyScene()` — does not depend on runtime context at construction
+10. No access to internal runtime APIs (`analyser`, registry, context converters)
 
 ---
 
@@ -434,14 +453,16 @@ Existing first-party packages using the canonical shape: `goopy`, `jelly-bell`, 
 
 ## 16. SDK exports (v1)
 
+All public symbols come from `@/theatre/author` only:
+
 ```ts
 import {
   CanvasAnimation,
   defineAnimationPackage,
   bandsFromPublicContext,
-  toPublicAnimationContext,
   type PublicAnimationContext,
   type PublicSharedContext,
+  type ReadonlyFeatures,
   type TheatreLayerOptions,
   type TriggerPreset,
   type TriggerFrame,
@@ -454,6 +475,8 @@ import {
 } from '@/theatre/author'
 ```
 
+Platform-internal helpers (`toPublicAnimationContext`, runtime context types, registry APIs) are not part of the public export surface.
+
 ---
 
 ## Appendix A — Architecture (informative)
@@ -465,7 +488,7 @@ TheatreController
   └─ RAF loop
        └─ AnimationBridge.renderFrame(ctx)
             └─ CanvasAnimation.renderFrame(ctx)
-                 └─ draw(toPublicAnimationContext(ctx))  ← author code
+                 └─ draw(publicContext)  ← author code (platform converts runtime → public)
 ```
 
 Authors sit at the bottom of this stack. Everything above is platform-owned.

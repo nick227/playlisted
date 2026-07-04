@@ -1,6 +1,8 @@
 # Theatre Animation Author SDK (v1)
 
-Public-facing contract for canvas animations. Import from `@/theatre/author`.
+Public-facing contract for canvas animations.
+
+**Import from `@/theatre/author` only** — do not import `@/theatre/core`, `@/theatre/registry`, or other runtime modules in author package code.
 
 **Full specification:** [docs/theatre-author-sdk-v1.md](../../../docs/theatre-author-sdk-v1.md)
 
