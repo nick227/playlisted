@@ -336,6 +336,7 @@ packages/metropolis/
 - [x] G2 District-weighted audio (bass→clubRow, highs→waterfront, chaos→horror)
 - [x] F4 Localized strobe/neon/horror FX by district tiles
 - [x] Hero landmarks (8 postcard tiles per city seed)
+- [x] Human drama — crowd queues, rooftop silhouettes, audio-reactive beats
 - [ ] H3 Dev overlay pass timings / entity counts
 
 ---

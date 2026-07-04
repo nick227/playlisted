@@ -47,16 +47,6 @@ export type CarState = {
   trailY: number
 }
 
-export type PedestrianState = {
-  id: number
-  gx: number
-  gy: number
-  displayGx: number
-  displayGy: number
-  dir: 0 | 1 | 2 | 3
-  speed: number
-}
-
 export type MetropolisAudio = {
   bass: number
   mids: number

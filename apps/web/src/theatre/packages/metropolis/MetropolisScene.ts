@@ -3,7 +3,7 @@ import type { PublicAnimationContext } from '../../author/types'
 import type { IAnimation } from '../../core/IAnimation'
 
 import { createDirector, drawDirectorFx, updateDirector } from './director/MetropolisDirector'
-import { spawnPedestrians, updatePedestrians, drawPedestrians } from './entities/pedestrians'
+import { updateHumanDrama, drawHumanDrama } from './entities/humanDrama'
 import { spawnTraffic, updateTraffic, drawTraffic } from './entities/traffic'
 import { createTrain, drawTrain, updateTrain } from './entities/train'
 import { createAudioEnvelope, updateAudioEnvelope } from './motion/audioEnvelope'
@@ -20,6 +20,7 @@ import { drawCinematicGrade } from './render/cinematicGrade'
 import { projectTile } from './world/coords'
 import { METRO_SETTINGS } from './world/constants'
 import { generateCity } from './world/cityGen'
+import { spawnHumanDrama } from './world/humanSpawn'
 import type { MetropolisAudio } from './world/types'
 
 export function metropolisFactory(): IAnimation {
@@ -30,7 +31,7 @@ export function metropolisFactory(): IAnimation {
     private director = createDirector()
     private train = createTrain()
     private cars = spawnTraffic(this.grid, METRO_SETTINGS.trafficCount)
-    private peds = spawnPedestrians(this.grid, METRO_SETTINGS.pedestrianCount)
+    private humanDrama = spawnHumanDrama(this.grid)
     private beatCooldownMs = 0
 
     constructor() {
@@ -80,7 +81,13 @@ export function metropolisFactory(): IAnimation {
       const trafficBoost = this.director.loopT >= 8_000 && this.director.loopT < 20_000 ? 0.5 : 0
       updateTraffic(this.cars, this.grid, deltaMs, trafficBoost)
       if (!reduced && context.shared.particleScale > 0) {
-        updatePedestrians(this.peds, this.grid, deltaMs)
+        updateHumanDrama(this.humanDrama, {
+          grid: this.grid,
+          audio: { ...audio, beat: rawAudio.beat, chaos: rawAudio.chaos },
+          director: this.director,
+          deltaMs,
+          reducedMotion: reduced,
+        })
       }
 
       this.beatCooldownMs = Math.max(0, this.beatCooldownMs - deltaMs)
@@ -104,7 +111,7 @@ export function metropolisFactory(): IAnimation {
       drawTrain(this.ctx, this.grid, cam, this.train)
       drawTraffic(this.ctx, this.cars, cam)
       if (!reduced && context.shared.particleScale > 0) {
-        drawPedestrians(this.ctx, this.peds, cam)
+        drawHumanDrama(this.ctx, this.humanDrama, this.grid, cam, elapsed, { ...audio, beat: rawAudio.beat, chaos: rawAudio.chaos }, reduced)
       }
       drawAtmosphere(this.ctx, w, h, elapsed, cityGlow, reduced, context.shared.particleScale)
 
