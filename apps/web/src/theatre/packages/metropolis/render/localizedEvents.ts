@@ -1,3 +1,4 @@
+import { buildingElevation } from '../world/coords'
 import { buildVisibleChunks, iterateVisibleCells } from '../world/chunks'
 import {
   districtHorrorIntensity,
@@ -48,7 +49,7 @@ function drawStrobeSpill(
   const intensity = districtStrobeIntensity(district, director.strobe)
   if (intensity <= 0) return
   const flash = reducedMotion ? 0.5 : 0.5 + 0.5 * Math.sin(elapsed * 0.035 + gx)
-  const h = floors * 0.35
+  const h = buildingElevation(floors)
   const base = tileCorners(gx, gy, 0, cam)
   const roof = tileCorners(gx, gy, h, cam)
   const left = [base[0], base[3], roof[3], roof[0]]
@@ -77,6 +78,6 @@ function drawHorrorSpill(
   if (intensity <= 0) return
   const flicker = reducedMotion ? 0.6 : 0.35 + 0.65 * Math.abs(Math.sin(elapsed * 0.04 + gy))
   ctx.globalAlpha = intensity * flicker * 0.35
-  fillQuad(ctx, tileCorners(gx, gy, floors * 0.35 * 0.5, cam), '#224422')
+  fillQuad(ctx, tileCorners(gx, gy, buildingElevation(floors) * 0.5, cam), '#224422')
   ctx.globalAlpha = 1
 }

@@ -1,7 +1,21 @@
 import { METRO_SETTINGS } from './constants'
 import type { CameraState, ProjectedPoint } from './types'
 
-const { tileHalfW, tileHalfH, isoYScale } = METRO_SETTINGS
+const { tileHalfW, tileHalfH, isoYScale, viewBounds } = METRO_SETTINGS
+
+export function buildingElevation(floors: number): number {
+  return floors * METRO_SETTINGS.floorElev
+}
+
+function viewCornerTiles(citySize: number): [number, number][] {
+  const gx0 = Math.max(0, viewBounds.gx0)
+  const gy0 = Math.max(0, viewBounds.gy0)
+  const gx1 = Math.min(citySize, viewBounds.gx1)
+  const gy1 = Math.min(citySize, viewBounds.gy1)
+  return [
+    [gx0, gy0], [gx1, gy0], [gx0, gy1], [gx1, gy1],
+  ]
+}
 
 /** Dimetric 3/4: +X screen-right, +Y screen-down-right, +Z up. */
 export function projectTile(
@@ -28,12 +42,8 @@ export function fitCameraToCity(
   cssH: number,
   zoom: number,
 ): Pick<CameraState, 'originX' | 'originY'> {
-  const corners = [
-    projectTile(0, 0, 0, { originX: 0, originY: 0, zoom, swayX: 0, swayY: 0 }),
-    projectTile(citySize, 0, 0, { originX: 0, originY: 0, zoom, swayX: 0, swayY: 0 }),
-    projectTile(0, citySize, 0, { originX: 0, originY: 0, zoom, swayX: 0, swayY: 0 }),
-    projectTile(citySize, citySize, 0, { originX: 0, originY: 0, zoom, swayX: 0, swayY: 0 }),
-  ]
+  const probe = { originX: 0, originY: 0, zoom, swayX: 0, swayY: 0 }
+  const corners = viewCornerTiles(citySize).map(([gx, gy]) => projectTile(gx, gy, 0, probe))
   let minX = Infinity
   let maxX = -Infinity
   let minY = Infinity
@@ -53,15 +63,10 @@ export function fitCameraToCity(
   return { originX, originY }
 }
 
-/** Zoom that fits the full city footprint in the viewport. */
+/** Zoom that fits the downtown view window in the viewport. */
 export function computeAutoZoom(citySize: number, cssW: number, cssH: number): number {
   const probe = { originX: 0, originY: 0, zoom: 1, swayX: 0, swayY: 0 }
-  const corners = [
-    projectTile(0, 0, 0, probe),
-    projectTile(citySize, 0, 0, probe),
-    projectTile(0, citySize, 0, probe),
-    projectTile(citySize, citySize, 0, probe),
-  ]
+  const corners = viewCornerTiles(citySize).map(([gx, gy]) => projectTile(gx, gy, 0, probe))
   let minX = Infinity
   let maxX = -Infinity
   let minY = Infinity

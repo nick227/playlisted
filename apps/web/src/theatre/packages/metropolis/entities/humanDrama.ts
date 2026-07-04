@@ -1,4 +1,4 @@
-import { projectTile } from '../world/coords'
+import { projectTile, buildingElevation } from '../world/coords'
 import type { CityGrid } from '../world/cityGen'
 import type { CameraState, MetropolisAudio } from '../world/types'
 import type { DirectorState } from '../director/MetropolisDirector'
@@ -91,7 +91,7 @@ export function drawHumanDrama(
   for (const fig of state.figures) {
     const cell = grid.cells[Math.floor(fig.gy)]?.[Math.floor(fig.gx)]
     const elev = fig.role === 'rooftop'
-      ? (cell?.floors ?? 1) * 0.35 + 0.05
+      ? buildingElevation(cell?.floors ?? 1) + 0.05
       : 0.03
     const bob = reducedMotion ? 0 : fig.bob * Math.sin(elapsed * 0.012 + fig.seed)
     const p = projectTile(fig.displayGx, fig.displayGy, elev - bob, cam)

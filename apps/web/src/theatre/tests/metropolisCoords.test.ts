@@ -26,11 +26,11 @@ describe('metropolis coords', () => {
     expect(Number.isFinite(fit.originY)).toBe(true)
   })
 
-  it('auto zoom fits 128 city in viewport', () => {
+  it('auto zoom fits downtown view in viewport', () => {
     const zoom = computeAutoZoom(128, 1280, 720)
     expect(zoom).toBeGreaterThanOrEqual(METRO_SETTINGS.minZoom)
     expect(zoom).toBeLessThanOrEqual(METRO_SETTINGS.maxZoom)
-    expect(zoom).toBeLessThan(0.85)
+    expect(zoom).toBeGreaterThan(0.55)
   })
 })
 

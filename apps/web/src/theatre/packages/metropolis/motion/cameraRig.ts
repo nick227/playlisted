@@ -14,10 +14,9 @@ export type CameraRig = {
 }
 
 export function createCameraRig(): CameraRig {
-  const z = METRO_SETTINGS.minZoom
   return {
-    display: { originX: 0, originY: 0, zoom: z, swayX: 0, swayY: 0 },
-    zoom: z,
+    display: { originX: 0, originY: 0, zoom: -1, swayX: 0, swayY: 0 },
+    zoom: -1,
     originX: 0,
     originY: 0,
     swayX: 0,
@@ -51,12 +50,13 @@ export function updateCameraRig(
   const targetOriginX = base.originX + driftX
   const targetOriginY = base.originY + driftY
 
-  const zoom = expSmooth(rig.zoom, targetZoom, deltaMs, 180)
-  const [originX, originY] = expSmoothVec2(
-    rig.originX, rig.originY, targetOriginX, targetOriginY, deltaMs, 220,
-  )
-  const swayX = expSmooth(rig.swayX, targetSwayX, deltaMs, 70)
-  const swayY = expSmooth(rig.swayY, targetSwayY, deltaMs, 80)
+  const snap = rig.zoom < 0
+  const zoom = snap ? targetZoom : expSmooth(rig.zoom, targetZoom, deltaMs, 180)
+  const [originX, originY] = snap
+    ? [targetOriginX, targetOriginY]
+    : expSmoothVec2(rig.originX, rig.originY, targetOriginX, targetOriginY, deltaMs, 220)
+  const swayX = snap ? targetSwayX : expSmooth(rig.swayX, targetSwayX, deltaMs, 70)
+  const swayY = snap ? targetSwayY : expSmooth(rig.swayY, targetSwayY, deltaMs, 80)
 
   const display: CameraState = { originX, originY, zoom, swayX, swayY }
   return { display, zoom, originX, originY, swayX, swayY }

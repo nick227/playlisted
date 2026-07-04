@@ -1,3 +1,4 @@
+import { buildingElevation } from '../world/coords'
 import { buildVisibleChunks, iterateVisibleCells } from '../world/chunks'
 import type { CityGrid } from '../world/cityGen'
 import type { CameraState } from '../world/types'
@@ -54,7 +55,7 @@ function drawBuildingStatic(
   const arch = archetypeById(cell.archetypeId)
   drawArchetypeShell(ctx, gx, gy, cell.floors, cell.district, cell.archetypeId, cam)
   if (arch.hasFireEscape) {
-    const h = cell.floors * 0.35
+    const h = buildingElevation(cell.floors)
     const inset = arch.inset
     const base = tileCorners(gx + inset, gy + inset, 0, cam)
     const roof = tileCorners(gx + inset, gy + inset, h, cam)

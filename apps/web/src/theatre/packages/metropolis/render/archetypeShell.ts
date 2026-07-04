@@ -1,6 +1,7 @@
 import { archetypeById } from '../world/buildingArchetypes'
 import { DISTRICTS } from '../world/districts'
 import type { DistrictId } from '../world/types'
+import { buildingElevation } from '../world/coords'
 import { fillQuad, shade, tileCorners } from './drawUtils'
 import type { CameraState } from '../world/types'
 
@@ -18,14 +19,14 @@ export function drawArchetypeShell(
   const arch = archetypeById(archetypeId)
   const style = DISTRICTS[district]
   const inset = arch.inset
-  const h = floors * 0.35
+  const h = buildingElevation(floors)
   const base = tileCorners(gx + inset, gy + inset, 0, cam)
   const roof = tileCorners(gx + inset, gy + inset, h, cam)
   fillQuad(ctx, base, style.base)
   const leftWall = [base[0], base[3], roof[3], roof[0]]
   const rightWall = [base[1], base[2], roof[2], roof[1]]
-  fillQuad(ctx, leftWall, shade(style.base, -0.08))
-  fillQuad(ctx, rightWall, shade(style.top, 0.05))
+  fillQuad(ctx, leftWall, shade(style.base, -0.14))
+  fillQuad(ctx, rightWall, shade(style.top, 0.1))
 
   if (arch.roofStyle === 'peaked') {
     drawPeakedRoof(ctx, roof, style.top)
@@ -86,7 +87,7 @@ export function archetypeLeftRightWalls(
   cam: CameraState,
 ): { left: Pt[]; right: Pt[] } {
   const inset = archetypeById(archetypeId).inset
-  const h = floors * 0.35
+  const h = buildingElevation(floors)
   const base = tileCorners(gx + inset, gy + inset, 0, cam)
   const roof = tileCorners(gx + inset, gy + inset, h, cam)
   return {

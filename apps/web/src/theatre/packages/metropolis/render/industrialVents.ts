@@ -2,7 +2,7 @@ import { buildVisibleChunks, iterateVisibleCells } from '../world/chunks'
 import { hash2 } from '../world/rng'
 import type { CityGrid } from '../world/cityGen'
 import type { CameraState } from '../world/types'
-import { projectTile } from '../world/coords'
+import { projectTile, buildingElevation } from '../world/coords'
 
 export function drawIndustrialVents(
   ctx: CanvasRenderingContext2D,
@@ -20,7 +20,7 @@ export function drawIndustrialVents(
     const cell = grid.cells[gy][gx]
     if (cell.district !== 'industrial' || cell.floors < 2) return
     if (hash2(cell.seed, 20) % 5 !== 0) return
-    const p = projectTile(gx + 0.5, gy + 0.5, cell.floors * 0.35, cam)
+    const p = projectTile(gx + 0.5, gy + 0.5, buildingElevation(cell.floors), cam)
     const drift = reducedMotion ? 0 : elapsed * 0.03 + cell.seed
     for (let i = 0; i < 3; i++) {
       const ox = Math.sin(drift + i) * 4
