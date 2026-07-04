@@ -20,6 +20,10 @@ export function pushRecentSearch(term: string): string[] {
     0,
     MAX_RECENT,
   );
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  } catch {
+    // Recent searches are optional; searching should still work when storage is full.
+  }
   return next;
 }

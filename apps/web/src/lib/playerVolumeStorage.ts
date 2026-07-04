@@ -6,14 +6,21 @@ function clamp01(n: number): number {
 
 export function readPlayerVolume(): number {
   if (typeof window === "undefined") return 1;
-  const raw = localStorage.getItem(VOLUME_KEY);
-  if (!raw) return 1;
-  const parsed = Number(raw);
-  if (!Number.isFinite(parsed)) return 1;
-  return clamp01(parsed);
+  try {
+    const raw = localStorage.getItem(VOLUME_KEY);
+    if (!raw) return 1;
+    const parsed = Number(raw);
+    if (!Number.isFinite(parsed)) return 1;
+    return clamp01(parsed);
+  } catch {
+    return 1;
+  }
 }
 
 export function writePlayerVolume(volume: number) {
-  localStorage.setItem(VOLUME_KEY, String(clamp01(volume)));
+  try {
+    localStorage.setItem(VOLUME_KEY, String(clamp01(volume)));
+  } catch {
+    // Volume persistence is optional.
+  }
 }
-

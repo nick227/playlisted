@@ -1,5 +1,5 @@
 import type { PlaylistDetail } from "@playlisted/client-sdk";
-import { Check, ChevronDown, Library, Pause, Pencil, Play, Plus, Search, Share2, Upload, X } from "lucide-react";
+import { Check, ChevronDown, Library, Pause, Play, Plus, Search, Share2, Upload, X } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { Link } from "react-router-dom";
 
@@ -431,7 +431,17 @@ export function CollectionView({
               className="mt-2 w-full border-0 bg-transparent text-3xl font-bold tracking-tight text-white outline-none focus:ring-0 md:text-5xl"
             />
           ) : (
-            <h1 className="mt-2 text-3xl font-bold tracking-tight md:text-5xl">{playlist.title}</h1>
+            <div className="flex items-start justify-between gap-4 group/title">
+              <h1 className="mt-2 text-3xl font-bold tracking-tight md:text-5xl">{playlist.title}</h1>
+              {isOwner ? (
+                <Link
+                  to={studioCollectionEditPath(playlist.id)}
+                  className="mt-4 shrink-0 rounded-full border border-white/15 px-4 py-1.5 text-sm font-semibold text-white transition hover:border-[var(--color-brand)] hover:text-[var(--color-brand)]"
+                >
+                  Edit
+                </Link>
+              ) : null}
+            </div>
           )}
           <p className="mt-3 text-sm text-[var(--color-text-muted)]">
             <Link to={artistPath(playlist.owner.username)} className="font-medium text-white hover:underline">
@@ -520,16 +530,6 @@ export function CollectionView({
               variant="inline"
               className="!h-10 !w-10 !rounded-full !border !border-white/20 !bg-transparent !opacity-100"
             />
-            {isOwner ? (
-              <Link
-                to={studioCollectionEditPath(playlist.id)}
-                className="inline-flex h-10 w-30 items-center justify-center rounded-full border border-white/20 text-white hover:bg-white/10"
-                aria-label="Edit playlist"
-                title="Edit"
-              >
-                <Pencil size={18} />
-              </Link>
-            ) : null}
             {onAddCollection ? (
               <button
                 type="button"

@@ -3,11 +3,15 @@ export const RADIO_TRANSITION_RETRY_MS = 1000;
 export const RADIO_TRANSITION_MAX_RETRIES = 8;
 
 export function getListenerId() {
-  const existing = window.localStorage.getItem(LISTENER_ID_KEY);
-  if (existing) return existing;
-  const next = crypto.randomUUID();
-  window.localStorage.setItem(LISTENER_ID_KEY, next);
-  return next;
+  try {
+    const existing = window.localStorage.getItem(LISTENER_ID_KEY);
+    if (existing) return existing;
+    const next = crypto.randomUUID();
+    window.localStorage.setItem(LISTENER_ID_KEY, next);
+    return next;
+  } catch {
+    return crypto.randomUUID();
+  }
 }
 
 export function getAnonName(listenerId: string) {

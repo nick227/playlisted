@@ -7,10 +7,9 @@ export const GENRES_PATH = "/genres";
 export const ARTISTS_PATH = "/artists";
 export const PLAYLISTS_PATH = "/playlists";
 export const FAVORITES_PATH = "/favorites";
-export const CHARTS_PATH = "/charts";
 
 /** Shared max-width for browse breadcrumbs and collection content. */
-export const BROWSE_LAYOUT_CLASS = "mx-auto max-w-3xl  bg-[var(--color-canvas)]/80 p-4";
+export const BROWSE_LAYOUT_CLASS = "mx-auto max-w-3xl bg-[var(--color-canvas)]/80 p-4";
 
 /** Artist profile breadcrumbs align with the wider profile layout below. */
 export const ARTIST_PROFILE_LAYOUT_CLASS = "mx-auto max-w-7xl";
@@ -58,10 +57,6 @@ export function playlistsBrowseCrumbs(): BrowseCrumb[] {
 
 export function favoritesBrowseCrumbs(): BrowseCrumb[] {
   return [libraryCrumb(), { label: "Favorites", to: FAVORITES_PATH }];
-}
-
-export function chartsBrowseCrumbs(): BrowseCrumb[] {
-  return [libraryCrumb(), { label: "Charts", to: CHARTS_PATH }];
 }
 
 export function playlistBrowseCrumbs(

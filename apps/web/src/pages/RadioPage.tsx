@@ -155,7 +155,7 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
         </div>
 
         <div className="relative flex min-h-0 w-full max-w-[min(74vw,23rem)] items-center justify-center">
-          <div className="absolute -inset-4 -z-10 rounded-[2rem] bg-white/[0.035] blur-xl" />
+          <div className="absolute -inset-4 -z-10 rounded-[2rem] blur-xl" />
           {playlistUrl ? (
             <Link
               to={playlistUrl}

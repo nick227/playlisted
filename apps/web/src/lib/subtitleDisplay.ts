@@ -7,7 +7,11 @@ const listeners = new Set<() => void>();
 
 function readStoredEnabled() {
   if (typeof window === "undefined") return true;
-  return window.localStorage.getItem(STORAGE_KEY) !== "0";
+  try {
+    return window.localStorage.getItem(STORAGE_KEY) !== "0";
+  } catch {
+    return true;
+  }
 }
 
 function emit() {
@@ -29,7 +33,11 @@ export function setSubtitlesEnabled(next: boolean) {
   if (enabled === next) return;
   enabled = next;
   if (typeof window !== "undefined") {
-    window.localStorage.setItem(STORAGE_KEY, next ? "1" : "0");
+    try {
+      window.localStorage.setItem(STORAGE_KEY, next ? "1" : "0");
+    } catch {
+      // Subtitle preference is optional; keep the in-memory toggle working.
+    }
   }
   emit();
 }

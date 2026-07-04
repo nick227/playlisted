@@ -45,12 +45,25 @@ function isDynamicImportFailure(error: unknown) {
 }
 
 function reloadForFreshTheatreChunk(error: unknown): Promise<never> {
+  const reloadAlreadyAttempted = (() => {
+    if (typeof window === 'undefined') return false
+    try {
+      return window.sessionStorage.getItem(THEATRE_RELOAD_KEY) === '1'
+    } catch {
+      return false
+    }
+  })()
+
   if (
     typeof window !== 'undefined' &&
     isDynamicImportFailure(error) &&
-    window.sessionStorage.getItem(THEATRE_RELOAD_KEY) !== '1'
+    !reloadAlreadyAttempted
   ) {
-    window.sessionStorage.setItem(THEATRE_RELOAD_KEY, '1')
+    try {
+      window.sessionStorage.setItem(THEATRE_RELOAD_KEY, '1')
+    } catch {
+      // Reload guard persistence is best-effort.
+    }
     window.location.reload()
     return new Promise(() => {
       // Keep the current promise pending while the browser navigates.

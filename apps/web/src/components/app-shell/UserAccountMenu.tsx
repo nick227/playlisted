@@ -65,7 +65,7 @@ export function UserAccountMenu({
                 className="flex items-center gap-2 px-4 py-2.5 text-sm text-white hover:bg-white/5"
               >
                 <Settings size={16} />
-                {panelPath === ADMIN_PATH ? "Admin panel" : "Artist studio"}
+                {panelPath === ADMIN_PATH ? "Admin panel" : "Settings"}
               </Link>
             ) : null}
             <button

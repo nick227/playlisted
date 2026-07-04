@@ -1,14 +1,17 @@
+/** When false, pointer/keyboard activity does not reveal or reset the body fade timer. */
+export const playbackFocusUserActivityEnabled = false;
+
 export const playbackFocusTiming = {
   theatre: {
     delayMs: 0,
     fadeInMs: 1200,
-    fadeOutMs: 1200,
+    fadeOutMs: 3200,
     exitBufferMs: 1200,
   },
 
   body: {
-    delayMs: 3500,
-    restoreDelayMs: 1000,
+    delayMs: 5000,
+    restoreDelayMs: 13500,
     fadeOutMs: 2000,
   },
 
@@ -20,7 +23,7 @@ export const playbackFocusTiming = {
   },
 
   artistVisual: {
-    gapAfterTitleIntroMs: 0,
+    gapAfterTitleIntroMs: 500,
     minVisibleMs: 5000,
     fadeInMs: 900,
     fadeOutMs: 900,
@@ -41,7 +44,7 @@ export const playbackFocusTiming = {
   },
 
   miniView: {
-    delayMs: 599000,
+    delayMs: 600000,
     fadeInMs: 620,
   },
 

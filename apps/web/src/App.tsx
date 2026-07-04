@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { BrowserRouter, Navigate, Route, Routes, useParams } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useLocation, useParams } from "react-router-dom";
 
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AppShell } from "@/components/app-shell/AppShell";
@@ -10,7 +10,6 @@ const LoginPage = lazy(() => import("@/pages/LoginPage").then((mod) => ({ defaul
 const RegisterPage = lazy(() => import("@/pages/RegisterPage").then((mod) => ({ default: mod.RegisterPage })));
 
 const HomePage = lazy(() => import("@/pages/HomePage").then((mod) => ({ default: mod.HomePage })));
-const ChartsPage = lazy(() => import("@/pages/ChartsPage").then((mod) => ({ default: mod.ChartsPage })));
 const SearchPage = lazy(() => import("@/pages/SearchPage").then((mod) => ({ default: mod.SearchPage })));
 const RadioPage = lazy(() => import("@/pages/RadioPage").then((mod) => ({ default: mod.RadioPage })));
 const ChatPage = lazy(() => import("@/pages/ChatPage").then((mod) => ({ default: mod.ChatPage })));
@@ -49,7 +48,7 @@ const JobsPage = lazy(() => import("@/pages/site/SitePages").then((mod) => ({ de
 const MediaPage = lazy(() => import("@/pages/site/SitePages").then((mod) => ({ default: mod.MediaPage })));
 const PrivacyPage = lazy(() => import("@/pages/site/PrivacyPage").then((mod) => ({ default: mod.PrivacyPage })));
 
-const StudioPage = lazy(() => import("@/pages/StudioPage").then((mod) => ({ default: mod.StudioPage })));
+const SettingsPage = lazy(() => import("@/pages/SettingsPage").then((mod) => ({ default: mod.SettingsPage })));
 const StudioCollectionsPage = lazy(() =>
   import("@/pages/studio/StudioCollectionsPage").then((mod) => ({ default: mod.StudioCollectionsPage })),
 );
@@ -100,6 +99,11 @@ function LegacyProfileRedirect() {
   return <Navigate to={`/@/${encodeURIComponent(username ?? "")}`} replace />;
 }
 
+function LegacyChartsRedirect() {
+  const location = useLocation();
+  return <Navigate to={`/favorites${location.search}`} replace />;
+}
+
 function RouteLoadingFallback() {
   return (
     <div
@@ -132,7 +136,7 @@ function MainRoutes() {
             <Route path="/register" element={<RegisterPage />} />
           </Route>
           <Route path="/" element={<HomePage />} />
-          <Route path="/charts" element={<ChartsPage />} />
+          <Route path="/charts" element={<LegacyChartsRedirect />} />
           <Route path="/search" element={<SearchPage />} />
           <Route path="/radio" element={<RadioPage />} />
           <Route path="/chat" element={<ChatPage />} />
@@ -143,7 +147,7 @@ function MainRoutes() {
           <Route path="/@/:username" element={<MemberPage />} />
           <Route path="/members/:userId" element={<MemberPage />} />
           <Route path="/explore" element={<Navigate to="/" replace />} />
-          <Route path="/trending" element={<Navigate to="/charts" replace />} />
+          <Route path="/trending" element={<Navigate to="/favorites" replace />} />
           <Route path="/musicians" element={<MusiciansPage />} />
           <Route path="/developers" element={<DevelopersPage />} />
           <Route path="/advertising" element={<AdvertisingPage />} />
@@ -160,13 +164,14 @@ function MainRoutes() {
           <Route path="/artists" element={<LibraryArtistsPage />} />
           <Route path="/artists/:username" element={<LibraryArtistRedirect />} />
           <Route
-            path="/studio"
+            path="/settings"
             element={
               <ProtectedRoute>
-                <StudioPage />
+                <SettingsPage />
               </ProtectedRoute>
             }
           />
+          <Route path="/studio" element={<Navigate to="/settings" replace />} />
           <Route
             path="/studio/collections"
             element={
@@ -196,22 +201,6 @@ function MainRoutes() {
             element={
               <ProtectedRoute>
                 <StudioHistoryPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/studio/profile"
-            element={
-              <ProtectedRoute roles={["CREATOR", "ADMIN", "LISTENER"]}>
-                <Navigate to="/studio" replace />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/studio/links"
-            element={
-              <ProtectedRoute roles={["CREATOR", "ADMIN", "LISTENER"]}>
-                <Navigate to="/studio" replace />
               </ProtectedRoute>
             }
           />

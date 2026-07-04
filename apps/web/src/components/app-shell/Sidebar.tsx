@@ -1,19 +1,21 @@
 import {
-  BarChart3,
   Heart,
   Home,
-  PanelsTopLeft,
   Settings,
   RadioIcon,
+  Plus,
+  Lock,
   type LucideIcon,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, Link } from "react-router-dom";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { authedApi } from "@/lib/authedApi";
 import { playbackFocusTiming } from "@/lib/playbackFocusTiming";
 import { usePlaybackFocusSuppressed } from "@/lib/playbackFocusSuppression";
-import { CHARTS_PATH, FAVORITES_PATH } from "@/lib/browsePaths";
-import { ADMIN_PATH, panelPathForRole, STUDIO_PATH } from "@/lib/routes";
+import { FAVORITES_PATH } from "@/lib/browsePaths";
+import { ADMIN_PATH, panelPathForRole, playlistPath, studioCollectionEditPath } from "@/lib/routes";
 import { useAuth } from "@/providers/AuthProvider";
 
 interface SidebarProps {
@@ -23,7 +25,6 @@ interface SidebarProps {
 
 const discoverLinks = [
   { to: "/", label: "Home", icon: Home, end: true },
-  { to: CHARTS_PATH, label: "Charts", icon: BarChart3, end: true },
 ] as const;
 
 const baseNavClass = "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition";
@@ -63,11 +64,38 @@ function NavItem({
 export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
   const blurTimerRef = useRef<number | null>(null);
   const playbackFocusSuppressed = usePlaybackFocusSuppressed();
-  const { user } = useAuth();
+  const { user, accessToken } = useAuth();
+  const isAuthenticated = Boolean(user);
+  const [showCollectionsSignIn, setShowCollectionsSignIn] = useState(false);
   const [navDimmed, setNavDimmed] = useState(false);
+  
+  const client = authedApi(accessToken);
+  const queryClient = useQueryClient();
+
+  const collectionsQuery = useQuery({
+    queryKey: ["me", "playlists"],
+    queryFn: () => client.me.playlists(),
+    enabled: Boolean(accessToken),
+  });
+  const collections = collectionsQuery.data?.data ?? [];
+
+  const createCollectionMutation = useMutation({
+    mutationFn: () =>
+      client.playlists.create({
+        ownerId: user!.id,
+        title: "Untitled collection",
+        type: "PLAYLIST",
+        status: "PUBLISHED",
+        visibility: "PUBLIC",
+      }),
+    onSuccess: (created) => {
+      queryClient.invalidateQueries({ queryKey: ["me", "playlists"] });
+      window.location.href = studioCollectionEditPath(created.id);
+    },
+  });
+
   const panelPath = user ? panelPathForRole(user.role) : null;
   const showAdminLink = panelPath === ADMIN_PATH;
-  const showStudioLink = panelPath != null;
 
   const clearBlurTimer = useCallback(() => {
     if (blurTimerRef.current === null) return;
@@ -158,16 +186,73 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
                   end={false}
                 />
               ) : null}
-              {showStudioLink ? (
-                <NavItem
-                  to={STUDIO_PATH}
-                  label="Studio"
-                  icon={PanelsTopLeft}
-                  onClick={onClose}
-                  end={false}
-                />
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (!isAuthenticated) {
+                    setShowCollectionsSignIn(true);
+                    return;
+                  }
+                  if (createCollectionMutation.isPending) return;
+                  createCollectionMutation.mutate();
+                }}
+                disabled={createCollectionMutation.isPending}
+                className={navClass(false, "text-left disabled:opacity-60 cursor-pointer")}
+              >
+                <Plus size={20} />
+                {createCollectionMutation.isPending ? "Creating..." : "Upload Media"}
+              </button>
+              {showCollectionsSignIn && !isAuthenticated ? (
+                <div className="mx-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-3">
+                  <p className="text-sm font-semibold text-white">Sign in to create collections</p>
+                  <p className="my-1 text-xs leading-relaxed text-[var(--color-text-muted)]">
+                    Collections and playlists are saved to your profile.
+                  </p>
+                  <Link to="/login" className="mt-4 text-sm text-white hover:underline">Sign in</Link> 
+                  <span className="text-xs text-[var(--color-text-muted)] mx-2">or</span>
+                  <Link to="/register" className="mt-4 text-sm text-white hover:underline">Register</Link>
+                </div>
               ) : null}
+              {collections.map((playlist) => (
+                <NavLink
+                  key={playlist.id}
+                  to={playlistPath({
+                    id: playlist.id,
+                    href: playlist.href,
+                    username: playlist.owner.username,
+                    slug: playlist.slug,
+                  })}
+                  onClick={onClose}
+                  className={({ isActive }) =>
+                    [
+                      "rounded-lg px-3 py-1.5 text-sm transition",
+                      isActive
+                        ? "bg-white/10 text-white shadow-inner"
+                        : "text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)] hover:text-white",
+                    ].join(" ")
+                  }
+                >
+                  <span className="flex items-center gap-2 truncate">
+                    {playlist.coverArtUrl ? (
+                      <img
+                        src={playlist.coverArtUrl}
+                        alt=""
+                        className="h-5 w-5 shrink-0 rounded object-cover"
+                      />
+                    ) : (
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-white/10 text-[10px] font-bold uppercase text-[var(--color-text-muted)]">
+                        {playlist.title ? playlist.title.charAt(0) : "P"}
+                      </span>
+                    )}
+                    {playlist.visibility === "PRIVATE" ? <Lock size={14} className="shrink-0 opacity-70" /> : null}
+                    <span className="truncate">{playlist.title}</span>
+                  </span>
+                </NavLink>
+              ))}
             </div>
+
+            
           </div>
         </nav>
       </aside>

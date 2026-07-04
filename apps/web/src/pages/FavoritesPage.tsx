@@ -1,15 +1,16 @@
-import { useMemo } from "react";
-import { Link } from "react-router-dom";
+import { useCallback, useMemo } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { Play, Pause } from "lucide-react";
 import type { FavoriteRecordingItem, MostPlayedItem, RecentlyPlayedItem } from "@playlisted/client-sdk";
 
 import { SmartPlaylistCard } from "@/components/cards/SmartPlaylistCard";
 import { ArtistCard } from "@/components/cards/ArtistCard";
+import { ChartsFilterBar } from "@/components/charts/ChartsFilterBar";
+import { ChartsList } from "@/components/charts/ChartsList";
 import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
 import { RecordingActionMenu } from "@/components/media/RecordingActionMenu";
 import { EmptyState } from "@/components/feedback/EmptyState";
 import { Skeleton } from "@/components/feedback/Skeleton";
-import { ContentRow } from "@/components/discovery/ContentRow";
 import { LibraryBrowseLayout } from "@/components/library/LibraryBrowseLayout";
 import { PanelHeader } from "@/components/library/libraryPanels";
 import { PlaybackBars } from "@/features/playback-indicators/PlaybackBars";
@@ -22,6 +23,7 @@ import { useTrackPlayback } from "@/hooks/useTrackPlayback";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 import { useAuth } from "@/providers/AuthProvider";
 import { usePageMeta } from "@/hooks/usePageMeta";
+import { useLibraryGenres } from "@/hooks/useLibrary";
 import {
   useFavoriteRecordings,
   useFavoriteArtists,
@@ -29,11 +31,58 @@ import {
   useMostPlayed,
   useRecentlyPlayed,
 } from "@/hooks/useFavorites";
-import { useTopPlaylists } from "@/hooks/useCharts";
+import {
+  chartsPageSearchParams,
+  parseChartsPageState,
+  type ChartsPageState,
+} from "@/lib/chartsPageState";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
 type AnyTrack = FavoriteRecordingItem | MostPlayedItem | RecentlyPlayedItem;
+const FAVORITES_CHART_ITEM_LIMIT = 10;
+type FavoritesView = "charts" | "personal";
+
+function parseFavoritesView(params: URLSearchParams): FavoritesView {
+  return params.get("view") === "personal" ? "personal" : "charts";
+}
+
+function FavoritesViewToggle({
+  activeView,
+  onChange,
+}: {
+  activeView: FavoritesView;
+  onChange: (view: FavoritesView) => void;
+}) {
+  return (
+    <div className="mt-5 grid grid-cols-2 gap-2 rounded-xl border border-[var(--color-border)] bg-white/[0.025] p-2">
+      {(["charts", "personal"] as const).map((view) => {
+        const isActive = activeView === view;
+        return (
+          <button
+            key={view}
+            type="button"
+            aria-pressed={isActive}
+            onClick={() => onChange(view)}
+            className={[
+              "min-h-24 rounded-lg border px-4 py-4 text-left transition sm:min-h-28 sm:px-6",
+              isActive
+                ? "border-[var(--color-brand)]/60 bg-[var(--color-brand)]/15 text-white"
+                : "border-transparent text-[var(--color-text-muted)] hover:border-white/10 hover:bg-white/[0.04] hover:text-white",
+            ].join(" ")}
+          >
+            <span className="block text-3xl font-black uppercase leading-none tracking-normal sm:text-5xl">
+              {view === "charts" ? "Charts" : "Personal"}
+            </span>
+            <span className="mt-2 block text-xs font-medium uppercase tracking-normal opacity-75 sm:text-sm">
+              {view === "charts" ? "Top ten lists" : "Your favorites"}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 // ── personal track row ────────────────────────────────────────────────────────
 
@@ -194,35 +243,83 @@ function Section({
 // ── page ──────────────────────────────────────────────────────────────────────
 
 export function FavoritesPage() {
+  const [params, setSearchParams] = useSearchParams();
+  const chartState = useMemo(() => parseChartsPageState(params), [params]);
+  const activeView = useMemo(() => parseFavoritesView(params), [params]);
+  const { data: genreData } = useLibraryGenres();
+  const genres = genreData?.data ?? [];
   const { status } = useAuth();
   const isAuthed = status === "authenticated";
 
-  usePageMeta({ title: "Favorites", description: "Your liked tracks, playlists, and artists." });
+  usePageMeta({ title: "Favorites", description: "Top charts and your liked tracks, playlists, and artists." });
 
   const favorites = useFavoriteRecordings();
   const favoritePlaylists = useFavoritePlaylists();
   const favoriteArtists = useFavoriteArtists();
   const mostPlayed = useMostPlayed(20);
   const recentlyPlayed = useRecentlyPlayed(20);
-  const topPlaylists = useTopPlaylists("30d", 12);
 
-  const recommended = useMemo(() => {
-    const list = topPlaylists.data?.data ?? [];
-    return [...list].sort(() => Math.random() - 0.5).slice(0, 10);
-  }, [topPlaylists.data]);
+  const updateChartState = useCallback(
+    (patch: Partial<ChartsPageState>) => {
+      const next = { ...chartState, ...patch };
+      if (next.tab !== "songs") next.genre = null;
+      const nextParams = chartsPageSearchParams(next);
+      if (activeView === "personal") nextParams.set("view", "personal");
+      setSearchParams(nextParams, { replace: true });
+    },
+    [activeView, chartState, setSearchParams],
+  );
+
+  const updateActiveView = useCallback(
+    (view: FavoritesView) => {
+      const nextParams = new URLSearchParams(params);
+      if (view === "personal") nextParams.set("view", "personal");
+      else nextParams.delete("view");
+      setSearchParams(nextParams, { replace: true });
+    },
+    [params, setSearchParams],
+  );
+
+  const chartsSection = (
+    <Section title="Charts" subtitle="The top ten across Playlisted" className="mt-8">
+      <div className="overflow-hidden rounded-xl border border-[var(--color-border)]">
+        <ChartsFilterBar
+          tab={chartState.tab}
+          range={chartState.range}
+          genre={chartState.genre}
+          genres={genres}
+          onTabChange={(tab) => updateChartState({ tab })}
+          onRangeChange={(range) => updateChartState({ range })}
+          onGenreChange={(genre) => updateChartState({ genre })}
+        />
+        <ChartsList
+          tab={chartState.tab}
+          range={chartState.range}
+          genre={chartState.genre}
+          limit={FAVORITES_CHART_ITEM_LIMIT}
+        />
+      </div>
+    </Section>
+  );
 
   if (!isAuthed) {
     return (
       <LibraryBrowseLayout crumbs={favoritesBrowseCrumbs()}>
-        <div className="flex min-h-[52vh] items-center justify-center">
-          <div className="text-center">
-            <EmptyState
-              title="Sign in to see your music"
-              description="Favorites, play history, and recommendations are saved to your account."
-            />
-            <Link to="/login" className="text-sm text-white hover:underline">Sign in</Link>
+        <PanelHeader label="Favorites" />
+        <FavoritesViewToggle activeView={activeView} onChange={updateActiveView} />
+        {activeView === "charts" ? (
+          chartsSection
+        ) : (
+          <div className="flex min-h-[35vh] items-center justify-center">
+            <div className="text-center">
+              <EmptyState
+                title="Sign in to see your music"
+                description="Favorites, play history, and recommendations are saved to your account."
+              />
+              <Link to="/login" className="text-sm text-white hover:underline">Sign in</Link>
+            </div>
           </div>
-        </div>
+        )}
       </LibraryBrowseLayout>
     );
   }
@@ -236,131 +333,114 @@ export function FavoritesPage() {
   return (
     <LibraryBrowseLayout crumbs={favoritesBrowseCrumbs()}>
       <PanelHeader label="Favorites" />
-      <Section
-        title="Collections"
-        className="mt-4"
-        loading={favoritePlaylists.isLoading}
-        empty={
-          favPlaylistItems.length === 0
-            ? "No favorite playlists yet — heart a collection to save it here"
-            : undefined
-        }
-      >
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
-          {favPlaylistItems.map((playlist) => (
-            <SmartPlaylistCard
-              key={playlist.id}
-              id={playlist.id}
-              title={playlist.title}
-              creatorName={playlist.owner.displayName}
-              coverArtUrl={playlist.coverArtUrl}
-              ownerUsername={playlist.owner.username}
-              slug={playlist.slug}
-              className="w-full"
-            />
-          ))}
-        </div>
-      </Section>
+      <FavoritesViewToggle activeView={activeView} onChange={updateActiveView} />
+      {activeView === "charts" ? chartsSection : (
+        <>
+          <Section
+            title="Collections"
+            className="mt-8"
+            loading={favoritePlaylists.isLoading}
+            empty={
+              favPlaylistItems.length === 0
+                ? "No favorite playlists yet — heart a collection to save it here"
+                : undefined
+            }
+          >
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+              {favPlaylistItems.map((playlist) => (
+                <SmartPlaylistCard
+                  key={playlist.id}
+                  id={playlist.id}
+                  title={playlist.title}
+                  creatorName={playlist.owner.displayName}
+                  coverArtUrl={playlist.coverArtUrl}
+                  ownerUsername={playlist.owner.username}
+                  slug={playlist.slug}
+                  className="w-full"
+                />
+              ))}
+            </div>
+          </Section>
 
-      {favArtistItems.length > 0 && (
-        <Section
-          title="Favorite artists"
-          loading={favoriteArtists.isLoading}
-          empty={
-            favArtistItems.length === 0
-              ? "No favorite artists yet — heart an artist to save them here"
-              : undefined
-          }
-        >
-          <div className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-5">
-            {favArtistItems.map((artist) => (
-              <ArtistCard
-                key={artist.id}
-                id={artist.id}
-                username={artist.username}
-                displayName={artist.displayName}
-                subtitle={`@${artist.username}`}
-                avatarUrl={artist.avatarUrl}
-                className="w-full"
-              />
-            ))}
-          </div>
-        </Section>
-      )}
-
-      <Section
-        title="Favorites"
-        loading={favorites.isLoading}
-        empty={favTracks.length === 0 ? "No favorites yet — heart a song to save it here" : undefined}
-      >
-        <div className="flex flex-col gap-0.5">
-          {favTracks.map((track) => (
-            <PersonalTrackRow
-              key={track.id}
-              track={track}
-              badge={`${formatPlayCount(track.playCount)} plays`}
-              allTracks={favTracks}
-            />
-          ))}
-        </div>
-      </Section>
-
-      <Section
-        title="Most played"
-        loading={mostPlayed.isLoading}
-        empty={mostPlayedTracks.length === 0 ? "Play some songs to see your top tracks" : undefined}
-      >
-        <div className="flex flex-col gap-0.5">
-          {mostPlayedTracks.map((track) => (
-            <PersonalTrackRow
-              key={track.id}
-              track={track}
-              badge={`${formatPlayCount(track.userPlayCount)} plays`}
-              badgeColor="text-emerald-400"
-              allTracks={mostPlayedTracks}
-            />
-          ))}
-        </div>
-      </Section>
-
-      <Section
-        title="Recently played"
-        loading={recentlyPlayed.isLoading}
-        empty={recentTracks.length === 0 ? "Your listening history will appear here" : undefined}
-      >
-        <div className="flex flex-col gap-0.5">
-          {recentTracks.map((track) => (
-            <PersonalTrackRow
-              key={track.id}
-              track={track}
-              badge={`${formatPlayCount(track.playCount)} plays`}
-              allTracks={recentTracks}
-            />
-          ))}
-        </div>
-      </Section>
-
-      <ContentRow title="Recommended for you" subtitle="Playlists you might like">
-        {topPlaylists.isLoading
-          ? Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="flex w-40 shrink-0 flex-col gap-2">
-                <Skeleton className="aspect-square w-full rounded-lg" />
-                <Skeleton className="h-4 w-3/4" />
+          {favArtistItems.length > 0 && (
+            <Section
+              title="Favorite artists"
+              loading={favoriteArtists.isLoading}
+              empty={
+                favArtistItems.length === 0
+                  ? "No favorite artists yet — heart an artist to save them here"
+                  : undefined
+              }
+            >
+              <div className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-5">
+                {favArtistItems.map((artist) => (
+                  <ArtistCard
+                    key={artist.id}
+                    id={artist.id}
+                    username={artist.username}
+                    displayName={artist.displayName}
+                    subtitle={`@${artist.username}`}
+                    avatarUrl={artist.avatarUrl}
+                    className="w-full"
+                  />
+                ))}
               </div>
-            ))
-          : recommended.map((item) => (
-              <SmartPlaylistCard
-                key={item.playlistId}
-                id={item.playlistId}
-                title={item.title}
-                creatorName={item.owner.displayName}
-                coverArtUrl={item.coverArtUrl}
-                ownerUsername={item.owner.username}
-                slug={item.slug}
-                className="w-40 shrink-0"
-              />
-            ))}
-      </ContentRow>
+            </Section>
+          )}
+
+          <Section
+            title="Favorites"
+            loading={favorites.isLoading}
+            empty={favTracks.length === 0 ? "No favorites yet — heart a song to save it here" : undefined}
+          >
+            <div className="flex flex-col gap-0.5">
+              {favTracks.map((track) => (
+                <PersonalTrackRow
+                  key={track.id}
+                  track={track}
+                  badge={`${formatPlayCount(track.playCount)} plays`}
+                  allTracks={favTracks}
+                />
+              ))}
+            </div>
+          </Section>
+
+          <Section
+            title="Most played"
+            loading={mostPlayed.isLoading}
+            empty={mostPlayedTracks.length === 0 ? "Play some songs to see your top tracks" : undefined}
+          >
+            <div className="flex flex-col gap-0.5">
+              {mostPlayedTracks.map((track) => (
+                <PersonalTrackRow
+                  key={track.id}
+                  track={track}
+                  badge={`${formatPlayCount(track.userPlayCount)} plays`}
+                  badgeColor="text-emerald-400"
+                  allTracks={mostPlayedTracks}
+                />
+              ))}
+            </div>
+          </Section>
+
+          <Section
+            title="Recently played"
+            loading={recentlyPlayed.isLoading}
+            empty={recentTracks.length === 0 ? "Your listening history will appear here" : undefined}
+          >
+            <div className="flex flex-col gap-0.5">
+              {recentTracks.map((track) => (
+                <PersonalTrackRow
+                  key={track.id}
+                  track={track}
+                  badge={`${formatPlayCount(track.playCount)} plays`}
+                  allTracks={recentTracks}
+                />
+              ))}
+            </div>
+          </Section>
+        </>
+      )}
     </LibraryBrowseLayout>
   );
 }

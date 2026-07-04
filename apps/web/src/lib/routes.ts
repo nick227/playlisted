@@ -2,13 +2,13 @@ import type { AuthUser, components } from "@playlisted/client-sdk";
 
 type HomepageItem = components["schemas"]["HomepageItem"];
 
+export const SETTINGS_PATH = "/settings";
 export const STUDIO_PATH = "/studio";
 export const ADMIN_PATH = "/admin";
 
 export function panelPathForRole(role: AuthUser["role"]): string | null {
   if (role === "ADMIN" || role === "EDITOR") return ADMIN_PATH;
-  if (role === "CREATOR") return STUDIO_PATH;
-  return null;
+  return SETTINGS_PATH;
 }
 
 export function playlistIdPath(id: string): string {

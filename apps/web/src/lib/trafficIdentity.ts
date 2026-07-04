@@ -7,14 +7,18 @@ function randomVisitorId() {
 }
 
 export function getTrafficVisitorId() {
-  const existing = localStorage.getItem(STORAGE_KEY);
-  if (existing && /^[a-zA-Z0-9_-]{12,64}$/.test(existing)) {
-    return existing;
-  }
+  try {
+    const existing = localStorage.getItem(STORAGE_KEY);
+    if (existing && /^[a-zA-Z0-9_-]{12,64}$/.test(existing)) {
+      return existing;
+    }
 
-  const next = randomVisitorId();
-  localStorage.setItem(STORAGE_KEY, next);
-  return next;
+    const next = randomVisitorId();
+    localStorage.setItem(STORAGE_KEY, next);
+    return next;
+  } catch {
+    return randomVisitorId();
+  }
 }
 
 export function trafficHeaders() {

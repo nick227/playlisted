@@ -31,12 +31,13 @@ interface ChartsListProps {
   tab: ChartsTab;
   range: ChartRange;
   genre: string | null;
+  limit?: number;
 }
 
-function ChartsListSkeleton() {
+function ChartsListSkeleton({ count }: { count: number }) {
   return (
     <ul className="divide-y divide-[var(--color-border)]">
-      {Array.from({ length: 12 }).map((_, i) => (
+      {Array.from({ length: count }).map((_, i) => (
         <SkeletonRow key={i} />
       ))}
     </ul>
@@ -66,16 +67,16 @@ function ChartsTabPanel({
   );
 }
 
-export function ChartsList({ tab, range, genre }: ChartsListProps) {
+export function ChartsList({ tab, range, genre, limit = CHARTS_PAGE_ITEM_LIMIT }: ChartsListProps) {
   const { play: playSong } = useChartsPageSongPlayback();
   const { play: playPlaylist, isActive: playlistActive, isPlaying: playlistPlaying } =
     useChartsPagePlaylistPlayback();
   const { play: playArtist, isActive: artistActive, isPlaying: artistPlaying } =
     useChartsPageArtistPlayback();
 
-  const topSongs = useTopSongs(range, CHARTS_PAGE_ITEM_LIMIT, genre ?? undefined, true, true);
-  const topPlaylists = useTopPlaylists(range, CHARTS_PAGE_ITEM_LIMIT, true, true);
-  const topArtists = useTopArtists(range, CHARTS_PAGE_ITEM_LIMIT, true, true);
+  const topSongs = useTopSongs(range, limit, genre ?? undefined, true, true);
+  const topPlaylists = useTopPlaylists(range, limit, true, true);
+  const topArtists = useTopArtists(range, limit, true, true);
 
   const songs = topSongs.data?.data ?? [];
   const playlists = topPlaylists.data?.data ?? [];
@@ -89,7 +90,7 @@ export function ChartsList({ tab, range, genre }: ChartsListProps) {
     <>
         <ChartsTabPanel tab="songs" activeTab={tab} label="Top songs">
           {songsLoading ? (
-            <ChartsListSkeleton />
+            <ChartsListSkeleton count={limit} />
           ) : songs.length === 0 ? (
             <div className="p-6">
               <EmptyState title="No songs in this chart" description="Try a different period or genre." />
@@ -128,7 +129,7 @@ export function ChartsList({ tab, range, genre }: ChartsListProps) {
 
         <ChartsTabPanel tab="playlists" activeTab={tab} label="Top playlists">
           {playlistsLoading ? (
-            <ChartsListSkeleton />
+            <ChartsListSkeleton count={limit} />
           ) : playlists.length === 0 ? (
             <div className="p-6">
               <EmptyState title="No playlists in this chart" description="Try a different period." />
@@ -174,7 +175,7 @@ export function ChartsList({ tab, range, genre }: ChartsListProps) {
 
         <ChartsTabPanel tab="artists" activeTab={tab} label="Top artists">
           {artistsLoading ? (
-            <ChartsListSkeleton />
+            <ChartsListSkeleton count={limit} />
           ) : artists.length === 0 ? (
             <div className="p-6">
               <EmptyState title="No artists in this chart" description="Try a different period." />

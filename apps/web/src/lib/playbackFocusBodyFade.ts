@@ -1,10 +1,10 @@
 export function isPlaybackFocusBodyFadeDisabled(pathname: string): boolean {
   if (pathname === "/admin" || pathname.startsWith("/admin/")) return true;
   if (pathname === "/login" || pathname === "/register") return true;
-  if (pathname === "/studio" || pathname === "/studio/") return true;
+  if (pathname === "/favorites" || pathname === "/favorites/") return true;
   if (pathname === "/chat" || pathname.startsWith("/chat/")) return true;
-  if (pathname === "/charts" || pathname.startsWith("/charts/")) return true;
-  if (pathname === "/library" || pathname.startsWith("/library/")) return true;
+  if (pathname === "/settings" || pathname.startsWith("/settings/")) return true;
+  if (pathname === "/search" || pathname.startsWith("/search/")) return true;
   return false;
 }
 

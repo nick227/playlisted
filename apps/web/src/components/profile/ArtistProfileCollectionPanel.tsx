@@ -13,7 +13,7 @@ import { useAuthAction } from "@/hooks/useAuthAction";
 import { usePlaylistByUsernameSlug } from "@/hooks/usePlaylistByUsernameSlug";
 import { formatPlayCount } from "@/lib/format";
 import { artistProfileTrackOrigin } from "@/lib/playbackOrigin";
-import { coverFallback, playlistPath } from "@/lib/routes";
+import { coverFallback, playlistPath, studioCollectionEditPath } from "@/lib/routes";
 import { useAudioPlayer, type QueueTrack } from "@/providers/AudioPlayerProvider";
 import { useAuth } from "@/providers/AuthProvider";
 
@@ -167,9 +167,9 @@ export function ArtistProfileCollectionPanel({ playlist, owner, editHref }: Arti
                 {playlist.title}
               </Link>
             </h3>
-            {isOwner && editHref ? (
+            {isOwner ? (
               <Link
-                to={editHref}
+                to={editHref ?? studioCollectionEditPath(playlist.id)}
                 className="shrink-0 rounded-full border border-white/15 px-3 py-1 text-xs font-semibold text-white transition hover:border-[var(--color-brand)] hover:text-[var(--color-brand)] opacity-0 group-hover/header:opacity-100"
               >
                 Edit
