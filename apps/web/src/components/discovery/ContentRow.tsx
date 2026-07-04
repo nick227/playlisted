@@ -22,7 +22,7 @@ export function ContentRow({
   empty,
 }: ContentRowProps) {
   return (
-    <section className="mb-10">
+    <section className="mb-4">
       <SectionHeader title={title} subtitle={subtitle} viewAllHref={viewAllHref} />
       {empty ?? (
         <div className="flex flex-wrap gap-4 justify-between lg:justify-start items-center">{children}</div>

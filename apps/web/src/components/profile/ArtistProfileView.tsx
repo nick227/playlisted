@@ -2,7 +2,8 @@ import type { TopArtistItem, UserDetail } from "@playlisted/client-sdk";
 import { useMemo } from "react";
 
 import { ArtistCard } from "@/components/cards/ArtistCard";
-import { ContentRow } from "@/components/discovery/ContentRow";
+import { SectionHeader } from "@/components/discovery/SectionHeader";
+
 import { EmptyState } from "@/components/feedback/EmptyState";
 import { BrowseBreadcrumbs } from "@/components/library/BrowseBreadcrumbs";
 import { useArtistTracks } from "@/hooks/useArtistTracks";
@@ -33,7 +34,7 @@ export function ArtistProfileView({
   showRelatedArtists = true,
   collectionEditHref,
 }: ArtistProfileViewProps) {
-  const relatedArtistLimit = 6;
+  const relatedArtistLimit = 4;
   const { data: related } = useTopArtists("30d", relatedArtistLimit + 1);
   const { user: authUser } = useAuth();
   const { setQueue, togglePlay, activeOriginKey, state } = useAudioPlayer();
@@ -140,22 +141,26 @@ export function ArtistProfileView({
         ) : null}
       </div>
 
-      {relatedArtists.length > 0 ? (
-        <div className={`${ARTIST_PROFILE_LAYOUT_CLASS} mt-32`}>
-          <ContentRow title="More Artists">
-            {relatedArtists.map((item: TopArtistItem) => (
-              <ArtistCard
-                key={item.userId}
-                id={item.userId}
-                username={item.username}
-                displayName={item.displayName}
-                avatarUrl={item.avatarUrl}
-                className="w-45 shrink-0"
-              />
-            ))}
-          </ContentRow>
-        </div>
-      ) : null}
+      <div className="py-2 px-4 mt-8">
+        {relatedArtists.length > 0 ? (
+          <>
+            <SectionHeader title="More Artists" />
+            <div className={`${ARTIST_PROFILE_LAYOUT_CLASS} flex flex-nowrap gap-2 justify-between items-center`}>
+
+              {relatedArtists.map((item: TopArtistItem) => (
+                <ArtistCard
+                  key={item.userId}
+                  id={item.userId}
+                  username={item.username}
+                  displayName={item.displayName}
+                  avatarUrl={item.avatarUrl}
+                  className="w-45 shrink-0"
+                />
+              ))}
+            </div>
+          </>
+        ) : null}
+      </div>
     </div>
   );
 }
