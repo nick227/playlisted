@@ -11,6 +11,12 @@ import { formatPlayCount, formatProfileDate } from "@/lib/format";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 import { getProfileLinkPlatform } from "@/components/profile/profileLinks";
 
+import {
+  FocusLaneGenreLink,
+  FocusLaneLink,
+  resolveArtistVisualLinks,
+  type GenreLink,
+} from "./artistVisualLinks";
 import { PlaybackFocusReactionBar } from "./PlaybackFocusReactionBar";
 
 type ArtistVisualProps = {
@@ -50,26 +56,28 @@ export function ArtistVisual({
   const libraryArtistsQuery = useLibraryArtists();
   const { tracks: artistTracks } = useArtistTracks(artistId);
 
+  const libraryArtist = (libraryArtistsQuery.data?.data ?? []).find((artist) => artist.id === artistId);
+  const libraryTrack = artistTracks.find((track) => track.id === recording?.id);
+
   const artistFacts = useMemo(() => {
     const user = artistQuery.data;
-    const libraryArtist = (libraryArtistsQuery.data?.data ?? []).find((artist) => artist.id === artistId);
     const publicPlaylists = user?.publicPlaylists ?? [];
     const songCountFromCollections = publicPlaylists.reduce((sum, playlist) => sum + playlist.itemCount, 0);
     const songCount = libraryArtist?.songCount ?? Math.max(songCountFromCollections, artistTracks.length);
     const collectionCount = publicPlaylists.length;
     const listens = artistTracks.reduce((sum, track) => sum + (track.playCount ?? 0), 0);
     const likes = artistTracks.reduce((sum, track) => sum + (track.favoriteCount ?? 0), 0);
-    const genreNames = (
+    const genres: GenreLink[] = (
       libraryArtist?.genres.length
-        ? libraryArtist.genres.map((genre) => genre.name)
+        ? libraryArtist.genres.map((genre) => ({ name: genre.name, slug: genre.slug }))
         : Array.from(
             new Map(
               artistTracks
                 .flatMap((track) => track.genres)
-                .map((genre) => [genre.slug, genre.name] as const),
+                .map((genre) => [genre.slug, { name: genre.name, slug: genre.slug }] as const),
             ).values(),
           )
-    ).slice(0, 1);
+    ).slice(0, 3);
     const profileLinks = (user?.profileLinks ?? []).filter((link) => link.url).slice(0, 4);
 
     return {
@@ -80,10 +88,44 @@ export function ArtistVisual({
         likes > 0 ? { label: "likes", value: formatCompactCount(likes) } : null,
       ].filter(Boolean) as Array<{ label: string; value: string }>,
       joined: user?.createdAt ? formatProfileDate(user.createdAt) : "",
-      genres: genreNames,
+      genres,
       profileLinks,
     };
-  }, [artistId, artistQuery.data, artistTracks, libraryArtistsQuery.data?.data]);
+  }, [artistQuery.data, artistTracks, libraryArtist]);
+
+  const links = useMemo(
+    () =>
+      resolveArtistVisualLinks({
+        recording: recording
+          ? {
+              ...recording,
+              genreLabel: recording.genreLabel ?? libraryTrack?.genres[0]?.name ?? null,
+              genres: libraryTrack?.genres.map((genre) => ({ name: genre.name, slug: genre.slug })),
+            }
+          : null,
+        artistUsername: artistQuery.data?.username ?? recording?.ownerUsername,
+        libraryTrackGenres: libraryTrack?.genres ?? [],
+        libraryArtistGenres: libraryArtist?.genres ?? [],
+      }),
+    [artistQuery.data?.username, libraryArtist?.genres, libraryTrack, recording],
+  );
+
+  const badgeGenres = links.recordingGenres.filter(
+    (genre) => !artistFacts.genres.some((item) => item.slug === genre.slug),
+  );
+
+  const artistImage = imageUrl ? (
+    <img
+      src={imageUrl}
+      alt={artistName ?? ""}
+      className="focus-lane__artist-image aspect-square w-28 rounded-sm border-2 border-white/10 object-cover shadow-[0_8px_30px_rgb(0,0,0,0.5)] sm:w-36"
+    />
+  ) : (
+    <div
+      className="focus-lane__artist-image focus-lane__artist-image--fallback aspect-square w-28 rounded-sm border-2 border-white/10 shadow-[0_8px_30px_rgb(0,0,0,0.5)] sm:w-36"
+      aria-hidden
+    />
+  );
 
   const hasArtistFacts =
     artistFacts.stats.length > 0 ||
@@ -186,29 +228,40 @@ export function ArtistVisual({
         </button>
       ) : null}
       <div className="flex min-w-0 items-start gap-3 sm:gap-5">
-        {imageUrl ? (
-          <img
-            src={imageUrl}
-            alt={artistName ?? ""}
-            className="focus-lane__artist-image aspect-square w-28 shrink-0 rounded-sm border-2 border-white/10 object-cover shadow-[0_8px_30px_rgb(0,0,0,0.5)] sm:w-36"
-          />
+        {links.artistHref ? (
+          <FocusLaneLink
+            to={links.artistHref}
+            title={artistName ? `View ${artistName}` : "View artist profile"}
+            className="focus-lane__artist-image-link shrink-0"
+          >
+            {artistImage}
+          </FocusLaneLink>
         ) : (
-          <div
-            className="focus-lane__artist-image focus-lane__artist-image--fallback aspect-square w-28 shrink-0 rounded-sm border-2 border-white/10 shadow-[0_8px_30px_rgb(0,0,0,0.5)] sm:w-36"
-            aria-hidden
-          />
+          <div className="shrink-0">{artistImage}</div>
         )}
         <div className="flex min-w-0 flex-1 flex-col gap-2 overflow-hidden pt-0.5 sm:gap-2.5">
           {artistName ? (
             <>
-              <p className="truncate text-2xl font-extrabold leading-none tracking-tight text-white drop-shadow-md sm:text-4xl">
-                {artistName}
-              </p>
-              {artistFacts.genres.map((genre) => (
-                <span key={genre} className="text-xs">
-                  {genre}
-                </span>
-              ))}
+              {links.artistHref ? (
+                <FocusLaneLink
+                  to={links.artistHref}
+                  title={`View ${artistName}`}
+                  className="focus-lane__artist-name-link truncate text-2xl font-extrabold leading-none tracking-tight text-white drop-shadow-md transition hover:text-[var(--color-brand)] sm:text-4xl"
+                >
+                  {artistName}
+                </FocusLaneLink>
+              ) : (
+                <p className="truncate text-2xl font-extrabold leading-none tracking-tight text-white drop-shadow-md sm:text-4xl">
+                  {artistName}
+                </p>
+              )}
+              {artistFacts.genres.length > 0 ? (
+                <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                  {artistFacts.genres.map((genre) => (
+                    <FocusLaneGenreLink key={genre.slug} genre={genre} />
+                  ))}
+                </div>
+              ) : null}
             </>
           ) : null}
           {hasArtistFacts ? (
@@ -253,13 +306,15 @@ export function ArtistVisual({
             </div>
           ) : null}
           <PlaybackFocusReactionBar recordingId={recording?.id} />
-          {artistBio || recording?.genreLabel ? (
-            <div className="flex min-w-0 items-center gap-2 text-sm font-medium text-white/70 drop-shadow-sm sm:text-base">
-              {recording?.genreLabel ? (
-                <span className="shrink-0 rounded-md bg-white/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider sm:text-xs">
-                  {recording.genreLabel}
-                </span>
-              ) : null}
+          {artistBio || badgeGenres.length > 0 ? (
+            <div className="flex min-w-0 flex-wrap items-center gap-2 text-sm font-medium text-white/70 drop-shadow-sm sm:text-base">
+              {badgeGenres.map((genre) => (
+                <FocusLaneGenreLink
+                  key={genre.slug}
+                  genre={genre}
+                  className="focus-lane__artist-genre-badge shrink-0 rounded-md bg-white/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider transition hover:bg-white/18 hover:text-white sm:text-xs"
+                />
+              ))}
               {artistBio ? <span className="min-w-0 truncate">{artistBio}</span> : null}
             </div>
           ) : null}
@@ -270,7 +325,23 @@ export function ArtistVisual({
       {recording ? (
         <div className="mt-1 flex min-w-0 items-center rounded-xl border border-white/5 bg-black/30 px-3 py-2.5 sm:mt-2 sm:px-4 sm:py-3">
           <div className="flex min-w-0 flex-1 items-center gap-3 overflow-hidden sm:gap-4">
-            {recording.artworkUrl ? (
+            {links.songHref ? (
+              <FocusLaneLink
+                to={links.songHref}
+                title={`Open ${recording.title}`}
+                className="focus-lane__song-art-link shrink-0"
+              >
+                {recording.artworkUrl ? (
+                  <img
+                    src={recording.artworkUrl}
+                    alt={recording.title}
+                    className="h-9 w-9 rounded-md object-cover shadow-md sm:h-10 sm:w-10"
+                  />
+                ) : (
+                  <div className="h-9 w-9 rounded-md bg-white/10 shadow-md sm:h-10 sm:w-10" />
+                )}
+              </FocusLaneLink>
+            ) : recording.artworkUrl ? (
               <img
                 src={recording.artworkUrl}
                 alt={recording.title}
@@ -280,9 +351,19 @@ export function ArtistVisual({
               <div className="h-9 w-9 shrink-0 rounded-md bg-white/10 shadow-md sm:h-10 sm:w-10" />
             )}
             <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-              <span className="truncate text-sm font-semibold text-white/90">
-                {recording.title}
-              </span>
+              {links.songHref ? (
+                <FocusLaneLink
+                  to={links.songHref}
+                  title={`Open ${recording.title}`}
+                  className="focus-lane__song-title-link truncate text-sm font-semibold text-white/90 transition hover:text-[var(--color-brand)]"
+                >
+                  {recording.title}
+                </FocusLaneLink>
+              ) : (
+                <span className="truncate text-sm font-semibold text-white/90">
+                  {recording.title}
+                </span>
+              )}
               <div className="mt-0.5 flex min-w-0 items-center gap-1.5 sm:gap-2">
                 <PlaybackBars
                   active={true}

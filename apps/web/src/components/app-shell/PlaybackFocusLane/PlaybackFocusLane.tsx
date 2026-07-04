@@ -16,6 +16,7 @@ import {
 } from "@/lib/subtitles";
 import { subtitlePositionClassName } from "@/lib/subtitleStyleToCss";
 import { useSubtitleDisplay } from "@/lib/subtitleDisplay";
+import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 import { useAuth } from "@/providers/AuthProvider";
 
 import { FocusLaneSubtitleContent } from "./FocusLaneSubtitleContent";
@@ -33,11 +34,15 @@ const SUBTITLE_POLL_MAX_ATTEMPTS = 20;
 
 export function PlaybackFocusLane({ focusState, onReturnBody }: PlaybackFocusLaneProps) {
   const { accessToken } = useAuth();
+  const { playbackContext } = useAudioPlayer();
   const { subtitlesEnabled } = useSubtitleDisplay();
-  const { track, isPlaying, currentTime } = useFocusLanePlayback();
+  const { track, isPlaying, currentTime, isRadio } = useFocusLanePlayback();
   const queryClient = useQueryClient();
 
-  const recording = useMemo(() => toFocusRecording(track), [track]);
+  const recording = useMemo(
+    () => toFocusRecording(track, isRadio ? undefined : playbackContext),
+    [isRadio, playbackContext, track],
+  );
   const artist = useMemo(() => (recording ? toFocusArtist(recording) : null), [recording]);
   const syntheticCues = useMemo(
     () => (recording ? buildSyntheticSubtitleCues(recording) : []),

@@ -365,6 +365,47 @@ body {
   align-items: stretch;
 }
 
+.focus-lane__artist-genre-link {
+  font-size: 0.75rem;
+  line-height: 1.2;
+  color: rgba(255, 255, 255, 0.72);
+  transition: color 160ms ease;
+}
+
+.focus-lane__artist-genre-link:hover {
+  color: #fff;
+  text-decoration: underline;
+}
+
+.focus-lane__artist-genre-badge {
+  color: rgba(255, 255, 255, 0.82);
+  text-decoration: none;
+}
+
+.focus-lane__artist-genre-badge:hover {
+  text-decoration: none;
+}
+
+.focus-lane__artist-image-link {
+  display: block;
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.focus-lane__artist-image-link:hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
+}
+
+.focus-lane__song-art-link {
+  display: block;
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.focus-lane__song-art-link:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
 .focus-lane__artist-return {
   position: absolute;
   top: 0.75rem;

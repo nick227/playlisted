@@ -20,14 +20,18 @@ export type SyntheticSubtitleCue = {
 export type FocusRecording = {
   id: string;
   title: string;
+  ownerId?: string | null;
   ownerName?: string | null;
   ownerUsername?: string | null;
   artworkUrl?: string | null;
   artistImageUrl?: string | null;
   description?: string | null;
   playlistTitle?: string | null;
+  playlistId?: string | null;
+  playlistSlug?: string | null;
   recordingType?: string | null;
   genreLabel?: string | null;
+  genres?: Array<{ name: string; slug: string }>;
   durationSeconds?: number | null;
   hasSubtitleTrack?: boolean;
   subtitlePosition?: string;
