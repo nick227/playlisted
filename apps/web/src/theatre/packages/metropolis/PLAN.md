@@ -21,7 +21,7 @@ A sprawling night city seen from above at a 3/4 angle: grid and organic roads th
 | SDK scope | **Internal** — extends `CanvasAnimation`, uses runtime APIs, phased director like `liminalDoom` |
 | Single canvas | Yes — one layer, multi-pass renderer inside |
 | Time | `MetropolisDirector` — script + phase machine (see `stopMotionScript`, `liminalDoom` phases) |
-| Scale | **Chunked city** — generate from seed; never hand-place every building |
+| Scale | **Graphic novel panel** — screen-space street + curated landmarks; logic grid kept for spawn only |
 | Performance | LOD tiers, offscreen caching, `particleScale` / `lowPower` gates |
 
 ---

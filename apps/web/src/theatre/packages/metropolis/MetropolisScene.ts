@@ -14,7 +14,7 @@ import { drawAtmosphere } from './render/atmosphere'
 import { drawIndustrialVents } from './render/industrialVents'
 import { drawStreetFurniture } from './render/streetFurniture'
 import { drawWaterfrontLandmarks } from './render/waterfrontLandmarks'
-import { drawGraphicNovelBlocks } from './render/graphicNovelBlocks'
+import { drawGraphicNovelPanel } from './render/graphicNovelPanel'
 import { drawHeroLandmarks } from './render/heroLandmarks'
 import { drawLocalizedEvents } from './render/localizedEvents'
 import { drawCinematicGrade } from './render/cinematicGrade'
@@ -100,27 +100,32 @@ export function metropolisFactory(): IAnimation {
         neonSurge: this.director.neonSurge,
         moonCover: this.director.moonCover,
       }, reduced)
-      drawCity(
-        this.ctx, this.grid, cam, w, h, this.pixelRatio, layoutKey,
-        elapsed, audio, reduced, this.director,
-      )
+
       if (METRO_SETTINGS.renderMode === 'graphicNovel') {
-        drawGraphicNovelBlocks(this.ctx, this.grid.composedBlocks, cam, elapsed, reduced)
+        drawGraphicNovelPanel(
+          this.ctx, w, h, elapsed, audio, rawAudio.beat, this.director, reduced,
+        )
       } else {
+        drawCity(
+          this.ctx, this.grid, cam, w, h, this.pixelRatio, layoutKey,
+          elapsed, audio, reduced, this.director,
+        )
         drawHeroLandmarks(this.ctx, this.grid, cam, elapsed, reduced)
-      }
-      drawLocalizedEvents(this.ctx, this.grid, cam, w, h, this.director, elapsed, reduced)
-      drawWaterfrontLandmarks(this.ctx, this.grid.landmarks, cam, elapsed, reduced)
-      drawStreetFurniture(this.ctx, this.grid.streetProps, cam, elapsed, reduced)
-      drawIndustrialVents(this.ctx, this.grid, cam, w, h, elapsed, reduced, context.shared.particleScale)
-      drawTrain(this.ctx, this.grid, cam, this.train)
-      drawTraffic(this.ctx, this.cars, cam)
-      if (!reduced && context.shared.particleScale > 0) {
-        drawHumanDrama(this.ctx, this.humanDrama, this.grid, cam, elapsed, { ...audio, beat: rawAudio.beat, chaos: rawAudio.chaos }, reduced)
+        drawLocalizedEvents(this.ctx, this.grid, cam, w, h, this.director, elapsed, reduced)
+        drawWaterfrontLandmarks(this.ctx, this.grid.landmarks, cam, elapsed, reduced)
+        drawStreetFurniture(this.ctx, this.grid.streetProps, cam, elapsed, reduced)
+        drawIndustrialVents(this.ctx, this.grid, cam, w, h, elapsed, reduced, context.shared.particleScale)
+        drawTrain(this.ctx, this.grid, cam, this.train)
+        drawTraffic(this.ctx, this.cars, cam)
+        if (!reduced && context.shared.particleScale > 0) {
+          drawHumanDrama(this.ctx, this.humanDrama, this.grid, cam, elapsed, { ...audio, beat: rawAudio.beat, chaos: rawAudio.chaos }, reduced)
+        }
       }
       drawAtmosphere(this.ctx, w, h, elapsed, cityGlow, reduced, context.shared.particleScale)
 
-      const fw = projectTile(this.grid.size - 10, 8, 1.5, cam)
+      const fw = METRO_SETTINGS.renderMode === 'graphicNovel'
+        ? { sx: w * 0.82, sy: h * 0.22 }
+        : projectTile(this.grid.size - 10, 8, 1.5, cam)
       drawDirectorFx(this.ctx, w, h, this.director, { fireworksX: fw.sx, fireworksY: fw.sy })
 
       if (!reduced) {
