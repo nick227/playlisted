@@ -294,13 +294,32 @@ packages/metropolis/
 
 ---
 
-## Open decisions (need input before M1 code)
+## Open decisions (locked — top settings)
 
-1. **Tile resolution:** 8px, 12px, or 16px base tile at 1080p reference?
-2. **Pan behavior:** Fixed camera vs slow autonomous drift vs audio-driven sway?
-3. **Realism vs readability:** How literal should substance/horror pockets be vs implied?
-4. **Preset duration:** Target hold 90s / 120s / loop forever?
-5. **Reference anchors:** Any specific cities/media (GTA III map, SimCity 2000, Kentucky Route Zero)?
+1. **Tile resolution:** **16px** base tile @ 1080p reference
+2. **Pan behavior:** Slow autonomous drift + **audio-driven sway/zoom**
+3. **Culture tone:** Full gritty implied pockets (neon, haze, horror flicker — stylized not literal)
+4. **Preset duration:** **120s flagship hold**, looping timeline
+5. **References:** SimCity 2000 density + GTA III night map + Playlisted decay
+
+---
+
+## Progress
+
+### M1 — Vertical slice (in progress)
+- [x] A1–A4 Coords, projection, camera, scene shell
+- [x] D1 Sky (stars, moon, clouds, light pollution)
+- [x] C1–C3 District map, roads, lots/buildings (48×48)
+- [x] E1 Traffic (48 cars)
+- [x] F1 Timeline director (blackout, strobe, siren, fireworks)
+- [x] G1 Audio → camera sway + window pulse + events
+- [x] Dev preset `metropolisNight` registered
+- [ ] M1 visual polish pass
+- [ ] Chunk bake / LOD (H1–H2)
+
+---
+
+## Open decisions (superseded — see locked settings above)
 
 ---
 

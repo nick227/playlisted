@@ -28,6 +28,7 @@ import { monsterWavePackage } from '../packages/monster-wave'
 import { rampagePackage } from '../packages/rampage'
 import { cruisinPackage } from '../packages/cruisin'
 import { sdkSmokePackage } from '../packages/sdk-smoke'
+import { metropolisPackage } from '../packages/metropolis'
 import {
   registerObjectTheatreInSeed,
   burgerBounceCarnivalPackage,
@@ -74,6 +75,7 @@ registerObjectTheatreInSeed([
   cuteMonstroPackage,
   monsterWavePackage,
   sdkSmokePackage,
+  metropolisPackage,
   ...createIndividualVideoPackages(SEED_VIDEO_ENTRIES, {
     category: 'lab',
     reducedMotionPreset: 'quietPulse',
