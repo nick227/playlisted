@@ -1,7 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { useAuthAction } from "@/hooks/useAuthAction";
 import {
+  canToggleRecordingReaction,
+  getRecordingReactionDef,
   reactionIdForKind,
   reactionKindForId,
   type RecordingReactionId,
@@ -18,8 +19,8 @@ function reactionsQueryKey(recordingId: string) {
 }
 
 export function useRecordingReactions(recordingId: string | undefined) {
-  const { accessToken } = useAuth();
-  const requireAuth = useAuthAction();
+  const { accessToken, status } = useAuth();
+  const isAuthenticated = status === "authenticated" && Boolean(accessToken);
   const client = authedApi(accessToken);
   const queryClient = useQueryClient();
   const queryKey = recordingId ? reactionsQueryKey(recordingId) : ["me", "reactions", "recordings", "none"];
@@ -27,7 +28,7 @@ export function useRecordingReactions(recordingId: string | undefined) {
   const query = useQuery({
     queryKey,
     queryFn: () => client.me.recordingReactions(recordingId!),
-    enabled: Boolean(accessToken && recordingId),
+    enabled: isAuthenticated && Boolean(recordingId),
   });
 
   const activeIds = new Set<RecordingReactionId>(
@@ -37,6 +38,9 @@ export function useRecordingReactions(recordingId: string | undefined) {
   const toggle = useMutation({
     mutationFn: async (reactionId: RecordingReactionId) => {
       if (!recordingId) return;
+      const def = getRecordingReactionDef(reactionId);
+      if (!canToggleRecordingReaction(def, { isAuthenticated, hasRecording: true })) return;
+
       const kind = reactionKindForId(reactionId);
       const current = queryClient.getQueryData<RecordingReactionsResponse>(queryKey);
       const isActive = current?.kinds.includes(kind) ?? false;
@@ -75,11 +79,16 @@ export function useRecordingReactions(recordingId: string | undefined) {
   });
 
   const toggleReaction = (reactionId: RecordingReactionId) => {
-    requireAuth(() => toggle.mutate(reactionId));
+    const def = getRecordingReactionDef(reactionId);
+    if (!canToggleRecordingReaction(def, { isAuthenticated, hasRecording: Boolean(recordingId) })) {
+      return;
+    }
+    toggle.mutate(reactionId);
   };
 
   return {
     activeIds,
+    isAuthenticated,
     toggleReaction,
     isLoading: query.isLoading,
     isPending: toggle.isPending,

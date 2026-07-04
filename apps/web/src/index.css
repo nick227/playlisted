@@ -201,6 +201,22 @@ body {
   transform: scale(1.2);
 }
 
+.focus-lane__reaction:disabled,
+.focus-lane__reaction.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+  filter: saturate(0.65);
+}
+
+.focus-lane__reaction:disabled:hover,
+.focus-lane__reaction.is-disabled:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.72);
+  transform: none;
+  box-shadow: none;
+}
+
 .focus-lane--position-top {
   place-items: start center;
 }

@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useRecordingReactions } from "@/hooks/useRecordingReactions";
-import { RECORDING_REACTIONS, type RecordingReactionId } from "@/lib/reactions/recordingReactions";
+import {
+  canToggleRecordingReaction,
+  reactionButtonTitle,
+  RECORDING_REACTIONS,
+  type RecordingReactionId,
+} from "@/lib/reactions/recordingReactions";
 import { stopPlaybackFocusBubble } from "@/lib/playbackFocus/interactiveTarget";
 
 const POP_MS = 420;
@@ -11,7 +16,7 @@ type PlaybackFocusReactionBarProps = {
 };
 
 export function PlaybackFocusReactionBar({ recordingId }: PlaybackFocusReactionBarProps) {
-  const { activeIds, toggleReaction } = useRecordingReactions(recordingId);
+  const { activeIds, isAuthenticated, toggleReaction } = useRecordingReactions(recordingId);
   const [popReaction, setPopReaction] = useState<RecordingReactionId | null>(null);
   const popTimerRef = useRef<number | null>(null);
 
@@ -41,9 +46,15 @@ export function PlaybackFocusReactionBar({ recordingId }: PlaybackFocusReactionB
       onPointerDown={stopPlaybackFocusBubble}
       onClick={stopPlaybackFocusBubble}
     >
-      {RECORDING_REACTIONS.map(({ id, label, icon: Icon }) => {
+      {RECORDING_REACTIONS.map((reaction) => {
+        const { id, icon: Icon } = reaction;
         const isActive = activeIds.has(id);
         const isPopping = popReaction === id;
+        const canToggle = canToggleRecordingReaction(reaction, {
+          isAuthenticated,
+          hasRecording: Boolean(recordingId),
+        });
+        const title = reactionButtonTitle(reaction, { isAuthenticated, isActive });
 
         return (
           <button
@@ -53,13 +64,19 @@ export function PlaybackFocusReactionBar({ recordingId }: PlaybackFocusReactionB
               "focus-lane__reaction",
               isActive ? "is-active" : "",
               isPopping ? "is-pop" : "",
+              !canToggle ? "is-disabled" : "",
             ]
               .filter(Boolean)
               .join(" ")}
-            aria-label={label}
+            title={title}
+            aria-label={title}
             aria-pressed={isActive}
-            disabled={!recordingId}
-            onClick={() => handleReactionClick(id)}
+            aria-disabled={!canToggle}
+            disabled={!canToggle}
+            onClick={() => {
+              if (!canToggle) return;
+              handleReactionClick(id);
+            }}
           >
             <Icon size={16} strokeWidth={isActive ? 2.4 : 2} aria-hidden />
           </button>
