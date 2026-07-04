@@ -151,6 +151,56 @@ body {
   display: contents;
 }
 
+.focus-lane__interactive {
+  pointer-events: auto;
+}
+
+.focus-lane__reactions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.focus-lane__reaction {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.72);
+  transition:
+    transform 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.focus-lane__reaction:hover {
+  border-color: rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.focus-lane__reaction.is-active {
+  border-color: color-mix(in srgb, var(--color-brand) 70%, white 10%);
+  background: color-mix(in srgb, var(--color-brand) 28%, transparent);
+  color: #fff;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-brand) 35%, transparent);
+}
+
+.focus-lane__reaction.is-pop {
+  transform: scale(1.14);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--color-brand) 45%, transparent);
+}
+
+.focus-lane__reaction.is-active.is-pop {
+  transform: scale(1.2);
+}
+
 .focus-lane--position-top {
   place-items: start center;
 }

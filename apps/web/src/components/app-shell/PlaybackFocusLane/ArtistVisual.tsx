@@ -1,8 +1,11 @@
 import { useEffect, useRef } from "react";
 import type { FocusRecording } from "@/lib/playbackFocus/types";
+import { PLAYBACK_FOCUS_INTERACTIVE_ATTR } from "@/lib/playbackFocus/interactiveTarget";
 import { PlaybackBars } from "@/features/playback-indicators/PlaybackBars";
 import { useAudioAnalyser } from "@/features/playback-indicators/useAudioAnalyser";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
+
+import { PlaybackFocusReactionBar } from "./PlaybackFocusReactionBar";
 
 type ArtistVisualProps = {
   artistName?: string;
@@ -107,10 +110,10 @@ export function ArtistVisual({
   return (
     <div
       ref={containerRef}
-      className="focus-lane__artist mx-auto flex w-full min-w-0 max-w-2xl flex-col gap-3 rounded-2xl border border-white/10 bg-black/40 p-4 shadow-2xl backdrop-blur-xl sm:gap-4 sm:rounded-3xl sm:p-6"
+      {...{ [PLAYBACK_FOCUS_INTERACTIVE_ATTR]: "" }}
+      className="focus-lane__artist focus-lane__interactive mx-auto flex w-full min-w-0 max-w-2xl flex-col gap-3 rounded-2xl border border-white/10 bg-black/40 p-4 shadow-2xl backdrop-blur-xl sm:gap-4 sm:rounded-3xl sm:p-6"
     >
-      {/* Tier 1: Artist Focus */}
-      <div className="flex min-w-0 items-center gap-3 sm:gap-5">
+      <div className="flex min-w-0 items-start gap-3 sm:gap-5">
         {imageUrl ? (
           <img
             src={imageUrl}
@@ -123,14 +126,15 @@ export function ArtistVisual({
             aria-hidden
           />
         )}
-        <div className="flex min-w-0 flex-1 flex-col justify-center overflow-hidden">
+        <div className="flex min-w-0 flex-1 flex-col gap-2 overflow-hidden pt-0.5 sm:gap-2.5">
           {artistName ? (
-            <p className="truncate text-2xl font-extrabold tracking-tight text-white drop-shadow-md sm:text-4xl">
+            <p className="truncate text-2xl font-extrabold leading-none tracking-tight text-white drop-shadow-md sm:text-4xl">
               {artistName}
             </p>
           ) : null}
+          <PlaybackFocusReactionBar />
           {artistBio || recording?.genreLabel ? (
-            <div className="mt-1 flex min-w-0 items-center gap-2 text-sm font-medium text-white/70 drop-shadow-sm sm:text-lg">
+            <div className="flex min-w-0 items-center gap-2 text-sm font-medium text-white/70 drop-shadow-sm sm:text-base">
               {recording?.genreLabel ? (
                 <span className="shrink-0 rounded-md bg-white/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider sm:text-xs">
                   {recording.genreLabel}

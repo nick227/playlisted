@@ -10,9 +10,10 @@ import {
 } from "react";
 
 import { isPlaybackFocusBodyFadeSuppressed } from "@/lib/playbackFocusBodyFade";
+import { isPlaybackFocusInteractiveTarget } from "@/lib/playbackFocus/interactiveTarget";
 import { usePlaybackFocusSuppressed } from "@/lib/playbackFocusSuppression";
 import type { PlaybackFocusState } from "@/lib/playbackFocus/types";
-import { playbackFocusTiming } from "@/lib/playbackFocusTiming";
+import { playbackFocusTiming, playbackFocusUserActivityEnabled } from "@/lib/playbackFocusTiming";
 import { useSubtitleDisplay } from "@/lib/subtitleDisplay";
 
 import { useTheatreMode } from "../useTheatreMode";
@@ -148,7 +149,7 @@ export function usePlaybackFocusBody({
 
   // Pointer/keyboard activity resets or extends the hide timer.
   useEffect(() => {
-    if (!playFocusActive) return;
+    if (!playbackFocusUserActivityEnabled || !playFocusActive) return;
 
     const onUserActivity = () => {
       armPlayFocus(bodyFocusHidden ? "activity" : "initial");
@@ -183,6 +184,7 @@ export function usePlaybackFocusBody({
   }, []);
 
   const finishRevealInteraction = useCallback((event: SyntheticEvent) => {
+    if (isPlaybackFocusInteractiveTarget(event.target)) return;
     consumeRevealEvent(event);
     clearRevealInteractionTimer();
     revealInteractionTimerRef.current = window.setTimeout(() => {
@@ -192,6 +194,7 @@ export function usePlaybackFocusBody({
   }, [clearRevealInteractionTimer, consumeRevealEvent]);
 
   const handleRevealPointerDown = useCallback((event: PointerEvent<HTMLButtonElement>) => {
+    if (isPlaybackFocusInteractiveTarget(event.target)) return;
     consumeRevealEvent(event);
     clearRevealInteractionTimer();
     setRevealInteractionActive(true);
