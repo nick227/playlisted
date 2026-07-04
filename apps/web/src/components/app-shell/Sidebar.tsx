@@ -28,6 +28,7 @@ import {
   FAVORITES_PATH,
   GENRES_PATH,
   SONGS_PATH,
+  LIBRARY_PATH,
   CHAT_PATH,
 } from "@/lib/browsePaths";
 import { ADMIN_PATH, panelPathForRole, playlistPath, studioCollectionEditPath } from "@/lib/routes";
@@ -184,9 +185,7 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
               ))}
               
               <NavItem to={FAVORITES_PATH} label="Favorites" icon={Heart} onClick={onClose} />
-              <NavItem to={ARTISTS_PATH} label="Artists" icon={Mic2} onClick={onClose} />
-              <NavItem to={GENRES_PATH} label="Genres" icon={Tags} onClick={onClose} />
-              <NavItem to={SONGS_PATH} label="Songs" icon={AudioLines} onClick={onClose} />
+              <NavItem to={LIBRARY_PATH} label="Library" icon={Mic2} onClick={onClose} />
               <NavItem to={CHAT_PATH} label="Chat" icon={MessageCircle} onClick={onClose} />
               
           {panelPath === ADMIN_PATH ? (

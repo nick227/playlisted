@@ -143,7 +143,7 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
           </div>
         ) : null}
 
-        <div className="flex h-8 shrink-0 items-center justify-center gap-2 rounded-full border border-white/[0.08] px-3 text-xs font-semibold uppercase text-white/78 sm:mb-5">
+        <div className="flex h-8 shrink-0 items-center justify-center gap-2 rounded-full border border-white/[0.08] px-3 text-xs font-semibold uppercase text-white/78">
           <PlaybackBars active={isLive} playing={playing} variant="thumb" barCount={7} />
           <span className="text-[var(--color-brand)]">{statusLabel}</span>
           {isLive && station?.listenerCount != null ? (
@@ -154,7 +154,7 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
           ) : null}
         </div>
 
-        <div className="relative flex min-h-0 w-full max-w-[min(74vw,23rem)] flex-1 items-center justify-center">
+        <div className="relative flex min-h-0 w-full max-w-[min(74vw,23rem)] items-center justify-center">
           <div className="absolute -inset-4 -z-10 rounded-[2rem] bg-white/[0.035] blur-xl" />
           {playlistUrl ? (
             <Link

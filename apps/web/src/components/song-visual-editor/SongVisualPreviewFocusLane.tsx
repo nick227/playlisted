@@ -19,17 +19,29 @@ type SongVisualPreviewFocusLaneProps = {
   enabled: boolean;
   recording: FocusRecording;
   currentTimeSec: number;
+  textOverlaysEnabled?: boolean;
 };
 
 export function SongVisualPreviewFocusLane({
   enabled,
   recording,
   currentTimeSec,
+  textOverlaysEnabled = true,
 }: SongVisualPreviewFocusLaneProps) {
   const { accessToken } = useAuth();
   const { subtitlesEnabled } = useSubtitleDisplay();
   const [subtitles, setSubtitles] = useState<RecordingSubtitlesResponse | null>(null);
-  const canLoadSubtitles = Boolean(enabled && subtitlesEnabled && recording.hasSubtitleTrack && recording.id);
+
+  const focusLaneActive = Boolean(enabled && recording.id);
+
+  const canLoadSubtitles = Boolean(
+    focusLaneActive &&
+      textOverlaysEnabled &&
+      subtitlesEnabled &&
+      recording.hasSubtitleTrack
+  );
+
+  const canRenderTextOverlay = Boolean(focusLaneActive && textOverlaysEnabled);
 
   const { subtitlePosition, customSubtitleStyle } = useRecordingSubtitleStyle(
     recording.id,
@@ -91,14 +103,14 @@ export function SongVisualPreviewFocusLane({
         artist: null,
         recording: null,
         focusState: {
-          playFocusActive: canLoadSubtitles,
-          hasBodyFaded: canLoadSubtitles,
-          bodyFadedAtTrackMs: canLoadSubtitles ? 0 : null,
+          playFocusActive: canRenderTextOverlay,
+          hasBodyFaded: canRenderTextOverlay,
+          bodyFadedAtTrackMs: canRenderTextOverlay ? 0 : null,
         },
         subtitlesEnabled,
       }),
     [
-      canLoadSubtitles,
+      canRenderTextOverlay,
       currentTimeSec,
       subtitles?.segments,
       subtitles?.status,
@@ -108,7 +120,7 @@ export function SongVisualPreviewFocusLane({
 
   const { displayFixture, displayKey, layerVisible, variantClass } = useFocusLaneVisibility(activeFixture);
 
-  if (!canLoadSubtitles || !displayFixture || displayFixture.type === "none") {
+  if (!canRenderTextOverlay || !displayFixture || displayFixture.type === "none") {
     return null;
   }
 

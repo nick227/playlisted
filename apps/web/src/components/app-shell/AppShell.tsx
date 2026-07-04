@@ -1,4 +1,14 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type SyntheticEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type PointerEvent,
+  type ReactNode,
+  type SyntheticEvent,
+} from "react";
 import { useLocation } from "react-router-dom";
 
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
@@ -30,12 +40,14 @@ export function AppShell({ children }: AppShellProps) {
   const bodyFocusTimerRef = useRef<number | null>(null);
   const miniViewTimerRef = useRef<number | null>(null);
   const snapRevealTimerRef = useRef<number | null>(null);
+  const revealInteractionTimerRef = useRef<number | null>(null);
   const resumeAfterNavRef = useRef(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [bodyFocusHidden, setBodyFocusHidden] = useState(false);
   const [bodyFadedAtTrackMs, setBodyFadedAtTrackMs] = useState<number | null>(null);
   const [miniViewVisible, setMiniViewVisible] = useState(false);
   const [snapReveal, setSnapReveal] = useState(false);
+  const [revealInteractionActive, setRevealInteractionActive] = useState(false);
   const playbackFocusSuppressed = usePlaybackFocusSuppressed();
   const { subtitlesEnabled } = useSubtitleDisplay();
   const { theatreFxEnabled } = useTheatreMode();
@@ -123,6 +135,12 @@ export function AppShell({ children }: AppShellProps) {
     snapRevealTimerRef.current = null;
   }, []);
 
+  const clearRevealInteractionTimer = useCallback(() => {
+    if (revealInteractionTimerRef.current === null) return;
+    window.clearTimeout(revealInteractionTimerRef.current);
+    revealInteractionTimerRef.current = null;
+  }, []);
+
   const armPlayFocus = useCallback((reason: PlayFocusArmReason = "initial") => {
     clearFocusTimer();
     setBodyFocusHidden(false);
@@ -160,8 +178,9 @@ export function AppShell({ children }: AppShellProps) {
     return () => {
       clearFocusTimer();
       clearSnapRevealTimer();
+      clearRevealInteractionTimer();
     };
-  }, [armPlayFocus, bodyFadeDisabled, clearFocusTimer, clearSnapRevealTimer, focusTrackKey, location.pathname, location.search, playbackFocusSuppressed]);
+  }, [armPlayFocus, bodyFadeDisabled, clearFocusTimer, clearRevealInteractionTimer, clearSnapRevealTimer, focusTrackKey, location.pathname, location.search, playbackFocusSuppressed]);
 
   useEffect(() => {
     return () => {
@@ -227,15 +246,27 @@ export function AppShell({ children }: AppShellProps) {
     event.stopPropagation();
   }, []);
 
-  const handleRevealEvent = useCallback((event: SyntheticEvent) => {
+  const finishRevealInteraction = useCallback((event: SyntheticEvent) => {
     consumeRevealEvent(event);
+    clearRevealInteractionTimer();
+    revealInteractionTimerRef.current = window.setTimeout(() => {
+      setRevealInteractionActive(false);
+      revealInteractionTimerRef.current = null;
+    }, 250);
+  }, [clearRevealInteractionTimer, consumeRevealEvent]);
+
+  const handleRevealPointerDown = useCallback((event: PointerEvent<HTMLButtonElement>) => {
+    consumeRevealEvent(event);
+    clearRevealInteractionTimer();
+    setRevealInteractionActive(true);
+    event.currentTarget.setPointerCapture(event.pointerId);
     revealPage();
-  }, [consumeRevealEvent, revealPage]);
+  }, [clearRevealInteractionTimer, consumeRevealEvent, revealPage]);
 
   const bodyFocusMode =
     playFocusActive && bodyFocusHidden && !playbackFocusSuppressed && !bodyFadeDisabled;
   const miniViewMode = playFocusActive && miniViewVisible && !playbackFocusSuppressed;
-  const revealShieldVisible = bodyFocusMode || snapReveal;
+  const revealShieldVisible = bodyFocusMode || snapReveal || revealInteractionActive;
   const radioShellActive =
     radioPlaying && Boolean(radioNowPlaying) && location.pathname !== "/radio" && !radioUiMounted;
   const shellHasPlayer = playerShellActive || radioShellActive;
@@ -283,9 +314,11 @@ export function AppShell({ children }: AppShellProps) {
         <button
           type="button"
           className={`play-focus-theatre-hit-area${playFocusHasPlayer ? "" : " play-focus-theatre-hit-area--no-player"}`}
-          onPointerDown={handleRevealEvent}
-          onPointerUp={consumeRevealEvent}
-          onClick={handleRevealEvent}
+          onPointerDown={handleRevealPointerDown}
+          onPointerUp={finishRevealInteraction}
+          onPointerCancel={finishRevealInteraction}
+          onLostPointerCapture={finishRevealInteraction}
+          onClick={finishRevealInteraction}
           aria-label="Show page content"
         />
       ) : null}
