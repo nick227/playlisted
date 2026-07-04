@@ -14,7 +14,7 @@ export function LibraryBrowseLayout({ crumbs, children }: LibraryBrowseLayoutPro
   return (
     <div className={BROWSE_LAYOUT_CLASS}>
       <BrowseBreadcrumbs crumbs={crumbs} />
-      <div className={showCrumbs ? "mt-5 min-h-[72vh]" : "min-h-[72vh]"}>{children}</div>
+      <div className={showCrumbs ? "mt-5 min-h-screen" : "min-h-screen"}>{children}</div>
     </div>
   );
 }

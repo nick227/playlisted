@@ -3,6 +3,7 @@ import { getFocusLaneElapsedMs } from "@/lib/playbackFocus/focusLaneSequence";
 import type { SubtitleSegment } from "@/lib/subtitles";
 import type {
   FocusArtist,
+  FocusRecording,
   PlaybackFocusFixture,
   PlaybackFocusState,
   ResolvePlaybackFocusInput,
@@ -37,8 +38,9 @@ function resolveSyntheticFixture(input: {
   focusLaneElapsedMs: number;
   syntheticCues: SyntheticSubtitleCue[];
   artist: FocusArtist | null;
+  recording: FocusRecording | null;
 }): PlaybackFocusFixture | null {
-  const { focusLaneElapsedMs, syntheticCues, artist } = input;
+  const { focusLaneElapsedMs, syntheticCues, artist, recording } = input;
 
   const titleCue = findActiveSyntheticCue(syntheticCues, focusLaneElapsedMs, "title-intro");
   if (titleCue?.text.trim()) {
@@ -48,6 +50,7 @@ function resolveSyntheticFixture(input: {
       key: titleCue.id,
       source: titleCue.source,
       artist: artist,
+      recording: recording,
     };
   }
 
@@ -59,6 +62,7 @@ function resolveSyntheticFixture(input: {
       key: fallbackCue.id,
       source: fallbackCue.source,
       artist: artist,
+      recording: recording,
     };
   }
 
@@ -100,7 +104,7 @@ export function resolvePlaybackFocusFixture(input: ResolvePlaybackFocusInput): P
     focusState.bodyFadedAtTrackMs,
   );
 
-  const synthetic = resolveSyntheticFixture({ focusLaneElapsedMs, syntheticCues, artist });
+  const synthetic = resolveSyntheticFixture({ focusLaneElapsedMs, syntheticCues, artist, recording });
   if (synthetic) {
     return synthetic;
   }
@@ -113,6 +117,7 @@ export function resolvePlaybackFocusFixture(input: ResolvePlaybackFocusInput): P
       title,
       artistName: recording?.ownerName?.trim() || null,
       artist: artist,
+      recording: recording,
     };
   }
 

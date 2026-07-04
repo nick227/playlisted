@@ -29,7 +29,7 @@ export function TopBar({ onMenuClick, cinematicBgTransparent = false }: TopBarPr
 
   return (
     <header
-      className={`topbar-chrome sticky top-0 z-40 flex h-[var(--spacing-topbar)] w-full min-w-0 max-w-full shrink-0 mb-4 items-center gap-1.5 overflow-x-clip border-b border-[var(--color-border)] px-2 backdrop-blur-md sm:gap-3 sm:px-4${
+      className={`topbar-chrome sticky top-0 z-40 flex h-[var(--spacing-topbar)] w-full min-w-0 max-w-full shrink-0 items-center gap-1.5 overflow-x-clip border-b border-[var(--color-border)] px-2 backdrop-blur-md sm:gap-3 sm:px-4${
         cinematicBgTransparent ? " is-play-focus-bg-transparent" : ""
       }`}
     >

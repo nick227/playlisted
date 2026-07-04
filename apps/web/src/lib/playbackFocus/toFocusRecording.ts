@@ -2,7 +2,6 @@ import type { components } from "@playlisted/client-sdk";
 
 import type { QueueTrack } from "@/providers/AudioPlayerProvider";
 import type { FocusArtist, FocusRecording } from "@/lib/playbackFocus/types";
-import { buildArtistInfoLine } from "@/lib/playbackFocus/formatFocusText";
 import { normalizeSubtitlePosition, normalizeSubtitleStyleId } from "@/lib/subtitleStylePresets";
 
 type RadioNowPlaying = components["schemas"]["RadioNowPlaying"];
@@ -61,6 +60,6 @@ export function toFocusArtist(recording: FocusRecording): FocusArtist | null {
   return {
     artistName: recording.ownerName,
     imageUrl: recording.artistImageUrl ?? recording.artworkUrl,
-    bioLine: recording.description?.trim() || buildArtistInfoLine(recording) || undefined,
+    bioLine: recording.description?.trim() || undefined,
   };
 }

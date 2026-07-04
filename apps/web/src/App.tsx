@@ -100,137 +100,161 @@ function LegacyProfileRedirect() {
   return <Navigate to={`/@/${encodeURIComponent(username ?? "")}`} replace />;
 }
 
+function RouteLoadingFallback() {
+  return (
+    <div
+      className="mx-auto flex min-h-[calc(100dvh-var(--spacing-topbar)-1.5rem)] w-full max-w-7xl flex-col gap-6 py-6"
+      aria-busy="true"
+      aria-label="Loading page"
+    >
+      <div className="h-10 w-56 rounded-lg bg-white/[0.06]" />
+      <div className="grid gap-4 md:grid-cols-3">
+        {Array.from({ length: 3 }).map((_, index) => (
+          <div key={index} className="h-32 rounded-lg border border-white/[0.06] bg-white/[0.035]" />
+        ))}
+      </div>
+      <div className="grid gap-3">
+        {Array.from({ length: 6 }).map((_, index) => (
+          <div key={index} className="h-14 rounded-lg border border-white/[0.05] bg-white/[0.025]" />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function MainRoutes() {
   return (
     <AppShell>
-      <Routes>
-        <Route element={<AuthLayout />}>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-        </Route>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/charts" element={<ChartsPage />} />
-        <Route path="/search" element={<SearchPage />} />
-        <Route path="/radio" element={<RadioPage />} />
-        <Route path="/chat" element={<ChatPage />} />
-        <Route path="/@:username" element={<LegacyProfileRedirect />} />
-        <Route path="/@/:username/:slug" element={<CanonicalPlaylistPage />} />
-        <Route path="/playlists" element={<LibraryPlaylistsPage />} />
-        <Route path="/playlists/:playlistId" element={<PlaylistPage />} />
-        <Route path="/@/:username" element={<MemberPage />} />
-        <Route path="/members/:userId" element={<MemberPage />} />
-        <Route path="/explore" element={<Navigate to="/" replace />} />
-        <Route path="/trending" element={<Navigate to="/charts" replace />} />
-        <Route path="/musicians" element={<MusiciansPage />} />
-        <Route path="/developers" element={<DevelopersPage />} />
-        <Route path="/advertising" element={<AdvertisingPage />} />
-        <Route path="/company" element={<CompanyPage />} />
-        <Route path="/jobs" element={<JobsPage />} />
-        <Route path="/media" element={<MediaPage />} />
-        <Route path="/privacy" element={<PrivacyPage />} />
-        <Route path="/library" element={<LibraryPage />} />
-        <Route path="/favorites" element={<FavoritesPage />} />
-        <Route path="/library/favorites" element={<Navigate to="/favorites" replace />} />
-        <Route path="/songs" element={<LibrarySongsPage />} />
-        <Route path="/genres" element={<LibraryGenresPage />} />
-        <Route path="/genres/:slug" element={<LibraryGenrePage />} />
-        <Route path="/artists" element={<LibraryArtistsPage />} />
-        <Route path="/artists/:username" element={<LibraryArtistRedirect />} />
-        <Route
-          path="/studio"
-          element={
-            <ProtectedRoute>
-              <StudioPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/studio/collections"
-          element={
-            <ProtectedRoute>
-              <StudioCollectionsPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/studio/collections/:playlistId/edit"
-          element={
-            <ProtectedRoute>
-              <StudioCollectionEditPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/studio/analytics"
-          element={
-            <ProtectedRoute>
-              <StudioAnalyticsPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/studio/history"
-          element={
-            <ProtectedRoute>
-              <StudioHistoryPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/studio/profile"
-          element={
-            <ProtectedRoute roles={["CREATOR", "ADMIN", "LISTENER"]}>
-              <Navigate to="/studio" replace />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/studio/links"
-          element={
-            <ProtectedRoute roles={["CREATOR", "ADMIN", "LISTENER"]}>
-              <Navigate to="/studio" replace />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/studio/developer"
-          element={
-            <ProtectedRoute>
-              <StudioDeveloperPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin"
-          element={
-            <ProtectedRoute roles={["ADMIN", "EDITOR"]}>
-              <AdminPage />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<AdminDashboardPage />} />
-          <Route path="traffic" element={<AdminTrafficPage />} />
-          <Route path="songs" element={<AdminSongsPage />} />
-          <Route path="playlists" element={<AdminPlaylistsPage />} />
-          <Route path="users" element={<AdminUsersPage />} />
-          <Route path="theatre" element={<AdminTheatrePage />} />
-          <Route path="tags" element={<AdminTagsPage />} />
-          <Route path="api-keys" element={<AdminApiKeysPage />} />
+      <Suspense fallback={<RouteLoadingFallback />}>
+        <Routes>
+          <Route element={<AuthLayout />}>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+          </Route>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/charts" element={<ChartsPage />} />
+          <Route path="/search" element={<SearchPage />} />
+          <Route path="/radio" element={<RadioPage />} />
+          <Route path="/chat" element={<ChatPage />} />
+          <Route path="/@:username" element={<LegacyProfileRedirect />} />
+          <Route path="/@/:username/:slug" element={<CanonicalPlaylistPage />} />
+          <Route path="/playlists" element={<LibraryPlaylistsPage />} />
+          <Route path="/playlists/:playlistId" element={<PlaylistPage />} />
+          <Route path="/@/:username" element={<MemberPage />} />
+          <Route path="/members/:userId" element={<MemberPage />} />
+          <Route path="/explore" element={<Navigate to="/" replace />} />
+          <Route path="/trending" element={<Navigate to="/charts" replace />} />
+          <Route path="/musicians" element={<MusiciansPage />} />
+          <Route path="/developers" element={<DevelopersPage />} />
+          <Route path="/advertising" element={<AdvertisingPage />} />
+          <Route path="/company" element={<CompanyPage />} />
+          <Route path="/jobs" element={<JobsPage />} />
+          <Route path="/media" element={<MediaPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/library" element={<LibraryPage />} />
+          <Route path="/favorites" element={<FavoritesPage />} />
+          <Route path="/library/favorites" element={<Navigate to="/favorites" replace />} />
+          <Route path="/songs" element={<LibrarySongsPage />} />
+          <Route path="/genres" element={<LibraryGenresPage />} />
+          <Route path="/genres/:slug" element={<LibraryGenrePage />} />
+          <Route path="/artists" element={<LibraryArtistsPage />} />
+          <Route path="/artists/:username" element={<LibraryArtistRedirect />} />
           <Route
-            path="radio"
+            path="/studio"
             element={
-              <ProtectedRoute roles={["ADMIN"]}>
-                <AdminRadioPage />
+              <ProtectedRoute>
+                <StudioPage />
               </ProtectedRoute>
             }
           />
-        </Route>
-        <Route
-          path="/playlists/new"
-          element={<Navigate to="/studio/collections" replace />}
-        />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+          <Route
+            path="/studio/collections"
+            element={
+              <ProtectedRoute>
+                <StudioCollectionsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/studio/collections/:playlistId/edit"
+            element={
+              <ProtectedRoute>
+                <StudioCollectionEditPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/studio/analytics"
+            element={
+              <ProtectedRoute>
+                <StudioAnalyticsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/studio/history"
+            element={
+              <ProtectedRoute>
+                <StudioHistoryPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/studio/profile"
+            element={
+              <ProtectedRoute roles={["CREATOR", "ADMIN", "LISTENER"]}>
+                <Navigate to="/studio" replace />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/studio/links"
+            element={
+              <ProtectedRoute roles={["CREATOR", "ADMIN", "LISTENER"]}>
+                <Navigate to="/studio" replace />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/studio/developer"
+            element={
+              <ProtectedRoute>
+                <StudioDeveloperPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute roles={["ADMIN", "EDITOR"]}>
+                <AdminPage />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<AdminDashboardPage />} />
+            <Route path="traffic" element={<AdminTrafficPage />} />
+            <Route path="songs" element={<AdminSongsPage />} />
+            <Route path="playlists" element={<AdminPlaylistsPage />} />
+            <Route path="users" element={<AdminUsersPage />} />
+            <Route path="theatre" element={<AdminTheatrePage />} />
+            <Route path="tags" element={<AdminTagsPage />} />
+            <Route path="api-keys" element={<AdminApiKeysPage />} />
+            <Route
+              path="radio"
+              element={
+                <ProtectedRoute roles={["ADMIN"]}>
+                  <AdminRadioPage />
+                </ProtectedRoute>
+              }
+            />
+          </Route>
+          <Route
+            path="/playlists/new"
+            element={<Navigate to="/studio/collections" replace />}
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
     </AppShell>
   );
 }
@@ -239,9 +263,7 @@ export function App() {
   return (
     <BrowserRouter>
       <RadioPlayerProvider>
-        <Suspense fallback={null}>
-          <MainRoutes />
-        </Suspense>
+        <MainRoutes />
       </RadioPlayerProvider>
     </BrowserRouter>
   );

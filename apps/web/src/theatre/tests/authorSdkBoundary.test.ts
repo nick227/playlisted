@@ -145,7 +145,8 @@ describe('sdk-smoke reference package', () => {
     animation.enableExternalDriving?.()
     await animation.start()
 
-    animation.renderFrame(frameContext)
+    expect(animation.renderFrame).toBeDefined()
+    animation.renderFrame?.(frameContext)
 
     expect(mockCtx.fillRect).toHaveBeenCalled()
     expect(canvas.width).toBeGreaterThan(0)

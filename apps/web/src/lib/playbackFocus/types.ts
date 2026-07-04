@@ -2,8 +2,8 @@ import type { SubtitleSegment } from "@/lib/subtitles";
 
 export type PlaybackFocusFixture =
   | { type: "subtitle"; text: string; cueId: string }
-  | { type: "fallbackSubtitle"; text: string; key: string; source: SyntheticSubtitleSource; artist?: FocusArtist | null }
-  | { type: "finalFallback"; key: string; title: string; artistName?: string | null; artist?: FocusArtist | null }
+  | { type: "fallbackSubtitle"; text: string; key: string; source: SyntheticSubtitleSource; artist?: FocusArtist | null; recording?: FocusRecording | null }
+  | { type: "finalFallback"; key: string; title: string; artistName?: string | null; artist?: FocusArtist | null; recording?: FocusRecording | null }
   | { type: "none" };
 
 export type SyntheticSubtitleSource = "title-intro" | "artist-info" | "song-info" | "system";

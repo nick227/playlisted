@@ -9,8 +9,8 @@ export { ANALYSER_FFT_SIZE } from "./audioAnalyser";
 
 type AudioAnalyserState = {
   analyser: AnalyserNode | null;
-  frequencyData: Uint8Array;
-  timeData: Uint8Array;
+  frequencyData: Uint8Array<ArrayBuffer>;
+  timeData: Uint8Array<ArrayBuffer>;
   connected: boolean;
   error: Error | null;
   resume: () => Promise<void>;
@@ -57,6 +57,10 @@ export function useAudioAnalyser(audioRef: RefObject<HTMLAudioElement | null>): 
     const onPlaybackIntent = () => {
       void resume();
     };
+
+    if (!audio.paused) {
+      onPlaybackIntent();
+    }
 
     audio.addEventListener("play", onPlaybackIntent);
     audio.addEventListener("playing", onPlaybackIntent);

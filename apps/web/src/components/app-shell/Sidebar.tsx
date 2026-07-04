@@ -1,5 +1,4 @@
 import {
-  AudioLines,
   BarChart3,
   Heart,
   Home,
@@ -9,7 +8,6 @@ import {
   Plus,
   MessageCircle,
   Settings,
-  Tags,
   RadioIcon,
   type LucideIcon,
 } from "lucide-react";
@@ -22,15 +20,7 @@ import { usePlaylists } from "@/hooks/usePlaylists";
 import { authedApi } from "@/lib/authedApi";
 import { playbackFocusTiming } from "@/lib/playbackFocusTiming";
 import { usePlaybackFocusSuppressed } from "@/lib/playbackFocusSuppression";
-import {
-  ARTISTS_PATH,
-  CHARTS_PATH,
-  FAVORITES_PATH,
-  GENRES_PATH,
-  SONGS_PATH,
-  LIBRARY_PATH,
-  CHAT_PATH,
-} from "@/lib/browsePaths";
+import { CHARTS_PATH, FAVORITES_PATH, LIBRARY_PATH, CHAT_PATH } from "@/lib/browsePaths";
 import { ADMIN_PATH, panelPathForRole, playlistPath, studioCollectionEditPath } from "@/lib/routes";
 import { useAuth } from "@/providers/AuthProvider";
 

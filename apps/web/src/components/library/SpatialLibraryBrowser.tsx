@@ -49,7 +49,7 @@ export function SpatialLibraryBrowser() {
   );
 
   return (
-    <div className={`${BROWSE_LAYOUT_CLASS} min-h-[72vh]`}>
+    <div className={`${BROWSE_LAYOUT_CLASS} min-h-screen`}>
       <RootPanel
         genreCount={allGenres.length}
         artistCount={allArtists.length}

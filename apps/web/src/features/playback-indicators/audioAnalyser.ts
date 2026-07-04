@@ -4,8 +4,8 @@ export type AudioAnalyserConnection = {
   context: AudioContext;
   source: MediaElementAudioSourceNode;
   analyser: AnalyserNode;
-  frequencyData: Uint8Array;
-  timeData: Uint8Array;
+  frequencyData: Uint8Array<ArrayBuffer>;
+  timeData: Uint8Array<ArrayBuffer>;
 };
 
 const analyserConnections = new WeakMap<HTMLMediaElement, AudioAnalyserConnection>();

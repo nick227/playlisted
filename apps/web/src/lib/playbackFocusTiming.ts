@@ -7,13 +7,13 @@ export const playbackFocusTiming = {
   },
 
   body: {
-    delayMs: 5000,
-    restoreDelayMs: 6000,
+    delayMs: 1500,
+    restoreDelayMs: 1000,
     fadeOutMs: 2000,
   },
 
   focusLane: {
-    delayMs: 1200,
+    delayMs: 0,
     fadeInMs: 200,
     fadeOutMs: 450,
     exitBufferMs: 180,
@@ -34,7 +34,7 @@ export const playbackFocusTiming = {
   },
 
   fallbackSubtitle: {
-    gapAfterArtistMs: 10000,
+    gapAfterArtistMs: 150000,
     fadeInMs: 900,
     fadeOutMs: 650,
     maxVisibleMs: 5000,
@@ -46,7 +46,7 @@ export const playbackFocusTiming = {
   },
 
   sidebarNav: {
-    blurDelayMs: 3000,
+    blurDelayMs: 0,
     fadeMs: 620,
   },
 

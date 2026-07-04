@@ -130,7 +130,12 @@ export function PlaybackFocusLane({ focusState }: PlaybackFocusLaneProps) {
       aria-hidden={!layerVisible}
     >
       <div key={displayKey} className="focus-lane__content">
-        <FocusLaneSubtitleContent fixture={displayFixture} customSubtitleStyle={customSubtitleStyle} />
+        <FocusLaneSubtitleContent
+          fixture={displayFixture}
+          customSubtitleStyle={customSubtitleStyle}
+          currentTimeSec={currentTime}
+          isPlaying={isPlaying}
+        />
       </div>
     </div>,
     document.body,

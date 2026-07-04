@@ -3,7 +3,9 @@ import { useEffect, useMemo, useState } from "react";
 import { FocusLaneSubtitleContent } from "@/components/app-shell/PlaybackFocusLane/FocusLaneSubtitleContent";
 import { useFocusLaneVisibility } from "@/components/app-shell/PlaybackFocusLane/useFocusLaneVisibility";
 import { useRecordingSubtitleStyle } from "@/hooks/useRecordingSubtitleStyle";
+import { buildSyntheticSubtitleCues } from "@/lib/playbackFocus/buildSyntheticCues";
 import { resolvePlaybackFocusFixture } from "@/lib/playbackFocus/resolvePlaybackFocusFixture";
+import { toFocusArtist } from "@/lib/playbackFocus/toFocusRecording";
 import type { FocusRecording } from "@/lib/playbackFocus/types";
 import { useSubtitleDisplay } from "@/lib/subtitleDisplay";
 import { subtitlePositionClassName } from "@/lib/subtitleStyleToCss";
@@ -99,9 +101,9 @@ export function SongVisualPreviewFocusLane({
         currentTimeMs: currentTimeSec * 1000,
         subtitleSegments: subtitles?.segments,
         subtitleReady: subtitles?.status === "READY",
-        syntheticCues: [],
-        artist: null,
-        recording: null,
+        syntheticCues: buildSyntheticSubtitleCues(recording),
+        artist: toFocusArtist(recording),
+        recording,
         focusState: {
           playFocusActive: canRenderTextOverlay,
           hasBodyFaded: canRenderTextOverlay,
@@ -112,6 +114,7 @@ export function SongVisualPreviewFocusLane({
     [
       canRenderTextOverlay,
       currentTimeSec,
+      recording,
       subtitles?.segments,
       subtitles?.status,
       subtitlesEnabled,
@@ -136,7 +139,12 @@ export function SongVisualPreviewFocusLane({
       aria-hidden={!layerVisible}
     >
       <div key={displayKey} className="focus-lane__content">
-        <FocusLaneSubtitleContent fixture={displayFixture} customSubtitleStyle={customSubtitleStyle} />
+        <FocusLaneSubtitleContent
+          fixture={displayFixture}
+          customSubtitleStyle={customSubtitleStyle}
+          currentTimeSec={currentTimeSec}
+          isPlaying={enabled}
+        />
       </div>
     </div>
   );

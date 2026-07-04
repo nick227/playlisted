@@ -292,7 +292,6 @@ export function AppShell({ children }: AppShellProps) {
         />
         <main
           ref={mainRef}
-          key={location.pathname}
           className={`player-shell-transition play-focus-content flex-1 min-w-0 max-w-full overflow-x-clip px-4 md:px-8 ${
             bodyFocusMode ? "is-play-focus-hidden" : ""
           } ${
