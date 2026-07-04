@@ -401,6 +401,8 @@ Authors must also respect `context.shared.reducedMotion` inside `draw()` — sim
 - High-motion presets without `reducedMotionPreset`
 - Empty manifest fields or invalid categories
 
+`authorSdkBoundary.test.ts` enforces the public import boundary for SDK author packages listed in `AUTHOR_SDK_PACKAGE_DIRS` (currently `sdk-smoke`). Add new public author packages to that list when they land.
+
 ### Author self-test checklist
 
 - [ ] Scene renders at multiple viewport sizes (resize handled by base class)
@@ -446,6 +448,8 @@ The platform may evolve internal runtime without a SDK version bump as long as `
 ## 15. Reference implementation
 
 See `apps/web/src/theatre/author/README.md` for a minimal working example.
+
+**Canonical reference package:** `apps/web/src/theatre/packages/sdk-smoke/` — imports only `@/theatre/author`, registered as `dev` with `internal` tag, covered by `authorSdkBoundary.test.ts`.
 
 Existing first-party packages using the canonical shape: `goopy`, `jelly-bell`, `eye-cloud`, `circuit-bot`, `cute-monstro`, `monster-wave`.
 

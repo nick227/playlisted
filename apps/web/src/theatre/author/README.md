@@ -93,3 +93,7 @@ registerAnimationPackage(pulsePackage)
 ## Dev validation
 
 Use `?theatreDev=1` to inspect live layers while developing.
+
+## Reference package
+
+`apps/web/src/theatre/packages/sdk-smoke/` is the canonical SDK-compliant sample. It imports only `@/theatre/author` and is guarded by `authorSdkBoundary.test.ts`. Copy it when starting a new author package.
