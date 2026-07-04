@@ -21,7 +21,8 @@ export class CityStaticCache {
   }
 
   private bakeKey(layoutKey: string, cam: CameraState): string {
-    return `${layoutKey}|${cam.zoom.toFixed(2)}`
+    const zoomBucket = Math.round(cam.zoom * 25) / 25
+    return `${layoutKey}|${zoomBucket.toFixed(2)}`
   }
 
   private bakeCam(cam: CameraState, citySize: number, cssW: number, cssH: number): CameraState {

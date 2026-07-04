@@ -38,6 +38,8 @@ export type CarState = {
   id: number
   gx: number
   gy: number
+  displayGx: number
+  displayGy: number
   dir: 0 | 1 | 2 | 3
   speed: number
   headlight: boolean
@@ -49,6 +51,8 @@ export type PedestrianState = {
   id: number
   gx: number
   gy: number
+  displayGx: number
+  displayGy: number
   dir: 0 | 1 | 2 | 3
   speed: number
 }

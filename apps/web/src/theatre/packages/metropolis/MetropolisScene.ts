@@ -6,7 +6,8 @@ import { createDirector, drawDirectorFx, updateDirector } from './director/Metro
 import { spawnPedestrians, updatePedestrians, drawPedestrians } from './entities/pedestrians'
 import { spawnTraffic, updateTraffic, drawTraffic } from './entities/traffic'
 import { createTrain, drawTrain, updateTrain } from './entities/train'
-import { createCamera, updateCamera } from './render/camera'
+import { createAudioEnvelope, updateAudioEnvelope } from './motion/audioEnvelope'
+import { createCameraRig, updateCameraRig } from './motion/cameraRig'
 import { drawCity } from './render/cityDraw'
 import { drawSky } from './render/sky'
 import { drawAtmosphere } from './render/atmosphere'
@@ -22,13 +23,13 @@ import type { MetropolisAudio } from './world/types'
 export function metropolisFactory(): IAnimation {
   class MetropolisScene extends CanvasAnimation {
     private grid = generateCity(METRO_SETTINGS.citySeed, METRO_SETTINGS.citySize)
-    private cam = createCamera()
+    private cameraRig = createCameraRig()
+    private audioEnv = createAudioEnvelope()
     private director = createDirector()
     private train = createTrain()
     private cars = spawnTraffic(this.grid, METRO_SETTINGS.trafficCount)
     private peds = spawnPedestrians(this.grid, METRO_SETTINGS.pedestrianCount)
-    private lastElapsed = 0
-    private layoutKey = ''
+    private beatCooldownMs = 0
 
     constructor() {
       super({ useEffects: true, defaultOpacity: 1, defaultZIndex: 101 })
@@ -55,25 +56,29 @@ export function metropolisFactory(): IAnimation {
       if (w < 16 || h < 16) return
 
       const elapsed = context.shared.time.elapsed
-      const delta = Math.min(50, context.shared.time.delta || Math.max(16, elapsed - this.lastElapsed))
-      this.lastElapsed = elapsed
+      const deltaMs = Math.min(32, Math.max(8, context.shared.time.delta || 16))
 
-      const audio = this.readAudio(context)
+      const rawAudio = this.readAudio(context)
+      this.audioEnv = updateAudioEnvelope(this.audioEnv, rawAudio, deltaMs)
       const reduced = context.shared.reducedMotion
       const layoutKey = `${w}|${h}`
-      if (layoutKey !== this.layoutKey) this.layoutKey = layoutKey
 
-      this.cam = updateCamera(elapsed, w, h, this.grid.size, audio, reduced)
-      this.director = updateDirector(this.director, delta, audio, reduced)
-      this.train = updateTrain(this.train, delta, this.director.train)
+      this.cameraRig = updateCameraRig(
+        this.cameraRig, elapsed, w, h, this.grid.size, this.audioEnv, reduced, deltaMs,
+      )
+      const cam = this.cameraRig.display
+
+      this.director = updateDirector(this.director, deltaMs, rawAudio, reduced)
+      this.train = updateTrain(this.train, deltaMs, this.director.train)
       const trafficBoost = this.director.loopT >= 8_000 && this.director.loopT < 20_000 ? 0.5 : 0
-      updateTraffic(this.cars, this.grid, delta * 0.06, trafficBoost)
+      updateTraffic(this.cars, this.grid, deltaMs, trafficBoost)
       if (!reduced && context.shared.particleScale > 0) {
-        updatePedestrians(this.peds, this.grid, delta * 0.06)
+        updatePedestrians(this.peds, this.grid, deltaMs)
       }
 
+      this.beatCooldownMs = Math.max(0, this.beatCooldownMs - deltaMs)
       const horizonY = h * 0.34
-      const cityGlow = audio.energy + audio.bass * 0.5 + this.director.neonSurge * 0.35
+      const cityGlow = this.audioEnv.energy + this.audioEnv.bass * 0.5 + this.director.neonSurge * 0.35
 
       drawSky(this.ctx, w, h, elapsed, horizonY, {
         cityGlow,
@@ -81,31 +86,34 @@ export function metropolisFactory(): IAnimation {
         moonCover: this.director.moonCover,
       }, reduced)
       drawCity(
-        this.ctx, this.grid, this.cam, w, h, this.pixelRatio, layoutKey,
-        elapsed, audio, reduced, this.director,
+        this.ctx, this.grid, cam, w, h, this.pixelRatio, layoutKey,
+        elapsed, { ...rawAudio, ...this.audioEnv }, reduced, this.director,
       )
-      drawWaterfrontLandmarks(this.ctx, this.grid.landmarks, this.cam, elapsed, reduced)
-      drawStreetFurniture(this.ctx, this.grid.streetProps, this.cam, elapsed, reduced)
-      drawIndustrialVents(this.ctx, this.grid, this.cam, w, h, elapsed, reduced, context.shared.particleScale)
-      drawTrain(this.ctx, this.grid, this.cam, this.train)
-      drawTraffic(this.ctx, this.cars, this.cam)
+      drawWaterfrontLandmarks(this.ctx, this.grid.landmarks, cam, elapsed, reduced)
+      drawStreetFurniture(this.ctx, this.grid.streetProps, cam, elapsed, reduced)
+      drawIndustrialVents(this.ctx, this.grid, cam, w, h, elapsed, reduced, context.shared.particleScale)
+      drawTrain(this.ctx, this.grid, cam, this.train)
+      drawTraffic(this.ctx, this.cars, cam)
       if (!reduced && context.shared.particleScale > 0) {
-        drawPedestrians(this.ctx, this.peds, this.cam)
+        drawPedestrians(this.ctx, this.peds, cam)
       }
       drawAtmosphere(this.ctx, w, h, elapsed, cityGlow, reduced, context.shared.particleScale)
 
-      const fw = projectTile(this.grid.size - 10, 8, 1.5, this.cam)
+      const fw = projectTile(this.grid.size - 10, 8, 1.5, cam)
       drawDirectorFx(this.ctx, w, h, this.director, { fireworksX: fw.sx, fireworksY: fw.sy })
 
       if (!reduced) {
         drawCinematicGrade(this.ctx, w, h, elapsed, {
           neonSurge: this.director.neonSurge,
-          energy: audio.energy,
+          energy: this.audioEnv.energy,
         }, reduced)
       }
 
       if (this.effects && !reduced && context.shared.particleScale > 0) {
-        if (audio.beat) this.effects.triggerScreenPunch(0.18 + audio.bass * 0.25)
+        if (rawAudio.beat && this.beatCooldownMs <= 0) {
+          this.effects.triggerScreenPunch(0.12 + this.audioEnv.bass * 0.18)
+          this.beatCooldownMs = 180
+        }
         this.effects.update(this.ctx, elapsed, this.pixelRatio)
       }
     }
