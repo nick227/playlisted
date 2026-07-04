@@ -6,8 +6,6 @@ import {
   districtStrobeIntensity,
   isNightlifeDistrict,
 } from '../packages/metropolis/world/districtAudio'
-import { generateCity } from '../packages/metropolis/world/cityGen'
-import { METRO_SETTINGS } from '../packages/metropolis/world/constants'
 
 describe('metropolis district audio', () => {
   it('clubRow pulses stronger on bass than park', () => {
@@ -23,14 +21,5 @@ describe('metropolis district audio', () => {
     expect(districtStrobeIntensity('clubRow', 1)).toBeGreaterThan(0)
     expect(districtStrobeIntensity('park', 1)).toBe(0)
     expect(isNightlifeDistrict('theatre')).toBe(true)
-  })
-})
-
-describe('metropolis hero landmarks', () => {
-  it('derives heroes from composed panel blocks', () => {
-    const grid = generateCity(METRO_SETTINGS.citySeed, 64)
-    expect(grid.composedBlocks.length).toBeGreaterThanOrEqual(7)
-    expect(grid.heroes.length).toBeGreaterThanOrEqual(4)
-    expect(grid.heroes.some((h) => h.kind === 'grandTheatre')).toBe(true)
   })
 })

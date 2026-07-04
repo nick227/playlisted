@@ -1,14 +1,10 @@
-export function hash2(seed: number, x: number, y: number): number {
-  let h = seed ^ (x * 374761393 + y * 668265263)
-  h = Math.imul(h ^ (h >>> 13), 1274126177)
-  return (h ^ (h >>> 16)) >>> 0
-}
-
-export function rand01(seed: number, x: number, y: number): number {
-  return hash2(seed, x, y) / 0xffffffff
-}
-
-export function pick<T>(seed: number, x: number, y: number, items: readonly T[]): T {
-  const i = hash2(seed, x, y) % items.length
-  return items[i]
+/** Deterministic 32-bit hash for star/grain/atmosphere placement. */
+export function hash2(a: number, b: number, c?: number): number {
+  let h = (a ^ Math.imul(b, 668265263)) >>> 0
+  if (c !== undefined) h = (h ^ Math.imul(c, 374761393)) >>> 0
+  h = Math.imul(h ^ (h >>> 15), h | 1)
+  h ^= h >>> 13
+  h = Math.imul(h, 1274126177)
+  h ^= h >>> 16
+  return h >>> 0
 }

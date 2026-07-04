@@ -66,7 +66,8 @@ export function updateDirector(
 ): DirectorState {
   const elapsed = state.elapsed + deltaMs
   const loopT = elapsed % METRO_SETTINGS.loopDurationMs
-  const fired = new Set(state.fired)
+  const loopWrapped = loopT < state.loopT
+  const fired = loopWrapped ? new Set<string>() : new Set(state.fired)
 
   let blackout = Math.max(0, state.blackout - deltaMs * 0.0004)
   let blackoutWave = state.blackoutWave
