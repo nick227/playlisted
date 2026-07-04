@@ -70,7 +70,7 @@ function drawVignette(ctx: CanvasRenderingContext2D, w: number, h: number) {
   const r = Math.max(w, h) * 0.72
   const g = ctx.createRadialGradient(cx, cy, r * 0.35, cx, cy, r)
   g.addColorStop(0, 'rgba(0,0,0,0)')
-  g.addColorStop(1, 'rgba(0,0,12,0.45)')
+  g.addColorStop(1, 'rgba(0,0,12,0.28)')
   ctx.fillStyle = g
   ctx.fillRect(0, 0, w, h)
 }

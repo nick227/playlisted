@@ -118,36 +118,53 @@ export function drawDirectorFx(
   w: number,
   h: number,
   state: DirectorState,
+  anchors?: { fireworksX: number; fireworksY: number },
 ) {
   if (state.blackout > 0) {
     ctx.fillStyle = `rgba(0,0,8,${state.blackout * 0.55})`
     ctx.fillRect(0, 0, w, h)
   }
   if (state.strobe > 0) {
-    ctx.fillStyle = `rgba(180,255,220,${state.strobe * 0.12})`
+    ctx.fillStyle = `rgba(180,255,220,${state.strobe * 0.14})`
     ctx.fillRect(0, 0, w, h)
   }
-  if (state.siren > 0) {
-    const alt = Math.sin(state.elapsed * 0.02) > 0
-    ctx.fillStyle = alt ? `rgba(255,40,40,${state.siren * 0.08})` : `rgba(40,80,255,${state.siren * 0.06})`
-    ctx.fillRect(0, 0, w, h * 0.15)
-  }
+  if (state.siren > 0) drawSirenWash(ctx, w, h, state)
   if (state.horror > 0) {
-    ctx.fillStyle = `rgba(40,120,40,${state.horror * 0.06})`
+    ctx.fillStyle = `rgba(40,120,40,${state.horror * 0.07})`
     ctx.fillRect(0, 0, w, h)
   }
-  if (state.fireworks > 0) drawFireworks(ctx, w, h * 0.35, state)
+  if (state.fireworks > 0) {
+    const cx = anchors?.fireworksX ?? w * 0.72
+    const cy = anchors?.fireworksY ?? h * 0.42
+    drawFireworks(ctx, cx, cy, state)
+  }
 }
 
-function drawFireworks(ctx: CanvasRenderingContext2D, w: number, h: number, state: DirectorState) {
-  const cx = w * 0.72
-  const cy = h * 0.5
-  for (let i = 0; i < 12; i++) {
-    const a = (i / 12) * Math.PI * 2 + state.elapsed * 0.001
-    const r = 40 + state.fireworks * 55
-    ctx.fillStyle = `rgba(255,200,100,${state.fireworks * 0.7})`
-    ctx.beginPath()
-    ctx.arc(cx + Math.cos(a) * r, cy + Math.sin(a) * r, 2 + state.fireworks * 2, 0, Math.PI * 2)
-    ctx.fill()
+function drawSirenWash(ctx: CanvasRenderingContext2D, w: number, h: number, state: DirectorState) {
+  const alt = Math.sin(state.elapsed * 0.02) > 0
+  const grad = ctx.createRadialGradient(w * 0.18, h * 0.82, 0, w * 0.18, h * 0.82, w * 0.65)
+  grad.addColorStop(0, alt ? `rgba(255,40,40,${state.siren * 0.14})` : `rgba(40,80,255,${state.siren * 0.1})`)
+  grad.addColorStop(1, 'rgba(0,0,0,0)')
+  ctx.fillStyle = grad
+  ctx.fillRect(0, 0, w, h)
+}
+
+function drawFireworks(ctx: CanvasRenderingContext2D, cx: number, cy: number, state: DirectorState) {
+  for (let burst = 0; burst < 3; burst++) {
+    const bx = cx + (burst - 1) * 45
+    const by = cy + burst * 12
+    for (let i = 0; i < 14; i++) {
+      const a = (i / 14) * Math.PI * 2 + state.elapsed * 0.001 + burst
+      const r = 35 + state.fireworks * 60
+      const alpha = state.fireworks * (0.5 + burst * 0.15)
+      ctx.fillStyle = burst === 1 ? `rgba(255,180,220,${alpha})` : `rgba(255,200,100,${alpha})`
+      ctx.beginPath()
+      ctx.arc(bx + Math.cos(a) * r, by + Math.sin(a) * r * 0.6, 2 + state.fireworks * 2.5, 0, Math.PI * 2)
+      ctx.fill()
+    }
   }
+  ctx.fillStyle = `rgba(255,240,200,${state.fireworks * 0.25})`
+  ctx.beginPath()
+  ctx.ellipse(cx, cy + 40, 80 * state.fireworks, 20 * state.fireworks, 0, 0, Math.PI * 2)
+  ctx.fill()
 }

@@ -11,6 +11,10 @@ import { drawCity } from './render/cityDraw'
 import { drawSky } from './render/sky'
 import { drawAtmosphere } from './render/atmosphere'
 import { drawIndustrialVents } from './render/industrialVents'
+import { drawStreetFurniture } from './render/streetFurniture'
+import { drawWaterfrontLandmarks } from './render/waterfrontLandmarks'
+import { drawCinematicGrade } from './render/cinematicGrade'
+import { projectTile } from './world/coords'
 import { METRO_SETTINGS } from './world/constants'
 import { generateCity } from './world/cityGen'
 import type { MetropolisAudio } from './world/types'
@@ -69,13 +73,19 @@ export function metropolisFactory(): IAnimation {
       }
 
       const horizonY = h * 0.34
-      const cityGlow = audio.energy + audio.bass * 0.5 + this.director.neonSurge * 0.3
+      const cityGlow = audio.energy + audio.bass * 0.5 + this.director.neonSurge * 0.35
 
-      drawSky(this.ctx, w, h, elapsed, horizonY, cityGlow, reduced, this.director.moonCover)
+      drawSky(this.ctx, w, h, elapsed, horizonY, {
+        cityGlow,
+        neonSurge: this.director.neonSurge,
+        moonCover: this.director.moonCover,
+      }, reduced)
       drawCity(
         this.ctx, this.grid, this.cam, w, h, this.pixelRatio, layoutKey,
         elapsed, audio, reduced, this.director,
       )
+      drawWaterfrontLandmarks(this.ctx, this.grid.landmarks, this.cam, elapsed, reduced)
+      drawStreetFurniture(this.ctx, this.grid.streetProps, this.cam, elapsed, reduced)
       drawIndustrialVents(this.ctx, this.grid, this.cam, w, h, elapsed, reduced, context.shared.particleScale)
       drawTrain(this.ctx, this.grid, this.cam, this.train)
       drawTraffic(this.ctx, this.cars, this.cam)
@@ -83,10 +93,19 @@ export function metropolisFactory(): IAnimation {
         drawPedestrians(this.ctx, this.peds, this.cam)
       }
       drawAtmosphere(this.ctx, w, h, elapsed, cityGlow, reduced, context.shared.particleScale)
-      drawDirectorFx(this.ctx, w, h, this.director)
+
+      const fw = projectTile(this.grid.size - 10, 8, 1.5, this.cam)
+      drawDirectorFx(this.ctx, w, h, this.director, { fireworksX: fw.sx, fireworksY: fw.sy })
+
+      if (!reduced) {
+        drawCinematicGrade(this.ctx, w, h, elapsed, {
+          neonSurge: this.director.neonSurge,
+          energy: audio.energy,
+        }, reduced)
+      }
 
       if (this.effects && !reduced && context.shared.particleScale > 0) {
-        if (audio.beat) this.effects.triggerScreenPunch(0.15 + audio.bass * 0.2)
+        if (audio.beat) this.effects.triggerScreenPunch(0.18 + audio.bass * 0.25)
         this.effects.update(this.ctx, elapsed, this.pixelRatio)
       }
     }

@@ -1,12 +1,13 @@
 import { buildVisibleChunks, iterateVisibleCells } from '../world/chunks'
-import { DISTRICTS } from '../world/districts'
 import type { CityGrid } from '../world/cityGen'
-import { archetypeById } from '../world/buildingArchetypes'
 import type { CameraState } from '../world/types'
 import { drawArchetypeShell } from './archetypeShell'
 import { drawFireEscape, drawStaticRoofClutter } from './buildingDetails'
+import { drawLotDressing } from './lotDressing'
 import { fillQuad, tileCorners } from './drawUtils'
 import { roadKind } from '../world/roads'
+import { archetypeById } from '../world/buildingArchetypes'
+import { DISTRICTS } from '../world/districts'
 
 const ROAD = {
   dark: '#1a1a22',
@@ -30,7 +31,10 @@ export function drawCityStatic(
     else if (cell.rail) fillQuad(ctx, tileCorners(gx, gy, 0, cam), ROAD.rail)
     else if (cell.road) drawRoadCell(ctx, gx, gy, cam, grid.size)
     else if (cell.floors > 0) drawBuildingStatic(ctx, gx, gy, cell, cam)
-    else fillQuad(ctx, tileCorners(gx, gy, 0, cam), DISTRICTS[cell.district].base)
+    else {
+      fillQuad(ctx, tileCorners(gx, gy, 0, cam), DISTRICTS[cell.district].base)
+      drawLotDressing(ctx, gx, gy, cell, cam)
+    }
   })
 }
 

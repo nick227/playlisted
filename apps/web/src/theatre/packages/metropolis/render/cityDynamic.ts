@@ -6,6 +6,7 @@ import type { CityGrid } from '../world/cityGen'
 import type { CameraState, MetropolisAudio } from '../world/types'
 import { archetypeLeftRightWalls } from './archetypeShell'
 import { drawNeonSign, drawTheatreMarquee } from './buildingDetails'
+import { drawBoardedWindow, drawWindowGlow, shouldBoardWindow } from './facadeGrime'
 import { blackoutDim, fillQuad, tileCorners } from './drawUtils'
 
 const WATER = { spec: '#4488aa' }
@@ -115,16 +116,28 @@ function drawWindows(
   dim: number,
 ) {
   const pulse = reducedMotion ? 0.5 : 0.35 + audio.bass * 0.65
+  const clubPulse = pulse * (1 + audio.mids * 0.4)
   for (let f = 0; f < floors; f++) {
-    if (rand01(seed, f, 1) <= windowSparse) continue
-    const flicker = reducedMotion ? 1 : 0.7 + 0.3 * Math.sin(elapsed * 0.003 + seed + f + gx)
     const t = (f + 0.5) / floors
     const lx = left[0].sx + (left[3].sx - left[0].sx) * t
     const ly = left[0].sy + (left[3].sy - left[0].sy) * t
     const rx = right[0].sx + (right[3].sx - right[0].sx) * t
     const ry = right[0].sy + (right[3].sy - right[0].sy) * t
+    if (shouldBoardWindow(style.id, seed, f)) {
+      drawBoardedWindow(ctx, lx, ly)
+      drawBoardedWindow(ctx, rx, ry)
+      continue
+    }
+    if (rand01(seed, f, 1) <= windowSparse) continue
+    const flicker = reducedMotion ? 1 : 0.7 + 0.3 * Math.sin(elapsed * 0.003 + seed + f + gx)
+    const p = clubPulse * flicker * 0.9 * dim
+    if (f === 0 && style.id === 'clubRow') {
+      drawWindowGlow(ctx, lx, ly, style.window, p * 1.2)
+      drawWindowGlow(ctx, rx, ry, style.window, p * 1.2)
+      continue
+    }
     ctx.fillStyle = style.window
-    ctx.globalAlpha = pulse * flicker * 0.9 * dim
+    ctx.globalAlpha = p
     ctx.fillRect(lx, ly - 2, 2, 2)
     ctx.fillRect(rx, ry - 2, 2, 2)
   }

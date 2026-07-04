@@ -330,6 +330,9 @@ packages/metropolis/
 - [x] E5 Pedestrians (LOD via particleScale)
 - [x] E6 Industrial vent smoke particles
 - [x] H1 Chunk visibility culling
+- [x] Street furniture + lot dressing + waterfront landmarks (cinematic pass)
+- [x] Cinematic grade — letterbox, color grade, grain, anamorphic flare
+- [x] Epic camera sweep + localized fireworks/siren FX
 - [ ] H3 Dev overlay pass timings / entity counts
 
 ---
