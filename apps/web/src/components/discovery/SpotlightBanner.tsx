@@ -27,6 +27,7 @@ function toQueueTrack(r: RecordingInPlaylist, pl: PlaylistDetail): QueueTrack {
     playlistTitle: pl.title,
     ownerName: pl.owner.displayName,
     ownerUsername: pl.owner.username,
+    artistImageUrl: pl.owner.avatarUrl,
     playlistSlug: pl.slug,
   };
 }

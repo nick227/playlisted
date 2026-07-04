@@ -41,6 +41,7 @@ export type QueueTrack = components["schemas"]["RecordingSummary"] & {
   playlistTitle?: string;
   ownerName?: string;
   ownerUsername?: string | null;
+  artistImageUrl?: string | null;
   playlistSlug?: string | null;
 };
 

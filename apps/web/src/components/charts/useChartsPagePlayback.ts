@@ -74,6 +74,7 @@ export function useChartsPagePlaylistPlayback() {
       const tracks = playlistRecordingsToQueue(recordings, {
         playlistTitle: item.title,
         ownerName: item.owner.displayName,
+        artistImageUrl: item.owner.avatarUrl,
       });
 
       setQueue(
@@ -131,6 +132,7 @@ export function useChartsPageArtistPlayback() {
       const tracks = playlistRecordingsToQueue(recordings, {
         playlistTitle: summary.title,
         ownerName: item.displayName,
+        artistImageUrl: item.avatarUrl,
       });
 
       setQueue(

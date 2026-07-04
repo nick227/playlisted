@@ -300,10 +300,8 @@ body {
 }
 
 .focus-lane__artist-image {
-  width: 12rem;
-  height: 12rem;
-  flex: 0 0 12rem;
-  border-radius: 1rem;
+  flex: 0 0 auto;
+  border-radius: 0.125rem;
   background-position: center;
   background-size: cover;
   box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5);

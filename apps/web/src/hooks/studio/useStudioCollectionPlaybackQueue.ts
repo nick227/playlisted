@@ -15,6 +15,7 @@ export function useStudioCollectionPlaybackQueue(collection: PlaylistDetailWithT
           ...recording,
           playlistTitle: collection.title,
           ownerName: collection.owner.displayName,
+          artistImageUrl: collection.owner.avatarUrl,
         }),
       ) ?? [],
     [collection?.recordings, collection?.title, collection?.owner.displayName],

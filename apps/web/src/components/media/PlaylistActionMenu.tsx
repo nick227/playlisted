@@ -24,6 +24,7 @@ function mapPlaylistTracks(
     ...r,
     playlistTitle: playlist.title,
     ownerName: playlist.owner.displayName,
+    artistImageUrl: playlist.owner.avatarUrl,
   }));
 }
 

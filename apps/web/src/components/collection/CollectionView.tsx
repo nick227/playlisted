@@ -367,6 +367,7 @@ export function CollectionView({
     playlistTitle: playlist.title,
     ownerUsername: playlist.owner.username,
     ownerDisplayName: playlist.owner.displayName,
+    ownerAvatarUrl: playlist.owner.avatarUrl,
     slug: playlist.slug,
   };
 

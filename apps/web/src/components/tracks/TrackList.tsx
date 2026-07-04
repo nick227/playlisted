@@ -76,6 +76,7 @@ export function TrackList({
               playlistTitle: playlistContext.playlistTitle,
               ownerName: displayOwner,
               ownerUsername: playlistContext.ownerUsername,
+              artistImageUrl: playlistContext.ownerAvatarUrl,
               playlistSlug: playlistContext.slug,
             }
           : undefined;

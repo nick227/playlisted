@@ -8,12 +8,13 @@ type UserPlaylistSummary = components["schemas"]["UserPlaylistSummary"];
 
 export function playlistRecordingsToQueue(
   recordings: PlaylistDetail["recordings"],
-  meta: { playlistTitle: string; ownerName: string },
+  meta: { playlistTitle: string; ownerName: string; artistImageUrl?: string | null },
 ): QueueTrack[] {
   return (recordings ?? []).map((recording) => ({
     ...recording,
     playlistTitle: meta.playlistTitle,
     ownerName: meta.ownerName,
+    artistImageUrl: meta.artistImageUrl,
   }));
 }
 

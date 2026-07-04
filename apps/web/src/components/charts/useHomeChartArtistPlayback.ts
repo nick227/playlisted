@@ -45,6 +45,7 @@ export function useHomeChartArtistPlayback() {
       const tracks = playlistRecordingsToQueue(recordings, {
         playlistTitle: summary.title,
         ownerName: item.displayName,
+        artistImageUrl: item.avatarUrl,
       });
 
       setQueue(

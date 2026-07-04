@@ -11,6 +11,7 @@ export function playlistDetailToQueueTracks(playlist: PlaylistDetail): QueueTrac
         ...recording,
         playlistTitle: playlist.title,
         ownerName: playlist.owner.displayName,
+        artistImageUrl: playlist.owner.avatarUrl,
       }),
     );
 }

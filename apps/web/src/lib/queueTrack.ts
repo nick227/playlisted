@@ -19,6 +19,7 @@ export function librarySongToQueueTrack(song: LibrarySong, context?: string): Qu
     ...song,
     ownerName: song.uploader.displayName,
     ownerUsername: song.uploader.username,
+    artistImageUrl: song.uploader.avatarUrl,
     playlistTitle: context ?? song.playlist.title,
     playlistSlug: song.playlist.slug,
   });
@@ -45,6 +46,7 @@ export function topSongToQueueTrack(item: TopSongItem, context?: string): QueueT
     updatedAt: item.updatedAt,
     ownerName: item.uploader.displayName,
     ownerUsername: item.uploader.username,
+    artistImageUrl: item.uploader.avatarUrl,
     playlistTitle: context ?? item.playlist.title,
     playlistSlug: item.playlist.slug,
   });
@@ -61,24 +63,35 @@ export function chartItemPlaybackContext(item: TopSongItem): PlaybackContext {
 
 export function recordingSummaryToQueueTrack(
   recording: RecordingSummary,
-  context?: { playlistTitle?: string; ownerName?: string; ownerUsername?: string; playlistSlug?: string },
+  context?: {
+    playlistTitle?: string;
+    ownerName?: string;
+    ownerUsername?: string;
+    playlistSlug?: string;
+    artistImageUrl?: string | null;
+  },
 ): QueueTrack {
   return withQueueTrackSubtitleStyle({
     ...recording,
     ownerName: context?.ownerName,
     ownerUsername: context?.ownerUsername,
+    artistImageUrl: context?.artistImageUrl,
     playlistTitle: context?.playlistTitle,
     playlistSlug: context?.playlistSlug,
   });
 }
 
 export function personalTrackToQueueTrack(
-  track: RecordingSummary & { uploader: { displayName: string; username?: string }; playlist?: { slug?: string } },
+  track: RecordingSummary & {
+    uploader: { displayName: string; username?: string; avatarUrl?: string | null };
+    playlist?: { slug?: string };
+  },
 ): QueueTrack {
   return withQueueTrackSubtitleStyle({
     ...track,
     ownerName: track.uploader.displayName,
     ownerUsername: track.uploader.username,
+    artistImageUrl: track.uploader.avatarUrl,
     playlistSlug: track.playlist?.slug,
   });
 }
@@ -88,6 +101,7 @@ export type PlaylistTrackContext = {
   playlistTitle: string;
   ownerUsername: string;
   ownerDisplayName: string;
+  ownerAvatarUrl?: string | null;
   slug: string;
 };
 

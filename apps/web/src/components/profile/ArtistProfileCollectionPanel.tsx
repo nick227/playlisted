@@ -47,6 +47,7 @@ export function ArtistProfileCollectionPanel({ playlist, owner, editHref }: Arti
     ...recording,
     playlistTitle: playlist.title,
     ownerName: owner.displayName,
+    artistImageUrl: owner.avatarUrl,
   }));
   const totalStreams = computePlaylistStreams(recordings);
 
@@ -160,7 +161,7 @@ export function ArtistProfileCollectionPanel({ playlist, owner, editHref }: Arti
         </button>
 
         <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-3">
+          <div className="group/header flex items-start justify-between gap-3">
             <h3 className="min-w-0 text-lg font-medium">
               <Link to={href} className="break-words text-white transition hover:text-[var(--color-brand)] hover:underline">
                 {playlist.title}
@@ -169,7 +170,7 @@ export function ArtistProfileCollectionPanel({ playlist, owner, editHref }: Arti
             {isOwner && editHref ? (
               <Link
                 to={editHref}
-                className="shrink-0 rounded-full border border-white/15 px-3 py-1 text-xs font-semibold text-white transition hover:border-[var(--color-brand)] hover:text-[var(--color-brand)]"
+                className="shrink-0 rounded-full border border-white/15 px-3 py-1 text-xs font-semibold text-white transition hover:border-[var(--color-brand)] hover:text-[var(--color-brand)] opacity-0 group-hover/header:opacity-100"
               >
                 Edit
               </Link>

@@ -24,6 +24,7 @@ export function useStudioCollectionPlayback(playlist: StudioCollectionListItem) 
         ...recording,
         playlistTitle: pl.title,
         ownerName: pl.owner.displayName,
+        artistImageUrl: pl.owner.avatarUrl,
       }));
       setQueue(
         queue,

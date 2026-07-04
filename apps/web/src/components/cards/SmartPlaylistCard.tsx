@@ -135,6 +135,7 @@ export function SmartPlaylistCard({
         ...r,
         playlistTitle: pl.title,
         ownerName: pl.owner.displayName,
+        artistImageUrl: pl.owner.avatarUrl,
       }));
       setQueue(
         queue,

@@ -38,6 +38,7 @@ export function PlaylistDetailView({ playlist }: PlaylistDetailViewProps) {
         playlistTitle: playlist.title,
         ownerName: playlist.owner.displayName,
         ownerUsername: playlist.owner.username,
+        artistImageUrl: playlist.owner.avatarUrl,
         playlistSlug: playlist.slug,
       })),
     [playlist.owner.displayName, playlist.owner.username, playlist.slug, playlist.title, recordings],

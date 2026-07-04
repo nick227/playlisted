@@ -45,6 +45,7 @@ export function toFocusRecording(track: ActiveTrack): FocusRecording | null {
     ownerName: track.ownerName,
     ownerUsername: track.ownerUsername,
     artworkUrl: track.artworkUrl,
+    artistImageUrl: track.artistImageUrl,
     description: track.description,
     playlistTitle: track.playlistTitle,
     recordingType: track.recordingType,
@@ -59,7 +60,7 @@ export function toFocusArtist(recording: FocusRecording): FocusArtist | null {
 
   return {
     artistName: recording.ownerName,
-    imageUrl: recording.artistImageUrl ?? recording.artworkUrl,
+    imageUrl: recording.artistImageUrl ?? null,
     bioLine: recording.description?.trim() || undefined,
   };
 }

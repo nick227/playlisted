@@ -99,10 +99,6 @@ export function ArtistVisual({
     };
   }, [analyser, frequencyData, connected, isPlaying]);
 
-  const imageStyle = imageUrl
-    ? { backgroundImage: `url(${imageUrl})` }
-    : undefined;
-
   const durationStr = recording?.durationSeconds
     ? formatDuration(recording.durationSeconds)
     : "--:--";
@@ -115,13 +111,18 @@ export function ArtistVisual({
     >
       {/* Tier 1: Artist Focus */}
       <div className="flex min-w-0 items-center gap-3 sm:gap-5">
-        <div
-          className={`h-20 w-20 shrink-0 overflow-hidden rounded-full border-2 border-white/10 bg-cover bg-center shadow-[0_8px_30px_rgb(0,0,0,0.5)] sm:h-28 sm:w-28${
-            imageUrl ? "" : " focus-lane__artist-image--fallback"
-          }`}
-          style={imageStyle}
-          aria-hidden
-        />
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt={artistName ?? ""}
+            className="focus-lane__artist-image aspect-square w-28 shrink-0 rounded-sm border-2 border-white/10 object-cover shadow-[0_8px_30px_rgb(0,0,0,0.5)] sm:w-36"
+          />
+        ) : (
+          <div
+            className="focus-lane__artist-image focus-lane__artist-image--fallback aspect-square w-28 shrink-0 rounded-sm border-2 border-white/10 shadow-[0_8px_30px_rgb(0,0,0,0.5)] sm:w-36"
+            aria-hidden
+          />
+        )}
         <div className="flex min-w-0 flex-1 flex-col justify-center overflow-hidden">
           {artistName ? (
             <p className="truncate text-2xl font-extrabold tracking-tight text-white drop-shadow-md sm:text-4xl">
