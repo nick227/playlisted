@@ -2,6 +2,8 @@
 
 Public-facing contract for canvas animations. Import from `@/theatre/author`.
 
+**Full specification:** [docs/theatre-author-sdk-v1.md](../../../docs/theatre-author-sdk-v1.md)
+
 ## Registration model
 
 **Curated packages only.** Authors submit an `AnimationPackage` via PR; maintainers register it in `registry/seed.ts`. There is no runtime plugin loader in v1.
