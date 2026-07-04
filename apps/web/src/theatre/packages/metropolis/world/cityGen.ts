@@ -1,17 +1,20 @@
 import { METRO_SETTINGS } from './constants'
 import { generateLandmarks, generateStreetProps } from './cityProps'
+import { generateHeroLandmarks } from './heroLandmarks'
 import { archetypeById, pickArchetypeId } from './buildingArchetypes'
 import { districtAt, DISTRICTS } from './districts'
 import { isRail, isRoad, isWater } from './roads'
 import { rand01 } from './rng'
 import type { CityCell } from './types'
 import type { Landmark, StreetProp } from './cityProps'
+import type { HeroLandmark } from './heroLandmarks'
 
 export type CityGrid = {
   size: number
   cells: CityCell[][]
   streetProps: StreetProp[]
   landmarks: Landmark[]
+  heroes: HeroLandmark[]
 }
 
 export function generateCity(seed: number, size: number = METRO_SETTINGS.citySize): CityGrid {
@@ -41,6 +44,7 @@ export function generateCity(seed: number, size: number = METRO_SETTINGS.citySiz
     cells,
     streetProps: generateStreetProps(cells, size),
     landmarks: generateLandmarks(cells, size),
+    heroes: generateHeroLandmarks(cells, size),
   }
 }
 

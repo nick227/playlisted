@@ -1,3 +1,4 @@
+import { districtAudioPulse, districtNeonBoost, districtChaosFlicker, isWaterfrontDistrict } from '../world/districtAudio'
 import { buildVisibleChunks, iterateVisibleCells } from '../world/chunks'
 import { archetypeById } from '../world/buildingArchetypes'
 import { DISTRICTS } from '../world/districts'
@@ -35,7 +36,7 @@ export function drawCityDynamic(
   iterateVisibleCells(grid.size, visible, (gx, gy) => {
     const cell = grid.cells[gy][gx]
     const dim = blackoutDim(gx, gy, grid.size, director.blackoutWave, director.blackoutRolling, director.blackout)
-    if (cell.water) drawWaterShimmer(ctx, gx, gy, cam, elapsed, reducedMotion, dim)
+    if (cell.water) drawWaterShimmer(ctx, gx, gy, cell.district, cam, elapsed, audio, reducedMotion, dim)
     else if (cell.road || cell.rail) drawWetRoad(ctx, gx, gy, cam, elapsed, reducedMotion, dim)
     else if (cell.floors > 0) {
       drawBuildingDynamic(ctx, gx, gy, cell, cam, elapsed, audio, reducedMotion, dim, director)
@@ -47,13 +48,16 @@ function drawWaterShimmer(
   ctx: CanvasRenderingContext2D,
   gx: number,
   gy: number,
+  district: CityGrid['cells'][0][0]['district'],
   cam: CameraState,
   elapsed: number,
+  audio: MetropolisAudio,
   reducedMotion: boolean,
   dim: number,
 ) {
-  const wave = reducedMotion ? 0.2 : 0.15 + 0.1 * Math.sin(elapsed * 0.002 + gx * 0.3)
-  ctx.globalAlpha = wave * dim
+  const highsBoost = isWaterfrontDistrict(district) ? 1 + audio.highs * 0.5 : 1
+  const wave = reducedMotion ? 0.2 : (0.15 + 0.1 * Math.sin(elapsed * 0.002 + gx * 0.3)) * highsBoost
+  ctx.globalAlpha = Math.min(1, wave * dim)
   fillQuad(ctx, tileCorners(gx, gy, 0, cam), WATER.spec)
   ctx.globalAlpha = 1
 }
@@ -92,11 +96,15 @@ function drawBuildingDynamic(
   const style = DISTRICTS[cell.district]
   const arch = archetypeById(cell.archetypeId)
   const { left, right } = archetypeLeftRightWalls(gx, gy, cell.floors, cell.archetypeId, cam)
+  const chaosMul = districtChaosFlicker(cell.district, audio.chaos)
   const horrorFlicker = cell.district === 'horror' && director.horror > 0
     ? (reducedMotion ? 1 : 0.3 + 0.7 * Math.abs(Math.sin(elapsed * 0.05 + cell.seed)))
     : 1
-  drawWindows(ctx, gx, cell.floors, style, cell.seed, arch.windowSparse, left, right, elapsed, audio, reducedMotion, dim * horrorFlicker)
-  const neonBoost = 1 + director.neonSurge * 0.85
+  drawWindows(
+    ctx, gx, cell.floors, style, cell.district, cell.seed, arch.windowSparse,
+    left, right, elapsed, audio, reducedMotion, dim * horrorFlicker * chaosMul,
+  )
+  const neonBoost = districtNeonBoost(cell.district, director.neonSurge)
   drawNeonSign(ctx, gx, gy, cell.floors, cell.district, cell.seed, right, elapsed, reducedMotion, neonBoost)
   drawTheatreMarquee(ctx, cell.district, cell.seed, right, elapsed, reducedMotion)
 }
@@ -106,6 +114,7 @@ function drawWindows(
   gx: number,
   floors: number,
   style: (typeof DISTRICTS)[keyof typeof DISTRICTS],
+  district: (typeof DISTRICTS)[keyof typeof DISTRICTS]['id'],
   seed: number,
   windowSparse: number,
   left: { sx: number; sy: number }[],
@@ -115,8 +124,8 @@ function drawWindows(
   reducedMotion: boolean,
   dim: number,
 ) {
-  const pulse = reducedMotion ? 0.5 : 0.35 + audio.bass * 0.65
-  const clubPulse = pulse * (1 + audio.mids * 0.4)
+  const districtPulse = districtAudioPulse(district, audio)
+  const pulse = reducedMotion ? 0.5 : districtPulse
   for (let f = 0; f < floors; f++) {
     const t = (f + 0.5) / floors
     const lx = left[0].sx + (left[3].sx - left[0].sx) * t
@@ -130,8 +139,8 @@ function drawWindows(
     }
     if (rand01(seed, f, 1) <= windowSparse) continue
     const flicker = reducedMotion ? 1 : 0.7 + 0.3 * Math.sin(elapsed * 0.003 + seed + f + gx)
-    const p = clubPulse * flicker * 0.9 * dim
-    if (f === 0 && style.id === 'clubRow') {
+    const p = pulse * flicker * 0.9 * dim
+    if (f === 0 && (style.id === 'clubRow' || style.id === 'strip')) {
       drawWindowGlow(ctx, lx, ly, style.window, p * 1.2)
       drawWindowGlow(ctx, rx, ry, style.window, p * 1.2)
       continue

@@ -125,12 +125,12 @@ export function drawDirectorFx(
     ctx.fillRect(0, 0, w, h)
   }
   if (state.strobe > 0) {
-    ctx.fillStyle = `rgba(180,255,220,${state.strobe * 0.14})`
+    ctx.fillStyle = `rgba(180,255,220,${state.strobe * 0.05})`
     ctx.fillRect(0, 0, w, h)
   }
   if (state.siren > 0) drawSirenWash(ctx, w, h, state)
   if (state.horror > 0) {
-    ctx.fillStyle = `rgba(40,120,40,${state.horror * 0.07})`
+    ctx.fillStyle = `rgba(40,120,40,${state.horror * 0.025})`
     ctx.fillRect(0, 0, w, h)
   }
   if (state.fireworks > 0) {

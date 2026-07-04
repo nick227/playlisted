@@ -14,6 +14,8 @@ import { drawAtmosphere } from './render/atmosphere'
 import { drawIndustrialVents } from './render/industrialVents'
 import { drawStreetFurniture } from './render/streetFurniture'
 import { drawWaterfrontLandmarks } from './render/waterfrontLandmarks'
+import { drawHeroLandmarks } from './render/heroLandmarks'
+import { drawLocalizedEvents } from './render/localizedEvents'
 import { drawCinematicGrade } from './render/cinematicGrade'
 import { projectTile } from './world/coords'
 import { METRO_SETTINGS } from './world/constants'
@@ -50,6 +52,10 @@ export function metropolisFactory(): IAnimation {
       }
     }
 
+    private sceneAudio(raw: MetropolisAudio): MetropolisAudio {
+      return { ...raw, bass: this.audioEnv.bass, mids: this.audioEnv.mids, highs: this.audioEnv.highs, energy: this.audioEnv.energy }
+    }
+
     protected draw(context: PublicAnimationContext) {
       const w = this.cssWidth
       const h = this.cssHeight
@@ -60,6 +66,7 @@ export function metropolisFactory(): IAnimation {
 
       const rawAudio = this.readAudio(context)
       this.audioEnv = updateAudioEnvelope(this.audioEnv, rawAudio, deltaMs)
+      const audio = this.sceneAudio(rawAudio)
       const reduced = context.shared.reducedMotion
       const layoutKey = `${w}|${h}`
 
@@ -78,7 +85,7 @@ export function metropolisFactory(): IAnimation {
 
       this.beatCooldownMs = Math.max(0, this.beatCooldownMs - deltaMs)
       const horizonY = h * 0.34
-      const cityGlow = this.audioEnv.energy + this.audioEnv.bass * 0.5 + this.director.neonSurge * 0.35
+      const cityGlow = audio.energy + audio.bass * 0.5 + this.director.neonSurge * 0.35
 
       drawSky(this.ctx, w, h, elapsed, horizonY, {
         cityGlow,
@@ -87,8 +94,10 @@ export function metropolisFactory(): IAnimation {
       }, reduced)
       drawCity(
         this.ctx, this.grid, cam, w, h, this.pixelRatio, layoutKey,
-        elapsed, { ...rawAudio, ...this.audioEnv }, reduced, this.director,
+        elapsed, audio, reduced, this.director,
       )
+      drawHeroLandmarks(this.ctx, this.grid, cam, elapsed, reduced)
+      drawLocalizedEvents(this.ctx, this.grid, cam, w, h, this.director, elapsed, reduced)
       drawWaterfrontLandmarks(this.ctx, this.grid.landmarks, cam, elapsed, reduced)
       drawStreetFurniture(this.ctx, this.grid.streetProps, cam, elapsed, reduced)
       drawIndustrialVents(this.ctx, this.grid, cam, w, h, elapsed, reduced, context.shared.particleScale)
@@ -105,13 +114,13 @@ export function metropolisFactory(): IAnimation {
       if (!reduced) {
         drawCinematicGrade(this.ctx, w, h, elapsed, {
           neonSurge: this.director.neonSurge,
-          energy: this.audioEnv.energy,
+          energy: audio.energy,
         }, reduced)
       }
 
       if (this.effects && !reduced && context.shared.particleScale > 0) {
         if (rawAudio.beat && this.beatCooldownMs <= 0) {
-          this.effects.triggerScreenPunch(0.12 + this.audioEnv.bass * 0.18)
+          this.effects.triggerScreenPunch(0.12 + audio.bass * 0.18)
           this.beatCooldownMs = 180
         }
         this.effects.update(this.ctx, elapsed, this.pixelRatio)

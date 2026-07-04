@@ -333,6 +333,9 @@ packages/metropolis/
 - [x] Street furniture + lot dressing + waterfront landmarks (cinematic pass)
 - [x] Cinematic grade — letterbox, color grade, grain, anamorphic flare
 - [x] Epic camera sweep + localized fireworks/siren FX
+- [x] G2 District-weighted audio (bass→clubRow, highs→waterfront, chaos→horror)
+- [x] F4 Localized strobe/neon/horror FX by district tiles
+- [x] Hero landmarks (8 postcard tiles per city seed)
 - [ ] H3 Dev overlay pass timings / entity counts
 
 ---
