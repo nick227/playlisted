@@ -16,7 +16,7 @@ export function drawStaticRoofClutter(
   seed: number,
   cam: CameraState,
 ) {
-  const h = buildingElevation(floors)
+  const h = buildingElevation(floors, cam.zoom)
   const roof = tileCorners(gx, gy, h, cam)
   const cx = (roof[0].sx + roof[2].sx) * 0.5
   const cy = (roof[0].sy + roof[2].sy) * 0.5

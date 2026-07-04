@@ -15,7 +15,7 @@ export function drawHeroLandmarks(
     const cell = grid.cells[hero.gy][hero.gx]
     if (cell.floors <= 0) continue
     const { right } = archetypeLeftRightWalls(hero.gx, hero.gy, cell.floors, cell.archetypeId, cam)
-    const roof = projectTile(hero.gx + 0.5, hero.gy + 0.5, buildingElevation(cell.floors), cam)
+    const roof = projectTile(hero.gx + 0.5, hero.gy + 0.5, buildingElevation(cell.floors, cam.zoom), cam)
     switch (hero.kind) {
       case 'grandTheatre': drawGrandTheatre(ctx, right, roof, elapsed, reducedMotion); break
       case 'motelNeon': drawMotelNeon(ctx, right, elapsed, reducedMotion, hero.seed); break

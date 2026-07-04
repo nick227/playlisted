@@ -6,18 +6,20 @@ export const METRO_SETTINGS = {
   chunkSize: 8,
   isoYScale: 0.5,
   /** Screen half-width of one tile at zoom 1 — larger = readable iso detail. */
-  tileHalfW: 10,
-  tileHalfH: 5,
+  tileHalfW: 14,
+  tileHalfH: 7,
   /** World Z units per floor (iso extrusion height). */
-  floorElev: 0.48,
-  /** Camera frames this downtown window, not the full 128×128 sprawl. */
-  viewBounds: { gx0: 18, gy0: 14, gx1: 102, gy1: 92 },
+  floorElev: 0.82,
+  /** Minimum building wall height in screen pixels (boosts low/short blocks). */
+  minWallPx: 20,
+  /** Camera frames this downtown core — not the full 128×128 sprawl. */
+  viewBounds: { gx0: 44, gy0: 32, gx1: 84, gy1: 72 },
   cameraDriftX: 0.014,
   cameraDriftY: 0.009,
   audioSwayMaxPx: 28,
   audioZoomPulse: 0.06,
-  minZoom: 0.42,
-  maxZoom: 1.12,
+  minZoom: 0.55,
+  maxZoom: 1.45,
   targetHoldMs: 120_000,
   loopDurationMs: 120_000,
   trafficCount: 120,

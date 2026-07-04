@@ -3,8 +3,11 @@ import type { CameraState, ProjectedPoint } from './types'
 
 const { tileHalfW, tileHalfH, isoYScale, viewBounds } = METRO_SETTINGS
 
-export function buildingElevation(floors: number): number {
-  return floors * METRO_SETTINGS.floorElev
+export function buildingElevation(floors: number, zoom = 1): number {
+  const z = Math.max(METRO_SETTINGS.minZoom, zoom)
+  const raw = floors * METRO_SETTINGS.floorElev
+  const minElev = METRO_SETTINGS.minWallPx / (METRO_SETTINGS.tileHalfH * z)
+  return Math.max(raw, minElev)
 }
 
 function viewCornerTiles(citySize: number): [number, number][] {
@@ -83,5 +86,5 @@ export function computeAutoZoom(citySize: number, cssW: number, cssH: number): n
   const skyBand = cssH * 0.28
   const fitX = (cssW - pad) / mapW
   const fitY = (cssH - skyBand - pad) / mapH
-  return Math.min(METRO_SETTINGS.maxZoom, Math.max(METRO_SETTINGS.minZoom, Math.min(fitX, fitY) * 0.96))
+  return Math.min(METRO_SETTINGS.maxZoom, Math.max(METRO_SETTINGS.minZoom, Math.min(fitX, fitY) * 0.88))
 }

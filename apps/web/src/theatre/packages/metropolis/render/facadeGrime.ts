@@ -31,17 +31,20 @@ export function drawWindowGlow(
   sy: number,
   color: string,
   alpha: number,
+  zoom = 1,
 ) {
+  const size = Math.max(3, Math.round(3 * zoom))
+  const glowR = 4 + zoom * 5
   ctx.fillStyle = color
   ctx.globalAlpha = alpha
-  ctx.fillRect(sx - 2, sy - 3, 4, 4)
-  ctx.globalAlpha = alpha * 0.35
-  const g = ctx.createRadialGradient(sx, sy, 0, sx, sy, 8)
+  ctx.fillRect(sx - size * 0.5, sy - size * 0.5, size, size)
+  ctx.globalAlpha = alpha * 0.28
+  const g = ctx.createRadialGradient(sx, sy, 0, sx, sy, glowR)
   g.addColorStop(0, color)
   g.addColorStop(1, 'rgba(0,0,0,0)')
   ctx.fillStyle = g
   ctx.beginPath()
-  ctx.arc(sx, sy, 8, 0, Math.PI * 2)
+  ctx.arc(sx, sy, glowR, 0, Math.PI * 2)
   ctx.fill()
   ctx.globalAlpha = 1
 }

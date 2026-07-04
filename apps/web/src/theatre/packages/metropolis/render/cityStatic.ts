@@ -8,7 +8,6 @@ import { drawLotDressing } from './lotDressing'
 import { fillQuad, tileCorners } from './drawUtils'
 import { roadKind } from '../world/roads'
 import { archetypeById } from '../world/buildingArchetypes'
-import { DISTRICTS } from '../world/districts'
 
 const ROAD = {
   dark: '#1a1a22',
@@ -33,7 +32,7 @@ export function drawCityStatic(
     else if (cell.road) drawRoadCell(ctx, gx, gy, cam, grid.size)
     else if (cell.floors > 0) drawBuildingStatic(ctx, gx, gy, cell, cam)
     else {
-      fillQuad(ctx, tileCorners(gx, gy, 0, cam), DISTRICTS[cell.district].base)
+      fillQuad(ctx, tileCorners(gx, gy, 0, cam), '#0a0a10')
       drawLotDressing(ctx, gx, gy, cell, cam)
     }
   })
@@ -55,7 +54,7 @@ function drawBuildingStatic(
   const arch = archetypeById(cell.archetypeId)
   drawArchetypeShell(ctx, gx, gy, cell.floors, cell.district, cell.archetypeId, cam)
   if (arch.hasFireEscape) {
-    const h = buildingElevation(cell.floors)
+    const h = buildingElevation(cell.floors, cam.zoom)
     const inset = arch.inset
     const base = tileCorners(gx + inset, gy + inset, 0, cam)
     const roof = tileCorners(gx + inset, gy + inset, h, cam)

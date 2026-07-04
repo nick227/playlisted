@@ -19,35 +19,46 @@ export function drawArchetypeShell(
   const arch = archetypeById(archetypeId)
   const style = DISTRICTS[district]
   const inset = arch.inset
-  const h = buildingElevation(floors)
+  const h = buildingElevation(floors, cam.zoom)
   const base = tileCorners(gx + inset, gy + inset, 0, cam)
   const roof = tileCorners(gx + inset, gy + inset, h, cam)
-  fillQuad(ctx, base, style.base)
   const leftWall = [base[0], base[3], roof[3], roof[0]]
   const rightWall = [base[1], base[2], roof[2], roof[1]]
-  fillQuad(ctx, leftWall, shade(style.base, -0.14))
-  fillQuad(ctx, rightWall, shade(style.top, 0.1))
+  fillQuad(ctx, leftWall, shade(style.base, -0.22))
+  fillQuad(ctx, rightWall, shade(style.top, -0.06))
 
   if (arch.roofStyle === 'peaked') {
-    drawPeakedRoof(ctx, roof, style.top)
+    drawPeakedRoof(ctx, roof, style.top, cam.zoom)
   } else if (arch.roofStyle === 'tar') {
-    fillQuad(ctx, roof, shade(style.top, -0.12))
+    fillQuad(ctx, roof, shade(style.top, -0.18))
     ctx.fillStyle = '#1a1a1a'
     ctx.globalAlpha = 0.35
     fillQuad(ctx, roof, '#1a1a1a')
     ctx.globalAlpha = 1
   } else {
-    fillQuad(ctx, roof, style.top)
+    fillQuad(ctx, roof, shade(style.top, 0.12))
   }
+  strokeRoofEdge(ctx, roof, style.accent)
 
-  if (arch.hasBillboard) drawBillboard(ctx, rightWall, style.accent)
-  if (arch.hasAntenna) drawAntenna(ctx, roof)
+  if (arch.hasBillboard) drawBillboard(ctx, rightWall, style.accent, cam.zoom)
+  if (arch.hasAntenna) drawAntenna(ctx, roof, cam.zoom)
 }
 
-function drawPeakedRoof(ctx: CanvasRenderingContext2D, roof: Pt[], color: string) {
+function strokeRoofEdge(ctx: CanvasRenderingContext2D, roof: Pt[], accent: string) {
+  ctx.strokeStyle = shade(accent, -0.35)
+  ctx.lineWidth = 1
+  ctx.beginPath()
+  ctx.moveTo(roof[0].sx, roof[0].sy)
+  for (let i = 1; i < roof.length; i++) ctx.lineTo(roof[i].sx, roof[i].sy)
+  ctx.closePath()
+  ctx.stroke()
+}
+
+function drawPeakedRoof(ctx: CanvasRenderingContext2D, roof: Pt[], color: string, zoom: number) {
+  const peakLift = 4 + zoom * 8
   const peak = {
     sx: (roof[0].sx + roof[2].sx) * 0.5,
-    sy: (roof[0].sy + roof[2].sy) * 0.5 - 6,
+    sy: (roof[0].sy + roof[2].sy) * 0.5 - peakLift,
   }
   ctx.fillStyle = color
   ctx.beginPath()
@@ -59,23 +70,25 @@ function drawPeakedRoof(ctx: CanvasRenderingContext2D, roof: Pt[], color: string
   ctx.fill()
 }
 
-function drawBillboard(ctx: CanvasRenderingContext2D, rightWall: Pt[], accent: string) {
-  const sx = rightWall[1].sx - 5
-  const sy = rightWall[1].sy - 10
+function drawBillboard(ctx: CanvasRenderingContext2D, rightWall: Pt[], accent: string, zoom: number) {
+  const w = 6 + zoom * 4
+  const sx = rightWall[1].sx - w
+  const sy = rightWall[1].sy - 10 - zoom * 4
   ctx.fillStyle = '#222'
-  ctx.fillRect(sx, sy, 7, 4)
+  ctx.fillRect(sx, sy, w + 2, 4 + zoom * 2)
   ctx.fillStyle = accent
-  ctx.fillRect(sx + 1, sy + 1, 5, 2)
+  ctx.fillRect(sx + 1, sy + 1, w, 2 + zoom)
 }
 
-function drawAntenna(ctx: CanvasRenderingContext2D, roof: Pt[]) {
+function drawAntenna(ctx: CanvasRenderingContext2D, roof: Pt[], zoom: number) {
   const cx = (roof[0].sx + roof[2].sx) * 0.5
   const cy = (roof[0].sy + roof[2].sy) * 0.5
-  ctx.strokeStyle = '#556677'
+  const h = 8 + zoom * 10
+  ctx.strokeStyle = '#667788'
   ctx.lineWidth = 1
   ctx.beginPath()
   ctx.moveTo(cx, cy)
-  ctx.lineTo(cx, cy - 12)
+  ctx.lineTo(cx, cy - h)
   ctx.stroke()
 }
 
@@ -87,7 +100,7 @@ export function archetypeLeftRightWalls(
   cam: CameraState,
 ): { left: Pt[]; right: Pt[] } {
   const inset = archetypeById(archetypeId).inset
-  const h = buildingElevation(floors)
+  const h = buildingElevation(floors, cam.zoom)
   const base = tileCorners(gx + inset, gy + inset, 0, cam)
   const roof = tileCorners(gx + inset, gy + inset, h, cam)
   return {

@@ -102,7 +102,7 @@ function drawBuildingDynamic(
     : 1
   drawWindows(
     ctx, gx, cell.floors, style, cell.district, cell.seed, arch.windowSparse,
-    left, right, elapsed, audio, reducedMotion, dim * horrorFlicker * chaosMul,
+    left, right, cam, elapsed, audio, reducedMotion, dim * horrorFlicker * chaosMul,
   )
   const neonBoost = districtNeonBoost(cell.district, director.neonSurge)
   drawNeonSign(ctx, gx, gy, cell.floors, cell.district, cell.seed, right, elapsed, reducedMotion, neonBoost)
@@ -119,6 +119,7 @@ function drawWindows(
   windowSparse: number,
   left: { sx: number; sy: number }[],
   right: { sx: number; sy: number }[],
+  cam: CameraState,
   elapsed: number,
   audio: MetropolisAudio,
   reducedMotion: boolean,
@@ -140,15 +141,16 @@ function drawWindows(
     if (rand01(seed, f, 1) <= windowSparse) continue
     const flicker = reducedMotion ? 1 : 0.7 + 0.3 * Math.sin(elapsed * 0.003 + seed + f + gx)
     const p = pulse * flicker * 0.9 * dim
+    const win = Math.max(2, Math.round(2 * cam.zoom))
     if (f === 0 && (style.id === 'clubRow' || style.id === 'strip')) {
-      drawWindowGlow(ctx, lx, ly, style.window, p * 1.2)
-      drawWindowGlow(ctx, rx, ry, style.window, p * 1.2)
+      drawWindowGlow(ctx, lx, ly, style.window, p * 1.2, cam.zoom)
+      drawWindowGlow(ctx, rx, ry, style.window, p * 1.2, cam.zoom)
       continue
     }
     ctx.fillStyle = style.window
     ctx.globalAlpha = p
-    ctx.fillRect(lx, ly - 2, 2, 2)
-    ctx.fillRect(rx, ry - 2, 2, 2)
+    ctx.fillRect(lx, ly - win, win, win)
+    ctx.fillRect(rx, ry - win, win, win)
   }
   ctx.globalAlpha = 1
 }

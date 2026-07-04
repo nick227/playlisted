@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { BUILDING_ARCHETYPES } from '../packages/metropolis/world/buildingArchetypes'
 import { buildVisibleChunks } from '../packages/metropolis/world/chunks'
-import { fitCameraToCity, projectTile, depthKey, computeAutoZoom } from '../packages/metropolis/world/coords'
+import { fitCameraToCity, projectTile, depthKey, computeAutoZoom, buildingElevation } from '../packages/metropolis/world/coords'
 import { generateCity, cityFingerprint } from '../packages/metropolis/world/cityGen'
 import { METRO_SETTINGS, ARCHETYPE_COUNT } from '../packages/metropolis/world/constants'
 
@@ -30,7 +30,14 @@ describe('metropolis coords', () => {
     const zoom = computeAutoZoom(128, 1280, 720)
     expect(zoom).toBeGreaterThanOrEqual(METRO_SETTINGS.minZoom)
     expect(zoom).toBeLessThanOrEqual(METRO_SETTINGS.maxZoom)
-    expect(zoom).toBeGreaterThan(0.55)
+    expect(zoom).toBeGreaterThan(0.85)
+  })
+
+  it('enforces minimum wall height in screen pixels', () => {
+    const low = buildingElevation(1, 1.2)
+    const high = buildingElevation(8, 1.2)
+    expect(high).toBeGreaterThan(low)
+    expect(low).toBeGreaterThan(1.2)
   })
 })
 
