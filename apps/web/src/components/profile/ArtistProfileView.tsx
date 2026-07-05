@@ -2,15 +2,14 @@ import type { TopArtistItem, UserDetail } from "@playlisted/client-sdk";
 import { useMemo } from "react";
 
 import { ArtistCard } from "@/components/cards/ArtistCard";
-import { SectionHeader } from "@/components/discovery/SectionHeader";
-
+import { ContentRow } from "@/components/discovery/ContentRow";
 import { EmptyState } from "@/components/feedback/EmptyState";
 import { BrowseBreadcrumbs } from "@/components/library/BrowseBreadcrumbs";
 import { useArtistTracks } from "@/hooks/useArtistTracks";
 import { useTopArtists } from "@/hooks/useCharts";
 import { genresFromSongs } from "@/components/library/libraryFilterUtils";
 import { librarySongToQueueTrack } from "@/lib/queueTrack";
-import { artistDetailCrumbs, ARTIST_PROFILE_LAYOUT_CLASS } from "@/lib/browsePaths";
+import { artistDetailCrumbs } from "@/lib/browsePaths";
 import { artistProfileArtistOrigin } from "@/lib/playbackOrigin";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 import { useAuth } from "@/providers/AuthProvider";
@@ -99,12 +98,12 @@ export function ArtistProfileView({
   }
 
   return (
-    <div className="pb-16 mx-auto max-w-3xl bg-[var(--color-canvas)]/80">
-      <div className="py-2 px-4">
+    <div className="mx-auto w-full min-w-0 max-w-3xl overflow-x-clip bg-[var(--color-canvas)]/80 pb-16">
+      <div className="px-4 py-2">
         <BrowseBreadcrumbs crumbs={browseCrumbs} />
       </div>
 
-      <div className="space-y-10">
+      <div className="min-w-0 space-y-10">
         <ArtistProfileHero
           user={user}
           genreNames={genreNames}
@@ -117,7 +116,7 @@ export function ArtistProfileView({
         />
 
         {sortedPlaylists.length > 0 ? (
-          <section>
+          <section className="min-w-0">
             {sortedPlaylists.map((playlist) => (
               <ArtistProfileCollectionPanel
                 key={playlist.id}
@@ -141,24 +140,19 @@ export function ArtistProfileView({
         ) : null}
       </div>
 
-      <div className="py-2 px-4 mt-8">
+      <div className="mt-8 min-w-0 px-4 py-2">
         {relatedArtists.length > 0 ? (
-          <>
-            <SectionHeader title="More Artists" />
-            <div className={`${ARTIST_PROFILE_LAYOUT_CLASS} flex flex-nowrap gap-2 justify-between items-center`}>
-
-              {relatedArtists.map((item: TopArtistItem) => (
-                <ArtistCard
-                  key={item.userId}
-                  id={item.userId}
-                  username={item.username}
-                  displayName={item.displayName}
-                  avatarUrl={item.avatarUrl}
-                  className="w-45 shrink-0"
-                />
-              ))}
-            </div>
-          </>
+          <ContentRow title="More Artists">
+            {relatedArtists.map((item: TopArtistItem) => (
+              <ArtistCard
+                key={item.userId}
+                id={item.userId}
+                username={item.username}
+                displayName={item.displayName}
+                avatarUrl={item.avatarUrl}
+              />
+            ))}
+          </ContentRow>
         ) : null}
       </div>
     </div>

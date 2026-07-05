@@ -186,17 +186,17 @@ export function ArtistProfileHero({
 
   return (
     <section className="min-w-0 overflow-x-clip border-b border-white/10 rounded-lg px-4 pb-10 pt-4 md:pb-12">
-      <div className="grid min-w-0 grid-cols-[5rem_1fr] items-start gap-x-4 gap-y-3 md:grid-cols-[minmax(140px,180px)_1fr] md:gap-x-10 md:gap-y-5">
-        <div className="relative group/avatar row-span-2 w-20 md:row-span-6 md:w-full md:max-w-[180px]">
+      <div className="grid min-w-0 gap-6 md:grid-cols-[minmax(140px,180px)_1fr] md:gap-10 md:items-start">
+        <div className="relative group/avatar w-full md:max-w-[180px]">
           {user.avatarUrl ? (
             <img
               src={user.avatarUrl}
               alt=""
-              className="aspect-square h-20 w-20 rounded-lg object-cover md:h-auto md:w-full"
+              className="aspect-square w-full rounded-lg object-cover"
             />
           ) : (
             <div
-              className="aspect-square h-20 w-20 rounded-lg md:h-auto md:w-full"
+              className="aspect-square w-full rounded-lg"
               style={{ background: coverFallback(displayName) }}
             />
           )}
@@ -231,32 +231,29 @@ export function ArtistProfileHero({
           )}
         </div>
 
-        <p className="min-w-0 self-end text-sm text-[var(--color-text-muted)] md:col-start-2 md:self-auto">
-          @{username}
-        </p>
+        <div className="min-w-0 space-y-5">
+          <p className="text-sm text-[var(--color-text-muted)]">@{username}</p>
 
-        <div className="flex min-w-0 flex-wrap items-center gap-3 md:col-start-2">
-          <h1
-            className="min-w-0 max-w-3xl break-words text-2xl font-light leading-tight tracking-tight text-white sm:text-3xl md:text-4xl lg:text-5xl outline-none focus:bg-white/5 rounded px-1 -ml-1 py-0.5 transition-colors"
-            contentEditable={isOwner && !preview}
-            suppressContentEditableWarning={true}
-            onBlur={isOwner && !preview ? handleNameBlur : undefined}
-            onKeyDown={isOwner && !preview ? handleNameKeyDown : undefined}
-          >
-            {displayName}
-          </h1>
-          {savingField === "displayName" && (
-            <span className="text-[10px] font-bold text-green-400 bg-green-400/10 px-1.5 py-0.5 rounded uppercase tracking-wider">
-              Saved
-            </span>
-          )}
-        </div>
-
-        <div className="col-span-2 min-w-0 space-y-5 md:col-span-1 md:col-start-2">
+          <div className="flex min-w-0 flex-wrap items-center gap-3">
+            <h1
+              className="min-w-0 max-w-full break-words text-3xl font-light leading-tight tracking-tight text-white md:text-4xl lg:text-5xl outline-none focus:bg-white/5 rounded px-1 -ml-1 py-0.5 transition-colors"
+              contentEditable={isOwner && !preview}
+              suppressContentEditableWarning={true}
+              onBlur={isOwner && !preview ? handleNameBlur : undefined}
+              onKeyDown={isOwner && !preview ? handleNameKeyDown : undefined}
+            >
+              {displayName}
+            </h1>
+            {savingField === "displayName" && (
+              <span className="text-[10px] font-bold text-green-400 bg-green-400/10 px-1.5 py-0.5 rounded uppercase tracking-wider">
+                Saved
+              </span>
+            )}
+          </div>
           {(bio || (isOwner && !preview)) ? (
             <div className="flex min-w-0 flex-wrap items-center gap-3">
               <p 
-                className="min-w-0 max-w-prose break-words text-sm leading-relaxed text-[var(--color-text-muted)] outline-none min-h-[1.5em] empty:before:content-['Add_a_bio...'] empty:before:text-white/20 transition-colors focus:bg-white/5 rounded px-1 -ml-1 py-0.5"
+                className="min-w-0 max-w-full break-words text-sm leading-relaxed text-[var(--color-text-muted)] outline-none min-h-[1.5em] empty:before:content-['Add_a_bio...'] empty:before:text-white/20 transition-colors focus:bg-white/5 rounded px-1 -ml-1 py-0.5"
                 contentEditable={isOwner && !preview}
                 suppressContentEditableWarning={true}
                 onBlur={isOwner && !preview ? handleBioBlur : undefined}

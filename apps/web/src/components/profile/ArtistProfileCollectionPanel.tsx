@@ -130,7 +130,7 @@ export function ArtistProfileCollectionPanel({ playlist, owner, editHref }: Arti
   });
 
   return (
-    <article className="border-b border-white/8 py-6 last:border-b-0 rounded-lg p-4">
+    <article className="min-w-0 overflow-x-clip border-b border-white/8 py-6 last:border-b-0 rounded-lg p-4">
       <div className="flex gap-4 flex-row items-start justify-start">
         <button
           type="button"
@@ -170,7 +170,7 @@ export function ArtistProfileCollectionPanel({ playlist, owner, editHref }: Arti
             {isOwner ? (
               <Link
                 to={editHref ?? studioCollectionEditPath(playlist.id)}
-                className="shrink-0 rounded-full border border-white/15 px-3 py-1 text-xs font-semibold text-white transition hover:border-[var(--color-brand)] hover:text-[var(--color-brand)] opacity-0 group-hover/header:opacity-100"
+                className="shrink-0 rounded-full border border-white/15 px-3 py-1 text-xs font-semibold text-white transition hover:border-[var(--color-brand)] hover:text-[var(--color-brand)]"
               >
                 Edit
               </Link>
