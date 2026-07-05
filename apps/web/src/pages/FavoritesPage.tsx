@@ -341,7 +341,7 @@ export function FavoritesPage() {
     <LibraryBrowseLayout crumbs={favoritesBrowseCrumbs()}>
       <PanelHeader label="Favorites" />
       <FavoritesViewToggle activeView={activeView} onChange={updateActiveView} />
-      {activeView === "charts" ? chartsSection : (
+      {activeView === "charts" && favPlaylistItems.length ? chartsSection : (
         <>
           <Section
             title="Collections"
