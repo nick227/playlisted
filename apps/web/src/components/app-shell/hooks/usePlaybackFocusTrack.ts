@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { usePlaybackTransport } from "@/hooks/usePlaybackTransport";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
@@ -21,17 +21,30 @@ export function usePlaybackFocusTrack() {
   const { currentTime: siteCurrentTime } = usePlaybackTransport();
   const currentTimeMsRef = useRef(0);
 
+  const [activeSource, setActiveSource] = useState<"radio" | "site" | null>(() => {
+    if (radioPlaying) return "radio";
+    if (isPlaying) return "site";
+    return currentTrack ? "site" : radioNowPlaying ? "radio" : null;
+  });
+
   useEffect(() => {
-    if (radioPlaying && radioNowPlaying) {
+    if (radioPlaying) setActiveSource("radio");
+    else if (isPlaying) setActiveSource("site");
+  }, [radioPlaying, isPlaying]);
+
+  useEffect(() => {
+    if (activeSource === "radio" && radioNowPlaying) {
       const audio = radioAudioRef.current;
       currentTimeMsRef.current = (audio?.currentTime ?? radioNowPlaying.elapsedSeconds ?? 0) * 1000;
       return;
     }
     currentTimeMsRef.current = siteCurrentTime * 1000;
-  }, [radioAudioRef, radioNowPlaying, radioPlaying, siteCurrentTime]);
+  }, [activeSource, radioAudioRef, radioNowPlaying, siteCurrentTime]);
 
   const focusTrack = useMemo<PlaybackFocusTrack | null>(() => {
-    if (radioPlaying && radioNowPlaying) {
+    const source = activeSource || (currentTrack ? "site" : radioNowPlaying ? "radio" : null);
+
+    if (source === "radio" && radioNowPlaying) {
       return {
         id: radioNowPlaying.id,
         title: radioNowPlaying.title,
@@ -46,7 +59,7 @@ export function usePlaybackFocusTrack() {
       };
     }
 
-    if (isPlaying && currentTrack) {
+    if (source === "site" && currentTrack) {
       return {
         id: currentTrack.id,
         title: currentTrack.title,
@@ -60,14 +73,14 @@ export function usePlaybackFocusTrack() {
     }
 
     return null;
-  }, [currentTrack, isPlaying, playbackContext, radioNowPlaying, radioPlaying]);
+  }, [activeSource, currentTrack, playbackContext, radioNowPlaying]);
 
   const focusTrackKey = `${focusTrack?.sourceLabel ?? "player"}:${focusTrack?.id ?? "none"}`;
 
   return {
     focusTrack,
     focusTrackKey,
-    playFocusActive: Boolean(focusTrack),
+    playFocusActive: isPlaying || radioPlaying,
     currentTimeMsRef,
     radioPlaying,
     radioNowPlaying,

@@ -127,8 +127,16 @@ export function usePlaybackFocusBody({
     setMiniViewVisible(false);
   }, [bodyFadeDisabled, clearFocusTimer, playbackFocusSuppressed]);
 
-  // Re-arm on track or route change.
+  // Re-arm on track/route change; clear immediately when playback stops.
   useEffect(() => {
+    if (!playFocusActive) {
+      clearFocusTimer();
+      setBodyFocusHidden(false);
+      setBodyFadedAtTrackMs(null);
+      setMiniViewVisible(false);
+      return;
+    }
+
     armPlayFocus("initial");
     return () => {
       clearFocusTimer();
@@ -144,6 +152,7 @@ export function usePlaybackFocusBody({
     focusTrackKey,
     pathname,
     playbackFocusSuppressed,
+    playFocusActive,
     search,
   ]);
 

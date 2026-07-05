@@ -10,7 +10,19 @@ export function useFocusLanePlayback() {
   const { currentTime: siteCurrentTime } = usePlaybackTransport();
   const { playing: radioPlaying, nowPlaying, audioRef } = useRadioPlayer();
 
-  const isRadio = Boolean(radioPlaying && nowPlaying);
+  const [activeSource, setActiveSource] = useState<"radio" | "site" | null>(() => {
+    if (radioPlaying) return "radio";
+    if (sitePlaying) return "site";
+    return currentTrack ? "site" : nowPlaying ? "radio" : null;
+  });
+
+  useEffect(() => {
+    if (radioPlaying) setActiveSource("radio");
+    else if (sitePlaying) setActiveSource("site");
+  }, [radioPlaying, sitePlaying]);
+
+  const source = activeSource || (currentTrack ? "site" : nowPlaying ? "radio" : null);
+  const isRadio = source === "radio" && Boolean(nowPlaying);
   const track = isRadio ? nowPlaying : currentTrack;
   const isPlaying = isRadio ? radioPlaying : sitePlaying;
   const [radioTime, setRadioTime] = useState(0);
