@@ -39,11 +39,13 @@ export function FocusLaneSubtitleContent({
   isPlaying,
   onReturnBody,
 }: FocusLaneSubtitleContentProps) {
+  const isTitleIntro = fixture.type === "fallbackSubtitle" && fixture.source === "title-intro";
   let style = customSubtitleStyle && usesCustomSubtitleStyle(fixture) ? { ...customSubtitleStyle } : undefined;
   const subtitleProps = fixtureToSubtitleProps(fixture);
 
   const preset = subtitleStyleId ? getSubtitleStylePreset(subtitleStyleId) : undefined;
-  if (preset?.dynamicSize && style && subtitleProps?.text) {
+  // Full-bleed dynamic sizing is for plain subtitle captions only — not the title intro card.
+  if (preset?.dynamicSize && style && subtitleProps?.text && !isTitleIntro) {
     style.fontSize = computeDynamicFontSize(subtitleProps.text);
     style.width = "100%";
     style.maxWidth = "100vw";
@@ -52,24 +54,14 @@ export function FocusLaneSubtitleContent({
     style.wordBreak = "break-word";
   }
 
-  const isTitleIntro = fixture.type === "fallbackSubtitle" && fixture.source === "title-intro";
   const isCombinedView = (fixture.type === "fallbackSubtitle" || fixture.type === "finalFallback") && !isTitleIntro;
 
   if (isTitleIntro && fixture.type === "fallbackSubtitle") {
-    if (preset?.dynamicSize && style) {
-       style.fontSize = computeDynamicFontSize(fixture.text);
-       style.width = "100%";
-       style.maxWidth = "100vw";
-       style.lineHeight = "0.95";
-       style.textWrap = "normal";
-       style.wordBreak = "break-word";
-    }
     return (
       <TitleIntroVisual
         title={fixture.text}
         artistName={fixture.artist?.artistName}
         recording={fixture.recording}
-        customStyle={style}
       />
     );
   }
