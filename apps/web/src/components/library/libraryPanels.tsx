@@ -3,6 +3,7 @@ import { ChevronRight, Pause, Play, Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
+import { SmartArtistCard } from "@/components/cards/SmartArtistCard";
 import { SmartPlaylistCard } from "@/components/cards/SmartPlaylistCard";
 import { Skeleton } from "@/components/feedback/Skeleton";
 import { LibraryArtistFilter } from "@/components/library/LibraryArtistFilter";
@@ -496,30 +497,22 @@ function ArtistResults({
   }
 
   return (
-    <div className="mt-10 grid grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-3">
+    <div className="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
       {filteredArtists.map((artist) => (
-        <Link
+        <SmartArtistCard
           key={artist.id}
-          to={artistPath(artist.username)}
-          className="group rounded-xl p-3 text-left transition-colors hover:bg-white/5"
-        >
-          <div className="mb-3 aspect-square w-full overflow-hidden rounded-lg">
-            {artist.avatarUrl ? (
-              <img
-                src={artist.avatarUrl}
-                alt=""
-                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-              />
-            ) : (
-              <div className="h-full w-full" style={{ background: coverFallback(artist.displayName) }} />
-            )}
-          </div>
-          <p className="truncate font-semibold text-white">{artist.displayName}</p>
-          <p className="mt-0.5 truncate text-xs text-[var(--color-text-muted)]">
-            {artist.songCount} recording{artist.songCount !== 1 ? "s" : ""}
-            {artist.genres.length > 0 ? ` · ${artist.genres[0].name}` : ""}
-          </p>
-        </Link>
+          id={artist.id}
+          username={artist.username}
+          displayName={artist.displayName}
+          avatarUrl={artist.avatarUrl}
+          subtitle={[
+            `${artist.songCount} recording${artist.songCount !== 1 ? "s" : ""}`,
+            artist.genres[0]?.name,
+          ]
+            .filter(Boolean)
+            .join(" · ")}
+          className="w-full gap-3"
+        />
       ))}
     </div>
   );

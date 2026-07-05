@@ -61,6 +61,10 @@ export function artistProfileArtistOrigin(userId: string): string {
   return playbackOriginKey("artist-profile", "artist", userId);
 }
 
+export function libraryArtistOrigin(userId: string): string {
+  return playbackOriginKey("library", "artists", userId);
+}
+
 /** Advance track-scoped origins on queue next/prev; playlist/artist origins stay fixed. */
 export function shiftPlaybackOriginForTrack(
   origin: string | null,
