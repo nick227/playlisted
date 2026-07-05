@@ -43,6 +43,11 @@ export const playbackFocusTiming = {
     maxVisibleMs: 5000,
   },
 
+  /** Gaps shorter than this between consecutive subtitles keep the previous cue visible. */
+  subtitleFlow: {
+    minGapForArtistVisualMs: 2000,
+  },
+
   miniView: {
     delayMs: 600000,
     fadeInMs: 620,

@@ -1,6 +1,6 @@
 import { playbackFocusTiming } from "@/lib/playbackFocusTiming";
 import { getFocusLaneElapsedMs, getFocusLaneSequenceWindows } from "@/lib/playbackFocus/focusLaneSequence";
-import type { SubtitleSegment } from "@/lib/subtitles";
+import { resolveSubtitleSegmentAtTime } from "@/lib/playbackFocus/subtitleGapHold";
 import type {
   FocusArtist,
   FocusRecording,
@@ -9,15 +9,6 @@ import type {
   ResolvePlaybackFocusInput,
   SyntheticSubtitleCue,
 } from "@/lib/playbackFocus/types";
-
-function findActiveSegment(
-  segments: SubtitleSegment[],
-  currentTimeSec: number,
-): SubtitleSegment | undefined {
-  return segments.find(
-    (segment) => currentTimeSec >= segment.start && currentTimeSec < segment.end,
-  );
-}
 
 function findActiveSyntheticCue(
   cues: SyntheticSubtitleCue[],
@@ -88,13 +79,17 @@ export function resolvePlaybackFocusFixture(input: ResolvePlaybackFocusInput): P
   const currentTimeSec = currentTimeMs / 1000;
 
   if (subtitlesEnabled && subtitleReady && subtitleSegments?.length) {
-    const activeSegment = findActiveSegment(subtitleSegments, currentTimeSec);
-    const text = activeSegment?.text.trim();
+    const flowSegment = resolveSubtitleSegmentAtTime(
+      subtitleSegments,
+      currentTimeSec,
+      playbackFocusTiming.subtitleFlow.minGapForArtistVisualMs / 1000,
+    );
+    const text = flowSegment?.segment.text.trim();
     if (text) {
       return {
         type: "subtitle",
         text,
-        cueId: `real:${activeSegment?.start ?? 0}-${activeSegment?.end ?? 0}`,
+        cueId: `real:${flowSegment.segment.start}-${flowSegment.segment.end}`,
       };
     }
   }
