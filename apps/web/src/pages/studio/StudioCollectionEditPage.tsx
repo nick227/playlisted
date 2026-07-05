@@ -60,6 +60,7 @@ export function StudioCollectionEditPage() {
     lastSavedTitleRef,
     lastSavedDescriptionRef,
     hasUnsavedDraft,
+    canPersistDraft,
     handleCoverFile,
   } = useStudioCollectionDraftAutosave({
     playlistId,
@@ -310,8 +311,20 @@ export function StudioCollectionEditPage() {
               );
             })()}
 
-            <div className="flex items-center gap-2 px-3 py-2 text-xs text-[var(--color-text-muted)] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-full select-none">
-              {saveMutation.isPending || hasUnsavedDraft ? (
+            <div
+              className="flex items-center gap-2 px-3 py-2 text-xs text-[var(--color-text-muted)] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-full select-none"
+              title={
+                !canPersistDraft
+                  ? "Add at least one track or rename this collection to save changes"
+                  : undefined
+              }
+            >
+              {!canPersistDraft ? (
+                <>
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                  <span>Add tracks or rename to save</span>
+                </>
+              ) : saveMutation.isPending || hasUnsavedDraft ? (
                 <>
                   <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-500" />
                   <span>Saving...</span>

@@ -12,6 +12,7 @@ import { NavLink, Link, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { components } from "@playlisted/client-sdk";
 
+import { DEFAULT_COLLECTION_TITLE } from "@/components/studio/studioCollectionUtils";
 import { authedApi } from "@/lib/authedApi";
 import { playbackFocusTiming } from "@/lib/playbackFocusTiming";
 import { usePlaybackFocusSuppressed } from "@/lib/playbackFocusSuppression";
@@ -85,7 +86,7 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
     mutationFn: () =>
       client.playlists.create({
         ownerId: user!.id,
-        title: "Untitled collection",
+        title: DEFAULT_COLLECTION_TITLE,
         type: "PLAYLIST",
         status: "PUBLISHED",
         visibility: "PUBLIC",

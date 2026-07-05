@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { BarChart2, Pause, Play, Radio, Users, Upload, Volume2, VolumeX } from "lucide-react";
 
+import { DEFAULT_COLLECTION_TITLE } from "@/components/studio/studioCollectionUtils";
 import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
 import { PlaybackBars } from "@/features/playback-indicators/PlaybackBars";
 import { authedApi } from "@/lib/authedApi";
@@ -78,7 +79,7 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
     mutationFn: () =>
       radioClient.playlists.create({
         ownerId: user!.id,
-        title: "Untitled collection",
+        title: DEFAULT_COLLECTION_TITLE,
         type: "PLAYLIST",
         status: "PUBLISHED",
         visibility: "PUBLIC",

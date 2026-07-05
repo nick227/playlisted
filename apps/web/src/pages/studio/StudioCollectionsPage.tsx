@@ -2,8 +2,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 
 import { StudioCollectionCard } from "@/components/studio/StudioCollectionCard";
-import type { StudioCollectionListItem } from "@/components/studio/studioCollectionUtils";
-import { formatPlaylistDuration } from "@/components/studio/studioCollectionUtils";
+import {
+  DEFAULT_COLLECTION_TITLE,
+  formatPlaylistDuration,
+  type StudioCollectionListItem,
+} from "@/components/studio/studioCollectionUtils";
 import { EmptyState } from "@/components/feedback/EmptyState";
 import { Skeleton } from "@/components/feedback/Skeleton";
 import { authedApi } from "@/lib/authedApi";
@@ -57,7 +60,7 @@ export function StudioCollectionsPage() {
     mutationFn: (type: (typeof typeOptions)[number]["value"]) =>
       client.playlists.create({
         ownerId: user!.id,
-        title: "Untitled collection",
+        title: DEFAULT_COLLECTION_TITLE,
         type,
         status: "PUBLISHED",
         visibility: "PUBLIC",

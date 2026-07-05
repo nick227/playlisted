@@ -8,6 +8,16 @@ export type StudioCollectionListItem = (PlaylistSummary | CollectionPlaylistItem
   listSource: "owned" | "followed";
 };
 
+export const DEFAULT_COLLECTION_TITLE = "Untitled collection";
+
+export function isEmptyUntitledCollection(title: string, trackCount: number): boolean {
+  return trackCount === 0 && title.trim() === DEFAULT_COLLECTION_TITLE;
+}
+
+export function canPersistCollectionDraft(title: string, trackCount: number): boolean {
+  return !isEmptyUntitledCollection(title, trackCount);
+}
+
 export const TYPE_LABELS: Record<string, string> = {
   PLAYLIST: "Playlist",
   ALBUM: "Album",

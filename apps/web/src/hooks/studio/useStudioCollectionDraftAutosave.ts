@@ -9,6 +9,11 @@ import { uploadImageFile } from "@/lib/authedApi";
 import { playlistPath, profilePath } from "@/lib/routes";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 
+import {
+  canPersistCollectionDraft,
+  isEmptyUntitledCollection,
+} from "@/components/studio/studioCollectionUtils";
+
 import type { PlaylistDetailWithTags } from "./types";
 
 type AuthedClient = ReturnType<typeof authedApi>;
@@ -33,8 +38,11 @@ export function useStudioCollectionDraftAutosave({
   const lastSavedTitleRef = useRef<string | undefined>(undefined);
   const lastSavedDescriptionRef = useRef<string | null | undefined>(undefined);
   const lastSavedSlugRef = useRef<string | undefined>(undefined);
+  const playlistRef = useRef<PlaylistDetailWithTags | null | undefined>(undefined);
+  const abandonTimerRef = useRef<number | null>(null);
 
   const playlist = draft ?? data;
+  playlistRef.current = playlist;
 
   if (data && lastSavedTitleRef.current === undefined) {
     lastSavedTitleRef.current = data.title;
@@ -139,6 +147,9 @@ export function useStudioCollectionDraftAutosave({
 
     const currentTitle = playlist.title;
     const currentDescription = playlist.description;
+    const trackCount = playlist.recordings.length;
+
+    if (!canPersistCollectionDraft(currentTitle, trackCount)) return;
 
     const hasChanges =
       (lastSavedTitleRef.current !== undefined && currentTitle !== lastSavedTitleRef.current) ||
@@ -155,16 +166,51 @@ export function useStudioCollectionDraftAutosave({
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [playlist?.title, playlist?.description]);
+  }, [playlist?.title, playlist?.description, playlist?.recordings.length]);
+
+  useEffect(() => {
+    if (abandonTimerRef.current !== null) {
+      window.clearTimeout(abandonTimerRef.current);
+      abandonTimerRef.current = null;
+    }
+
+    return () => {
+      const current = playlistRef.current;
+      if (!playlistId || !current) return;
+      if (!isEmptyUntitledCollection(current.title, current.recordings.length)) return;
+
+      abandonTimerRef.current = window.setTimeout(() => {
+        abandonTimerRef.current = null;
+        void client.playlists
+          .delete(playlistId)
+          .then(() =>
+            Promise.all([
+              queryClient.invalidateQueries({ queryKey: ["me", "playlists"] }),
+              queryClient.invalidateQueries({ queryKey: ["playlists"] }),
+            ]),
+          )
+          .catch(() => undefined);
+      }, 100);
+    };
+  }, [client, playlistId, queryClient]);
 
   async function handleCoverFile(file: File) {
-    if (!accessToken) return;
+    if (!accessToken || !playlist) return;
+    if (!canPersistCollectionDraft(playlist.title, playlist.recordings.length)) {
+      setUploadError("Add tracks or rename this collection before saving cover art.");
+      return;
+    }
     const uploaded = await uploadImageFile(file, accessToken);
     const updated = await saveMutation.mutateAsync({ coverArtUrl: uploaded.url });
     setDraft(updated as PlaylistDetailWithTags);
   }
 
+  const canPersistDraft = playlist
+    ? canPersistCollectionDraft(playlist.title, playlist.recordings.length)
+    : false;
+
   const hasUnsavedDraft =
+    canPersistDraft &&
     Boolean(playlist) &&
     (playlist?.title !== lastSavedTitleRef.current ||
       playlist?.description !== lastSavedDescriptionRef.current);
@@ -180,6 +226,7 @@ export function useStudioCollectionDraftAutosave({
     lastSavedTitleRef,
     lastSavedDescriptionRef,
     hasUnsavedDraft,
+    canPersistDraft,
     handleCoverFile,
   };
 }
