@@ -393,7 +393,7 @@ export function RootPanel({
           <Link to={SECTION_PATHS[entry.label]} className="group block w-full text-left">
             <div className="flex items-start justify-between gap-6 pt-10 pb-4">
               <div className="min-w-0 flex-1">
-                <p className="text-[clamp(2.8rem,6vw,4.5rem)] font-extrabold leading-none tracking-tighter text-white transition-colors group-hover:text-[var(--color-brand)]">
+                <p className="text-[clamp(10rem,10vw,10rem)] font-extrabold leading-none tracking-tighter text-white transition-colors group-hover:text-[var(--color-brand)]">
                   {entry.label}
                 </p>
                 <p className="mt-3 max-w-sm text-sm text-[var(--color-text-subtle)]">{entry.description}</p>
@@ -497,7 +497,7 @@ function ArtistResults({
   }
 
   return (
-    <div className="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+    <div className="mt-10 grid grid-cols-6 gap-4">
       {filteredArtists.map((artist) => (
         <SmartArtistCard
           key={artist.id}
@@ -606,7 +606,7 @@ function PlaylistResults({
   }
 
   return (
-    <div className="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+    <div className="mt-10 grid grid-cols-6 gap-4">
       {playlists.map((playlist) => (
         <SmartPlaylistCard
           key={playlist.id}

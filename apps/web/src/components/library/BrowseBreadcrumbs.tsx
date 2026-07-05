@@ -23,7 +23,7 @@ function crumbLabelClass(isLast: boolean): string {
 export function BrowseBreadcrumbs({ crumbs }: BrowseBreadcrumbsProps) {
   const isMdUp = useIsMdUp();
 
-  if (crumbs.length <= 1) return null;
+  if (crumbs.length === 0) return null;
 
   const visibleCrumbs = isMdUp ? crumbs : collapseCrumbsForMobile(crumbs);
 

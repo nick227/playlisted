@@ -6,6 +6,7 @@ import {
   EMPTY_LIBRARY_SONGS,
   EMPTY_PLAYLISTS,
 } from "@/components/library/libraryFilterUtils";
+import { LibraryBrowseLayout } from "@/components/library/LibraryBrowseLayout";
 import { RootPanel, type RootPreviewData } from "@/components/library/libraryPanels";
 import {
   useLibraryArtists,
@@ -13,7 +14,7 @@ import {
   useLibraryPlaylists,
   useLibrarySongs,
 } from "@/hooks/useLibrary";
-import { BROWSE_LAYOUT_CLASS } from "@/lib/browsePaths";
+import { libraryRootCrumbs } from "@/lib/browsePaths";
 
 function sample<T>(arr: T[], n: number): T[] {
   if (arr.length <= n) return arr;
@@ -49,7 +50,7 @@ export function SpatialLibraryBrowser() {
   );
 
   return (
-    <div className={`${BROWSE_LAYOUT_CLASS} min-h-screen`}>
+    <LibraryBrowseLayout crumbs={libraryRootCrumbs()}>
       <RootPanel
         genreCount={allGenres.length}
         artistCount={allArtists.length}
@@ -57,6 +58,6 @@ export function SpatialLibraryBrowser() {
         songCount={allSongs.length}
         previews={previews}
       />
-    </div>
+    </LibraryBrowseLayout>
   );
 }

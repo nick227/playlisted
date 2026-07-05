@@ -9,7 +9,7 @@ export const PLAYLISTS_PATH = "/playlists";
 export const FAVORITES_PATH = "/favorites";
 
 /** Shared max-width for browse breadcrumbs and collection content. */
-export const BROWSE_LAYOUT_CLASS = "mx-auto max-w-3xl bg-[var(--color-canvas)]/80 p-4";
+export const BROWSE_LAYOUT_CLASS = "mx-auto w-full min-w-0 max-w-3xl overflow-x-clip bg-[var(--color-canvas)]/80 p-4";
 
 /** Artist profile breadcrumbs align with the wider profile layout below. */
 export const ARTIST_PROFILE_LAYOUT_CLASS = "mx-auto max-w-7xl";
@@ -29,6 +29,11 @@ export function artistPath(username: string): string {
 
 export function libraryCrumb(): BrowseCrumb {
   return { label: "Library", to: LIBRARY_PATH };
+}
+
+/** Root `/library` — current page only, styled like the terminal crumb on inner pages. */
+export function libraryRootCrumbs(): BrowseCrumb[] {
+  return [{ label: "Library" }];
 }
 
 export function songsBrowseCrumbs(): BrowseCrumb[] {

@@ -9,12 +9,12 @@ interface LibraryBrowseLayoutProps {
 }
 
 export function LibraryBrowseLayout({ crumbs, children }: LibraryBrowseLayoutProps) {
-  const showCrumbs = crumbs.length > 1;
+  const showCrumbs = crumbs.length > 0;
 
   return (
     <div className={BROWSE_LAYOUT_CLASS}>
       <BrowseBreadcrumbs crumbs={crumbs} />
-      <div className={showCrumbs ? "mt-5 min-h-screen" : "min-h-screen"}>{children}</div>
+      <div className={showCrumbs ? "mt-5 min-h-screen min-w-0" : "min-h-screen min-w-0"}>{children}</div>
     </div>
   );
 }
