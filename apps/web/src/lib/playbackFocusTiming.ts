@@ -20,7 +20,7 @@ export const playbackFocusTiming = {
     fadeInMs: 200,
     fadeOutMs: 450,
     exitBufferMs: 180,
-  },
+  },  
 
   artistVisual: {
     gapAfterTitleIntroMs: 500,
