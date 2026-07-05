@@ -173,8 +173,10 @@ export function SongVisualAssetLibrary({
 
   useEffect(() => {
     if (!libraryFocusMineKind) return;
+    const countKey: VisibleCountKey = libraryFocusMineKind === "image" ? "mineImages" : "mineVideos";
     setActiveTab("mine");
     setMineKind(libraryFocusMineKind);
+    setVisibleCounts((current) => ({ ...current, [countKey]: LIBRARY_BATCH_SIZE }));
     onLibraryFocusHandled();
   }, [libraryFocusMineKind, onLibraryFocusHandled]);
 
@@ -328,7 +330,44 @@ export function SongVisualAssetLibrary({
 
       <EditorSection
         title="Library"
-        action={<PrimaryTabs activeTab={activeTab} onChange={setActiveTab} />}
+        action={
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              disabled={isBusy}
+              onClick={onUpload}
+              className={[
+                "inline-flex h-7 items-center gap-1.5 rounded-md border px-2.5 text-[11px] font-semibold transition",
+                isUploading
+                  ? "border-sky-400/30 bg-sky-500/15 text-sky-100"
+                  : "border-white/15 bg-white/5 text-white/85 hover:border-white/25 hover:bg-white/10 hover:text-white disabled:opacity-40",
+              ].join(" ")}
+              aria-busy={isUploading}
+              aria-label={
+                isUploading
+                  ? formatVisualUploadProgressLabel(uploadProgress, "button")
+                  : "Upload image or video"
+              }
+              title={
+                isUploading
+                  ? formatVisualUploadProgressLabel(uploadProgress, "button")
+                  : "Upload image or video"
+              }
+            >
+              {isUploading ? (
+                <Loader2 size={12} className="animate-spin" />
+              ) : (
+                <Upload size={12} />
+              )}
+              <span className="max-w-[7.5rem] truncate">
+                {isUploading
+                  ? formatVisualUploadProgressLabel(uploadProgress, "button")
+                  : "Upload"}
+              </span>
+            </button>
+            <PrimaryTabs activeTab={activeTab} onChange={setActiveTab} />
+          </div>
+        }
       >
         <div className="mb-3 space-y-2">
           {activeTab === "mine" ? (

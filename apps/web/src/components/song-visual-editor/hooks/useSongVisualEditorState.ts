@@ -151,6 +151,7 @@ export function useSongVisualEditorState({
     onMutate: (file) => {
       const kind = visualUploadKindForFile(file);
       if (!kind) return;
+      setLibraryFocusMineKind(kind);
       setPendingUpload({
         id: `pending-${crypto.randomUUID()}`,
         fileName: file.name,
@@ -161,6 +162,11 @@ export function useSongVisualEditorState({
     },
     onSuccess: async (asset) => {
       setLibraryFocusMineKind(asset.mediaType === "video" ? "video" : "image");
+      queryClient.setQueryData<VisualMediaAssetRecord[]>(["visual-media-assets"], (current) => {
+        if (!current) return [asset];
+        if (current.some((item) => item.id === asset.id)) return current;
+        return [asset, ...current];
+      });
       await attachAssetToTimeline(asset, { startSec: 0 });
       await queryClient.invalidateQueries({ queryKey: ["visual-media-assets"] });
     },
