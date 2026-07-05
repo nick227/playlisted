@@ -1,6 +1,6 @@
 import registry from './index'
-import { registerAnimationPackage } from './registerAnimationPackage'
-import { registerPreset } from './scenePresets'
+import { ensureAnimationPackage } from './registerAnimationPackage'
+import { hasPreset, registerPreset } from './scenePresets'
 import { registerUserMediaEngine } from '../media/userMediaEngine'
 import { registerAttachedOnlyBlankEngine, ATTACHED_ONLY_BLANK_PRESET } from '../media/attachedOnlyBlankPreset'
 import { createIndividualVideoPackages, SEED_VIDEO_ENTRIES } from '../packages/createVideoPackage'
@@ -39,11 +39,14 @@ import {
 
 registerUserMediaEngine()
 registerAttachedOnlyBlankEngine()
-registerPreset(ATTACHED_ONLY_BLANK_PRESET)
+if (!hasPreset(ATTACHED_ONLY_BLANK_PRESET.id)) {
+  registerPreset(ATTACHED_ONLY_BLANK_PRESET)
+}
 
 // Package order matters only when presets reference animations owned by an
 // earlier package. Keep quietPulse first so reduced-motion fallbacks can point
 // at it, then register composite dependencies before their presets.
+// ensureAnimationPackage makes re-imports (HMR / editor + theatre) safe.
 registerObjectTheatreInSeed([
   burgerBounceCarnivalPackage,
   knifeSpiralHorrorPackage,
@@ -80,6 +83,6 @@ registerObjectTheatreInSeed([
     category: 'lab',
     reducedMotionPreset: 'quietPulse',
   }),
-].forEach(registerAnimationPackage)
+].forEach(ensureAnimationPackage)
 
 export default registry

@@ -3,7 +3,11 @@ import { describe, expect, it } from 'vitest'
 import type { AnimationContext, IAnimation } from '../core/IAnimation'
 import registry from '../registry'
 import { getPreset, listPresets, pickPreset } from '../registry/scenePresets'
-import { listRegisteredAnimationPackageIds, registerAnimationPackage } from '../registry/registerAnimationPackage'
+import {
+  ensureAnimationPackage,
+  listRegisteredAnimationPackageIds,
+  registerAnimationPackage,
+} from '../registry/registerAnimationPackage'
 import '../registry/seed'
 
 function testFactory(): IAnimation {
@@ -65,6 +69,12 @@ describe('theatre wiring', () => {
   })
 
   it('rejects duplicate package, animation, and preset IDs', () => {
+    expect(() => ensureAnimationPackage({
+      manifest: { id: 'osm-burger-bounce-carnival', label: 'Already Seeded', version: '1.0.0', kind: 'effect-system', category: 'lab' },
+      animations: [],
+      presets: [],
+    })).not.toThrow()
+
     expect(() => registerAnimationPackage({
       manifest: { id: 'puppet-dancer', label: 'Duplicate Puppet', version: '1.0.0', kind: 'visual-scene', category: 'lab' },
       animations: [{ id: 'duplicatePuppet', label: 'Duplicate Puppet', factory: testFactory, visualType: 'canvas', mood: 'calm' }],

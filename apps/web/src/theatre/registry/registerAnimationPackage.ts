@@ -91,6 +91,16 @@ export function registerAnimationPackage(pkg: AnimationPackage) {
   }
 }
 
+export function hasAnimationPackage(packageId: string) {
+  return registeredPackageIds.has(packageId)
+}
+
 export function listRegisteredAnimationPackageIds() {
   return Array.from(registeredPackageIds)
+}
+
+/** Idempotent seed registration — skips packages already present (HMR / double import). */
+export function ensureAnimationPackage(pkg: AnimationPackage) {
+  if (hasAnimationPackage(pkg.manifest.id)) return
+  registerAnimationPackage(pkg)
 }
