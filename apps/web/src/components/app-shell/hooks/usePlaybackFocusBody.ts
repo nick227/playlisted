@@ -49,6 +49,9 @@ export function usePlaybackFocusBody({
   const miniViewTimerRef = useRef<number | null>(null);
   const snapRevealTimerRef = useRef<number | null>(null);
   const revealInteractionTimerRef = useRef<number | null>(null);
+  const previousFocusTrackKeyRef = useRef(focusTrackKey);
+  const previousLocationKeyRef = useRef(`${pathname}\n${search}`);
+  const bodyFocusHiddenRef = useRef(false);
 
   const [bodyFocusHidden, setBodyFocusHidden] = useState(false);
   const [bodyFadedAtTrackMs, setBodyFadedAtTrackMs] = useState<number | null>(null);
@@ -61,6 +64,10 @@ export function usePlaybackFocusBody({
     subtitlesEnabled,
     theatreFxEnabled,
   });
+
+  useEffect(() => {
+    bodyFocusHiddenRef.current = bodyFocusHidden;
+  }, [bodyFocusHidden]);
 
   const clearFocusTimer = useCallback(() => {
     if (bodyFocusTimerRef.current !== null) {
@@ -129,12 +136,36 @@ export function usePlaybackFocusBody({
 
   // Re-arm on track/route change; clear immediately when playback stops.
   useEffect(() => {
+    const locationKey = `${pathname}\n${search}`;
+    const trackChanged = previousFocusTrackKeyRef.current !== focusTrackKey;
+    const locationChanged = previousLocationKeyRef.current !== locationKey;
+
+    previousFocusTrackKeyRef.current = focusTrackKey;
+    previousLocationKeyRef.current = locationKey;
+
     if (!playFocusActive) {
       clearFocusTimer();
       setBodyFocusHidden(false);
       setBodyFadedAtTrackMs(null);
       setMiniViewVisible(false);
       return;
+    }
+
+    if (
+      trackChanged &&
+      !locationChanged &&
+      bodyFocusHiddenRef.current &&
+      !playbackFocusSuppressed &&
+      !bodyFadeDisabled
+    ) {
+      clearFocusTimer();
+      setBodyFadedAtTrackMs(currentTimeMsRef.current);
+      setMiniViewVisible(false);
+      return () => {
+        clearFocusTimer();
+        clearSnapRevealTimer();
+        clearRevealInteractionTimer();
+      };
     }
 
     armPlayFocus("initial");
@@ -149,6 +180,7 @@ export function usePlaybackFocusBody({
     clearFocusTimer,
     clearRevealInteractionTimer,
     clearSnapRevealTimer,
+    currentTimeMsRef,
     focusTrackKey,
     pathname,
     playbackFocusSuppressed,
