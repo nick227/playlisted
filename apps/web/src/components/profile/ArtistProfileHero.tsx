@@ -83,13 +83,15 @@ export function ArtistProfileHero({
   const displayName = preview?.displayName ?? user.displayName;
   const username = preview?.username ?? user.username;
   const bio = preview?.bio ?? user.bio;
-  const profileLinks = preview?.profileLinks ?? user.profileLinks ?? [];
   const { theatreActive } = useTheatreMode();
 
   const [savingField, setSavingField] = useState<string | null>(null);
   const saveTimer = useRef<NodeJS.Timeout | undefined>(undefined);
   
   const [editingLinks, setEditingLinks] = useState(false);
+  const [optimisticLinks, setOptimisticLinks] = useState<ProfileLink[] | null>(null);
+  
+  const profileLinks = preview?.profileLinks ?? optimisticLinks ?? user.profileLinks ?? [];
   const [localLinks, setLocalLinks] = useState<ProfileLink[]>(profileLinks);
 
   const { data: analytics } = useQuery({
@@ -158,7 +160,9 @@ export function ArtistProfileHero({
   }
   
   function saveLinks() {
-    updateMutation.mutate({ profileLinks: prepareProfileLinks(localLinks) });
+    const updatedLinks = prepareProfileLinks(localLinks);
+    setOptimisticLinks(updatedLinks);
+    updateMutation.mutate({ profileLinks: updatedLinks });
     setEditingLinks(false);
   }
 
@@ -181,18 +185,18 @@ export function ArtistProfileHero({
   }
 
   return (
-    <section className="border-b border-white/10 pb-12 rounded-lg p-4">
-      <div className="grid gap-10 md:grid-cols-[minmax(140px,180px)_1fr] md:items-start">
-        <div className="relative group/avatar">
+    <section className="min-w-0 overflow-x-clip border-b border-white/10 rounded-lg px-4 pb-10 pt-4 md:pb-12">
+      <div className="grid min-w-0 grid-cols-[5rem_1fr] items-start gap-x-4 gap-y-3 md:grid-cols-[minmax(140px,180px)_1fr] md:gap-x-10 md:gap-y-5">
+        <div className="relative group/avatar row-span-2 w-20 md:row-span-6 md:w-full md:max-w-[180px]">
           {user.avatarUrl ? (
             <img
               src={user.avatarUrl}
               alt=""
-              className="aspect-square w-full rounded-lg object-cover sm:max-w-[180px]"
+              className="aspect-square h-20 w-20 rounded-lg object-cover md:h-auto md:w-full"
             />
           ) : (
             <div
-              className="aspect-square w-full max-w-[180px] rounded-lg"
+              className="aspect-square h-20 w-20 rounded-lg md:h-auto md:w-full"
               style={{ background: coverFallback(displayName) }}
             />
           )}
@@ -227,28 +231,32 @@ export function ArtistProfileHero({
           )}
         </div>
 
-        <div className="min-w-0 space-y-5">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <p className="text-sm text-[var(--color-text-muted)]">@{username}</p>
-          </div>
+        <p className="min-w-0 self-end text-sm text-[var(--color-text-muted)] md:col-start-2 md:self-auto">
+          @{username}
+        </p>
 
-          <div className="flex items-center gap-3">
-            <h1 
-              className="max-w-3xl text-4xl font-light leading-tight tracking-tight text-white md:text-5xl outline-none focus:bg-white/5 rounded px-1 -ml-1 py-0.5 transition-colors"
-              contentEditable={isOwner && !preview}
-              suppressContentEditableWarning={true}
-              onBlur={isOwner && !preview ? handleNameBlur : undefined}
-              onKeyDown={isOwner && !preview ? handleNameKeyDown : undefined}
-            >
-              {displayName}
-            </h1>
-            {savingField === "displayName" && <span className="text-[10px] font-bold text-green-400 bg-green-400/10 px-1.5 py-0.5 rounded uppercase tracking-wider">Saved</span>}
-          </div>
+        <div className="flex min-w-0 flex-wrap items-center gap-3 md:col-start-2">
+          <h1
+            className="min-w-0 max-w-3xl break-words text-2xl font-light leading-tight tracking-tight text-white sm:text-3xl md:text-4xl lg:text-5xl outline-none focus:bg-white/5 rounded px-1 -ml-1 py-0.5 transition-colors"
+            contentEditable={isOwner && !preview}
+            suppressContentEditableWarning={true}
+            onBlur={isOwner && !preview ? handleNameBlur : undefined}
+            onKeyDown={isOwner && !preview ? handleNameKeyDown : undefined}
+          >
+            {displayName}
+          </h1>
+          {savingField === "displayName" && (
+            <span className="text-[10px] font-bold text-green-400 bg-green-400/10 px-1.5 py-0.5 rounded uppercase tracking-wider">
+              Saved
+            </span>
+          )}
+        </div>
 
+        <div className="col-span-2 min-w-0 space-y-5 md:col-span-1 md:col-start-2">
           {(bio || (isOwner && !preview)) ? (
-            <div className="flex items-center gap-3">
+            <div className="flex min-w-0 flex-wrap items-center gap-3">
               <p 
-                className="max-w-prose text-sm leading-relaxed text-[var(--color-text-muted)] outline-none min-w-[200px] min-h-[1.5em] empty:before:content-['Add_a_bio...'] empty:before:text-white/20 transition-colors focus:bg-white/5 rounded px-1 -ml-1 py-0.5"
+                className="min-w-0 max-w-prose break-words text-sm leading-relaxed text-[var(--color-text-muted)] outline-none min-h-[1.5em] empty:before:content-['Add_a_bio...'] empty:before:text-white/20 transition-colors focus:bg-white/5 rounded px-1 -ml-1 py-0.5"
                 contentEditable={isOwner && !preview}
                 suppressContentEditableWarning={true}
                 onBlur={isOwner && !preview ? handleBioBlur : undefined}
@@ -260,16 +268,16 @@ export function ArtistProfileHero({
           ) : null}
 
           {isOwner && !preview && analytics ? (
-            <ul className="flex items-center gap-6 divide-x divide-white/10 text-sm mt-2">
-              <li className="flex flex-col pr-6">
+            <ul className="mt-2 flex flex-wrap items-start gap-x-6 gap-y-3 text-sm">
+              <li className="flex flex-col">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Views</span>
                 <span className="text-lg font-light text-white">{analytics.summary.totalPageViews.current.toLocaleString() ?? "-"}</span>
               </li>
-              <li className="flex flex-col px-6">
+              <li className="flex flex-col">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Likes</span>
                 <span className="text-lg font-light text-white">{analytics.summary.totalLikes.current.toLocaleString() ?? "-"}</span>
               </li>
-              <li className="flex flex-col pl-6">
+              <li className="flex flex-col">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Hours</span>
                 <span className="text-lg font-light text-white">{(analytics.summary.totalPlaySeconds.current / 3600).toFixed(1)}</span>
               </li>
@@ -314,6 +322,100 @@ export function ArtistProfileHero({
               </nav>
             ) : null}
             
+            {savingField === "profileLinks" && !editingLinks && <span className="text-[10px] font-bold text-green-400 bg-green-400/10 px-1.5 py-0.5 rounded uppercase tracking-wider">Saved</span>}
+          </div>
+
+          {editingLinks && isOwner && (
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+              <div className="flex flex-col w-full max-w-md overflow-hidden rounded-xl border border-white/10 bg-[var(--color-canvas)] shadow-2xl p-5">
+                <div className="flex items-center justify-between mb-5">
+                  <h3 className="text-lg font-bold text-white">Edit Social Links</h3>
+                  <button
+                    type="button"
+                    onClick={() => setEditingLinks(false)}
+                    className="rounded-full p-2 text-white/50 hover:bg-white/10 hover:text-white transition-colors"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+                
+                <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
+                  {localLinks.map((link) => (
+                    <div key={link.id} className="flex gap-2 items-start bg-white/5 p-3 rounded-xl border border-white/5 relative group">
+                      <div className="flex-1 space-y-2">
+                        <div className="flex gap-2">
+                          <select
+                            value={link.platform}
+                            onChange={(event) =>
+                              patchLocalLink(link.id, { platform: event.target.value as ProfileLink["platform"] })
+                            }
+                            className="flex-1 rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white outline-none focus:border-white/30"
+                          >
+                            {PROFILE_LINK_PLATFORMS.map((platform) => (
+                              <option key={platform.value} value={platform.value}>
+                                {platform.label}
+                              </option>
+                            ))}
+                          </select>
+                          <input
+                            value={link.label}
+                            onChange={(event) => patchLocalLink(link.id, { label: event.target.value })}
+                            placeholder="Label (Optional)"
+                            className="flex-1 rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/30 focus:border-white/30"
+                          />
+                        </div>
+                        <input
+                          value={link.url}
+                          onChange={(event) => patchLocalLink(link.id, { url: event.target.value })}
+                          placeholder="https://"
+                          inputMode="url"
+                          className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/30 focus:border-white/30"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setLocalLinks((links) => links.filter((item) => item.id !== link.id))}
+                        className="p-2 text-white/30 hover:text-red-400 rounded-lg hover:bg-white/5 transition-colors mt-1"
+                        aria-label="Remove link"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ))}
+                  
+                  <button
+                    type="button"
+                    onClick={() => setLocalLinks((links) => [...links, createProfileLink()])}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-white/20 py-3 text-sm font-semibold text-white/60 transition hover:bg-white/5 hover:text-white"
+                  >
+                    <Plus size={16} />
+                    Add another link
+                  </button>
+                </div>
+                
+                <div className="mt-6 flex justify-end gap-3 pt-5 border-t border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => setEditingLinks(false)}
+                    className="rounded-full px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-white/10"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={saveLinks}
+                    disabled={updateMutation.isPending}
+                    className="rounded-full bg-white px-6 py-2.5 text-sm font-bold text-black transition hover:bg-white/90 disabled:opacity-60"
+                  >
+                    {updateMutation.isPending ? "Saving..." : "Save"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="collection-controls mt-6 flex min-w-0 flex-wrap items-center gap-3 sm:flex-nowrap sm:overflow-x-auto">
+            
             {isOwner && !preview && !editingLinks ? (
               <button
                 type="button"
@@ -321,99 +423,13 @@ export function ArtistProfileHero({
                   setLocalLinks(profileLinks);
                   setEditingLinks(true);
                 }}
-                className="inline-flex h-9 items-center gap-2 rounded-full border border-dashed border-white/20 px-3 text-xs font-semibold text-[var(--color-text-muted)] transition hover:border-white/50 hover:text-white"
+                className="inline-flex h-10 items-center gap-2 rounded-full border border-dashed border-white/20 px-3 text-xs font-semibold text-[var(--color-text-muted)] transition hover:border-white/50 hover:text-white"
               >
                 <Plus size={14} />
                 {profileLinks.length > 0 ? "Edit Links" : "Add Links"}
               </button>
             ) : null}
-            
-            {savingField === "profileLinks" && !editingLinks && <span className="text-[10px] font-bold text-green-400 bg-green-400/10 px-1.5 py-0.5 rounded uppercase tracking-wider">Saved</span>}
-          </div>
 
-          {editingLinks && isOwner && (
-            <div className="mt-4 max-w-2xl rounded-xl border border-white/10 bg-black/20 p-4">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-semibold text-white">Edit Social Links</h3>
-                <button
-                  type="button"
-                  onClick={() => setEditingLinks(false)}
-                  className="text-[var(--color-text-muted)] hover:text-white"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-              
-              <div className="space-y-3">
-                {localLinks.map((link) => (
-                  <div key={link.id} className="flex flex-wrap md:flex-nowrap gap-2 items-center">
-                    <select
-                      value={link.platform}
-                      onChange={(event) =>
-                        patchLocalLink(link.id, { platform: event.target.value as ProfileLink["platform"] })
-                      }
-                      className="w-full md:w-auto min-w-[120px] rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-white outline-none focus:border-[var(--color-brand)]"
-                    >
-                      {PROFILE_LINK_PLATFORMS.map((platform) => (
-                        <option key={platform.value} value={platform.value}>
-                          {platform.label}
-                        </option>
-                      ))}
-                    </select>
-                    <input
-                      value={link.label}
-                      onChange={(event) => patchLocalLink(link.id, { label: event.target.value })}
-                      placeholder="Label"
-                      className="w-full md:w-32 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-white outline-none placeholder:text-[var(--color-text-subtle)] focus:border-[var(--color-brand)]"
-                    />
-                    <input
-                      value={link.url}
-                      onChange={(event) => patchLocalLink(link.id, { url: event.target.value })}
-                      placeholder="https://"
-                      inputMode="url"
-                      className="w-full flex-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-white outline-none placeholder:text-[var(--color-text-subtle)] focus:border-[var(--color-brand)]"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setLocalLinks((links) => links.filter((item) => item.id !== link.id))}
-                      className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-white/10 text-[var(--color-text-muted)] transition hover:border-red-400/60 hover:text-red-300"
-                    >
-                      <Trash2 size={15} />
-                    </button>
-                  </div>
-                ))}
-                
-                <button
-                  type="button"
-                  onClick={() => setLocalLinks((links) => [...links, createProfileLink()])}
-                  className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-white/20 py-2.5 text-xs font-semibold text-[var(--color-text-muted)] transition hover:bg-white/5 hover:text-white"
-                >
-                  <Plus size={14} />
-                  Add another link
-                </button>
-              </div>
-              
-              <div className="mt-5 flex justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setEditingLinks(false)}
-                  className="rounded-full px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={saveLinks}
-                  disabled={updateMutation.isPending}
-                  className="rounded-full bg-white px-5 py-2 text-sm font-bold text-black transition hover:bg-white/90 disabled:opacity-60"
-                >
-                  {updateMutation.isPending ? "Saving..." : "Save Links"}
-                </button>
-              </div>
-            </div>
-          )}
-
-          <div className="mt-6 flex flex-nowrap items-center gap-3 overflow-x-auto collection-controls">
             {onPlay ? (
               <button
                 type="button"
