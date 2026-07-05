@@ -5,7 +5,7 @@ export function isPlaybackFocusBodyFadeDisabled(pathname: string): boolean {
   if (pathname === "/chat" || pathname.startsWith("/chat/")) return true;
   if (pathname === "/settings" || pathname.startsWith("/settings/")) return true;
   if (pathname === "/search" || pathname.startsWith("/search/")) return true;
-  if (pathname === "/@" || pathname.startsWith("/@/")) return true;
+  // if (pathname === "/@" || pathname.startsWith("/@/")) return true;
   return false;
 }
 
