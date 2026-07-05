@@ -70,15 +70,16 @@ export function resolvePlaybackFocusFixture(input: ResolvePlaybackFocusInput): P
     recording,
     focusState,
     subtitlesEnabled,
+    isPlaying,
   } = input;
 
-  if (!canShowFocusLane(focusState)) {
+  if (!canShowFocusLane(focusState) || !isPlaying) {
     return { type: "none" };
   }
 
   const currentTimeSec = currentTimeMs / 1000;
 
-  if (subtitlesEnabled && subtitleReady && subtitleSegments?.length) {
+  if (subtitlesEnabled && subtitleReady && subtitleSegments?.length && isPlaying) {
     const flowSegment = resolveSubtitleSegmentAtTime(
       subtitleSegments,
       currentTimeSec,

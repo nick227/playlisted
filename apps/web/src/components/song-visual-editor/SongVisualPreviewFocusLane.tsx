@@ -110,6 +110,7 @@ export function SongVisualPreviewFocusLane({
           bodyFadedAtTrackMs: canRenderTextOverlay ? 0 : null,
         },
         subtitlesEnabled,
+        isPlaying: canRenderTextOverlay,
       }),
     [
       canRenderTextOverlay,

@@ -59,4 +59,5 @@ export type ResolvePlaybackFocusInput = {
   recording: FocusRecording | null;
   focusState: PlaybackFocusState;
   subtitlesEnabled: boolean;
+  isPlaying: boolean;
 };

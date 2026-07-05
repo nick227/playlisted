@@ -110,11 +110,13 @@ export function PlaybackFocusLane({ focusState, onReturnBody }: PlaybackFocusLan
         recording,
         focusState,
         subtitlesEnabled,
+        isPlaying,
       }),
     [
       artist,
       currentTimeMs,
       focusState,
+      isPlaying,
       recording,
       subtitles?.segments,
       subtitles?.status,
@@ -125,7 +127,11 @@ export function PlaybackFocusLane({ focusState, onReturnBody }: PlaybackFocusLan
 
   const { displayFixture, displayKey, layerVisible, variantClass } = useFocusLaneVisibility(activeFixture);
 
-  if (!recording?.id || !displayFixture || displayFixture.type === "none") {
+  if (!recording?.id || !focusState.hasBodyFaded || !isPlaying) {
+    return null;
+  }
+
+  if (!displayFixture || displayFixture.type === "none") {
     return null;
   }
 
