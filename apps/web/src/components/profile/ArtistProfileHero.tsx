@@ -411,7 +411,7 @@ export function ArtistProfileHero({
             </div>
           )}
 
-          <div className="collection-controls mt-6 flex min-w-0 flex-wrap items-center gap-3 sm:flex-nowrap sm:overflow-x-auto">
+          <div className="collection-controls mt-6 flex min-w-0 flex-wrap items-center gap-2 flex-nowrap sm:overflow-x-auto">
             
             {isOwner && !preview && !editingLinks ? (
               <button

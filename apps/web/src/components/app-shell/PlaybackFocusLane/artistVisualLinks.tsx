@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import { Link } from "react-router-dom";
 
+import { AppLink } from "@/components/navigation/AppLink";
 import { genrePath } from "@/lib/browsePaths";
 import type { FocusRecording } from "@/lib/playbackFocus/types";
 import { playlistRecordingPath, profilePath } from "@/lib/routes";
@@ -94,15 +94,14 @@ type FocusLaneLinkProps = {
 
 export function FocusLaneLink({ to, className = "", title, children }: FocusLaneLinkProps) {
   return (
-    <Link
+    <AppLink
       to={to}
       title={title}
       className={className}
       onPointerDown={stopPlaybackFocusBubble}
-      onClick={stopPlaybackFocusBubble}
     >
       {children}
-    </Link>
+    </AppLink>
   );
 }
 

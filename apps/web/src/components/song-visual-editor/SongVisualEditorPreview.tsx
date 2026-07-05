@@ -31,6 +31,7 @@ type SongVisualEditorPreviewProps = {
   audioRef: RefObject<HTMLAudioElement | null>;
   onTogglePlayback: () => void;
   canPlay: boolean;
+  showOverlays: boolean;
 };
 
 export function SongVisualEditorPreview({
@@ -41,6 +42,7 @@ export function SongVisualEditorPreview({
   audioRef,
   onTogglePlayback,
   canPlay,
+  showOverlays,
 }: SongVisualEditorPreviewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const attachment = clip?.attachment ?? null;
@@ -74,14 +76,16 @@ export function SongVisualEditorPreview({
             Add media to preview visuals
           </div>
         ) : (
-          <div ref={containerRef} className="absolute inset-0" />
+          <div ref={containerRef} className="pointer-events-none absolute inset-0" />
         )}
 
-        <SongVisualPreviewFocusLane
-          enabled={isPlaying}
-          recording={recording}
-          currentTimeSec={currentTimeSec}
-        />
+        {showOverlays ? (
+          <SongVisualPreviewFocusLane
+            enabled={isPlaying}
+            recording={recording}
+            currentTimeSec={currentTimeSec}
+          />
+        ) : null}
 
         {canPlay ? (
           isPlaying ? (

@@ -29,6 +29,7 @@ apps/web/src/components/uploads/*
 !apps/web/src/components/uploads/TrackUploadQueue.tsx
 temp/
 
+
 # Test & coverage
 coverage/
 reports/image-optimization-backups/

@@ -126,6 +126,10 @@ export function PlaybackFocusLane({ focusState, onReturnBody }: PlaybackFocusLan
   );
 
   const { displayFixture, displayKey, layerVisible, variantClass } = useFocusLaneVisibility(activeFixture);
+  const artistVisualPosition =
+    displayFixture?.type === "finalFallback" ||
+    (displayFixture?.type === "fallbackSubtitle" && displayFixture.source !== "title-intro");
+  const positionClassName = subtitlePositionClassName(artistVisualPosition ? "middle" : subtitlePosition);
 
   if (!recording?.id || !focusState.hasBodyFaded || !isPlaying) {
     return null;
@@ -138,7 +142,7 @@ export function PlaybackFocusLane({ focusState, onReturnBody }: PlaybackFocusLan
   return createPortal(
     <div
       data-focus-lane
-      className={`focus-lane${layerVisible ? " is-visible" : ""}${variantClass}${subtitlePositionClassName(subtitlePosition)}`}
+      className={`focus-lane${layerVisible ? " is-visible" : ""}${variantClass}${positionClassName}`}
       aria-hidden={!layerVisible}
     >
       <div key={displayKey} className="focus-lane__content">

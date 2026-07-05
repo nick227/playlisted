@@ -28,14 +28,14 @@ export type VideoPackageEntry = {
   videoUrl: string
 }
 
+const MAX_VIDEO_COUNT = 240
+
 /** One package per video — each gets an equal rotation slot via per-package pick. */
 export const SEED_VIDEO_ENTRIES: VideoPackageEntry[] = [
-  ...Array.from({ length: 63 }, (_, index) => {
+  ...Array.from({ length: MAX_VIDEO_COUNT }, (_, index) => {
     const n = index + 1
     return { id: `video${n}`, label: `Video ${n}`, videoUrl: `/${n}.mp4` }
   }),
-  { id: 'demo1', label: 'demo1', videoUrl: '/demo1.mp4' },
-  { id: 'demo2', label: 'demo2', videoUrl: '/demo2.mp4' },
 ]
 
 export type IndividualVideoPackageDefaults = Omit<CreateVideoPackageOptions, 'id' | 'label' | 'videoUrl'>

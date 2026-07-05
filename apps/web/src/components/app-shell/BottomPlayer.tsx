@@ -1,10 +1,7 @@
 import {
-  Captions,
   ListMusic,
   Pause,
   Play,
-  Repeat,
-  Shuffle,
   SkipBack,
   SkipForward,
   Volume2,
@@ -18,7 +15,6 @@ import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
 import { formatDuration } from "@/lib/format";
 import { coverFallback, playlistPath, playlistRecordingPath, profilePath } from "@/lib/routes";
 import { usePlaybackTransport } from "@/hooks/usePlaybackTransport";
-import { useSubtitleDisplay } from "@/lib/subtitleDisplay";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 import { useRadioPlayer } from "@/providers/RadioPlayerProvider";
 
@@ -58,10 +54,6 @@ export function BottomPlayer() {
     autoplayNextSegment,
     upNextPipeline,
     skipToUpNext,
-    shuffle,
-    toggleShuffle,
-    repeatMode,
-    cycleRepeat,
     volume,
     setVolume,
   } = useAudioPlayer();
@@ -75,7 +67,6 @@ export function BottomPlayer() {
     setVolume: setRadioVolume,
   } = useRadioPlayer();
   const { currentTime, duration, seek } = usePlaybackTransport();
-  const { subtitlesEnabled, toggleSubtitlesEnabled } = useSubtitleDisplay();
 
   const prevVolumeRef = useRef(1);
   const [radioCurrentTime, setRadioCurrentTime] = useState(0);
@@ -121,7 +112,6 @@ export function BottomPlayer() {
     ? radioPlaying
     : dismiss && !currentTrack ? false : isPlaying;
   const progress = shellDuration > 0 ? (shellCurrentTime / shellDuration) * 100 : 0;
-  const canShowCaptions = !radioDisplayTrack && currentTrack?.subtitle?.status === "READY";
   const activeVolume = radioDisplayTrack ? radioVolume : volume;
   const setActiveVolume = radioDisplayTrack ? setRadioVolume : setVolume;
   const showQueueControls = !radioDisplayTrack && !playerBarExiting;
@@ -318,28 +308,8 @@ export function BottomPlayer() {
             </div>
           </div>
           <div className="bottom-player__section bottom-player__section--actions bottom-player__actions-mobile">
-            {canShowCaptions ? (
-              <button
-                type="button"
-                onClick={toggleSubtitlesEnabled}
-                aria-pressed={subtitlesEnabled}
-                aria-label={subtitlesEnabled ? "Hide subtitles" : "Show subtitles"}
-                className={`${mobileActionButtonClass} ${subtitlesEnabled ? "!text-[var(--color-brand)]" : ""}`}
-              >
-                <Captions size={18} />
-              </button>
-            ) : null}
             {showQueueControls ? (
               <>
-                <button
-                  type="button"
-                  onClick={toggleShuffle}
-                  aria-pressed={shuffle}
-                  aria-label="Shuffle"
-                  className={`${mobileActionButtonClass} ${shuffle ? "!text-[var(--color-brand)]" : ""}`}
-                >
-                  <Shuffle size={17} />
-                </button>
                 <button
                   type="button"
                   onClick={() => setQueueOpen(true)}
@@ -373,43 +343,8 @@ export function BottomPlayer() {
 
             {showQueueControls ? <div className="mx-1 h-4 w-px bg-white/10" /> : null}
 
-            {canShowCaptions ? (
-              <button
-                type="button"
-                onClick={toggleSubtitlesEnabled}
-                aria-pressed={subtitlesEnabled}
-                aria-label={subtitlesEnabled ? "Hide subtitles" : "Show subtitles"}
-                className={`transition ${subtitlesEnabled ? "text-[var(--color-brand)]" : "text-[var(--color-text-muted)] hover:text-white"}`}
-              >
-                <Captions size={20} />
-              </button>
-            ) : null}
-
             {showQueueControls ? (
               <>
-                <button
-                  type="button"
-                  onClick={toggleShuffle}
-                  aria-pressed={shuffle}
-                  aria-label="Shuffle"
-                  className={`transition ${shuffle ? "text-[var(--color-brand)]" : "text-[var(--color-text-muted)] hover:text-white"}`}
-                >
-                  <Shuffle size={18} />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={cycleRepeat}
-                  aria-label="Repeat"
-                  className={`relative transition ${repeatMode !== "off" ? "text-[var(--color-brand)]" : "text-[var(--color-text-muted)] hover:text-white"}`}
-                >
-                  <Repeat size={18} />
-                  {repeatMode === "one" && (
-                    <span className="absolute -right-1 -top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[var(--color-brand)] text-[8px] font-bold leading-none text-white">
-                      1
-                    </span>
-                  )}
-                </button>
 
                 <button
                   type="button"

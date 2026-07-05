@@ -85,13 +85,15 @@ export function resolvePlaybackFocusFixture(input: ResolvePlaybackFocusInput): P
       currentTimeSec,
       playbackFocusTiming.subtitleFlow.minGapForArtistVisualMs / 1000,
     );
-    const text = flowSegment?.segment.text.trim();
-    if (text) {
-      return {
-        type: "subtitle",
-        text,
-        cueId: `real:${flowSegment.segment.start}-${flowSegment.segment.end}`,
-      };
+    if (flowSegment) {
+      const text = flowSegment.segment.text.trim();
+      if (text) {
+        return {
+          type: "subtitle",
+          text,
+          cueId: `real:${flowSegment.segment.start}-${flowSegment.segment.end}`,
+        };
+      }
     }
   }
 

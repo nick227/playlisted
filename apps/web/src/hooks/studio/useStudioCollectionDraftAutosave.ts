@@ -6,7 +6,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 
 import type { authedApi } from "@/lib/authedApi";
 import { uploadImageFile } from "@/lib/authedApi";
-import { playlistPath } from "@/lib/routes";
+import { playlistPath, profilePath } from "@/lib/routes";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 
 import type { PlaylistDetailWithTags } from "./types";
@@ -121,13 +121,13 @@ export function useStudioCollectionDraftAutosave({
       await queryClient.invalidateQueries({ queryKey: ["me", "playlists"] });
       await queryClient.invalidateQueries({ queryKey: ["playlists"] });
       await queryClient.invalidateQueries({ queryKey: ["playlist", playlistId] });
-      window.location.href = "/studio";
+      navigate(playlist?.owner.username ? profilePath(playlist.owner.username) : "/settings", { replace: true });
     },
     onError: async (err) => {
       if (err instanceof PlaylistedApiError && err.status === 404) {
         await queryClient.invalidateQueries({ queryKey: ["me", "playlists"] });
         await queryClient.invalidateQueries({ queryKey: ["playlists"] });
-        window.location.href = "/studio";
+        navigate(playlist?.owner.username ? profilePath(playlist.owner.username) : "/settings", { replace: true });
         return;
       }
       setUploadError(err instanceof Error ? err.message : "Failed to delete collection.");

@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { MessageCircle, Pause, Play, Radio, Users, Upload, Volume2, VolumeX } from "lucide-react";
+import { BarChart2, Pause, Play, Radio, Users, Upload, Volume2, VolumeX } from "lucide-react";
 
 import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
 import { PlaybackBars } from "@/features/playback-indicators/PlaybackBars";
 import { authedApi } from "@/lib/authedApi";
-import { coverFallback, playlistPath, studioCollectionEditPath } from "@/lib/routes";
+import { coverFallback, playlistPath, profilePath, studioCollectionEditPath } from "@/lib/routes";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { useAuth } from "@/providers/AuthProvider";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
@@ -39,7 +39,8 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const location = useLocation();
-  const [volumeOpen, setVolumeOpen] = useState(false);
+  const [volumeHoverOpen, setVolumeHoverOpen] = useState(false);
+  const [volumePinnedOpen, setVolumePinnedOpen] = useState(false);
 
   const shellHasPlayer =
     playerShellActive ||
@@ -51,9 +52,6 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
 
   const statusLabel = radioQuery.isError ? "Unavailable" : isLive ? "Live" : "Offline";
 
-  const description =
-    nowPlaying?.description?.trim() ||
-    [nowPlaying?.uploader.displayName, nowPlaying?.playlist.title].filter(Boolean).join(" · ");
 
   const artStyle = useMemo(() => {
     if (nowPlaying?.artworkUrl) return { backgroundImage: `url(${nowPlaying.artworkUrl})` };
@@ -101,29 +99,82 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
     submissionCollectionMutation.mutate();
   }
 
-  function calculateFontSize(text: string): number {
-    const minFontSize = 24;
-    const maxFontSize = 64;
-    const minChars = 25;
-    const maxChars = 35;
+  /* Magic font */
 
-    const length = Math.max(minChars, Math.min(maxChars, text.length));
-    const ratio = (length - minChars) / (maxChars - minChars);
-    
-    return maxFontSize - (ratio * (maxFontSize - minFontSize));
+  type MagicFontProps = {
+    children: string;
+    minFontSize?: number;
+    maxFontSize?: number;
+    minChars?: number;
+    maxChars?: number;
+  };
+  
+  function clamp(value: number, min: number, max: number): number {
+    return Math.min(max, Math.max(min, value));
+  }
+  
+  function countTextLength(text: string): number {
+    return [...text.trim()].length;
+  }
+  
+  function calculateFontSize(
+    text: string,
+    {
+      minFontSize = 24,
+      maxFontSize = 64,
+      minChars = 25,
+      maxChars = 35,
+    }: Omit<MagicFontProps, "children"> = {},
+  ): number {
+    const charRange = maxChars - minChars;
+  
+    if (charRange <= 0) {
+      return maxFontSize;
+    }
+  
+    const length = clamp(countTextLength(text), minChars, maxChars);
+    const progress = (length - minChars) / charRange;
+  
+    return maxFontSize - progress * (maxFontSize - minFontSize);
+  }
+  
+  function MagicFont({
+    children,
+    minFontSize = 16,
+    maxFontSize = 24,
+    minChars = 10,
+    maxChars = 65,
+  }: MagicFontProps) {
+    const text = children.trim();
+  
+    const fontSize = calculateFontSize(text, {
+      minFontSize,
+      maxFontSize,
+      minChars,
+      maxChars,
+    });
+  
+    return (
+      <span
+        style={{
+          display: "block",
+          fontSize: `${fontSize}px`,
+          lineHeight: 1,
+        }}
+      >
+        {text}
+      </span>
+    );
   }
 
-  function MagicFont({ children }: { children: string }) {
-    const text = children || "";
-    const fontSize = calculateFontSize(text);
-    return <span style={{ fontSize: `${fontSize}px`, display: "block", lineHeight: "1" }}>{text}</span>;
-  }
+  /* End Magic font */
 
   const pageHeight = shellHasPlayer
     ? "h-[calc(100dvh-var(--spacing-topbar)-1rem-var(--spacing-player-safe-mobile)-1.5rem)] max-h-[calc(100dvh-var(--spacing-topbar)-1rem-var(--spacing-player-safe-mobile)-1.5rem)] md:h-[calc(100dvh-var(--spacing-topbar)-1rem-var(--spacing-player)-1.5rem)] md:max-h-[calc(100dvh-var(--spacing-topbar)-1rem-var(--spacing-player)-1.5rem)]"
     : "h-[calc(100dvh-var(--spacing-topbar)-1rem-1.5rem)] max-h-[calc(100dvh-var(--spacing-topbar)-1rem-1.5rem)]";
   const artworkClassName =
     "aspect-square max-h-full w-full max-w-full rounded-[1.4rem] border border-white/[0.08] bg-white/5 bg-cover bg-center shadow-[0_26px_80px_rgba(0,0,0,0.44)]";
+  const volumeOpen = volumeHoverOpen || volumePinnedOpen;
 
   return (
     <div
@@ -189,7 +240,11 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
           </h1>
 
           <p className="mt-1 h-7 max-w-full truncate text-base leading-7 text-[var(--color-text-muted)] bg-[var(--color-canvas)]/80 rounded-sm px-4 sm:mt-3">
-            {description}
+            {nowPlaying?.uploader ? (
+              <Link to={profilePath(nowPlaying.uploader.username)} className="hover:text-white transition">
+                {nowPlaying.uploader.displayName}
+              </Link>
+            ) : null}
           </p>
         </div>
 
@@ -213,13 +268,20 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
         <div className="flex h-16 shrink-0 items-center justify-center gap-4 sm:mt-8">
           <div
             className="group/volume relative flex h-11 w-11 items-center justify-center"
-            onMouseEnter={() => setVolumeOpen(true)}
-            onMouseLeave={() => setVolumeOpen(false)}
+            onMouseEnter={() => setVolumeHoverOpen(true)}
+            onMouseLeave={() => setVolumeHoverOpen(false)}
+            onBlur={(event) => {
+              if (!event.currentTarget.contains(event.relatedTarget)) {
+                setVolumeHoverOpen(false);
+                setVolumePinnedOpen(false);
+              }
+            }}
           >
+            <span className="absolute bottom-0 left-1/2 z-0 h-48 w-11 -translate-x-1/2" aria-hidden="true" />
             <div
-              className={`absolute bottom-[3.25rem] left-1/2 flex h-36 w-11 -translate-x-1/2 items-center justify-center rounded-full border border-white/[0.08] bg-black/70 py-4 shadow-2xl shadow-black/40 backdrop-blur-md transition ${
+              className={`absolute bottom-[3.25rem] left-1/2 z-10 flex h-36 w-11 -translate-x-1/2 items-center justify-center rounded-full border border-white/[0.08] bg-black/70 py-4 shadow-2xl shadow-black/40 backdrop-blur-md transition ${
                 volumeOpen ? "pointer-events-auto translate-y-0 opacity-100" : "pointer-events-none translate-y-2 opacity-0"
-              } group-hover/volume:pointer-events-auto group-hover/volume:translate-y-0 group-hover/volume:opacity-100`}
+              }`}
             >
               <input
                 type="range"
@@ -234,8 +296,8 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
             </div>
             <button
               type="button"
-              onClick={() => setVolumeOpen((open) => !open)}
-              className="flex h-11 w-11 items-center justify-center rounded-full border border-white/[0.08] text-white/72 shadow-lg shadow-black/20 transition hover:border-white/20 hover:bg-white/[0.09] hover:text-white bg-[var(--color-surface)]/80 rounded-full"
+              onClick={() => setVolumePinnedOpen((open) => !open)}
+              className="relative z-10 flex h-11 w-11 items-center justify-center rounded-full border border-white/[0.08] text-white/72 shadow-lg shadow-black/20 transition hover:border-white/20 hover:bg-white/[0.09] hover:text-white bg-[var(--color-surface)]/80 rounded-full"
               aria-label="Adjust radio volume"
               aria-expanded={volumeOpen}
             >
@@ -281,11 +343,11 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
             <Upload size={17} className="text-[var(--color-brand)]" />
           </button>
           <Link
-            to="/chat"
-            className="flex h-11 w-11 items-center justify-center rounded-full border border-white/[0.08] text-white shadow-lg shadow-black/25 backdrop-blur transition hover:border-[var(--color-brand)]/40 hover:bg-white/[0.09] bg-[var(--color-surface)]/80 rounded-full"
-            aria-label="Open radio chat"
+            to="/favorites"
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-white/[0.08] text-white shadow-lg shadow-black/25 backdrop-blur transition hover:border-[var(--color-brand)]/40 hover:bg-white/[0.09] bg-[var(--color-surface)]/80"
+            aria-label="Music Charts"
           >
-            <MessageCircle size={17} className="text-[var(--color-brand)]" />
+            <BarChart2 size={17} className="text-[var(--color-brand)]" />
           </Link>
         </div>
       </div>

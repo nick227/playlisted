@@ -1,5 +1,5 @@
-import { CornerUpLeft } from "lucide-react";
-import { useEffect, useMemo, useRef } from "react";
+import { CornerUpLeft, Volume2, VolumeX } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { FocusRecording } from "@/lib/playbackFocus/types";
 import { PLAYBACK_FOCUS_INTERACTIVE_ATTR, stopPlaybackFocusBubble } from "@/lib/playbackFocus/interactiveTarget";
 import { PlaybackBars } from "@/features/playback-indicators/PlaybackBars";
@@ -8,7 +8,9 @@ import { useArtistTracks } from "@/hooks/useArtistTracks";
 import { useLibraryArtists } from "@/hooks/useLibrary";
 import { useUser } from "@/hooks/useUser";
 import { formatPlayCount, formatProfileDate } from "@/lib/format";
+import { useFocusLanePlayback } from "@/hooks/useFocusLanePlayback";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
+import { useRadioPlayer } from "@/providers/RadioPlayerProvider";
 import { getProfileLinkPlatform } from "@/components/profile/profileLinks";
 
 import {
@@ -48,37 +50,56 @@ export function ArtistVisual({
   isPlaying = false,
   onReturnBody,
 }: ArtistVisualProps) {
-  const { audioRef } = useAudioPlayer();
+  const { isRadio } = useFocusLanePlayback();
+  const { audioRef, volume: siteVolume, setVolume: siteSetVolume } = useAudioPlayer();
+  const { volume: radioVolume, setVolume: radioSetVolume } = useRadioPlayer();
+  const [previousVolume, setPreviousVolume] = useState(1);
+  const [songTransitioning, setSongTransitioning] = useState(false);
+  const lastRecordingIdRef = useRef<string | null>(null);
+
+  const activeVolume = isRadio ? radioVolume : siteVolume;
+  const setActiveVolume = isRadio ? radioSetVolume : siteSetVolume;
+
+  const handleToggleMute = (e: React.MouseEvent) => {
+    stopPlaybackFocusBubble(e);
+    if (activeVolume > 0) {
+      setPreviousVolume(activeVolume);
+      setActiveVolume(0);
+    } else {
+      setActiveVolume(previousVolume > 0 ? previousVolume : 1);
+    }
+  };
   const { analyser, frequencyData, connected } = useAudioAnalyser(audioRef);
   const containerRef = useRef<HTMLDivElement>(null);
   const artistId = recording?.ownerId ?? undefined;
+  const recordingId = recording?.id ?? null;
   const artistQuery = useUser(artistId);
   const libraryArtistsQuery = useLibraryArtists();
   const { tracks: artistTracks } = useArtistTracks(artistId);
 
-  const libraryArtist = (libraryArtistsQuery.data?.data ?? []).find((artist) => artist.id === artistId);
-  const libraryTrack = artistTracks.find((track) => track.id === recording?.id);
+  const libraryArtist = (libraryArtistsQuery.data?.data ?? []).find((artist: any) => artist.id === artistId);
+  const libraryTrack = artistTracks.find((track: any) => track.id === recording?.id);
 
   const artistFacts = useMemo(() => {
     const user = artistQuery.data;
     const publicPlaylists = user?.publicPlaylists ?? [];
-    const songCountFromCollections = publicPlaylists.reduce((sum, playlist) => sum + playlist.itemCount, 0);
+    const songCountFromCollections = publicPlaylists.reduce((sum: number, playlist: any) => sum + playlist.itemCount, 0);
     const songCount = libraryArtist?.songCount ?? Math.max(songCountFromCollections, artistTracks.length);
     const collectionCount = publicPlaylists.length;
-    const listens = artistTracks.reduce((sum, track) => sum + (track.playCount ?? 0), 0);
-    const likes = artistTracks.reduce((sum, track) => sum + (track.favoriteCount ?? 0), 0);
+    const listens = artistTracks.reduce((sum: number, track: any) => sum + (track.playCount ?? 0), 0);
+    const likes = artistTracks.reduce((sum: number, track: any) => sum + (track.favoriteCount ?? 0), 0);
     const genres: GenreLink[] = (
       libraryArtist?.genres.length
-        ? libraryArtist.genres.map((genre) => ({ name: genre.name, slug: genre.slug }))
+        ? libraryArtist.genres.map((genre: any) => ({ name: genre.name, slug: genre.slug }))
         : Array.from(
             new Map(
               artistTracks
-                .flatMap((track) => track.genres)
-                .map((genre) => [genre.slug, { name: genre.name, slug: genre.slug }] as const),
+                .flatMap((track: any) => track.genres)
+                .map((genre: any) => [genre.slug, { name: genre.name, slug: genre.slug }] as const),
             ).values(),
           )
     ).slice(0, 3);
-    const profileLinks = (user?.profileLinks ?? []).filter((link) => link.url).slice(0, 4);
+    const profileLinks = (user?.profileLinks ?? []).filter((link: any) => link.url).slice(0, 4);
 
     return {
       stats: [
@@ -100,7 +121,7 @@ export function ArtistVisual({
           ? {
               ...recording,
               genreLabel: recording.genreLabel ?? libraryTrack?.genres[0]?.name ?? null,
-              genres: libraryTrack?.genres.map((genre) => ({ name: genre.name, slug: genre.slug })),
+              genres: libraryTrack?.genres.map((genre: any) => ({ name: genre.name, slug: genre.slug })),
             }
           : null,
         artistUsername: artistQuery.data?.username ?? recording?.ownerUsername,
@@ -132,6 +153,22 @@ export function ArtistVisual({
     artistFacts.joined ||
     artistFacts.genres.length > 0 ||
     artistFacts.profileLinks.length > 0;
+
+  useEffect(() => {
+    if (!recordingId) return;
+
+    const previousRecordingId = lastRecordingIdRef.current;
+    lastRecordingIdRef.current = recordingId;
+    if (previousRecordingId === recordingId) return;
+
+    setSongTransitioning(true);
+
+    const timeout = window.setTimeout(() => {
+      setSongTransitioning(false);
+    }, 900);
+
+    return () => window.clearTimeout(timeout);
+  }, [recordingId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -210,7 +247,9 @@ export function ArtistVisual({
     <div
       ref={containerRef}
       {...{ [PLAYBACK_FOCUS_INTERACTIVE_ATTR]: "" }}
-      className="focus-lane__artist focus-lane__interactive relative mx-auto flex w-full min-w-0 max-w-2xl flex-col gap-3 rounded-2xl border border-white/10 bg-black/40 p-4 shadow-2xl backdrop-blur-xl sm:gap-4 sm:rounded-3xl sm:p-6"
+      className={`focus-lane__artist focus-lane__interactive relative mx-auto flex w-full min-w-0 max-w-2xl flex-col gap-3 rounded-2xl border border-white/10 bg-black/40 p-4 shadow-2xl backdrop-blur-xl sm:gap-4 sm:rounded-3xl sm:p-6${
+        songTransitioning ? " is-song-transitioning" : ""
+      }`}
     >
       {onReturnBody ? (
         <button
@@ -381,6 +420,18 @@ export function ArtistVisual({
                 </span>
               </div>
             </div>
+          </div>
+
+          <div className="ml-3 flex shrink-0 items-center gap-1.5 sm:ml-4 sm:gap-2">
+            <button
+              type="button"
+              onClick={handleToggleMute}
+              onPointerDown={stopPlaybackFocusBubble}
+              className="focus-lane__reaction"
+              aria-label={activeVolume === 0 ? "Unmute" : "Mute"}
+            >
+              {activeVolume === 0 ? <VolumeX size={16} /> : <Volume2 size={16} />}
+            </button>
           </div>
         </div>
       ) : null}

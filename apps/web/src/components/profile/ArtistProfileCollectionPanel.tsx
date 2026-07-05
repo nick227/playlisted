@@ -183,7 +183,7 @@ export function ArtistProfileCollectionPanel({ playlist, owner, editHref }: Arti
               : null}
           </p>
 
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-nowrap items-center gap-3">
           <div className="flex items-center gap-1.5 text-sm text-[var(--color-text-muted)]">
             <FavoriteHeartButton target="playlist" id={playlist.id} variant="inline" className="!opacity-100 !p-0" />
             Like

@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 
 import { StudioCollectionCard } from "@/components/studio/StudioCollectionCard";
 import type { StudioCollectionListItem } from "@/components/studio/studioCollectionUtils";
@@ -35,6 +36,7 @@ function SummaryStat({ label, value }: { label: string; value: string }) {
 export function StudioCollectionsPage() {
   const { user, accessToken } = useAuth();
   const client = authedApi(accessToken);
+  const navigate = useNavigate();
 
   usePageMeta({ title: "Collections — Studio" });
   const queryClient = useQueryClient();
@@ -62,7 +64,7 @@ export function StudioCollectionsPage() {
       }),
     onSuccess: (created) => {
       queryClient.invalidateQueries({ queryKey: ["me", "playlists"] });
-      window.location.href = studioCollectionEditPath(created.id);
+      navigate(studioCollectionEditPath(created.id));
     },
   });
 

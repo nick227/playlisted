@@ -64,6 +64,10 @@ export function profilePath(username: string): string {
   return `/@/${encodeURIComponent(clean)}`;
 }
 
+export function currentUserProfilePath(user: Pick<AuthUser, "username"> | null | undefined): string {
+  return user?.username ? profilePath(user.username) : "/login";
+}
+
 export function studioCollectionEditPath(playlistId: string): string {
   return `/studio/collections/${playlistId}/edit`;
 }

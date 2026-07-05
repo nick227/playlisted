@@ -1,21 +1,22 @@
 import {
   Heart,
-  Home,
   Settings,
   RadioIcon,
-  Plus,
+  Music,
   Lock,
   type LucideIcon,
+  Home,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { NavLink, Link } from "react-router-dom";
+import { NavLink, Link, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { components } from "@playlisted/client-sdk";
 
 import { authedApi } from "@/lib/authedApi";
 import { playbackFocusTiming } from "@/lib/playbackFocusTiming";
 import { usePlaybackFocusSuppressed } from "@/lib/playbackFocusSuppression";
 import { FAVORITES_PATH } from "@/lib/browsePaths";
-import { ADMIN_PATH, panelPathForRole, playlistPath, studioCollectionEditPath } from "@/lib/routes";
+import { ADMIN_PATH, currentUserProfilePath, panelPathForRole, playlistPath, studioCollectionEditPath } from "@/lib/routes";
 import { useAuth } from "@/providers/AuthProvider";
 
 interface SidebarProps {
@@ -24,7 +25,7 @@ interface SidebarProps {
 }
 
 const discoverLinks = [
-  { to: "/", label: "Home", icon: Home, end: true },
+  { to: "/", label: "Radio", icon: RadioIcon, end: true },
 ] as const;
 
 const baseNavClass = "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition";
@@ -65,6 +66,7 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
   const blurTimerRef = useRef<number | null>(null);
   const playbackFocusSuppressed = usePlaybackFocusSuppressed();
   const { user, accessToken } = useAuth();
+  const navigate = useNavigate();
   const isAuthenticated = Boolean(user);
   const [showCollectionsSignIn, setShowCollectionsSignIn] = useState(false);
   const [navDimmed, setNavDimmed] = useState(false);
@@ -77,7 +79,7 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
     queryFn: () => client.me.playlists(),
     enabled: Boolean(accessToken),
   });
-  const collections = collectionsQuery.data?.data ?? [];
+  const collections: components["schemas"]["PlaylistSummary"][] = collectionsQuery.data?.data ?? [];
 
   const createCollectionMutation = useMutation({
     mutationFn: () =>
@@ -90,11 +92,12 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
       }),
     onSuccess: (created) => {
       queryClient.invalidateQueries({ queryKey: ["me", "playlists"] });
-      window.location.href = studioCollectionEditPath(created.id);
+      navigate(studioCollectionEditPath(created.id));
     },
   });
 
   const panelPath = user ? panelPathForRole(user.role) : null;
+  const profileNavPath = currentUserProfilePath(user);
   const showAdminLink = panelPath === ADMIN_PATH;
 
   const clearBlurTimer = useCallback(() => {
@@ -177,6 +180,7 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
                 <NavItem key={link.to} {...link} onClick={onClose} />
               ))}
               <NavItem to={FAVORITES_PATH} label="Favorites" icon={Heart} onClick={onClose} end />
+              <NavItem to={profileNavPath} label="Profile" icon={Home} onClick={onClose} end />
               {showAdminLink ? (
                 <NavItem
                   to={ADMIN_PATH}
@@ -200,8 +204,8 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
                 disabled={createCollectionMutation.isPending}
                 className={navClass(false, "text-left disabled:opacity-60 cursor-pointer")}
               >
-                <Plus size={20} />
-                {createCollectionMutation.isPending ? "Creating..." : "Upload Media"}
+                <Music size={20} />
+                {createCollectionMutation.isPending ? "Loading studio..." : "Submit Songs"}
               </button>
               {showCollectionsSignIn && !isAuthenticated ? (
                 <div className="mx-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-3">
@@ -213,6 +217,10 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
                   <span className="text-xs text-[var(--color-text-muted)] mx-2">or</span>
                   <Link to="/register" className="mt-4 text-sm text-white hover:underline">Register</Link>
                 </div>
+              ) : null}
+
+              {collections ? (
+                <div className="flex flex-col gap-2 mb-2 border-b border-white/[0.5] pl-4"></div>
               ) : null}
               {collections.map((playlist) => (
                 <NavLink

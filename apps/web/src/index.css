@@ -365,6 +365,42 @@ body {
   align-items: stretch;
 }
 
+.focus-lane__artist.is-song-transitioning {
+  animation: focus-lane-artist-song-transition 900ms var(--ease-play-focus-fade);
+}
+
+.focus-lane__artist.is-song-transitioning .focus-lane__artist-image,
+.focus-lane__artist.is-song-transitioning .focus-lane__song-art-link,
+.focus-lane__artist.is-song-transitioning .focus-lane__song-title-link {
+  animation: focus-lane-artist-detail-transition 900ms var(--ease-play-focus-fade);
+}
+
+@keyframes focus-lane-artist-song-transition {
+  0% {
+    opacity: 0.82;
+    transform: translateY(0.35rem) scale(0.992);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes focus-lane-artist-detail-transition {
+  0% {
+    opacity: 0.68;
+    filter: saturate(0.8);
+    transform: translateY(0.2rem);
+  }
+
+  100% {
+    opacity: 1;
+    filter: saturate(1);
+    transform: translateY(0);
+  }
+}
+
 .focus-lane__artist-genre-link {
   font-size: 0.75rem;
   line-height: 1.2;
@@ -981,6 +1017,13 @@ body {
   .subtitle-layer,
   .focus-lane {
     transition: none;
+  }
+
+  .focus-lane__artist.is-song-transitioning,
+  .focus-lane__artist.is-song-transitioning .focus-lane__artist-image,
+  .focus-lane__artist.is-song-transitioning .focus-lane__song-art-link,
+  .focus-lane__artist.is-song-transitioning .focus-lane__song-title-link {
+    animation: none;
   }
 }
 

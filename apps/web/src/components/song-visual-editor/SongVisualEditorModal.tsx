@@ -54,6 +54,7 @@ function SongVisualEditorModalInner({
   const { pauseRadio } = useRadioPlayer();
   const playback = useSongVisualPreviewPlayback(recording.audioUrl);
   const [editMode, setEditMode] = useState<TimelineEditMode>("select");
+  const [showOverlays, setShowOverlays] = useState(false);
   const { data: waveform, loading: waveformLoading, error: waveformError } = useAudioWaveformPeaks(recording.audioUrl);
 
   // Single source of truth for song duration: the editor state must resolve clip
@@ -116,7 +117,7 @@ function SongVisualEditorModalInner({
         if (event.target === event.currentTarget) handleClose();
       }}
     >
-      <div className="flex h-full max-h-screen w-full max-w-8xl flex-col overflow-hidden border border-white/10 bg-[var(--color-canvas)] shadow-2xl md:rounded-2xl">
+      <div className="flex h-full max-h-screen w-full max-w-5xl flex-col overflow-hidden border border-white/10 bg-[var(--color-canvas)] shadow-2xl md:rounded-2xl">
         <header className="relative flex shrink-0 items-center justify-center border-b border-white/10 bg-black/20 px-12 py-3 md:px-14">
           <h2 className="truncate text-center text-base font-semibold text-white md:text-lg">
             {recording.title}
@@ -141,6 +142,7 @@ function SongVisualEditorModalInner({
               audioRef={playback.audioRef}
               onTogglePlayback={playback.togglePlayback}
               canPlay={Boolean(recording.audioUrl) && durationSec > 0}
+              showOverlays={showOverlays}
             />
 
             <SongVisualEditorToolbar
@@ -158,6 +160,8 @@ function SongVisualEditorModalInner({
               onCancelUpload={editor.cancelUpload}
               onSave={() => editor.saveChanges()}
               onCancel={handleClose}
+              showOverlays={showOverlays}
+              onToggleOverlays={() => setShowOverlays(!showOverlays)}
             />
 
             {editor.error ? (

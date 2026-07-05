@@ -55,7 +55,7 @@ function FavoritesViewToggle({
   onChange: (view: FavoritesView) => void;
 }) {
   return (
-    <div className="mt-5 grid grid-cols-2 gap-2 rounded-xl border border-[var(--color-border)] bg-white/[0.025] p-2">
+    <div className="mt-4 grid grid-cols-2 gap-1.5 rounded-xl border border-[var(--color-border)] bg-white/[0.025] p-1.5 sm:mt-5 sm:gap-2 sm:p-2">
       {(["charts", "personal"] as const).map((view) => {
         const isActive = activeView === view;
         return (
@@ -65,16 +65,16 @@ function FavoritesViewToggle({
             aria-pressed={isActive}
             onClick={() => onChange(view)}
             className={[
-              "min-h-24 rounded-lg border px-4 py-4 text-left transition sm:min-h-28 sm:px-6",
+              "min-h-16 rounded-lg border px-3 py-3 text-left transition sm:min-h-28 sm:px-6 sm:py-4",
               isActive
                 ? "border-[var(--color-brand)]/60 bg-[var(--color-brand)]/15 text-white"
                 : "border-transparent text-[var(--color-text-muted)] hover:border-white/10 hover:bg-white/[0.04] hover:text-white",
             ].join(" ")}
           >
-            <span className="block text-3xl font-black uppercase leading-none tracking-normal sm:text-5xl">
+            <span className="block text-lg font-black uppercase leading-none tracking-normal sm:text-5xl">
               {view === "charts" ? "Charts" : "Personal"}
             </span>
-            <span className="mt-2 block text-xs font-medium uppercase tracking-normal opacity-75 sm:text-sm">
+            <span className="mt-1.5 block text-[10px] font-medium uppercase tracking-normal opacity-75 sm:mt-2 sm:text-sm">
               {view === "charts" ? "Top ten lists" : "Your favorites"}
             </span>
           </button>
@@ -127,13 +127,15 @@ function PersonalTrackRow({
   return (
     <div
       className={[
-        "group/card flex items-center gap-2 rounded-xl px-3 py-2.5 transition",
+        "group/card flex items-center gap-2 rounded-xl px-2.5 py-2 transition sm:px-3 sm:py-2.5",
         isActive ? "bg-white/[0.08]" : "hover:bg-white/[0.04] bg-[--cover-canvas]/90",
       ].join(" ")}
     >
-      <PlaybackBars active={isActive} playing={isPlaying} />
+      <div className="hidden sm:block">
+        <PlaybackBars active={isActive} playing={isPlaying} />
+      </div>
       {/* artwork + play */}
-      <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-md">
+      <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-md sm:h-10 sm:w-10">
         {track.artworkUrl ? (
           <img src={track.artworkUrl} alt="" className="h-full w-full object-cover" />
         ) : (
@@ -146,13 +148,13 @@ function PersonalTrackRow({
           aria-label={isPlaying ? "Pause" : "Play"}
         >
           {isPlaying
-            ? <Pause size={14} className="text-white" fill="currentColor" />
-            : <Play size={14} className="text-white" fill="currentColor" />}
+            ? <Pause size={16} className="text-white sm:size-3.5" fill="currentColor" />
+            : <Play size={16} className="text-white sm:size-3.5" fill="currentColor" />}
         </button>
       </div>
 
       {/* title + artist + playlist */}
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 py-0.5 sm:py-0">
         <Link
           to={songHref}
           className={[
@@ -171,15 +173,20 @@ function PersonalTrackRow({
             {track.playlist.title}
           </Link>
         </p>
+        <div className="mt-1 flex items-center gap-2 text-[11px] text-[var(--color-text-muted)] sm:hidden">
+          {badge && <span className={`min-w-0 truncate font-medium ${badgeColor}`}>{badge}</span>}
+          {badge && <span className="text-white/20" aria-hidden>·</span>}
+          <span className="shrink-0 tabular-nums">{formatDuration(track.durationSeconds)}</span>
+        </div>
       </div>
 
       {/* badge (play count / time ago) */}
       {badge && (
-        <span className={`shrink-0 text-xs font-medium ${badgeColor}`}>{badge}</span>
+        <span className={`hidden shrink-0 text-xs font-medium sm:inline ${badgeColor}`}>{badge}</span>
       )}
 
       {/* duration */}
-      <span className="w-10 shrink-0 text-right text-xs text-[var(--color-text-muted)]">
+      <span className="hidden w-10 shrink-0 text-right text-xs text-[var(--color-text-muted)] sm:inline">
         {formatDuration(track.durationSeconds)}
       </span>
 
@@ -197,7 +204,7 @@ function PersonalTrackRow({
         })}
       />
 
-      <FavoriteHeartButton target="recording" id={track.id} variant="inline" className="!opacity-100" />
+      <FavoriteHeartButton target="recording" id={track.id} variant="inline" className="max-sm:!hidden !opacity-100" />
     </div>
   );
 }
@@ -220,10 +227,10 @@ function Section({
   className?: string;
 }) {
   return (
-    <section className={["mb-8 last:mb-0", className].join(" ")}>
-      <div className="mb-4 flex items-end justify-between gap-4">
+    <section className={["mb-7 last:mb-0 sm:mb-8", className].join(" ")}>
+      <div className="mb-3 flex items-end justify-between gap-4 sm:mb-4">
         <div>
-          <h2 className="text-xl font-bold tracking-tight text-white">{title}</h2>
+          <h2 className="text-lg font-bold tracking-tight text-white sm:text-xl">{title}</h2>
           {subtitle && <p className="mt-0.5 text-sm text-[var(--color-text-muted)]">{subtitle}</p>}
         </div>
       </div>
@@ -281,7 +288,7 @@ export function FavoritesPage() {
   );
 
   const chartsSection = (
-    <Section title="Charts" subtitle="The top ten across Playlisted" className="mt-8">
+    <Section title="Charts" subtitle="The top ten across Playlisted" className="mt-6 sm:mt-8">
       <div className="overflow-hidden rounded-xl border border-[var(--color-border)]">
         <ChartsFilterBar
           tab={chartState.tab}
@@ -338,7 +345,7 @@ export function FavoritesPage() {
         <>
           <Section
             title="Collections"
-            className="mt-8"
+            className="mt-6 sm:mt-8"
             loading={favoritePlaylists.isLoading}
             empty={
               favPlaylistItems.length === 0
@@ -346,7 +353,7 @@ export function FavoritesPage() {
                 : undefined
             }
           >
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4">
               {favPlaylistItems.map((playlist) => (
                 <SmartPlaylistCard
                   key={playlist.id}
@@ -372,7 +379,7 @@ export function FavoritesPage() {
                   : undefined
               }
             >
-              <div className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-5">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4 md:grid-cols-5">
                 {favArtistItems.map((artist) => (
                   <ArtistCard
                     key={artist.id}

@@ -1,4 +1,4 @@
-import { Loader2, MousePointer2, Pause, Play, Scissors, Upload } from "lucide-react";
+import { Loader2, MousePointer2, Pause, Play, Scissors, Upload, Subtitles } from "lucide-react";
 import type { ReactNode } from "react";
 import { editorToggleClass } from "./editorToggle";
 
@@ -24,6 +24,8 @@ type SongVisualEditorToolbarProps = {
   onCancelUpload: () => void;
   onSave: () => void;
   onCancel: () => void;
+  showOverlays: boolean;
+  onToggleOverlays: () => void;
 };
 
 export function SongVisualEditorToolbar({
@@ -41,6 +43,8 @@ export function SongVisualEditorToolbar({
   onCancelUpload,
   onSave,
   onCancel,
+  showOverlays,
+  onToggleOverlays,
 }: SongVisualEditorToolbarProps) {
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-white/10 bg-black/20 px-3 py-2">
@@ -73,6 +77,17 @@ export function SongVisualEditorToolbar({
           onClick={() => onEditModeChange("cut")}
         >
           <Scissors size={13} />
+        </ToolbarIconButton>
+      </ToolbarButtonGroup>
+
+      <ToolbarButtonGroup>
+        <ToolbarIconButton
+          active={showOverlays}
+          disabled={isBusy}
+          label="Preview subtitles & overlays"
+          onClick={onToggleOverlays}
+        >
+          <Subtitles size={13} />
         </ToolbarIconButton>
       </ToolbarButtonGroup>
 

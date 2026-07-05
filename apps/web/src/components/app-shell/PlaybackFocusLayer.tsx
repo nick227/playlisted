@@ -1,6 +1,6 @@
 import { Maximize2 } from "lucide-react";
-import { Link } from "react-router-dom";
 
+import { AppLink } from "@/components/navigation/AppLink";
 import { coverFallback, playlistPath, playlistRecordingPath, profilePath } from "@/lib/routes";
 
 export type PlaybackFocusTrack = {
@@ -70,12 +70,12 @@ export function PlaybackFocusLayer({
         <div className="min-w-0 flex-1">
           <div className="mb-1 flex min-w-0 items-center gap-2">
             {track.sourceHref && track.sourceLabel ? (
-              <Link
+              <AppLink
                 to={track.sourceHref}
                 className="shrink-0 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-brand)] transition hover:text-white"
               >
                 {track.sourceLabel}
-              </Link>
+              </AppLink>
             ) : null}
             <span className="min-w-0 truncate text-[10px] font-semibold uppercase tracking-wider text-white/45">
               Now playing
@@ -83,12 +83,12 @@ export function PlaybackFocusLayer({
           </div>
           <div className="flex min-w-0 items-center gap-2">
             {songHref ? (
-              <Link
+              <AppLink
                 to={songHref}
                 className="truncate text-sm font-semibold text-white transition hover:text-[var(--color-brand)]"
               >
                 {track.title}
-              </Link>
+              </AppLink>
             ) : (
               <p className="truncate text-sm font-semibold text-white">{track.title}</p>
             )}
@@ -96,9 +96,9 @@ export function PlaybackFocusLayer({
           <p className="mt-0.5 truncate text-xs text-[var(--color-text-muted)]">
             {track.ownerName ? (
               artistHref ? (
-                <Link to={artistHref} className="hover:text-white hover:underline">
+                <AppLink to={artistHref} className="hover:text-white hover:underline">
                   {track.ownerName}
-                </Link>
+                </AppLink>
               ) : (
                 track.ownerName
               )
@@ -110,9 +110,9 @@ export function PlaybackFocusLayer({
             ) : null}
             {track.playlistTitle ? (
               playlistHref ? (
-                <Link to={playlistHref} className="hover:text-white hover:underline">
+                <AppLink to={playlistHref} className="hover:text-white hover:underline">
                   {track.playlistTitle}
-                </Link>
+                </AppLink>
               ) : (
                 track.playlistTitle
               )

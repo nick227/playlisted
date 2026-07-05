@@ -33,7 +33,7 @@ export function libraryCrumb(): BrowseCrumb {
 
 /** Root `/library` — current page only, styled like the terminal crumb on inner pages. */
 export function libraryRootCrumbs(): BrowseCrumb[] {
-  return [{ label: "Library" }];
+  return [{ label: "Library /" }];
 }
 
 export function songsBrowseCrumbs(): BrowseCrumb[] {
