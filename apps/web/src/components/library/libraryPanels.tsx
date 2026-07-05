@@ -3,6 +3,7 @@ import { ChevronRight, Pause, Play, Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
+import { SmartPlaylistCard } from "@/components/cards/SmartPlaylistCard";
 import { Skeleton } from "@/components/feedback/Skeleton";
 import { LibraryArtistFilter } from "@/components/library/LibraryArtistFilter";
 import {
@@ -278,7 +279,7 @@ function GenreCard({ genre }: { genre: LibraryGenre }) {
               ))}
             </div>
           ) : previewSongs.length > 0 ? (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <div className="grid grid-cols-6 gap-3 sm:grid-cols-6">
               {previewSongs.slice(0, 6).map((song) => (
                 <GenreSongThumb key={song.id} song={song} queue={previewSongs} />
               ))}
@@ -495,7 +496,7 @@ function ArtistResults({
   }
 
   return (
-    <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+    <div className="mt-10 grid grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-3">
       {filteredArtists.map((artist) => (
         <Link
           key={artist.id}
@@ -612,30 +613,19 @@ function PlaylistResults({
   }
 
   return (
-    <div className="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+    <div className="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
       {playlists.map((playlist) => (
-        <Link
+        <SmartPlaylistCard
           key={playlist.id}
-          to={playlistPath({ id: playlist.id, href: playlist.href })}
-          className="group block"
-        >
-          <div className="mb-3 aspect-square overflow-hidden rounded-lg">
-            {playlist.coverArtUrl ? (
-              <img
-                src={playlist.coverArtUrl}
-                alt=""
-                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-              />
-            ) : (
-              <div className="h-full w-full" style={{ background: coverFallback(playlist.title) }} />
-            )}
-          </div>
-          <p className="truncate text-sm font-semibold text-white">{playlist.title}</p>
-          <p className="mt-0.5 truncate text-xs text-[var(--color-text-muted)]">
-            {playlist.owner.displayName}
-            {playlist.itemCount > 0 ? ` · ${playlist.itemCount} tracks` : ""}
-          </p>
-        </Link>
+          id={playlist.id}
+          title={playlist.title}
+          creatorName={playlist.owner.displayName}
+          coverArtUrl={playlist.coverArtUrl}
+          ownerUsername={playlist.owner.username}
+          slug={playlist.slug}
+          meta={playlist.itemCount > 0 ? `${playlist.itemCount} tracks` : undefined}
+          className="w-full"
+        />
       ))}
     </div>
   );
