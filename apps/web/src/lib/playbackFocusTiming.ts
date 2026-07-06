@@ -10,7 +10,7 @@ export const playbackFocusTiming = {
   },
 
   body: {
-    delayMs: 5000,
+    delayMs: 95000,
     restoreDelayMs: 10000,
     fadeOutMs: 2000,
   },

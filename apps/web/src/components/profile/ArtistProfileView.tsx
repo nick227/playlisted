@@ -144,7 +144,7 @@ export function ArtistProfileView({
         ) : null}
       </div>
 
-      <div className="mt-8 min-w-0 px-4 py-2">
+      <div className="mt-8 min-w-0 p-2">
         {relatedArtists.length > 0 ? (
           <ContentRow title="More Artists">
             {relatedArtists.map((item: TopArtistItem) => (
