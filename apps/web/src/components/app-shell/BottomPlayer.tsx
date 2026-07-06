@@ -4,19 +4,19 @@ import {
   Play,
   SkipBack,
   SkipForward,
-  Volume2,
-  VolumeX,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link, useLocation } from "react-router-dom";
 
 import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
+import { VerticalVolumeControl } from "@/components/playback/VerticalVolumeControl";
 import { formatDuration } from "@/lib/format";
 import { coverFallback, playlistPath, playlistRecordingPath, profilePath } from "@/lib/routes";
 import { usePlaybackTransport } from "@/hooks/usePlaybackTransport";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
+import { usePlaybackVolume } from "@/providers/PlaybackVolumeProvider";
 import { useRadioPlayer } from "@/providers/RadioPlayerProvider";
 
 type PlayerDisplayTrack = {
@@ -56,8 +56,6 @@ export function BottomPlayer() {
     autoplayNextSegment,
     upNextPipeline,
     skipToUpNext,
-    volume,
-    setVolume,
   } = useAudioPlayer();
   const {
     playing: radioPlaying,
@@ -66,12 +64,10 @@ export function BottomPlayer() {
     radioUiMounted,
     togglePlayback: toggleRadioPlayback,
     pauseRadio,
-    volume: radioVolume,
-    setVolume: setRadioVolume,
   } = useRadioPlayer();
+  const { volume, setVolume, toggleMute } = usePlaybackVolume();
   const { currentTime, duration, seek } = usePlaybackTransport();
 
-  const prevVolumeRef = useRef(1);
   const [radioCurrentTime, setRadioCurrentTime] = useState(0);
 
   const radioShellActive =
@@ -115,18 +111,7 @@ export function BottomPlayer() {
     ? radioPlaying
     : dismiss && !currentTrack ? false : isPlaying;
   const progress = shellDuration > 0 ? (shellCurrentTime / shellDuration) * 100 : 0;
-  const activeVolume = radioDisplayTrack ? radioVolume : volume;
-  const setActiveVolume = radioDisplayTrack ? setRadioVolume : setVolume;
   const showQueueControls = !radioDisplayTrack && !playerBarExiting;
-
-  function handleVolumeMute() {
-    if (activeVolume > 0) {
-      prevVolumeRef.current = activeVolume;
-      setActiveVolume(0);
-    } else {
-      setActiveVolume(prevVolumeRef.current);
-    }
-  }
 
   function handleClosePlayer() {
     pauseRadio();
@@ -325,6 +310,12 @@ export function BottomPlayer() {
             </div>
           </div>
           <div className="bottom-player__section bottom-player__section--actions bottom-player__actions-mobile">
+            <VerticalVolumeControl
+              volume={volume}
+              onVolumeChange={setVolume}
+              onToggleMute={toggleMute}
+              variant="player"
+            />
             {showQueueControls ? (
               <>
                 <button
@@ -339,23 +330,11 @@ export function BottomPlayer() {
             ) : null}
           </div>
           <div className="bottom-player__section bottom-player__section--actions bottom-player__actions-desktop">
-            <button
-              type="button"
-              onClick={handleVolumeMute}
-              className="shrink-0 text-[var(--color-text-muted)] transition hover:text-white"
-              aria-label={activeVolume === 0 ? "Unmute" : "Mute"}
-            >
-              {activeVolume === 0 ? <VolumeX size={18} /> : <Volume2 size={18} />}
-            </button>
-            <input
-              type="range"
-              min={0}
-              max={1}
-              step={0.02}
-              value={activeVolume}
-              onChange={(e) => setActiveVolume(Number(e.target.value))}
-              className="w-20 accent-[var(--color-brand)]"
-              aria-label="Volume"
+            <VerticalVolumeControl
+              volume={volume}
+              onVolumeChange={setVolume}
+              onToggleMute={toggleMute}
+              variant="player"
             />
 
             {showQueueControls ? <div className="mx-1 h-4 w-px bg-white/10" /> : null}

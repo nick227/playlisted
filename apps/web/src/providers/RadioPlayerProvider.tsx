@@ -20,6 +20,7 @@ import {
 } from "@/lib/radio/radioPlayback";
 import { api } from "@/lib/api";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
+import { usePlaybackVolume } from "@/providers/PlaybackVolumeProvider";
 import theatreController from "@/theatre/controller/lazyController";
 import { setRadioPlaybackActive } from "@/theatre/radioPlaybackBridge";
 import { useTheatreTrackRotation } from "@/theatre/useTheatreTrackRotation";
@@ -65,7 +66,7 @@ export function RadioPlayerProvider({ children }: { children: ReactNode }) {
   const chatMountCountRef = useRef(0);
 
   const [playing, setPlaying] = useState(false);
-  const [volume, setVolumeState] = useState(1);
+  const { volume, setVolume } = usePlaybackVolume();
   const [uiMounted, setUiMounted] = useState(false);
   const [chatMounted, setChatMounted] = useState(false);
   const [activeStationSlug, setActiveStationSlug] = useState<string | null>(null);
@@ -147,11 +148,6 @@ export function RadioPlayerProvider({ children }: { children: ReactNode }) {
     setChatMounted(chatMountCountRef.current > 0);
   }, []);
 
-  const setVolume = useCallback((nextVolume: number) => {
-    const clamped = Math.max(0, Math.min(1, nextVolume));
-    setVolumeState(clamped);
-    if (audioRef.current) audioRef.current.volume = clamped;
-  }, []);
 
   useEffect(() => {
     if (audioRef.current) audioRef.current.volume = volume;

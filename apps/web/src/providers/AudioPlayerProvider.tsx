@@ -34,7 +34,7 @@ import { resolveAutopilotSegment } from "@/lib/upNext/resolveAutopilot";
 import { readAutoplayEnabled, writeAutoplayEnabled } from "@/lib/upNext/storage";
 import type { BeginSegmentOptions, UpNextSegment } from "@/lib/upNext/types";
 import { postPlaybackEvent } from "@/lib/playbackEvents";
-import { readPlayerVolume, writePlayerVolume } from "@/lib/playerVolumeStorage";
+import { usePlaybackVolume } from "@/providers/PlaybackVolumeProvider";
 import { useAuth } from "@/providers/AuthProvider";
 
 export type QueueTrack = components["schemas"]["RecordingSummary"] & {
@@ -165,7 +165,8 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const siteAudioRef = useRef<HTMLAudioElement | null>(null);
   const adoptedAudioRef = useRef<HTMLAudioElement | null>(null);
-  const volumeRef = useRef<number>(readPlayerVolume());
+  const { volume, setVolume } = usePlaybackVolume();
+  const volumeRef = useRef<number>(volume);
   const [activeAudio, setActiveAudio] = useState<HTMLAudioElement | null>(null);
   const bindAudioElement = useCallback((audio: HTMLAudioElement | null) => {
     siteAudioRef.current = audio;
@@ -204,7 +205,6 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   const [queueOpen, setQueueOpen] = useState(false);
   const [shuffle, setShuffleState] = useState(false);
   const [repeatMode, setRepeatModeState] = useState<"off" | "one" | "all">("off");
-  const [volume, setVolumeState] = useState(() => readPlayerVolume());
   const [playerDismissSnapshot, setPlayerDismissSnapshot] = useState<PlayerDismissSnapshot | null>(null);
   const [playerBarExiting, setPlayerBarExiting] = useState(false);
   const [radioPlaying, setRadioPlaying] = useState(getRadioPlaybackActive);
@@ -286,13 +286,11 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     setRepeatModeState(next);
   }, []);
 
-  const setVolume = useCallback((v: number) => {
-    const clamped = Math.max(0, Math.min(1, v));
-    setVolumeState(clamped);
-    volumeRef.current = clamped;
-    writePlayerVolume(clamped);
-    if (audioRef.current) audioRef.current.volume = clamped;
-  }, []);
+  useEffect(() => {
+    volumeRef.current = volume;
+    if (audioRef.current) audioRef.current.volume = volume;
+    if (siteAudioRef.current) siteAudioRef.current.volume = volume;
+  }, [volume]);
 
   const flushPlayback = useCallback(
     (track: QueueTrack, seconds: number, completed: boolean) => {

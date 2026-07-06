@@ -8,9 +8,8 @@ import { useArtistTracks } from "@/hooks/useArtistTracks";
 import { useLibraryArtists } from "@/hooks/useLibrary";
 import { useUser } from "@/hooks/useUser";
 import { formatPlayCount, formatProfileDate } from "@/lib/format";
-import { useFocusLanePlayback } from "@/hooks/useFocusLanePlayback";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
-import { useRadioPlayer } from "@/providers/RadioPlayerProvider";
+import { usePlaybackVolume } from "@/providers/PlaybackVolumeProvider";
 import { getProfileLinkPlatform } from "@/components/profile/profileLinks";
 
 import {
@@ -50,24 +49,14 @@ export function ArtistVisual({
   isPlaying = false,
   onMinimize,
 }: ArtistVisualProps) {
-  const { isRadio } = useFocusLanePlayback();
-  const { audioRef, volume: siteVolume, setVolume: siteSetVolume } = useAudioPlayer();
-  const { volume: radioVolume, setVolume: radioSetVolume } = useRadioPlayer();
-  const [previousVolume, setPreviousVolume] = useState(1);
+  const { audioRef } = useAudioPlayer();
+  const { isMuted, toggleMute } = usePlaybackVolume();
   const [songTransitioning, setSongTransitioning] = useState(false);
   const lastRecordingIdRef = useRef<string | null>(null);
 
-  const activeVolume = isRadio ? radioVolume : siteVolume;
-  const setActiveVolume = isRadio ? radioSetVolume : siteSetVolume;
-
   const handleToggleMute = (e: React.MouseEvent) => {
     stopPlaybackFocusBubble(e);
-    if (activeVolume > 0) {
-      setPreviousVolume(activeVolume);
-      setActiveVolume(0);
-    } else {
-      setActiveVolume(previousVolume > 0 ? previousVolume : 1);
-    }
+    toggleMute();
   };
   const { analyser, frequencyData, connected } = useAudioAnalyser(audioRef);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -410,9 +399,9 @@ export function ArtistVisual({
               onClick={handleToggleMute}
               onPointerDown={stopPlaybackFocusBubble}
               className="focus-lane__reaction"
-              aria-label={activeVolume === 0 ? "Unmute" : "Mute"}
+              aria-label={isMuted ? "Unmute" : "Mute"}
             >
-              {activeVolume === 0 ? <VolumeX size={16} /> : <Volume2 size={16} />}
+              {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
             </button>
           </div>
         </div>

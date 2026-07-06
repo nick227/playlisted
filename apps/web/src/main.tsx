@@ -8,6 +8,7 @@ import { queryClient } from "@/lib/queryClient";
 import { installStorageDiagnostics } from "@/lib/storageDiagnostics";
 import { AudioPlayerProvider } from "@/providers/AudioPlayerProvider";
 import { AuthProvider } from "@/providers/AuthProvider";
+import { PlaybackVolumeProvider } from "@/providers/PlaybackVolumeProvider";
 import "@/index.css";
 
 applyPlaybackFocusTimingCssVars(document.documentElement);
@@ -19,9 +20,11 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <AudioPlayerProvider>
-          <App />
-        </AudioPlayerProvider>
+        <PlaybackVolumeProvider>
+          <AudioPlayerProvider>
+            <App />
+          </AudioPlayerProvider>
+        </PlaybackVolumeProvider>
       </AuthProvider>
     </QueryClientProvider>
   </StrictMode>,

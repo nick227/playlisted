@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { BarChart2, Pause, Play, Radio, Users, Upload, Volume2, VolumeX } from "lucide-react";
+import { BarChart2, Pause, Play, Radio, Users, Upload } from "lucide-react";
 
 import { DEFAULT_COLLECTION_TITLE } from "@/components/studio/studioCollectionUtils";
 import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
+import { VerticalVolumeControl } from "@/components/playback/VerticalVolumeControl";
 import { GenreHorizontalPanel } from "@/components/radio/GenreHorizontalPanel";
 import { PlaybackBars } from "@/features/playback-indicators/PlaybackBars";
 import { useLibraryGenres } from "@/hooks/useLibrary";
@@ -13,6 +14,7 @@ import { coverFallback, playlistPath, profilePath, studioCollectionEditPath } fr
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { useAuth } from "@/providers/AuthProvider";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
+import { usePlaybackVolume } from "@/providers/PlaybackVolumeProvider";
 import { useRadioPlayer } from "@/providers/RadioPlayerProvider";
 
 function formatTime(totalSeconds?: number | null) {
@@ -27,8 +29,6 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
   const { status, user, accessToken } = useAuth();
   const {
     playing,
-    volume: radioVolume,
-    setVolume: setRadioVolume,
     togglePlayback,
     radioQuery,
     station,
@@ -44,12 +44,11 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
     playerShellActive,
     currentTrack,
   } = useAudioPlayer();
+  const { volume, setVolume, toggleMute } = usePlaybackVolume();
   const { data: genreData } = useLibraryGenres({ minSongCount: 1 });
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const location = useLocation();
-  const [volumeHoverOpen, setVolumeHoverOpen] = useState(false);
-  const [volumePinnedOpen, setVolumePinnedOpen] = useState(false);
 
   const shellHasPlayer =
     playerShellActive ||
@@ -107,8 +106,6 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
   const displayArtistName = nowPlaying?.uploader?.displayName;
   const displayArtistUsername = nowPlaying?.uploader?.username;
   const activePlaying = playing;
-  const activeVolume = radioVolume;
-  const setActiveVolume = setRadioVolume;
   const favoriteRecordingId = nowPlaying?.id;
 
   useEffect(() => {
@@ -217,7 +214,6 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
     : "h-[calc(100dvh-var(--spacing-topbar)-1rem-1.5rem)] max-h-[calc(100dvh-var(--spacing-topbar)-1rem-1.5rem)]";
   const artworkClassName =
     "aspect-square max-h-full w-full max-w-full rounded-[1.4rem] border border-white/[0.08] bg-white/5 bg-cover bg-center shadow-[0_26px_80px_rgba(0,0,0,0.44)]";
-  const volumeOpen = volumeHoverOpen || volumePinnedOpen;
 
   return (
     <div
@@ -323,44 +319,12 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
         </div>
 
         <div className="flex h-16 shrink-0 items-center justify-center gap-4 sm:mt-8">
-          <div
-            className="group/volume relative flex h-11 w-11 items-center justify-center"
-            onMouseEnter={() => setVolumeHoverOpen(true)}
-            onMouseLeave={() => setVolumeHoverOpen(false)}
-            onBlur={(event) => {
-              if (!event.currentTarget.contains(event.relatedTarget)) {
-                setVolumeHoverOpen(false);
-                setVolumePinnedOpen(false);
-              }
-            }}
-          >
-            <span className="absolute bottom-0 left-1/2 z-0 h-48 w-11 -translate-x-1/2" aria-hidden="true" />
-            <div
-              className={`absolute bottom-[3.25rem] left-1/2 z-10 flex h-36 w-11 -translate-x-1/2 items-center justify-center rounded-full border border-white/[0.08] bg-black/70 py-4 shadow-2xl shadow-black/40 backdrop-blur-md transition ${
-                volumeOpen ? "pointer-events-auto translate-y-0 opacity-100" : "pointer-events-none translate-y-2 opacity-0"
-              }`}
-            >
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.01"
-                value={activeVolume}
-                onChange={(e) => setActiveVolume(Number(e.target.value))}
-                className="h-24 w-2 cursor-pointer accent-white [direction:rtl] [writing-mode:vertical-lr]"
-                aria-label="Playback volume"
-              />
-            </div>
-            <button
-              type="button"
-              onClick={() => setVolumePinnedOpen((open) => !open)}
-              className="relative z-10 flex h-11 w-11 items-center justify-center rounded-full border border-white/[0.08] text-white/72 shadow-lg shadow-black/20 transition hover:border-white/20 hover:bg-white/[0.09] hover:text-white bg-[var(--color-surface)]/80 rounded-full"
-              aria-label="Adjust playback volume"
-              aria-expanded={volumeOpen}
-            >
-              {activeVolume === 0 ? <VolumeX size={18} /> : <Volume2 size={18} />}
-            </button>
-          </div>
+          <VerticalVolumeControl
+            volume={volume}
+            onVolumeChange={setVolume}
+            onToggleMute={toggleMute}
+            variant="radio"
+          />
 
           <button
             type="button"
