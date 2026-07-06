@@ -1,4 +1,4 @@
-/** When false, pointer/keyboard/scroll activity does not reveal or reset the body fade timer. */
+/** When false, page activity does not reset the pending body fade timer. */
 export const playbackFocusUserActivityEnabled = true;
 
 export const playbackFocusTiming = {

@@ -17,8 +17,8 @@ export function ArtistCard({ id, username, displayName, subtitle, avatarUrl, cla
   const path = profilePath(username);
 
   return (
-    <div className={`group/card flex flex-col items-center gap-3 text-center ${className ?? "w-36 shrink-0"}`}>
-      <div className="relative w-full max-w-[140px]">
+    <div className={`group/card flex flex-col items-center gap-3 text-center ${className ?? "w-30 shrink-0"}`}>
+      <div className="relative w-full max-w-[120px]">
         <Link to={path} className="block transition hover:opacity-90">
           <MediaCover title={displayName} imageUrl={avatarUrl} shape="circle" />
         </Link>

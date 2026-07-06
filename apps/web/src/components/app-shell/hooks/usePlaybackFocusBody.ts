@@ -193,30 +193,29 @@ export function usePlaybackFocusBody({
     search,
   ]);
 
-  // Pointer/keyboard/scroll activity resets or extends the hide timer.
+  // Page activity resets the pending hide timer without restoring hidden content.
   useEffect(() => {
     if (!playbackFocusUserActivityEnabled || !playFocusActive) return;
 
-    const onUserActivity = () => {
-      armPlayFocus(bodyFocusHidden ? "activity" : "initial");
+    const onPageActivity = () => {
+      if (bodyFocusHiddenRef.current) return;
+      armPlayFocus("initial");
     };
     const scrollContainer = scrollContainerRef?.current;
 
-    window.addEventListener("pointermove", onUserActivity, { passive: true });
-    window.addEventListener("pointerdown", onUserActivity, { passive: true });
-    window.addEventListener("wheel", onUserActivity, { passive: true });
-    window.addEventListener("scroll", onUserActivity, { passive: true });
-    scrollContainer?.addEventListener("scroll", onUserActivity, { passive: true });
-    window.addEventListener("keydown", onUserActivity);
+    window.addEventListener("pointermove", onPageActivity, { passive: true });
+    window.addEventListener("pointerdown", onPageActivity, { passive: true });
+    window.addEventListener("wheel", onPageActivity, { passive: true });
+    window.addEventListener("scroll", onPageActivity, { passive: true });
+    scrollContainer?.addEventListener("scroll", onPageActivity, { passive: true });
     return () => {
-      window.removeEventListener("pointermove", onUserActivity);
-      window.removeEventListener("pointerdown", onUserActivity);
-      window.removeEventListener("wheel", onUserActivity);
-      window.removeEventListener("scroll", onUserActivity);
-      scrollContainer?.removeEventListener("scroll", onUserActivity);
-      window.removeEventListener("keydown", onUserActivity);
+      window.removeEventListener("pointermove", onPageActivity);
+      window.removeEventListener("pointerdown", onPageActivity);
+      window.removeEventListener("wheel", onPageActivity);
+      window.removeEventListener("scroll", onPageActivity);
+      scrollContainer?.removeEventListener("scroll", onPageActivity);
     };
-  }, [armPlayFocus, bodyFocusHidden, playFocusActive, scrollContainerRef]);
+  }, [armPlayFocus, playFocusActive, scrollContainerRef]);
 
   const revealPage = useCallback(() => {
     if (!bodyFocusHidden && !miniViewVisible) return;

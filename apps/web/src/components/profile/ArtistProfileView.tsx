@@ -33,7 +33,7 @@ export function ArtistProfileView({
   showRelatedArtists = true,
   collectionEditHref,
 }: ArtistProfileViewProps) {
-  const relatedArtistLimit = 4;
+  const relatedArtistLimit = 12;
   const { data: related } = useTopArtists("30d", relatedArtistLimit + 1);
   const { user: authUser } = useAuth();
   const { setQueue, togglePlay, activeOriginKey, state } = useAudioPlayer();

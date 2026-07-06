@@ -28,7 +28,7 @@ export type VideoPackageEntry = {
   videoUrl: string
 }
 
-const MAX_VIDEO_COUNT = 240
+const MAX_VIDEO_COUNT = 246
 
 /** One package per video — each gets an equal rotation slot via per-package pick. */
 export const SEED_VIDEO_ENTRIES: VideoPackageEntry[] = [

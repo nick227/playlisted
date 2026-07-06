@@ -1,4 +1,4 @@
-import { Minimize2, Volume2, VolumeX } from "lucide-react";
+import { ExternalLink, Minimize2, Volume2, VolumeX } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { FocusRecording } from "@/lib/playbackFocus/types";
 import { PLAYBACK_FOCUS_INTERACTIVE_ATTR, stopPlaybackFocusBubble } from "@/lib/playbackFocus/interactiveTarget";
@@ -147,12 +147,6 @@ export function ArtistVisual({
       aria-hidden
     />
   );
-
-  const hasArtistFacts =
-    artistFacts.stats.length > 0 ||
-    artistFacts.joined ||
-    artistFacts.genres.length > 0 ||
-    artistFacts.profileLinks.length > 0;
 
   useEffect(() => {
     if (!recordingId) return;
@@ -303,47 +297,35 @@ export function ArtistVisual({
               ) : null}
             </>
           ) : null}
-          {hasArtistFacts ? (
-            <div className="flex min-w-0 flex-col gap-2 px-3 py-2">
-              {artistFacts.stats.length > 0 ? (
-                <div className="grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-4">
-                  {artistFacts.stats.map((stat) => (
-                    <div key={stat.label} className="min-w-0">
-                      <div className="truncate text-sm font-extrabold leading-none text-white sm:text-base">
-                        {stat.value}
-                      </div>
-                      <div className="mt-0.5 truncate text-[9px] font-bold uppercase tracking-wider text-white/45 sm:text-[10px]">
-                        {stat.label}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : null}
-              <div className="flex min-w-0 flex-wrap items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-white/60 sm:text-xs">
-                
-                {artistFacts.profileLinks.map((link) => {
-                  const platform = getProfileLinkPlatform(link.platform);
-                  const Icon = platform.icon;
-
-                  return (
-                    <a
-                      key={link.id}
-                      href={link.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex max-w-32 items-center gap-1 rounded-md bg-white/10 px-2 py-1 text-white/75 transition hover:bg-white/20 hover:text-white"
-                      title={link.label || platform.label}
-                      onPointerDown={stopPlaybackFocusBubble}
-                      onClick={stopPlaybackFocusBubble}
-                    >
-                      <Icon size={12} aria-hidden />
-                      <span className="min-w-0 truncate">{link.label || platform.label}</span>
-                    </a>
-                  );
-                })}
-              </div>
-            </div>
-          ) : null}
+          {artistFacts.profileLinks.length > 0 ? (
+            <nav
+              aria-label={artistName ? `${artistName} social links` : "Artist social links"}
+              className="flex min-h-8 min-w-0 flex-wrap items-center gap-1.5"
+            >
+              {artistFacts.profileLinks.map((link) => {
+                const platform = getProfileLinkPlatform(link.platform);
+                const Icon = platform.icon;
+                return (
+                  <a
+                    key={link.id}
+                    href={link.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    title={link.label || platform.label}
+                    className="inline-flex h-8 max-w-[9rem] items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-2.5 text-[11px] font-semibold text-white/68 transition hover:border-white/25 hover:bg-white/[0.09] hover:text-white"
+                    onPointerDown={stopPlaybackFocusBubble}
+                    onClick={stopPlaybackFocusBubble}
+                  >
+                    <Icon size={13} className="shrink-0" aria-hidden />
+                    <span className="min-w-0 truncate">{link.label || platform.label}</span>
+                    <ExternalLink size={11} className="shrink-0 opacity-55" aria-hidden />
+                  </a>
+                );
+              })}
+            </nav>
+          ) : (
+            <div className="min-h-8" aria-hidden />
+          )}
           <PlaybackFocusReactionBar recordingId={recording?.id} />
           {artistBio || badgeGenres.length > 0 ? (
             <div className="flex min-w-0 flex-wrap items-center gap-2 text-sm font-medium text-white/70 drop-shadow-sm sm:text-base">
