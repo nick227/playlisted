@@ -139,6 +139,7 @@ export function PlaybackFocusLane({ focusState, withPlayer = false }: PlaybackFo
   const isSubtitleFixture = displayFixture?.type === "subtitle";
   const isArtistVisualFixture = artistVisualPosition;
   const showMiniPlayer =
+    isRadio &&
     layerVisible &&
     (isSubtitleFixture || (isArtistVisualFixture && artistVisualMinimized));
 
@@ -169,15 +170,17 @@ export function PlaybackFocusLane({ focusState, withPlayer = false }: PlaybackFo
           />
         </div>
       </div>
-      <MinimizedSongPlayer
-        recording={recording}
-        artistName={artist?.artistName ?? recording.ownerName ?? undefined}
-        artistUsername={recording.ownerUsername}
-        visible={showMiniPlayer}
-        showExpand={Boolean(isArtistVisualFixture && artistVisualMinimized)}
-        onExpand={expandArtistVisual}
-        withPlayer={withPlayer}
-      />
+      {isRadio ? (
+        <MinimizedSongPlayer
+          recording={recording}
+          artistName={artist?.artistName ?? recording.ownerName ?? undefined}
+          artistUsername={recording.ownerUsername}
+          visible={showMiniPlayer}
+          showExpand={Boolean(isArtistVisualFixture && artistVisualMinimized)}
+          onExpand={expandArtistVisual}
+          withPlayer={withPlayer}
+        />
+      ) : null}
     </>,
     document.body,
   );
