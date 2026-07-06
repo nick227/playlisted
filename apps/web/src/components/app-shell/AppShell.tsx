@@ -51,6 +51,7 @@ export function AppShell({ children }: AppShellProps) {
     focusTrackKey,
     focusTrackSourceLabel: focusTrack?.sourceLabel,
     currentTimeMsRef,
+    scrollContainerRef: mainRef,
     pathname: location.pathname,
     search: location.search,
   });

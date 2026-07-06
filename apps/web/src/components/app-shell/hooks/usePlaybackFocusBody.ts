@@ -25,6 +25,7 @@ type UsePlaybackFocusBodyOptions = {
   focusTrackKey: string;
   focusTrackSourceLabel?: string;
   currentTimeMsRef: RefObject<number>;
+  scrollContainerRef?: RefObject<HTMLElement | null>;
   pathname: string;
   search: string;
 };
@@ -38,6 +39,7 @@ export function usePlaybackFocusBody({
   focusTrackKey,
   focusTrackSourceLabel,
   currentTimeMsRef,
+  scrollContainerRef,
   pathname,
   search,
 }: UsePlaybackFocusBodyOptions) {
@@ -191,25 +193,30 @@ export function usePlaybackFocusBody({
     search,
   ]);
 
-  // Pointer/keyboard activity resets or extends the hide timer.
+  // Pointer/keyboard/scroll activity resets or extends the hide timer.
   useEffect(() => {
     if (!playbackFocusUserActivityEnabled || !playFocusActive) return;
 
     const onUserActivity = () => {
       armPlayFocus(bodyFocusHidden ? "activity" : "initial");
     };
+    const scrollContainer = scrollContainerRef?.current;
 
     window.addEventListener("pointermove", onUserActivity, { passive: true });
     window.addEventListener("pointerdown", onUserActivity, { passive: true });
     window.addEventListener("wheel", onUserActivity, { passive: true });
+    window.addEventListener("scroll", onUserActivity, { passive: true });
+    scrollContainer?.addEventListener("scroll", onUserActivity, { passive: true });
     window.addEventListener("keydown", onUserActivity);
     return () => {
       window.removeEventListener("pointermove", onUserActivity);
       window.removeEventListener("pointerdown", onUserActivity);
       window.removeEventListener("wheel", onUserActivity);
+      window.removeEventListener("scroll", onUserActivity);
+      scrollContainer?.removeEventListener("scroll", onUserActivity);
       window.removeEventListener("keydown", onUserActivity);
     };
-  }, [armPlayFocus, bodyFocusHidden, playFocusActive]);
+  }, [armPlayFocus, bodyFocusHidden, playFocusActive, scrollContainerRef]);
 
   const revealPage = useCallback(() => {
     if (!bodyFocusHidden && !miniViewVisible) return;

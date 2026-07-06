@@ -1,5 +1,5 @@
-/** When false, pointer/keyboard activity does not reveal or reset the body fade timer. */
-export const playbackFocusUserActivityEnabled = false;
+/** When false, pointer/keyboard/scroll activity does not reveal or reset the body fade timer. */
+export const playbackFocusUserActivityEnabled = true;
 
 export const playbackFocusTiming = {
   theatre: {
@@ -11,7 +11,7 @@ export const playbackFocusTiming = {
 
   body: {
     delayMs: 5000,
-    restoreDelayMs: 6000,
+    restoreDelayMs: 10000,
     fadeOutMs: 2000,
   },
 
@@ -31,7 +31,7 @@ export const playbackFocusTiming = {
 
   titleIntro: {
     delayMs: 0,
-    minVisibleMs: 6000,
+    minVisibleMs: 3000,
     fadeInMs: 900,
     fadeOutMs: 650,
   },
