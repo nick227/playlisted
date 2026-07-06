@@ -356,9 +356,20 @@ body {
 
 .focus-lane__artist,
 .focus-lane__title-intro {
-  width: min(34rem, 100%);
+  width: min(36rem, 100%);
   min-width: 0;
   max-width: 100%;
+}
+
+.focus-lane__title-intro-heading {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+
+.focus-lane__title-intro-meta {
+  align-items: start;
 }
 
 .focus-lane__artist {

@@ -44,6 +44,7 @@ export function toFocusRecording(
       playlistId: track.playlist.id,
       playlistSlug: track.playlist.slug,
       durationSeconds: track.durationSeconds,
+      playCount: null,
       hasSubtitleTrack: track.subtitle != null,
       ...mapTrackSubtitleStyle(track),
     };
@@ -63,6 +64,7 @@ export function toFocusRecording(
     playlistSlug: playbackContext?.playlistSlug ?? track.playlistSlug ?? null,
     recordingType: track.recordingType,
     durationSeconds: track.durationSeconds,
+    playCount: track.playCount,
     hasSubtitleTrack: track.subtitle != null,
     ...mapTrackSubtitleStyle(track),
   };
