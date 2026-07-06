@@ -74,12 +74,13 @@ export function AppShell({ children }: AppShellProps) {
     radioUiMounted,
   );
   const shellHasPlayer = playerShellActive || radioShellActive;
+  const reservePlayerSpace = shellHasPlayer || location.pathname === "/radio";
   const isChatPage = location.pathname === "/chat";
   const mainClassName = buildMainContentClassName({
     bodyFocusMode: playbackFocus.bodyFocusMode,
     snapReveal: playbackFocus.snapReveal,
     isChatPage,
-    shellHasPlayer,
+    shellHasPlayer: reservePlayerSpace,
   });
 
   return (
@@ -114,7 +115,11 @@ export function AppShell({ children }: AppShellProps) {
       />
 
       <BottomPlayer />
-      <PlaybackFocusLane focusState={playbackFocus.focusState} onReturnBody={playbackFocus.revealPage} />
+      <PlaybackFocusLane
+        focusState={playbackFocus.focusState}
+        onReturnBody={playbackFocus.revealPage}
+        withPlayer={shellHasPlayer}
+      />
       <QueuePanel />
     </div>
   );

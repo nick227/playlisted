@@ -20,11 +20,14 @@ import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 import { useAuth } from "@/providers/AuthProvider";
 
 import { FocusLaneSubtitleContent } from "./FocusLaneSubtitleContent";
+import { MinimizedSongPlayer } from "./MinimizedSongPlayer";
+import { useArtistVisualMinimized } from "./useArtistVisualMinimized";
 import { useFocusLaneVisibility } from "./useFocusLaneVisibility";
 
 type PlaybackFocusLaneProps = {
   focusState: PlaybackFocusState;
   onReturnBody?: () => void;
+  withPlayer?: boolean;
 };
 
 const SUBTITLE_POLL_INTERVAL_MS = 3000;
@@ -32,7 +35,7 @@ const SUBTITLE_POLL_INTERVAL_MS = 3000;
 // polling for the entire duration of playback.
 const SUBTITLE_POLL_MAX_ATTEMPTS = 20;
 
-export function PlaybackFocusLane({ focusState, onReturnBody }: PlaybackFocusLaneProps) {
+export function PlaybackFocusLane({ focusState, onReturnBody, withPlayer = false }: PlaybackFocusLaneProps) {
   const { accessToken } = useAuth();
   const { playbackContext } = useAudioPlayer();
   const { subtitlesEnabled } = useSubtitleDisplay();
@@ -126,10 +129,19 @@ export function PlaybackFocusLane({ focusState, onReturnBody }: PlaybackFocusLan
   );
 
   const { displayFixture, displayKey, layerVisible, variantClass } = useFocusLaneVisibility(activeFixture);
+  const { minimized: artistVisualMinimized, minimize: minimizeArtistVisual, expand: expandArtistVisual } =
+    useArtistVisualMinimized(recording?.id);
+
   const artistVisualPosition =
     displayFixture?.type === "finalFallback" ||
     (displayFixture?.type === "fallbackSubtitle" && displayFixture.source !== "title-intro");
   const positionClassName = subtitlePositionClassName(artistVisualPosition ? "middle" : subtitlePosition);
+
+  const isSubtitleFixture = displayFixture?.type === "subtitle";
+  const isArtistVisualFixture = artistVisualPosition;
+  const showMiniPlayer =
+    layerVisible &&
+    (isSubtitleFixture || (isArtistVisualFixture && artistVisualMinimized));
 
   if (!recording?.id || !focusState.hasBodyFaded || !isPlaying) {
     return null;
@@ -140,22 +152,35 @@ export function PlaybackFocusLane({ focusState, onReturnBody }: PlaybackFocusLan
   }
 
   return createPortal(
-    <div
-      data-focus-lane
-      className={`focus-lane${layerVisible ? " is-visible" : ""}${variantClass}${positionClassName}`}
-      aria-hidden={!layerVisible}
-    >
-      <div key={displayKey} className="focus-lane__content">
-        <FocusLaneSubtitleContent
-          fixture={displayFixture}
-          customSubtitleStyle={customSubtitleStyle}
-          subtitleStyleId={subtitleStyleId}
-          currentTimeSec={currentTime}
-          isPlaying={isPlaying}
-          onReturnBody={onReturnBody}
-        />
+    <>
+      <div
+        data-focus-lane
+        className={`focus-lane${layerVisible ? " is-visible" : ""}${variantClass}${positionClassName}`}
+        aria-hidden={!layerVisible}
+      >
+        <div key={displayKey} className="focus-lane__content">
+          <FocusLaneSubtitleContent
+            fixture={displayFixture}
+            customSubtitleStyle={customSubtitleStyle}
+            subtitleStyleId={subtitleStyleId}
+            currentTimeSec={currentTime}
+            isPlaying={isPlaying}
+            onReturnBody={onReturnBody}
+            onMinimizeArtistVisual={minimizeArtistVisual}
+            artistVisualMinimized={artistVisualMinimized}
+          />
+        </div>
       </div>
-    </div>,
+      <MinimizedSongPlayer
+        recording={recording}
+        artistName={artist?.artistName ?? recording.ownerName ?? undefined}
+        artistUsername={recording.ownerUsername}
+        visible={showMiniPlayer}
+        showExpand={Boolean(isArtistVisualFixture && artistVisualMinimized)}
+        onExpand={expandArtistVisual}
+        withPlayer={withPlayer}
+      />
+    </>,
     document.body,
   );
 }

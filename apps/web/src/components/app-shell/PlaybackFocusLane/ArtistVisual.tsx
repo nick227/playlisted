@@ -1,4 +1,4 @@
-import { CornerUpLeft, Volume2, VolumeX } from "lucide-react";
+import { CornerUpLeft, Minimize2, Volume2, VolumeX } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { FocusRecording } from "@/lib/playbackFocus/types";
 import { PLAYBACK_FOCUS_INTERACTIVE_ATTR, stopPlaybackFocusBubble } from "@/lib/playbackFocus/interactiveTarget";
@@ -29,6 +29,7 @@ type ArtistVisualProps = {
   currentTimeSec?: number;
   isPlaying?: boolean;
   onReturnBody?: () => void;
+  onMinimize?: () => void;
 };
 
 function formatDuration(seconds: number): string {
@@ -49,6 +50,7 @@ export function ArtistVisual({
   currentTimeSec = 0,
   isPlaying = false,
   onReturnBody,
+  onMinimize,
 }: ArtistVisualProps) {
   const { isRadio } = useFocusLanePlayback();
   const { audioRef, volume: siteVolume, setVolume: siteSetVolume } = useAudioPlayer();
@@ -251,6 +253,21 @@ export function ArtistVisual({
         songTransitioning ? " is-song-transitioning" : ""
       }`}
     >
+      {onMinimize ? (
+        <button
+          type="button"
+          className="focus-lane__artist-minimize"
+          title="Minimize player"
+          aria-label="Minimize player"
+          onPointerDown={stopPlaybackFocusBubble}
+          onClick={(event) => {
+            stopPlaybackFocusBubble(event);
+            onMinimize();
+          }}
+        >
+          <Minimize2 size={16} aria-hidden />
+        </button>
+      ) : null}
       {onReturnBody ? (
         <button
           type="button"

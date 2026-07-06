@@ -15,6 +15,8 @@ type FocusLaneSubtitleContentProps = {
   currentTimeSec?: number;
   isPlaying?: boolean;
   onReturnBody?: () => void;
+  onMinimizeArtistVisual?: () => void;
+  artistVisualMinimized?: boolean;
 };
 
 function usesCustomSubtitleStyle(fixture: PlaybackFocusFixture): boolean {
@@ -38,6 +40,8 @@ export function FocusLaneSubtitleContent({
   currentTimeSec,
   isPlaying,
   onReturnBody,
+  onMinimizeArtistVisual,
+  artistVisualMinimized = false,
 }: FocusLaneSubtitleContentProps) {
   const isTitleIntro = fixture.type === "fallbackSubtitle" && fixture.source === "title-intro";
   let style = customSubtitleStyle && usesCustomSubtitleStyle(fixture) ? { ...customSubtitleStyle } : undefined;
@@ -67,9 +71,11 @@ export function FocusLaneSubtitleContent({
   }
 
   if (isCombinedView) {
+    if (artistVisualMinimized) return null;
+
     const artist = (fixture.type === "fallbackSubtitle" || fixture.type === "finalFallback") ? fixture.artist : null;
     const recording = (fixture.type === "fallbackSubtitle" || fixture.type === "finalFallback") ? fixture.recording : null;
-    
+
     return (
       <ArtistVisual
         artistName={artist?.artistName || (fixture.type === "finalFallback" ? fixture.artistName ?? undefined : undefined)}
@@ -79,6 +85,7 @@ export function FocusLaneSubtitleContent({
         currentTimeSec={currentTimeSec}
         isPlaying={isPlaying}
         onReturnBody={onReturnBody}
+        onMinimize={onMinimizeArtistVisual}
       />
     );
   }
