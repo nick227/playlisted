@@ -6,12 +6,17 @@ import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 export function useResumePlaybackAfterNav(pathname: string, radioPlaying: boolean) {
   const { state, resumePlaybackIfPaused } = useAudioPlayer();
   const resumeAfterNavRef = useRef(false);
+  const stateRef = useRef(state);
+
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
 
   useEffect(() => {
     return () => {
-      resumeAfterNavRef.current = state === "playing" || state === "loading";
+      resumeAfterNavRef.current = stateRef.current === "playing" || stateRef.current === "loading";
     };
-  }, [pathname, state]);
+  }, [pathname]);
 
   useEffect(() => {
     if (!resumeAfterNavRef.current) return;

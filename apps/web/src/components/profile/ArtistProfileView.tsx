@@ -36,7 +36,7 @@ export function ArtistProfileView({
   const relatedArtistLimit = 12;
   const { data: related } = useTopArtists("30d", relatedArtistLimit + 1);
   const { user: authUser } = useAuth();
-  const { setQueue, togglePlay, activeOriginKey, state } = useAudioPlayer();
+  const { setQueue, togglePlay, ensurePlayback, activeOriginKey, state } = useAudioPlayer();
   const { tracks, isLoading: tracksLoading } = useArtistTracks(user.id);
 
   const isOwner = authUser?.id === user.id;
@@ -73,7 +73,11 @@ export function ArtistProfileView({
 
   function playArtist() {
     if (artistHasCurrent) {
-      togglePlay();
+      if (artistIsPlaying) {
+        togglePlay();
+      } else {
+        ensurePlayback();
+      }
       return;
     }
 

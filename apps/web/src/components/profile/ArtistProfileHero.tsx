@@ -432,13 +432,14 @@ export function ArtistProfileHero({
                 type="button"
                 onClick={onPlay}
                 className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-black"
+                aria-label={isPlaying ? "Pause artist playback" : isPaused ? "Resume artist playback" : "Play artist"}
               >
                 {isPlaying ? (
                   <Pause size={18} fill="currentColor" />
                 ) : (
                   <Play size={18} fill="currentColor" />
                 )}
-                {isPlaying ? "Playing" : isPaused ? "Resume" : "Play"}
+                {isPlaying ? "Pause" : isPaused ? "Resume" : "Play"}
               </button>
             ) : null}
             <button

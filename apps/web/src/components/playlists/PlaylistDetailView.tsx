@@ -24,7 +24,7 @@ export function PlaylistDetailView({ playlist }: PlaylistDetailViewProps) {
   const isMdUp = useIsMdUp();
   const relatedPlaylistLimit = isMdUp ? 4 : 6;
   const { data: related } = usePlaylists(relatedPlaylistLimit + 1);
-  const { setQueue, currentTrack, togglePlay, playbackContext, state } = useAudioPlayer();
+  const { setQueue, currentTrack, togglePlay, ensurePlayback, playbackContext, state } = useAudioPlayer();
   const { status, user } = useAuth();
   const savedCollections = useCollectionPlaylists(100);
   const addCollection = useAddCollectionPlaylist();
@@ -53,7 +53,11 @@ export function PlaylistDetailView({ playlist }: PlaylistDetailViewProps) {
 
   const playAll = useCallback((shuffle = false) => {
     if (playlistHasCurrent) {
-      togglePlay();
+      if (playlistIsPlaying) {
+        togglePlay();
+      } else {
+        ensurePlayback();
+      }
       return;
     }
 
@@ -77,7 +81,9 @@ export function PlaylistDetailView({ playlist }: PlaylistDetailViewProps) {
     playlist.slug,
     playlist.title,
     playlistHasCurrent,
+    playlistIsPlaying,
     queueTracks,
+    ensurePlayback,
     setQueue,
     togglePlay,
   ]);
@@ -85,7 +91,11 @@ export function PlaylistDetailView({ playlist }: PlaylistDetailViewProps) {
   const playRecording = useCallback((recording: CollectionRecording, index: number) => {
     if (currentTrack?.id === recording.id) {
       if (playbackContext.playlistId === playlist.id) {
-        togglePlay();
+        if (state === "playing") {
+          togglePlay();
+        } else {
+          ensurePlayback();
+        }
         return;
       }
 
@@ -117,11 +127,13 @@ export function PlaylistDetailView({ playlist }: PlaylistDetailViewProps) {
   }, [
     currentTrack?.id,
     playbackContext.playlistId,
+    state,
     playlist.id,
     playlist.owner.username,
     playlist.slug,
     playlist.title,
     queueTracks,
+    ensurePlayback,
     setQueue,
     togglePlay,
   ]);

@@ -34,7 +34,7 @@ export function ArtistProfileCollectionPanel({ playlist, owner, editHref }: Arti
   const savedCollections = useCollectionPlaylists(100);
   const addCollection = useAddCollectionPlaylist();
   const { data: detail, isLoading } = usePlaylistByUsernameSlug(owner.username, playlist.slug);
-  const { setQueue, currentTrack, togglePlay, playbackContext, activeOriginKey, state } = useAudioPlayer();
+  const { setQueue, currentTrack, togglePlay, ensurePlayback, playbackContext, activeOriginKey, state } = useAudioPlayer();
 
   const isActive = playbackContext.playlistId === playlist.id;
   const isPlaying = isActive && state === "playing";
@@ -73,7 +73,11 @@ export function ArtistProfileCollectionPanel({ playlist, owner, editHref }: Arti
 
   function playAll() {
     if (isActive) {
-      togglePlay();
+      if (isPlaying) {
+        togglePlay();
+      } else {
+        ensurePlayback();
+      }
       return;
     }
     if (queueTracks.length === 0) {
@@ -101,7 +105,11 @@ export function ArtistProfileCollectionPanel({ playlist, owner, editHref }: Arti
     const playbackOrigin = artistProfileTrackOrigin(playlist.id, recording.id);
 
     if (currentTrack?.id === recording.id && activeOriginKey === playbackOrigin) {
-      togglePlay();
+      if (state === "playing") {
+        togglePlay();
+      } else {
+        ensurePlayback();
+      }
       return;
     }
 

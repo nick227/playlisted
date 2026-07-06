@@ -90,7 +90,7 @@ export function AppShell({ children }: AppShellProps) {
 
       <Sidebar mobileOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      <div className="relative flex min-h-full min-w-0 w-full max-w-full flex-1 flex-col">
+      <div className="relative z-40 flex min-h-full min-w-0 w-full max-w-full flex-1 flex-col">
         <TopBar
           onMenuClick={() => setSidebarOpen(true)}
           cinematicBgTransparent={playbackFocus.bodyFocusMode}

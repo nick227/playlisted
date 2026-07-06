@@ -362,7 +362,6 @@ export function BottomPlayer() {
 
             {showQueueControls ? (
               <>
-
                 <button
                   type="button"
                   onClick={() => setQueueOpen(true)}

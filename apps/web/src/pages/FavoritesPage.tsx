@@ -99,7 +99,7 @@ function PersonalTrackRow({
   badgeColor = "text-[var(--color-text-muted)]",
   allTracks,
 }: PersonalTrackRowProps) {
-  const { playTrack, togglePlay } = useAudioPlayer();
+  const { playTrack, togglePlay, ensurePlayback } = useAudioPlayer();
   const { isActive, isPlaying } = useTrackPlayback(track.id);
 
   const songHref = playlistRecordingPath(
@@ -115,7 +115,11 @@ function PersonalTrackRow({
 
   function handlePlay() {
     if (isActive) {
-      togglePlay();
+      if (isPlaying) {
+        togglePlay();
+      } else {
+        ensurePlayback();
+      }
     } else {
       const queue = allTracks.map(personalTrackToQueueTrack);
       playTrack(personalTrackToQueueTrack(track), queue, { sourceContext: "library" }, {

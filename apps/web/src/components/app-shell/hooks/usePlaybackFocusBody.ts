@@ -30,6 +30,26 @@ type UsePlaybackFocusBodyOptions = {
   search: string;
 };
 
+function isNativeInteractiveTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return false;
+  return Boolean(
+    target.closest(
+      [
+        "a",
+        "button",
+        "input",
+        "select",
+        "textarea",
+        "[role='button']",
+        "[role='link']",
+        "[data-bottom-player]",
+        ".topbar-chrome",
+        ".sidebar-nav-content",
+      ].join(","),
+    ),
+  );
+}
+
 /**
  * Manages cinematic body fade: hide page chrome after idle playback,
  * reveal on user activity, and expose focus-lane state for subtitles.
@@ -256,6 +276,21 @@ export function usePlaybackFocusBody({
     playFocusActive && bodyFocusHidden && !playbackFocusSuppressed && !bodyFadeDisabled;
   const miniViewMode = playFocusActive && miniViewVisible && !playbackFocusSuppressed;
   const revealShieldVisible = bodyFocusMode || snapReveal || revealInteractionActive;
+
+  useEffect(() => {
+    if (!revealShieldVisible) return;
+
+    const handleDocumentPointerDown = (event: globalThis.PointerEvent) => {
+      if (isPlaybackFocusInteractiveTarget(event.target)) return;
+      if (isNativeInteractiveTarget(event.target)) return;
+      revealPage();
+    };
+
+    document.addEventListener("pointerdown", handleDocumentPointerDown, { capture: true });
+    return () => {
+      document.removeEventListener("pointerdown", handleDocumentPointerDown, { capture: true });
+    };
+  }, [revealPage, revealShieldVisible]);
 
   const focusState = useMemo<PlaybackFocusState>(
     () => ({

@@ -508,13 +508,14 @@ export function CollectionView({
               type="button"
               onClick={() => onPlayAll(false)}
               className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-black"
+              aria-label={playlistIsPlaying ? "Pause playlist" : playlistIsPaused ? "Resume playlist" : "Play playlist"}
             >
               {playlistIsPlaying ? (
                 <Pause size={18} fill="currentColor" />
               ) : (
                 <Play size={18} fill="currentColor" />
               )}
-              {playlistIsPlaying ? "Playing" : playlistIsPaused ? "Resume" : "Play"}
+              {playlistIsPlaying ? "Pause" : playlistIsPaused ? "Resume" : "Play"}
             </button>
             <button
               type="button"

@@ -18,7 +18,7 @@ export function SearchPage() {
   const [params] = useSearchParams();
   const q = params.get("q")?.trim() ?? "";
   const hasQuery = q.length > 0;
-  const { currentTrack, playTrack, togglePlay } = useAudioPlayer();
+  const { currentTrack, isPlaying, playTrack, togglePlay, ensurePlayback } = useAudioPlayer();
 
   usePageMeta({
     title: q ? `Search: ${q}` : "Search",
@@ -42,7 +42,11 @@ export function SearchPage() {
 
   function playSong(song: (typeof songResults)[number]) {
     if (currentTrack?.id === song.id) {
-      togglePlay();
+      if (isPlaying) {
+        togglePlay();
+      } else {
+        ensurePlayback();
+      }
       return;
     }
 

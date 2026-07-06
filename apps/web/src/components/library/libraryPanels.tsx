@@ -103,11 +103,15 @@ export function PanelHeader({
 }
 
 function TracksList({ songs }: { songs: LibrarySong[] }) {
-  const { playTrack, currentTrack, togglePlay } = useAudioPlayer();
+  const { playTrack, currentTrack, isPlaying, togglePlay, ensurePlayback } = useAudioPlayer();
 
   function handlePlay(song: LibrarySong) {
     if (currentTrack?.id === song.id) {
-      togglePlay();
+      if (isPlaying) {
+        togglePlay();
+      } else {
+        ensurePlayback();
+      }
       return;
     }
     const queue = songs.map((s) => librarySongToQueueTrack(s));
@@ -131,13 +135,17 @@ function TracksList({ songs }: { songs: LibrarySong[] }) {
 }
 
 function SongPreviewChip({ song, queue }: { song: LibrarySong; queue: LibrarySong[] }) {
-  const { playTrack, currentTrack, isPlaying, togglePlay } = useAudioPlayer();
+  const { playTrack, currentTrack, isPlaying, togglePlay, ensurePlayback } = useAudioPlayer();
   const isActive = currentTrack?.id === song.id;
 
   function handleClick(e: React.MouseEvent) {
     e.stopPropagation();
     if (isActive) {
-      togglePlay();
+      if (isPlaying) {
+        togglePlay();
+      } else {
+        ensurePlayback();
+      }
       return;
     }
     playTrack(
@@ -191,12 +199,16 @@ function GenrePreviewChip({ genre }: { genre: LibraryGenre }) {
 }
 
 function GenreSongThumb({ song, queue }: { song: LibrarySong; queue: LibrarySong[] }) {
-  const { playTrack, currentTrack, isPlaying, togglePlay } = useAudioPlayer();
+  const { playTrack, currentTrack, isPlaying, togglePlay, ensurePlayback } = useAudioPlayer();
   const isActive = currentTrack?.id === song.id;
 
   function handlePlay() {
     if (isActive) {
-      togglePlay();
+      if (isPlaying) {
+        togglePlay();
+      } else {
+        ensurePlayback();
+      }
       return;
     }
     playTrack(

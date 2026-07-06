@@ -136,6 +136,8 @@ interface AudioPlayerContextValue {
   yieldPlaybackToRadio: () => void;
   /** Resume the current audio element when it was paused without clearing the queue. */
   resumePlaybackIfPaused: () => void;
+  /** Start or resume the current queue without toggling an already playing track off. */
+  ensurePlayback: () => void;
 }
 
 export type PlaybackTransportValue = {
@@ -339,11 +341,38 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     if (siteAudioRef.current) siteAudioRef.current.volume = volumeRef.current;
   }, []);
 
+  const seekQuietly = useCallback((audio: HTMLAudioElement, time: number) => {
+    if (!Number.isFinite(time) || time <= 0) return;
+    const applySeek = () => {
+      try {
+        audio.currentTime = time;
+      } catch {
+        // Media can reject seeks until metadata is loaded; playback can still begin.
+      }
+    };
+    if (audio.readyState >= HTMLMediaElement.HAVE_METADATA) {
+      applySeek();
+      return;
+    }
+    audio.addEventListener("loadedmetadata", applySeek, { once: true });
+  }, []);
+
+  const recoverDetachedAdoptedAudio = useCallback(() => {
+    const adopted = adoptedAudioRef.current;
+    if (!adopted || adopted.isConnected) return null;
+
+    const resumeAt = adopted.currentTime || currentTimeRef.current;
+    adopted.pause();
+    restoreSiteAudioElement();
+    return resumeAt;
+  }, [restoreSiteAudioElement]);
+
   /** Keep playback running when re-anchoring queue/context to the same audio source. */
   const tryContinueSameSource = useCallback(
     (track: QueueTrack): boolean => {
+      recoverDetachedAdoptedAudio();
       const audio = audioRef.current;
-      if (!audio || !track.audioUrl || audio.ended) return false;
+      if (!audio || !audio.isConnected || !track.audioUrl || audio.ended) return false;
       if (!trackSrcMatches(audio, track.audioUrl)) return false;
 
       syncTheatreTrackContext(track.id);
@@ -363,11 +392,13 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       }
       return true;
     },
-    [logPlaybackStart, trackSrcMatches],
+    [logPlaybackStart, recoverDetachedAdoptedAudio, trackSrcMatches],
   );
 
   const loadTrack = useCallback((track: QueueTrack) => {
     syncTheatreTrackContext(track.id);
+
+    const resumeAt = recoverDetachedAdoptedAudio();
 
     if (adoptedAudioRef.current) {
       adoptedAudioRef.current.pause();
@@ -382,6 +413,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     setState("loading");
     audio.src = track.audioUrl;
     audio.load();
+    seekQuietly(audio, resumeAt ?? 0);
     void audio.play().then(() => {
       if (!audio.paused) {
         setState("playing");
@@ -389,7 +421,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
         theatreController.setCanEnter(true);
       }
     }).catch(() => setState("paused"));
-  }, [logPlaybackStart, restoreSiteAudioElement]);
+  }, [logPlaybackStart, recoverDetachedAdoptedAudio, restoreSiteAudioElement, seekQuietly]);
 
   const completeAutoplaySegmentIfNeeded = useCallback(() => {
     const segment = currentSegmentRef.current;
@@ -623,13 +655,20 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     setPlaybackContext(next);
   }, []);
 
-  const togglePlay = useCallback(() => {
+  const ensurePlayback = useCallback(() => {
     const audio = audioRef.current;
     const idx = queueIndexRef.current;
     if (!audio || idx < 0) return;
     const track = queueRef.current[idx];
+    if (!track) return;
+
+    if (!audio.isConnected || !trackSrcMatches(audio, track.audioUrl)) {
+      loadTrack(track);
+      return;
+    }
+
     if (audio.paused) {
-      if (track) syncTheatreTrackContext(track.id);
+      syncTheatreTrackContext(track.id);
       void audio.play().then(() => {
         if (!audio.paused) {
           setState("playing");
@@ -637,10 +676,29 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
         }
       }).catch(() => setState("paused"));
     } else {
+      setState("playing");
+    }
+  }, [loadTrack, trackSrcMatches]);
+
+  const togglePlay = useCallback(() => {
+    const audio = audioRef.current;
+    const idx = queueIndexRef.current;
+    if (!audio || idx < 0) return;
+    const track = queueRef.current[idx];
+    if (!track) return;
+
+    if (!audio.isConnected || !trackSrcMatches(audio, track.audioUrl)) {
+      loadTrack(track);
+      return;
+    }
+
+    if (audio.paused) {
+      ensurePlayback();
+    } else {
       audio.pause();
       setState("paused");
     }
-  }, []);
+  }, [ensurePlayback, loadTrack, trackSrcMatches]);
 
   const playNext = useCallback(() => {
     const end = segmentEndIndexRef.current;
@@ -827,12 +885,16 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
 
   const resumePlaybackIfPaused = useCallback(() => {
     const audio = audioRef.current;
-    if (!audio || audio.ended || queueIndexRef.current < 0) return;
+    const idx = queueIndexRef.current;
+    if (!audio || audio.ended || idx < 0) return;
+    const track = queueRef.current[idx];
+    if (track && (!audio.isConnected || !trackSrcMatches(audio, track.audioUrl))) {
+      loadTrack(track);
+      return;
+    }
     if (!audio.paused) return;
-    void audio.play().then(() => {
-      if (!audio.paused) setState("playing");
-    }).catch(() => setState("paused"));
-  }, []);
+    ensurePlayback();
+  }, [ensurePlayback, loadTrack, trackSrcMatches]);
 
   useEffect(() => {
     return () => {
@@ -1005,6 +1067,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       releasePlayback,
       yieldPlaybackToRadio,
       resumePlaybackIfPaused,
+      ensurePlayback,
     }),
     [
       currentTrack,
@@ -1047,6 +1110,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       releasePlayback,
       yieldPlaybackToRadio,
       resumePlaybackIfPaused,
+      ensurePlayback,
     ],
   );
 
