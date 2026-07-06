@@ -26,7 +26,6 @@ import { useFocusLaneVisibility } from "./useFocusLaneVisibility";
 
 type PlaybackFocusLaneProps = {
   focusState: PlaybackFocusState;
-  onReturnBody?: () => void;
   withPlayer?: boolean;
 };
 
@@ -35,7 +34,7 @@ const SUBTITLE_POLL_INTERVAL_MS = 3000;
 // polling for the entire duration of playback.
 const SUBTITLE_POLL_MAX_ATTEMPTS = 20;
 
-export function PlaybackFocusLane({ focusState, onReturnBody, withPlayer = false }: PlaybackFocusLaneProps) {
+export function PlaybackFocusLane({ focusState, withPlayer = false }: PlaybackFocusLaneProps) {
   const { accessToken } = useAuth();
   const { playbackContext } = useAudioPlayer();
   const { subtitlesEnabled } = useSubtitleDisplay();
@@ -130,7 +129,7 @@ export function PlaybackFocusLane({ focusState, onReturnBody, withPlayer = false
 
   const { displayFixture, displayKey, layerVisible, variantClass } = useFocusLaneVisibility(activeFixture);
   const { minimized: artistVisualMinimized, minimize: minimizeArtistVisual, expand: expandArtistVisual } =
-    useArtistVisualMinimized(recording?.id);
+    useArtistVisualMinimized(recording?.id, focusState.hasBodyFaded);
 
   const artistVisualPosition =
     displayFixture?.type === "finalFallback" ||
@@ -165,7 +164,6 @@ export function PlaybackFocusLane({ focusState, onReturnBody, withPlayer = false
             subtitleStyleId={subtitleStyleId}
             currentTimeSec={currentTime}
             isPlaying={isPlaying}
-            onReturnBody={onReturnBody}
             onMinimizeArtistVisual={minimizeArtistVisual}
             artistVisualMinimized={artistVisualMinimized}
           />

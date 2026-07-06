@@ -14,7 +14,6 @@ type FocusLaneSubtitleContentProps = {
   subtitleStyleId?: string;
   currentTimeSec?: number;
   isPlaying?: boolean;
-  onReturnBody?: () => void;
   onMinimizeArtistVisual?: () => void;
   artistVisualMinimized?: boolean;
 };
@@ -39,7 +38,6 @@ export function FocusLaneSubtitleContent({
   subtitleStyleId,
   currentTimeSec,
   isPlaying,
-  onReturnBody,
   onMinimizeArtistVisual,
   artistVisualMinimized = false,
 }: FocusLaneSubtitleContentProps) {

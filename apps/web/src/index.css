@@ -538,9 +538,13 @@ body {
   line-height: 1.2;
 }
 
+.focus-lane__mini-player-favorite {
+  display: flex;
+  align-items: center;
+}
+
 .focus-lane__mini-player-heart {
-  width: 1.75rem;
-  height: 1.75rem;
+  pointer-events: auto;
 }
 
 .focus-lane__mini-player-expand {

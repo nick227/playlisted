@@ -1,19 +1,10 @@
-import { Heart, Maximize2 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Maximize2 } from "lucide-react";
 
-import { useRecordingReactions } from "@/hooks/useRecordingReactions";
+import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
 import { PLAYBACK_FOCUS_INTERACTIVE_ATTR, stopPlaybackFocusBubble } from "@/lib/playbackFocus/interactiveTarget";
 import type { FocusRecording } from "@/lib/playbackFocus/types";
-import {
-  canToggleRecordingReaction,
-  reactionButtonTitle,
-  RECORDING_REACTIONS,
-} from "@/lib/reactions/recordingReactions";
 
 import { FocusLaneLink, resolveArtistVisualLinks } from "./artistVisualLinks";
-
-const LOVE_REACTION = RECORDING_REACTIONS.find((reaction) => reaction.id === "love")!;
-const POP_MS = 420;
 
 type MinimizedSongPlayerProps = {
   recording: FocusRecording;
@@ -38,35 +29,6 @@ export function MinimizedSongPlayer({
     recording,
     artistUsername: artistUsername ?? recording.ownerUsername,
   });
-  const { activeIds, isAuthenticated, toggleReaction } = useRecordingReactions(recording.id);
-  const [isPopping, setIsPopping] = useState(false);
-  const popTimerRef = useRef<number | null>(null);
-
-  const clearPopTimer = useCallback(() => {
-    if (popTimerRef.current === null) return;
-    window.clearTimeout(popTimerRef.current);
-    popTimerRef.current = null;
-  }, []);
-
-  useEffect(() => clearPopTimer, [clearPopTimer]);
-
-  const isLoved = activeIds.has("love");
-  const canToggleLove = canToggleRecordingReaction(LOVE_REACTION, {
-    isAuthenticated,
-    hasRecording: true,
-  });
-  const loveTitle = reactionButtonTitle(LOVE_REACTION, { isAuthenticated, isActive: isLoved });
-
-  const handleLoveClick = () => {
-    if (!canToggleLove) return;
-    toggleReaction("love");
-    setIsPopping(true);
-    clearPopTimer();
-    popTimerRef.current = window.setTimeout(() => {
-      setIsPopping(false);
-      popTimerRef.current = null;
-    }, POP_MS);
-  };
 
   return (
     <div
@@ -134,29 +96,19 @@ export function MinimizedSongPlayer({
           ) : null}
         </div>
 
-        <button
-          type="button"
-          className={[
-            "focus-lane__reaction focus-lane__mini-player-heart",
-            isLoved ? "is-active" : "",
-            isPopping ? "is-pop" : "",
-            !canToggleLove ? "is-disabled" : "",
-          ]
-            .filter(Boolean)
-            .join(" ")}
-          title={loveTitle}
-          aria-label={loveTitle}
-          aria-pressed={isLoved}
-          aria-disabled={!canToggleLove}
-          disabled={!canToggleLove}
+        <div
+          className="focus-lane__mini-player-favorite shrink-0"
           onPointerDown={stopPlaybackFocusBubble}
-          onClick={(event) => {
-            stopPlaybackFocusBubble(event);
-            handleLoveClick();
-          }}
+          onClick={stopPlaybackFocusBubble}
         >
-          <Heart size={14} strokeWidth={isLoved ? 2.4 : 2} aria-hidden />
-        </button>
+          <FavoriteHeartButton
+            target="recording"
+            id={recording.id}
+            variant="inline"
+            inlineAlwaysVisible
+            className="focus-lane__mini-player-heart h-7 w-7"
+          />
+        </div>
 
         {showExpand && onExpand ? (
           <button

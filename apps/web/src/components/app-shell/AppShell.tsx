@@ -117,7 +117,6 @@ export function AppShell({ children }: AppShellProps) {
       <BottomPlayer />
       <PlaybackFocusLane
         focusState={playbackFocus.focusState}
-        onReturnBody={playbackFocus.revealPage}
         withPlayer={shellHasPlayer}
       />
       <QueuePanel />
