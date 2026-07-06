@@ -111,7 +111,8 @@ export function BottomPlayer() {
     ? radioPlaying
     : dismiss && !currentTrack ? false : isPlaying;
   const progress = shellDuration > 0 ? (shellCurrentTime / shellDuration) * 100 : 0;
-  const showQueueControls = !radioDisplayTrack && !playerBarExiting;
+  const sitePlayerActive = Boolean(currentTrack ?? dismiss?.track);
+  const showQueueControls = sitePlayerActive && !playerBarExiting;
 
   function handleClosePlayer() {
     pauseRadio();
@@ -319,8 +320,8 @@ export function BottomPlayer() {
               <button
                 type="button"
                 onClick={() => setQueueOpen(true)}
-                className={mobileActionButtonClass}
-                aria-label="Open up next"
+                className={`${mobileActionButtonClass} relative z-[60]`}
+                aria-label="Next songs"
               >
                 <ListMusic size={18} />
               </button>
@@ -339,8 +340,8 @@ export function BottomPlayer() {
                 <button
                   type="button"
                   onClick={() => setQueueOpen(true)}
-                  className="text-[var(--color-text-muted)] transition hover:text-white"
-                  aria-label="Open queue"
+                  className="relative z-[60] text-[var(--color-text-muted)] transition hover:text-white"
+                  aria-label="Next songs"
                 >
                   <ListMusic size={20} />
                 </button>

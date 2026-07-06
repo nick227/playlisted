@@ -930,7 +930,7 @@ body {
   position: absolute;
   right: 1rem;
   bottom: 0.625rem;
-  z-index: 2;
+  z-index: 30;
   display: flex;
   align-items: center;
   gap: 0.5rem;
