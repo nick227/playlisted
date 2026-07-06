@@ -30,6 +30,7 @@ interface RadioPlayerContextValue {
   volume: number;
   setVolume: (volume: number) => void;
   togglePlayback: () => Promise<void>;
+  playStation: (slug: string | null) => void;
   pauseRadio: () => void;
   registerRadioUi: () => void;
   unregisterRadioUi: () => void;
@@ -41,6 +42,8 @@ interface RadioPlayerContextValue {
   station: Awaited<ReturnType<typeof api.radio.get>> | undefined;
   nowPlaying: Awaited<ReturnType<typeof api.radio.get>>["nowPlaying"] | null | undefined;
   isLive: boolean;
+  activeStationSlug: string | null;
+  setActiveStationSlug: (slug: string | null) => void;
 }
 
 const RadioPlayerContext = createContext<RadioPlayerContextValue | null>(null);
@@ -65,6 +68,8 @@ export function RadioPlayerProvider({ children }: { children: ReactNode }) {
   const [volume, setVolumeState] = useState(1);
   const [uiMounted, setUiMounted] = useState(false);
   const [chatMounted, setChatMounted] = useState(false);
+  const [activeStationSlug, setActiveStationSlug] = useState<string | null>(null);
+  const [requestedStationSlug, setRequestedStationSlug] = useState<string | null | undefined>(undefined);
 
   const listenerId = useMemo(() => {
     if (!listenerIdRef.current) listenerIdRef.current = getListenerId();
@@ -73,11 +78,11 @@ export function RadioPlayerProvider({ children }: { children: ReactNode }) {
 
   // Fetch radio state when playback, radio UI, or chat UI needs it.
   // Poll only while audio is playing (track sync) or the user is on /chat.
-  const radioDataNeeded = playing || uiMounted || chatMounted;
+  const radioDataNeeded = playing || uiMounted || chatMounted || requestedStationSlug !== undefined;
   const radioPollInterval = playing || chatMounted ? 10_000 : false;
   const radioQuery = useQuery({
-    queryKey: ["radio", "public"],
-    queryFn: () => api.radio.get(),
+    queryKey: ["radio", "public", activeStationSlug],
+    queryFn: () => api.radio.get(activeStationSlug ? { station: activeStationSlug } : undefined),
     enabled: radioDataNeeded,
     refetchInterval: radioPollInterval,
   });
@@ -115,6 +120,7 @@ export function RadioPlayerProvider({ children }: { children: ReactNode }) {
 
   const pauseRadio = useCallback(() => {
     clearTransitionRetry();
+    setRequestedStationSlug(undefined);
     if (!siteControlledRef.current) {
       audioRef.current?.pause();
     }
@@ -310,6 +316,44 @@ export function RadioPlayerProvider({ children }: { children: ReactNode }) {
     }
   }, [nowPlaying, pauseRadio, playing, syncAndPlayRadio, yieldPlaybackToRadio]);
 
+  const playStation = useCallback((slug: string | null) => {
+    siteControlledRef.current = false;
+    suppressNextSitePauseRef.current = true;
+    clearTransitionRetry();
+    setActiveStationSlug(slug);
+    setRequestedStationSlug(slug);
+    void yieldPlaybackToRadio();
+  }, [clearTransitionRetry, yieldPlaybackToRadio]);
+
+  useEffect(() => {
+    if (requestedStationSlug === undefined) return;
+    if (activeStationSlug !== requestedStationSlug) return;
+    if (radioQuery.isFetching) return;
+
+    const requestedTrack = station?.status === "LIVE" ? station.nowPlaying : null;
+    if (!requestedTrack?.audioUrl) {
+      setRequestedStationSlug(undefined);
+      setPlaying(false);
+      window.setTimeout(() => {
+        suppressNextSitePauseRef.current = false;
+      }, 0);
+      return;
+    }
+
+    void syncAndPlayRadio(requestedTrack).finally(() => {
+      setRequestedStationSlug(undefined);
+      window.setTimeout(() => {
+        suppressNextSitePauseRef.current = false;
+      }, 0);
+    });
+  }, [
+    activeStationSlug,
+    radioQuery.isFetching,
+    requestedStationSlug,
+    station,
+    syncAndPlayRadio,
+  ]);
+
   function handleRadioPlay(el: HTMLAudioElement) {
     if (siteControlledRef.current) return;
     setPlaying(true);
@@ -337,6 +381,7 @@ export function RadioPlayerProvider({ children }: { children: ReactNode }) {
       volume,
       setVolume,
       togglePlayback,
+      playStation,
       pauseRadio,
       registerRadioUi,
       unregisterRadioUi,
@@ -348,8 +393,10 @@ export function RadioPlayerProvider({ children }: { children: ReactNode }) {
       station,
       nowPlaying,
       isLive,
+      activeStationSlug,
+      setActiveStationSlug,
     }),
-    [playing, volume, setVolume, togglePlayback, pauseRadio, registerRadioUi, unregisterRadioUi, uiMounted, registerChatUi, unregisterChatUi, listenerId, radioQuery, station, nowPlaying, isLive],
+    [playing, volume, setVolume, togglePlayback, playStation, pauseRadio, registerRadioUi, unregisterRadioUi, uiMounted, registerChatUi, unregisterChatUi, listenerId, radioQuery, station, nowPlaying, isLive, activeStationSlug],
   );
 
   return (

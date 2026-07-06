@@ -175,10 +175,10 @@ export interface PlaylistedApi {
     get(): Promise<HomepageResponse>;
   };
   radio: {
-    get(): Promise<RadioStationResponse>;
+    get(query?: { station?: string }): Promise<RadioStationResponse>;
     heartbeat(body?: RadioHeartbeatRequest): Promise<RadioHeartbeatResponse>;
     sendChatMessage(body: CreateRadioChatMessageRequest): Promise<RadioChatMessage>;
-    adminGet(): Promise<RadioStationResponse>;
+    adminGet(query?: { station?: string }): Promise<RadioStationResponse>;
   };
   users: {
     list(query?: ListUsersQuery): Promise<UserListResponse>;
@@ -521,8 +521,8 @@ export function createPlaylistedApi(options: PlaylistedClientOptions = {}): Play
       },
     },
     radio: {
-      get() {
-        return unwrap(raw.GET("/api/v1/radio"), "Failed to load radio.");
+      get(query?: { station?: string }) {
+        return unwrap(raw.GET("/api/v1/radio", { params: { query } }), "Failed to load radio.");
       },
       heartbeat(body = {}) {
         return unwrap(raw.POST("/api/v1/radio/listeners/heartbeat", { body }), "Failed to update radio listener.");
@@ -530,8 +530,8 @@ export function createPlaylistedApi(options: PlaylistedClientOptions = {}): Play
       sendChatMessage(body) {
         return unwrap(raw.POST("/api/v1/radio/chat", { body }), "Failed to send chat message.");
       },
-      adminGet() {
-        return unwrap(raw.GET("/api/v1/radio/admin"), "Failed to load radio tools.");
+      adminGet(query?: { station?: string }) {
+        return unwrap(raw.GET("/api/v1/radio/admin", { params: { query } }), "Failed to load radio tools.");
       },
     },
     search: {

@@ -46,6 +46,13 @@ paths:
       tags: [ Radio ]
       operationId: getRadioStation
       summary: Get public radio now-playing state
+      parameters:
+        - name: station
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Station or genre slug (defaults to main)
       responses:
         '200':
           description: Radio station state
@@ -105,6 +112,13 @@ paths:
       summary: Get radio state for admin tools
       security:
         - bearerAuth: []
+      parameters:
+        - name: station
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Station or genre slug (defaults to main)
       responses:
         '200':
           description: Radio station state

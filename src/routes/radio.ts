@@ -6,6 +6,7 @@ import { prisma } from "../lib/prisma.js";
 import { radioChatLimiter, radioHeartbeatLimiter } from "../lib/rateLimiter.js";
 import { mapSubtitleSummary, subtitleInclude } from "../lib/subtitles/summary.js";
 import { mapRecordingSubtitleStyle } from "../lib/subtitles/styleSettings.js";
+import { effectiveGenreWhere } from "../lib/effectiveGenres.js";
 
 const DEFAULT_STATION_SLUG = "main";
 const LISTENER_TTL_MS = 60_000;
@@ -77,7 +78,10 @@ function cleanChatText(value: unknown, maxLength: number) {
   return typeof value === "string" ? value.replace(/\s+/g, " ").trim().slice(0, maxLength) : "";
 }
 
-function normalizeStationSlug(_value: unknown) {
+function normalizeStationSlug(value: unknown) {
+  if (typeof value === "string" && value.trim().length > 0) {
+    return value.trim().toLowerCase();
+  }
   return DEFAULT_STATION_SLUG;
 }
 
@@ -109,7 +113,7 @@ async function resolveChatAuthor(
   };
 }
 
-async function getRadioRecordings() {
+async function getRadioRecordings(stationSlug: string) {
   return prisma.recording.findMany({
     where: {
       visibility: "PUBLIC",
@@ -119,6 +123,7 @@ async function getRadioRecordings() {
         visibility: "PUBLIC",
         status: "PUBLISHED",
       },
+      ...(stationSlug !== DEFAULT_STATION_SLUG ? effectiveGenreWhere(stationSlug) : {}),
     },
     include: {
       uploader: true,
@@ -155,19 +160,29 @@ function mapRecording(recording: RadioRecording) {
   };
 }
 
-async function getStationState() {
-  const recordings = await getRadioRecordings();
+async function getStationState(stationSlug: string = DEFAULT_STATION_SLUG) {
+  const recordings = await getRadioRecordings(stationSlug);
   const nowMs = Date.now();
   const updatedAt = new Date(nowMs).toISOString();
 
+  let stationName = "Playlisted Radio";
+  if (stationSlug !== DEFAULT_STATION_SLUG) {
+    const tag = await prisma.tag.findUnique({ where: { slug: stationSlug } });
+    if (tag && tag.kind === "GENRE") {
+      stationName = `${tag.name} Radio`;
+    } else {
+      stationName = `${stationSlug} Radio`;
+    }
+  }
+
   if (recordings.length === 0) {
     return {
-      id: DEFAULT_STATION_SLUG,
-      slug: DEFAULT_STATION_SLUG,
-      name: "Playlisted Radio",
+      id: stationSlug,
+      slug: stationSlug,
+      name: stationName,
       status: "OFFLINE",
-      listenerCount: getListenerCount(DEFAULT_STATION_SLUG),
-      chatMessages: getChatMessages(DEFAULT_STATION_SLUG),
+      listenerCount: getListenerCount(stationSlug),
+      chatMessages: getChatMessages(stationSlug),
       sourcePlaylist: null,
       nowPlaying: null,
       upNext: [],
@@ -199,12 +214,12 @@ async function getStationState() {
   });
 
   return {
-    id: DEFAULT_STATION_SLUG,
-    slug: DEFAULT_STATION_SLUG,
-    name: "Playlisted Radio",
+    id: stationSlug,
+    slug: stationSlug,
+    name: stationName,
     status: "LIVE",
-    listenerCount: getListenerCount(DEFAULT_STATION_SLUG),
-    chatMessages: getChatMessages(DEFAULT_STATION_SLUG),
+    listenerCount: getListenerCount(stationSlug),
+    chatMessages: getChatMessages(stationSlug),
     sourcePlaylist: null,
     nowPlaying: {
       ...mapRecording(current),
@@ -216,9 +231,10 @@ async function getStationState() {
   };
 }
 
-radioRouter.get("/", async (_req, res, next) => {
+radioRouter.get("/", async (req, res, next) => {
   try {
-    return res.json(await getStationState());
+    const station = normalizeStationSlug(req.query.station);
+    return res.json(await getStationState(station));
   } catch (error) {
     return next(error);
   }
@@ -283,7 +299,8 @@ radioRouter.post("/chat", radioChatLimiter, async (req, res, next) => {
 radioRouter.get("/admin", async (req, res, next) => {
   try {
     if (!(await requireRadioAdmin(req, res))) return;
-    return res.json(await getStationState());
+    const station = normalizeStationSlug(req.query.station);
+    return res.json(await getStationState(station));
   } catch (error) {
     return next(error);
   }

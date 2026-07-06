@@ -2975,7 +2975,10 @@ export interface operations {
     };
     getRadioStation: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Station or genre slug (defaults to main) */
+                station?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -3052,7 +3055,10 @@ export interface operations {
     };
     getRadioAdminStation: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Station or genre slug (defaults to main) */
+                station?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;

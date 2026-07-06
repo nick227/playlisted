@@ -5,7 +5,9 @@ import { BarChart2, Pause, Play, Radio, Users, Upload, Volume2, VolumeX } from "
 
 import { DEFAULT_COLLECTION_TITLE } from "@/components/studio/studioCollectionUtils";
 import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
+import { GenreHorizontalPanel } from "@/components/radio/GenreHorizontalPanel";
 import { PlaybackBars } from "@/features/playback-indicators/PlaybackBars";
+import { useLibraryGenres } from "@/hooks/useLibrary";
 import { authedApi } from "@/lib/authedApi";
 import { coverFallback, playlistPath, profilePath, studioCollectionEditPath } from "@/lib/routes";
 import { usePageMeta } from "@/hooks/usePageMeta";
@@ -32,11 +34,17 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
     station,
     nowPlaying,
     isLive,
+    activeStationSlug,
+    playStation,
     registerRadioUi,
     unregisterRadioUi,
   } = useRadioPlayer();
 
-  const { playerShellActive } = useAudioPlayer();
+  const {
+    playerShellActive,
+    currentTrack,
+  } = useAudioPlayer();
+  const { data: genreData } = useLibraryGenres({ minSongCount: 1 });
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const location = useLocation();
@@ -51,24 +59,57 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
 
   const radioClient = useMemo(() => authedApi(accessToken), [accessToken]);
 
-  const statusLabel = radioQuery.isError ? "Unavailable" : isLive ? "Live" : "Offline";
+  const genres = useMemo(
+    () => (genreData?.data ?? []).filter((genre) => genre.songCount > 0),
+    [genreData?.data],
+  );
+  const activeGenre = useMemo(
+    () => genres.find((genre) => genre.slug === activeStationSlug) ?? null,
+    [activeStationSlug, genres],
+  );
+  const genreStationActive = activeStationSlug !== null;
+  const genreStationName = activeGenre
+    ? `${activeGenre.name} Radio`
+    : activeStationSlug
+      ? `${activeStationSlug} Radio`
+      : null;
 
+  const statusLabel = radioQuery.isError
+      ? "Unavailable"
+      : isLive
+        ? "Live"
+        : "Offline";
 
   const artStyle = useMemo(() => {
-    if (nowPlaying?.artworkUrl) return { backgroundImage: `url(${nowPlaying.artworkUrl})` };
-    return { background: coverFallback(nowPlaying?.title ?? "Radio") };
-  }, [nowPlaying?.artworkUrl, nowPlaying?.title]);
+    const artworkUrl = nowPlaying?.artworkUrl;
+    const title = nowPlaying?.title;
+    if (artworkUrl) return { backgroundImage: `url(${artworkUrl})` };
+    return { background: coverFallback(title ?? "Radio") };
+  }, [
+    nowPlaying?.artworkUrl,
+    nowPlaying?.title,
+  ]);
 
-  const progressPct =
-    nowPlaying?.durationSeconds
+  const progressPct = nowPlaying?.durationSeconds
       ? Math.min(100, ((nowPlaying.elapsedSeconds ?? 0) / nowPlaying.durationSeconds) * 100)
       : null;
-  const elapsedLabel = nowPlaying?.durationSeconds ? formatTime(nowPlaying.elapsedSeconds) : null;
-  const durationLabel = nowPlaying?.durationSeconds ? formatTime(nowPlaying.durationSeconds) : null;
+  const elapsedLabel = nowPlaying?.durationSeconds
+      ? formatTime(nowPlaying.elapsedSeconds)
+      : null;
+  const durationLabel = nowPlaying?.durationSeconds
+      ? formatTime(nowPlaying.durationSeconds)
+      : null;
 
   const playlistUrl = nowPlaying
-    ? playlistPath({ id: nowPlaying.playlist.id, slug: nowPlaying.playlist.slug, username: nowPlaying.uploader.username })
-    : null;
+      ? playlistPath({ id: nowPlaying.playlist.id, slug: nowPlaying.playlist.slug, username: nowPlaying.uploader.username })
+      : null;
+  const displayTitle = nowPlaying?.title;
+  const displayArtistName = nowPlaying?.uploader?.displayName;
+  const displayArtistUsername = nowPlaying?.uploader?.username;
+  const activePlaying = playing;
+  const activeVolume = radioVolume;
+  const setActiveVolume = setRadioVolume;
+  const favoriteRecordingId = nowPlaying?.id;
 
   useEffect(() => {
     registerRadioUi();
@@ -170,7 +211,8 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
 
   /* End Magic font */
 
-  const pageHeight = shellHasPlayer
+  const reservePlayerSpace = shellHasPlayer || !isEmbedded;
+  const pageHeight = reservePlayerSpace
     ? "h-[calc(100dvh-var(--spacing-topbar)-1rem-var(--spacing-player-safe-mobile)-1.5rem)] max-h-[calc(100dvh-var(--spacing-topbar)-1rem-var(--spacing-player-safe-mobile)-1.5rem)] md:h-[calc(100dvh-var(--spacing-topbar)-1rem-var(--spacing-player)-1.5rem)] md:max-h-[calc(100dvh-var(--spacing-topbar)-1rem-var(--spacing-player)-1.5rem)]"
     : "h-[calc(100dvh-var(--spacing-topbar)-1rem-1.5rem)] max-h-[calc(100dvh-var(--spacing-topbar)-1rem-1.5rem)]";
   const artworkClassName =
@@ -195,10 +237,16 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
           </div>
         ) : null}
 
+
         <div className="flex h-8 shrink-0 items-center justify-center gap-2 rounded-full border border-white/[0.08] px-3 text-xs font-semibold uppercase text-white/78">
-          <PlaybackBars active={isLive} playing={playing} variant="thumb" barCount={7} />
+          <PlaybackBars
+            active={genreStationActive || isLive}
+            playing={activePlaying}
+            variant="thumb"
+            barCount={7}
+          />
           <span className="text-[var(--color-brand)]">{statusLabel}</span>
-          {isLive && station?.listenerCount != null ? (
+          {!genreStationActive && isLive && station?.listenerCount != null ? (
             <span className="flex items-center gap-1 border-l border-white/10 pl-2 text-white/72">
               <Users size={12} />
               {station.listenerCount}
@@ -213,7 +261,11 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
               to={playlistUrl}
               className={`${artworkClassName} block transition duration-300 hover:scale-[1.012] hover:brightness-105`}
               style={artStyle}
-              aria-label={`Go to playlist: ${nowPlaying?.playlist.title}`}
+              aria-label={`Go to playlist: ${
+                genreStationActive
+                  ? currentTrack?.playlistTitle ?? displayTitle ?? "current recording"
+                  : nowPlaying?.playlist.title ?? "current recording"
+              }`}
             />
           ) : (
             <div className={artworkClassName} style={artStyle} />
@@ -223,7 +275,7 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
         <div className="flex w-full shrink-0 flex-col items-center justify-start text-center sm:mt-7 sm:min-h-[9.35rem]">
           <p className="mb-1 flex h-5 max-w-full items-center gap-2 truncate text-xs font-semibold uppercase text-white/42 bg-[var(--color-canvas)] px-2 py-1 rounded-full sm:mb-3">
             <Radio size={13} className="shrink-0 text-[var(--color-brand)]" />
-            <span className="truncate">{station?.name ?? "Playlisted Radio"}</span>
+            <span className="truncate">{genreStationName ?? station?.name ?? "Playlisted Radio"}</span>
           </p>
           <h1 className="grid max-w-full place-items-center overflow-hidden text-balance text-[clamp(1.5rem,7vw,3.75rem)] font-black leading-[0.98] text-white line-height-none sm:min-h-[4.9rem]">
             {playlistUrl ? (
@@ -231,20 +283,24 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
                 to={playlistUrl}
                 className="overflow-hidden transition hover:text-[var(--color-brand)] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] bg-[var(--color-canvas)]/80 rounded-sm p-2"
               >
-                <MagicFont>{nowPlaying?.title ?? "Radio"}</MagicFont>
+                <MagicFont>{displayTitle ?? "Radio"}</MagicFont>
               </Link>
             ) : (
               <span className="overflow-hidden [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] bg-[var(--color-canvas)]/80 rounded-sm">
-                {nowPlaying?.title ?? "Radio"}
+                {displayTitle ?? "Radio"}
               </span>
             )}
           </h1>
 
           <p className="mt-1 h-7 max-w-full truncate text-base leading-7 text-[var(--color-text-muted)] bg-[var(--color-canvas)]/80 rounded-sm px-4 sm:mt-3">
-            {nowPlaying?.uploader ? (
-              <Link to={profilePath(nowPlaying.uploader.username)} className="hover:text-white transition">
-                {nowPlaying.uploader.displayName}
-              </Link>
+            {displayArtistName ? (
+              displayArtistUsername ? (
+                <Link to={profilePath(displayArtistUsername)} className="hover:text-white transition">
+                  {displayArtistName}
+                </Link>
+              ) : (
+                displayArtistName
+              )
             ) : null}
           </p>
         </div>
@@ -289,20 +345,20 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
                 min="0"
                 max="1"
                 step="0.01"
-                value={radioVolume}
-                onChange={(e) => setRadioVolume(Number(e.target.value))}
+                value={activeVolume}
+                onChange={(e) => setActiveVolume(Number(e.target.value))}
                 className="h-24 w-2 cursor-pointer accent-white [direction:rtl] [writing-mode:vertical-lr]"
-                aria-label="Radio volume"
+                aria-label="Playback volume"
               />
             </div>
             <button
               type="button"
               onClick={() => setVolumePinnedOpen((open) => !open)}
               className="relative z-10 flex h-11 w-11 items-center justify-center rounded-full border border-white/[0.08] text-white/72 shadow-lg shadow-black/20 transition hover:border-white/20 hover:bg-white/[0.09] hover:text-white bg-[var(--color-surface)]/80 rounded-full"
-              aria-label="Adjust radio volume"
+              aria-label="Adjust playback volume"
               aria-expanded={volumeOpen}
             >
-              {radioVolume === 0 ? <VolumeX size={18} /> : <Volume2 size={18} />}
+              {activeVolume === 0 ? <VolumeX size={18} /> : <Volume2 size={18} />}
             </button>
           </div>
 
@@ -311,19 +367,19 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
             onClick={() => void togglePlayback()}
             disabled={!nowPlaying?.audioUrl}
             className="inline-flex h-16 w-16 items-center justify-center rounded-full text-white shadow-[0_18px_46px_rgba(0,0,0,0.42)] transition hover:scale-105 disabled:cursor-not-allowed disabled:opacity-40 bg-[var(--color-surface)]/80 rounded-full"
-            aria-label={playing ? "Pause radio" : "Play radio"}
+            aria-label={activePlaying ? "Pause radio" : "Play radio"}
           >
-            {playing ? (
+            {activePlaying ? (
               <Pause size={26} fill="currentColor" />
             ) : (
               <Play size={26} fill="currentColor" className="ml-1" />
             )}
           </button>
 
-          {isLive && nowPlaying ? (
+          {favoriteRecordingId ? (
             <FavoriteHeartButton
               target="recording"
-              id={nowPlaying.id}
+              id={favoriteRecordingId}
               variant="inline"
               inlineAlwaysVisible
               className="flex h-11 w-11 items-center justify-center rounded-full border border-white/[0.08] p-0 text-white/72 shadow-lg shadow-black/20 transition hover:border-rose-400/35 hover:bg-white/[0.09] hover:text-rose-400 bg-[var(--color-surface)]/80"
@@ -351,6 +407,28 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
             <BarChart2 size={17} className="text-[var(--color-brand)]" />
           </Link>
         </div>
+        <GenreHorizontalPanel
+          genres={genres}
+          genreStationActive={genreStationActive}
+          activeGenreSlug={activeStationSlug}
+          pendingGenreSlug={null}
+          onPlaylistedRadioClick={() => {
+            if (activeStationSlug !== null) {
+              playStation(null);
+            } else {
+              void togglePlayback();
+            }
+          }}
+          onGenreClick={(genre) => {
+            if (activeStationSlug === genre.slug) {
+              void togglePlayback();
+            } else {
+              playStation(genre.slug);
+            }
+          }}
+          isGenreStationPlaying={(slug) => activeStationSlug === slug && playing}
+        />
+
       </div>
     </div>
   );

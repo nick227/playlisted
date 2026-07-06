@@ -1,0 +1,254 @@
+import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent, type PointerEvent, type WheelEvent } from "react";
+import type { LibraryGenre } from "@playlisted/client-sdk";
+import { ChevronLeft, ChevronRight, Pause, Play, Radio } from "lucide-react";
+
+interface GenreHorizontalPanelProps {
+  genres: LibraryGenre[];
+  genreStationActive: boolean;
+  activeGenreSlug: string | null;
+  pendingGenreSlug: string | null;
+  onPlaylistedRadioClick: () => void;
+  onGenreClick: (genre: LibraryGenre) => void;
+  isGenreStationPlaying: (slug: string) => boolean;
+}
+
+const DRAG_THRESHOLD_PX = 5;
+const SCROLL_MASKS = {
+  none: "none",
+  left: "linear-gradient(to right, transparent, black 2rem, black 100%)",
+  right: "linear-gradient(to right, black 0%, black calc(100% - 2rem), transparent)",
+  both: "linear-gradient(to right, transparent, black 2rem, black calc(100% - 2rem), transparent)",
+} as const;
+
+export function GenreHorizontalPanel({
+  genres,
+  genreStationActive,
+  activeGenreSlug,
+  pendingGenreSlug,
+  onPlaylistedRadioClick,
+  onGenreClick,
+  isGenreStationPlaying,
+}: GenreHorizontalPanelProps) {
+  const scrollerRef = useRef<HTMLDivElement | null>(null);
+  const dragRef = useRef({
+    active: false,
+    pointerId: -1,
+    startX: 0,
+    startScrollLeft: 0,
+    moved: false,
+  });
+  const [isDragging, setIsDragging] = useState(false);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+  const inUseGenres = useMemo(
+    () => genres.filter((genre) => genre.songCount > 0),
+    [genres],
+  );
+  const scrollMask = canScrollLeft && canScrollRight
+    ? SCROLL_MASKS.both
+    : canScrollLeft
+      ? SCROLL_MASKS.left
+      : canScrollRight
+        ? SCROLL_MASKS.right
+        : SCROLL_MASKS.none;
+
+  const updateScrollButtons = useCallback(() => {
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
+
+    const maxScroll = scroller.scrollWidth - scroller.clientWidth;
+    setCanScrollLeft(scroller.scrollLeft > 2);
+    setCanScrollRight(scroller.scrollLeft < maxScroll - 2);
+  }, []);
+
+  useEffect(() => {
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
+
+    updateScrollButtons();
+    const resizeObserver = new ResizeObserver(updateScrollButtons);
+    resizeObserver.observe(scroller);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [inUseGenres.length, updateScrollButtons]);
+
+  if (inUseGenres.length === 0) {
+    return null;
+  }
+
+  function scrollByPage(direction: -1 | 1) {
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
+
+    scroller.scrollBy({
+      left: direction * Math.max(160, scroller.clientWidth * 0.78),
+      behavior: "smooth",
+    });
+  }
+
+  function handleWheel(event: WheelEvent<HTMLDivElement>) {
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
+
+    const maxScroll = scroller.scrollWidth - scroller.clientWidth;
+    if (maxScroll <= 0) return;
+
+    if (Math.abs(event.deltaX) > Math.abs(event.deltaY) || event.deltaY === 0) return;
+
+    const nextScrollLeft = Math.max(0, Math.min(maxScroll, scroller.scrollLeft + event.deltaY * 1.35));
+    if (nextScrollLeft === scroller.scrollLeft) return;
+
+    event.preventDefault();
+    scroller.scrollLeft = nextScrollLeft;
+    updateScrollButtons();
+  }
+
+  function handlePointerDown(event: PointerEvent<HTMLDivElement>) {
+    if (event.pointerType !== "mouse" || event.button !== 0) return;
+
+    const scroller = scrollerRef.current;
+    if (!scroller || scroller.scrollWidth <= scroller.clientWidth) return;
+
+    dragRef.current = {
+      active: true,
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startScrollLeft: scroller.scrollLeft,
+      moved: false,
+    };
+  }
+
+  function handlePointerMove(event: PointerEvent<HTMLDivElement>) {
+    const drag = dragRef.current;
+    const scroller = scrollerRef.current;
+    if (!drag.active || drag.pointerId !== event.pointerId || !scroller) return;
+
+    const distance = event.clientX - drag.startX;
+    if (!drag.moved && Math.abs(distance) < DRAG_THRESHOLD_PX) return;
+
+    drag.moved = true;
+    setIsDragging(true);
+    if (!scroller.hasPointerCapture(event.pointerId)) {
+      scroller.setPointerCapture(event.pointerId);
+    }
+    event.preventDefault();
+    scroller.scrollLeft = drag.startScrollLeft - distance;
+    updateScrollButtons();
+  }
+
+  function endDrag(event: PointerEvent<HTMLDivElement>) {
+    const drag = dragRef.current;
+    const scroller = scrollerRef.current;
+    if (!drag.active || drag.pointerId !== event.pointerId) return;
+
+    if (scroller?.hasPointerCapture(event.pointerId)) {
+      scroller.releasePointerCapture(event.pointerId);
+    }
+
+    dragRef.current = { ...drag, active: false };
+    setIsDragging(false);
+  }
+
+  function suppressClickAfterDrag(event: MouseEvent<HTMLDivElement>) {
+    if (!dragRef.current.moved) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    dragRef.current.moved = false;
+  }
+
+  function preventMouseFocusScroll(event: MouseEvent<HTMLButtonElement>) {
+    event.preventDefault();
+  }
+
+  return (
+    <div className="w-full max-w-[min(92vw,30rem)] shrink-0 sm:mt-6">
+      <h6 className="mb-2 w-full text-sm font-semibold text-white/58">More Channels</h6>
+      <div className="relative w-full">
+        <button
+          type="button"
+          onClick={() => scrollByPage(-1)}
+          disabled={!canScrollLeft}
+          className="absolute left-0 top-1/2 z-10 flex h-8 w-8 -translate-x-1/3 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-black/70 text-white shadow-lg shadow-black/30 backdrop-blur transition hover:border-white/20 hover:bg-black/85 disabled:pointer-events-none disabled:opacity-0"
+          aria-label="Scroll genres left"
+        >
+          <ChevronLeft size={16} />
+        </button>
+        <div
+          ref={scrollerRef}
+          onWheel={handleWheel}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={endDrag}
+          onPointerCancel={endDrag}
+          onLostPointerCapture={endDrag}
+          onClickCapture={suppressClickAfterDrag}
+          onScroll={updateScrollButtons}
+          className={`genre-horizontal-panel w-full touch-pan-y select-none overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
+            isDragging ? "cursor-grabbing" : "cursor-grab"
+          }`}
+          style={{
+            maskImage: scrollMask,
+            WebkitMaskImage: scrollMask,
+          }}
+          aria-label="Radio genre stations"
+        >
+          <div className="flex min-w-max items-center gap-2 px-1">
+            <button
+              type="button"
+              onClick={onPlaylistedRadioClick}
+              onMouseDown={preventMouseFocusScroll}
+              aria-label="Play Playlisted radio"
+              className={`inline-flex h-8 items-center gap-2 rounded-full border px-3 text-xs font-semibold transition ${
+                !genreStationActive
+                  ? "border-[var(--color-brand)]/50 bg-[var(--color-brand)]/15 text-white"
+                  : "border-white/10 bg-white/[0.03] text-white/58 hover:border-white/20 hover:bg-white/[0.07] hover:text-white"
+              }`}
+            >
+              <Radio size={13} />
+              Playlisted
+            </button>
+            {inUseGenres.map((genre) => {
+              const stationPlaying = isGenreStationPlaying(genre.slug);
+              const pending = pendingGenreSlug === genre.slug;
+              const active = activeGenreSlug === genre.slug;
+              return (
+                <button
+                  key={genre.slug}
+                  type="button"
+                  onClick={() => onGenreClick(genre)}
+                  onMouseDown={preventMouseFocusScroll}
+                  disabled={pending}
+                  aria-label={`${stationPlaying ? "Pause" : "Play"} ${genre.name} radio`}
+                  className={`inline-flex h-8 items-center gap-2 rounded-full border px-3 text-xs font-semibold transition disabled:cursor-wait disabled:opacity-60 ${
+                    active
+                      ? "border-[var(--color-brand)]/50 bg-[var(--color-brand)]/15 text-white"
+                      : "border-white/10 bg-white/[0.03] text-white/58 hover:border-white/20 hover:bg-white/[0.07] hover:text-white"
+                  }`}
+                >
+                  {stationPlaying ? (
+                    <Pause size={12} fill="currentColor" />
+                  ) : (
+                    <Play size={12} fill="currentColor" className="ml-0.5" />
+                  )}
+                  {genre.name}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => scrollByPage(1)}
+          disabled={!canScrollRight}
+          className="absolute right-0 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 translate-x-1/3 items-center justify-center rounded-full border border-white/10 bg-black/70 text-white shadow-lg shadow-black/30 backdrop-blur transition hover:border-white/20 hover:bg-black/85 disabled:pointer-events-none disabled:opacity-0"
+          aria-label="Scroll genres right"
+        >
+          <ChevronRight size={16} />
+        </button>
+      </div>
+    </div>
+  );
+}

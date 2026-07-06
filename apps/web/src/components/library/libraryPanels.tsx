@@ -54,6 +54,7 @@ import {
 import { librarySongToQueueTrack } from "@/lib/queueTrack";
 import { coverFallback, playlistPath } from "@/lib/routes";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
+import { useRadioPlayer } from "@/providers/RadioPlayerProvider";
 
 type PlaylistPreview = PlaylistListResponse["data"][number];
 
@@ -241,8 +242,20 @@ function GenreSongThumb({ song, queue }: { song: LibrarySong; queue: LibrarySong
 
 function GenreCard({ genre }: { genre: LibraryGenre }) {
   const { data, isLoading } = useLibrarySongs(genre.slug, true, 6);
+  const { activeStationSlug, setActiveStationSlug, playing, togglePlayback } = useRadioPlayer();
   const previewSongs = data?.data ?? EMPTY_LIBRARY_SONGS;
   const featuredArtistCount = new Set(previewSongs.map((song) => song.uploaderId)).size;
+  const stationPlaying = activeStationSlug === genre.slug && playing;
+  const stationPending = false;
+
+  const handlePlayStation = () => {
+    if (activeStationSlug === genre.slug) {
+      void togglePlayback();
+    } else {
+      setActiveStationSlug(genre.slug);
+      if (!playing) void togglePlayback();
+    }
+  };
 
   return (
     <article className="group relative overflow-hidden rounded-xl sm:p-5 xl:p-6">
@@ -263,13 +276,28 @@ function GenreCard({ genre }: { genre: LibraryGenre }) {
                 : ""}
             </p>
           </div>
-          <Link
-            to={genrePath(genre.slug)}
-            className="mt-4 inline-flex shrink-0 items-center gap-1 rounded-full border border-white/10 bg-black/20 px-3 py-1.5 text-xs font-semibold text-white/65 transition-colors hover:border-white/25 hover:bg-white/10 hover:text-white xl:mt-0"
-          >
-            All
-            <ChevronRight size={14} />
-          </Link>
+          <div className="mt-4 flex shrink-0 items-center gap-2 xl:mt-0">
+            <button
+              type="button"
+              onClick={handlePlayStation}
+              disabled={stationPending || genre.songCount <= 0}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-black/20 text-white/70 transition-colors hover:border-[var(--color-brand)]/45 hover:bg-white/10 hover:text-white disabled:cursor-wait disabled:opacity-50"
+              aria-label={`${stationPlaying ? "Pause" : "Play"} ${genre.name} radio`}
+            >
+              {stationPlaying ? (
+                <Pause size={14} fill="currentColor" />
+              ) : (
+                <Play size={14} fill="currentColor" className="ml-0.5" />
+              )}
+            </button>
+            <Link
+              to={genrePath(genre.slug)}
+              className="inline-flex shrink-0 items-center gap-1 rounded-full border border-white/10 bg-black/20 px-3 py-1.5 text-xs font-semibold text-white/65 transition-colors hover:border-white/25 hover:bg-white/10 hover:text-white"
+            >
+              All
+              <ChevronRight size={14} />
+            </Link>
+          </div>
         </div>
 
         <div className="w-full">

@@ -7,11 +7,11 @@ export type PlaybackFocusBodyFadeConfig = {
 
 export function getPlaybackFocusBodyFadeConfig(pathname: string, user?: AuthUser | null): PlaybackFocusBodyFadeConfig {
   if (pathname === "/admin" || pathname.startsWith("/admin/")) return { disabled: true };
-  if (pathname === "/login" || pathname === "/register") return { disabled: true, delayMs: 15000 };
-  if (pathname === "/favorites" || pathname === "/favorites/") return { disabled: true, delayMs: 15000 };
+  if (pathname === "/login" || pathname === "/register") return { disabled: false, delayMs: 6330000 };
+  if (pathname === "/favorites" || pathname === "/favorites/") return { disabled: false, delayMs: 10000 };
   if (pathname === "/chat" || pathname.startsWith("/chat/")) return { disabled: true };
   if (pathname === "/settings" || pathname.startsWith("/settings/")) return { disabled: true };
-  if (pathname === "/search" || pathname.startsWith("/search/")) return { disabled: true, delayMs: 15000 };
+  if (pathname === "/search" || pathname.startsWith("/search/")) return { disabled: false, delayMs: 15000 };
   // block if is owner of profile page, 
   if (user && (pathname === `/@${user.username}` || pathname.startsWith(`/@${user.username}/`))) return { disabled: true };
   return { disabled: false };

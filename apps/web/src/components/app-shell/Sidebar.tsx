@@ -226,7 +226,7 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
                 </div>
               ) : null}
 
-              {collections ? (
+              {collections.length ? (
                 <div className="flex flex-col gap-2 mb-2 border-b border-white/[0.5] pl-4"></div>
               ) : null}
               {collections.map((playlist) => (
