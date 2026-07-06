@@ -7,6 +7,13 @@ It is meant to help developers understand the current capabilities and build fut
 
 Theatre visuals are layered, audio-aware canvas animations. The controller owns playback binding, feature extraction, performance policy, preset selection, and the single frame loop. Individual animations focus on visual behavior.
 
+**Related docs:**
+
+- [`theatre-runtime.md`](./theatre-runtime.md) — controller, rotation policy, FX selection, overlay timing
+- [`theatre-author-sdk-v1.md`](./theatre-author-sdk-v1.md) — public author SDK (`@/theatre/author`)
+- [`adding-theatre-videos-and-animations.md`](./adding-theatre-videos-and-animations.md) — quick start for new packages
+- [`playback-focus.md`](./playback-focus.md) — subtitle/focus lane (separate from theatre FX)
+
 ## System Capabilities
 
 The theatre system currently supports:
@@ -25,22 +32,32 @@ The theatre system currently supports:
 
 ## Core Files
 
-- `apps/web/src/theatre/IAnimation.ts`
-- `apps/web/src/theatre/TheatreController.ts`
-- `apps/web/src/theatre/AnimationBridge.ts`
-- `apps/web/src/theatre/CanvasAnimation.ts`
-- `apps/web/src/theatre/AudioFeatureExtractor.ts`
-- `apps/web/src/theatre/VisualTriggers.ts`
-- `apps/web/src/theatre/getAudioBands.ts`
-- `apps/web/src/theatre/MicroEffects.ts`
-- `apps/web/src/theatre/PerformancePolicy.ts`
-- `apps/web/src/theatre/scenePresets.ts`
-- `apps/web/src/theatre/registry/index.ts`
+**Runtime (platform):**
+
+- `apps/web/src/theatre/controller/lazyController.ts` — public import, lazy load
+- `apps/web/src/theatre/controller/TheatreController.ts`
+- `apps/web/src/theatre/controller/TheatreSceneDeck.ts`
+- `apps/web/src/theatre/controller/AnimationBridge.ts`
+- `apps/web/src/theatre/rotation/RotationPolicy.ts`
+- `apps/web/src/theatre/registry/presetTuning.ts`
+- `apps/web/src/theatre/selection/FxSelector.ts`
+- `apps/web/src/theatre/registry/scenePresets.ts`
 - `apps/web/src/theatre/registry/seed.ts`
+
+**Animation authoring:**
+
+- `apps/web/src/theatre/core/IAnimation.ts`
+- `apps/web/src/theatre/core/CanvasAnimation.ts`
+- `apps/web/src/theatre/audio/AudioFeatureExtractor.ts`
+- `apps/web/src/theatre/audio/VisualTriggers.ts`
+- `apps/web/src/theatre/audio/getAudioBands.ts`
+- `apps/web/src/theatre/runtime/MicroEffects.ts`
+- `apps/web/src/theatre/runtime/PerformancePolicy.ts`
 - `apps/web/src/theatre/stopMotion.ts`
 - `apps/web/src/theatre/stopMotionScript.ts`
 - `apps/web/src/theatre/scripts/*.script.ts`
 - `apps/web/src/theatre/animations/*.ts`
+- `apps/web/src/theatre/packages/*/`
 
 ## Runtime Flow
 
@@ -49,7 +66,7 @@ The theatre system currently supports:
 3. The controller creates or reuses a shared analyser connection.
 4. `AudioFeatureExtractor` produces shared features when an analyser is available.
 5. `detectPolicy()` chooses layer count, DPR clamp, particle scale, and low-power behavior.
-6. `pickPreset()` chooses a scene preset, with reduced-motion substitution when configured.
+6. `FxSelector` chooses a scene preset (weighted shuffle bag), with reduced-motion substitution when configured.
 7. The controller converts preset layers into animation factories.
 8. `AnimationBridge` creates each animation, calls `init(container, context)`, opts into external driving when supported, and calls `start()`.
 9. The controller's single RAF loop updates shared time, updates audio features, and calls `bridge.renderFrame(context)`.
@@ -442,16 +459,22 @@ Useful checks:
 - Do not add a scene only to the animation registry and forget to add it to a preset.
 - Do not ship a high-motion preset without a reduced-motion path.
 
-## Future Extension Points
+## Implemented platform features
 
-The current contracts can support:
+These are handled by the runtime — see [`theatre-runtime.md`](./theatre-runtime.md):
 
-- artwork-aware scenes using `context.artworkUrl`
-- image, video, UI, and hybrid layers
-- timed preset transitions
-- admin-controlled preset locks
-- shared listening overlays
-- richer script DSLs for story-driven scenes
+- Timed + music-aware preset rotation (`RotationPolicy`, `presetTuning.ts`)
+- Weighted preset selection and shuffle bags (`FxSelector`)
+- Scene transitions (`TheatreSceneDeck`, `THEATRE_TRANSITIONS`)
+- Video, image, and hybrid layers (`createVideoPackage`, `createImagePackage`)
+- Song-visual attachments and timeline clip playback
+- Lazy controller loading for initial bundle size
+
+## Future extension points
+
+- Admin-controlled global preset locks (partial — per-preset `pinPresetId` exists)
+- Shared listening overlays (chat, reactions)
+- Richer script DSLs for story-driven scenes
 - WebGL or Three.js layers that still implement `IAnimation`
 
 For any future renderer, keep `IAnimation` and `AnimationContext` as the orchestration boundary.

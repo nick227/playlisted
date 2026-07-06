@@ -1,5 +1,12 @@
 # Theatre Mode — Architecture Proposal
 
+> **Historical document.** This was the original 2026-06-01 design proposal. Much of it has been implemented, but paths, APIs, and behavior have evolved.
+>
+> **Current references:**
+> - Runtime (controller, rotation, FX selection): [`theatre-runtime.md`](./theatre-runtime.md)
+> - Animation authoring: [`theatre-animations.md`](./theatre-animations.md), [`theatre-author-sdk-v1.md`](./theatre-author-sdk-v1.md)
+> - Adding packages: [`adding-theatre-videos-and-animations.md`](./adding-theatre-videos-and-animations.md)
+
 ## Overview
 
 Add a fullscreen "Theatre Mode" that overlays the site-wide media player with immersive, branded visuals. Theatre Mode is designed as a premium listening room: artwork-first, calm, and curated — not a generic visualizer. The initial scope includes a top-bar toggle button (disabled when no audio is playing), a `TheatreController` that manages a fullscreen branded container, and a scene-presets registry that pairs layered visuals (artwork, canvas effects, video) with run/preset semantics. Admin controls allow selecting or locking scene presets.
