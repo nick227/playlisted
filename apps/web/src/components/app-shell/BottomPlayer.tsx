@@ -317,24 +317,14 @@ export function BottomPlayer() {
               variant="player"
             />
             {showQueueControls ? (
-              <>
-                <button
-                  type="button"
-                  onClick={playNext}
-                  className={mobileActionButtonClass}
-                  aria-label="Next song"
-                >
-                  <SkipForward size={18} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setQueueOpen(true)}
-                  className={mobileActionButtonClass}
-                  aria-label="Open up next"
-                >
-                  <ListMusic size={18} />
-                </button>
-              </>
+              <button
+                type="button"
+                onClick={() => setQueueOpen(true)}
+                className={mobileActionButtonClass}
+                aria-label="Open up next"
+              >
+                <ListMusic size={18} />
+              </button>
             ) : null}
           </div>
           <div className="bottom-player__section bottom-player__section--actions bottom-player__actions-desktop">
@@ -347,14 +337,6 @@ export function BottomPlayer() {
 
             {showQueueControls ? (
               <>
-                <button
-                  type="button"
-                  onClick={playNext}
-                  className="text-[var(--color-text-muted)] transition hover:text-white"
-                  aria-label="Next song"
-                >
-                  <SkipForward size={20} />
-                </button>
                 <div className="mx-1 h-4 w-px bg-white/10" />
                 <button
                   type="button"
