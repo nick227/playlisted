@@ -3,6 +3,7 @@ import { ensureAnimationPackage } from './registerAnimationPackage'
 import { hasPreset, registerPreset } from './scenePresets'
 import { registerUserMediaEngine } from '../media/userMediaEngine'
 import { registerAttachedOnlyBlankEngine, ATTACHED_ONLY_BLANK_PRESET } from '../media/attachedOnlyBlankPreset'
+import { createIndividualImagePackages, SEED_IMAGE_ENTRIES } from '../packages/createImagePackage'
 import { createIndividualVideoPackages, SEED_VIDEO_ENTRIES } from '../packages/createVideoPackage'
 
 import { albumArtPackage } from '../packages/album-art'
@@ -79,6 +80,10 @@ registerObjectTheatreInSeed([
   monsterWavePackage,
   sdkSmokePackage,
   metropolisPackage,
+  ...createIndividualImagePackages(SEED_IMAGE_ENTRIES, {
+    category: 'lab',
+    reducedMotionPreset: 'quietPulse',
+  }),
   ...createIndividualVideoPackages(SEED_VIDEO_ENTRIES, {
     category: 'lab',
     reducedMotionPreset: 'quietPulse',

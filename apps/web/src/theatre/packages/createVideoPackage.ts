@@ -34,7 +34,7 @@ const MAX_VIDEO_COUNT = 240
 export const SEED_VIDEO_ENTRIES: VideoPackageEntry[] = [
   ...Array.from({ length: MAX_VIDEO_COUNT }, (_, index) => {
     const n = index + 1
-    return { id: `video${n}`, label: `Video ${n}`, videoUrl: `/${n}.mp4` }
+    return { id: `video${n}`, label: `Video ${n}`, videoUrl: `/videos/${n}.mp4` }
   }),
 ]
 

@@ -1,16 +1,19 @@
-import { RotateCcw, Trash2, Upload, AudioLines, Loader2 } from "lucide-react";
+import { Upload, Loader2 } from "lucide-react";
 import { useEffect, useState, type DragEvent } from "react";
 
 import { VISUAL_UPLOAD_MAX_BYTES } from "@/lib/visualUploadLimits";
-import type { PendingVisualUpload, VisualMediaAssetRecord, UserLibraryImageRecord } from "@/lib/visualMediaApi";
+import type {
+  PendingVisualUpload,
+  SongVisualAttachmentRecord,
+  VisualMediaAssetRecord,
+  UserLibraryImageRecord,
+} from "@/lib/visualMediaApi";
 import { formatVisualUploadProgressLabel, type VisualUploadProgress } from "@/lib/visualUploadProgress";
 
-import { editorToggleClass } from "./editorToggle";
 import { EditorSection } from "./EditorSection";
 import { SongVisualLibraryCard } from "./SongVisualLibraryCard";
 import { readTheatrePresetIdFromTags } from "./theatreFxLibrary";
-import { formatMegabytes, formatTimelineTime, readClipStartOffsetMs } from "./timelineLayout";
-import type { TimelineClip } from "./types";
+import { formatMegabytes } from "./timelineLayout";
 import {
   LIBRARY_BATCH_SIZE,
   useSongVisualLibraryItems,
@@ -21,7 +24,7 @@ import {
 } from "./useSongVisualLibraryItems";
 
 type SongVisualAssetLibraryProps = {
-  timelineClips: TimelineClip[];
+  attachments: SongVisualAttachmentRecord[];
   assets: VisualMediaAssetRecord[];
   userLibraryImages: UserLibraryImageRecord[];
   isBusy: boolean;
@@ -29,18 +32,12 @@ type SongVisualAssetLibraryProps = {
   uploadProgress: VisualUploadProgress | null;
   libraryFocusMineKind: MineMediaKind | null;
   onLibraryFocusHandled: () => void;
-  onClipAudioPulseChange: (attachmentId: string, enabled: boolean) => void;
-  readClipAudioPulse: (attachment: TimelineClip["attachment"]) => boolean;
-  onResetClipTrim: (attachmentId: string) => void;
   onAddRow: (row: VisualLibraryRow) => void;
-  onRemoveClip: (attachmentId: string) => void;
-  onSelectClip: (attachmentId: string) => void;
   onDeleteAsset: (assetId: string) => void;
   onUpload: () => void;
   onUploadFile: (file: File) => void;
   onCancelUpload: () => void;
   pendingUpload: PendingVisualUpload | null;
-  selectedAttachmentId: string | null;
 };
 
 const PRIMARY_TABS: Array<{ id: LibraryTabId; label: string }> = [
@@ -138,7 +135,7 @@ function FilterChips<T extends string>({
 }
 
 export function SongVisualAssetLibrary({
-  timelineClips,
+  attachments,
   assets,
   userLibraryImages,
   isBusy,
@@ -146,18 +143,12 @@ export function SongVisualAssetLibrary({
   uploadProgress,
   libraryFocusMineKind,
   onLibraryFocusHandled,
-  onClipAudioPulseChange,
-  readClipAudioPulse,
-  onResetClipTrim,
   onAddRow,
-  onRemoveClip,
-  onSelectClip,
   onDeleteAsset,
   onUpload,
   onUploadFile,
   onCancelUpload,
   pendingUpload,
-  selectedAttachmentId,
 }: SongVisualAssetLibraryProps) {
   const [activeTab, setActiveTab] = useState<LibraryTabId>("mine");
   const [mineKind, setMineKind] = useState<MineMediaKind>("image");
@@ -184,7 +175,7 @@ export function SongVisualAssetLibrary({
     useSongVisualLibraryItems({
       assets,
       userLibraryImages,
-      attachments: timelineClips.map((clip) => clip.attachment),
+      attachments,
       pendingUpload,
       uploadProgress,
     });
@@ -229,12 +220,10 @@ export function SongVisualAssetLibrary({
     }));
   }
 
-  const sortedClips = [...timelineClips].sort((left, right) => left.startSec - right.startSec);
-
-  const activeAssetIds = new Set(timelineClips.map((clip) => clip.attachment.mediaAssetId));
+  const activeAssetIds = new Set(attachments.map((attachment) => attachment.mediaAssetId));
   const activePresetIds = new Set(
-    timelineClips
-      .map((clip) => readTheatrePresetIdFromTags(clip.attachment.tags))
+    attachments
+      .map((attachment) => readTheatrePresetIdFromTags(attachment.tags))
       .filter((presetId): presetId is string => presetId != null),
   );
 
@@ -245,89 +234,6 @@ export function SongVisualAssetLibrary({
 
   return (
     <div className="space-y-3">
-      <div className="overflow-hidden rounded-lg border border-white/10 bg-black/25">
-        <div className="flex items-center justify-between border-b border-white/5 px-2.5 py-1.5">
-          <span className="text-[10px] font-semibold uppercase tracking-wide text-white/40">Active</span>
-          <span className="text-[10px] tabular-nums text-white/30">
-            {sortedClips.length} {sortedClips.length === 1 ? "clip" : "clips"}
-          </span>
-        </div>
-        {sortedClips.length === 0 ? (
-          <p className="px-2.5 py-2 text-xs text-white/35">Add clips from the library below.</p>
-        ) : (
-          <ul className="divide-y divide-white/5">
-            {sortedClips.map((clip) => {
-              const { attachment } = clip;
-              const selected = attachment.id === selectedAttachmentId;
-              const isCommunity = readTheatrePresetIdFromTags(attachment.tags) != null;
-              const startOffsetMs = readClipStartOffsetMs(attachment);
-              const audioPulse = readClipAudioPulse(attachment);
-              return (
-                <li
-                  key={attachment.id}
-                  className={[
-                    "flex items-center gap-1 px-1.5 py-1",
-                    selected ? "bg-emerald-500/10" : "hover:bg-white/5",
-                  ].join(" ")}
-                >
-                  <button
-                    type="button"
-                    disabled={isBusy}
-                    onClick={() => onSelectClip(attachment.id)}
-                    className="flex min-w-0 flex-1 items-center gap-2 px-1 py-0.5 text-left disabled:opacity-40"
-                  >
-                    <span
-                      className={[
-                        "h-1.5 w-1.5 shrink-0 rounded-full",
-                        isCommunity ? "bg-cyan-400" : "bg-violet-400",
-                      ].join(" ")}
-                      title={isCommunity ? "Community" : "Yours"}
-                    />
-                    <span className="truncate text-xs font-medium text-white">
-                      {attachment.label ?? attachment.mediaAsset.originalName}
-                    </span>
-                    <span className="shrink-0 text-[10px] tabular-nums text-white/40">
-                      {formatTimelineTime(clip.startSec)}–{formatTimelineTime(clip.endSec)}
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    disabled={isBusy}
-                    onClick={() => onClipAudioPulseChange(attachment.id, !audioPulse)}
-                    className={editorToggleClass(audioPulse, isBusy, "h-6 gap-1 px-1.5 text-[10px]")}
-                    aria-pressed={audioPulse}
-                    title="Beat reactive pulse"
-                  >
-                    <AudioLines size={11} />
-                  </button>
-                  {startOffsetMs > 0 ? (
-                    <button
-                      type="button"
-                      disabled={isBusy}
-                      onClick={() => onResetClipTrim(attachment.id)}
-                      className="rounded-md border border-amber-400/20 px-1.5 py-1 text-amber-100 hover:bg-amber-400/10 disabled:opacity-40"
-                      aria-label="Reset media cut-in"
-                      title="Reset cut-in to media start"
-                    >
-                      <RotateCcw size={11} />
-                    </button>
-                  ) : null}
-                  <button
-                    type="button"
-                    disabled={isBusy}
-                    onClick={() => onRemoveClip(attachment.id)}
-                    className="rounded-md px-1.5 py-1 text-white/60 hover:bg-red-500/10 hover:text-red-200 disabled:opacity-40"
-                    aria-label="Remove clip from timeline"
-                  >
-                    <Trash2 size={11} />
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </div>
-
       <EditorSection
         title="Library"
         action={

@@ -47,7 +47,7 @@ export function SongVisualEditorToolbar({
   onToggleOverlays,
 }: SongVisualEditorToolbarProps) {
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-white/10 bg-black/20 px-3 py-2">
+    <div className="flex flex-nowrap items-center gap-x-1 gap-y-2 rounded-lg border border-white/10 bg-black/20 py-2">
       <ToolbarButtonGroup>
         <ToolbarIconButton
           active={isPlaying}
@@ -116,7 +116,7 @@ export function SongVisualEditorToolbar({
         </button>
       ) : null}
 
-      <div className={`ml-auto flex items-center gap-2 ${TOOLBAR_CONTROL_HEIGHT}`}>
+      <div className={`ml-auto flex items-center gap-1 ${TOOLBAR_CONTROL_HEIGHT}`}>
         <button
           type="button"
           onClick={onCancel}

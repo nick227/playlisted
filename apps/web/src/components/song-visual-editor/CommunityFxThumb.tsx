@@ -46,6 +46,16 @@ export function CommunityFxThumb({ row, className = "" }: CommunityFxThumbProps)
     return <CommunityVideoThumb url={row.thumbUrl} label={row.label} className={className} />;
   }
 
+  if (row.communityKind === "images" && (row.thumbUrls?.length || row.thumbUrl)) {
+    return (
+      <CommunityImageThumb
+        urls={row.thumbUrls ?? (row.thumbUrl ? [row.thumbUrl] : [])}
+        label={row.label}
+        className={className}
+      />
+    );
+  }
+
   if (row.theatrePresetId) {
     return (
       <TheatrePresetThumbnail
@@ -57,6 +67,45 @@ export function CommunityFxThumb({ row, className = "" }: CommunityFxThumbProps)
   }
 
   return <TheatrePresetThumbnailFallback kind={row.communityKind ?? "animations"} className={className} />;
+}
+
+function CommunityImageThumb({
+  urls,
+  label,
+  className,
+}: {
+  urls: string[];
+  label: string;
+  className?: string;
+}) {
+  const [index, setIndex] = useState(0);
+  const [failed, setFailed] = useState(false);
+  const url = urls[index];
+
+  useEffect(() => {
+    setIndex(0);
+    setFailed(false);
+  }, [urls.join("|")]);
+
+  if (!url || failed) {
+    return <TheatrePresetThumbnailFallback kind="images" className={className} />;
+  }
+
+  return (
+    <img
+      src={resolveAssetUrl(url)}
+      alt={label}
+      className={["h-full w-full object-cover", className].join(" ")}
+      onError={() => {
+        setIndex((current) => {
+          const next = current + 1;
+          if (next < urls.length) return next;
+          setFailed(true);
+          return current;
+        });
+      }}
+    />
+  );
 }
 
 function CommunityVideoThumb({

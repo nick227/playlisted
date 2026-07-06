@@ -27,6 +27,9 @@ export class ImageAnimation implements IAnimation {
   private running = false
   private externallyDriven = false
   private resolvedSrc = ''
+  private sourceCandidates: string[] = []
+  private sourceCandidateKey = ''
+  private sourceCandidateIndex = 0
   private initOptions: ImageAnimationInitOptions
   private pulseState: VideoBeatFxPulseState = { beatPulse: 0, dropPulse: 0 }
 
@@ -77,7 +80,7 @@ export class ImageAnimation implements IAnimation {
       if (this.img) this.img.style.display = 'block'
     }
     this.img.onerror = () => {
-      if (this.img) this.img.style.display = 'none'
+      this.tryNextImageCandidate()
     }
 
     this.root.appendChild(this.fallbackEl)
@@ -122,6 +125,9 @@ export class ImageAnimation implements IAnimation {
     this.fallbackEl = null
     this.img = null
     this.resolvedSrc = ''
+    this.sourceCandidates = []
+    this.sourceCandidateKey = ''
+    this.sourceCandidateIndex = 0
     this.boundImageUrl = null
     this.pulseState = { beatPulse: 0, dropPulse: 0 }
   }
@@ -171,10 +177,14 @@ export class ImageAnimation implements IAnimation {
 
   private applyImageSource(context: AnimationContext) {
     if (!this.img) return
-    const optionImageUrl = context.options?.imageUrl
-    const nextSrc = typeof optionImageUrl === 'string' && optionImageUrl.trim().length > 0
-      ? optionImageUrl.trim()
-      : this.boundImageUrl ?? resolveImageUrl(context)
+    const candidates = this.resolveImageCandidates(context)
+    const candidateKey = candidates.join('\n')
+    if (candidateKey !== this.sourceCandidateKey) {
+      this.sourceCandidates = candidates
+      this.sourceCandidateKey = candidateKey
+      this.sourceCandidateIndex = 0
+    }
+    const nextSrc = this.sourceCandidates[this.sourceCandidateIndex]
     if (!nextSrc) {
       this.resolvedSrc = ''
       this.img.style.display = 'none'
@@ -185,6 +195,37 @@ export class ImageAnimation implements IAnimation {
     this.resolvedSrc = nextSrc
     this.img.style.display = 'none'
     this.img.src = nextSrc
+  }
+
+  private resolveImageCandidates(context: AnimationContext): string[] {
+    const urls: string[] = []
+    const optionImageUrl = context.options?.imageUrl
+    if (typeof optionImageUrl === 'string' && optionImageUrl.trim().length > 0) {
+      urls.push(optionImageUrl.trim())
+    }
+    const optionCandidates = context.options?.imageUrlCandidates
+    if (Array.isArray(optionCandidates)) {
+      for (const candidate of optionCandidates) {
+        if (typeof candidate !== 'string') continue
+        const trimmed = candidate.trim()
+        if (trimmed) urls.push(trimmed)
+      }
+    }
+    const fallback = this.boundImageUrl ?? resolveImageUrl(context)
+    if (fallback) urls.push(fallback)
+    return [...new Set(urls)]
+  }
+
+  private tryNextImageCandidate() {
+    if (!this.img) return
+    const nextIndex = this.sourceCandidateIndex + 1
+    if (nextIndex >= this.sourceCandidates.length) {
+      this.img.style.display = 'none'
+      return
+    }
+    this.sourceCandidateIndex = nextIndex
+    this.resolvedSrc = ''
+    this.applyImageSource({ options: { imageUrlCandidates: this.sourceCandidates } })
   }
 }
 

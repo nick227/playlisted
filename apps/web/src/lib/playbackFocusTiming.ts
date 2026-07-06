@@ -10,7 +10,7 @@ export const playbackFocusTiming = {
   },
 
   body: {
-    delayMs: 3330,
+    delayMs: 5000,
     restoreDelayMs: 6000,
     fadeOutMs: 2000,
   },
@@ -23,15 +23,15 @@ export const playbackFocusTiming = {
   },  
 
   artistVisual: {
-    gapAfterTitleIntroMs: 500,
-    minVisibleMs: 5000,
+    gapAfterTitleIntroMs: 0,
+    minVisibleMs: 6000,
     fadeInMs: 900,
     fadeOutMs: 900,
   },
 
   titleIntro: {
     delayMs: 0,
-    minVisibleMs: 3000,
+    minVisibleMs: 6000,
     fadeInMs: 900,
     fadeOutMs: 650,
   },

@@ -76,11 +76,17 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
   const queryClient = useQueryClient();
 
   const collectionsQuery = useQuery({
-    queryKey: ["me", "playlists"],
+    queryKey: ["me", "playlists", user?.id ?? "guest"],
     queryFn: () => client.me.playlists(),
-    enabled: Boolean(accessToken),
+    enabled: Boolean(accessToken && user),
   });
-  const collections: components["schemas"]["PlaylistSummary"][] = collectionsQuery.data?.data ?? [];
+  const collections: components["schemas"]["PlaylistSummary"][] =
+    isAuthenticated ? collectionsQuery.data?.data ?? [] : [];
+
+  useEffect(() => {
+    if (accessToken && user) return;
+    queryClient.removeQueries({ queryKey: ["me", "playlists"] });
+  }, [accessToken, queryClient, user]);
 
   const createCollectionMutation = useMutation({
     mutationFn: () =>

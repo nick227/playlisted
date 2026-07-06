@@ -393,7 +393,7 @@ export function RootPanel({
           <Link to={SECTION_PATHS[entry.label]} className="group block w-full text-left">
             <div className="flex items-start justify-between gap-6 pt-10 pb-4">
               <div className="min-w-0 flex-1">
-                <p className="text-[clamp(10rem,10vw,10rem)] font-extrabold leading-none tracking-tighter text-white transition-colors group-hover:text-[var(--color-brand)]">
+                <p className="text-lg lg:text-[clamp(6rem,6vw,7rem)] font-extrabold leading-none tracking-tighter text-white transition-colors group-hover:text-[var(--color-brand)]">
                   {entry.label}
                 </p>
                 <p className="mt-3 max-w-sm text-sm text-[var(--color-text-subtle)]">{entry.description}</p>

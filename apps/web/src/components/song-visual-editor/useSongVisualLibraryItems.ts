@@ -18,6 +18,7 @@ export type VisualLibraryRow = {
   label: string;
   detail: string;
   thumbUrl: string | null;
+  thumbUrls?: string[];
   mediaType: "image" | "video";
   rank: number;
   asset?: VisualMediaAssetRecord;

@@ -318,6 +318,12 @@ export function useSongVisualEditorState({
     setError(null);
   }
 
+  function setAttachmentEnabled(attachmentId: string, enabled: boolean) {
+    if (!getAttachmentSnapshot(attachmentId)) return;
+    updateDraft((current) => patchDraftAttachment(current, attachmentId, { enabled }));
+    setError(null);
+  }
+
   function moveClip(attachmentId: string, nextStartSec: number) {
     const attachment = getAttachmentSnapshot(attachmentId);
     const clip = timelineClips.find((item) => item.attachment.id === attachmentId);
@@ -574,6 +580,7 @@ export function useSongVisualEditorState({
     attachLibraryRow,
     deleteAsset: deleteAssetMutation.mutate,
     setClipAudioPulse,
+    setAttachmentEnabled,
     resizeClip,
     resizeClipStart,
     resetClipTrim,

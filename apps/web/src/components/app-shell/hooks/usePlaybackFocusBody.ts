@@ -9,7 +9,7 @@ import {
   type SyntheticEvent,
 } from "react";
 
-import { isPlaybackFocusBodyFadeSuppressed } from "@/lib/playbackFocusBodyFade";
+import { getPlaybackFocusBodyFadeSuppressed } from "@/lib/playbackFocusBodyFade";
 import { isPlaybackFocusInteractiveTarget } from "@/lib/playbackFocus/interactiveTarget";
 import { usePlaybackFocusSuppressed } from "@/lib/playbackFocusSuppression";
 import type { PlaybackFocusState } from "@/lib/playbackFocus/types";
@@ -59,11 +59,13 @@ export function usePlaybackFocusBody({
   const [snapReveal, setSnapReveal] = useState(false);
   const [revealInteractionActive, setRevealInteractionActive] = useState(false);
 
-  const bodyFadeDisabled = isPlaybackFocusBodyFadeSuppressed({
+  const fadeConfig = getPlaybackFocusBodyFadeSuppressed({
     pathname,
     subtitlesEnabled,
     theatreFxEnabled,
   });
+  const bodyFadeDisabled = fadeConfig.disabled;
+  const customBodyDelayMs = fadeConfig.delayMs;
 
   useEffect(() => {
     bodyFocusHiddenRef.current = bodyFocusHidden;
@@ -102,7 +104,7 @@ export function usePlaybackFocusBody({
     const bodyDelayMs =
       reason === "activity"
         ? playbackFocusTiming.body.restoreDelayMs
-        : playbackFocusTiming.body.delayMs;
+        : (customBodyDelayMs ?? playbackFocusTiming.body.delayMs);
 
     bodyFocusTimerRef.current = window.setTimeout(() => {
       setBodyFocusHidden(true);
@@ -120,6 +122,7 @@ export function usePlaybackFocusBody({
     bodyFadeDisabled,
     clearFocusTimer,
     currentTimeMsRef,
+    customBodyDelayMs,
     focusTrackSourceLabel,
     playFocusActive,
     playbackFocusSuppressed,

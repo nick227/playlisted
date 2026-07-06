@@ -1,5 +1,6 @@
 import "@/theatre/registry/seed";
 
+import { SEED_IMAGE_ENTRIES } from "@/theatre/packages/createImagePackage";
 import { SEED_VIDEO_ENTRIES } from "@/theatre/packages/createVideoPackage";
 import registry from "@/theatre/registry";
 import { listPresets, type ScenePresetDef } from "@/theatre/registry/scenePresets";
@@ -17,6 +18,10 @@ export function theatrePresetTag(presetId: string) {
 
 const VIDEO_URL_BY_PRESET_ID = new Map(
   SEED_VIDEO_ENTRIES.map((entry) => [entry.id, entry.videoUrl]),
+);
+
+const IMAGE_URLS_BY_PRESET_ID = new Map(
+  SEED_IMAGE_ENTRIES.map((entry) => [entry.id, entry.imageUrlCandidates]),
 );
 
 function presetPrimaryKind(preset: ScenePresetDef): CommunityKind | null {
@@ -40,7 +45,11 @@ function isSelectableCommunityPreset(preset: ScenePresetDef) {
 }
 
 function presetToRow(preset: ScenePresetDef, kind: CommunityKind, rank: number): VisualLibraryRow {
-  const previewUrl = kind === "videos" ? VIDEO_URL_BY_PRESET_ID.get(preset.id) ?? null : null;
+  const imageUrls = kind === "images" ? IMAGE_URLS_BY_PRESET_ID.get(preset.id) : undefined;
+  const previewUrl =
+    kind === "videos"
+      ? VIDEO_URL_BY_PRESET_ID.get(preset.id) ?? null
+      : imageUrls?.[0] ?? null;
   const detail =
     kind === "animations" ? "Theatre animation" : kind === "videos" ? "Theatre video" : "Theatre image";
 
@@ -49,6 +58,7 @@ function presetToRow(preset: ScenePresetDef, kind: CommunityKind, rank: number):
     label: preset.label,
     detail,
     thumbUrl: previewUrl,
+    thumbUrls: imageUrls,
     mediaType: kind === "videos" ? "video" : "image",
     theatrePresetId: preset.id,
     rank,

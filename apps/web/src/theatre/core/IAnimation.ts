@@ -13,6 +13,7 @@ export type AnimationMood = 'calm' | 'dynamic' | 'chaos' | 'nightmare'
 /** Platform/runtime layer options — extends public layer options with internal keys. */
 export type InternalAnimationOptions = TheatreLayerOptions & {
   imageUrl?: string
+  imageUrlCandidates?: string[]
   videoUrl?: string
   loop?: boolean
   muted?: boolean

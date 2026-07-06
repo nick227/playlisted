@@ -7,6 +7,7 @@ import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 import { useRadioPlayer } from "@/providers/RadioPlayerProvider";
 import { useAuth } from "@/providers/AuthProvider";
 
+import { ActiveMediaPanel } from "./ActiveMediaPanel";
 import { SongVisualAssetLibrary } from "./SongVisualAssetLibrary";
 import { SongVisualEditorPreview } from "./SongVisualEditorPreview";
 import { SongVisualEditorTimeline } from "./SongVisualEditorTimeline";
@@ -134,16 +135,34 @@ function SongVisualEditorModalInner({
 
         <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden px-4 py-3 md:px-6 md:py-4">
           <div className="shrink-0 space-y-2.5 md:space-y-3">
-            <SongVisualEditorPreview
-              clip={activeClip}
-              isPlaying={playback.isPlaying}
-              currentTimeSec={playback.currentTimeSec}
-              recording={recording}
-              audioRef={playback.audioRef}
-              onTogglePlayback={playback.togglePlayback}
-              canPlay={Boolean(recording.audioUrl) && durationSec > 0}
-              showOverlays={showOverlays}
-            />
+            <div className="grid w-full gap-4 md:grid-cols-5">
+              <div className="md:col-span-3">
+                <SongVisualEditorPreview
+                  clip={activeClip}
+                  isPlaying={playback.isPlaying}
+                  currentTimeSec={playback.currentTimeSec}
+                  recording={recording}
+                  audioRef={playback.audioRef}
+                  onTogglePlayback={playback.togglePlayback}
+                  canPlay={Boolean(recording.audioUrl) && durationSec > 0}
+                  showOverlays={showOverlays}
+                />
+              </div>
+              <div className="md:col-span-2">
+                <ActiveMediaPanel
+                  attachments={editor.attachments}
+                  timelineClips={editor.timelineClips}
+                  isBusy={editor.isBusy}
+                  onClipAudioPulseChange={(attachmentId, enabled) => editor.setClipAudioPulse(attachmentId, enabled)}
+                  readClipAudioPulse={editor.readClipAudioPulse}
+                  onResetClipTrim={(attachmentId) => editor.resetClipTrim(attachmentId)}
+                  onRemoveClip={editor.detachAttachment}
+                  onSelectClip={editor.selectAttachment}
+                  onToggleClipStage={(attachmentId, enabled) => editor.setAttachmentEnabled(attachmentId, enabled)}
+                  selectedAttachmentId={editor.selectedAttachmentId}
+                />
+              </div>
+            </div>
 
             <SongVisualEditorToolbar
               isBusy={editor.isBusy}
@@ -192,7 +211,7 @@ function SongVisualEditorModalInner({
 
           <div className="mt-3 min-h-0 flex-1 overflow-y-auto [scrollbar-gutter:stable] md:mt-4">
             <SongVisualAssetLibrary
-              timelineClips={editor.timelineClips}
+              attachments={editor.attachments}
               assets={editor.assets}
               userLibraryImages={editor.userLibraryImages}
               isBusy={editor.isBusy}
@@ -202,16 +221,10 @@ function SongVisualEditorModalInner({
               onLibraryFocusHandled={editor.clearLibraryFocus}
               pendingUpload={editor.pendingUpload}
               onCancelUpload={editor.cancelUpload}
-              onClipAudioPulseChange={(attachmentId, enabled) => editor.setClipAudioPulse(attachmentId, enabled)}
-              readClipAudioPulse={editor.readClipAudioPulse}
-              onResetClipTrim={(attachmentId) => editor.resetClipTrim(attachmentId)}
               onAddRow={(row) => void editor.attachLibraryRow(row, playback.currentTimeSec)}
-              onRemoveClip={editor.detachAttachment}
-              onSelectClip={editor.selectAttachment}
               onDeleteAsset={editor.deleteAsset}
               onUpload={editor.openUploadPicker}
               onUploadFile={editor.uploadFile}
-              selectedAttachmentId={editor.selectedAttachmentId}
             />
 
           </div>

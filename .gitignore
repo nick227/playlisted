@@ -63,3 +63,9 @@ __pycache__/
 .modal.toml
 modal/test-audio/
 modal/output/
+
+# Python
+.venv/
+venv/
+*-venv/
+*.bak

@@ -1,4 +1,4 @@
-import { GripVertical, Scissors, AudioLines } from "lucide-react";
+import { GripVertical, Scissors, Vibrate } from "lucide-react";
 import { useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 
 import { MediaAssetThumb } from "./MediaAssetThumb";
@@ -265,7 +265,7 @@ export function TimelineClipBlock({
         <span className="truncate font-medium drop-shadow">
           {clip.attachment.label ?? clip.attachment.mediaAsset.originalName}
         </span>
-        {audioPulse ? <AudioLines size={10} className="shrink-0 opacity-80" /> : null}
+        {audioPulse ? <Vibrate size={10} className="shrink-0 opacity-80" /> : null}
         {cutMode ? <Scissors size={10} className="shrink-0 opacity-80" /> : null}
       </div>
 
