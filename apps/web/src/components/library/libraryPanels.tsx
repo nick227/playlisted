@@ -431,7 +431,7 @@ export function RootPanel({
       {entries.map((entry, i) => (
         <div key={entry.label} className={i > 0 ? "border-t border-white/[0.06]" : ""}>
           <Link to={SECTION_PATHS[entry.label]} className="group block w-full text-left">
-            <div className="flex items-start justify-between gap-6 pt-10 pb-4">
+            <div className="flex items-start justify-between gap-6 py-4">
               <div className="min-w-0 flex-1">
                 <p className="text-lg lg:text-[clamp(6rem,6vw,7rem)] font-extrabold leading-none tracking-tighter text-white transition-colors group-hover:text-[var(--color-brand)]">
                   {entry.label}

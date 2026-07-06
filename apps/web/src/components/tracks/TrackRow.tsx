@@ -171,7 +171,7 @@ export function TrackRow({
       id={`track-${recordingId}`}
       className={`group/card grid w-full ${
         editMode && onPlay ? "grid-cols-[auto_auto_minmax(0,1fr)_auto]" : "grid-cols-[auto_minmax(0,1fr)_auto]"
-      } items-center gap-1 rounded-lg px-1 py-1.5 transition sm:gap-2 sm:px-2 ${
+      } items-center gap-1 rounded-lg py-1.5 transition sm:gap-2 ${
         isActive ? "bg-[var(--color-surface)]/80" : "hover:bg-[var(--color-surface-hover)]"
       }${onPlay && !editMode ? " cursor-pointer" : ""}`}
       role={onPlay && !editMode ? "button" : undefined}

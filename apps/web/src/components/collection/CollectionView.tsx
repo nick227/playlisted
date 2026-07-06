@@ -388,12 +388,12 @@ export function CollectionView({
   }
 
   return (
-    <div className={`mx-auto flex ${isEdit ? "max-w-3xl" : "w-full"} flex-col justify-center bg-[var(--color-canvas)]/80 rounded-lg p-4`}>
+    <div className={`mx-auto flex ${isEdit ? "w-full" : "w-full"} flex-col justify-center bg-[var(--color-canvas)]/80 rounded-lg`}>
       {isEdit && editToolbar ? (
         <div className="mb-6 flex flex-wrap items-center gap-3">{editToolbar}</div>
       ) : null}
 
-      <div className="flex flex-col lg:flex-row gap-8 rounded-lg p-2 max-w-3xl">
+      <div className="flex flex-col lg:flex-row gap-8 rounded-lg">
         <div className="mx-auto shrink-0 md:mx-0 flex justify-center align-center w-full lg:max-w-[50%]">
           <button
             type="button"
@@ -566,7 +566,7 @@ export function CollectionView({
         </div>
       </div>
 
-      <div className="mt-4 max-w-3xl">
+      <div className="mt-4">
         {isEdit ? (
           <div className="min-h-[16px]">
             {uploadProgress ? <div className="py-2">{uploadProgress}</div> : null}
