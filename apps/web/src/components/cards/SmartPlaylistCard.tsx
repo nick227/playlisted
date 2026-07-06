@@ -247,7 +247,7 @@ export function SmartPlaylistCard({
 
         {/* Currently playing track info */}
         {isActive && currentTrack && (
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent px-3 pb-3 pt-8">
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
             <p className="truncate text-xs font-semibold text-white">{currentTrack.title}</p>
             <p className="truncate text-xs text-white/50">{currentTrack.ownerName}</p>
           </div>
