@@ -31,7 +31,7 @@ type PlayerDisplayTrack = {
 };
 
 const playerFooterClass =
-  "fixed inset-x-0 bottom-0 z-[10000] w-full isolate border-t border-[var(--color-border)] bg-[var(--color-canvas-alt)] pb-[env(safe-area-inset-bottom,0px)] md:pb-0";
+  "fixed inset-x-0 bottom-0 z-[10000] w-full isolate overflow-visible border-t border-[var(--color-border)] bg-[var(--color-canvas-alt)] pb-[env(safe-area-inset-bottom,0px)] md:pb-0";
 
 const playerBodyClass =
   "relative flex h-[var(--spacing-player-mobile)] w-full min-w-0 max-w-full flex-col justify-center gap-1.5 px-4 py-2 md:grid md:h-[var(--spacing-player)] md:grid-cols-3 md:items-center md:gap-2 md:px-4";
@@ -65,7 +65,7 @@ export function BottomPlayer() {
     togglePlayback: toggleRadioPlayback,
     pauseRadio,
   } = useRadioPlayer();
-  const { volume, setVolume, toggleMute } = usePlaybackVolume();
+  const { volume, setVolume } = usePlaybackVolume();
   const { currentTime, duration, seek } = usePlaybackTransport();
 
   const [radioCurrentTime, setRadioCurrentTime] = useState(0);
@@ -169,7 +169,7 @@ export function BottomPlayer() {
       aria-hidden={playerBarExiting}
     >
       <div
-        className={`bottom-player__surface${playerBarExiting ? " bottom-player__surface--exit" : ""}`}
+        className={`bottom-player__surface overflow-visible${playerBarExiting ? " bottom-player__surface--exit" : ""}`}
       >
         <div
           className="absolute inset-x-0 top-0 h-0.5 bg-[var(--color-surface-elevated)]"
@@ -313,7 +313,6 @@ export function BottomPlayer() {
             <VerticalVolumeControl
               volume={volume}
               onVolumeChange={setVolume}
-              onToggleMute={toggleMute}
               variant="player"
             />
             {showQueueControls ? (
@@ -331,7 +330,6 @@ export function BottomPlayer() {
             <VerticalVolumeControl
               volume={volume}
               onVolumeChange={setVolume}
-              onToggleMute={toggleMute}
               variant="player"
             />
 

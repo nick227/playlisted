@@ -930,9 +930,11 @@ body {
   position: absolute;
   right: 1rem;
   bottom: 0.625rem;
+  z-index: 2;
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  overflow: visible;
 }
 
 .bottom-player__close-mobile {
@@ -976,6 +978,7 @@ body {
     align-items: center;
     justify-content: flex-end;
     gap: 0.5rem;
+    overflow: visible;
   }
 }
 

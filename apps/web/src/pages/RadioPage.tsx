@@ -44,7 +44,7 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
     playerShellActive,
     currentTrack,
   } = useAudioPlayer();
-  const { volume, setVolume, toggleMute } = usePlaybackVolume();
+  const { volume, setVolume } = usePlaybackVolume();
   const { data: genreData } = useLibraryGenres({ minSongCount: 1 });
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -322,7 +322,6 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
           <VerticalVolumeControl
             volume={volume}
             onVolumeChange={setVolume}
-            onToggleMute={toggleMute}
             variant="radio"
           />
 
