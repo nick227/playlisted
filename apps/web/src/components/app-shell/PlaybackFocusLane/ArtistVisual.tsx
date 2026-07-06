@@ -1,4 +1,4 @@
-import { CornerUpLeft, Minimize2, Volume2, VolumeX } from "lucide-react";
+import { Minimize2, Volume2, VolumeX } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { FocusRecording } from "@/lib/playbackFocus/types";
 import { PLAYBACK_FOCUS_INTERACTIVE_ATTR, stopPlaybackFocusBubble } from "@/lib/playbackFocus/interactiveTarget";
@@ -28,7 +28,6 @@ type ArtistVisualProps = {
   recording?: FocusRecording | null;
   currentTimeSec?: number;
   isPlaying?: boolean;
-  onReturnBody?: () => void;
   onMinimize?: () => void;
 };
 
@@ -49,7 +48,6 @@ export function ArtistVisual({
   recording,
   currentTimeSec = 0,
   isPlaying = false,
-  onReturnBody,
   onMinimize,
 }: ArtistVisualProps) {
   const { isRadio } = useFocusLanePlayback();
@@ -256,7 +254,7 @@ export function ArtistVisual({
       {onMinimize ? (
         <button
           type="button"
-          className="focus-lane__artist-minimize"
+          className="focus-lane__artist-return"
           title="Minimize player"
           aria-label="Minimize player"
           onPointerDown={stopPlaybackFocusBubble}
@@ -266,21 +264,6 @@ export function ArtistVisual({
           }}
         >
           <Minimize2 size={16} aria-hidden />
-        </button>
-      ) : null}
-      {onReturnBody ? (
-        <button
-          type="button"
-          className="focus-lane__artist-return"
-          title="Return to page"
-          aria-label="Return to page"
-          onPointerDown={stopPlaybackFocusBubble}
-          onClick={(event) => {
-            stopPlaybackFocusBubble(event);
-            onReturnBody();
-          }}
-        >
-          <CornerUpLeft size={16} aria-hidden />
         </button>
       ) : null}
       <div className="flex min-w-0 items-start gap-3 sm:gap-5">

@@ -84,7 +84,6 @@ export function FocusLaneSubtitleContent({
         recording={recording}
         currentTimeSec={currentTimeSec}
         isPlaying={isPlaying}
-        onReturnBody={onReturnBody}
         onMinimize={onMinimizeArtistVisual}
       />
     );
