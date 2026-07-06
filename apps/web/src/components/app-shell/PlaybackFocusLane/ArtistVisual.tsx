@@ -300,7 +300,7 @@ export function ArtistVisual({
           {artistFacts.profileLinks.length > 0 ? (
             <nav
               aria-label={artistName ? `${artistName} social links` : "Artist social links"}
-              className="flex min-h-8 min-w-0 flex-wrap items-center gap-1.5"
+              className="flex min-w-0 flex-wrap items-center gap-1.5"
             >
               {artistFacts.profileLinks.map((link) => {
                 const platform = getProfileLinkPlatform(link.platform);

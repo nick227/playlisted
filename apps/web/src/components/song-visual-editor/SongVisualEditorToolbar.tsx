@@ -47,7 +47,7 @@ export function SongVisualEditorToolbar({
   onToggleOverlays,
 }: SongVisualEditorToolbarProps) {
   return (
-    <div className="flex flex-nowrap items-center gap-x-1 gap-y-2 rounded-lg border border-white/10 bg-black/20 py-2">
+    <div className="flex min-w-0 items-center gap-x-1 gap-y-2 overflow-x-auto rounded-lg border border-white/10 bg-black/20 py-2 [-webkit-overflow-scrolling:touch] sm:flex-nowrap">
       <ToolbarButtonGroup>
         <ToolbarIconButton
           active={isPlaying}
@@ -95,7 +95,7 @@ export function SongVisualEditorToolbar({
         type="button"
         disabled={isBusy}
         onClick={onUpload}
-        className={`inline-flex ${TOOLBAR_CONTROL_HEIGHT} items-center gap-1.5 rounded-md border px-3 text-[11px] font-semibold transition disabled:opacity-40 ${
+        className={`inline-flex shrink-0 ${TOOLBAR_CONTROL_HEIGHT} items-center gap-1.5 rounded-md border px-3 text-[11px] font-semibold transition disabled:opacity-40 ${
           isUploading
             ? "border-sky-400/30 bg-sky-500/15 text-sky-100"
             : "border-white/15 bg-white/5 text-white/85 hover:border-white/25 hover:bg-white/10 hover:text-white"
@@ -116,7 +116,7 @@ export function SongVisualEditorToolbar({
         </button>
       ) : null}
 
-      <div className={`ml-auto flex items-center gap-1 ${TOOLBAR_CONTROL_HEIGHT}`}>
+      <div className={`ml-auto flex shrink-0 items-center gap-1 ${TOOLBAR_CONTROL_HEIGHT}`}>
         <button
           type="button"
           onClick={onCancel}
@@ -144,7 +144,7 @@ function ToolbarDivider() {
 
 function ToolbarButtonGroup({ children }: { children: ReactNode }) {
   return (
-    <div className={`inline-flex ${TOOLBAR_CONTROL_HEIGHT} items-center gap-0.5 rounded-md border border-white/10 bg-black/25 p-0.5`}>
+    <div className={`inline-flex shrink-0 ${TOOLBAR_CONTROL_HEIGHT} items-center gap-0.5 rounded-md border border-white/10 bg-black/25 p-0.5`}>
       {children}
     </div>
   );

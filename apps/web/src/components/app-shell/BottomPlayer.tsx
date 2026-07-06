@@ -6,6 +6,7 @@ import {
   SkipForward,
   Volume2,
   VolumeX,
+  X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -50,6 +51,7 @@ export function BottomPlayer() {
     playNext,
     playPrevious,
     setQueueOpen,
+    closePlayback,
     autoplayEnabled,
     autoplayNextSegment,
     upNextPipeline,
@@ -63,6 +65,7 @@ export function BottomPlayer() {
     audioRef: radioAudioRef,
     radioUiMounted,
     togglePlayback: toggleRadioPlayback,
+    pauseRadio,
     volume: radioVolume,
     setVolume: setRadioVolume,
   } = useRadioPlayer();
@@ -123,6 +126,11 @@ export function BottomPlayer() {
     } else {
       setActiveVolume(prevVolumeRef.current);
     }
+  }
+
+  function handleClosePlayer() {
+    pauseRadio();
+    closePlayback();
   }
 
   if (!displayTrack) {
@@ -189,6 +197,15 @@ export function BottomPlayer() {
           />
         </div>
         <div className={playerBodyClass}>
+          <button
+            type="button"
+            onClick={handleClosePlayer}
+            className="bottom-player__close-mobile"
+            aria-label="Close player and stop playback"
+            disabled={playerBarExiting}
+          >
+            <X size={16} />
+          </button>
           <div className="bottom-player__section bottom-player__section--track group/card flex min-w-0 items-start gap-3 md:items-center">
             {displayTrack.artworkUrl ? (
               <img

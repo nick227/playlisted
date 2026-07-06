@@ -6,7 +6,6 @@ import { useAuth } from "@/providers/AuthProvider";
 
 import { AuthLinks } from "./AuthLinks";
 import { PanelShortcutLink } from "./PanelShortcutLink";
-import { SubtitlesToggleButton } from "./SubtitlesToggleButton";
 import { TheatreModeButton } from "./TheatreModeButton";
 import { UserAccountMenu } from "./UserAccountMenu";
 
@@ -33,7 +32,6 @@ export function TopBarActions({ mobileSearchOpen }: TopBarActionsProps) {
         mobileSearchOpen ? "ml-auto" : "sm:ml-auto"
       }`}
     >
-      <SubtitlesToggleButton />
       <TheatreModeButton />
 
       {status === "authenticated" && user ? (

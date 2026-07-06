@@ -128,6 +128,8 @@ interface AudioPlayerContextValue {
   removeFromQueue: (trackId: string) => void;
   updateQueuePlaylistTitle: (playlistId: string, title: string) => void;
   updateQueuePlaylistSlug: (playlistId: string, slug: string) => void;
+  /** Stop audio, clear playback state, and remove the site player immediately. */
+  closePlayback: () => void;
   /** Pause, dismiss the bar (with fade), and clear the active track; queue is kept. */
   releasePlayback: () => void;
   /** Pause site audio and dismiss the bar only when it is currently visible. */
@@ -770,6 +772,47 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     setQueueOpen(false);
   }, [transportDuration, flushPlayback, isPlayerBarUpNow]);
 
+  const closePlayback = useCallback(() => {
+    if (dismissTimerRef.current !== null) {
+      window.clearTimeout(dismissTimerRef.current);
+      dismissTimerRef.current = null;
+    }
+
+    const idx = queueIndexRef.current;
+    const track = idx >= 0 ? queueRef.current[idx] : null;
+    const audio = audioRef.current;
+    if (track) {
+      flushPlayback(track, audio?.currentTime ?? currentTimeRef.current, false);
+      loggedTrackRef.current = null;
+    }
+
+    audio?.pause();
+    siteAudioRef.current?.pause();
+    try {
+      if (audio) audio.currentTime = 0;
+      if (siteAudioRef.current) siteAudioRef.current.currentTime = 0;
+    } catch {
+      // Some externally adopted media elements may reject seeking before metadata is loaded.
+    }
+
+    restoreSiteAudioElement();
+    currentSegmentRef.current = { autoplay: false };
+    playbackContextRef.current = { sourceContext: "player" };
+    setPlaybackContext(playbackContextRef.current);
+    setPlayerDismissSnapshot(null);
+    setPlayerBarExiting(false);
+    setQueueState([]);
+    setQueueIndex(-1);
+    setUpNextPipeline([]);
+    setSegmentLabel(null);
+    setAutoplayNextSegment(null);
+    setActiveOriginKey(null);
+    setQueueOpen(false);
+    setTransportCurrentTime(0);
+    setTransportDuration(0);
+    setState("idle");
+  }, [flushPlayback, restoreSiteAudioElement]);
+
   const yieldPlaybackToRadio = useCallback(() => {
     const ownedAudio = audioRef.current;
     ownedAudio?.pause();
@@ -958,6 +1001,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       removeFromQueue,
       updateQueuePlaylistTitle,
       updateQueuePlaylistSlug,
+      closePlayback,
       releasePlayback,
       yieldPlaybackToRadio,
       resumePlaybackIfPaused,
@@ -999,6 +1043,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       removeFromQueue,
       updateQueuePlaylistTitle,
       updateQueuePlaylistSlug,
+      closePlayback,
       releasePlayback,
       yieldPlaybackToRadio,
       resumePlaybackIfPaused,

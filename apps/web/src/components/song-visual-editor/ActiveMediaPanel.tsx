@@ -86,7 +86,7 @@ export function ActiveMediaPanel({
     });
 
   return (
-    <div className="overflow-hidden rounded-lg border border-white/10 bg-black/25">
+    <div className="w-full min-w-0 overflow-hidden rounded-lg border border-white/10 bg-black/25">
       <div className="flex items-center justify-between border-b border-white/5 px-2.5 py-1.5">
         <span className="text-[10px] font-semibold uppercase tracking-wide text-white/40">Active</span>
         <span className="text-[10px] tabular-nums text-white/30">
@@ -96,7 +96,7 @@ export function ActiveMediaPanel({
       {sortedRows.length === 0 ? (
         <p className="px-2.5 py-2 text-xs text-white/35">Add clips from the library below.</p>
       ) : (
-        <ul className="max-h-[17.5rem] divide-y divide-white/5 overflow-y-auto [scrollbar-gutter:stable]">
+        <ul className="max-h-[17.5rem] divide-y divide-white/5 overflow-y-auto md:[scrollbar-gutter:stable]">
           {sortedRows.map((row) => {
             const { attachment } = row;
             const selected = attachment.id === selectedAttachmentId;
@@ -108,7 +108,7 @@ export function ActiveMediaPanel({
               <li
                 key={attachment.id}
                 className={[
-                  "flex items-center gap-1 px-1.5 py-1",
+                  "flex min-w-0 items-center gap-1 px-1.5 py-1",
                   selected ? "bg-emerald-500/10" : "hover:bg-white/5",
                   enabled ? "" : "opacity-60",
                 ].join(" ")}
@@ -129,7 +129,7 @@ export function ActiveMediaPanel({
                   <span className="truncate text-xs font-medium text-white">
                     {attachment.label ?? attachment.mediaAsset.originalName}
                   </span>
-                  <span className="shrink-0 text-[10px] tabular-nums text-white/40">
+                  <span className="hidden shrink-0 text-[10px] tabular-nums text-white/40 sm:inline">
                     {formatRowTime(row)}
                   </span>
                 </button>

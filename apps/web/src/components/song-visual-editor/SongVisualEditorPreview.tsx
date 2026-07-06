@@ -62,12 +62,12 @@ export function SongVisualEditorPreview({
   );
 
   return (
-    <div className="mx-auto flex w-full max-w-xl shrink-0 justify-center">
+    <div className="mx-auto flex w-full min-w-0 max-w-xl shrink-0 justify-center">
       <button
         type="button"
         disabled={!canPlay}
         onClick={onTogglePlayback}
-        className="group/preview relative w-full max-h-[34vh] overflow-hidden rounded-xl border border-white/10 bg-black text-left disabled:cursor-default"
+        className="group/preview relative w-full max-w-full max-h-[34vh] overflow-hidden rounded-xl border border-white/10 bg-black text-left disabled:cursor-default"
         style={{ aspectRatio }}
         aria-label={isPlaying ? "Pause preview" : "Play preview"}
       >

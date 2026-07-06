@@ -118,7 +118,7 @@ function SongVisualEditorModalInner({
         if (event.target === event.currentTarget) handleClose();
       }}
     >
-      <div className="flex h-full max-h-screen w-full max-w-5xl flex-col overflow-hidden border border-white/10 bg-[var(--color-canvas)] shadow-2xl md:rounded-2xl">
+      <div className="flex h-full max-h-screen w-full min-w-0 max-w-5xl flex-col overflow-hidden border border-white/10 bg-[var(--color-canvas)] shadow-2xl md:rounded-2xl">
         <header className="relative flex shrink-0 items-center justify-center border-b border-white/10 bg-black/20 px-12 py-3 md:px-14">
           <h2 className="truncate text-center text-base font-semibold text-white md:text-lg">
             {recording.title}
@@ -133,10 +133,10 @@ function SongVisualEditorModalInner({
           </button>
         </header>
 
-        <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden px-4 py-3 md:px-6 md:py-4">
-          <div className="shrink-0 space-y-2.5 md:space-y-3">
-            <div className="grid w-full gap-4 md:grid-cols-5">
-              <div className="md:col-span-3">
+        <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-hidden px-4 py-3 md:px-6 md:py-4">
+          <div className="min-w-0 shrink-0 space-y-2.5 md:space-y-3">
+            <div className="grid w-full min-w-0 gap-4 md:grid-cols-5">
+              <div className="min-w-0 md:col-span-3">
                 <SongVisualEditorPreview
                   clip={activeClip}
                   isPlaying={playback.isPlaying}
@@ -148,7 +148,7 @@ function SongVisualEditorModalInner({
                   showOverlays={showOverlays}
                 />
               </div>
-              <div className="md:col-span-2">
+              <div className="min-w-0 md:col-span-2">
                 <ActiveMediaPanel
                   attachments={editor.attachments}
                   timelineClips={editor.timelineClips}
@@ -209,7 +209,7 @@ function SongVisualEditorModalInner({
             />
           </div>
 
-          <div className="mt-3 min-h-0 flex-1 overflow-y-auto [scrollbar-gutter:stable] md:mt-4">
+          <div className="mt-3 min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto md:mt-4 md:[scrollbar-gutter:stable]">
             <SongVisualAssetLibrary
               attachments={editor.attachments}
               assets={editor.assets}

@@ -284,7 +284,7 @@ export function GenreHorizontalPanel({
               className={`inline-flex h-10 items-center gap-2 rounded-full border px-4 text-xs font-semibold transition sm:h-8 sm:px-3 ${
                 !genreStationActive
                   ? "border-[var(--color-brand)]/50 bg-[var(--color-brand)]/15 text-white"
-                  : "border-white/10 bg-white/[0.03] text-white/58 hover:border-white/20 hover:bg-white/[0.07] hover:text-white"
+                  : "border-white/10 bg-[--color-canvas]/80 text-white/58 hover:border-white/20 hover:bg-white/[0.07] hover:text-white"
               }`}
             >
               <Radio size={13} />
@@ -304,8 +304,8 @@ export function GenreHorizontalPanel({
                   aria-label={`${stationPlaying ? "Pause" : "Play"} ${genre.name} radio`}
                   className={`inline-flex h-10 items-center gap-2 rounded-full border px-4 text-xs font-semibold transition disabled:cursor-wait disabled:opacity-60 sm:h-8 sm:px-3 ${
                     active
-                      ? "border-[var(--color-brand)]/50 bg-[var(--color-brand)]/15 text-white"
-                      : "border-white/10 bg-white/[0.03] text-white/58 hover:border-white/20 hover:bg-white/[0.07] hover:text-white"
+                      ? "border-[var(--color-brand)]/50 bg-[var(--color-brand)]/50 text-white"
+                      : "border-white/10 bg-[--color-canvas]/80 text-white/58 hover:border-white/20 hover:bg-white/[0.07] hover:text-white"
                   }`}
                 >
                   {stationPlaying ? (
