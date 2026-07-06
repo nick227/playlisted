@@ -14,6 +14,7 @@ import {
 import { rejectDisallowedUpload, resolveUploadMimeType } from "../../lib/uploadValidate.js";
 import { dtoMediaTypeToPrisma } from "../../lib/visualMedia/types.js";
 import { listUserLibraryImages } from "../../lib/visualMedia/listUserLibraryImages.js";
+import { importVisualMediaFromUrl } from "../../lib/visualMedia/importVisualMediaFromUrl.js";
 import { mapVisualMediaAsset } from "../../lib/visualMedia/mapDto.js";
 import { parseVisualUploadMetadata } from "../../lib/visualMedia/validateUploadMetadata.js";
 
@@ -42,6 +43,47 @@ visualMediaAssetsRouter.get("/library-images", async (req, res, next) => {
 
     const items = await listUserLibraryImages(auth.user.id);
     res.json({ items });
+  } catch (error) {
+    next(error);
+  }
+});
+
+visualMediaAssetsRouter.post("/import-url", async (req, res, next) => {
+  try {
+    const auth = await requireAuth(req, res);
+    if (!auth) return;
+
+    const body = req.body as { url?: string; originalName?: string; kind?: string };
+    const url = typeof body.url === "string" ? body.url.trim() : "";
+    const originalName = typeof body.originalName === "string" ? body.originalName.trim() : "imported-media";
+    const kind = body.kind === "video" ? "video" : "image";
+
+    if (!url) {
+      return res.status(400).json({
+        error: "url_required",
+        message: "url is required.",
+      });
+    }
+
+    try {
+      const asset = await importVisualMediaFromUrl(auth.user.id, { url, originalName, kind });
+      res.status(201).json(mapVisualMediaAsset(asset));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "import_failed";
+      if (message === "import_url_not_owned") {
+        return res.status(403).json({
+          error: "import_url_not_owned",
+          message: "You can only import uploads from your own library.",
+        });
+      }
+      if (message === "import_url_must_be_upload" || message === "upload_url_invalid") {
+        return res.status(400).json({
+          error: "import_url_invalid",
+          message: "Only existing Playlisted upload URLs can be linked without re-uploading.",
+        });
+      }
+      throw error;
+    }
   } catch (error) {
     next(error);
   }

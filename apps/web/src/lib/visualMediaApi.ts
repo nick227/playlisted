@@ -1,4 +1,5 @@
 import { uploadVisualMediaFile } from "@/lib/visualMediaUpload";
+import { normalizeVisualMediaUrl, visualMediaUploadPathKey } from "@/lib/visualMediaUrl";
 import type { SongVisualPolicy, VisualMediaBeatFx } from "@/theatre/media/types";
 
 export type { VisualUploadPhase, VisualUploadProgress, PendingVisualUpload } from "@/lib/visualUploadProgress";
@@ -68,20 +69,57 @@ async function parseJson<T>(response: Response): Promise<T> {
   return response.json() as Promise<T>;
 }
 
+function findExistingAssetByUrl(
+  existingAssets: VisualMediaAssetRecord[],
+  url: string,
+  mediaType: "image" | "video",
+) {
+  const normalized = normalizeVisualMediaUrl(url);
+  const pathKey = visualMediaUploadPathKey(url);
+  return existingAssets.find((asset) => {
+    if (asset.mediaType !== mediaType) return false;
+    if (normalizeVisualMediaUrl(asset.url) === normalized) return true;
+    if (pathKey && visualMediaUploadPathKey(asset.url) === pathKey) return true;
+    if (asset.thumbnailUrl) {
+      if (normalizeVisualMediaUrl(asset.thumbnailUrl) === normalized) return true;
+      if (pathKey && visualMediaUploadPathKey(asset.thumbnailUrl) === pathKey) return true;
+    }
+    return false;
+  });
+}
+
+async function linkVisualMediaFromUrl(
+  url: string,
+  originalName: string,
+  accessToken: string,
+  kind: "image" | "video",
+) {
+  const response = await fetch(`${apiBase()}/api/v1/visual-media/import-url`, {
+    method: "POST",
+    headers: {
+      ...authHeaders(accessToken),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ url, originalName, kind }),
+    credentials: "include",
+  });
+  return parseJson<VisualMediaAssetRecord>(response);
+}
+
 export async function importVisualMediaVideoFromUrl(
   url: string,
   originalName: string,
   accessToken: string,
   existingAssets: VisualMediaAssetRecord[],
 ) {
-  const resolved = new URL(url, window.location.origin).href;
-  const existing = existingAssets.find(
-    (asset) =>
-      asset.mediaType === "video" &&
-      new URL(asset.url, window.location.origin).href === resolved,
-  );
+  const existing = findExistingAssetByUrl(existingAssets, url, "video");
   if (existing) return existing;
 
+  if (visualMediaUploadPathKey(url)) {
+    return linkVisualMediaFromUrl(url, originalName, accessToken, "video");
+  }
+
+  const resolved = new URL(url, window.location.origin).href;
   const response = await fetch(resolved, { credentials: "include" });
   if (!response.ok) {
     throw new Error("Could not import video.");
@@ -118,14 +156,14 @@ export async function importVisualMediaImageFromUrl(
   accessToken: string,
   existingAssets: VisualMediaAssetRecord[],
 ) {
-  const resolved = new URL(url, window.location.origin).href;
-  const existing = existingAssets.find(
-    (asset) =>
-      asset.mediaType === "image" &&
-      new URL(asset.url, window.location.origin).href === resolved,
-  );
+  const existing = findExistingAssetByUrl(existingAssets, url, "image");
   if (existing) return existing;
 
+  if (visualMediaUploadPathKey(url)) {
+    return linkVisualMediaFromUrl(url, originalName, accessToken, "image");
+  }
+
+  const resolved = new URL(url, window.location.origin).href;
   const response = await fetch(resolved, { credentials: "include" });
   if (!response.ok) {
     throw new Error("Could not import image.");

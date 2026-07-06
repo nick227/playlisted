@@ -1,7 +1,7 @@
 import { createReadStream } from "node:fs";
 import fs from "node:fs/promises";
 
-import { DeleteObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
 
 /** Use multipart upload for large files (slow uplinks, R2/S3 reliability). */
@@ -96,6 +96,15 @@ export async function uploadFileToR2(input: {
 export async function deleteObjectFromR2(key: string) {
   await getClient().send(
     new DeleteObjectCommand({
+      Bucket: requireEnv("R2_BUCKET_NAME"),
+      Key: key,
+    }),
+  );
+}
+
+export async function headObjectFromR2(key: string) {
+  return getClient().send(
+    new HeadObjectCommand({
       Bucket: requireEnv("R2_BUCKET_NAME"),
       Key: key,
     }),

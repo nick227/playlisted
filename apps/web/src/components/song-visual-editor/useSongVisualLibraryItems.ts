@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import type { PendingVisualUpload, VisualMediaAssetRecord, UserLibraryImageRecord } from "@/lib/visualMediaApi";
 import type { SongVisualAttachmentRecord } from "@/lib/visualMediaApi";
 import type { VisualUploadProgress } from "@/lib/visualUploadProgress";
+import { normalizeVisualMediaUrl, visualMediaUploadPathKey } from "@/lib/visualMediaUrl";
 
 import { formatMegabytes } from "./timelineLayout";
 import { buildCommunityLibraryRows } from "./theatreFxLibrary";
@@ -37,14 +38,27 @@ type UseSongVisualLibraryItemsArgs = {
   uploadProgress?: VisualUploadProgress | null;
 };
 
-function normalizeImageUrl(url: string): string {
-  try {
-    const parsed = new URL(url, window.location.origin);
-    if (parsed.pathname.startsWith("/uploads/")) return parsed.pathname;
-    return parsed.href;
-  } catch {
-    return url;
+function collectKnownImageKeys(assets: VisualMediaAssetRecord[]): Set<string> {
+  const keys = new Set<string>();
+  for (const asset of assets) {
+    if (asset.mediaType !== "image") continue;
+    keys.add(normalizeVisualMediaUrl(asset.url));
+    const urlKey = visualMediaUploadPathKey(asset.url);
+    if (urlKey) keys.add(urlKey);
+    if (asset.thumbnailUrl) {
+      keys.add(normalizeVisualMediaUrl(asset.thumbnailUrl));
+      const thumbKey = visualMediaUploadPathKey(asset.thumbnailUrl);
+      if (thumbKey) keys.add(thumbKey);
+    }
   }
+  return keys;
+}
+
+function libraryImageIsKnown(image: UserLibraryImageRecord, knownImageKeys: Set<string>): boolean {
+  const normalized = normalizeVisualMediaUrl(image.url);
+  if (knownImageKeys.has(normalized)) return true;
+  const pathKey = visualMediaUploadPathKey(image.url);
+  return pathKey != null && knownImageKeys.has(pathKey);
 }
 
 function sourceDetail(source: UserLibraryImageRecord["source"]): string {
@@ -66,20 +80,11 @@ export function useSongVisualLibraryItems({
     [attachments],
   );
 
-  const knownAssetUrls = useMemo(
-    () =>
-      new Set(
-        assets
-          .filter((asset) => asset.mediaType === "image")
-          .flatMap((asset) => [asset.url, asset.thumbnailUrl].filter(Boolean) as string[])
-          .map(normalizeImageUrl),
-      ),
-    [assets],
-  );
+  const knownImageKeys = useMemo(() => collectKnownImageKeys(assets), [assets]);
 
   const importedImageRows = useMemo(
-    () => buildImportedImageRows(userLibraryImages, knownAssetUrls),
-    [userLibraryImages, knownAssetUrls],
+    () => buildImportedImageRows(userLibraryImages, knownImageKeys),
+    [userLibraryImages, knownImageKeys],
   );
 
   const imageRows = useMemo(
@@ -149,10 +154,10 @@ function buildUploadRows(
 
 function buildImportedImageRows(
   userLibraryImages: UserLibraryImageRecord[],
-  knownAssetUrls: Set<string>,
+  knownImageKeys: Set<string>,
 ): VisualLibraryRow[] {
   return userLibraryImages
-    .filter((image) => !knownAssetUrls.has(normalizeImageUrl(image.url)))
+    .filter((image) => !libraryImageIsKnown(image, knownImageKeys))
     .map((image) => ({
       id: `import-${image.url}`,
       label: image.label,
