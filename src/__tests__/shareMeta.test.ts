@@ -19,10 +19,11 @@ vi.mock("../lib/prisma.js", () => ({
 import { prisma } from "../lib/prisma.js";
 import { createApp } from "../app.js";
 import { escapeHtml, injectShareMeta, safeJsonLd } from "../share/injectShareMeta.js";
-import { resolveShareMeta } from "../share/shareMeta.js";
+import { resolveShareMeta, shareOriginsFromOrigin } from "../share/shareMeta.js";
 import { pickShareImage, toAbsoluteUrl } from "../share/shareImages.js";
 
 const ORIGIN = "https://playlisted.com";
+const ORIGINS = shareOriginsFromOrigin(ORIGIN);
 const app = createApp({ skipWeb: true });
 
 const TEMPLATE = `<!doctype html>
@@ -71,7 +72,7 @@ describe("injectShareMeta", () => {
   });
 
   it("injects metadata into placeholders", async () => {
-    const meta = await resolveShareMeta("/", ORIGIN);
+    const meta = await resolveShareMeta("/", ORIGINS);
     const html = injectShareMeta(TEMPLATE, meta);
 
     expect(html).toContain("<title>Playlisted — Music charts and curated playlists for independent artists</title>");
@@ -80,7 +81,7 @@ describe("injectShareMeta", () => {
   });
 
   it("emits valid JSON-LD", async () => {
-    const meta = await resolveShareMeta("/privacy", ORIGIN);
+    const meta = await resolveShareMeta("/privacy", ORIGINS);
     const html = injectShareMeta(TEMPLATE, meta);
     const match = html.match(/<script[^>]*id="share-json-ld"[^>]*>\s*([\s\S]*?)\s*<\/script>/);
     expect(match?.[1]).toBeTruthy();
@@ -98,7 +99,7 @@ describe("resolveShareMeta", () => {
   });
 
   it("returns homepage metadata", async () => {
-    const meta = await resolveShareMeta("/", ORIGIN);
+    const meta = await resolveShareMeta("/", ORIGINS);
     expect(meta.title).toContain("Playlisted");
     expect(meta.image).toBe("https://playlisted.com/og/playlisted-default.jpg");
     expect(meta.type).toBe("website");
@@ -116,7 +117,7 @@ describe("resolveShareMeta", () => {
       updatedAt: new Date("2026-01-01T00:00:00.000Z"),
     } as never);
 
-    const meta = await resolveShareMeta("/@/artist", ORIGIN);
+    const meta = await resolveShareMeta("/@/artist", ORIGINS);
     expect(meta.title).toBe("Artist Name (@artist) — Playlisted");
     expect(meta.description).toBe("Indie producer");
     expect(meta.image).toBe("https://playlisted.com/uploads/images/avatar.jpg");
@@ -135,7 +136,7 @@ describe("resolveShareMeta", () => {
       updatedAt: new Date("2026-01-01T00:00:00.000Z"),
     } as never);
 
-    const meta = await resolveShareMeta("/@/artist", ORIGIN);
+    const meta = await resolveShareMeta("/@/artist", ORIGINS);
     expect(meta.image).toBe("https://playlisted.com/og/playlisted-artist-default.jpg");
     expect(meta.description).toContain("Listen to Artist Name");
   });
@@ -160,7 +161,7 @@ describe("resolveShareMeta", () => {
       },
     } as never);
 
-    const meta = await resolveShareMeta("/@/artist/best-songs", ORIGIN);
+    const meta = await resolveShareMeta("/@/artist/best-songs", ORIGINS);
     expect(meta.title).toBe("Best Songs by Artist Name — Playlisted");
     expect(meta.description).toBe("A great mix");
     expect(meta.image).toBe("https://playlisted.com/uploads/images/cover.jpg");
@@ -190,16 +191,34 @@ describe("resolveShareMeta", () => {
       },
     } as never);
 
-    const meta = await resolveShareMeta("/songs/r1", ORIGIN);
+    const meta = await resolveShareMeta("/songs/r1", ORIGINS);
     expect(meta.title).toBe("Midnight Drive by Artist Name — Playlisted");
     expect(meta.image).toBe("https://playlisted.com/uploads/images/song.jpg");
     expect(meta.type).toBe("music.song");
   });
 
   it("returns safe default for unknown routes", async () => {
-    const meta = await resolveShareMeta("/unknown-page", ORIGIN);
+    const meta = await resolveShareMeta("/unknown-page", ORIGINS);
     expect(meta.title).toBe("Playlisted");
     expect(meta.url).toBe("https://playlisted.com/unknown-page");
+  });
+
+  it("uses asset origin for images when canonical origin differs", async () => {
+    const previous = process.env.PUBLIC_SITE_URL;
+    process.env.PUBLIC_SITE_URL = "https://playlisted.com";
+
+    try {
+      const meta = await resolveShareMeta("/", {
+        assetOrigin: "https://playlisted.up.railway.app",
+        canonicalOrigin: "https://playlisted.com",
+      });
+
+      expect(meta.url).toBe("https://playlisted.com/");
+      expect(meta.image).toBe("https://playlisted.up.railway.app/og/playlisted-default.jpg");
+    } finally {
+      if (previous === undefined) delete process.env.PUBLIC_SITE_URL;
+      else process.env.PUBLIC_SITE_URL = previous;
+    }
   });
 });
 

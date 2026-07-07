@@ -7,7 +7,7 @@ import {
 import { canViewerAccessUserProfile } from "../lib/publicUserFilter.js";
 import { resolveRecordingArtworkUrl } from "../lib/mediaUrls.js";
 import { slugify } from "../utils/slug.js";
-import { SITE_NAME } from "./constants.js";
+import { PUBLIC_ORIGIN, SITE_NAME } from "./constants.js";
 import { defaultShareImage, pickShareImage } from "./shareImages.js";
 import {
   buildShareMeta,
@@ -15,6 +15,7 @@ import {
   homeShareMeta,
   staticPageShareMetaByPath,
 } from "./shareMetaData.js";
+import type { ShareOrigins } from "./shareRequest.js";
 import type { ShareMeta } from "./types.js";
 
 const ANONYMOUS_VIEWER = { userId: null as string | null, role: null as string | null };
@@ -35,7 +36,10 @@ function songPath(recordingId: string): string {
   return `/songs/${encodeURIComponent(recordingId)}`;
 }
 
-export async function resolveArtistShareMeta(usernameInput: string, origin: string): Promise<ShareMeta> {
+export async function resolveArtistShareMeta(
+  usernameInput: string,
+  origins: ShareOrigins,
+): Promise<ShareMeta> {
   const username = slugify(decodeURIComponent(usernameInput));
   const user = await prisma.user.findUnique({
     where: { username },
@@ -52,7 +56,7 @@ export async function resolveArtistShareMeta(usernameInput: string, origin: stri
   });
 
   if (!user || !canViewerAccessUserProfile(user, ANONYMOUS_VIEWER)) {
-    return defaultShareMeta(profilePath(username), origin);
+    return defaultShareMeta(profilePath(username), origins);
   }
 
   const title = `${user.displayName} (@${user.username}) — ${SITE_NAME}`;
@@ -60,19 +64,20 @@ export async function resolveArtistShareMeta(usernameInput: string, origin: stri
     user.bio?.trim()
     || `Listen to ${user.displayName}'s playlists, songs, and artist profile on Playlisted.`;
   const image = pickShareImage(
-    origin,
+    origins.assetOrigin,
     user.avatarUrl,
     user.heroImageUrl,
-    defaultShareImage(origin, "artist"),
+    defaultShareImage(origins.assetOrigin, "artist"),
   );
   const canonicalPath = profilePath(user.username);
+  const canonicalUrl = `${origins.canonicalOrigin}${canonicalPath}`;
 
   return buildShareMeta({
     title,
     description,
     image,
     canonicalPath,
-    origin,
+    canonicalOrigin: origins.canonicalOrigin,
     type: "profile",
     imageAlt: `${user.displayName} on Playlisted`,
     modifiedTime: user.updatedAt.toISOString(),
@@ -81,7 +86,7 @@ export async function resolveArtistShareMeta(usernameInput: string, origin: stri
       "@type": "MusicGroup",
       name: user.displayName,
       alternateName: `@${user.username}`,
-      url: `${origin}${canonicalPath}`,
+      url: canonicalUrl,
       image,
       description,
     },
@@ -90,7 +95,7 @@ export async function resolveArtistShareMeta(usernameInput: string, origin: stri
 
 async function resolvePlaylistRecord(
   lookup: { ownerId: string; slug: string } | { id: string },
-  origin: string,
+  origins: ShareOrigins,
   canonicalPath: string,
 ): Promise<ShareMeta | null> {
   const playlist = "id" in lookup
@@ -131,18 +136,19 @@ async function resolvePlaylistRecord(
     playlist.description?.trim()
     || `Listen to ${playlist.title}, a playlist by ${ownerName} on Playlisted.`;
   const image = pickShareImage(
-    origin,
+    origins.assetOrigin,
     playlist.coverArtUrl,
     playlist.owner.avatarUrl,
-    defaultShareImage(origin, "playlist"),
+    defaultShareImage(origins.assetOrigin, "playlist"),
   );
+  const canonicalUrl = `${origins.canonicalOrigin}${canonicalPath}`;
 
   return buildShareMeta({
     title,
     description,
     image,
     canonicalPath,
-    origin,
+    canonicalOrigin: origins.canonicalOrigin,
     type: "music.playlist",
     imageAlt: `${playlist.title} by ${ownerName}`,
     authorName: ownerName,
@@ -153,7 +159,7 @@ async function resolvePlaylistRecord(
       "@type": "MusicPlaylist",
       name: playlist.title,
       description,
-      url: `${origin}${canonicalPath}`,
+      url: canonicalUrl,
       image,
       creator: {
         "@type": "Person",
@@ -166,7 +172,7 @@ async function resolvePlaylistRecord(
 export async function resolvePlaylistShareMeta(
   usernameInput: string,
   slugInput: string,
-  origin: string,
+  origins: ShareOrigins,
 ): Promise<ShareMeta> {
   const username = slugify(decodeURIComponent(usernameInput));
   const slug = slugify(decodeURIComponent(slugInput));
@@ -177,30 +183,36 @@ export async function resolvePlaylistShareMeta(
   });
 
   if (!user) {
-    return defaultShareMeta(playlistPath(username, slug), origin);
+    return defaultShareMeta(playlistPath(username, slug), origins);
   }
 
   const meta = await resolvePlaylistRecord(
     { ownerId: user.id, slug },
-    origin,
+    origins,
     playlistPath(username, slug),
   );
 
-  return meta ?? defaultShareMeta(playlistPath(username, slug), origin);
+  return meta ?? defaultShareMeta(playlistPath(username, slug), origins);
 }
 
-export async function resolvePlaylistIdShareMeta(playlistId: string, origin: string): Promise<ShareMeta> {
+export async function resolvePlaylistIdShareMeta(
+  playlistId: string,
+  origins: ShareOrigins,
+): Promise<ShareMeta> {
   const meta = await resolvePlaylistRecord(
     { id: playlistId },
-    origin,
+    origins,
     playlistIdPath(playlistId),
   );
 
   if (meta) return meta;
-  return defaultShareMeta(playlistIdPath(playlistId), origin);
+  return defaultShareMeta(playlistIdPath(playlistId), origins);
 }
 
-export async function resolveSongShareMeta(recordingId: string, origin: string): Promise<ShareMeta> {
+export async function resolveSongShareMeta(
+  recordingId: string,
+  origins: ShareOrigins,
+): Promise<ShareMeta> {
   const recording = await prisma.recording.findUnique({
     where: { id: recordingId },
     include: {
@@ -228,7 +240,7 @@ export async function resolveSongShareMeta(recordingId: string, origin: string):
     || !canViewerAccessRecording(recording, ANONYMOUS_VIEWER, recording.uploaderId)
     || !isRecordingLinkAccessible(recording)
   ) {
-    return defaultShareMeta(songPath(recordingId), origin);
+    return defaultShareMeta(songPath(recordingId), origins);
   }
 
   const artistName = recording.uploader.displayName;
@@ -236,19 +248,20 @@ export async function resolveSongShareMeta(recordingId: string, origin: string):
   const description = `Listen to ${recording.title} by ${artistName} on Playlisted.`;
   const artworkUrl = resolveRecordingArtworkUrl(recording, recording.publishedPlaylist);
   const image = pickShareImage(
-    origin,
+    origins.assetOrigin,
     artworkUrl,
     recording.uploader.avatarUrl,
-    defaultShareImage(origin, "song"),
+    defaultShareImage(origins.assetOrigin, "song"),
   );
   const canonicalPath = songPath(recording.id);
+  const canonicalUrl = `${origins.canonicalOrigin}${canonicalPath}`;
 
   return buildShareMeta({
     title,
     description,
     image,
     canonicalPath,
-    origin,
+    canonicalOrigin: origins.canonicalOrigin,
     type: "music.song",
     imageAlt: `${recording.title} by ${artistName}`,
     authorName: artistName,
@@ -257,7 +270,7 @@ export async function resolveSongShareMeta(recordingId: string, origin: string):
       "@context": "https://schema.org",
       "@type": "MusicRecording",
       name: recording.title,
-      url: `${origin}${canonicalPath}`,
+      url: canonicalUrl,
       image,
       byArtist: {
         "@type": "MusicGroup",
@@ -267,47 +280,58 @@ export async function resolveSongShareMeta(recordingId: string, origin: string):
   });
 }
 
-export async function resolveShareMeta(pathname: string, origin: string): Promise<ShareMeta> {
+export async function resolveShareMeta(pathname: string, origins: ShareOrigins): Promise<ShareMeta> {
   const path = pathname.split("?")[0]?.split("#")[0] ?? "/";
 
   if (path === "/") {
-    return homeShareMeta(origin);
+    return homeShareMeta(origins);
   }
 
-  const staticMeta = staticPageShareMetaByPath(path, origin);
+  const staticMeta = staticPageShareMetaByPath(path, origins);
   if (staticMeta) {
     return staticMeta;
   }
 
   const artistMatch = path.match(/^\/@\/([^/]+)$/);
   if (artistMatch?.[1]) {
-    return resolveArtistShareMeta(artistMatch[1], origin);
+    return resolveArtistShareMeta(artistMatch[1], origins);
   }
 
   const playlistMatch = path.match(/^\/@\/([^/]+)\/([^/]+)$/);
   if (playlistMatch?.[1] && playlistMatch[2]) {
-    return resolvePlaylistShareMeta(playlistMatch[1], playlistMatch[2], origin);
+    return resolvePlaylistShareMeta(playlistMatch[1], playlistMatch[2], origins);
   }
 
   const playlistIdMatch = path.match(/^\/playlists\/([^/]+)$/);
   if (playlistIdMatch?.[1]) {
-    return resolvePlaylistIdShareMeta(playlistIdMatch[1], origin);
+    return resolvePlaylistIdShareMeta(playlistIdMatch[1], origins);
   }
 
   const songMatch = path.match(/^\/songs\/([^/]+)$/);
   if (songMatch?.[1]) {
-    return resolveSongShareMeta(songMatch[1], origin);
+    return resolveSongShareMeta(songMatch[1], origins);
   }
 
-  return defaultShareMeta(path, origin);
+  return defaultShareMeta(path, origins);
 }
 
-export async function resolveShareMetaFromUrl(urlValue: string, fallbackOrigin: string): Promise<ShareMeta> {
+export async function resolveShareMetaFromUrl(
+  urlValue: string,
+  fallbackOrigins: ShareOrigins,
+): Promise<ShareMeta> {
   try {
-    const parsed = new URL(urlValue, fallbackOrigin);
-    const origin = `${parsed.protocol}//${parsed.host}`;
-    return resolveShareMeta(parsed.pathname, origin);
+    const parsed = new URL(urlValue, fallbackOrigins.assetOrigin);
+    const assetOrigin = `${parsed.protocol}//${parsed.host}`;
+    const canonicalOrigin = process.env.PUBLIC_SITE_URL ? PUBLIC_ORIGIN : assetOrigin;
+    return resolveShareMeta(parsed.pathname, { assetOrigin, canonicalOrigin });
   } catch {
-    return defaultShareMeta("/", fallbackOrigin);
+    return defaultShareMeta("/", fallbackOrigins);
   }
+}
+
+export function shareOriginsFromOrigin(origin: string): ShareOrigins {
+  return {
+    assetOrigin: origin,
+    canonicalOrigin: process.env.PUBLIC_SITE_URL ? PUBLIC_ORIGIN : origin,
+  };
 }

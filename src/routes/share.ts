@@ -1,18 +1,18 @@
 import { Router } from "express";
 
-import { getRequestOrigin } from "../share/shareRequest.js";
+import { getShareOrigins } from "../share/shareRequest.js";
 import { resolveShareMeta, resolveShareMetaFromUrl } from "../share/shareMeta.js";
 
 export const shareRouter = Router();
 
 shareRouter.get("/meta", async (req, res, next) => {
   try {
-    const origin = getRequestOrigin(req);
+    const origins = getShareOrigins(req);
     const urlValue = typeof req.query.url === "string" ? req.query.url : null;
 
     const meta = urlValue
-      ? await resolveShareMetaFromUrl(urlValue, origin)
-      : await resolveShareMeta("/", origin);
+      ? await resolveShareMetaFromUrl(urlValue, origins)
+      : await resolveShareMeta("/", origins);
 
     res.setHeader("Cache-Control", "no-store");
     return res.json(meta);
@@ -29,9 +29,9 @@ function pathnameFromShareDebugRequest(reqPath: string, prefix: "/debug" | "/pre
 
 shareRouter.get(/^\/debug(\/.*)?$/, async (req, res, next) => {
   try {
-    const origin = getRequestOrigin(req);
+    const origins = getShareOrigins(req);
     const pathname = pathnameFromShareDebugRequest(req.path, "/debug");
-    const meta = await resolveShareMeta(pathname, origin);
+    const meta = await resolveShareMeta(pathname, origins);
     res.setHeader("Cache-Control", "no-store");
     return res.json(meta);
   } catch (error) {
@@ -41,9 +41,9 @@ shareRouter.get(/^\/debug(\/.*)?$/, async (req, res, next) => {
 
 shareRouter.get(/^\/preview(\/.*)?$/, async (req, res, next) => {
   try {
-    const origin = getRequestOrigin(req);
+    const origins = getShareOrigins(req);
     const pathname = pathnameFromShareDebugRequest(req.path, "/preview");
-    const meta = await resolveShareMeta(pathname, origin);
+    const meta = await resolveShareMeta(pathname, origins);
     res.setHeader("Cache-Control", "no-store");
     return res.json({
       pathname,

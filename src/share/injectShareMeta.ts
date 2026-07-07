@@ -19,6 +19,12 @@ export function safeJsonLd(value: Record<string, unknown>): string {
 export function injectShareMeta(html: string, meta: ShareMeta): string {
   const jsonLd = meta.jsonLd ?? {};
   const imageAlt = meta.imageAlt ?? meta.title;
+  const secureImageTag = meta.image.startsWith("https://")
+    ? `<meta property="og:image:secure_url" content="${escapeHtml(meta.image)}" />`
+    : "";
+  const imageTypeTag = meta.image.includes(".png")
+    ? `<meta property="og:image:type" content="image/png" />`
+    : `<meta property="og:image:type" content="image/jpeg" />`;
 
   return html
     .replaceAll("__META_TITLE__", escapeHtml(meta.title))
@@ -31,5 +37,7 @@ export function injectShareMeta(html: string, meta: ShareMeta): string {
     .replaceAll("__META_TWITTER_TITLE__", escapeHtml(meta.twitterTitle))
     .replaceAll("__META_TWITTER_DESCRIPTION__", escapeHtml(meta.twitterDescription))
     .replaceAll("__META_TWITTER_IMAGE__", escapeHtml(meta.twitterImage))
+    .replaceAll("__META_OG_IMAGE_SECURE_TAG__", secureImageTag)
+    .replaceAll("__META_OG_IMAGE_TYPE_TAG__", imageTypeTag)
     .replaceAll("__META_JSON_LD__", safeJsonLd(jsonLd));
 }

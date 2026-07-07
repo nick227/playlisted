@@ -1,5 +1,6 @@
 import { DEFAULT_SHARE_DESCRIPTION, SITE_NAME } from "./constants.js";
 import { defaultShareImage } from "./shareImages.js";
+import type { ShareOrigins } from "./shareRequest.js";
 import type { ShareMeta, ShareMetaType } from "./types.js";
 
 type BuildShareMetaInput = {
@@ -7,7 +8,7 @@ type BuildShareMetaInput = {
   description: string;
   image: string;
   canonicalPath: string;
-  origin: string;
+  canonicalOrigin: string;
   type: ShareMetaType;
   imageAlt?: string;
   authorName?: string;
@@ -17,7 +18,7 @@ type BuildShareMetaInput = {
 };
 
 export function buildShareMeta(input: BuildShareMetaInput): ShareMeta {
-  const canonicalUrl = `${input.origin}${input.canonicalPath}`;
+  const canonicalUrl = `${input.canonicalOrigin}${input.canonicalPath}`;
 
   return {
     title: input.title,
@@ -39,26 +40,26 @@ export function buildShareMeta(input: BuildShareMetaInput): ShareMeta {
   };
 }
 
-export function defaultShareMeta(pathname: string, origin: string): ShareMeta {
+export function defaultShareMeta(pathname: string, origins: ShareOrigins): ShareMeta {
   return buildShareMeta({
     title: SITE_NAME,
     description: DEFAULT_SHARE_DESCRIPTION,
-    image: defaultShareImage(origin),
+    image: defaultShareImage(origins.assetOrigin),
     canonicalPath: pathname || "/",
-    origin,
+    canonicalOrigin: origins.canonicalOrigin,
     type: "website",
     imageAlt: `${SITE_NAME} — ${DEFAULT_SHARE_DESCRIPTION}`,
     jsonLd: {
       "@context": "https://schema.org",
       "@type": "WebSite",
       name: SITE_NAME,
-      url: origin,
+      url: origins.canonicalOrigin,
       description: DEFAULT_SHARE_DESCRIPTION,
     },
   });
 }
 
-export function homeShareMeta(origin: string): ShareMeta {
+export function homeShareMeta(origins: ShareOrigins): ShareMeta {
   const title = `${SITE_NAME} — Music charts and curated playlists for independent artists`;
   const description =
     "Discover independent artists, curated playlists, and music charts on Playlisted.";
@@ -66,16 +67,16 @@ export function homeShareMeta(origin: string): ShareMeta {
   return buildShareMeta({
     title,
     description,
-    image: defaultShareImage(origin),
+    image: defaultShareImage(origins.assetOrigin),
     canonicalPath: "/",
-    origin,
+    canonicalOrigin: origins.canonicalOrigin,
     type: "website",
     imageAlt: title,
     jsonLd: {
       "@context": "https://schema.org",
       "@type": "WebSite",
       name: SITE_NAME,
-      url: origin,
+      url: origins.canonicalOrigin,
       description,
     },
   });
@@ -155,35 +156,35 @@ const STATIC_PAGES: Record<
   },
 };
 
-export function staticPageShareMeta(page: StaticPageKey, origin: string): ShareMeta {
+export function staticPageShareMeta(page: StaticPageKey, origins: ShareOrigins): ShareMeta {
   const config = STATIC_PAGES[page];
   const title = `${config.title} — ${SITE_NAME}`;
 
   return buildShareMeta({
     title,
     description: config.description,
-    image: defaultShareImage(origin),
+    image: defaultShareImage(origins.assetOrigin),
     canonicalPath: config.path,
-    origin,
+    canonicalOrigin: origins.canonicalOrigin,
     type: config.type ?? "article",
     imageAlt: title,
     jsonLd: {
       "@context": "https://schema.org",
       "@type": "WebPage",
       name: config.title,
-      url: `${origin}${config.path}`,
+      url: `${origins.canonicalOrigin}${config.path}`,
       description: config.description,
       isPartOf: {
         "@type": "WebSite",
         name: SITE_NAME,
-        url: origin,
+        url: origins.canonicalOrigin,
       },
     },
   });
 }
 
-export function staticPageShareMetaByPath(pathname: string, origin: string): ShareMeta | null {
+export function staticPageShareMetaByPath(pathname: string, origins: ShareOrigins): ShareMeta | null {
   const entry = Object.entries(STATIC_PAGES).find(([, config]) => config.path === pathname);
   if (!entry) return null;
-  return staticPageShareMeta(entry[0] as StaticPageKey, origin);
+  return staticPageShareMeta(entry[0] as StaticPageKey, origins);
 }

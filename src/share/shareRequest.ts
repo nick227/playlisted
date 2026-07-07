@@ -2,17 +2,35 @@ import type express from "express";
 
 import { PUBLIC_ORIGIN } from "./constants.js";
 
-export function getRequestOrigin(req: express.Request): string {
-  if (process.env.PUBLIC_SITE_URL) {
-    return PUBLIC_ORIGIN;
-  }
+export type ShareOrigins = {
+  assetOrigin: string;
+  canonicalOrigin: string;
+};
 
+export function getRequestAssetOrigin(req: express.Request): string {
   const forwardedProto = req.get("x-forwarded-proto");
   const proto = forwardedProto ? forwardedProto.split(",")[0]?.trim() : req.protocol;
   const forwardedHost = req.get("x-forwarded-host");
   const host = forwardedHost ? forwardedHost.split(",")[0]?.trim() : req.get("host");
   if (!host) return PUBLIC_ORIGIN;
   return `${proto}://${host}`;
+}
+
+export function getCanonicalOrigin(req: express.Request): string {
+  if (process.env.PUBLIC_SITE_URL) return PUBLIC_ORIGIN;
+  return getRequestAssetOrigin(req);
+}
+
+export function getShareOrigins(req: express.Request): ShareOrigins {
+  return {
+    assetOrigin: getRequestAssetOrigin(req),
+    canonicalOrigin: getCanonicalOrigin(req),
+  };
+}
+
+/** @deprecated Use getShareOrigins().canonicalOrigin */
+export function getRequestOrigin(req: express.Request): string {
+  return getCanonicalOrigin(req);
 }
 
 export function acceptsHtml(req: express.Request): boolean {

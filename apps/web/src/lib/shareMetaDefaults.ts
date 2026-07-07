@@ -10,7 +10,7 @@ export const OG_IMAGE_PATHS = {
   song: "/og/playlisted-song-default.jpg",
 } as const;
 
-export function resolveClientOgImage(path = OG_IMAGE_PATHS.default): string {
+export function resolveClientOgImage(path: string = OG_IMAGE_PATHS.default): string {
   if (typeof window === "undefined") return path;
   if (path.startsWith("http://") || path.startsWith("https://")) return path;
   return `${window.location.origin}${path.startsWith("/") ? path : `/${path}`}`;

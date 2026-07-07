@@ -25,6 +25,11 @@ export function installWebApp(app: express.Application) {
           return;
         }
 
+        if (relativePath.startsWith("og/")) {
+          res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+          return;
+        }
+
         if (path.basename(filePath) === "index.html") {
           res.setHeader("Cache-Control", "no-cache");
         }

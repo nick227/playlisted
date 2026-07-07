@@ -5,7 +5,7 @@ import type express from "express";
 
 import { injectShareMeta } from "./injectShareMeta.js";
 import { resolveShareMeta } from "./shareMeta.js";
-import { acceptsHtml, getRequestOrigin, normalizeSharePathname } from "./shareRequest.js";
+import { acceptsHtml, getShareOrigins, normalizeSharePathname } from "./shareRequest.js";
 import { SHARE_CACHE_CONTROL } from "./constants.js";
 
 const WEB_ROOT = path.resolve(process.cwd(), "apps/web");
@@ -38,9 +38,9 @@ export function clearIndexHtmlTemplateCache(): void {
 }
 
 export async function buildShareHtml(template: string, req: express.Request): Promise<string> {
-  const origin = getRequestOrigin(req);
+  const origins = getShareOrigins(req);
   const pathname = normalizeSharePathname(req.path);
-  const meta = await resolveShareMeta(pathname, origin);
+  const meta = await resolveShareMeta(pathname, origins);
   return injectShareMeta(template, meta);
 }
 
