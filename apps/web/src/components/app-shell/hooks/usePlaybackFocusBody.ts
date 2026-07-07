@@ -4,6 +4,7 @@ import { useLocation } from "react-router-dom";
 import { isBrowseSwipeNavigation } from "@/lib/browseNavigation/types";
 
 import { getPlaybackFocusBodyFadeSuppressed } from "@/lib/playbackFocusBodyFade";
+import { bodyFadedAtTrackMsForArtistVisual } from "@/lib/playbackFocus/focusLaneSequence";
 import { isPlaybackFocusInteractiveTarget } from "@/lib/playbackFocus/interactiveTarget";
 import { usePlaybackFocusSuppressed } from "@/lib/playbackFocusSuppression";
 import type { PlaybackFocusState } from "@/lib/playbackFocus/types";
@@ -172,7 +173,7 @@ export function usePlaybackFocusBody({
       !bodyFadeDisabled
     ) {
       clearFocusTimer();
-      setBodyFadedAtTrackMs(currentTimeMsRef.current);
+      setBodyFadedAtTrackMs(bodyFadedAtTrackMsForArtistVisual(currentTimeMsRef.current));
       setMiniViewVisible(false);
       return () => {
         clearFocusTimer();
@@ -197,7 +198,7 @@ export function usePlaybackFocusBody({
       !bodyFadeDisabled
     ) {
       clearFocusTimer();
-      setBodyFadedAtTrackMs(currentTimeMsRef.current);
+      setBodyFadedAtTrackMs(bodyFadedAtTrackMsForArtistVisual(currentTimeMsRef.current));
       setMiniViewVisible(false);
       return () => {
         clearFocusTimer();

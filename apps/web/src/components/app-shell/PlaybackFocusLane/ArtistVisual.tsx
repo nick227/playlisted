@@ -52,6 +52,7 @@ export function ArtistVisual({
   const { audioRef } = useAudioPlayer();
   const { isMuted, toggleMute } = usePlaybackVolume();
   const [songTransitioning, setSongTransitioning] = useState(false);
+  const [frozenHeight, setFrozenHeight] = useState<number | null>(null);
   const lastRecordingIdRef = useRef<string | null>(null);
 
   const handleToggleMute = (e: React.MouseEvent) => {
@@ -144,11 +145,15 @@ export function ArtistVisual({
     lastRecordingIdRef.current = recordingId;
     if (previousRecordingId === recordingId) return;
 
+    if (containerRef.current && previousRecordingId) {
+      setFrozenHeight(containerRef.current.offsetHeight);
+    }
     setSongTransitioning(true);
 
     const timeout = window.setTimeout(() => {
       setSongTransitioning(false);
-    }, 900);
+      setFrozenHeight(null);
+    }, 520);
 
     return () => window.clearTimeout(timeout);
   }, [recordingId]);
@@ -230,10 +235,15 @@ export function ArtistVisual({
     <div
       ref={containerRef}
       {...{ [PLAYBACK_FOCUS_INTERACTIVE_ATTR]: "" }}
-      className={`focus-lane__artist focus-lane__interactive relative mx-auto flex w-full min-w-0 max-w-2xl flex-col gap-3 rounded-2xl border border-white/10 bg-black/40 p-4 shadow-2xl backdrop-blur-xl sm:gap-4 sm:rounded-3xl sm:p-6${
-        songTransitioning ? " is-song-transitioning" : ""
-      }`}
+      style={{ minHeight: frozenHeight ? `${frozenHeight}px` : undefined }}
+      className="focus-lane__artist focus-lane__interactive relative mx-auto flex w-full min-w-0 max-w-2xl flex-col gap-3 rounded-2xl border border-white/10 bg-black/40 p-4 shadow-2xl backdrop-blur-xl sm:gap-4 sm:rounded-3xl sm:p-6"
     >
+      {songTransitioning ? <div className="focus-lane__artist-flash" aria-hidden /> : null}
+      <div
+        className={`focus-lane__artist-content flex min-w-0 flex-col gap-3 sm:gap-4${
+          songTransitioning ? " is-song-transitioning" : ""
+        }`}
+      >
       {onMinimize ? (
         <button
           type="button"
@@ -262,30 +272,36 @@ export function ArtistVisual({
           <div className="shrink-0">{artistImage}</div>
         )}
         <div className="flex min-w-0 flex-1 flex-col gap-2 overflow-hidden pt-0.5 sm:gap-2.5">
-          {artistName ? (
-            <>
-              {links.artistHref ? (
-                <FocusLaneLink
-                  to={links.artistHref}
-                  title={`View ${artistName}`}
-                  className="focus-lane__artist-name-link truncate text-2xl font-extrabold leading-none tracking-tight text-white drop-shadow-md transition hover:text-[var(--color-brand)] sm:text-4xl"
-                >
-                  {artistName}
-                </FocusLaneLink>
-              ) : (
-                <p className="truncate text-2xl font-extrabold leading-none tracking-tight text-white drop-shadow-md sm:text-4xl">
-                  {artistName}
-                </p>
-              )}
-              {artistFacts.genres.length > 0 ? (
-                <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-                  {artistFacts.genres.map((genre) => (
-                    <FocusLaneGenreLink key={genre.slug} genre={genre} />
-                  ))}
-                </div>
-              ) : null}
-            </>
-          ) : null}
+          <div className="min-h-9 sm:min-h-10">
+            {artistName ? (
+              <>
+                {links.artistHref ? (
+                  <FocusLaneLink
+                    to={links.artistHref}
+                    title={`View ${artistName}`}
+                    className="focus-lane__artist-name-link truncate text-2xl font-extrabold leading-none tracking-tight text-white drop-shadow-md transition hover:text-[var(--color-brand)] sm:text-4xl"
+                  >
+                    {artistName}
+                  </FocusLaneLink>
+                ) : (
+                  <p className="truncate text-2xl font-extrabold leading-none tracking-tight text-white drop-shadow-md sm:text-4xl">
+                    {artistName}
+                  </p>
+                )}
+              </>
+            ) : (
+              <span className="block min-h-9 sm:min-h-10" aria-hidden />
+            )}
+          </div>
+          <div className="min-h-6">
+            {artistFacts.genres.length > 0 ? (
+              <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                {artistFacts.genres.map((genre) => (
+                  <FocusLaneGenreLink key={genre.slug} genre={genre} />
+                ))}
+              </div>
+            ) : null}
+          </div>
           {artistFacts.profileLinks.length > 0 ? (
             <nav
               aria-label={artistName ? `${artistName} social links` : "Artist social links"}
@@ -331,10 +347,11 @@ export function ArtistVisual({
         </div>
       </div>
 
-      {/* Tier 2: Currently Playing */}
-      {recording ? (
-        <div className="mt-1 flex min-w-0 items-center rounded-xl border border-white/5 bg-black/30 px-3 py-2.5 sm:mt-2 sm:px-4 sm:py-3">
-          <div className="flex min-w-0 flex-1 items-center gap-3 overflow-hidden sm:gap-4">
+      {/* Tier 2: Currently Playing — fixed height slot prevents collapse during track swap */}
+      <div className="mt-1 flex h-[3.25rem] min-w-0 items-center rounded-xl border border-white/5 bg-black/30 px-3 sm:mt-2 sm:h-14 sm:px-4">
+        {recording ? (
+          <>
+            <div className="flex min-w-0 flex-1 items-center gap-3 overflow-hidden sm:gap-4">
             {links.songHref ? (
               <FocusLaneLink
                 to={links.songHref}
@@ -391,21 +408,28 @@ export function ArtistVisual({
                 </span>
               </div>
             </div>
-          </div>
+            </div>
 
-          <div className="ml-3 flex shrink-0 items-center gap-1.5 sm:ml-4 sm:gap-2">
-            <button
-              type="button"
-              onClick={handleToggleMute}
-              onPointerDown={stopPlaybackFocusBubble}
-              className="focus-lane__reaction"
-              aria-label={isMuted ? "Unmute" : "Mute"}
-            >
-              {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
-            </button>
+            <div className="ml-3 flex shrink-0 items-center gap-1.5 sm:ml-4 sm:gap-2">
+              <button
+                type="button"
+                onClick={handleToggleMute}
+                onPointerDown={stopPlaybackFocusBubble}
+                className="focus-lane__reaction"
+                aria-label={isMuted ? "Unmute" : "Mute"}
+              >
+                {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+              </button>
+            </div>
+          </>
+        ) : (
+          <div className="flex min-w-0 flex-1 items-center gap-3 sm:gap-4" aria-hidden>
+            <div className="h-9 w-9 shrink-0 rounded-md bg-white/10 sm:h-10 sm:w-10" />
+            <div className="h-4 flex-1 rounded bg-white/5" />
           </div>
-        </div>
-      ) : null}
+        )}
+      </div>
+      </div>
     </div>
   );
 }

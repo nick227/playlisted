@@ -20,3 +20,9 @@ export function getFocusLaneElapsedMs(currentTimeMs: number, bodyFadedAtTrackMs:
 
   return elapsed;
 }
+
+/** Keep artist-visual fixture active across in-theatre track changes (skip title intro replay). */
+export function bodyFadedAtTrackMsForArtistVisual(currentTimeMs: number): number {
+  const { fallbackStart } = getFocusLaneSequenceWindows();
+  return currentTimeMs - fallbackStart;
+}
