@@ -27,6 +27,18 @@ type ArtistProfileCollectionPanelProps = {
   editHref?: string;
 };
 
+function CollectionBannerLightning() {
+  return (
+    <div className="collection-banner-lightning" aria-hidden="true">
+      <div className="collection-banner-lightning__flash" />
+      <span className="collection-banner-lightning__bolt collection-banner-lightning__bolt--1" />
+      <span className="collection-banner-lightning__bolt collection-banner-lightning__bolt--2" />
+      <span className="collection-banner-lightning__bolt collection-banner-lightning__bolt--3" />
+      <div className="collection-banner-lightning__edge" />
+    </div>
+  );
+}
+
 export function ArtistProfileCollectionPanel({ playlist, owner, editHref }: ArtistProfileCollectionPanelProps) {
   const pendingPlayRef = useRef(false);
   const { user, status } = useAuth();
@@ -50,6 +62,10 @@ export function ArtistProfileCollectionPanel({ playlist, owner, editHref }: Arti
     artistImageUrl: owner.avatarUrl,
   }));
   const totalStreams = computePlaylistStreams(recordings);
+
+  const bannerBackgroundStyle = playlist.coverArtUrl
+    ? { backgroundImage: `url(${playlist.coverArtUrl})` }
+    : { background: coverFallback(playlist.title) };
 
   useEffect(() => {
     if (!pendingPlayRef.current || recordings.length === 0) return;
@@ -138,80 +154,107 @@ export function ArtistProfileCollectionPanel({ playlist, owner, editHref }: Arti
   });
 
   return (
-    <article className="min-w-0 overflow-x-clip border-b border-white/8 py-6 last:border-b-0 rounded-lg p-4">
-      <div className="flex gap-4 flex-row items-start justify-start">
-        <button
-          type="button"
-          onClick={playAll}
-          className="group relative h-20 w-20 shrink-0 overflow-hidden rounded-md"
-        >
-          {playlist.coverArtUrl ? (
-            <img src={playlist.coverArtUrl} alt="" className="h-full w-full object-cover" />
-          ) : (
-            <div className="h-full w-full" style={{ background: coverFallback(playlist.title) }} />
-          )}
-          <span
-            className={[
-              "playback-thumb-glow rounded-md",
-              isActive ? "is-active" : "",
-              isPlaying ? "is-playing" : "",
-            ].join(" ")}
-            aria-hidden="true"
-          />
-          <PlaybackBars variant="thumb" active={isActive} playing={isPlaying} />
-          <div className="absolute inset-0 flex items-center justify-center bg-black/35 opacity-0 transition group-hover:opacity-100">
-            {isPlaying ? (
-              <Pause size={20} className="text-white" fill="currentColor" />
-            ) : (
-              <Play size={20} className="ml-0.5 text-white" fill="currentColor" />
-            )}
-          </div>
-        </button>
+    <article className="min-w-0 overflow-x-clip">
+      <div className="relative min-h-[220px] overflow-hidden rounded-xl border border-white/8 md:min-h-[260px]">
+        <div
+          className="absolute inset-0 scale-105 bg-cover bg-center transition-transform duration-700"
+          style={bannerBackgroundStyle}
+          aria-hidden="true"
+        />
+        <div className="absolute inset-0 bg-black/35" aria-hidden="true" />
+        <div
+          className="absolute inset-0 bg-gradient-to-r from-black/88 via-black/55 to-black/25"
+          aria-hidden="true"
+        />
+        <div
+          className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"
+          aria-hidden="true"
+        />
 
-        <div className="min-w-0 flex-1">
-          <div className="group/header flex items-start justify-between gap-3">
-            <h3 className="min-w-0 text-lg font-medium">
-              <Link to={href} className="break-words text-white transition hover:text-[var(--color-brand)] hover:underline">
-                {playlist.title}
-              </Link>
-            </h3>
+        <span
+          className={[
+            "collection-banner-glow",
+            isActive ? "is-active" : "",
+            isPlaying ? "is-playing" : "",
+          ].join(" ")}
+          aria-hidden="true"
+        />
+        {isPlaying ? <CollectionBannerLightning /> : null}
+
+        <div className="relative z-10 flex min-h-[220px] flex-col justify-between p-5 md:min-h-[260px] md:p-6">
+          <div className="flex items-start justify-between gap-3">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-black/30 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/75 backdrop-blur-sm">
+              {isActive ? (
+                <PlaybackBars active={isActive} playing={isPlaying} variant="row-compact" className="!mb-0" />
+              ) : null}
+              <span>{playlist.itemCount} tracks</span>
+            </div>
             {isOwner ? (
               <Link
                 to={editHref ?? studioCollectionEditPath(playlist.id)}
-                className="shrink-0 rounded-full border border-white/15 px-3 py-1 text-xs font-semibold text-white transition hover:border-[var(--color-brand)] hover:text-[var(--color-brand)]"
+                className="shrink-0 rounded-full border border-white/20 bg-black/30 px-3 py-1 text-xs font-semibold text-white backdrop-blur-sm transition hover:border-[var(--color-brand)] hover:text-[var(--color-brand)]"
               >
                 Edit
               </Link>
             ) : null}
           </div>
-          <p className="mt-1 text-sm text-[var(--color-text-muted)]">
-            {playlist.itemCount} tracks
-            {!isLoading && recordings.length > 0
-              ? ` · ${formatPlayCount(totalStreams) || "0"} streams`
-              : null}
-          </p>
 
-        <div className="flex flex-nowrap items-center gap-3">
-          <div className="flex items-center gap-1.5 text-sm text-[var(--color-text-muted)]">
-            <FavoriteHeartButton target="playlist" id={playlist.id} variant="inline" className="!opacity-100 !p-0" />
-            Like
-          </div>
-          {status === "authenticated" && !isOwner ? (
+          <div className="mt-auto flex items-end gap-4 md:gap-5">
             <button
               type="button"
-              onClick={handleFollow}
-              disabled={addCollection.isPending || isFollowing}
-              className="cursor-pointer text-sm text-[var(--color-text-muted)] transition hover:text-white disabled:opacity-50"
+              onClick={playAll}
+              aria-label={isPlaying ? `Pause ${playlist.title}` : `Play ${playlist.title}`}
+              className="group/play relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-white/25 bg-white/12 text-white shadow-[0_8px_32px_rgba(0,0,0,0.45)] backdrop-blur-md transition hover:scale-105 hover:border-white/40 hover:bg-white/20 md:h-16 md:w-16"
             >
-              {isFollowing ? "Following" : addCollection.isPending ? "Following…" : "Follow"}
+              {isPlaying ? (
+                <Pause size={22} fill="currentColor" />
+              ) : (
+                <Play size={22} className="ml-0.5" fill="currentColor" />
+              )}
             </button>
-          ) : null}
-        </div>
-          
+
+            <div className="min-w-0 flex-1 pb-0.5">
+              <h3 className="text-2xl font-semibold leading-tight tracking-tight text-white md:text-3xl">
+                <Link
+                  to={href}
+                  className="break-words transition hover:text-[var(--color-brand)] hover:underline"
+                >
+                  {playlist.title}
+                </Link>
+              </h3>
+              <p className="mt-1.5 text-sm text-white/65">
+                {!isLoading && recordings.length > 0
+                  ? `${formatPlayCount(totalStreams) || "0"} streams`
+                  : "Loading streams…"}
+              </p>
+
+              <div className="mt-3 flex flex-wrap items-center gap-3">
+                <div className="inline-flex items-center gap-1.5 rounded-full border border-white/12 bg-black/25 px-3 py-1 text-sm text-white/75 backdrop-blur-sm">
+                  <FavoriteHeartButton
+                    target="playlist"
+                    id={playlist.id}
+                    variant="inline"
+                    className="!opacity-100 !p-0"
+                  />
+                  Like
+                </div>
+                {status === "authenticated" && !isOwner ? (
+                  <button
+                    type="button"
+                    onClick={handleFollow}
+                    disabled={addCollection.isPending || isFollowing}
+                    className="rounded-full border border-white/12 bg-black/25 px-3 py-1 text-sm text-white/75 backdrop-blur-sm transition hover:border-white/25 hover:text-white disabled:opacity-50"
+                  >
+                    {isFollowing ? "Following" : addCollection.isPending ? "Following…" : "Follow"}
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="mt-4">
+      <div className="mt-4 px-1">
         {isLoading ? (
           <div className="space-y-2">
             {Array.from({ length: Math.min(playlist.itemCount, 4) }).map((_, index) => (

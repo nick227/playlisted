@@ -488,16 +488,24 @@ body {
   transform: translateY(-1px);
 }
 
-.focus-lane__artist-return {
+.focus-lane__artist-controls {
   position: absolute;
   top: 0.75rem;
   right: 0.75rem;
-  z-index: 2;
-  display: grid;
-  place-items: center;
-  width: 2rem;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.focus-lane__artist-control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
   height: 2rem;
-  border-radius: 9999px;
+  padding: 0 0.625rem;
+  border-radius: 0.5rem;
   border: 1px solid rgba(255, 255, 255, 0.15);
   background: rgba(255, 255, 255, 0.1);
   color: rgba(255, 255, 255, 0.88);
@@ -508,14 +516,14 @@ body {
     transform 160ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.focus-lane__artist-return:hover {
+.focus-lane__artist-control:hover {
   border-color: rgba(255, 255, 255, 0.3);
   background: rgba(255, 255, 255, 0.18);
   color: #fff;
 }
 
-.focus-lane__artist-return:active {
-  transform: scale(0.94);
+.focus-lane__artist-control:active {
+  transform: scale(0.96);
 }
 
 .focus-lane__mini-player {
@@ -616,11 +624,16 @@ body {
 }
 
 @media (min-width: 640px) {
-  .focus-lane__artist-return {
+  .focus-lane__artist-controls {
     top: 1rem;
     right: 1rem;
-    width: 2.25rem;
+    gap: 0.625rem;
+  }
+
+  .focus-lane__artist-control {
+    min-width: 2.25rem;
     height: 2.25rem;
+    padding: 0 0.75rem;
   }
 }
 
@@ -879,6 +892,162 @@ body {
   .playback-bars.is-playing .playback-bars__bar,
   .playback-thumb-glow.is-playing {
     animation: none;
+  }
+}
+
+/* Artist profile collection banner — lightning when playing */
+.collection-banner-lightning {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.collection-banner-lightning__flash {
+  position: absolute;
+  inset: -20%;
+  opacity: 0;
+  background:
+    radial-gradient(ellipse 55% 40% at 72% 18%, rgba(210, 190, 255, 0.55), transparent 62%),
+    radial-gradient(ellipse 35% 28% at 28% 42%, rgba(124, 77, 255, 0.35), transparent 68%);
+  mix-blend-mode: screen;
+  animation: collection-banner-flash 4.2s ease-in-out infinite;
+}
+
+.collection-banner-lightning__bolt {
+  position: absolute;
+  width: 2px;
+  height: 72px;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    rgba(255, 255, 255, 0.95) 38%,
+    rgba(180, 150, 255, 0.9) 52%,
+    transparent
+  );
+  filter: drop-shadow(0 0 8px rgba(180, 150, 255, 0.9)) drop-shadow(0 0 18px rgba(124, 77, 255, 0.65));
+  opacity: 0;
+  transform-origin: top center;
+}
+
+.collection-banner-lightning__bolt--1 {
+  top: 8%;
+  right: 18%;
+  transform: rotate(12deg) scaleY(0.85);
+  animation: collection-banner-bolt 4.2s ease-in-out infinite;
+}
+
+.collection-banner-lightning__bolt--2 {
+  top: 14%;
+  right: 24%;
+  height: 48px;
+  transform: rotate(-28deg) scaleY(0.7);
+  animation: collection-banner-bolt 4.2s ease-in-out infinite 0.08s;
+}
+
+.collection-banner-lightning__bolt--3 {
+  top: 22%;
+  left: 62%;
+  height: 56px;
+  transform: rotate(6deg);
+  animation: collection-banner-bolt 5.1s ease-in-out infinite 1.6s;
+}
+
+.collection-banner-lightning__edge {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0;
+  box-shadow:
+    inset 0 0 28px rgba(124, 77, 255, 0.22),
+    inset 0 0 60px rgba(180, 150, 255, 0.12);
+  animation: collection-banner-edge 4.2s ease-in-out infinite;
+}
+
+.collection-banner-glow {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  border-radius: inherit;
+  opacity: 0;
+  background:
+    radial-gradient(circle at 82% 72%, color-mix(in srgb, var(--color-brand) 38%, transparent), transparent 38%),
+    linear-gradient(to top, rgba(124, 77, 255, 0.18), transparent 52%);
+  mix-blend-mode: screen;
+  transition: opacity 220ms ease;
+}
+
+.collection-banner-glow.is-active {
+  opacity: 0.65;
+}
+
+.collection-banner-glow.is-playing {
+  animation: playback-thumb-breathe 1200ms ease-in-out infinite;
+}
+
+@keyframes collection-banner-flash {
+  0%,
+  82%,
+  100% {
+    opacity: 0;
+  }
+  83% {
+    opacity: 0.95;
+  }
+  84% {
+    opacity: 0.15;
+  }
+  85% {
+    opacity: 0.75;
+  }
+  86% {
+    opacity: 0;
+  }
+}
+
+@keyframes collection-banner-bolt {
+  0%,
+  82%,
+  100% {
+    opacity: 0;
+    transform: rotate(var(--bolt-rotate, 12deg)) scaleY(0.2);
+  }
+  83% {
+    opacity: 1;
+    transform: rotate(var(--bolt-rotate, 12deg)) scaleY(1);
+  }
+  86% {
+    opacity: 0;
+    transform: rotate(var(--bolt-rotate, 12deg)) scaleY(0.35);
+  }
+}
+
+@keyframes collection-banner-edge {
+  0%,
+  82%,
+  100% {
+    opacity: 0;
+  }
+  83% {
+    opacity: 1;
+  }
+  86% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .collection-banner-lightning__flash,
+  .collection-banner-lightning__bolt,
+  .collection-banner-lightning__edge,
+  .collection-banner-glow.is-playing {
+    animation: none;
+  }
+
+  .collection-banner-glow.is-playing {
+    opacity: 0.72;
   }
 }
 
