@@ -227,7 +227,9 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
               ) : null}
 
               {collections.length ? (
-                <div className="flex flex-col gap-2 mb-2 border-b border-white/[0.5] pl-4"></div>
+                <div className="flex flex-col gap-2 mt-2 border-t pt-2 border-white/[0.5] pl-4">
+                  <span className="text-sm font-bold text-white">Library</span>
+                </div>
               ) : null}
               {collections.map((playlist) => (
                 <NavLink
