@@ -95,10 +95,10 @@ export function FavoriteHeartButton({
           ? "grid shrink-0 place-items-center rounded-full p-1.5 transition"
           : "grid h-8 w-8 place-items-center rounded-full bg-black/60 backdrop-blur-sm transition hover:bg-black/75",
         isFavorited
-          ? "text-rose-500 hover:text-rose-400"
+          ? "text-red-500 hover:text-red-400 scale-110"
           : isInline
             ? inlineAlwaysVisible
-              ? "text-white/80 hover:text-rose-400"
+              ? "text-white/80 hover:text-red-400"
               : "text-white/20 hover:text-white"
             : "text-white/80 hover:text-white",
         hideUnfavoritedUntilHover
