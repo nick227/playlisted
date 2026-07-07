@@ -13,7 +13,7 @@ import {
   useLibraryPlaylists,
   useLibrarySongs,
 } from "@/hooks/useLibrary";
-import { LIBRARY_FEED_LAYOUT_CLASS, libraryRootCrumbs } from "@/lib/browsePaths";
+import { LIBRARY_FEED_LAYOUT_CLASS } from "@/lib/browsePaths";
 
 export function SpatialLibraryBrowser() {
   const artistsQuery = useLibraryArtists();
