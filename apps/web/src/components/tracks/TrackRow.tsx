@@ -5,20 +5,20 @@ import { useEffect, useRef, useState, type MouseEvent } from "react";
 import { RecordingActionMenu } from "@/components/media/RecordingActionMenu";
 import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
 import { SongVisualEditorModal } from "@/components/song-visual-editor";
-import { PlaybackBars } from "@/features/playback-indicators/PlaybackBars";
 import { fetchSongVisualAttachments } from "@/lib/visualMediaApi";
 import { SubtitleEditorModal } from "./SubtitleEditorModal";
 import { TrackEditActionMenu } from "./TrackEditActionMenu";
 import { normalizeSubtitlePosition, normalizeSubtitleStyleId } from "@/lib/subtitleStylePresets";
 import { useTrackPlayback } from "@/hooks/useTrackPlayback";
-import { formatDuration, formatPlayCount } from "@/lib/format";
-import { MediaCover } from "@/components/cards/MediaCover";
+import { formatDuration } from "@/lib/format";
 import { useAudioPlayer, type QueueTrack } from "@/providers/AudioPlayerProvider";
 import { useAuth } from "@/providers/AuthProvider";
 import { Link } from "react-router-dom";
 
 import type { GenreOption } from "@/components/studio/studioCollectionUtils";
 import { recordingGenreSlug } from "@/components/studio/studioCollectionUtils";
+import { WaveformTrackRow } from "./WaveformTrackRow";
+import { TrackRowPlayCount } from "./trackRowUi";
 
 type TrackTag = { id: string; name: string; slug: string; kind: string };
 type SubtitleSummary = QueueTrack["subtitle"];
@@ -34,7 +34,6 @@ interface TrackRowProps {
   audioUrl?: string | null;
   artworkUrl?: string | null;
   recordingHref?: string;
-  playlistHref?: string;
   playlistTitle?: string;
   tags?: TrackTag[];
   onUpdateTitle?: (title: string) => void;
@@ -68,7 +67,6 @@ export function TrackRow({
   audioUrl,
   artworkUrl,
   recordingHref,
-  playlistHref,
   playlistTitle,
   tags,
   onUpdateTitle,
@@ -124,10 +122,6 @@ export function TrackRow({
     onUpdateTags(nextSlug ? [nextSlug] : []);
   }
 
-  function isProtectedClickTarget(target: EventTarget | null) {
-    return target instanceof HTMLElement && Boolean(target.closest("button, input, select, textarea"));
-  }
-
   function isPlainLeftClick(event: MouseEvent<HTMLElement>) {
     return !event.defaultPrevented && event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey;
   }
@@ -166,205 +160,164 @@ export function TrackRow({
     onUpdateTitle(nextTitle);
   }
 
-  return (
-    <div
-      id={`track-${recordingId}`}
-      className={`group/card grid w-full ${
-        editMode && onPlay ? "grid-cols-[auto_auto_minmax(0,1fr)_auto]" : "grid-cols-[auto_minmax(0,1fr)_auto]"
-      } items-center gap-1 rounded-lg py-1.5 transition sm:gap-2 ${
-        isActive ? "bg-[var(--color-surface)]/80" : "hover:bg-[var(--color-surface-hover)]"
-      }${onPlay && !editMode ? " cursor-pointer" : ""}`}
-      role={onPlay && !editMode ? "button" : undefined}
-      tabIndex={onPlay && !editMode ? 0 : undefined}
-      aria-label={onPlay && !editMode ? `${trackIsPlaying ? "Pause" : "Play"} ${title}` : undefined}
-      onClickCapture={(e) => {
-        if (!onPlay || editMode || !isPlainLeftClick(e)) return;
-        if (isProtectedClickTarget(e.target)) return;
-        if (!(e.target instanceof HTMLElement) || !e.target.closest("a")) return;
-        e.preventDefault();
-        e.stopPropagation();
-        handlePlaybackIntent();
-      }}
-      onClick={(e) => {
-        if (!onPlay || editMode) return;
-        if (isProtectedClickTarget(e.target)) return;
-        handlePlaybackIntent();
-      }}
-      onKeyDown={(e) => {
-        if (!onPlay || editMode || e.key !== " ") return;
-        if (isProtectedClickTarget(e.target)) return;
-        e.preventDefault();
-        handlePlaybackIntent();
-      }}
-    >
-      <PlaybackBars active={isActive} playing={isPlaying} />
-      {editMode && onPlay ? (
+  const imageOverlay = editMode && onUpdateArtwork ? (
+    <>
+      {onPlay ? (
         <button
           type="button"
-          onClick={handlePlaybackIntent}
-          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md transition ${
-            isActive
-              ? "bg-transparent text-white"
-              : "text-[var(--color-text-muted)] hover:bg-white/10 hover:text-white"
+          onClick={(e) => {
+            e.stopPropagation();
+            handlePlaybackIntent();
+          }}
+          className={`absolute bottom-0.5 right-0.5 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white transition hover:bg-black/80 ${
+            isActive ? "text-[var(--color-brand)]" : ""
           }`}
           aria-label={trackIsPlaying ? "Pause track" : "Play track"}
           title={trackIsPlaying ? "Pause" : "Play"}
         >
           {trackIsPlaying ? (
-            <Pause size={15} fill="currentColor" />
+            <Pause size={12} fill="currentColor" />
           ) : (
-            <Play size={15} className="ml-px" fill="currentColor" />
+            <Play size={12} className="ml-px" fill="currentColor" />
           )}
         </button>
       ) : null}
-      <div className="flex min-w-0 items-center gap-2 text-left">
-        <div className="relative h-6 w-6 shrink-0 overflow-hidden rounded-md">
-          {editMode && onUpdateArtwork ? (
-            <>
-              <button
-                type="button"
-                onClick={() => artworkInputRef.current?.click()}
-                disabled={saving}
-                className="group/art relative block h-6 w-6 overflow-hidden rounded-md text-left disabled:opacity-60"
-                aria-label="Change track artwork"
-                title="Change track artwork"
-              >
-                <MediaCover title={title} imageUrl={artworkUrl} />
-                <span className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition group-hover/art:opacity-100">
-                  <ImagePlus size={16} className="text-white" />
-                </span>
-              </button>
-              <input
-                ref={artworkInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(event) => {
-                  const file = event.target.files?.[0];
-                  if (file) onUpdateArtwork(file);
-                  event.currentTarget.value = "";
-                }}
-              />
-            </>
-          ) : (
-            <>
-              <MediaCover title={title} imageUrl={artworkUrl} />
-              {onPlay && (
-                <span
-                  aria-hidden="true"
-                  className={`absolute inset-0 flex items-center justify-center bg-black/50 transition-opacity ${
-                    isActive || isCurrentTrack ? "opacity-100" : "opacity-0 group-hover/card:opacity-100"
-                  }`}
-                >
-                  {trackIsPlaying ? (
-                    <Pause size={14} className="text-white" fill="currentColor" />
-                  ) : (
-                    <Play size={14} className="ml-px text-white" fill="currentColor" />
-                  )}
-                </span>
-              )}
-            </>
-          )}
-        </div>
-        <div className="min-w-0 flex-1">
-          {editMode && onUpdateTitle ? (
-            <input
-              value={draftTitle}
-              onChange={(event) => {
-                setDraftTitle(event.target.value);
-                setLocalError(null);
-              }}
-              onBlur={saveTitleDraft}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  event.currentTarget.blur();
-                }
-                if (event.key === "Escape") {
-                  setDraftTitle(title);
-                  setLocalError(null);
-                  event.currentTarget.blur();
-                }
-              }}
-              disabled={saving}
-              className="w-full min-w-0 rounded border border-transparent bg-transparent px-1 py-0.5 text-sm font-medium text-white outline-none hover:border-white/10 focus:border-[var(--color-brand)] focus:bg-black/20 disabled:opacity-70"
-            />
-          ) : (
-            recordingHref ? (
-              <Link
-                to={recordingHref}
-                onClick={handleRecordingLinkClick}
-                className={`block truncate text-sm font-medium hover:underline ${
-                  isActive ? "text-[var(--color-brand)]" : "text-white"
-                }`}
-              >
-                {title}
-              </Link>
-            ) : (
-              <button type="button" onClick={handlePlaybackIntent} className="block min-w-0 text-left">
-                <p className={`truncate text-sm font-medium ${isActive ? "text-[var(--color-brand)]" : "text-white"}`}>
-                  {title}
-                </p>
-              </button>
-            )
-          )}
-          <div className="flex min-w-0 flex-nowrap items-center gap-x-1 overflow-hidden text-xs text-[var(--color-text-muted)]">
-            {creator ? <span className="truncate">{creator}</span> : null}
-            {creator && (playlistTitle || meta) ? <span aria-hidden>•</span> : null}
-            {playlistHref && playlistTitle ? (
-              <Link to={playlistHref} className="min-w-0 truncate hover:text-white hover:underline">
-                {playlistTitle}
-              </Link>
-            ) : playlistTitle ? (
-              <span className="truncate">{playlistTitle}</span>
-            ) : null}
-            {(creator || playlistTitle) && meta ? <span aria-hidden>•</span> : null}
-            {meta ? <span className="truncate">{meta}</span> : null}
-          </div>
-          {editMode && (saving || localError || error) ? (
-            <p className={`truncate text-xs ${localError || error ? "text-red-300" : "text-amber-300"}`}>
-              {localError ?? error ?? "Saving..."}
-            </p>
-          ) : null}
-        </div>
-      </div>
-      <div className="flex shrink-0 items-center gap-1.5">
-        {playCount != null && playCount > 0 && (
-          <span className="hidden text-xs text-[var(--color-text-subtle)] sm:inline">
-            {formatPlayCount(playCount)} plays
-          </span>
-        )}
-        <span className="text-xs text-[var(--color-text-muted)]">{formatDuration(durationSeconds)}</span>
-        {editMode ? (
-          <TrackEditActionMenu
-            title={title}
-            subtitle={subtitle ?? queueTrack?.subtitle}
-            visualAttachmentCount={visualAttachmentCount}
-            genreOptions={genreOptions}
-            genreSelectValue={genreSelectValue}
-            playlistGenreSlug={playlistGenreSlug}
-            genreLoading={genreLoading}
-            saving={saving}
-            canMoveUp={canMoveUp}
-            canMoveDown={canMoveDown}
-            onEditSubtitles={() => setSubtitleModalOpen(true)}
-            onEditVisuals={() => setVisualEditorOpen(true)}
-            onGenreSelect={onUpdateTags ? handleGenreSelect : undefined}
-            onMoveUp={onMoveUp}
-            onMoveDown={onMoveDown}
-            onRemove={onRemove}
-          />
-        ) : showActions ? (
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); artworkInputRef.current?.click(); }}
+        disabled={saving}
+        className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition hover:opacity-100 disabled:opacity-60"
+        aria-label="Change track artwork"
+        title="Change track artwork"
+      >
+        <ImagePlus size={16} className="text-white" />
+      </button>
+      <input
+        ref={artworkInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          if (file) onUpdateArtwork(file);
+          event.currentTarget.value = "";
+        }}
+      />
+    </>
+  ) : undefined;
+
+  const titleSlot = (
+    <>
+      {editMode && onUpdateTitle ? (
+        <input
+          value={draftTitle}
+          onChange={(event) => {
+            setDraftTitle(event.target.value);
+            setLocalError(null);
+          }}
+          onBlur={saveTitleDraft}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.currentTarget.blur();
+            }
+            if (event.key === "Escape") {
+              setDraftTitle(title);
+              setLocalError(null);
+              event.currentTarget.blur();
+            }
+          }}
+          disabled={saving}
+          className="w-full min-w-0 rounded border border-transparent bg-transparent px-1 py-0.5 text-sm font-medium text-white outline-none hover:border-white/10 focus:border-[var(--color-brand)] focus:bg-black/20 disabled:opacity-70"
+        />
+      ) : (
+        recordingHref ? (
+          <Link
+            to={recordingHref}
+            onClick={handleRecordingLinkClick}
+            className={`block truncate text-sm font-medium hover:underline ${
+              isActive ? "text-[var(--color-brand)]" : "text-white"
+            }`}
+          >
+            {title}
+          </Link>
+        ) : (
+          <p className={`truncate text-sm font-medium ${isActive ? "text-[var(--color-brand)]" : "text-white"}`}>
+            {title}
+          </p>
+        )
+      )}
+      {editMode && (saving || localError || error) ? (
+        <p className={`truncate text-xs ${localError || error ? "text-red-300" : "text-amber-300"}`}>
+          {localError ?? error ?? "Saving..."}
+        </p>
+      ) : null}
+    </>
+  );
+
+  const rightSlot = (
+    <>
+      <TrackRowPlayCount count={playCount ?? 0} />
+
+      {editMode ? (
+        <TrackEditActionMenu
+          title={title}
+          subtitle={subtitle ?? queueTrack?.subtitle}
+          visualAttachmentCount={visualAttachmentCount}
+          genreOptions={genreOptions}
+          genreSelectValue={genreSelectValue}
+          playlistGenreSlug={playlistGenreSlug}
+          genreLoading={genreLoading}
+          saving={saving}
+          canMoveUp={canMoveUp}
+          canMoveDown={canMoveDown}
+          onEditSubtitles={() => setSubtitleModalOpen(true)}
+          onEditVisuals={() => setVisualEditorOpen(true)}
+          onGenreSelect={onUpdateTags ? handleGenreSelect : undefined}
+          onMoveUp={onMoveUp}
+          onMoveDown={onMoveDown}
+          onRemove={onRemove}
+        />
+      ) : showActions ? (
+        <RecordingActionMenu
+          recordingId={recordingId}
+          title={title}
+          queueTrack={queueTrack}
+          shareUrl={shareUrl}
+        />
+      ) : null}
+    </>
+  );
+
+  const cornerSlot = showActions ? (
+    <FavoriteHeartButton target="recording" id={recordingId} variant="inline" inlineAlwaysVisible />
+  ) : null;
+
+  return (
+    <>
+      <WaveformTrackRow
+        id={recordingId}
+        audioUrl={audioUrl}
+        isActive={isActive}
+        isPlaying={trackIsPlaying}
+        onPlay={onPlay ? handlePlaybackIntent : undefined}
+        imageUrl={artworkUrl}
+        titleSlot={titleSlot}
+        subtitleSlot={
           <>
-            <FavoriteHeartButton target="recording" id={recordingId} variant="inline" inlineAlwaysVisible />
-            <RecordingActionMenu
-              recordingId={recordingId}
-              title={title}
-              queueTrack={queueTrack}
-              shareUrl={shareUrl}
-            />
+            <span className="tabular-nums">{formatDuration(durationSeconds)}</span>
+            {(creator ?? meta) ? (
+              <>
+                <span className="mx-1.5 opacity-50">·</span>
+                <span className="truncate">{creator ?? meta}</span>
+              </>
+            ) : null}
           </>
-        ) : null}
-      </div>
+        }
+        rightSlot={rightSlot}
+        cornerSlot={cornerSlot}
+        imageOverlay={imageOverlay}
+        className={editMode ? "" : (onPlay ? "cursor-pointer" : "")}
+      />
 
       {isSubtitleModalOpen && (
         <SubtitleEditorModal
@@ -397,6 +350,6 @@ export function TrackRow({
           onClose={() => setVisualEditorOpen(false)}
         />
       ) : null}
-    </div>
+    </>
   );
 }

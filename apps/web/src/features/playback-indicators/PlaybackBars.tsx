@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 
-type PlaybackBarsVariant = "row" | "thumb";
+type PlaybackBarsVariant = "row" | "row-compact" | "thumb";
 type BarStyle = CSSProperties & {
   "--bar-index": number;
   "--bar-rest-height": string;

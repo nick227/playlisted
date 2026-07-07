@@ -1,48 +1,19 @@
-import { Pause, Play } from "lucide-react";
-
-import { PlaybackBars } from "@/features/playback-indicators/PlaybackBars";
+import { ArtworkCompactBars } from "@/components/tracks/ArtworkCompactBars";
 
 interface ChartRowPlayControlsProps {
   rank: number;
   isActive: boolean;
   isPlaying: boolean;
-  onPlay: () => void;
 }
 
-export function ChartRowPlayControls({ rank, isActive, isPlaying, onPlay }: ChartRowPlayControlsProps) {
-  const playLabel = isPlaying ? "Pause" : isActive ? "Resume" : "Play";
+export function ChartRowPlayControls({ rank, isActive, isPlaying }: ChartRowPlayControlsProps) {
+  if (isActive) {
+    return <ArtworkCompactBars isActive={isActive} isPlaying={isPlaying} />;
+  }
 
   return (
-    <>
-      <button
-        type="button"
-        onClick={onPlay}
-        className="flex cursor-pointer items-center"
-        aria-label={playLabel}
-      >
-        <PlaybackBars active={isActive} playing={isPlaying} />
-      </button>
-      <button
-        type="button"
-        onClick={onPlay}
-        className="group/play flex w-8 cursor-pointer items-center justify-center"
-        aria-label={playLabel}
-      >
-        {isPlaying ? (
-          <Pause size={16} className="text-white" fill="currentColor" />
-        ) : (
-          <>
-            <span className="text-sm tabular-nums text-[var(--color-text-subtle)] group-hover/play:hidden">
-              {rank}
-            </span>
-            <Play
-              size={16}
-              className="hidden text-white group-hover/play:block"
-              fill="currentColor"
-            />
-          </>
-        )}
-      </button>
-    </>
+    <span className="pointer-events-none absolute left-1 top-0.5 text-[10px] font-semibold tabular-nums text-white/85 drop-shadow-sm">
+      {rank}
+    </span>
   );
 }

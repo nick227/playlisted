@@ -758,6 +758,14 @@ body {
   flex: 0 0 16px;
 }
 
+.playback-bars--row-compact {
+  --bar-width: 1.5px;
+  --bar-gap: 1px;
+  width: 10px;
+  height: 12px;
+  flex: 0 0 10px;
+}
+
 .playback-bars--thumb {
   --bar-width: 3px;
   --bar-gap: 3px;

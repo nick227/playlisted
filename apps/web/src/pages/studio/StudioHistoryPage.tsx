@@ -63,7 +63,7 @@ export function StudioHistoryPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl bg-[var(--color-canvas)]/80">
+    <div className="mx-auto max-w-3xl bg-[var(--color-canvas)]/80 shadow-[0_0_20px_rgba(0,0,0,0.5)] ">
       <Link
         to="/studio"
         className="mb-4 inline-flex text-sm font-semibold text-[var(--color-brand)] hover:underline"
@@ -103,7 +103,6 @@ export function StudioHistoryPage() {
                       )
                     : undefined
                 }
-                playlistHref={item.playlist?.href}
                 playlistTitle={item.playlist?.title}
                 meta={
                   item.playlist

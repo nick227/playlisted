@@ -107,7 +107,7 @@ export function RecordingActionMenu({
   return (
     <>
       <div className={`relative ${className ?? ""}`}>
-        <MediaActionMenu items={items} ariaLabel={`Actions for ${title}`} />
+        <MediaActionMenu items={items} ariaLabel={`Actions for ${title}`} alwaysVisible />
         {feedback ? (
           <span
             className="pointer-events-none absolute right-0 top-full z-40 mt-1 whitespace-nowrap rounded-md bg-black/80 px-2 py-1 text-xs text-white"

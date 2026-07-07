@@ -14,6 +14,7 @@ type MediaActionMenuProps = {
   ariaLabel?: string;
   className?: string;
   align?: "left" | "right";
+  alwaysVisible?: boolean;
 };
 
 export function MediaActionMenu({
@@ -21,6 +22,7 @@ export function MediaActionMenu({
   ariaLabel = "More actions",
   className = "",
   align = "right",
+  alwaysVisible = false,
 }: MediaActionMenuProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -70,7 +72,7 @@ export function MediaActionMenu({
           "flex h-7 w-7 items-center justify-center rounded-full",
           "bg-black/50 text-white/80 backdrop-blur-sm transition",
           "hover:bg-black/70 hover:text-white",
-          "opacity-0 group-hover/card:opacity-100 focus:opacity-100",
+          alwaysVisible ? "opacity-100" : "opacity-0 group-hover/card:opacity-100 focus:opacity-100",
           open ? "opacity-100" : "",
         ].join(" ")}
       >

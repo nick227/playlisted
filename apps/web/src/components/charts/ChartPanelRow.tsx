@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
 
 import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
-import { formatPlayCount } from "@/lib/format";
-import { coverFallback } from "@/lib/routes";
+import { WaveformTrackRow } from "@/components/tracks/WaveformTrackRow";
+import { TrackRowPlayCount, stopRowPropagation } from "@/components/tracks/trackRowUi";
 
 import { ChartRowPlayControls } from "./ChartRowPlayControls";
 import { ChartRowSubtitle, ChartRowTitle } from "./ChartRowText";
@@ -33,6 +33,7 @@ interface ChartPanelRowProps {
   actionSlot?: ReactNode;
   secondaryMeta?: string;
   variant?: "panel" | "page";
+  audioUrl?: string | null;
 }
 
 export function ChartPanelRow({
@@ -50,88 +51,58 @@ export function ChartPanelRow({
   actionSlot,
   secondaryMeta,
   variant = "panel",
+  audioUrl,
 }: ChartPanelRowProps) {
-  const rounded = imageShape === "circle" ? "rounded-full" : "rounded-md";
   const { isActive, isPlaying, onPlay } = play;
   const isPage = variant === "page";
-  const artSize = isPage ? "h-12 w-12" : "h-10 w-10";
+
+  const leftSlot = (
+    <ChartRowPlayControls rank={rank} isActive={isActive} isPlaying={isPlaying} />
+  );
+
+  const titleSlot = <ChartRowTitle title={title} href={titleHref} active={isActive} />;
+  const subtitleSlot = <ChartRowSubtitle text={subtitle} href={subtitleHref} genre={genre} />;
+
+  const rightSlot = (
+    <>
+      {secondaryMeta ? (
+        <span className="hidden shrink-0 text-xs text-[var(--color-text-subtle)] md:inline">
+          {secondaryMeta}
+        </span>
+      ) : null}
+      {actionSlot ? (
+        <div className="shrink-0" onClick={stopRowPropagation}>
+          {actionSlot}
+        </div>
+      ) : null}
+      <TrackRowPlayCount count={playCount} suffix={isPage ? " plays" : ""} />
+    </>
+  );
 
   return (
     <li>
-      <div
-        className={[
-          "flex w-full items-center gap-2 sm:gap-3",
-          isPage ? "px-4 py-3" : "px-3 py-2.5",
-          isActive ? "bg-white/10" : "hover:bg-white/[0.04]",
-        ].join(" ")}
-      >
-        <div className="flex shrink-0 items-center">
-          <ChartRowPlayControls
-            rank={rank}
-            isActive={isActive}
-            isPlaying={isPlaying}
-            onPlay={onPlay}
+      <WaveformTrackRow
+        id={favorite.id}
+        audioUrl={audioUrl}
+        isActive={isActive}
+        isPlaying={isPlaying}
+        onPlay={onPlay}
+        imageUrl={imageUrl}
+        imageShape={imageShape}
+        leftSlot={leftSlot}
+        titleSlot={titleSlot}
+        subtitleSlot={subtitleSlot}
+        rightSlot={rightSlot}
+        cornerSlot={
+          <FavoriteHeartButton
+            target={favorite.target}
+            id={favorite.id}
+            variant="inline"
+            inlineAlwaysVisible
           />
-        </div>
-
-        <button
-          type="button"
-          onClick={onPlay}
-          aria-label={isPlaying ? `Pause ${title}` : `Play ${title}`}
-          className={`${artSize} shrink-0 cursor-pointer overflow-hidden ${rounded}`}
-        >
-          {imageUrl ? (
-            <img
-              src={imageUrl}
-              alt=""
-              loading="lazy"
-              decoding="async"
-              className={`h-full w-full object-cover ${rounded}`}
-            />
-          ) : (
-            <div
-              className={`h-full w-full ${rounded}`}
-              style={{ background: coverFallback(title) }}
-              aria-hidden
-            />
-          )}
-        </button>
-
-        <div className="min-w-0 flex-1 text-left">
-          <ChartRowTitle title={title} href={titleHref} active={isActive} />
-          <ChartRowSubtitle text={subtitle} href={subtitleHref} genre={genre} />
-        </div>
-
-        {secondaryMeta ? (
-          <span className="hidden shrink-0 text-xs text-[var(--color-text-subtle)] md:inline">
-            {secondaryMeta}
-          </span>
-        ) : null}
-
-        <div className="flex shrink-0 items-center justify-end gap-1 sm:gap-2">
-          <div
-            className="flex w-8 shrink-0 justify-center"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {actionSlot}
-          </div>
-          <div className="flex items-center gap-2">
-            {playCount > 0 ? (
-              <span className="hidden text-xs tabular-nums text-[var(--color-text-subtle)] sm:inline">
-                {formatPlayCount(playCount)}
-                {isPage ? " plays" : ""}
-              </span>
-            ) : null}
-            <FavoriteHeartButton
-              target={favorite.target}
-              id={favorite.id}
-              variant="inline"
-              inlineAlwaysVisible
-              className="-mr-1.5"
-            />
-          </div>
-        </div>
-      </div>
+        }
+        className={isPage ? "px-4 py-3" : "px-3 py-2.5"}
+      />
     </li>
   );
 }

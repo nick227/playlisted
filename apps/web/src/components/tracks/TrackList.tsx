@@ -7,7 +7,7 @@ import {
   recordingShareUrlForContext,
   recordingSummaryToQueueTrack,
 } from "@/lib/queueTrack";
-import { playlistPath, playlistRecordingPath } from "@/lib/routes";
+import { playlistRecordingPath } from "@/lib/routes";
 
 import { TrackRow } from "./TrackRow";
 
@@ -64,13 +64,6 @@ export function TrackList({
     <div className="flex flex-col gap-0.5 rounded-2xl">
       {recordings.map((recording, index) => {
         const displayOwner = ownerName ?? recording.uploader?.displayName ?? playlistContext?.ownerDisplayName;
-        const playlistHref = playlistContext
-          ? playlistPath({
-              id: playlistContext.playlistId,
-              username: playlistContext.ownerUsername,
-              slug: playlistContext.slug,
-            })
-          : undefined;
         const trackContext = playlistContext
           ? {
               playlistTitle: playlistContext.playlistTitle,
@@ -107,7 +100,6 @@ export function TrackList({
                   )
                 : undefined
             }
-            playlistHref={playlistHref}
             playlistTitle={playlistContext?.playlistTitle}
             editMode={editMode}
             canMoveUp={editMode ? index > 0 : undefined}

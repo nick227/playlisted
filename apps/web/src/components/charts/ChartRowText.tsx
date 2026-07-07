@@ -42,7 +42,7 @@ export function ChartRowSubtitle({
     <Link
       to={href}
       onClick={(e) => e.stopPropagation()}
-      className="shrink-0 truncate hover:text-white"
+      className="shrink-0 truncate hover:text-white hover:underline"
     >
       {text}
     </Link>
@@ -51,11 +51,11 @@ export function ChartRowSubtitle({
   );
 
   return (
-    <div className="mt-0.5 flex min-w-0 items-center gap-0 overflow-hidden text-xs text-[var(--color-text-muted)]">
+    <>
       {subtitleEl}
-      {genre && (
+      {genre ? (
         <>
-          <span className="mx-1.5 shrink-0 text-white/20">·</span>
+          <span className="mx-1.5 shrink-0 opacity-50">·</span>
           <Link
             to={libraryGenrePath(genre.slug)}
             onClick={(e) => e.stopPropagation()}
@@ -64,7 +64,7 @@ export function ChartRowSubtitle({
             {genre.name}
           </Link>
         </>
-      )}
-    </div>
+      ) : null}
+    </>
   );
 }

@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import type { LibrarySong } from "@playlisted/client-sdk";
 
+import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
 import { RecordingActionMenu } from "@/components/media/RecordingActionMenu";
 import { useTrackPlayback } from "@/hooks/useTrackPlayback";
 import { formatDuration, formatPlayCount } from "@/lib/format";
@@ -12,6 +13,7 @@ import {
 import { recordingShareUrl } from "@/lib/shareContent";
 import type { QueueTrack } from "@/providers/AudioPlayerProvider";
 import { WaveformTrackRow } from "@/components/tracks/WaveformTrackRow";
+import { TrackRowMetaStat, TrackRowPlayCount, trackTitleClassName } from "@/components/tracks/trackRowUi";
 
 interface LibraryTrackRowProps {
   song: LibrarySong;
@@ -30,30 +32,24 @@ export function LibraryTrackRow({ song, onPlay, queueTrack }: LibraryTrackRowPro
   });
 
   const titleSlot = (
-    <Link
-      to={libraryRecordingPath(song)}
-      className={[
-        "block truncate text-sm font-medium hover:underline",
-        isActive ? "text-[var(--color-brand)]" : "text-white",
-      ].join(" ")}
-    >
+    <Link to={libraryRecordingPath(song)} className={trackTitleClassName(isActive)}>
       {song.title}
     </Link>
   );
 
   const subtitleSlot = (
     <>
-      <span className="tabular-nums text-[var(--color-text-muted)]">{formatDuration(song.durationSeconds)}</span>
-      <span className="mx-1.5 opacity-50">·</span>
+      <span className="tabular-nums">{formatDuration(song.durationSeconds)}</span>
+      <span className="opacity-50">·</span>
       <Link
         to={libraryArtistPath(song)}
-        className="hover:text-white hover:underline"
+        className="truncate hover:text-white hover:underline"
       >
         {song.uploader.displayName}
       </Link>
       {song.genres.length > 0 ? (
         <>
-          <span className="mx-1.5 text-white/20">·</span>
+          <span className="opacity-50">·</span>
           {song.genres.map((genre, index) => (
             <span key={genre.slug}>
               {index > 0 ? <span className="text-white/20">, </span> : null}
@@ -72,15 +68,8 @@ export function LibraryTrackRow({ song, onPlay, queueTrack }: LibraryTrackRowPro
 
   const rightSlot = (
     <>
-      {song.playCount > 0 ? (
-        <span className="hidden w-16 shrink-0 text-right text-xs text-[var(--color-text-subtle)] sm:inline">
-          {formatPlayCount(song.playCount)} plays
-        </span>
-      ) : null}
-      <span className="hidden w-12 shrink-0 text-right text-xs text-[var(--color-text-subtle)] md:inline mr-2">
-        {formatPlayCount(song.favoriteCount)} favs
-      </span>
-
+      <TrackRowPlayCount count={song.playCount} />
+      <TrackRowMetaStat>{formatPlayCount(song.favoriteCount)} favs</TrackRowMetaStat>
       <RecordingActionMenu
         recordingId={song.id}
         title={song.title}
@@ -102,6 +91,9 @@ export function LibraryTrackRow({ song, onPlay, queueTrack }: LibraryTrackRowPro
       titleSlot={titleSlot}
       subtitleSlot={subtitleSlot}
       rightSlot={rightSlot}
+      cornerSlot={
+        <FavoriteHeartButton target="recording" id={song.id} variant="inline" inlineAlwaysVisible />
+      }
     />
   );
 }
