@@ -13,8 +13,10 @@ type MinimizedSongPlayerProps = {
   visible: boolean;
   showExpand: boolean;
   onExpand?: () => void;
+  expandLabel?: string;
   withPlayer: boolean;
   dockedToSitePlayer?: boolean;
+  snapReveal?: boolean;
 };
 
 export function MinimizedSongPlayer({
@@ -24,8 +26,10 @@ export function MinimizedSongPlayer({
   visible,
   showExpand,
   onExpand,
+  expandLabel = "Expand artist card",
   withPlayer,
   dockedToSitePlayer = false,
+  snapReveal = false,
 }: MinimizedSongPlayerProps) {
   const links = resolveArtistVisualLinks({
     recording,
@@ -40,6 +44,7 @@ export function MinimizedSongPlayer({
         visible ? "is-visible" : "",
         withPlayer ? "" : "focus-lane__mini-player--no-player",
         dockedToSitePlayer ? "focus-lane__mini-player--site-player-collapsed" : "",
+        snapReveal ? "is-play-focus-revealing" : "",
       ]
         .filter(Boolean)
         .join(" ")}
@@ -117,8 +122,8 @@ export function MinimizedSongPlayer({
           <button
             type="button"
             className="focus-lane__mini-player-expand"
-            title="Expand artist card"
-            aria-label="Expand artist card"
+            title={expandLabel}
+            aria-label={expandLabel}
             onPointerDown={stopPlaybackFocusBubble}
             onClick={(event) => {
               stopPlaybackFocusBubble(event);

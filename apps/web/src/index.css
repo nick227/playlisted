@@ -555,6 +555,10 @@ body {
   --focus-lane-mini-player-y: var(--spacing-player-safe-mobile);
 }
 
+.focus-lane__mini-player.is-play-focus-revealing {
+  transition: none;
+}
+
 .focus-lane__mini-player-card {
   display: flex;
   max-width: min(16rem, calc(100vw - 2rem));

@@ -28,6 +28,7 @@ type PlaybackFocusLaneProps = {
   focusState: PlaybackFocusState;
   withPlayer?: boolean;
   onSitePlayerCollapseChange?: (collapsed: boolean) => void;
+  onMiniPlayerActiveChange?: (active: boolean) => void;
   onReturn?: () => void;
 };
 
@@ -40,6 +41,7 @@ export function PlaybackFocusLane({
   focusState,
   withPlayer = false,
   onSitePlayerCollapseChange,
+  onMiniPlayerActiveChange,
   onReturn,
 }: PlaybackFocusLaneProps) {
   const { accessToken } = useAuth();
@@ -172,8 +174,17 @@ export function PlaybackFocusLane({
   const handleExpandMiniPlayer = () => {
     setSiteMiniPlayerDocked(false);
     onSitePlayerCollapseChange?.(false);
-    expandArtistVisual();
+    if (isArtistVisualFixture && artistVisualMinimized) {
+      expandArtistVisual();
+      return;
+    }
+    onReturn?.();
   };
+
+  useEffect(() => {
+    onMiniPlayerActiveChange?.(showMiniPlayer);
+    return () => onMiniPlayerActiveChange?.(false);
+  }, [onMiniPlayerActiveChange, showMiniPlayer]);
 
   if (!recording?.id || !focusState.hasBodyFaded || !isPlaying) {
     return null;
@@ -208,8 +219,9 @@ export function PlaybackFocusLane({
         artistName={artist?.artistName ?? recording.ownerName ?? undefined}
         artistUsername={recording.ownerUsername}
         visible={showMiniPlayer}
-        showExpand={Boolean(isArtistVisualFixture && artistVisualMinimized)}
+        showExpand={showMiniPlayer}
         onExpand={handleExpandMiniPlayer}
+        expandLabel={isArtistVisualFixture && artistVisualMinimized ? "Expand artist card" : "Return to page"}
         withPlayer={withPlayer}
         dockedToSitePlayer={siteMiniPlayerDocked}
       />
