@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { isSpaRoute } from "./spaRoutes.js";
+import { buildShareHtml, readIndexHtmlTemplate, sendShareHtml, shouldInjectShareHtml } from "../share/shareHtml.js";
 
 const WEB_DIST = path.resolve(process.cwd(), "apps/web/dist");
 const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
@@ -31,14 +32,20 @@ export function installWebApp(app: express.Application) {
     }),
   );
 
-  app.get("*", (req, res, next) => {
-    if (req.method !== "GET" && req.method !== "HEAD") {
+  app.get("*", async (req, res, next) => {
+    if (!shouldInjectShareHtml(req)) {
       return next();
     }
     if (!isSpaRoute(req.path)) {
       return next();
     }
-    res.setHeader("Cache-Control", "no-cache");
-    res.sendFile(path.join(WEB_DIST, "index.html"));
+
+    try {
+      const template = readIndexHtmlTemplate();
+      const html = await buildShareHtml(template, req);
+      sendShareHtml(res, html);
+    } catch (error) {
+      next(error);
+    }
   });
 }

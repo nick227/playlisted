@@ -43,6 +43,7 @@ import { ingestUploadsRouter } from "./routes/ingest/uploads.js";
 import { ingestPlaylistsRouter } from "./routes/ingest/playlists.js";
 import { ingestRecordingsRouter } from "./routes/ingest/recordings.js";
 import { usersRouter } from "./routes/users.js";
+import { shareRouter } from "./routes/share.js";
 
 const openApiPath = path.resolve(process.cwd(), "openapi/openapi.yaml");
 const openApiDocument = YAML.parse(fs.readFileSync(openApiPath, "utf8"));
@@ -112,6 +113,7 @@ export function createApp(options: CreateAppOptions = {}) {
   app.use(publicApiTiming);
 
   app.use("/api/v1/health", healthRouter);
+  app.use("/api/share", shareRouter);
   app.use("/api/v1/auth", authRouter);
   app.use("/api/v1/me/analytics", analyticsRouter);
   app.use("/api/v1/me", meRouter);

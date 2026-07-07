@@ -1,6 +1,11 @@
 import { useEffect } from "react";
 
-const SITE = "Playlisted";
+import {
+  DEFAULT_OG_IMAGE,
+  DEFAULT_SHARE_DESCRIPTION,
+  resolveClientOgImage,
+  SITE_NAME,
+} from "@/lib/shareMetaDefaults";
 
 interface PageMetaOptions {
   title: string;
@@ -21,16 +26,28 @@ function upsertMeta(key: string, value: string, isProp: boolean) {
 
 export function usePageMeta({ title, description, image }: PageMetaOptions) {
   useEffect(() => {
-    const full = `${title} — ${SITE}`;
+    const full = `${title} — ${SITE_NAME}`;
+    const resolvedDescription = description ?? DEFAULT_SHARE_DESCRIPTION;
+    const resolvedImage = resolveClientOgImage(image || DEFAULT_OG_IMAGE);
+    const pageUrl = window.location.href;
+
     document.title = full;
     upsertMeta("og:title", full, true);
-    upsertMeta("og:site_name", SITE, true);
-    if (description) {
-      upsertMeta("description", description, false);
-      upsertMeta("og:description", description, true);
+    upsertMeta("og:site_name", SITE_NAME, true);
+    upsertMeta("og:description", resolvedDescription, true);
+    upsertMeta("og:url", pageUrl, true);
+    upsertMeta("og:image", resolvedImage, true);
+    upsertMeta("description", resolvedDescription, false);
+    upsertMeta("twitter:title", full, false);
+    upsertMeta("twitter:description", resolvedDescription, false);
+    upsertMeta("twitter:image", resolvedImage, false);
+
+    let canonical = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+    if (!canonical) {
+      canonical = document.createElement("link");
+      canonical.setAttribute("rel", "canonical");
+      document.head.appendChild(canonical);
     }
-    if (image) {
-      upsertMeta("og:image", image, true);
-    }
+    canonical.setAttribute("href", pageUrl);
   }, [title, description, image]);
 }
