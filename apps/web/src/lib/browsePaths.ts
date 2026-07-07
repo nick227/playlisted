@@ -9,7 +9,7 @@ export const PLAYLISTS_PATH = "/playlists";
 export const FAVORITES_PATH = "/favorites";
 
 /** Shared max-width for browse breadcrumbs and collection content. */
-export const BROWSE_LAYOUT_CLASS = "mx-auto w-full min-w-0 max-w-3xl overflow-x-clip bg-[var(--color-canvas)]/80 p-2";
+export const BROWSE_LAYOUT_CLASS = "mx-auto w-full min-w-0 max-w-3xl shrink-0 overflow-x-clip bg-[var(--color-canvas)]/80 p-2 shadow-[0_0_20px_rgba(0,0,0,0.5)]";
 
 /** Artist profile breadcrumbs align with the wider profile layout below. */
 export const ARTIST_PROFILE_LAYOUT_CLASS = "mx-auto max-w-7xl";
