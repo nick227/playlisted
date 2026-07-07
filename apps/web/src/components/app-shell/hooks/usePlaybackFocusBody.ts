@@ -77,6 +77,8 @@ export function usePlaybackFocusBody({
   const previousFocusTrackKeyRef = useRef(focusTrackKey);
   const previousLocationKeyRef = useRef(`${pathname}\n${search}`);
   const bodyFocusHiddenRef = useRef(false);
+  const bodyFadeDisabledRef = useRef(false);
+  const playbackFocusSuppressedRef = useRef(playbackFocusSuppressed);
 
   const [bodyFocusHidden, setBodyFocusHidden] = useState(false);
   const [bodyFadedAtTrackMs, setBodyFadedAtTrackMs] = useState<number | null>(null);
@@ -96,6 +98,14 @@ export function usePlaybackFocusBody({
   useEffect(() => {
     bodyFocusHiddenRef.current = bodyFocusHidden;
   }, [bodyFocusHidden]);
+
+  useEffect(() => {
+    bodyFadeDisabledRef.current = bodyFadeDisabled;
+  }, [bodyFadeDisabled]);
+
+  useEffect(() => {
+    playbackFocusSuppressedRef.current = playbackFocusSuppressed;
+  }, [playbackFocusSuppressed]);
 
   const clearFocusTimer = useCallback(() => {
     if (bodyFocusTimerRef.current !== null) {
@@ -141,9 +151,15 @@ export function usePlaybackFocusBody({
 
   const armPlayFocus = useCallback((reason: PlayFocusArmReason = "initial") => {
     clearFocusTimer();
-    setBodyFocusHidden(false);
-    setBodyFadedAtTrackMs(null);
-    setMiniViewVisible(false);
+    if (
+      !isDisplaySettingsBodyRevealSuppressed() ||
+      !bodyFocusHiddenRef.current ||
+      bodyFadeDisabled
+    ) {
+      setBodyFocusHidden(false);
+      setBodyFadedAtTrackMs(null);
+      setMiniViewVisible(false);
+    }
     if (!playFocusActive || playbackFocusSuppressed || bodyFadeDisabled) return;
 
     const bodyDelayMs =
@@ -178,6 +194,7 @@ export function usePlaybackFocusBody({
     if (!playbackFocusSuppressed && !bodyFadeDisabled) return;
 
     const revealBody = () => {
+      if (!playbackFocusSuppressedRef.current && !bodyFadeDisabledRef.current) return;
       clearFocusTimer();
       setBodyFocusHidden(false);
       setBodyFadedAtTrackMs(null);
@@ -311,6 +328,7 @@ export function usePlaybackFocusBody({
   useEffect(() => {
     const onClickCapture = (event: MouseEvent) => {
       if (performance.now() > revealClickSuppressUntilRef.current) return;
+      if (isPlaybackFocusInteractiveTarget(event.target)) return;
       event.preventDefault();
       event.stopPropagation();
     };

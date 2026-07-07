@@ -159,6 +159,7 @@ export function useTheatreTrackGestures({
 
     const onClickCapture = (event: MouseEvent) => {
       if (performance.now() > clickSuppressionUntilRef.current) return;
+      if (isPlaybackFocusInteractiveTarget(event.target)) return;
       event.preventDefault();
       event.stopPropagation();
     };
