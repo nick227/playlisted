@@ -63,6 +63,9 @@ export const playbackFocusTiming = {
   },
 
   snapRevealMs: 120,
+
+  /** Block ghost clicks on links after tap-to-reveal from theatre mode. */
+  revealClickSuppressMs: 450,
 } as const;
 
 function ms(value: number) {

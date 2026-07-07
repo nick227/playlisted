@@ -1101,10 +1101,14 @@ body {
   transition: none;
 }
 
+.play-focus-content.is-play-focus-input-guarded {
+  pointer-events: none;
+}
+
 .play-focus-theatre-hit-area {
   position: fixed;
   inset: var(--spacing-topbar) 0 var(--spacing-player-safe-mobile) 0;
-  z-index: 30;
+  z-index: 45;
   cursor: default;
   border: 0;
   padding: 0;

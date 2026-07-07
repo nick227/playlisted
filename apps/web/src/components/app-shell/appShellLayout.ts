@@ -1,6 +1,7 @@
 type MainContentLayoutOptions = {
   bodyFocusMode: boolean;
   snapReveal: boolean;
+  contentInputGuarded: boolean;
   isChatPage: boolean;
   shellHasPlayer: boolean;
 };
@@ -17,6 +18,7 @@ export function isRadioShellActive(
 export function buildMainContentClassName({
   bodyFocusMode,
   snapReveal,
+  contentInputGuarded,
   isChatPage,
   shellHasPlayer,
 }: MainContentLayoutOptions): string {
@@ -24,6 +26,7 @@ export function buildMainContentClassName({
     "player-shell-transition play-focus-content flex-1 min-h-0 min-w-0 overflow-x-clip px-4 md:px-8 flex flex-col",
     bodyFocusMode ? "is-play-focus-hidden" : "",
     snapReveal ? "is-play-focus-revealing" : "",
+    contentInputGuarded ? "is-play-focus-input-guarded" : "",
   ]
     .filter(Boolean)
     .join(" ");

@@ -92,6 +92,7 @@ export function AppShell({ children }: AppShellProps) {
   const mainClassName = buildMainContentClassName({
     bodyFocusMode: playbackFocus.bodyFocusMode,
     snapReveal: playbackFocus.snapReveal,
+    contentInputGuarded: playbackFocus.contentInputGuarded,
     isChatPage,
     shellHasPlayer: reservePlayerSpace,
   });

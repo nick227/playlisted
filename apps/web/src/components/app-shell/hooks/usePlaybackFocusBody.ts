@@ -67,6 +67,8 @@ export function usePlaybackFocusBody({
   const miniViewTimerRef = useRef<number | null>(null);
   const snapRevealTimerRef = useRef<number | null>(null);
   const revealInteractionTimerRef = useRef<number | null>(null);
+  const revealClickSuppressTimerRef = useRef<number | null>(null);
+  const revealClickSuppressUntilRef = useRef(0);
   const previousFocusTrackKeyRef = useRef(focusTrackKey);
   const previousLocationKeyRef = useRef(`${pathname}\n${search}`);
   const bodyFocusHiddenRef = useRef(false);
@@ -76,6 +78,7 @@ export function usePlaybackFocusBody({
   const [miniViewVisible, setMiniViewVisible] = useState(false);
   const [snapReveal, setSnapReveal] = useState(false);
   const [revealInteractionActive, setRevealInteractionActive] = useState(false);
+  const [contentInputGuarded, setContentInputGuarded] = useState(false);
 
   const fadeConfig = getPlaybackFocusBodyFadeSuppressed({
     pathname,
@@ -111,6 +114,25 @@ export function usePlaybackFocusBody({
     window.clearTimeout(revealInteractionTimerRef.current);
     revealInteractionTimerRef.current = null;
   }, []);
+
+  const clearRevealClickSuppressTimer = useCallback(() => {
+    if (revealClickSuppressTimerRef.current !== null) {
+      window.clearTimeout(revealClickSuppressTimerRef.current);
+      revealClickSuppressTimerRef.current = null;
+    }
+    revealClickSuppressUntilRef.current = 0;
+    setContentInputGuarded(false);
+  }, []);
+
+  const armRevealClickSuppression = useCallback(() => {
+    clearRevealClickSuppressTimer();
+    revealClickSuppressUntilRef.current = performance.now() + playbackFocusTiming.revealClickSuppressMs;
+    setContentInputGuarded(true);
+    revealClickSuppressTimerRef.current = window.setTimeout(() => {
+      setContentInputGuarded(false);
+      revealClickSuppressTimerRef.current = null;
+    }, playbackFocusTiming.revealClickSuppressMs);
+  }, [clearRevealClickSuppressTimer]);
 
   const armPlayFocus = useCallback((reason: PlayFocusArmReason = "initial") => {
     clearFocusTimer();
@@ -153,7 +175,8 @@ export function usePlaybackFocusBody({
     setBodyFocusHidden(false);
     setBodyFadedAtTrackMs(null);
     setMiniViewVisible(false);
-  }, [bodyFadeDisabled, clearFocusTimer, playbackFocusSuppressed]);
+    clearRevealClickSuppressTimer();
+  }, [bodyFadeDisabled, clearFocusTimer, clearRevealClickSuppressTimer, playbackFocusSuppressed]);
 
   // Re-arm on track/route change; clear immediately when playback stops.
   useEffect(() => {
@@ -179,6 +202,7 @@ export function usePlaybackFocusBody({
         clearFocusTimer();
         clearSnapRevealTimer();
         clearRevealInteractionTimer();
+        clearRevealClickSuppressTimer();
       };
     }
 
@@ -187,6 +211,7 @@ export function usePlaybackFocusBody({
       setBodyFocusHidden(false);
       setBodyFadedAtTrackMs(null);
       setMiniViewVisible(false);
+      clearRevealClickSuppressTimer();
       return;
     }
 
@@ -204,6 +229,7 @@ export function usePlaybackFocusBody({
         clearFocusTimer();
         clearSnapRevealTimer();
         clearRevealInteractionTimer();
+        clearRevealClickSuppressTimer();
       };
     }
 
@@ -212,11 +238,13 @@ export function usePlaybackFocusBody({
       clearFocusTimer();
       clearSnapRevealTimer();
       clearRevealInteractionTimer();
+      clearRevealClickSuppressTimer();
     };
   }, [
     armPlayFocus,
     bodyFadeDisabled,
     clearFocusTimer,
+    clearRevealClickSuppressTimer,
     clearRevealInteractionTimer,
     clearSnapRevealTimer,
     currentTimeMsRef,
@@ -254,6 +282,7 @@ export function usePlaybackFocusBody({
 
   const revealPage = useCallback(() => {
     if (!bodyFocusHidden && !miniViewVisible) return;
+    armRevealClickSuppression();
     clearSnapRevealTimer();
     setSnapReveal(true);
     armPlayFocus("activity");
@@ -261,7 +290,20 @@ export function usePlaybackFocusBody({
       setSnapReveal(false);
       snapRevealTimerRef.current = null;
     }, playbackFocusTiming.snapRevealMs);
-  }, [armPlayFocus, bodyFocusHidden, clearSnapRevealTimer, miniViewVisible]);
+  }, [armPlayFocus, armRevealClickSuppression, bodyFocusHidden, clearSnapRevealTimer, miniViewVisible]);
+
+  useEffect(() => {
+    const onClickCapture = (event: MouseEvent) => {
+      if (performance.now() > revealClickSuppressUntilRef.current) return;
+      event.preventDefault();
+      event.stopPropagation();
+    };
+
+    document.addEventListener("click", onClickCapture, { capture: true });
+    return () => {
+      document.removeEventListener("click", onClickCapture, { capture: true });
+    };
+  }, []);
 
   const consumeRevealEvent = useCallback((event: SyntheticEvent) => {
     event.preventDefault();
@@ -278,14 +320,27 @@ export function usePlaybackFocusBody({
     }, 250);
   }, [clearRevealInteractionTimer, consumeRevealEvent]);
 
+  const cancelRevealInteraction = useCallback((event: SyntheticEvent) => {
+    if (isPlaybackFocusInteractiveTarget(event.target)) return;
+    consumeRevealEvent(event);
+    clearRevealInteractionTimer();
+    setRevealInteractionActive(false);
+  }, [clearRevealInteractionTimer, consumeRevealEvent]);
+
   const handleRevealPointerDown = useCallback((event: PointerEvent<HTMLElement>) => {
     if (isPlaybackFocusInteractiveTarget(event.target)) return;
     consumeRevealEvent(event);
     clearRevealInteractionTimer();
     setRevealInteractionActive(true);
     event.currentTarget.setPointerCapture(event.pointerId);
+  }, [clearRevealInteractionTimer, consumeRevealEvent]);
+
+  const handleRevealPointerUp = useCallback((event: PointerEvent<HTMLElement> | SyntheticEvent) => {
+    if (isPlaybackFocusInteractiveTarget(event.target)) return;
+    consumeRevealEvent(event);
     revealPage();
-  }, [clearRevealInteractionTimer, consumeRevealEvent, revealPage]);
+    finishRevealInteraction(event);
+  }, [consumeRevealEvent, finishRevealInteraction, revealPage]);
 
   const bodyFocusMode =
     playFocusActive && bodyFocusHidden && !playbackFocusSuppressed && !bodyFadeDisabled;
@@ -321,13 +376,14 @@ export function usePlaybackFocusBody({
     miniViewMode,
     revealShieldVisible,
     snapReveal,
+    contentInputGuarded,
     focusState,
     revealPage,
     revealShieldHandlers: {
       onPointerDown: handleRevealPointerDown,
-      onPointerUp: finishRevealInteraction,
-      onPointerCancel: finishRevealInteraction,
-      onLostPointerCapture: finishRevealInteraction,
+      onPointerUp: handleRevealPointerUp,
+      onPointerCancel: cancelRevealInteraction,
+      onLostPointerCapture: cancelRevealInteraction,
       onClick: finishRevealInteraction,
     },
   };

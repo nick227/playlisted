@@ -151,6 +151,7 @@ export function useTheatreTrackGestures({
       }
 
       if (!moved && shouldRevealTapTarget(revealTarget)) {
+        clickSuppressionUntilRef.current = performance.now() + SWIPE_CLICK_SUPPRESS_MS;
         onRevealRef.current();
       }
     };
