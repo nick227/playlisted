@@ -246,6 +246,20 @@ export function BottomPlayer({ collapsedByFocusLane = false }: BottomPlayerProps
                       displayTrack.ownerName
                     )
                   ) : null}
+                  {displayTrack.ownerName && displayTrack.playlistTitle ? (
+                    <span className="mx-1 text-white/20" aria-hidden>
+                      ·
+                    </span>
+                  ) : null}
+                  {displayTrack.playlistTitle ? (
+                    playlistHref ? (
+                      <Link to={playlistHref} className="hover:underline">
+                        {displayTrack.playlistTitle}
+                      </Link>
+                    ) : (
+                      displayTrack.playlistTitle
+                    )
+                  ) : null}
                 </p>
               ) : null}
               {canSkipToUpNext && upNextText && !playerBarExiting ? (
