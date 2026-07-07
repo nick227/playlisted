@@ -503,7 +503,7 @@ export function CollectionView({
         <hr className="border-[var(--color-border)]" />
 
         {!isEdit && onPlayAll ? (
-          <div className="mt-6 flex flex-nowrap items-center gap-3 overflow-x-auto collection-controls">
+          <div className="mt-6 flex flex-nowrap items-center gap-2 collection-controls">
             <button
               type="button"
               onClick={() => onPlayAll(false)}
