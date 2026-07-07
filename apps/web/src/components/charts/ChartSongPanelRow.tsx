@@ -1,5 +1,3 @@
-import type { ReactNode } from "react";
-
 import { useTrackPlayback } from "@/hooks/useTrackPlayback";
 
 import { ChartPanelRow } from "./ChartPanelRow";

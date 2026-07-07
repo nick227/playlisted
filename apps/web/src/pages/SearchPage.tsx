@@ -101,7 +101,6 @@ export function SearchPage() {
                 key={song.id}
                 song={song}
                 onPlay={() => playSong(song)}
-                queueTrack={librarySongToQueueTrack(song, "Search")}
               />
             ))}
           </div>

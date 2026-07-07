@@ -34,7 +34,6 @@ export function LibraryTrackList({ songs, className }: LibraryTrackListProps) {
           key={song.id}
           song={song}
           onPlay={() => handlePlay(song)}
-          queueTrack={librarySongToQueueTrack(song)}
         />
       ))}
     </div>

@@ -2,7 +2,6 @@ import { Link } from "react-router-dom";
 import type { LibrarySong } from "@playlisted/client-sdk";
 
 import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
-import { RecordingActionMenu } from "@/components/media/RecordingActionMenu";
 import { useTrackPlayback } from "@/hooks/useTrackPlayback";
 import { formatDuration, formatPlayCount } from "@/lib/format";
 import {
@@ -10,8 +9,6 @@ import {
   libraryGenrePath,
   libraryRecordingPath,
 } from "@/lib/libraryPaths";
-import { recordingShareUrl } from "@/lib/shareContent";
-import type { QueueTrack } from "@/providers/AudioPlayerProvider";
 import { WaveformTrackRow } from "@/components/tracks/WaveformTrackRow";
 import { TrackRowMetaStat, TrackRowPlayCount, trackTitleClassName } from "@/components/tracks/trackRowUi";
 import { PlaybackBars } from "@/features/playback-indicators/PlaybackBars";
@@ -19,18 +16,10 @@ import { PlaybackBars } from "@/features/playback-indicators/PlaybackBars";
 interface LibraryTrackRowProps {
   song: LibrarySong;
   onPlay: () => void;
-  queueTrack: QueueTrack;
 }
 
-export function LibraryTrackRow({ song, onPlay, queueTrack }: LibraryTrackRowProps) {
+export function LibraryTrackRow({ song, onPlay }: LibraryTrackRowProps) {
   const { isActive, isPlaying } = useTrackPlayback(song.id);
-  const shareUrl = recordingShareUrl({
-    playlistId: song.playlist.id,
-    recordingId: song.id,
-    title: song.title,
-    username: song.uploader.username,
-    slug: song.playlist.slug,
-  });
 
   const titleSlot = (
     <Link to={libraryRecordingPath(song)} className={trackTitleClassName(isActive)}>

@@ -3,11 +3,8 @@ import type { TopArtistItem, TopPlaylistItem, TopSongItem } from "@playlisted/cl
 import type { ReactNode } from "react";
 
 import { EmptyState } from "@/components/feedback/EmptyState";
-import { RecordingActionMenu } from "@/components/media/RecordingActionMenu";
-import { PlaylistActionMenu } from "@/components/media/PlaylistActionMenu";
 import { formatProfileDate } from "@/lib/format";
 import { chartsPageSongOrigin } from "@/lib/playbackOrigin";
-import { topSongToQueueTrack } from "@/lib/queueTrack";
 import { playlistPath, profilePath } from "@/lib/routes";
 import { useTopArtists, useTopPlaylists, useTopSongs } from "@/hooks/useCharts";
 import type { ChartsTab } from "@/lib/chartsPageState";
@@ -16,11 +13,7 @@ import { CHARTS_PAGE_ITEM_LIMIT } from "./chartConfig";
 import { ChartPanelRow } from "./ChartPanelRow";
 import { SkeletonRow } from "./ChartPanelSkeleton";
 import { ChartSongPanelRow } from "./ChartSongPanelRow";
-import {
-  topSongPanelHref,
-  topSongPanelShareUrl,
-  topSongPanelSubtitleHref,
-} from "./chartSongUtils";
+import { topSongPanelHref, topSongPanelSubtitleHref } from "./chartSongUtils";
 import {
   useChartsPageArtistPlayback,
   useChartsPagePlaylistPlayback,

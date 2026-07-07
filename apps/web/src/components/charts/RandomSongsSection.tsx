@@ -1,19 +1,13 @@
 import type { TopSongItem } from "@playlisted/client-sdk";
 import { useMemo } from "react";
 
-import { RecordingActionMenu } from "@/components/media/RecordingActionMenu";
 import { useTopSongs } from "@/hooks/useCharts";
 import { homeChartSongOrigin } from "@/lib/playbackOrigin";
-import { topSongToQueueTrack } from "@/lib/queueTrack";
 
 import { ChartPanelContainer } from "./ChartPanelContainer";
 import { SkeletonRow } from "./ChartPanelSkeleton";
 import { ChartSongPanelRow } from "./ChartSongPanelRow";
-import {
-  topSongPanelHref,
-  topSongPanelShareUrl,
-  topSongPanelSubtitleHref,
-} from "./chartSongUtils";
+import { topSongPanelHref, topSongPanelSubtitleHref } from "./chartSongUtils";
 import { useHomeChartSongPlayback } from "./useHomeChartSongPlayback";
 
 const RANDOM_SONG_COUNT = 5;

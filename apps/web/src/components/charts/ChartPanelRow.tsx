@@ -1,8 +1,6 @@
-import type { ReactNode } from "react";
-
 import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
 import { WaveformTrackRow } from "@/components/tracks/WaveformTrackRow";
-import { TrackRowPlayCount, stopRowPropagation } from "@/components/tracks/trackRowUi";
+import { TrackRowPlayCount } from "@/components/tracks/trackRowUi";
 import { PlaybackBars } from "@/features/playback-indicators/PlaybackBars";
 
 import { ChartRowPlayControls } from "./ChartRowPlayControls";

@@ -2,7 +2,6 @@ import { useQuery } from "@tanstack/react-query";
 import { ImagePlus, Pause, Play } from "lucide-react";
 import { useEffect, useRef, useState, type MouseEvent } from "react";
 
-import { RecordingActionMenu } from "@/components/media/RecordingActionMenu";
 import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
 import { SongVisualEditorModal } from "@/components/song-visual-editor";
 import { fetchSongVisualAttachments } from "@/lib/visualMediaApi";
