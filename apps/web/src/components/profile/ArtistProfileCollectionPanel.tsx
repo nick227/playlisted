@@ -161,13 +161,13 @@ export function ArtistProfileCollectionPanel({ playlist, owner, editHref }: Arti
           style={bannerBackgroundStyle}
           aria-hidden="true"
         />
-        <div className="absolute inset-0 bg-black/35" aria-hidden="true" />
+        <div className="absolute inset-0" aria-hidden="true" />
         <div
-          className="absolute inset-0 bg-gradient-to-r from-black/88 via-black/55 to-black/25"
+          className="absolute"
           aria-hidden="true"
         />
         <div
-          className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"
+          className="absolute"
           aria-hidden="true"
         />
 
@@ -204,7 +204,7 @@ export function ArtistProfileCollectionPanel({ playlist, owner, editHref }: Arti
               type="button"
               onClick={playAll}
               aria-label={isPlaying ? `Pause ${playlist.title}` : `Play ${playlist.title}`}
-              className="group/play relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-white/25 bg-white/12 text-white shadow-[0_8px_32px_rgba(0,0,0,0.45)] backdrop-blur-md transition hover:scale-105 hover:border-white/40 hover:bg-white/20 md:h-16 md:w-16"
+              className="group/play relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-white/25 bg-black/90 text-white shadow-[0_8px_32px_rgba(0,0,0,0.45)] backdrop-blur-md transition hover:scale-105 hover:border-white/40 hover:bg-white/20 md:h-16 md:w-16"
             >
               {isPlaying ? (
                 <Pause size={22} fill="currentColor" />
@@ -217,19 +217,19 @@ export function ArtistProfileCollectionPanel({ playlist, owner, editHref }: Arti
               <h3 className="text-2xl font-semibold leading-tight tracking-tight text-white md:text-3xl">
                 <Link
                   to={href}
-                  className="break-words transition hover:text-[var(--color-brand)] hover:underline"
+                  className="break-words bg-black/50 rounded-sm p-2 transition hover:text-[var(--color-brand)] hover:underline"
                 >
                   {playlist.title}
                 </Link>
               </h3>
-              <p className="mt-1.5 text-sm text-white/65">
+              <p className="mt-2 text-sm text-white/65 bg-black/50 rounded-sm p-1 w-fit">
                 {!isLoading && recordings.length > 0
                   ? `${formatPlayCount(totalStreams) || "0"} streams`
                   : "Loading streams…"}
               </p>
 
               <div className="mt-3 flex flex-wrap items-center gap-3">
-                <div className="inline-flex items-center gap-1.5 rounded-full border border-white/12 bg-black/25 px-3 py-1 text-sm text-white/75 backdrop-blur-sm">
+                <div className="inline-flex items-center gap-1.5 rounded-full border border-white/12 bg-black/50 px-3 py-1 text-sm text-white">
                   <FavoriteHeartButton
                     target="playlist"
                     id={playlist.id}
@@ -243,7 +243,7 @@ export function ArtistProfileCollectionPanel({ playlist, owner, editHref }: Arti
                     type="button"
                     onClick={handleFollow}
                     disabled={addCollection.isPending || isFollowing}
-                    className="rounded-full border border-white/12 bg-black/25 px-3 py-1 text-sm text-white/75 backdrop-blur-sm transition hover:border-white/25 hover:text-white disabled:opacity-50"
+                    className="rounded-full border border-white/12 bg-black/25 px-3 py-1 text-sm text-white transition hover:border-white/50 hover:text-white disabled:opacity-50"
                   >
                     {isFollowing ? "Following" : addCollection.isPending ? "Following…" : "Follow"}
                   </button>
