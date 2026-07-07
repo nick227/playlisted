@@ -39,6 +39,8 @@
   --sidebar-nav-dimmed-opacity: 0;
   --play-focus-layer-bottom-mobile: calc(var(--spacing-player-safe-mobile) + 1rem);
   --play-focus-layer-bottom: calc(var(--spacing-player) + 1rem);
+  --spacing-player-collapsed-peek: 0.125rem;
+  --focus-lane-mini-player-site-gap: 0.5rem;
 
   --animate-fade-in: fade-in 500ms ease-out forwards;
   --animate-library-exhibit-rise: library-exhibit-rise 680ms cubic-bezier(0.22, 1, 0.36, 1) both;
@@ -552,7 +554,10 @@ body {
 }
 
 .focus-lane__mini-player--site-player-collapsed {
-  --focus-lane-mini-player-y: var(--spacing-player-safe-mobile);
+  --focus-lane-mini-player-y: calc(
+    var(--play-focus-layer-bottom-mobile) - env(safe-area-inset-bottom, 0px) -
+      var(--spacing-player-collapsed-peek) - var(--focus-lane-mini-player-site-gap)
+  );
 }
 
 .focus-lane__mini-player.is-play-focus-revealing {
@@ -1204,7 +1209,10 @@ body {
   }
 
   .focus-lane__mini-player--site-player-collapsed {
-    --focus-lane-mini-player-y: var(--spacing-player);
+    --focus-lane-mini-player-y: calc(
+      var(--play-focus-layer-bottom) - var(--spacing-player-collapsed-peek) -
+        var(--focus-lane-mini-player-site-gap)
+    );
   }
 
   .subtitle-layer,
