@@ -4,6 +4,7 @@ import { useLocation } from "react-router-dom";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 import { useRadioPlayer } from "@/providers/RadioPlayerProvider";
 
+import { useTheatreTrackGestures } from "@/hooks/useTheatreTrackGestures";
 import { useSyncPlaybackBodyFocusHidden } from "@/lib/playbackBodyFocus";
 import { buildMainContentClassName, isRadioShellActive } from "./appShellLayout";
 import { BackgroundLayer } from "./BackgroundLayer";
@@ -44,7 +45,7 @@ export function AppShell({ children }: AppShellProps) {
     radioNowPlaying,
   } = usePlaybackFocusTrack();
 
-  const { playerShellActive, currentTrack, togglePlay } = useAudioPlayer();
+  const { playerShellActive, currentTrack, togglePlay, playNext, playPrevious } = useAudioPlayer();
   const { radioUiMounted, togglePlayback: toggleRadioPlayback } = useRadioPlayer();
 
   // --- Cinematic body fade + focus lane --------------------------------------
@@ -59,6 +60,13 @@ export function AppShell({ children }: AppShellProps) {
   });
 
   useSyncPlaybackBodyFocusHidden(playbackFocus.bodyFocusMode);
+
+  useTheatreTrackGestures({
+    enabled: playbackFocus.bodyFocusMode,
+    onTrackNext: playNext,
+    onTrackPrevious: playPrevious,
+    onReveal: playbackFocus.revealPage,
+  });
 
   // --- Global shortcuts + navigation side effects ----------------------------
   useResumePlaybackAfterNav(location.pathname, radioPlaying);
