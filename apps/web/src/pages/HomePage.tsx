@@ -8,7 +8,7 @@ const RadioPage = lazy(() =>
 function EmbeddedRadioFallback() {
   return (
     <div
-      className="relative isolate -mx-4 flex h-[calc(100dvh-var(--spacing-topbar)-1rem-1.5rem)] max-h-[calc(100dvh-var(--spacing-topbar)-1rem-1.5rem)] items-center justify-center px-4 py-3 sm:-mx-6 sm:px-6 sm:py-6 lg:-mx-8 lg:px-8"
+      className="relative isolate -mx-4 flex h-full items-center justify-center px-4 py-3 sm:-mx-6 sm:px-6 sm:py-6 lg:-mx-8 lg:px-8"
       aria-busy="true"
       aria-label="Loading radio"
     >
@@ -48,7 +48,7 @@ export function HomePage() {
   });
 
   return (
-    <div className="mx-auto max-w-[var(--size-container-max,90rem)] overflow-hidden">
+    <div className="mx-auto h-full max-w-[var(--size-container-max,90rem)] overflow-hidden">
       <Suspense fallback={<EmbeddedRadioFallback />}>
         <RadioPage isEmbedded />
       </Suspense>

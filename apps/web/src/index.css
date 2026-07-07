@@ -61,7 +61,7 @@ body,
 #root {
   height: 100%;
   max-width: 100%;
-  overflow-x: clip;
+  overflow: hidden;
 }
 
 body {
@@ -71,6 +71,14 @@ body {
   color: var(--color-text);
   -webkit-font-smoothing: antialiased;
   -webkit-overflow-scrolling: touch;
+}
+
+#root {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  min-height: 0;
+  overflow: hidden;
 }
 
 ::-webkit-scrollbar {

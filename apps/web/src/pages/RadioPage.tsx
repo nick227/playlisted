@@ -40,19 +40,12 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
     unregisterRadioUi,
   } = useRadioPlayer();
 
-  const {
-    playerShellActive,
-    currentTrack,
-  } = useAudioPlayer();
+  const { currentTrack } = useAudioPlayer();
   const { volume, setVolume } = usePlaybackVolume();
   const { data: genreData } = useLibraryGenres({ minSongCount: 1 });
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const location = useLocation();
-
-  const shellHasPlayer =
-    playerShellActive ||
-    (playing && Boolean(nowPlaying) && location.pathname !== "/radio" && !isEmbedded);
 
   usePageMeta({ title: "Radio" });
 
@@ -208,10 +201,7 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
 
   /* End Magic font */
 
-  const reservePlayerSpace = shellHasPlayer || !isEmbedded;
-  const pageHeight = reservePlayerSpace
-    ? "h-[calc(100dvh-var(--spacing-topbar)-1rem-var(--spacing-player-safe-mobile)-1.5rem)] max-h-[calc(100dvh-var(--spacing-topbar)-1rem-var(--spacing-player-safe-mobile)-1.5rem)] md:h-[calc(100dvh-var(--spacing-topbar)-1rem-var(--spacing-player)-1.5rem)] md:max-h-[calc(100dvh-var(--spacing-topbar)-1rem-var(--spacing-player)-1.5rem)]"
-    : "h-[calc(100dvh-var(--spacing-topbar)-1rem-1.5rem)] max-h-[calc(100dvh-var(--spacing-topbar)-1rem-1.5rem)]";
+  const pageHeight = "h-full max-h-full";
   const artworkClassName =
     "aspect-square max-h-full w-full max-w-full rounded-[1.4rem] border border-white/[0.08] bg-white/5 bg-cover bg-center shadow-[0_26px_80px_rgba(0,0,0,0.44)]";
 

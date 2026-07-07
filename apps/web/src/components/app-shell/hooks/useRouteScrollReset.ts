@@ -11,5 +11,7 @@ export function useRouteScrollReset(
     if (hash) return;
     mainRef.current?.scrollTo({ top: 0, left: 0, behavior: "auto" });
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
   }, [hash, mainRef, pathname, search]);
 }

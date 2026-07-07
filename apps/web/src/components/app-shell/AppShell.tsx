@@ -85,12 +85,12 @@ export function AppShell({ children }: AppShellProps) {
   });
 
   return (
-    <div className="relative flex min-h-full w-full max-w-full overflow-x-clip bg-transparent">
+    <div className="relative flex h-dvh min-h-0 w-full max-w-full overflow-hidden bg-transparent">
       <BackgroundLayer />
 
       <Sidebar mobileOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      <div className="relative z-40 flex min-h-full min-w-0 w-full max-w-full flex-1 flex-col">
+      <div className="relative z-40 flex h-full min-h-0 min-w-0 w-full max-w-full flex-1 flex-col overflow-hidden">
         <TopBar
           onMenuClick={() => setSidebarOpen(true)}
           cinematicBgTransparent={playbackFocus.bodyFocusMode}
