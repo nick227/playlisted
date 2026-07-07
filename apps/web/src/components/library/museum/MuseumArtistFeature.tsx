@@ -32,10 +32,10 @@ export function MuseumArtistFeature({ artist, songs }: MuseumArtistFeatureProps)
 
       <MuseumExhibitFrame className="relative">
         <div className={MUSEUM_GRID}>
-          <div className={MUSEUM_COL_LEFT}>
+          <div className={`${MUSEUM_COL_LEFT} hidden md:block`}>
             <MuseumSectionHeader label="Artist" />
           </div>
-          <div className={MUSEUM_COL_RIGHT}>
+          <div className={`${MUSEUM_COL_RIGHT} hidden md:block`}>
             <MuseumSectionHeader label="From this artist" href={artistPath(artist.username)} hrefLabel="Profile" />
           </div>
 

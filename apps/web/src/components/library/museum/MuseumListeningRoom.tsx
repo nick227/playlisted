@@ -34,10 +34,10 @@ export function MuseumListeningRoom({ playlist }: MuseumListeningRoomProps) {
 
       <MuseumExhibitFrame className="relative">
         <div className={MUSEUM_GRID}>
-          <div className={MUSEUM_COL_LEFT}>
+          <div className={`${MUSEUM_COL_LEFT} hidden md:block`}>
             <MuseumSectionHeader label="Playlist" href={href} hrefLabel="Open" />
           </div>
-          <div className={MUSEUM_COL_RIGHT}>
+          <div className={`${MUSEUM_COL_RIGHT} hidden md:block`}>
             <MuseumSectionHeader label="Details" />
           </div>
 

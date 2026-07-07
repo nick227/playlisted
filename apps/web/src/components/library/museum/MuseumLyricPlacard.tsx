@@ -51,7 +51,7 @@ export function MuseumLyricPlacard({ song }: MuseumLyricPlacardProps) {
           <div className={`${MUSEUM_COL_LEFT} hidden md:block`}>
             <MuseumSectionHeader label="Recording" />
           </div>
-          <div className={MUSEUM_COL_RIGHT}>
+          <div className={`${MUSEUM_COL_RIGHT} hidden md:block`}>
             <MuseumSectionHeader label="Lyrics" />
           </div>
 
