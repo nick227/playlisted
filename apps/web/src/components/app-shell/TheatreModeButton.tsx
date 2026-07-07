@@ -2,6 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { Captions, Loader2, Monitor } from "lucide-react";
 
 import { useTheatreMode } from "@/components/app-shell/useTheatreMode";
+import {
+  DISPLAY_SETTINGS_INTERACTION_MS,
+  armDisplaySettingsBodyRevealSuppression,
+} from "@/lib/playbackFocus/interactiveTarget";
 import { useSubtitleDisplay } from "@/lib/subtitleDisplay";
 
 export function TheatreModeButton() {
@@ -9,31 +13,43 @@ export function TheatreModeButton() {
   const { subtitlesEnabled, toggleSubtitlesEnabled } = useSubtitleDisplay();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const openedAtRef = useRef(0);
+
+  function openMenu() {
+    openedAtRef.current = performance.now();
+    armDisplaySettingsBodyRevealSuppression();
+    setOpen(true);
+  }
+
+  function closeMenu() {
+    setOpen(false);
+  }
 
   function handleSubtitlesClick() {
-    setOpen(false);
+    armDisplaySettingsBodyRevealSuppression();
+    closeMenu();
     toggleSubtitlesEnabled();
   }
 
   function handleTheatreClick() {
-    setOpen(false);
+    armDisplaySettingsBodyRevealSuppression();
+    closeMenu();
     void toggleTheatreMode();
   }
 
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent | TouchEvent) {
+    function handleClickOutside(event: MouseEvent) {
+      if (performance.now() - openedAtRef.current < DISPLAY_SETTINGS_INTERACTION_MS) return;
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setOpen(false);
+        closeMenu();
       }
     }
 
     if (open) {
-      document.addEventListener("mousedown", handleClickOutside);
-      document.addEventListener("touchstart", handleClickOutside);
+      document.addEventListener("click", handleClickOutside);
     }
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("touchstart", handleClickOutside);
+      document.removeEventListener("click", handleClickOutside);
     };
   }, [open]);
 
@@ -46,7 +62,7 @@ export function TheatreModeButton() {
     >
       <button
         type="button"
-        onClick={() => setOpen(!open)}
+        onClick={() => (open ? closeMenu() : openMenu())}
         className={`inline-flex shrink-0 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-1.5 transition sm:p-2 ${
           open || theatreFxEnabled || subtitlesEnabled
             ? "text-[var(--color-brand)]"
@@ -61,7 +77,8 @@ export function TheatreModeButton() {
       </button>
 
       {open ? (
-        <div className="absolute right-0 top-full z-50 mt-2 w-48 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] py-1 shadow-xl">
+        <div className="absolute right-0 top-full z-50 w-48 pt-2">
+          <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] py-1 shadow-xl">
             <button
               type="button"
               onClick={handleSubtitlesClick}
@@ -97,6 +114,7 @@ export function TheatreModeButton() {
               {theatreFxEnabled ? "Hide theatre" : "Show theatre"}
             </button>
           </div>
+        </div>
       ) : null}
     </div>
   );

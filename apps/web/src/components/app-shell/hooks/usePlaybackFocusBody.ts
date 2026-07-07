@@ -5,7 +5,11 @@ import { isBrowseSwipeNavigation } from "@/lib/browseNavigation/types";
 
 import { getPlaybackFocusBodyFadeSuppressed } from "@/lib/playbackFocusBodyFade";
 import { bodyFadedAtTrackMsForArtistVisual } from "@/lib/playbackFocus/focusLaneSequence";
-import { isPlaybackFocusInteractiveTarget } from "@/lib/playbackFocus/interactiveTarget";
+import {
+  displaySettingsBodyRevealSuppressRemainingMs,
+  isDisplaySettingsBodyRevealSuppressed,
+  isPlaybackFocusInteractiveTarget,
+} from "@/lib/playbackFocus/interactiveTarget";
 import { usePlaybackFocusSuppressed } from "@/lib/playbackFocusSuppression";
 import type { PlaybackFocusState } from "@/lib/playbackFocus/types";
 import { playbackFocusTiming, playbackFocusUserActivityEnabled } from "@/lib/playbackFocusTiming";
@@ -40,6 +44,7 @@ function isNativeInteractiveTarget(target: EventTarget | null): boolean {
         "[data-bottom-player]",
         ".topbar-chrome",
         ".sidebar-nav-content",
+        "[data-playback-focus-interactive]",
       ].join(","),
     ),
   );
@@ -171,11 +176,21 @@ export function usePlaybackFocusBody({
   // Disable fade timers when focus is suppressed or body fade is off for this route.
   useEffect(() => {
     if (!playbackFocusSuppressed && !bodyFadeDisabled) return;
-    clearFocusTimer();
-    setBodyFocusHidden(false);
-    setBodyFadedAtTrackMs(null);
-    setMiniViewVisible(false);
-    clearRevealClickSuppressTimer();
+
+    const revealBody = () => {
+      clearFocusTimer();
+      setBodyFocusHidden(false);
+      setBodyFadedAtTrackMs(null);
+      setMiniViewVisible(false);
+      clearRevealClickSuppressTimer();
+    };
+
+    if (isDisplaySettingsBodyRevealSuppressed()) {
+      const timer = window.setTimeout(revealBody, displaySettingsBodyRevealSuppressRemainingMs());
+      return () => window.clearTimeout(timer);
+    }
+
+    revealBody();
   }, [bodyFadeDisabled, clearFocusTimer, clearRevealClickSuppressTimer, playbackFocusSuppressed]);
 
   // Re-arm on track/route change; clear immediately when playback stops.
@@ -281,6 +296,7 @@ export function usePlaybackFocusBody({
   }, [armPlayFocus, playFocusActive, scrollContainerRef]);
 
   const revealPage = useCallback(() => {
+    if (isDisplaySettingsBodyRevealSuppressed()) return;
     if (!bodyFocusHidden && !miniViewVisible) return;
     armRevealClickSuppression();
     clearSnapRevealTimer();

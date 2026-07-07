@@ -50,6 +50,7 @@ function isTheatreGestureBlockedTarget(target: EventTarget | null): boolean {
         ".topbar-chrome",
         ".sidebar-nav-content",
         ".bottom-player",
+        "[data-playback-focus-interactive]",
       ].join(","),
     ),
   );
