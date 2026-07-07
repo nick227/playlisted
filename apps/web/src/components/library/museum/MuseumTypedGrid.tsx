@@ -31,11 +31,11 @@ export function MuseumTypedGrid({ kind, songs = [], artists = [], playlists = []
   if (isEmpty) return null;
 
   return (
-    <section>
+    <section className="min-w-0">
       <MuseumSectionHeader label={meta.label} href={meta.path} />
 
       <MuseumPanel padding="roomy" className="bg-black/10">
-        <div className={`grid gap-4 ${meta.cols}`}>
+        <div className={`grid items-start ${meta.cols} gap-4`}>
           {kind === "songs"
             ? songs.map((song) => (
                 <MuseumSongThumb key={song.id} song={song} queue={songs} showMeta />
@@ -52,7 +52,7 @@ export function MuseumTypedGrid({ kind, songs = [], artists = [], playlists = []
                   avatarUrl={artist.avatarUrl}
                   shape="circle"
                   subtitle={artist.genres[0]?.name}
-                  className="min-w-0"
+                  className="min-w-0 w-full"
                   playbackOrigin={`library:artist-grid:${artist.id}`}
                 />
               ))
@@ -60,7 +60,7 @@ export function MuseumTypedGrid({ kind, songs = [], artists = [], playlists = []
 
           {kind === "playlists"
             ? playlists.map((playlist) => (
-                <MuseumPlaylistCard key={playlist.id} playlist={playlist} className="min-w-0" />
+                <MuseumPlaylistCard key={playlist.id} playlist={playlist} className="min-w-0 w-full" />
               ))
             : null}
         </div>

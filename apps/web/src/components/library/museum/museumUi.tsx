@@ -3,6 +3,18 @@ import { Link } from "react-router-dom";
 
 import { coverFallback } from "@/lib/routes";
 
+export const MUSEUM_GRID = "grid grid-cols-1 gap-6 md:grid-cols-12 md:gap-6";
+export const MUSEUM_EXHIBIT_PAD = "p-5 md:p-6";
+export const MUSEUM_EXHIBIT_RADIUS = "rounded-[1.25rem]";
+
+export const MUSEUM_COL_LEFT = "min-w-0 md:col-span-4";
+export const MUSEUM_COL_RIGHT = "min-w-0 md:col-span-8";
+export const MUSEUM_COL_TRACKS = "min-w-0 md:col-span-5";
+export const MUSEUM_COL_PLAYLIST = "min-w-0 md:col-span-3";
+export const MUSEUM_COL_LYRIC = "min-w-0 md:col-span-8";
+export const MUSEUM_COL_PEERS = "min-w-0 md:col-span-4";
+export const MUSEUM_COL_FULL = "min-w-0 md:col-span-12";
+
 export function MuseumExhibitShell({
   children,
   className,
@@ -11,7 +23,28 @@ export function MuseumExhibitShell({
   className?: string;
 }) {
   return (
-    <div className={["library-exhibit-enter", className ?? ""].join(" ")}>
+    <div className={["library-exhibit-enter min-w-0", className ?? ""].join(" ")}>
+      {children}
+    </div>
+  );
+}
+
+export function MuseumExhibitFrame({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div
+      className={[
+        "relative min-w-0 overflow-hidden",
+        MUSEUM_EXHIBIT_RADIUS,
+        MUSEUM_EXHIBIT_PAD,
+        className ?? "",
+      ].join(" ")}
+    >
       {children}
     </div>
   );
@@ -27,12 +60,16 @@ export function MuseumPanel({
   padding?: "none" | "tight" | "roomy";
 }) {
   const pad =
-    padding === "tight" ? "p-1" : padding === "roomy" ? "p-5 md:p-6" : "";
+    padding === "tight"
+      ? "px-2 py-1 md:px-3 md:py-1.5"
+      : padding === "roomy"
+        ? MUSEUM_EXHIBIT_PAD
+        : "";
 
   return (
     <div
       className={[
-        "museum-panel relative overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.025] shadow-[0_20px_70px_rgba(0,0,0,0.32)]",
+        "museum-panel relative min-w-0 overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.025] shadow-[0_20px_70px_rgba(0,0,0,0.32)]",
         pad,
         className ?? "",
       ].join(" ")}
@@ -56,7 +93,7 @@ export function MuseumSectionHeader({
   hrefLabel?: string;
 }) {
   return (
-    <div className="mb-4 flex items-end justify-between gap-4">
+    <div className="mb-3 flex min-h-[1.75rem] items-end justify-between gap-4">
       <div className="min-w-0">
         <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-white/42">{label}</p>
         <div className="mt-2 h-px w-10 bg-gradient-to-r from-[var(--color-brand)]/70 to-transparent" />
@@ -64,20 +101,24 @@ export function MuseumSectionHeader({
       {href ? (
         <Link
           to={href}
-          className="shrink-0 text-[10px] font-medium uppercase tracking-[0.2em] text-white/24 transition hover:text-[var(--color-brand)]"
+          className="shrink-0 pb-0.5 text-[10px] font-medium uppercase tracking-[0.2em] text-white/24 transition hover:text-[var(--color-brand)]"
         >
           {hrefLabel}
         </Link>
-      ) : null}
+      ) : (
+        <span className="shrink-0 pb-0.5 text-[10px] opacity-0" aria-hidden>
+          —
+        </span>
+      )}
     </div>
   );
 }
 
 export function MuseumExhibitDivider() {
   return (
-    <div className="flex items-center gap-3 py-1" aria-hidden>
+    <div className="flex min-w-0 items-center gap-3 py-1" aria-hidden>
       <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/[0.09] to-transparent" />
-      <div className="h-1 w-1 rounded-full bg-[var(--color-brand)]/45 shadow-[0_0_12px_rgba(124,77,255,0.45)]" />
+      <div className="h-1 w-1 shrink-0 rounded-full bg-[var(--color-brand)]/45 shadow-[0_0_12px_rgba(124,77,255,0.45)]" />
       <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/[0.09] to-transparent" />
     </div>
   );

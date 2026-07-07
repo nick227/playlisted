@@ -25,38 +25,40 @@ export function MuseumFeed({ pools }: MuseumFeedProps) {
   }
 
   return (
-    <div className="space-y-16 md:space-y-24">
+    <div className="min-w-0 space-y-14 md:space-y-20">
       {exhibits.map((exhibit, index) => (
         <MuseumExhibitShell key={exhibit.id}>
-          {index > 0 ? <MuseumExhibitDivider /> : null}
+          {index > 0 ? (
+            <div className="pb-14 md:pb-20">
+              <MuseumExhibitDivider />
+            </div>
+          ) : null}
 
-          <div className={index > 0 ? "pt-16 md:pt-24" : ""}>
-            {exhibit.kind === "showcase" ? (
-              <MuseumShowcase
-                artist={exhibit.artist}
-                songs={exhibit.songs}
-                playlist={exhibit.playlist}
-                lyricSong={exhibit.lyricSong}
-                peers={exhibit.peers}
-              />
-            ) : null}
-            {exhibit.kind === "artist-feature" ? (
-              <MuseumArtistFeature artist={exhibit.artist} songs={exhibit.songs} />
-            ) : null}
-            {exhibit.kind === "lyric-placard" ? <MuseumLyricPlacard song={exhibit.song} /> : null}
-            {exhibit.kind === "quiet-room" ? <MuseumQuietRoom phrase={exhibit.phrase} /> : null}
-            {exhibit.kind === "song-tracklist" ? (
-              <MuseumTrackListSection songs={exhibit.songs} label={exhibit.label} />
-            ) : null}
-            {exhibit.kind === "song-grid" ? <MuseumTypedGrid kind="songs" songs={exhibit.songs} /> : null}
-            {exhibit.kind === "artist-grid" ? (
-              <MuseumTypedGrid kind="artists" artists={exhibit.artists} />
-            ) : null}
-            {exhibit.kind === "playlist-grid" ? (
-              <MuseumTypedGrid kind="playlists" playlists={exhibit.playlists} />
-            ) : null}
-            {exhibit.kind === "listening-room" ? <MuseumListeningRoom playlist={exhibit.playlist} /> : null}
-          </div>
+          {exhibit.kind === "showcase" ? (
+            <MuseumShowcase
+              artist={exhibit.artist}
+              songs={exhibit.songs}
+              playlist={exhibit.playlist}
+              lyricSong={exhibit.lyricSong}
+              peers={exhibit.peers}
+            />
+          ) : null}
+          {exhibit.kind === "artist-feature" ? (
+            <MuseumArtistFeature artist={exhibit.artist} songs={exhibit.songs} />
+          ) : null}
+          {exhibit.kind === "lyric-placard" ? <MuseumLyricPlacard song={exhibit.song} /> : null}
+          {exhibit.kind === "quiet-room" ? <MuseumQuietRoom phrase={exhibit.phrase} /> : null}
+          {exhibit.kind === "song-tracklist" ? (
+            <MuseumTrackListSection songs={exhibit.songs} label={exhibit.label} />
+          ) : null}
+          {exhibit.kind === "song-grid" ? <MuseumTypedGrid kind="songs" songs={exhibit.songs} /> : null}
+          {exhibit.kind === "artist-grid" ? (
+            <MuseumTypedGrid kind="artists" artists={exhibit.artists} />
+          ) : null}
+          {exhibit.kind === "playlist-grid" ? (
+            <MuseumTypedGrid kind="playlists" playlists={exhibit.playlists} />
+          ) : null}
+          {exhibit.kind === "listening-room" ? <MuseumListeningRoom playlist={exhibit.playlist} /> : null}
         </MuseumExhibitShell>
       ))}
 

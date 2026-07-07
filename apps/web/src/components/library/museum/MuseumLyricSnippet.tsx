@@ -35,16 +35,16 @@ export function MuseumLyricSnippet({ song, variant = "inline" }: MuseumLyricSnip
 
   if (variant === "showcase") {
     return (
-      <MuseumPanel padding="roomy" className="relative overflow-hidden bg-black/25">
+      <div className="relative min-w-0 overflow-hidden rounded-2xl border border-white/[0.08] bg-black/25 p-5 md:p-6">
         {song.artworkUrl ? (
           <img
             src={song.artworkUrl}
             alt=""
-            className="pointer-events-none absolute -right-6 -top-8 h-40 w-40 rounded-2xl object-cover opacity-25 blur-[1px] md:h-48 md:w-48"
+            className="pointer-events-none absolute right-0 top-0 h-36 w-36 rounded-2xl object-cover opacity-25 blur-[1px] md:h-44 md:w-44"
           />
         ) : (
           <div
-            className="pointer-events-none absolute -right-6 -top-8 h-40 w-40 rounded-2xl opacity-20 md:h-48 md:w-48"
+            className="pointer-events-none absolute right-0 top-0 h-36 w-36 rounded-2xl opacity-20 md:h-44 md:w-44"
             style={{ background: coverFallback(song.title) }}
           />
         )}
@@ -68,7 +68,7 @@ export function MuseumLyricSnippet({ song, variant = "inline" }: MuseumLyricSnip
             {song.title} · {song.uploader.displayName}
           </Link>
         </div>
-      </MuseumPanel>
+      </div>
     );
   }
 

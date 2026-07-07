@@ -19,7 +19,7 @@ export function MuseumTrackListSection({
   if (songs.length === 0) return null;
 
   return (
-    <section>
+    <section className="min-w-0">
       <MuseumSectionHeader label={label} href={viewAllHref} />
       <MuseumTrackPanel>
         <LibraryTrackList songs={songs} />
