@@ -40,14 +40,14 @@ export function SpatialLibraryBrowser() {
 
   if (isLoading) {
     return (
-      <LibraryBrowseLayout crumbs={libraryRootCrumbs()} layoutClass={LIBRARY_FEED_LAYOUT_CLASS}>
+      <LibraryBrowseLayout crumbs={[]} layoutClass={LIBRARY_FEED_LAYOUT_CLASS}>
         <PanelSkeleton />
       </LibraryBrowseLayout>
     );
   }
 
   return (
-    <LibraryBrowseLayout crumbs={libraryRootCrumbs()} layoutClass={LIBRARY_FEED_LAYOUT_CLASS}>
+    <LibraryBrowseLayout crumbs={[]} layoutClass={LIBRARY_FEED_LAYOUT_CLASS}>
       <MuseumFeed pools={pools} />
     </LibraryBrowseLayout>
   );
