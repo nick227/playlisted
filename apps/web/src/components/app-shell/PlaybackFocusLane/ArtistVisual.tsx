@@ -8,6 +8,8 @@ import { useArtistTracks } from "@/hooks/useArtistTracks";
 import { useLibraryArtists } from "@/hooks/useLibrary";
 import { useUser } from "@/hooks/useUser";
 import { formatPlayCount, formatProfileDate } from "@/lib/format";
+import { isSwipeExcludedTarget } from "@/lib/browseNavigation/swipeGesture";
+import { useHorizontalBrowseSwipeGesture } from "@/hooks/useHorizontalBrowseSwipeGesture";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 import { usePlaybackVolume } from "@/providers/PlaybackVolumeProvider";
 import { getProfileLinkPlatform } from "@/components/profile/profileLinks";
@@ -49,7 +51,7 @@ export function ArtistVisual({
   isPlaying = false,
   onMinimize,
 }: ArtistVisualProps) {
-  const { audioRef } = useAudioPlayer();
+  const { audioRef, playNext, playPrevious } = useAudioPlayer();
   const { isMuted, toggleMute } = usePlaybackVolume();
   const [songTransitioning, setSongTransitioning] = useState(false);
   const lastRecordingIdRef = useRef<string | null>(null);
@@ -226,13 +228,28 @@ export function ArtistVisual({
     : "--:--";
   const currentStr = formatDuration(currentTimeSec);
 
+  const trackSwipe = useHorizontalBrowseSwipeGesture({
+    enabled: true,
+    onCommit: (direction) => {
+      if (direction === "next") playNext();
+      else playPrevious();
+    },
+    isExcludedTarget: isSwipeExcludedTarget,
+  });
+
   return (
     <div
       ref={containerRef}
       {...{ [PLAYBACK_FOCUS_INTERACTIVE_ATTR]: "" }}
-      className={`focus-lane__artist focus-lane__interactive relative mx-auto flex w-full min-w-0 max-w-2xl flex-col gap-3 rounded-2xl border border-white/10 bg-black/40 p-4 shadow-2xl backdrop-blur-xl sm:gap-4 sm:rounded-3xl sm:p-6${
+      className={`focus-lane__artist focus-lane__interactive relative mx-auto flex w-full min-w-0 max-w-2xl touch-pan-y select-none flex-col gap-3 rounded-2xl border border-white/10 bg-black/40 p-4 shadow-2xl backdrop-blur-xl sm:gap-4 sm:rounded-3xl sm:p-6${
         songTransitioning ? " is-song-transitioning" : ""
       }`}
+      onPointerDown={trackSwipe.onPointerDown}
+      onPointerMove={trackSwipe.onPointerMove}
+      onPointerUp={trackSwipe.onPointerUp}
+      onPointerCancel={trackSwipe.onPointerCancel}
+      onLostPointerCapture={trackSwipe.onLostPointerCapture}
+      onClick={trackSwipe.onClick}
     >
       {onMinimize ? (
         <button

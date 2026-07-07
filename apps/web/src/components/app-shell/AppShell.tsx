@@ -5,8 +5,6 @@ import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 import { useRadioPlayer } from "@/providers/RadioPlayerProvider";
 
 import { useSyncPlaybackBodyFocusHidden } from "@/lib/playbackBodyFocus";
-import { parseBrowseRoute } from "@/lib/browseNavigation/parseBrowseRoute";
-import { useTheatreBrowseSwipe } from "@/hooks/useTheatreBrowseSwipe";
 import { buildMainContentClassName, isRadioShellActive } from "./appShellLayout";
 import { BackgroundLayer } from "./BackgroundLayer";
 import { BottomPlayer } from "./BottomPlayer";
@@ -34,7 +32,6 @@ export function AppShell({ children }: AppShellProps) {
   const mainRef = useRef<HTMLElement | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sitePlayerFocusCollapsed, setSitePlayerFocusCollapsed] = useState(false);
-  const [theatreEdgeMessage, setTheatreEdgeMessage] = useState<string | null>(null);
   const location = useLocation();
 
   // --- Playback source -------------------------------------------------------
@@ -62,30 +59,6 @@ export function AppShell({ children }: AppShellProps) {
   });
 
   useSyncPlaybackBodyFocusHidden(playbackFocus.bodyFocusMode);
-
-  const theatreBrowseEnabled =
-    playbackFocus.bodyFocusMode && parseBrowseRoute(location.pathname) !== null;
-
-  const theatreSwipe = useTheatreBrowseSwipe({
-    enabled: theatreBrowseEnabled,
-    pathname: location.pathname,
-    onReveal: playbackFocus.revealPage,
-    onEdge: (message) => {
-      setTheatreEdgeMessage(message);
-      window.setTimeout(() => setTheatreEdgeMessage(null), 1200);
-    },
-  });
-
-  const revealShieldHandlers = theatreBrowseEnabled
-    ? {
-        onPointerDown: theatreSwipe.onPointerDown,
-        onPointerMove: theatreSwipe.onPointerMove,
-        onPointerUp: theatreSwipe.onPointerUp,
-        onPointerCancel: theatreSwipe.onPointerCancel,
-        onLostPointerCapture: theatreSwipe.onLostPointerCapture,
-        onClick: theatreSwipe.onClick,
-      }
-    : playbackFocus.revealShieldHandlers;
 
   // --- Global shortcuts + navigation side effects ----------------------------
   useResumePlaybackAfterNav(location.pathname, radioPlaying);
@@ -145,16 +118,8 @@ export function AppShell({ children }: AppShellProps) {
       <PlaybackFocusRevealShield
         visible={playbackFocus.revealShieldVisible}
         withPlayer={shellHasPlayer}
-        {...revealShieldHandlers}
+        {...playbackFocus.revealShieldHandlers}
       />
-
-      {theatreEdgeMessage ? (
-        <div className="pointer-events-none fixed inset-x-0 top-1/2 z-[10060] flex justify-center">
-          <span className="rounded-full border border-white/10 bg-black/70 px-3 py-1 text-xs font-medium text-white/80 shadow-lg backdrop-blur">
-            {theatreEdgeMessage}
-          </span>
-        </div>
-      ) : null}
 
       <PlaybackFocusLayer
         visible={playbackFocus.miniViewMode}
