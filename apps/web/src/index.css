@@ -612,6 +612,33 @@ body {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.04));
 }
 
+.focus-lane__artist-avatar {
+  position: relative;
+  overflow: hidden;
+}
+
+.focus-lane__artist-avatar-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.62);
+}
+
+.focus-lane__artist-avatar-spinner {
+  width: 2.25rem;
+  height: 2.25rem;
+  color: var(--color-brand);
+  animation: focus-lane-avatar-spin 0.75s linear infinite;
+}
+
+@keyframes focus-lane-avatar-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .focus-lane__artist-copy {
   min-width: 0;
   display: flex;
@@ -1221,6 +1248,10 @@ body {
     animation: none;
     transition: none;
     opacity: 1;
+  }
+
+  .focus-lane__artist-avatar-spinner {
+    animation: none;
   }
 }
 

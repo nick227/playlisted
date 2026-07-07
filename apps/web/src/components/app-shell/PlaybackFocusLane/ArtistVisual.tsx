@@ -1,4 +1,4 @@
-import { ExternalLink, Minimize2, Volume2, VolumeX } from "lucide-react";
+import { ExternalLink, Loader2, Minimize2, Volume2, VolumeX } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { FocusRecording } from "@/lib/playbackFocus/types";
 import { PLAYBACK_FOCUS_INTERACTIVE_ATTR, stopPlaybackFocusBubble } from "@/lib/playbackFocus/interactiveTarget";
@@ -40,6 +40,40 @@ function formatCompactCount(count: number): string {
   return formatPlayCount(count) || "0";
 }
 
+const AVATAR_RELOAD_MS = 2000;
+const SONG_FLASH_MS = 520;
+
+function ArtistAvatar({
+  imageUrl,
+  artistName,
+  reloading,
+}: {
+  imageUrl?: string;
+  artistName?: string;
+  reloading: boolean;
+}) {
+  return (
+    <div className="focus-lane__artist-avatar aspect-square w-28 shrink-0 rounded-sm border-2 border-white/10 shadow-[0_8px_30px_rgb(0,0,0,0.5)] sm:w-36">
+      {reloading ? (
+        <div className="focus-lane__artist-avatar-loading" aria-busy="true" aria-label="Loading track">
+          <Loader2 className="focus-lane__artist-avatar-spinner" aria-hidden />
+        </div>
+      ) : imageUrl ? (
+        <img
+          src={imageUrl}
+          alt={artistName ?? ""}
+          className="focus-lane__artist-image h-full w-full rounded-sm object-cover"
+        />
+      ) : (
+        <div
+          className="focus-lane__artist-image focus-lane__artist-image--fallback h-full w-full rounded-sm"
+          aria-hidden
+        />
+      )}
+    </div>
+  );
+}
+
 export function ArtistVisual({
   artistName,
   imageUrl,
@@ -52,6 +86,7 @@ export function ArtistVisual({
   const { audioRef } = useAudioPlayer();
   const { isMuted, toggleMute } = usePlaybackVolume();
   const [songTransitioning, setSongTransitioning] = useState(false);
+  const [avatarReloading, setAvatarReloading] = useState(false);
   const [frozenHeight, setFrozenHeight] = useState<number | null>(null);
   const lastRecordingIdRef = useRef<string | null>(null);
 
@@ -125,19 +160,6 @@ export function ArtistVisual({
     (genre) => !artistFacts.genres.some((item) => item.slug === genre.slug),
   );
 
-  const artistImage = imageUrl ? (
-    <img
-      src={imageUrl}
-      alt={artistName ?? ""}
-      className="focus-lane__artist-image aspect-square w-28 rounded-sm border-2 border-white/10 object-cover shadow-[0_8px_30px_rgb(0,0,0,0.5)] sm:w-36"
-    />
-  ) : (
-    <div
-      className="focus-lane__artist-image focus-lane__artist-image--fallback aspect-square w-28 rounded-sm border-2 border-white/10 shadow-[0_8px_30px_rgb(0,0,0,0.5)] sm:w-36"
-      aria-hidden
-    />
-  );
-
   useEffect(() => {
     if (!recordingId) return;
 
@@ -149,13 +171,21 @@ export function ArtistVisual({
       setFrozenHeight(containerRef.current.offsetHeight);
     }
     setSongTransitioning(true);
+    setAvatarReloading(true);
 
-    const timeout = window.setTimeout(() => {
+    const flashTimeout = window.setTimeout(() => {
       setSongTransitioning(false);
       setFrozenHeight(null);
-    }, 520);
+    }, SONG_FLASH_MS);
 
-    return () => window.clearTimeout(timeout);
+    const avatarTimeout = window.setTimeout(() => {
+      setAvatarReloading(false);
+    }, AVATAR_RELOAD_MS);
+
+    return () => {
+      window.clearTimeout(flashTimeout);
+      window.clearTimeout(avatarTimeout);
+    };
   }, [recordingId]);
 
   useEffect(() => {
@@ -266,10 +296,10 @@ export function ArtistVisual({
             title={artistName ? `View ${artistName}` : "View artist profile"}
             className="focus-lane__artist-image-link shrink-0"
           >
-            {artistImage}
+            <ArtistAvatar imageUrl={imageUrl} artistName={artistName} reloading={avatarReloading} />
           </FocusLaneLink>
         ) : (
-          <div className="shrink-0">{artistImage}</div>
+          <ArtistAvatar imageUrl={imageUrl} artistName={artistName} reloading={avatarReloading} />
         )}
         <div className="flex min-w-0 flex-1 flex-col gap-2 overflow-hidden pt-0.5 sm:gap-2.5">
           <div className="min-h-9 sm:min-h-10">
