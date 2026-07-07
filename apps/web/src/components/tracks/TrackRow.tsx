@@ -19,6 +19,7 @@ import type { GenreOption } from "@/components/studio/studioCollectionUtils";
 import { recordingGenreSlug } from "@/components/studio/studioCollectionUtils";
 import { WaveformTrackRow } from "./WaveformTrackRow";
 import { TrackRowPlayCount } from "./trackRowUi";
+import { PlaybackBars } from "@/features/playback-indicators/PlaybackBars";
 
 type TrackTag = { id: string; name: string; slug: string; kind: string };
 type SubtitleSummary = QueueTrack["subtitle"];
@@ -297,7 +298,10 @@ export function TrackRow({
         titleSlot={titleSlot}
         subtitleSlot={
           <>
-            <span className="tabular-nums">{formatDuration(durationSeconds)}</span>
+            <div className="flex items-end gap-1.5 shrink-0 opacity-80">
+              <PlaybackBars active={isActive} playing={trackIsPlaying} variant="row-compact" className="mb-[2px]" />
+              <span className="tabular-nums leading-none">{formatDuration(durationSeconds)}</span>
+            </div>
             {(creator ?? meta) ? (
               <>
                 <span className="mx-1.5 opacity-50">·</span>

@@ -142,6 +142,7 @@ export function AppShell({ children }: AppShellProps) {
         focusState={playbackFocus.focusState}
         withPlayer={shellHasPlayer}
         onSitePlayerCollapseChange={setSitePlayerFocusCollapsed}
+        onReturn={playbackFocus.revealPage}
       />
       <QueuePanel />
     </div>

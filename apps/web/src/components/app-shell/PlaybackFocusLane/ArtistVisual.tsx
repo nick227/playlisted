@@ -1,4 +1,4 @@
-import { Loader2, Minimize2, Volume2, VolumeX } from "lucide-react";
+import { Loader2, Minimize2, Volume2, VolumeX, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { FocusRecording } from "@/lib/playbackFocus/types";
 import { PLAYBACK_FOCUS_INTERACTIVE_ATTR, stopPlaybackFocusBubble } from "@/lib/playbackFocus/interactiveTarget";
@@ -27,6 +27,7 @@ type ArtistVisualProps = {
   currentTimeSec?: number;
   isPlaying?: boolean;
   onMinimize?: () => void;
+  onClose?: () => void;
 };
 
 function formatDuration(seconds: number): string {
@@ -79,6 +80,7 @@ export function ArtistVisual({
   currentTimeSec = 0,
   isPlaying = false,
   onMinimize,
+  onClose,
 }: ArtistVisualProps) {
   const { audioRef } = useAudioPlayer();
   const { isMuted, toggleMute } = usePlaybackVolume();
@@ -138,14 +140,16 @@ export function ArtistVisual({
     [artistQuery.data?.username, libraryArtist?.genres, libraryTrack, recording],
   );
 
-  const badgeGenres = links.recordingGenres.filter(
-    (genre) => !artistMeta.genres.some((item) => item.slug === genre.slug),
-  );
-
-  const hasDetails =
-    artistMeta.profileLinks.length > 0 ||
-    Boolean(artistBio) ||
-    badgeGenres.length > 0;
+  const displayGenres = useMemo(() => {
+    const seen = new Set<string>();
+    const result: GenreLink[] = [];
+    for (const genre of [...artistMeta.genres, ...links.recordingGenres]) {
+      if (seen.has(genre.slug)) continue;
+      seen.add(genre.slug);
+      result.push(genre);
+    }
+    return result.slice(0, 4);
+  }, [artistMeta.genres, links.recordingGenres]);
 
   useEffect(() => {
     if (!recordingId) return;
@@ -259,8 +263,8 @@ export function ArtistVisual({
   const heroInner = (
     <div className="focus-lane__artist-hero relative aspect-[5/3] w-full overflow-hidden rounded-xl sm:aspect-[2/1] sm:rounded-2xl">
       <ArtistHeroImage imageUrl={imageUrl} artistName={artistName} reloading={avatarReloading} />
-      <div className="focus-lane__artist-hero-footer absolute inset-x-0 bottom-0 z-20 flex items-end justify-between gap-2 p-3 sm:gap-3 sm:p-4">
-        <div className="min-w-0 flex-1">
+      <div className="focus-lane__artist-hero-header absolute inset-x-0 top-0 z-20 p-3 sm:p-4">
+        <div className="min-w-0 max-w-[78%]">
           <div className="focus-lane__artist-name-slot">
             {artistName ? (
               links.artistHref ? (
@@ -280,12 +284,25 @@ export function ArtistVisual({
               <span className="block h-7 sm:h-9" aria-hidden />
             )}
           </div>
-          <div className="focus-lane__artist-genre-slot mt-1 flex h-5 items-center gap-1.5 overflow-hidden">
-            {artistMeta.genres.map((genre) => (
-              <FocusLaneGenreLink key={genre.slug} genre={genre} />
-            ))}
-          </div>
+          {artistBio ? (
+            <p className="focus-lane__artist-bio mt-1 line-clamp-2 text-xs leading-snug text-white/75 drop-shadow sm:text-sm">
+              {artistBio}
+            </p>
+          ) : null}
+          {displayGenres.length > 0 ? (
+            <div className="focus-lane__artist-genre-slot mt-1.5 flex flex-wrap items-center gap-1.5">
+              {displayGenres.map((genre) => (
+                <FocusLaneGenreLink
+                  key={genre.slug}
+                  genre={genre}
+                  className="focus-lane__artist-genre-badge shrink-0 rounded bg-black/35 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider backdrop-blur-sm transition hover:bg-black/50 hover:text-white"
+                />
+              ))}
+            </div>
+          ) : null}
         </div>
+      </div>
+      <div className="focus-lane__artist-hero-footer absolute inset-x-0 bottom-0 z-20 flex items-end justify-between gap-2 p-3 sm:gap-3 sm:p-4">
         <div
           className="focus-lane__artist-actions shrink-0"
           onPointerDown={stopPlaybackFocusBubble}
@@ -293,6 +310,33 @@ export function ArtistVisual({
         >
           <PlaybackFocusReactionBar recordingId={recording?.id} artistId={artistId} />
         </div>
+        {artistMeta.profileLinks.length > 0 ? (
+          <nav
+            aria-label={artistName ? `${artistName} social links` : "Artist social links"}
+            className="focus-lane__artist-socials flex min-w-0 flex-1 flex-wrap items-end justify-end gap-1.5"
+          >
+            {artistMeta.profileLinks.map((link) => {
+              const platform = getProfileLinkPlatform(link.platform);
+              const Icon = platform.icon;
+              const label = link.label || platform.label;
+              return (
+                <a
+                  key={link.id}
+                  href={link.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  title={label}
+                  className="focus-lane__artist-social inline-flex h-7 max-w-full items-center gap-1.5 rounded-full border border-white/15 bg-black/45 px-2.5 text-[10px] font-semibold text-white/80 backdrop-blur-sm transition hover:border-white/30 hover:bg-black/60 hover:text-white sm:h-8 sm:gap-2 sm:px-3 sm:text-xs"
+                  onPointerDown={stopPlaybackFocusBubble}
+                  onClick={stopPlaybackFocusBubble}
+                >
+                  <Icon size={12} aria-hidden className="shrink-0" />
+                  <span className="min-w-0 truncate">{label}</span>
+                </a>
+              );
+            })}
+          </nav>
+        ) : null}
       </div>
     </div>
   );
@@ -310,78 +354,42 @@ export function ArtistVisual({
           songTransitioning ? " is-song-transitioning" : ""
         }`}
       >
-        {onMinimize ? (
-          <button
-            type="button"
-            className="focus-lane__artist-return"
-            title="Minimize player"
-            aria-label="Minimize player"
-            onPointerDown={stopPlaybackFocusBubble}
-            onClick={(event) => {
-              stopPlaybackFocusBubble(event);
-              onMinimize();
-            }}
-          >
-            <Minimize2 size={16} aria-hidden />
-          </button>
+        {(onMinimize || onClose) ? (
+          <div className="focus-lane__artist-controls">
+            {onMinimize ? (
+              <button
+                type="button"
+                className="focus-lane__artist-control"
+                title="Minimize player"
+                aria-label="Minimize player"
+                onPointerDown={stopPlaybackFocusBubble}
+                onClick={(event) => {
+                  stopPlaybackFocusBubble(event);
+                  onMinimize();
+                }}
+              >
+                <Minimize2 size={15} aria-hidden />
+              </button>
+            ) : null}
+            {onClose ? (
+              <button
+                type="button"
+                className="focus-lane__artist-control"
+                title="Return to page"
+                aria-label="Return to page"
+                onPointerDown={stopPlaybackFocusBubble}
+                onClick={(event) => {
+                  stopPlaybackFocusBubble(event);
+                  onClose();
+                }}
+              >
+                <X size={15} aria-hidden />
+              </button>
+            ) : null}
+          </div>
         ) : null}
 
-        {links.artistHref ? (
-          <FocusLaneLink
-            to={links.artistHref}
-            title={artistName ? `View ${artistName}` : "View artist profile"}
-            className="focus-lane__artist-hero-link block"
-          >
-            {heroInner}
-          </FocusLaneLink>
-        ) : (
-          heroInner
-        )}
-
-        <div className="focus-lane__artist-details h-7 shrink-0 overflow-hidden">
-          {hasDetails ? (
-            <div className="flex h-full min-w-0 items-center gap-2">
-              {artistMeta.profileLinks.length > 0 ? (
-                <nav
-                  aria-label={artistName ? `${artistName} social links` : "Artist social links"}
-                  className="flex shrink-0 items-center gap-1"
-                >
-                  {artistMeta.profileLinks.map((link) => {
-                    const platform = getProfileLinkPlatform(link.platform);
-                    const Icon = platform.icon;
-                    return (
-                      <a
-                        key={link.id}
-                        href={link.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        title={link.label || platform.label}
-                        className="focus-lane__artist-social grid h-7 w-7 place-items-center rounded-full border border-white/10 bg-white/[0.04] text-white/65 transition hover:border-white/25 hover:bg-white/[0.09] hover:text-white"
-                        onPointerDown={stopPlaybackFocusBubble}
-                        onClick={stopPlaybackFocusBubble}
-                      >
-                        <Icon size={14} aria-hidden />
-                        <span className="sr-only">{link.label || platform.label}</span>
-                      </a>
-                    );
-                  })}
-                </nav>
-              ) : null}
-              {(badgeGenres.length > 0 || artistBio) ? (
-                <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden text-xs font-medium text-white/60">
-                  {badgeGenres.map((genre) => (
-                    <FocusLaneGenreLink
-                      key={genre.slug}
-                      genre={genre}
-                      className="focus-lane__artist-genre-badge shrink-0 rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider transition hover:bg-white/18 hover:text-white"
-                    />
-                  ))}
-                  {artistBio ? <span className="min-w-0 truncate">{artistBio}</span> : null}
-                </div>
-              ) : null}
-            </div>
-          ) : null}
-        </div>
+        {heroInner}
 
         <div className="flex h-[3.25rem] min-w-0 items-center rounded-xl border border-white/5 bg-black/30 px-3 sm:h-14 sm:px-4">
           {recording ? (

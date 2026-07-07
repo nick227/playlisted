@@ -28,6 +28,7 @@ type PlaybackFocusLaneProps = {
   focusState: PlaybackFocusState;
   withPlayer?: boolean;
   onSitePlayerCollapseChange?: (collapsed: boolean) => void;
+  onReturn?: () => void;
 };
 
 const SUBTITLE_POLL_INTERVAL_MS = 3000;
@@ -39,6 +40,7 @@ export function PlaybackFocusLane({
   focusState,
   withPlayer = false,
   onSitePlayerCollapseChange,
+  onReturn,
 }: PlaybackFocusLaneProps) {
   const { accessToken } = useAuth();
   const { playbackContext } = useAudioPlayer();
@@ -196,6 +198,7 @@ export function PlaybackFocusLane({
             currentTimeSec={currentTime}
             isPlaying={isPlaying}
             onMinimizeArtistVisual={minimizeArtistVisual}
+            onCloseArtistVisual={onReturn}
             artistVisualMinimized={artistVisualMinimized}
           />
         </div>

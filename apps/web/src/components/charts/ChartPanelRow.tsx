@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
 import { WaveformTrackRow } from "@/components/tracks/WaveformTrackRow";
 import { TrackRowPlayCount, stopRowPropagation } from "@/components/tracks/trackRowUi";
+import { PlaybackBars } from "@/features/playback-indicators/PlaybackBars";
 
 import { ChartRowPlayControls } from "./ChartRowPlayControls";
 import { ChartRowSubtitle, ChartRowTitle } from "./ChartRowText";
@@ -59,7 +60,14 @@ export function ChartPanelRow({
   );
 
   const titleSlot = <ChartRowTitle title={title} href={titleHref} active={isActive} />;
-  const subtitleSlot = <ChartRowSubtitle text={subtitle} href={subtitleHref} genre={genre} />;
+  const subtitleSlot = (
+    <div className="flex items-end gap-1.5 shrink-0">
+      <PlaybackBars active={isActive} playing={isPlaying} variant="row-compact" className="opacity-80 mb-[2px]" />
+      <div className="leading-none flex items-center">
+        <ChartRowSubtitle text={subtitle} href={subtitleHref} genre={genre} />
+      </div>
+    </div>
+  );
 
   const rightSlot = (
     <>
@@ -68,6 +76,8 @@ export function ChartPanelRow({
           {secondaryMeta}
         </span>
       ) : null}
+
+
 
       <TrackRowPlayCount count={playCount} suffix={isPage ? " plays" : ""} />
       <FavoriteHeartButton

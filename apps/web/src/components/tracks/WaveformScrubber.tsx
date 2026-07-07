@@ -1,4 +1,4 @@
-import { useContext, useRef, type MouseEvent } from "react";
+import { useContext, useRef, useId, type MouseEvent } from "react";
 import { PlaybackTransportContext } from "@/providers/AudioPlayerProvider";
 import { useAudioWaveformPeaks } from "../song-visual-editor/hooks/useAudioWaveformPeaks";
 
@@ -11,6 +11,7 @@ export function WaveformScrubber({ audioUrl, isActive }: WaveformScrubberProps) 
   const { data, loading } = useAudioWaveformPeaks(audioUrl);
   const transport = useContext(PlaybackTransportContext);
   const containerRef = useRef<HTMLDivElement>(null);
+  const gradientId = "grad-" + useId().replace(/:/g, "");
 
   if (loading || !data) {
     return (
@@ -52,11 +53,11 @@ export function WaveformScrubber({ audioUrl, isActive }: WaveformScrubberProps) 
         style={{
           // Use CSS variables for easy theming
           '--waveform-played': 'var(--color-brand)',
-          '--waveform-unplayed': 'rgba(255, 255, 255, 0.2)',
+          '--waveform-unplayed': isActive ? 'color-mix(in srgb, var(--color-brand) 50%, transparent)' : 'rgba(255, 255, 255, 0.2)',
         } as React.CSSProperties}
       >
         <defs>
-          <linearGradient id="waveform-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+          <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset={`${progressPercent * 100}%`} stopColor="var(--waveform-played)" />
             <stop offset={`${progressPercent * 100}%`} stopColor="var(--waveform-unplayed)" />
           </linearGradient>
@@ -73,7 +74,7 @@ export function WaveformScrubber({ audioUrl, isActive }: WaveformScrubberProps) 
               y={y}
               width={0.7}
               height={height}
-              fill="url(#waveform-gradient)"
+              fill={`url(#${gradientId})`}
               rx={0.35}
             />
           );

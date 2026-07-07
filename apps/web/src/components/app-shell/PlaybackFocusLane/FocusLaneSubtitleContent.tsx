@@ -15,6 +15,7 @@ type FocusLaneSubtitleContentProps = {
   currentTimeSec?: number;
   isPlaying?: boolean;
   onMinimizeArtistVisual?: () => void;
+  onCloseArtistVisual?: () => void;
   artistVisualMinimized?: boolean;
 };
 
@@ -39,6 +40,7 @@ export function FocusLaneSubtitleContent({
   currentTimeSec,
   isPlaying,
   onMinimizeArtistVisual,
+  onCloseArtistVisual,
   artistVisualMinimized = false,
 }: FocusLaneSubtitleContentProps) {
   const isTitleIntro = fixture.type === "fallbackSubtitle" && fixture.source === "title-intro";
@@ -83,6 +85,7 @@ export function FocusLaneSubtitleContent({
         currentTimeSec={currentTimeSec}
         isPlaying={isPlaying}
         onMinimize={onMinimizeArtistVisual}
+        onClose={onCloseArtistVisual}
       />
     );
   }

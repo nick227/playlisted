@@ -86,7 +86,7 @@ export function SearchPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="mx-auto max-w-2xl">
       <h1 className="mb-8 text-2xl font-bold">
         Results for <span className="text-[var(--color-brand)]">{q}</span>
       </h1>
@@ -122,7 +122,7 @@ export function SearchPage() {
         </ContentRow>
       ) : null}
       {playlistResults.length > 0 ? (
-        <ContentRow title="Playlists">
+        <div className="grid grid-cols-4 gap-2">
           {playlistResults.map((p) => (
             <SmartPlaylistCard
               key={p.id}
@@ -132,9 +132,10 @@ export function SearchPage() {
               coverArtUrl={p.coverArtUrl}
               ownerUsername={p.owner.username}
               slug={p.slug}
+              className="flex"
             />
           ))}
-        </ContentRow>
+        </div>
       ) : null}
       {genreResults.length > 0 ? (
         <section className="mb-10">

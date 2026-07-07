@@ -185,7 +185,7 @@ export function ArtistProfileHero({
   }
 
   return (
-    <section className="min-w-0 overflow-x-clip border-b border-white/10 rounded-lg px-4 pb-10 pt-4 md:pb-12">
+    <section className="min-w-0 overflow-x-clip px-4 pt-4">
       <div className="grid min-w-0 gap-6 md:grid-cols-[minmax(140px,180px)_1fr] md:gap-10 md:items-start">
         <div className="relative group/avatar w-full md:max-w-[180px]">
           {user.avatarUrl ? (

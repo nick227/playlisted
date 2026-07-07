@@ -135,9 +135,6 @@ function PersonalTrackRow({
         isActive ? "bg-white/[0.08]" : "hover:bg-white/[0.04] bg-[--cover-canvas]/90",
       ].join(" ")}
     >
-      <div className="hidden sm:block">
-        <PlaybackBars active={isActive} playing={isPlaying} />
-      </div>
       {/* artwork + play */}
       <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-md sm:h-10 sm:w-10">
         {track.artworkUrl ? (
@@ -169,18 +166,21 @@ function PersonalTrackRow({
           {track.title}
         </Link>
         <p className="truncate text-xs text-[var(--color-text-muted)]">
+          <span className="inline-flex items-end gap-1.5 shrink-0 opacity-80 mr-1.5">
+            <PlaybackBars active={isActive} playing={isPlaying} variant="row-compact" className="mb-[2px]" />
+            <span className="tabular-nums leading-none">{formatDuration(track.durationSeconds)}</span>
+          </span>
+          <span className="mr-1.5 opacity-50" aria-hidden>·</span>
           <Link to={artistHref} className="hover:underline">
             {track.uploader.displayName}
           </Link>
-          <span className="mx-1 text-white/20" aria-hidden>·</span>
+          <span className="mx-1.5 text-white/20" aria-hidden>·</span>
           <Link to={playlistHref} className="hover:underline">
             {track.playlist.title}
           </Link>
         </p>
         <div className="mt-1 flex items-center gap-2 text-[11px] text-[var(--color-text-muted)] sm:hidden">
           {badge && <span className={`min-w-0 truncate font-medium ${badgeColor}`}>{badge}</span>}
-          {badge && <span className="text-white/20" aria-hidden>·</span>}
-          <span className="shrink-0 tabular-nums">{formatDuration(track.durationSeconds)}</span>
         </div>
       </div>
 
@@ -188,11 +188,6 @@ function PersonalTrackRow({
       {badge && (
         <span className={`hidden shrink-0 text-xs font-medium sm:inline ${badgeColor}`}>{badge}</span>
       )}
-
-      {/* duration */}
-      <span className="hidden w-10 shrink-0 text-right text-xs text-[var(--color-text-muted)] sm:inline">
-        {formatDuration(track.durationSeconds)}
-      </span>
 
 
 
