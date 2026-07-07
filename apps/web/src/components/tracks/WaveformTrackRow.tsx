@@ -62,7 +62,7 @@ export function WaveformTrackRow({
   return (
     <div
       id={`track-${id}`}
-      className={`group/card relative flex flex-col gap-1.5 rounded-lg py-1.5 transition-colors sm:py-2 ${
+      className={`group/card relative flex flex-col gap-1.5 rounded-lg py-1.5 transition-colors sm:py-2 outline-none focus-visible:ring-2 focus-visible:ring-white/20 ${
         isActive ? "bg-[var(--color-surface)]/80" : "hover:bg-white/[0.04]"
       } ${className}`}
       role={onPlay ? "button" : undefined}

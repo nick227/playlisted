@@ -10,7 +10,6 @@ import { TrackEditActionMenu } from "./TrackEditActionMenu";
 import { normalizeSubtitlePosition, normalizeSubtitleStyleId } from "@/lib/subtitleStylePresets";
 import { useTrackPlayback } from "@/hooks/useTrackPlayback";
 import { formatDuration } from "@/lib/format";
-import { useAudioPlayer, type QueueTrack } from "@/providers/AudioPlayerProvider";
 import { useAuth } from "@/providers/AuthProvider";
 import { Link } from "react-router-dom";
 
@@ -21,7 +20,7 @@ import { TrackRowPlayCount } from "./trackRowUi";
 import { PlaybackBars } from "@/features/playback-indicators/PlaybackBars";
 
 type TrackTag = { id: string; name: string; slug: string; kind: string };
-type SubtitleSummary = QueueTrack["subtitle"];
+type SubtitleSummary = { status: string; id: string; [key: string]: any } | any;
 
 interface TrackRowProps {
   recordingId: string;
@@ -52,7 +51,7 @@ interface TrackRowProps {
   onRemove?: () => void;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
-  queueTrack?: QueueTrack;
+  queueTrack?: any;
   subtitle?: SubtitleSummary | null;
   shareUrl?: string;
 }
@@ -90,10 +89,7 @@ export function TrackRow({
   shareUrl,
 }: TrackRowProps) {
   const { accessToken } = useAuth();
-  const { currentTrack, isPlaying: playerIsPlaying, togglePlay } = useAudioPlayer();
-  const { isActive, isPlaying } = useTrackPlayback(recordingId, playbackOrigin);
-  const isCurrentTrack = currentTrack?.id === recordingId;
-  const trackIsPlaying = isPlaying || (isCurrentTrack && playerIsPlaying);
+  const { isActive, trackIsPlaying } = useTrackPlayback(recordingId, playbackOrigin);
   const showActions = !editMode && queueTrack && shareUrl;
   const [isSubtitleModalOpen, setSubtitleModalOpen] = useState(false);
   const [isVisualEditorOpen, setVisualEditorOpen] = useState(false);
@@ -128,10 +124,6 @@ export function TrackRow({
 
   function handlePlaybackIntent() {
     if (!onPlay) return;
-    if (isCurrentTrack) {
-      togglePlay();
-      return;
-    }
     onPlay();
   }
 
@@ -169,7 +161,7 @@ export function TrackRow({
             e.stopPropagation();
             handlePlaybackIntent();
           }}
-          className={`absolute bottom-0.5 right-0.5 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white transition hover:bg-black/80 ${
+          className={`absolute left-1/2 top-1/2 z-10 flex h-6 w-6 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-black/60 text-white transition hover:bg-black/80 ${
             isActive ? "text-[var(--color-brand)]" : ""
           }`}
           aria-label={trackIsPlaying ? "Pause track" : "Play track"}
@@ -270,6 +262,7 @@ export function TrackRow({
           saving={saving}
           canMoveUp={canMoveUp}
           canMoveDown={canMoveDown}
+          onChangeImage={onUpdateArtwork ? () => artworkInputRef.current?.click() : undefined}
           onEditSubtitles={() => setSubtitleModalOpen(true)}
           onEditVisuals={() => setVisualEditorOpen(true)}
           onGenreSelect={onUpdateTags ? handleGenreSelect : undefined}

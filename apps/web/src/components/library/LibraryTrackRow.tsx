@@ -19,7 +19,7 @@ interface LibraryTrackRowProps {
 }
 
 export function LibraryTrackRow({ song, onPlay }: LibraryTrackRowProps) {
-  const { isActive, isPlaying } = useTrackPlayback(song.id);
+  const { isActive, trackIsPlaying } = useTrackPlayback(song.id);
 
   const titleSlot = (
     <Link to={libraryRecordingPath(song)} className={trackTitleClassName(isActive)}>
@@ -30,7 +30,7 @@ export function LibraryTrackRow({ song, onPlay }: LibraryTrackRowProps) {
   const subtitleSlot = (
     <>
       <div className="flex items-end gap-1.5 shrink-0 opacity-80">
-        <PlaybackBars active={isActive} playing={isPlaying} variant="row-compact" className="mb-[2px]" />
+        <PlaybackBars active={isActive} playing={trackIsPlaying} variant="row-compact" className="mb-[2px]" />
         <span className="tabular-nums leading-none">{formatDuration(song.durationSeconds)}</span>
       </div>
       <span className="mx-1.5 opacity-50">·</span>
@@ -73,7 +73,7 @@ export function LibraryTrackRow({ song, onPlay }: LibraryTrackRowProps) {
       id={song.id}
       audioUrl={song.audioUrl}
       isActive={isActive}
-      isPlaying={isPlaying}
+      isPlaying={trackIsPlaying}
       onPlay={onPlay}
       imageUrl={song.artworkUrl}
       titleSlot={titleSlot}

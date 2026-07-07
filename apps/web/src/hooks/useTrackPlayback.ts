@@ -9,6 +9,10 @@ export function useTrackPlayback(trackId: string | undefined, originKey?: string
   const isActive = surfaceIsActive(trackMatches, activeOriginKey, originKey);
   const isPlaying = isActive && playerIsPlaying;
   const isPaused = isActive && state === "paused";
+  
+  // Expose track-level playing state irrespective of origin matching,
+  // to centralize scattered logic in track rows.
+  const trackIsPlaying = isPlaying || (trackMatches && playerIsPlaying);
 
-  return { isActive, isPlaying, isPaused, playerIsPlaying };
+  return { isActive, isPlaying, isPaused, playerIsPlaying, trackMatches, trackIsPlaying };
 }

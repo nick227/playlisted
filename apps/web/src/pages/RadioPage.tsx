@@ -209,7 +209,7 @@ export function RadioPage({ isEmbedded: _isEmbedded = false }: { isEmbedded?: bo
     <div
       className={`relative isolate -mx-4 flex items-center justify-center px-4 py-3 sm:-mx-6 sm:px-6 sm:py-6 lg:-mx-8 lg:px-8 ${pageHeight}`}
     >
-      <div className="mx-auto flex h-full min-h-0 w-full bg-[var(--color-canvas)]/80 rounded-lg pb-4 shadow-[0_0_20px_rgba(0,0,0,0.5)] p-2 max-w-[30rem] flex-col items-center justify-center gap-2 sm:gap-0">
+      <div className="mx-auto flex min-h-0 w-full bg-[var(--color-canvas)]/80 rounded-lg shadow-[0_0_20px_rgba(0,0,0,0.5)] lg:px-12 py-6 flex-col items-center justify-center gap-2 sm:gap-0">
         {radioQuery.isError ? (
           <div className="w-full shrink-0 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-center text-sm text-red-200 shadow-lg shadow-black/20 backdrop-blur">
             Couldn&apos;t load radio.{" "}
@@ -278,7 +278,7 @@ export function RadioPage({ isEmbedded: _isEmbedded = false }: { isEmbedded?: bo
             )}
           </h1>
 
-          <p className="mt-1 h-7 max-w-full truncate text-base leading-7 text-[var(--color-text-muted)] bg-[var(--color-canvas)]/80 shadow-[0_0_20px_rgba(0,0,0,0.5)]  rounded-sm px-4 sm:mt-3">
+          <p className="mt-1 h-7 max-w-full truncate text-base leading-7 text-[var(--color-text-muted)] shadow-[0_0_20px_rgba(0,0,0,0.5)]  rounded-sm px-4 sm:mt-3">
             {displayArtistName ? (
               displayArtistUsername ? (
                 <Link to={profilePath(displayArtistUsername)} className="hover:text-white transition">
@@ -291,7 +291,7 @@ export function RadioPage({ isEmbedded: _isEmbedded = false }: { isEmbedded?: bo
           </p>
         </div>
 
-        <div className="w-full bg-[var(--color-canvas)]/80 max-w-[min(74vw,23rem)] shrink-0 sm:mt-1">
+        <div className="w-full max-w-[min(74vw,23rem)] shrink-0 sm:mt-1">
           <div className="flex shadow-[0_0_20px_rgba(0,0,0,0.5)] rounded-sm p-2 h-5 items-center justify-between text-[0.7rem] font-medium text-white/36">
             <span>{elapsedLabel ?? "Live"}</span>
             <span>{durationLabel ?? "On air"}</span>

@@ -27,13 +27,13 @@ export function ChartSongPanelRow({
   audioUrl,
   ...row
 }: ChartSongPanelRowProps) {
-  const { isActive, isPlaying } = useTrackPlayback(recordingId, playbackOrigin);
+  const { isActive, trackIsPlaying } = useTrackPlayback(recordingId, playbackOrigin);
 
   return (
     <ChartPanelRow
       {...row}
       audioUrl={audioUrl}
-      play={{ isActive, isPlaying, onPlay }}
+      play={{ isActive, isPlaying: trackIsPlaying, onPlay }}
       favorite={{ target: "recording", id: recordingId }}
     />
   );

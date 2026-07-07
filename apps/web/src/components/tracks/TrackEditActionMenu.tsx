@@ -1,4 +1,4 @@
-import { Captions, Check, ChevronDown, ChevronUp, Film, MoreVertical, Search, Trash2 } from "lucide-react";
+import { Captions, Check, ChevronDown, ChevronUp, Film, ImagePlus, MoreVertical, Search, Trash2 } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 
 import type { GenreOption } from "@/components/studio/studioCollectionUtils";
@@ -17,6 +17,7 @@ type TrackEditActionMenuProps = {
   saving?: boolean;
   canMoveUp?: boolean;
   canMoveDown?: boolean;
+  onChangeImage?: () => void;
   onEditSubtitles: () => void;
   onEditVisuals: () => void;
   onGenreSelect?: (slug: string) => void;
@@ -82,6 +83,7 @@ export function TrackEditActionMenu({
   saving,
   canMoveUp,
   canMoveDown,
+  onChangeImage,
   onEditSubtitles,
   onEditVisuals,
   onGenreSelect,
@@ -177,6 +179,13 @@ export function TrackEditActionMenu({
           className="absolute right-0 top-full z-30 mt-1 max-h-[min(70vh,24rem)] min-w-[12rem] overflow-y-auto rounded-lg border border-white/10 bg-[var(--color-surface-elevated)] py-1 shadow-xl"
           onClick={(e) => e.stopPropagation()}
         >
+          {onChangeImage ? (
+            <MenuButton
+              label="Change image"
+              icon={<ImagePlus size={16} />}
+              onClick={() => runAction(onChangeImage)}
+            />
+          ) : null}
           <MenuButton
             label={subtitleMenuLabel(subtitle)}
             icon={<Captions size={16} />}

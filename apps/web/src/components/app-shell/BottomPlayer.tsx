@@ -246,20 +246,6 @@ export function BottomPlayer({ collapsedByFocusLane = false }: BottomPlayerProps
                       displayTrack.ownerName
                     )
                   ) : null}
-                  {displayTrack.ownerName && displayTrack.playlistTitle ? (
-                    <span className="mx-1 text-white/20" aria-hidden>
-                      ·
-                    </span>
-                  ) : null}
-                  {displayTrack.playlistTitle ? (
-                    playlistHref ? (
-                      <Link to={playlistHref} className="hover:underline">
-                        {displayTrack.playlistTitle}
-                      </Link>
-                    ) : (
-                      displayTrack.playlistTitle
-                    )
-                  ) : null}
                 </p>
               ) : null}
               {canSkipToUpNext && upNextText && !playerBarExiting ? (
@@ -273,7 +259,7 @@ export function BottomPlayer({ collapsedByFocusLane = false }: BottomPlayerProps
               ) : null}
             </div>
           </div>
-          <div className="bottom-player__section bottom-player__section--controls flex flex-col items-center justify-center gap-1 md:gap-1.5">
+          <div className="bottom-player__section bottom-player__section--controls flex flex-col items-center justify-center gap-2 md:gap-1.5">
             <div className="flex items-center gap-4 md:gap-4">
               {showQueueControls ? (
                 <button type="button" onClick={playPrevious} className="text-[var(--color-text-muted)] hover:text-white">

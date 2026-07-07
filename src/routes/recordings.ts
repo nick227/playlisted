@@ -510,8 +510,18 @@ recordingsRouter.patch("/:recordingId/tags", async (req, res, next) => {
     }
 
     const distinctSlugs = Array.from(new Set(body.tagSlugs));
+    const dbTags = distinctSlugs.length > 0 
+      ? await prisma.tag.findMany({ where: { slug: { in: distinctSlugs }, kind: "GENRE" } })
+      : [];
+    const dbTagsBySlug = new Map(dbTags.map((t) => [t.slug, t]));
+
     const tagInfos = distinctSlugs
       .map((slug) => {
+        const existing = dbTagsBySlug.get(slug);
+        if (existing) {
+          return { slug, name: existing.name, kind: "GENRE" as const };
+        }
+
         const subgenre = getAllSubgenres().find((s) => s.slug === slug);
         if (subgenre) {
           return { slug, name: subgenre.name, kind: "GENRE" as const };
