@@ -31,10 +31,11 @@ export function ChatPage() {
   const chatMessages = station?.chatMessages ?? [];
 
   const shellHasPlayer = playerShellActive || (playing && Boolean(nowPlaying));
+  const reservePlayerSpace = shellHasPlayer;
 
-  const shellHeightClass = shellHasPlayer
-    ? "h-[calc(100dvh-var(--spacing-topbar)-var(--spacing-player-safe-mobile))] md:h-[calc(100dvh-var(--spacing-topbar)-var(--spacing-player))]"
-    : "h-[calc(100dvh-var(--spacing-topbar))]";
+  const shellHeightClass = reservePlayerSpace
+    ? "h-full"
+    : "h-full";
 
   const scrollMessagesToBottom = useCallback((behavior: ScrollBehavior = "instant") => {
     const el = chatScrollRef.current;
