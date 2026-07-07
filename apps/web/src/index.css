@@ -641,6 +641,60 @@ body {
   overflow: hidden;
 }
 
+.focus-lane__artist-hero-link {
+  display: block;
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.focus-lane__artist-hero-link:hover {
+  opacity: 0.96;
+}
+
+.focus-lane__artist-hero-scrim {
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.92) 0%,
+    rgba(0, 0, 0, 0.55) 38%,
+    rgba(0, 0, 0, 0.12) 72%,
+    rgba(0, 0, 0, 0.04) 100%
+  );
+}
+
+.focus-lane__artist-hero-footer {
+  pointer-events: none;
+}
+
+.focus-lane__artist-hero-footer a,
+.focus-lane__artist-hero-footer button {
+  pointer-events: auto;
+}
+
+.focus-lane__artist-actions {
+  pointer-events: auto;
+}
+
+.focus-lane__artist-name-slot {
+  min-height: 1.75rem;
+}
+
+@media (min-width: 640px) {
+  .focus-lane__artist-name-slot {
+    min-height: 2.25rem;
+  }
+}
+
+.focus-lane__artist-genre-slot {
+  min-height: 1.25rem;
+}
+
+.focus-lane__artist-details {
+  min-height: 1.75rem;
+}
+
+.focus-lane__artist-social {
+  flex-shrink: 0;
+}
+
 .focus-lane__artist-avatar-loading {
   display: flex;
   align-items: center;

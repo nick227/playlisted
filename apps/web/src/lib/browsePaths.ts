@@ -65,7 +65,7 @@ export function playlistsBrowseCrumbs(): BrowseCrumb[] {
 }
 
 export function favoritesBrowseCrumbs(): BrowseCrumb[] {
-  return [libraryCrumb(), { label: "Favorites", to: FAVORITES_PATH }];
+  return [libraryCrumb(), { label: "Charts", to: FAVORITES_PATH }];
 }
 
 export function playlistBrowseCrumbs(

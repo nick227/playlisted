@@ -70,13 +70,7 @@ export function LibraryTrackRow({ song, onPlay, queueTrack }: LibraryTrackRowPro
     <>
       <TrackRowPlayCount count={song.playCount} />
       <TrackRowMetaStat>{formatPlayCount(song.favoriteCount)} favs</TrackRowMetaStat>
-      <RecordingActionMenu
-        recordingId={song.id}
-        title={song.title}
-        queueTrack={queueTrack}
-        shareUrl={shareUrl}
-        transcriptAvailable={song.subtitle?.status === "READY"}
-      />
+      <FavoriteHeartButton target="recording" id={song.id} variant="inline" inlineAlwaysVisible />
     </>
   );
 
@@ -91,9 +85,6 @@ export function LibraryTrackRow({ song, onPlay, queueTrack }: LibraryTrackRowPro
       titleSlot={titleSlot}
       subtitleSlot={subtitleSlot}
       rightSlot={rightSlot}
-      cornerSlot={
-        <FavoriteHeartButton target="recording" id={song.id} variant="inline" inlineAlwaysVisible />
-      }
     />
   );
 }

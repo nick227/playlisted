@@ -114,14 +114,7 @@ export function ChartsList({ tab, range, genre, limit = CHARTS_PAGE_ITEM_LIMIT }
                   secondaryMeta={formatProfileDate(item.createdAt)}
                   audioUrl={item.audioUrl}
                   onPlay={() => playSong(item, songs)}
-                  actionSlot={
-                    <RecordingActionMenu
-                      recordingId={item.recordingId}
-                      title={item.title}
-                      queueTrack={topSongToQueueTrack(item)}
-                      shareUrl={topSongPanelShareUrl(item)}
-                    />
-                  }
+
                 />
               ))}
             </ul>
@@ -160,14 +153,7 @@ export function ChartsList({ tab, range, genre, limit = CHARTS_PAGE_ITEM_LIMIT }
                     onPlay: () => void playPlaylist(item),
                   }}
                   favorite={{ target: "playlist", id: item.playlistId }}
-                  actionSlot={
-                    <PlaylistActionMenu
-                      playlistId={item.playlistId}
-                      title={item.title}
-                      ownerUsername={item.owner.username}
-                      slug={item.slug}
-                    />
-                  }
+
                 />
               ))}
             </ul>

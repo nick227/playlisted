@@ -194,19 +194,7 @@ function PersonalTrackRow({
         {formatDuration(track.durationSeconds)}
       </span>
 
-      <RecordingActionMenu
-        className="shrink-0"
-        recordingId={track.id}
-        title={track.title}
-        queueTrack={personalTrackToQueueTrack(track)}
-        shareUrl={recordingShareUrl({
-          playlistId: track.playlist.id,
-          recordingId: track.id,
-          title: track.title,
-          username: track.uploader.username,
-          slug: track.playlist.slug,
-        })}
-      />
+
 
       <FavoriteHeartButton target="recording" id={track.id} variant="inline" className="max-sm:!hidden !opacity-100" />
     </div>
@@ -316,7 +304,6 @@ export function FavoritesPage() {
   if (!isAuthed) {
     return (
       <LibraryBrowseLayout crumbs={favoritesBrowseCrumbs()}>
-        <PanelHeader label="Favorites" />
         <FavoritesViewToggle activeView={activeView} onChange={updateActiveView} />
         {activeView === "charts" ? (
           chartsSection
@@ -343,7 +330,6 @@ export function FavoritesPage() {
 
   return (
     <LibraryBrowseLayout crumbs={favoritesBrowseCrumbs()}>
-      <PanelHeader label="Favorites" />
       <FavoritesViewToggle activeView={activeView} onChange={updateActiveView} />
       {activeView === "charts" ? chartsSection : (
         <>

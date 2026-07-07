@@ -14,7 +14,6 @@ export interface WaveformTrackRowProps {
   subtitleSlot?: ReactNode;
   leftSlot?: ReactNode;
   rightSlot?: ReactNode;
-  cornerSlot?: ReactNode;
   imageUrl?: string | null;
   imageShape?: "square" | "circle";
   imageOverlay?: ReactNode;
@@ -33,7 +32,6 @@ export function WaveformTrackRow({
   subtitleSlot,
   leftSlot,
   rightSlot,
-  cornerSlot,
   imageUrl,
   imageShape = "square",
   imageOverlay,
@@ -65,7 +63,7 @@ export function WaveformTrackRow({
   return (
     <div
       id={`track-${id}`}
-      className={`group/card relative flex flex-col gap-1.5 rounded-lg px-2 py-1.5 transition-colors sm:py-2 ${
+      className={`group/card relative flex flex-col gap-1.5 rounded-lg py-1.5 transition-colors sm:py-2 ${
         isActive ? "bg-[var(--color-surface)]/80" : "hover:bg-white/[0.04]"
       } ${className}`}
       role={onPlay ? "button" : undefined}
@@ -73,12 +71,6 @@ export function WaveformTrackRow({
       onClick={handleRowClick}
       onKeyDown={handleKeyDown}
     >
-      {cornerSlot ? (
-        <div className="absolute right-1 top-1 z-20" onClick={(e) => e.stopPropagation()}>
-          {cornerSlot}
-        </div>
-      ) : null}
-
       <div className="flex w-full items-start gap-2">
         <div className={`relative h-10 w-10 shrink-0 overflow-hidden sm:h-11 sm:w-11 ${rounded}`}>
           {imageUrl ? (
@@ -111,7 +103,7 @@ export function WaveformTrackRow({
           {!leftSlot ? <ArtworkCompactBars isActive={isActive} isPlaying={isPlaying} /> : null}
         </div>
 
-        <div className="flex min-w-0 flex-1 flex-col justify-start pt-0.5 pr-7 text-left">
+        <div className="flex min-w-0 flex-1 flex-col justify-start pt-0.5 text-left">
           {titleSlot}
           {subtitleSlot ? (
             <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 truncate text-xs text-[var(--color-text-muted)]">

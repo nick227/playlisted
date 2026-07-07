@@ -28,7 +28,7 @@ export function BrowseBreadcrumbs({ crumbs }: BrowseBreadcrumbsProps) {
   const visibleCrumbs = isMdUp ? crumbs : collapseCrumbsForMobile(crumbs);
 
   return (
-    <nav className="flex flex-wrap items-center gap-1.5 text-xs" aria-label="Breadcrumb">
+    <nav className="px-2 flex flex-wrap items-center gap-1.5 text-xs" aria-label="Breadcrumb">
       {visibleCrumbs.map((crumb, i) => {
         const isLast = i === visibleCrumbs.length - 1;
         const isEllipsis = crumb.label === "…";

@@ -30,7 +30,6 @@ interface ChartPanelRowProps {
   playCount: number;
   play: ChartPanelPlayState;
   favorite: ChartPanelFavorite;
-  actionSlot?: ReactNode;
   secondaryMeta?: string;
   variant?: "panel" | "page";
   audioUrl?: string | null;
@@ -48,7 +47,6 @@ export function ChartPanelRow({
   playCount,
   play,
   favorite,
-  actionSlot,
   secondaryMeta,
   variant = "panel",
   audioUrl,
@@ -70,12 +68,14 @@ export function ChartPanelRow({
           {secondaryMeta}
         </span>
       ) : null}
-      {actionSlot ? (
-        <div className="shrink-0" onClick={stopRowPropagation}>
-          {actionSlot}
-        </div>
-      ) : null}
+
       <TrackRowPlayCount count={playCount} suffix={isPage ? " plays" : ""} />
+      <FavoriteHeartButton
+        target={favorite.target}
+        id={favorite.id}
+        variant="inline"
+        inlineAlwaysVisible
+      />
     </>
   );
 
@@ -93,14 +93,6 @@ export function ChartPanelRow({
         titleSlot={titleSlot}
         subtitleSlot={subtitleSlot}
         rightSlot={rightSlot}
-        cornerSlot={
-          <FavoriteHeartButton
-            target={favorite.target}
-            id={favorite.id}
-            variant="inline"
-            inlineAlwaysVisible
-          />
-        }
         className={isPage ? "px-4 py-3" : "px-3 py-2.5"}
       />
     </li>

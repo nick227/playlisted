@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
 import { useRecordingReactions } from "@/hooks/useRecordingReactions";
 import {
   canToggleRecordingReaction,
@@ -10,12 +11,14 @@ import {
 import { stopPlaybackFocusBubble } from "@/lib/playbackFocus/interactiveTarget";
 
 const POP_MS = 420;
+const TRACK_REACTIONS = RECORDING_REACTIONS.filter((reaction) => reaction.id !== "love");
 
 type PlaybackFocusReactionBarProps = {
   recordingId?: string;
+  artistId?: string;
 };
 
-export function PlaybackFocusReactionBar({ recordingId }: PlaybackFocusReactionBarProps) {
+export function PlaybackFocusReactionBar({ recordingId, artistId }: PlaybackFocusReactionBarProps) {
   const { activeIds, isAuthenticated, toggleReaction } = useRecordingReactions(recordingId);
   const [popReaction, setPopReaction] = useState<RecordingReactionId | null>(null);
   const popTimerRef = useRef<number | null>(null);
@@ -42,11 +45,20 @@ export function PlaybackFocusReactionBar({ recordingId }: PlaybackFocusReactionB
     <div
       className="focus-lane__reactions"
       role="toolbar"
-      aria-label="Track reactions"
+      aria-label="Artist and track reactions"
       onPointerDown={stopPlaybackFocusBubble}
       onClick={stopPlaybackFocusBubble}
     >
-      {RECORDING_REACTIONS.map((reaction) => {
+      {artistId ? (
+        <FavoriteHeartButton
+          target="artist"
+          id={artistId}
+          variant="inline"
+          inlineAlwaysVisible
+          className="focus-lane__reaction !h-8 !w-8 !rounded-full !border !border-white/12 !bg-white/[0.06] !p-0 !opacity-100 hover:!border-white/24 hover:!bg-white/12"
+        />
+      ) : null}
+      {TRACK_REACTIONS.map((reaction) => {
         const { id, icon: Icon } = reaction;
         const isActive = activeIds.has(id);
         const isPopping = popReaction === id;

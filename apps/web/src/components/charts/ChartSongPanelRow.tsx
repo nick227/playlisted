@@ -16,7 +16,7 @@ interface ChartSongPanelRowProps {
   imageUrl?: string | null;
   playCount: number;
   onPlay: () => void;
-  actionSlot: ReactNode;
+
   secondaryMeta?: string;
   variant?: "panel" | "page";
   audioUrl?: string | null;

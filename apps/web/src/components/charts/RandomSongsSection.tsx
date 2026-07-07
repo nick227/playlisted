@@ -70,14 +70,7 @@ export function RandomSongsSection() {
                 imageUrl={item.artworkUrl}
                 playCount={item.playCount}
                 onPlay={() => play(item, songs)}
-                actionSlot={
-                  <RecordingActionMenu
-                    recordingId={item.recordingId}
-                    title={item.title}
-                    queueTrack={topSongToQueueTrack(item)}
-                    shareUrl={topSongPanelShareUrl(item)}
-                  />
-                }
+
               />
             ))}
       </ChartPanelContainer>

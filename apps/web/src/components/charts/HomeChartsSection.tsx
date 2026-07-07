@@ -80,14 +80,7 @@ export function HomeChartsSection() {
               playCount={item.playCount}
               audioUrl={item.audioUrl}
               onPlay={() => playChartSong(item, songs)}
-              actionSlot={
-                <RecordingActionMenu
-                  recordingId={item.recordingId}
-                  title={item.title}
-                  queueTrack={topSongToQueueTrack(item)}
-                  shareUrl={topSongPanelShareUrl(item)}
-                />
-              }
+
             />
           ))}
         </ChartPanelContainer>
@@ -120,14 +113,7 @@ export function HomeChartsSection() {
                 onPlay: () => void playChartPlaylist(item),
               }}
               favorite={{ target: "playlist", id: item.playlistId }}
-              actionSlot={
-                <PlaylistActionMenu
-                  playlistId={item.playlistId}
-                  title={item.title}
-                  ownerUsername={item.owner.username}
-                  slug={item.slug}
-                />
-              }
+
             />
           ))}
         </ChartPanelContainer>

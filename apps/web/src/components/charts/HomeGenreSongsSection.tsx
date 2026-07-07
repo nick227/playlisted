@@ -63,14 +63,7 @@ function GenreSongPanel({ genre }: { genre: LibraryGenre }) {
               imageUrl={item.artworkUrl}
               playCount={item.playCount}
               onPlay={() => play(item, songs)}
-              actionSlot={
-                <RecordingActionMenu
-                  recordingId={item.recordingId}
-                  title={item.title}
-                  queueTrack={topSongToQueueTrack(item)}
-                  shareUrl={topSongPanelShareUrl(item)}
-                />
-              }
+
             />
           ))}
     </ChartPanelContainer>

@@ -278,19 +278,12 @@ export function TrackRow({
           onRemove={onRemove}
         />
       ) : showActions ? (
-        <RecordingActionMenu
-          recordingId={recordingId}
-          title={title}
-          queueTrack={queueTrack}
-          shareUrl={shareUrl}
-        />
+        <FavoriteHeartButton target="recording" id={recordingId} variant="inline" inlineAlwaysVisible />
       ) : null}
     </>
   );
 
-  const cornerSlot = showActions ? (
-    <FavoriteHeartButton target="recording" id={recordingId} variant="inline" inlineAlwaysVisible />
-  ) : null;
+
 
   return (
     <>
@@ -314,7 +307,6 @@ export function TrackRow({
           </>
         }
         rightSlot={rightSlot}
-        cornerSlot={cornerSlot}
         imageOverlay={imageOverlay}
         className={editMode ? "" : (onPlay ? "cursor-pointer" : "")}
       />
