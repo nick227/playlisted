@@ -37,11 +37,13 @@ const TEMPLATE = `<!doctype html>
     <meta property="og:type" content="__META_TYPE__" />
     <meta property="og:url" content="__META_URL__" />
     <meta property="og:image" content="__META_IMAGE__" />
+    <!--__META_OG_IMAGE_SECURE_TAG__-->
+    <!--__META_OG_IMAGE_TYPE_TAG__-->
     <meta property="og:image:alt" content="__META_IMAGE_ALT__" />
     <meta name="twitter:title" content="__META_TWITTER_TITLE__" />
     <meta name="twitter:description" content="__META_TWITTER_DESCRIPTION__" />
     <meta name="twitter:image" content="__META_TWITTER_IMAGE__" />
-    <script type="application/ld+json" id="share-json-ld">__META_JSON_LD__</script>
+    <script type="application/ld+json" id="share-json-ld"><!--__META_JSON_LD__--></script>
   </head>
   <body></body>
 </html>`;
@@ -77,7 +79,12 @@ describe("injectShareMeta", () => {
 
     expect(html).toContain("<title>Playlisted — Music charts and curated playlists for independent artists</title>");
     expect(html).toContain('content="https://playlisted.com/og/playlisted-default.jpg"');
+    expect(html).toContain('<meta property="og:image:secure_url" content="https://playlisted.com/og/playlisted-default.jpg" />');
+    expect(html).toContain('<meta property="og:image:type" content="image/jpeg" />');
     expect(html).not.toContain("__META_TITLE__");
+    expect(html).not.toContain("__META_OG_IMAGE_SECURE_TAG__");
+    expect(html).not.toContain("__META_OG_IMAGE_TYPE_TAG__");
+    expect(html).not.toContain("__META_JSON_LD__");
   });
 
   it("emits valid JSON-LD", async () => {
