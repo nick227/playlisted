@@ -293,7 +293,7 @@ export function AdminTagsPage() {
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
           placeholder="New tag name…"
-          className="flex-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-white placeholder-[var(--color-text-muted)] focus:outline-none focus:ring-1 focus:ring-amber-400/50"
+          className="flex-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-white placeholder-[var(--color-text-muted)] focus:outline-none focus:ring-1 min-w-0 focus:ring-amber-400/50"
         />
         <select
           value={newKind}

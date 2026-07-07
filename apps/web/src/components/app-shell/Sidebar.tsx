@@ -150,7 +150,7 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
           type="button"
           className="fixed inset-0 z-[10055] bg-black/60 lg:hidden"
           onClick={onClose}
-          aria-label="Close menu"
+        aria-label="Close menu"
         />
       ) : null}
       <aside

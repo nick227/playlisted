@@ -79,14 +79,14 @@ export function AdminDashboardPage() {
       </div>
 
       {/* Top-level stat cards */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Total users" value={fmt(totals.users.total)} sub={`+${totals.users.newToday} today · +${totals.users.newThisWeek} this week`} />
         <StatCard label="Published songs" value={fmt(totals.songs.published)} sub={`${totals.songs.draft} drafts · ${totals.songs.total} total`} />
         <StatCard label="Published playlists" value={fmt(totals.playlists.published)} sub={`${totals.playlists.total} total`} />
         <StatCard label="Plays today" value={fmt(totals.plays.today)} sub={`${fmt(totals.plays.total)} all time`} accent />
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Listen time today" value={fmtHours(totals.playSeconds.today)} sub={`${fmtHours(totals.playSeconds.total)} all time`} />
         <StatCard label="Saves" value={fmt(totals.saves)} />
         <StatCard label="Follows" value={fmt(totals.follows)} />

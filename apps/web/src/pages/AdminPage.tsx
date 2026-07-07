@@ -17,7 +17,7 @@ export function AdminPage() {
   const { user } = useAuth();
 
   return (
-    <div className="mx-auto max-w-5xl space-y-8 bg-black/90 p-4 rounded-lg min-h-screen">
+    <div className="mx-auto w-full min-w-0 max-w-5xl space-y-8 bg-black/90 p-4 rounded-lg min-h-screen">
       <div>
         <p className="text-xs font-semibold uppercase tracking-wider text-amber-400">Administration</p>
         <h1 className="mt-1 text-4xl font-extrabold tracking-tight text-white">Control center</h1>
@@ -26,17 +26,17 @@ export function AdminPage() {
         </p>
       </div>
 
-      <nav className="flex gap-1 border-b border-[var(--color-border)] md:mx-0">
+      <nav className="flex flex-wrap gap-2 md:mx-0 mb-6">
         {NAV.filter((item) => item.roles?.includes(user?.role ?? "") ?? true).map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
             end={(item as any).end}
             className={({ isActive }) =>
-              `px-4 py-2.5 text-sm font-medium transition border-b-2 -mb-px whitespace-nowrap bg-black ${
+              `px-3 py-1.5 text-sm font-medium transition rounded-lg whitespace-nowrap ${
                 isActive
-                  ? "border-amber-400 text-white"
-                  : "border-transparent text-[var(--color-text-muted)] hover:text-white"
+                  ? "bg-amber-400 text-black font-bold shadow-sm"
+                  : "bg-white/5 text-[var(--color-text-muted)] hover:bg-white/10 hover:text-white border border-[var(--color-border)]"
               }`
             }
           >
