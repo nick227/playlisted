@@ -12,9 +12,11 @@ interface GenreHorizontalPanelProps {
   isGenreStationPlaying: (slug: string) => boolean;
 }
 
-const DRAG_THRESHOLD_PX = 5;
-const INERTIA_MIN_VELOCITY = 0.02;
-const INERTIA_DECAY_MS = 325;
+const DRAG_THRESHOLD_PX = 2;
+const INERTIA_MIN_VELOCITY = 0.012;
+const INERTIA_DECAY_MS = 520;
+const INERTIA_VELOCITY_BOOST = 1.45;
+const VELOCITY_SAMPLE_COUNT = 5;
 const SCROLL_MASKS = {
   none: "none",
   left: "linear-gradient(to right, transparent, black 2rem, black 100%)",
@@ -40,8 +42,10 @@ export function GenreHorizontalPanel({
     lastX: 0,
     lastTime: 0,
     velocity: 0,
+    velocitySamples: [] as number[],
     moved: false,
   });
+  const scrollSuppressionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inertiaFrameRef = useRef<number | null>(null);
   const inertiaLastTimeRef = useRef(0);
   const clickSuppressionUntilRef = useRef(0);
@@ -87,6 +91,9 @@ export function GenreHorizontalPanel({
       if (inertiaFrameRef.current !== null) {
         cancelAnimationFrame(inertiaFrameRef.current);
       }
+      if (scrollSuppressionTimeoutRef.current !== null) {
+        clearTimeout(scrollSuppressionTimeoutRef.current);
+      }
     };
   }, []);
 
@@ -130,6 +137,30 @@ export function GenreHorizontalPanel({
     inertiaFrameRef.current = null;
   }
 
+  function suppressClicksAfterScroll() {
+    clickSuppressionUntilRef.current = performance.now() + 450;
+    if (scrollSuppressionTimeoutRef.current !== null) {
+      clearTimeout(scrollSuppressionTimeoutRef.current);
+    }
+    scrollSuppressionTimeoutRef.current = setTimeout(() => {
+      scrollSuppressionTimeoutRef.current = null;
+    }, 450);
+  }
+
+  function pushVelocitySample(samples: number[], velocity: number) {
+    const nextSamples = [...samples, velocity];
+    if (nextSamples.length > VELOCITY_SAMPLE_COUNT) {
+      nextSamples.shift();
+    }
+    return nextSamples;
+  }
+
+  function averageVelocity(samples: number[]) {
+    if (samples.length === 0) return 0;
+    const total = samples.reduce((sum, value) => sum + value, 0);
+    return (total / samples.length) * INERTIA_VELOCITY_BOOST;
+  }
+
   function startInertia(velocity: number) {
     const scroller = scrollerRef.current;
     if (!scroller || Math.abs(velocity) < INERTIA_MIN_VELOCITY) return;
@@ -170,7 +201,7 @@ export function GenreHorizontalPanel({
   }
 
   function handlePointerDown(event: PointerEvent<HTMLDivElement>) {
-    if (event.pointerType === "mouse" && event.button !== 0) return;
+    if (event.pointerType !== "mouse" || event.button !== 0) return;
 
     const scroller = scrollerRef.current;
     if (!scroller || scroller.scrollWidth <= scroller.clientWidth) return;
@@ -186,6 +217,7 @@ export function GenreHorizontalPanel({
       lastX: event.clientX,
       lastTime: now,
       velocity: 0,
+      velocitySamples: [],
       moved: false,
     };
   }
@@ -200,7 +232,9 @@ export function GenreHorizontalPanel({
 
     const now = performance.now();
     const elapsed = Math.max(1, now - drag.lastTime);
-    drag.velocity = (drag.lastX - event.clientX) / elapsed;
+    const frameVelocity = (drag.lastX - event.clientX) / elapsed;
+    drag.velocity = frameVelocity;
+    drag.velocitySamples = pushVelocitySample(drag.velocitySamples, frameVelocity);
     drag.lastX = event.clientX;
     drag.lastTime = now;
     drag.moved = true;
@@ -225,9 +259,14 @@ export function GenreHorizontalPanel({
     dragRef.current = { ...drag, active: false };
     setIsDragging(false);
     if (drag.moved) {
-      clickSuppressionUntilRef.current = performance.now() + 450;
+      suppressClicksAfterScroll();
     }
-    startInertia(drag.velocity);
+    startInertia(averageVelocity(drag.velocitySamples));
+  }
+
+  function handleNativeScroll() {
+    updateScrollButtons();
+    suppressClicksAfterScroll();
   }
 
   function suppressClickAfterDrag(event: MouseEvent<HTMLDivElement>) {
@@ -265,8 +304,8 @@ export function GenreHorizontalPanel({
           onPointerCancel={endDrag}
           onLostPointerCapture={endDrag}
           onClickCapture={suppressClickAfterDrag}
-          onScroll={updateScrollButtons}
-          className={`genre-horizontal-panel w-full touch-pan-y select-none overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
+          onScroll={handleNativeScroll}
+          className={`genre-horizontal-panel w-full touch-pan-x select-none overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
             isDragging ? "cursor-grabbing" : "cursor-grab"
           }`}
           style={{
