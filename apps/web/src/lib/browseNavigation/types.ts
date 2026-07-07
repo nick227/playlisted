@@ -28,6 +28,7 @@ export const BROWSE_SWIPE_NAVIGATION_STATE = "swipe" as const;
 
 export type BrowseNavigationState = {
   intent: typeof BROWSE_SWIPE_NAVIGATION_STATE;
+  preserveTheatreFocus?: boolean;
 };
 
 export function isBrowseSwipeNavigation(

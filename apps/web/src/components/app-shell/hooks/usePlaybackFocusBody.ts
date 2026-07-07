@@ -1,13 +1,7 @@
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type PointerEvent,
-  type RefObject,
-  type SyntheticEvent,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent, type RefObject, type SyntheticEvent } from "react";
+import { useLocation } from "react-router-dom";
+
+import { isBrowseSwipeNavigation } from "@/lib/browseNavigation/types";
 
 import { getPlaybackFocusBodyFadeSuppressed } from "@/lib/playbackFocusBodyFade";
 import { isPlaybackFocusInteractiveTarget } from "@/lib/playbackFocus/interactiveTarget";
@@ -66,6 +60,7 @@ export function usePlaybackFocusBody({
   const playbackFocusSuppressed = usePlaybackFocusSuppressed();
   const { subtitlesEnabled } = useSubtitleDisplay();
   const { theatreFxEnabled } = useTheatreMode();
+  const location = useLocation();
 
   const bodyFocusTimerRef = useRef<number | null>(null);
   const miniViewTimerRef = useRef<number | null>(null);
@@ -168,6 +163,24 @@ export function usePlaybackFocusBody({
     previousFocusTrackKeyRef.current = focusTrackKey;
     previousLocationKeyRef.current = locationKey;
 
+    if (
+      locationChanged &&
+      isBrowseSwipeNavigation(location.state) &&
+      location.state.preserveTheatreFocus &&
+      bodyFocusHiddenRef.current &&
+      !playbackFocusSuppressed &&
+      !bodyFadeDisabled
+    ) {
+      clearFocusTimer();
+      setBodyFadedAtTrackMs(currentTimeMsRef.current);
+      setMiniViewVisible(false);
+      return () => {
+        clearFocusTimer();
+        clearSnapRevealTimer();
+        clearRevealInteractionTimer();
+      };
+    }
+
     if (!playFocusActive) {
       clearFocusTimer();
       setBodyFocusHidden(false);
@@ -211,6 +224,7 @@ export function usePlaybackFocusBody({
     playbackFocusSuppressed,
     playFocusActive,
     search,
+    location.state,
   ]);
 
   // Page activity resets the pending hide timer without restoring hidden content.
@@ -263,7 +277,7 @@ export function usePlaybackFocusBody({
     }, 250);
   }, [clearRevealInteractionTimer, consumeRevealEvent]);
 
-  const handleRevealPointerDown = useCallback((event: PointerEvent<HTMLButtonElement>) => {
+  const handleRevealPointerDown = useCallback((event: PointerEvent<HTMLElement>) => {
     if (isPlaybackFocusInteractiveTarget(event.target)) return;
     consumeRevealEvent(event);
     clearRevealInteractionTimer();
@@ -278,7 +292,7 @@ export function usePlaybackFocusBody({
   const revealShieldVisible = bodyFocusMode || snapReveal || revealInteractionActive;
 
   useEffect(() => {
-    if (!revealShieldVisible) return;
+    if (!revealShieldVisible || bodyFocusMode) return;
 
     const handleDocumentPointerDown = (event: globalThis.PointerEvent) => {
       if (isPlaybackFocusInteractiveTarget(event.target)) return;
@@ -290,7 +304,7 @@ export function usePlaybackFocusBody({
     return () => {
       document.removeEventListener("pointerdown", handleDocumentPointerDown, { capture: true });
     };
-  }, [revealPage, revealShieldVisible]);
+  }, [bodyFocusMode, revealPage, revealShieldVisible]);
 
   const focusState = useMemo<PlaybackFocusState>(
     () => ({
