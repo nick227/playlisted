@@ -4,7 +4,6 @@ import {
   RadioIcon,
   Music,
   Lock,
-  Library,
   type LucideIcon,
   Home,
 } from "lucide-react";

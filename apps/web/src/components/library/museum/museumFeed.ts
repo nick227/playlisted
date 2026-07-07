@@ -1,4 +1,4 @@
-import type { LibraryArtist, LibrarySong, PlaylistSummary } from "@playlisted/client-sdk";
+import type { LibrarySong } from "@playlisted/client-sdk";
 
 import type { MuseumExhibit, MuseumPools } from "./museumTypes";
 
@@ -16,7 +16,7 @@ const BATCH_PATTERN = [
   "artist-feature",
   "song-tracklist",
   "lyric-placard",
-  "song-tracklist",
+  "song-grid",
   "artist-grid",
   "listening-room",
   "playlist-grid",

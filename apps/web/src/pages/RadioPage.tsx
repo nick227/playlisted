@@ -25,7 +25,7 @@ function formatTime(totalSeconds?: number | null) {
   return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
 }
 
-export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
+export function RadioPage({ isEmbedded: _isEmbedded = false }: { isEmbedded?: boolean }) {
   const { status, user, accessToken } = useAuth();
   const {
     playing,
