@@ -69,13 +69,13 @@ export function MuseumPanel({
   return (
     <div
       className={[
-        "museum-panel relative min-w-0 overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.025] shadow-[0_20px_70px_rgba(0,0,0,0.32)]",
+        "museum-panel relative w-full min-w-0",
         pad,
         className ?? "",
       ].join(" ")}
     >
       <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent"
+        className="pointer-events-none"
         aria-hidden
       />
       {children}
@@ -95,7 +95,7 @@ export function MuseumSectionHeader({
   return (
     <div className="mb-3 flex min-h-[1.75rem] items-end justify-between gap-4">
       <div className="min-w-0">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-white/42">{label}</p>
+        <p className="truncate text-[10px] font-semibold uppercase tracking-[0.32em] text-white/42">{label}</p>
         <div className="mt-2 h-px w-10 bg-gradient-to-r from-[var(--color-brand)]/70 to-transparent" />
       </div>
       {href ? (

@@ -73,7 +73,7 @@ export function MuseumLyricPlacard({ song }: MuseumLyricPlacardProps) {
               </div>
             ) : null}
 
-            <MuseumPanel padding="roomy" className="border-0 bg-black/15 shadow-none">
+            <MuseumPanel padding="roomy" className="border-0 w-full">
               <blockquote className="max-w-2xl font-serif text-[clamp(1.35rem,3.2vw,2.35rem)] font-light italic leading-[1.15] tracking-tight text-white/82">
                 {line ? `“${line}”` : "…"}
               </blockquote>

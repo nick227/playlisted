@@ -267,18 +267,18 @@ export function RadioPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
             {playlistUrl ? (
               <Link
                 to={playlistUrl}
-                className="overflow-hidden transition hover:text-[var(--color-brand)] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] bg-[var(--color-canvas)]/80 rounded-sm p-2"
+                className="overflow-hidden transition hover:text-[var(--color-brand)] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] bg-[var(--color-canvas)]/80 shadow-[0_0_20px_rgba(0,0,0,0.5)]  rounded-sm p-2"
               >
                 <MagicFont>{displayTitle ?? "Radio"}</MagicFont>
               </Link>
             ) : (
-              <span className="overflow-hidden [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] bg-[var(--color-canvas)]/80 rounded-sm">
+              <span className="overflow-hidden [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] bg-[var(--color-canvas)]/80 shadow-[0_0_20px_rgba(0,0,0,0.5)]  rounded-sm">
                 {displayTitle ?? "Radio"}
               </span>
             )}
           </h1>
 
-          <p className="mt-1 h-7 max-w-full truncate text-base leading-7 text-[var(--color-text-muted)] bg-[var(--color-canvas)]/80 rounded-sm px-4 sm:mt-3">
+          <p className="mt-1 h-7 max-w-full truncate text-base leading-7 text-[var(--color-text-muted)] bg-[var(--color-canvas)]/80 shadow-[0_0_20px_rgba(0,0,0,0.5)]  rounded-sm px-4 sm:mt-3">
             {displayArtistName ? (
               displayArtistUsername ? (
                 <Link to={profilePath(displayArtistUsername)} className="hover:text-white transition">

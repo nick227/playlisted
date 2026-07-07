@@ -46,13 +46,13 @@ export function MuseumShowcase({ artist, songs, playlist, lyricSong, peers }: Mu
 
       <MuseumExhibitFrame className="relative">
         <div className={MUSEUM_GRID}>
-          <div className={MUSEUM_COL_LEFT}>
+          <div className={`${MUSEUM_COL_LEFT} hidden md:block`}>
             <MuseumSectionHeader label="Featured artist" />
           </div>
-          <div className={MUSEUM_COL_TRACKS}>
+          <div className={`${MUSEUM_COL_TRACKS} hidden md:block`}>
             <MuseumSectionHeader label="Recordings" />
           </div>
-          <div className={MUSEUM_COL_PLAYLIST}>
+          <div className={`${MUSEUM_COL_PLAYLIST} hidden md:block`}>
             <MuseumSectionHeader label="Playlist" />
           </div>
 

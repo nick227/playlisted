@@ -4,6 +4,7 @@ import {
   RadioIcon,
   Music,
   Lock,
+  Library,
   type LucideIcon,
   Home,
 } from "lucide-react";
@@ -16,7 +17,7 @@ import { DEFAULT_COLLECTION_TITLE } from "@/components/studio/studioCollectionUt
 import { authedApi } from "@/lib/authedApi";
 import { playbackFocusTiming } from "@/lib/playbackFocusTiming";
 import { usePlaybackFocusSuppressed } from "@/lib/playbackFocusSuppression";
-import { FAVORITES_PATH } from "@/lib/browsePaths";
+import { FAVORITES_PATH, LIBRARY_PATH } from "@/lib/browsePaths";
 import { ADMIN_PATH, currentUserProfilePath, panelPathForRole, playlistPath, studioCollectionEditPath } from "@/lib/routes";
 import { useAuth } from "@/providers/AuthProvider";
 
@@ -186,7 +187,8 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
               {discoverLinks.map((link) => (
                 <NavItem key={link.to} {...link} onClick={onClose} />
               ))}
-              <NavItem to={FAVORITES_PATH} label="Favorites" icon={Heart} onClick={onClose} end />
+              <NavItem to={FAVORITES_PATH} label="Charts" icon={Heart} onClick={onClose} end />
+              <NavItem to={LIBRARY_PATH} label="Library" icon={Heart} onClick={onClose} end />
               <NavItem to={profileNavPath} label="Profile" icon={Home} onClick={onClose} end />
               {showAdminLink ? (
                 <NavItem

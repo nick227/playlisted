@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { useFocusLanePlayback } from "@/hooks/useFocusLanePlayback";
@@ -27,6 +27,7 @@ import { useFocusLaneVisibility } from "./useFocusLaneVisibility";
 type PlaybackFocusLaneProps = {
   focusState: PlaybackFocusState;
   withPlayer?: boolean;
+  onSitePlayerCollapseChange?: (collapsed: boolean) => void;
 };
 
 const SUBTITLE_POLL_INTERVAL_MS = 3000;
@@ -34,12 +35,17 @@ const SUBTITLE_POLL_INTERVAL_MS = 3000;
 // polling for the entire duration of playback.
 const SUBTITLE_POLL_MAX_ATTEMPTS = 20;
 
-export function PlaybackFocusLane({ focusState, withPlayer = false }: PlaybackFocusLaneProps) {
+export function PlaybackFocusLane({
+  focusState,
+  withPlayer = false,
+  onSitePlayerCollapseChange,
+}: PlaybackFocusLaneProps) {
   const { accessToken } = useAuth();
   const { playbackContext } = useAudioPlayer();
   const { subtitlesEnabled } = useSubtitleDisplay();
   const { track, isPlaying, currentTime, isRadio } = useFocusLanePlayback();
   const queryClient = useQueryClient();
+  const [siteMiniPlayerDocked, setSiteMiniPlayerDocked] = useState(false);
 
   const recording = useMemo(
     () => toFocusRecording(track, isRadio ? undefined : playbackContext),
@@ -138,10 +144,34 @@ export function PlaybackFocusLane({ focusState, withPlayer = false }: PlaybackFo
 
   const isSubtitleFixture = displayFixture?.type === "subtitle";
   const isArtistVisualFixture = artistVisualPosition;
-  const showMiniPlayer =
-    isRadio &&
-    layerVisible &&
-    (isSubtitleFixture || (isArtistVisualFixture && artistVisualMinimized));
+  const miniPlayerRequested = isSubtitleFixture || (isArtistVisualFixture && artistVisualMinimized);
+  const showMiniPlayer = layerVisible && miniPlayerRequested;
+  const shouldCollapseSitePlayer = !isRadio && miniPlayerRequested;
+
+  useEffect(() => {
+    if (!onSitePlayerCollapseChange) return;
+
+    if (!shouldCollapseSitePlayer) {
+      setSiteMiniPlayerDocked(false);
+      onSitePlayerCollapseChange(false);
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      setSiteMiniPlayerDocked(true);
+      onSitePlayerCollapseChange(true);
+    }, 180);
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [onSitePlayerCollapseChange, shouldCollapseSitePlayer]);
+
+  const handleExpandMiniPlayer = () => {
+    setSiteMiniPlayerDocked(false);
+    onSitePlayerCollapseChange?.(false);
+    expandArtistVisual();
+  };
 
   if (!recording?.id || !focusState.hasBodyFaded || !isPlaying) {
     return null;
@@ -170,17 +200,16 @@ export function PlaybackFocusLane({ focusState, withPlayer = false }: PlaybackFo
           />
         </div>
       </div>
-      {isRadio ? (
-        <MinimizedSongPlayer
-          recording={recording}
-          artistName={artist?.artistName ?? recording.ownerName ?? undefined}
-          artistUsername={recording.ownerUsername}
-          visible={showMiniPlayer}
-          showExpand={Boolean(isArtistVisualFixture && artistVisualMinimized)}
-          onExpand={expandArtistVisual}
-          withPlayer={withPlayer}
-        />
-      ) : null}
+      <MinimizedSongPlayer
+        recording={recording}
+        artistName={artist?.artistName ?? recording.ownerName ?? undefined}
+        artistUsername={recording.ownerUsername}
+        visible={showMiniPlayer}
+        showExpand={Boolean(isArtistVisualFixture && artistVisualMinimized)}
+        onExpand={handleExpandMiniPlayer}
+        withPlayer={withPlayer}
+        dockedToSitePlayer={siteMiniPlayerDocked}
+      />
     </>,
     document.body,
   );

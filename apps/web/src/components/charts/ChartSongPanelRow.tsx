@@ -19,12 +19,14 @@ interface ChartSongPanelRowProps {
   actionSlot: ReactNode;
   secondaryMeta?: string;
   variant?: "panel" | "page";
+  audioUrl?: string | null;
 }
 
 export function ChartSongPanelRow({
   recordingId,
   playbackOrigin,
   onPlay,
+  audioUrl,
   ...row
 }: ChartSongPanelRowProps) {
   const { isActive, isPlaying } = useTrackPlayback(recordingId, playbackOrigin);
@@ -32,6 +34,7 @@ export function ChartSongPanelRow({
   return (
     <ChartPanelRow
       {...row}
+      audioUrl={audioUrl}
       play={{ isActive, isPlaying, onPlay }}
       favorite={{ target: "recording", id: recordingId }}
     />

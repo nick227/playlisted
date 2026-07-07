@@ -112,6 +112,7 @@ export function ChartsList({ tab, range, genre, limit = CHARTS_PAGE_ITEM_LIMIT }
                   imageUrl={item.artworkUrl}
                   playCount={item.playCount}
                   secondaryMeta={formatProfileDate(item.createdAt)}
+                  audioUrl={item.audioUrl}
                   onPlay={() => playSong(item, songs)}
                   actionSlot={
                     <RecordingActionMenu

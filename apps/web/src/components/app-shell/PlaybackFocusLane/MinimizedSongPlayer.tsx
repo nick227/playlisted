@@ -14,6 +14,7 @@ type MinimizedSongPlayerProps = {
   showExpand: boolean;
   onExpand?: () => void;
   withPlayer: boolean;
+  dockedToSitePlayer?: boolean;
 };
 
 export function MinimizedSongPlayer({
@@ -24,6 +25,7 @@ export function MinimizedSongPlayer({
   showExpand,
   onExpand,
   withPlayer,
+  dockedToSitePlayer = false,
 }: MinimizedSongPlayerProps) {
   const links = resolveArtistVisualLinks({
     recording,
@@ -37,6 +39,7 @@ export function MinimizedSongPlayer({
         "focus-lane__mini-player",
         visible ? "is-visible" : "",
         withPlayer ? "" : "focus-lane__mini-player--no-player",
+        dockedToSitePlayer ? "focus-lane__mini-player--site-player-collapsed" : "",
       ]
         .filter(Boolean)
         .join(" ")}

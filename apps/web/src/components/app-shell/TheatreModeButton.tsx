@@ -10,6 +10,16 @@ export function TheatreModeButton() {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  function handleSubtitlesClick() {
+    setOpen(false);
+    toggleSubtitlesEnabled();
+  }
+
+  function handleTheatreClick() {
+    setOpen(false);
+    void toggleTheatreMode();
+  }
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent | TouchEvent) {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
@@ -54,7 +64,7 @@ export function TheatreModeButton() {
         <div className="absolute right-0 top-full z-50 mt-2 w-48 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] py-1 shadow-xl">
             <button
               type="button"
-              onClick={toggleSubtitlesEnabled}
+              onClick={handleSubtitlesClick}
               className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-white hover:bg-white/5"
             >
               <Captions
@@ -66,7 +76,7 @@ export function TheatreModeButton() {
             <button
               type="button"
               disabled={theatreLoading || (!theatreFxEnabled && !canEnterTheatre)}
-              onClick={toggleTheatreMode}
+              onClick={handleTheatreClick}
               className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-white hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40"
               title={
                 theatreLoading

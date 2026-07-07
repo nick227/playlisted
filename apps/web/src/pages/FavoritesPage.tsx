@@ -234,7 +234,7 @@ function Section({
     <section className={["mb-7 last:mb-0 sm:mb-8", className].join(" ")}>
       <div className="mb-3 flex items-end justify-between gap-4 sm:mb-4">
         <div>
-          <h2 className="text-lg font-bold tracking-tight text-white sm:text-xl">{title}</h2>
+          {title && <h2 className="text-lg font-bold tracking-tight text-white sm:text-xl">{title}</h2>}
           {subtitle && <p className="mt-0.5 text-sm text-[var(--color-text-muted)]">{subtitle}</p>}
         </div>
       </div>
@@ -292,7 +292,7 @@ export function FavoritesPage() {
   );
 
   const chartsSection = (
-    <Section title="Charts" subtitle="The top ten across Playlisted" className="mt-6 sm:mt-8">
+    <Section title="" subtitle="" className="mt-2">
       <div className="overflow-hidden rounded-xl border border-[var(--color-border)]">
         <ChartsFilterBar
           tab={chartState.tab}
@@ -349,7 +349,7 @@ export function FavoritesPage() {
         <>
           <Section
             title="Collections"
-            className="mt-6 sm:mt-8"
+            className="mt-2"
             loading={favoritePlaylists.isLoading}
             empty={
               favPlaylistItems.length === 0

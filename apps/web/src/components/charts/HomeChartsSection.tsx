@@ -78,6 +78,7 @@ export function HomeChartsSection() {
               genre={item.genre}
               imageUrl={item.artworkUrl}
               playCount={item.playCount}
+              audioUrl={item.audioUrl}
               onPlay={() => playChartSong(item, songs)}
               actionSlot={
                 <RecordingActionMenu

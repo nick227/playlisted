@@ -39,7 +39,11 @@ const playerBodyClass =
 const mobileActionButtonClass =
   "grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white/5 text-[var(--color-text-muted)] transition hover:bg-white/10 hover:text-white";
 
-export function BottomPlayer() {
+type BottomPlayerProps = {
+  collapsedByFocusLane?: boolean;
+};
+
+export function BottomPlayer({ collapsedByFocusLane = false }: BottomPlayerProps) {
   const location = useLocation();
   const {
     currentTrack,
@@ -166,7 +170,9 @@ export function BottomPlayer() {
   return createPortal(
     <footer
       data-bottom-player
-      className={`${playerFooterClass}${playerBarExiting ? " bottom-player--exit pointer-events-none" : ""}`}
+      className={`${playerFooterClass}${playerBarExiting ? " bottom-player--exit pointer-events-none" : ""}${
+        collapsedByFocusLane ? " bottom-player--focus-collapsed" : ""
+      }`}
       aria-hidden={playerBarExiting}
     >
       <div
@@ -182,7 +188,10 @@ export function BottomPlayer() {
             style={{ width: `${progress}%` }}
           />
         </div>
-        <div className={playerBodyClass}>
+        <div
+          className={`bottom-player__body ${playerBodyClass}`}
+          aria-hidden={collapsedByFocusLane}
+        >
           <button
             type="button"
             onClick={handleClosePlayer}
