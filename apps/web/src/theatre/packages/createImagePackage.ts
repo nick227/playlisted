@@ -27,7 +27,7 @@ export type CreateImagePackageOptions = {
   rotation?: ScenePresetDef['rotation']
 }
 
-const MAX_IMAGE_COUNT = 10
+const MAX_IMAGE_COUNT = 46
 const IMAGE_EXTENSIONS = ['jpg', 'webp', 'png'] as const
 
 function imageCandidates(n: number): string[] {
