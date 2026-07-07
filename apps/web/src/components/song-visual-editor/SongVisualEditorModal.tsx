@@ -106,13 +106,14 @@ function SongVisualEditorModalInner({
   });
 
   return createPortal(
-    <div
-      className="absolute inset-x-0 top-0 z-[10000] flex min-h-screen items-start justify-center bg-black/70 backdrop-blur-sm md:p-4"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) handleClose();
-      }}
-    >
-      <div className="flex min-h-screen w-full min-w-0 max-w-5xl flex-col overflow-hidden border border-white/10 bg-[var(--color-canvas)] shadow-2xl">
+    <div className="fixed inset-0 z-[10050] overflow-y-auto bg-black/70 backdrop-blur-sm">
+      <div
+        className="flex min-h-full items-start justify-center md:p-4"
+        onMouseDown={(event) => {
+          if (event.target === event.currentTarget) handleClose();
+        }}
+      >
+        <div className="flex w-full min-w-0 max-w-5xl flex-col border border-white/10 bg-[var(--color-canvas)] shadow-2xl">
         <header className="relative flex shrink-0 items-center justify-center border-b border-white/10 bg-black/20 px-12 py-3 md:px-14">
           <h2 className="truncate text-center text-base font-semibold text-white md:text-lg">
             {recording.title}
@@ -138,7 +139,7 @@ function SongVisualEditorModalInner({
                   recording={recording}
                   audioRef={playback.audioRef}
                   onTogglePlayback={playback.togglePlayback}
-                  canPlay={Boolean(recording.audioUrl) && durationSec > 0}
+                  canPlay={Boolean(recording.audioUrl)}
                   showOverlays={showOverlays}
                 />
               </div>
@@ -165,7 +166,7 @@ function SongVisualEditorModalInner({
               isDirty={editor.isDirty}
               isSaving={editor.isSaving}
               isPlaying={playback.isPlaying}
-              canPlay={Boolean(recording.audioUrl) && durationSec > 0}
+              canPlay={Boolean(recording.audioUrl)}
               editMode={editMode}
               onEditModeChange={setEditMode}
               onTogglePlayback={playback.togglePlayback}
@@ -241,6 +242,7 @@ function SongVisualEditorModalInner({
           preload="metadata"
           className="hidden"
         />
+        </div>
       </div>
     </div>,
     document.body,

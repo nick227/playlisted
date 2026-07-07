@@ -92,8 +92,7 @@ export function useSongVisualTheatrePreview({
       if (cancelled || !container) return;
 
       const layer = document.createElement("div");
-      layer.className = "absolute inset-0 overflow-hidden";
-      layer.style.pointerEvents = "none";
+      layer.className = "pointer-events-none absolute inset-0 overflow-hidden [&_*]:pointer-events-none";
       container.appendChild(layer);
       layerRef.current = layer;
 

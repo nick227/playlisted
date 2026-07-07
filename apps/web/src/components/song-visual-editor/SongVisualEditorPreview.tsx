@@ -63,20 +63,19 @@ export function SongVisualEditorPreview({
 
   return (
     <div className="mx-auto flex w-full min-w-0 max-w-xl shrink-0 justify-center">
-      <button
-        type="button"
-        disabled={!canPlay}
-        onClick={onTogglePlayback}
-        className="group/preview relative w-full max-w-full max-h-[34vh] overflow-hidden rounded-xl border border-white/10 bg-black text-left disabled:cursor-default"
+      <div
+        className="group/preview relative w-full max-w-full max-h-[34vh] overflow-hidden rounded-xl border border-white/10 bg-black text-left"
         style={{ aspectRatio }}
-        aria-label={isPlaying ? "Pause preview" : "Play preview"}
       >
         {!media ? (
           <div className="flex h-full w-full items-center justify-center px-6 text-center text-sm text-white/35">
             Add media to preview visuals
           </div>
         ) : (
-          <div ref={containerRef} className="pointer-events-none absolute inset-0" />
+          <div
+            ref={containerRef}
+            className="pointer-events-none absolute inset-0 [&_*]:pointer-events-none"
+          />
         )}
 
         {showOverlays ? (
@@ -85,20 +84,6 @@ export function SongVisualEditorPreview({
             recording={recording}
             currentTimeSec={currentTimeSec}
           />
-        ) : null}
-
-        {canPlay ? (
-          isPlaying ? (
-            <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center opacity-0 transition-opacity duration-200 group-hover/preview:opacity-100">
-              <span className="flex h-16 w-16 items-center justify-center rounded-full bg-black/55 text-white shadow-lg backdrop-blur-sm">
-                <Pause size={30} fill="currentColor" />
-              </span>
-            </div>
-          ) : (
-            <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center bg-black/20">
-              <Play size={72} className="ml-2 text-white/95 drop-shadow-[0_4px_24px_rgba(0,0,0,0.65)]" fill="currentColor" strokeWidth={0} />
-            </div>
-          )
         ) : null}
 
         {media ? (
@@ -112,7 +97,31 @@ export function SongVisualEditorPreview({
             </p>
           </div>
         ) : null}
-      </button>
+
+        {canPlay ? (
+          <button
+            type="button"
+            onClick={onTogglePlayback}
+            className="absolute inset-0 z-30 flex items-center justify-center border-0 bg-transparent p-0 text-left"
+            aria-label={isPlaying ? "Pause preview" : "Play preview"}
+          >
+            {isPlaying ? (
+              <span className="pointer-events-none flex h-16 w-16 items-center justify-center rounded-full bg-black/55 text-white opacity-0 shadow-lg backdrop-blur-sm transition-opacity duration-200 group-hover/preview:opacity-100">
+                <Pause size={30} fill="currentColor" />
+              </span>
+            ) : (
+              <span className="pointer-events-none flex h-full w-full items-center justify-center bg-black/20">
+                <Play
+                  size={72}
+                  className="ml-2 text-white/95 drop-shadow-[0_4px_24px_rgba(0,0,0,0.65)]"
+                  fill="currentColor"
+                  strokeWidth={0}
+                />
+              </span>
+            )}
+          </button>
+        ) : null}
+      </div>
     </div>
   );
 }

@@ -90,7 +90,9 @@ export function useSongVisualPreviewPlayback(audioUrl?: string | null) {
     const audio = audioRef.current;
     if (!audio || !audioUrl) return;
     if (audio.paused) {
-      void playPreviewAudio(audio).catch(() => undefined);
+      void playPreviewAudio(audio).catch((error) => {
+        console.warn("[song-visual-preview] audio play failed", error);
+      });
       return;
     }
     audio.pause();

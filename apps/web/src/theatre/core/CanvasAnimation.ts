@@ -39,6 +39,7 @@ export abstract class CanvasAnimation implements IAnimation {
     this.canvas.style.inset = '0'
     this.canvas.style.width = '100%'
     this.canvas.style.height = '100%'
+    this.canvas.style.pointerEvents = 'none'
     const opacity = context.options?.opacity ?? this.initOptions.defaultOpacity
     if (opacity !== undefined) this.canvas.style.opacity = String(opacity)
     const blendMode = context.options?.blendMode ?? this.initOptions.defaultBlendMode
