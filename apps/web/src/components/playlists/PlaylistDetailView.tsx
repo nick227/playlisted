@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo } from "react";
 import type { PlaylistDetail } from "@playlisted/client-sdk";
 
+import { SwipeBrowseShell } from "@/components/browse/SwipeBrowseShell";
 import { SmartPlaylistCard } from "@/components/cards/SmartPlaylistCard";
 import { CollectionView } from "@/components/collection/CollectionView";
 import { BrowseBreadcrumbs } from "@/components/library/BrowseBreadcrumbs";
@@ -12,15 +13,17 @@ import { useIsMdUp } from "@/hooks/useIsMdUp";
 import { usePlaylistHashTrack } from "@/hooks/usePlaylistHashTrack";
 import { usePlaylists } from "@/hooks/usePlaylists";
 import { BROWSE_LAYOUT_CLASS, playlistBrowseCrumbs } from "@/lib/browsePaths";
+import { resolvePlaylistBrowseSequence } from "@/lib/browseNavigation/resolvePlaylistNeighbors";
 import { recordingHash } from "@/lib/routes";
 import { useAudioPlayer, type QueueTrack } from "@/providers/AudioPlayerProvider";
 import { useAuth } from "@/providers/AuthProvider";
 
 type PlaylistDetailViewProps = {
   playlist: PlaylistDetail;
+  isRefreshing?: boolean;
 };
 
-export function PlaylistDetailView({ playlist }: PlaylistDetailViewProps) {
+export function PlaylistDetailView({ playlist, isRefreshing = false }: PlaylistDetailViewProps) {
   const isMdUp = useIsMdUp();
   const relatedPlaylistLimit = isMdUp ? 4 : 6;
   const { data: related } = usePlaylists(relatedPlaylistLimit + 1);
@@ -154,8 +157,18 @@ export function PlaylistDetailView({ playlist }: PlaylistDetailViewProps) {
 
   usePlaylistHashTrack(recordings, playRecording);
 
+  const resolveNeighbors = useCallback(
+    () => resolvePlaylistBrowseSequence(playlist),
+    [playlist],
+  );
+
   return (
-    <>
+    <SwipeBrowseShell
+      neighborsKey={`playlist:${playlist.id}`}
+      resolveNeighbors={resolveNeighbors}
+      endLabel="playlists"
+      isRefreshing={isRefreshing}
+    >
       <div className={BROWSE_LAYOUT_CLASS}>
         <BrowseBreadcrumbs crumbs={browseCrumbs} />
         <div className="mt-5">
@@ -196,7 +209,7 @@ export function PlaylistDetailView({ playlist }: PlaylistDetailViewProps) {
           </ContentRow>
         </div>
       ) : null}
-    </>
+    </SwipeBrowseShell>
   );
 }
 

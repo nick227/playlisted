@@ -1,6 +1,7 @@
 import type { TopArtistItem, UserDetail } from "@playlisted/client-sdk";
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 
+import { SwipeBrowseShell } from "@/components/browse/SwipeBrowseShell";
 import { ArtistCard } from "@/components/cards/ArtistCard";
 import { ContentRow } from "@/components/discovery/ContentRow";
 import { EmptyState } from "@/components/feedback/EmptyState";
@@ -10,6 +11,7 @@ import { useTopArtists } from "@/hooks/useCharts";
 import { genresFromSongs } from "@/components/library/libraryFilterUtils";
 import { librarySongToQueueTrack } from "@/lib/queueTrack";
 import { artistDetailCrumbs } from "@/lib/browsePaths";
+import { resolveArtistBrowseSequence } from "@/lib/browseNavigation/resolveArtistNeighbors";
 import { artistProfileArtistOrigin } from "@/lib/playbackOrigin";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 import { useAuth } from "@/providers/AuthProvider";
@@ -25,6 +27,7 @@ type ArtistProfileViewProps = {
   preview?: ArtistProfilePreview;
   showRelatedArtists?: boolean;
   collectionEditHref?: (playlist: UserDetail["publicPlaylists"][number]) => string;
+  isRefreshing?: boolean;
 };
 
 export function ArtistProfileView({
@@ -32,6 +35,7 @@ export function ArtistProfileView({
   preview,
   showRelatedArtists = true,
   collectionEditHref,
+  isRefreshing = false,
 }: ArtistProfileViewProps) {
   const relatedArtistLimit = 12;
   const { data: related } = useTopArtists("30d", relatedArtistLimit + 1);
@@ -101,64 +105,76 @@ export function ArtistProfileView({
     );
   }
 
+  const resolveNeighbors = useCallback(
+    () => resolveArtistBrowseSequence(user.id),
+    [user.id],
+  );
+
   return (
-    <div className="mx-auto w-full min-w-0 max-w-3xl overflow-x-clip bg-[var(--color-canvas)]/80 pb-16">
-      <div className="px-4 py-2">
-        <BrowseBreadcrumbs crumbs={browseCrumbs} />
-      </div>
+    <SwipeBrowseShell
+      neighborsKey={`artist:${user.id}`}
+      resolveNeighbors={resolveNeighbors}
+      endLabel="artists"
+      isRefreshing={isRefreshing}
+    >
+      <div className="mx-auto w-full min-w-0 max-w-3xl overflow-x-clip bg-[var(--color-canvas)]/80 pb-16">
+        <div className="px-4 py-2">
+          <BrowseBreadcrumbs crumbs={browseCrumbs} />
+        </div>
 
-      <div className="min-w-0 space-y-10">
-        <ArtistProfileHero
-          user={user}
-          genreNames={genreNames}
-          totalStreams={totalStreams}
-          isOwner={isOwner}
-          preview={preview}
-          onPlay={queueTracks.length > 0 ? playArtist : undefined}
-          isPlaying={artistIsPlaying}
-          isPaused={artistIsPaused}
-        />
-
-        {sortedPlaylists.length > 0 ? (
-          <section className="min-w-0">
-            {sortedPlaylists.map((playlist) => (
-              <ArtistProfileCollectionPanel
-                key={playlist.id}
-                playlist={playlist}
-                owner={user}
-                editHref={collectionEditHref?.(playlist)}
-              />
-            ))}
-          </section>
-        ) : null}
-
-        {!tracksLoading && sortedPlaylists.length === 0 ? (
-          <EmptyState
-            title="No public music yet"
-            description={
-              isOwner
-                ? "Upload tracks and publish collections to fill out your profile."
-                : "This creator has not published yet."
-            }
+        <div className="min-w-0 space-y-10">
+          <ArtistProfileHero
+            user={user}
+            genreNames={genreNames}
+            totalStreams={totalStreams}
+            isOwner={isOwner}
+            preview={preview}
+            onPlay={queueTracks.length > 0 ? playArtist : undefined}
+            isPlaying={artistIsPlaying}
+            isPaused={artistIsPaused}
           />
-        ) : null}
-      </div>
 
-      <div className="mt-8 min-w-0 p-2">
-        {relatedArtists.length > 0 ? (
-          <ContentRow title="More Artists">
-            {relatedArtists.map((item: TopArtistItem) => (
-              <ArtistCard
-                key={item.userId}
-                id={item.userId}
-                username={item.username}
-                displayName={item.displayName}
-                avatarUrl={item.avatarUrl}
-              />
-            ))}
-          </ContentRow>
-        ) : null}
+          {sortedPlaylists.length > 0 ? (
+            <section className="min-w-0">
+              {sortedPlaylists.map((playlist) => (
+                <ArtistProfileCollectionPanel
+                  key={playlist.id}
+                  playlist={playlist}
+                  owner={user}
+                  editHref={collectionEditHref?.(playlist)}
+                />
+              ))}
+            </section>
+          ) : null}
+
+          {!tracksLoading && sortedPlaylists.length === 0 ? (
+            <EmptyState
+              title="No public music yet"
+              description={
+                isOwner
+                  ? "Upload tracks and publish collections to fill out your profile."
+                  : "This creator has not published yet."
+              }
+            />
+          ) : null}
+        </div>
+
+        <div className="mt-8 min-w-0 p-2">
+          {relatedArtists.length > 0 ? (
+            <ContentRow title="More Artists">
+              {relatedArtists.map((item: TopArtistItem) => (
+                <ArtistCard
+                  key={item.userId}
+                  id={item.userId}
+                  username={item.username}
+                  displayName={item.displayName}
+                  avatarUrl={item.avatarUrl}
+                />
+              ))}
+            </ContentRow>
+          ) : null}
+        </div>
       </div>
-    </div>
+    </SwipeBrowseShell>
   );
 }

@@ -14,7 +14,7 @@ export function MemberPage() {
   const byUsername = useUserByUsername(username);
   const byId = useUser(userId);
   const query = username ? byUsername : byId;
-  const { data: user, isLoading, isError } = query;
+  const { data: user, isLoading, isFetching, isError } = query;
   const fallbackName = username ? decodeURIComponent(username).replace(/^@/, "") : "Artist";
 
   usePageMeta({
@@ -23,7 +23,7 @@ export function MemberPage() {
     image: user?.avatarUrl,
   });
 
-  if (isLoading) {
+  if (isLoading && !user) {
     return (
       <div className="pb-16">
         <div className={ARTIST_PROFILE_LAYOUT_CLASS}>
@@ -42,9 +42,13 @@ export function MemberPage() {
     );
   }
 
-  if (isError || !user) {
+  if (isError && !user) {
     return <EmptyState title="Artist not found" />;
   }
 
-  return <ArtistProfileView user={user} />;
+  if (!user) {
+    return <EmptyState title="Artist not found" />;
+  }
+
+  return <ArtistProfileView user={user} isRefreshing={isFetching && !isLoading} />;
 }

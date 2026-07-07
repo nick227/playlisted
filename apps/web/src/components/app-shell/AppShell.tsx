@@ -1,9 +1,10 @@
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
 
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 import { useRadioPlayer } from "@/providers/RadioPlayerProvider";
 
+import { useSyncPlaybackBodyFocusHidden } from "@/lib/playbackBodyFocus";
 import { buildMainContentClassName, isRadioShellActive } from "./appShellLayout";
 import { BackgroundLayer } from "./BackgroundLayer";
 import { BottomPlayer } from "./BottomPlayer";
@@ -30,6 +31,7 @@ interface AppShellProps {
 export function AppShell({ children }: AppShellProps) {
   const mainRef = useRef<HTMLElement | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sitePlayerFocusCollapsed, setSitePlayerFocusCollapsed] = useState(false);
   const location = useLocation();
 
   // --- Playback source -------------------------------------------------------
@@ -55,6 +57,8 @@ export function AppShell({ children }: AppShellProps) {
     pathname: location.pathname,
     search: location.search,
   });
+
+  useSyncPlaybackBodyFocusHidden(playbackFocus.bodyFocusMode);
 
   // --- Global shortcuts + navigation side effects ----------------------------
   useResumePlaybackAfterNav(location.pathname, radioPlaying);
@@ -83,6 +87,16 @@ export function AppShell({ children }: AppShellProps) {
     isChatPage,
     shellHasPlayer: reservePlayerSpace,
   });
+
+  useEffect(() => {
+    setSitePlayerFocusCollapsed(false);
+  }, [focusTrackKey]);
+
+  useEffect(() => {
+    if (!playbackFocus.bodyFocusMode) {
+      setSitePlayerFocusCollapsed(false);
+    }
+  }, [playbackFocus.bodyFocusMode]);
 
   return (
     <div className="relative flex h-dvh min-h-0 w-full max-w-full overflow-hidden bg-transparent">
@@ -115,10 +129,11 @@ export function AppShell({ children }: AppShellProps) {
         snapReveal={playbackFocus.snapReveal}
       />
 
-      <BottomPlayer />
+      <BottomPlayer collapsedByFocusLane={sitePlayerFocusCollapsed} />
       <PlaybackFocusLane
         focusState={playbackFocus.focusState}
         withPlayer={shellHasPlayer}
+        onSitePlayerCollapseChange={setSitePlayerFocusCollapsed}
       />
       <QueuePanel />
     </div>

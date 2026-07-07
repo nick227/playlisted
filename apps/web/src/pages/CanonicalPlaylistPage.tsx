@@ -9,7 +9,7 @@ import { playlistPath } from "@/lib/routes";
 
 export function CanonicalPlaylistPage() {
   const { username, slug } = useParams<{ username: string; slug: string }>();
-  const { data: playlist, isLoading, isError, error } = usePlaylistByUsernameSlug(username, slug);
+  const { data: playlist, isLoading, isFetching, isError, error } = usePlaylistByUsernameSlug(username, slug);
   usePlaylistPageMeta(playlist);
   const navigate = useNavigate();
   const { hash } = useLocation();
@@ -28,13 +28,17 @@ export function CanonicalPlaylistPage() {
     );
   }, [hash, navigate, playlist, username, slug]);
 
-  if (isLoading) {
+  if (isLoading && !playlist) {
     return <PlaylistPageSkeleton />;
   }
 
-  if (isError || !playlist) {
+  if (isError && !playlist) {
     return <PlaylistAccessEmptyState error={error} />;
   }
 
-  return <PlaylistDetailView playlist={playlist} />;
+  if (!playlist) {
+    return <PlaylistAccessEmptyState error={error} />;
+  }
+
+  return <PlaylistDetailView playlist={playlist} isRefreshing={isFetching && !isLoading} />;
 }
