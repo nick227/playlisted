@@ -1,5 +1,6 @@
 import { getPreset } from '../registry/scenePresets'
 import { getRotationPackages } from '../registry/packageRotation'
+import { isSegmentIntroPresetExcludedFromBag } from '../segmentIntro/resolveSegmentIntro'
 
 export type WeightedPresetEntry = {
   id: string
@@ -33,6 +34,7 @@ export function collectWeightedFamilyCatalog(): WeightedFamilyCatalogEntry[] {
       presets: pkg.presetIds
         .map(presetId => getPreset(presetId))
         .filter((preset): preset is NonNullable<typeof preset> => preset !== null)
+        .filter(preset => !isSegmentIntroPresetExcludedFromBag(preset.id))
         .map(preset => ({
           id: preset.id,
           weight: preset.weight ?? 1,

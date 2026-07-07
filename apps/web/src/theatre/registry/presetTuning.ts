@@ -29,6 +29,13 @@ export const ROTATION_HOLD_CALM: RotationOverride = {
   maxHoldMs: 100_000,
 }
 
+/** Short segment-open hold — album art intro before normal rotation. */
+export const ROTATION_HOLD_SEGMENT_INTRO: RotationOverride = {
+  minHoldMs: 8_000,
+  targetHoldMs: 12_000,
+  maxHoldMs: 20_000,
+}
+
 export const FAMILY_WEIGHT_FLAGSHIP = 4
 export const FAMILY_WEIGHT_STRONG = 3
 export const FAMILY_WEIGHT_STANDARD = 2

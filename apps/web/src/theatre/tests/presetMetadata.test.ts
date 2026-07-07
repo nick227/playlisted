@@ -31,6 +31,17 @@ describe('preset metadata audit', () => {
     expect(albumArt?.tags).toContain('occasional')
   })
 
+  it('keeps album art intro out of the rotation bag', () => {
+    const intro = getPreset('albumArtIntro')
+    expect(intro?.rotation?.mode).toBe('timedMusicAware')
+    expect(intro?.weight).toBe(0)
+    expect(intro?.tags).toContain('segment-intro')
+
+    const families = collectWeightedFamilyCatalog()
+    const albumArtFamily = families.find(family => family.familyId === 'album-art')
+    expect(albumArtFamily?.presets.map(preset => preset.id)).toEqual(['albumArtStill'])
+  })
+
   it('boosts flagship presets with longer hold windows and higher weights', () => {
     const flagship = getPreset('signalOrganism')
     expect(flagship?.weight).toBe(PRESET_WEIGHT_FLAGSHIP)

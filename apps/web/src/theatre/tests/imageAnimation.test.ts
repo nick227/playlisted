@@ -52,7 +52,7 @@ describe('imageAnimationUtils', () => {
 
 describe('albumArtStill preset', () => {
   it('pins rotation per track via preset metadata', () => {
-    const preset = albumArtPresetsFromPackage()
+    const preset = albumArtPresetsFromPackage('albumArtStill')
     expect(preset.rotation?.mode).toBe('perTrack')
   })
 
@@ -195,8 +195,10 @@ describe('ImageAnimation init', () => {
   })
 })
 
-function albumArtPresetsFromPackage() {
-  return albumArtPackage.presets[0]
+function albumArtPresetsFromPackage(id = 'albumArtStill') {
+  const preset = albumArtPackage.presets.find(entry => entry.id === id)
+  if (!preset) throw new Error(`missing preset ${id}`)
+  return preset
 }
 
 function createDomContainer() {

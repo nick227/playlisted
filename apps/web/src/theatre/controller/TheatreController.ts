@@ -24,6 +24,7 @@ import { resolveTimelinePlaybackDecision } from '../media/TimelinePlaybackDirect
 import { resolveTimelinePresetId } from '../media/timelineClipPick'
 import { hydrateTrackVisualMedia } from '../media/hydrateTrackVisualMedia'
 import { lookupTrackVisualMediaKey } from '../media/resolveTrackVisualMedia'
+import { resolveSegmentIntro } from '../segmentIntro/resolveSegmentIntro'
 import { getPackageIdForPreset } from '../registry/packageRotation'
 import { buildAnimationFrameContext, mergePresetLayerOptions, withTheatreInitContext } from './theatreFrameContext'
 import { detectPolicy } from '../runtime/PerformancePolicy'
@@ -667,6 +668,15 @@ class TheatreController extends EventTarget {
     await this.ensureVisualMediaHydrated()
 
     const pickCtx = this.buildFxPickContext()
+    const introPresetId = resolveSegmentIntro({
+      artworkUrl: this.state.artworkUrl,
+      pickCtx,
+    })
+    if (introPresetId) {
+      await this.changePresetAuto(introPresetId)
+      return
+    }
+
     if (pickCtx.songVisualPolicy === 'attachedOnly') {
       await this.syncAttachedOnlyPlaybackAfterHydrate()
       return
@@ -1147,10 +1157,19 @@ class TheatreController extends EventTarget {
     await this.ensureVisualMediaHydrated()
 
     const pickCtx = this.buildFxPickContext(true)
-    let selectedPreset = this.fxSelector.consumeNext(pickCtx)
-    const attachedOnlyPresetId = resolveAttachedOnlyTimelinePresetId(pickCtx)
-    if (attachedOnlyPresetId && selectedPreset?.id !== attachedOnlyPresetId) {
-      selectedPreset = resolvePreset(attachedOnlyPresetId)
+    let selectedPreset = null
+    const introPresetId = resolveSegmentIntro({
+      artworkUrl: this.state.artworkUrl,
+      pickCtx,
+    })
+    if (introPresetId) {
+      selectedPreset = resolvePreset(introPresetId)
+    } else {
+      selectedPreset = this.fxSelector.consumeNext(pickCtx)
+      const attachedOnlyPresetId = resolveAttachedOnlyTimelinePresetId(pickCtx)
+      if (attachedOnlyPresetId && selectedPreset?.id !== attachedOnlyPresetId) {
+        selectedPreset = resolvePreset(attachedOnlyPresetId)
+      }
     }
     const initialPresetId = selectedPreset?.id ?? null
 
