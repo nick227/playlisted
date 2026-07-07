@@ -56,6 +56,7 @@
     "uploads:images:scan": "node scripts/optimize-upload-images.mjs",
     "uploads:images:optimize": "node scripts/optimize-upload-images.mjs --write",
     "og:generate": "node scripts/generate-og-images.mjs",
+    "share:validate": "node scripts/validate-share-preview.mjs",
     "ports:free": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/free-ports.ps1",
     "dev:full": "npm run ports:free && npx concurrently -k -n api,web -c blue,green \"npm run dev\" \"npm run web:dev\"",
     "dev:wsl": "npx concurrently -k -n api,web,worker -c blue,green,magenta \"SERVE_WEB_DIST=1 npm run dev\" \"npm run web:dev\" \"npm run subtitles:worker:dev\"",
