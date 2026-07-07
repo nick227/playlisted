@@ -12,9 +12,9 @@ export function LibraryBrowseLayout({ crumbs, children }: LibraryBrowseLayoutPro
   const showCrumbs = crumbs.length > 0;
 
   return (
-    <div className={BROWSE_LAYOUT_CLASS}>
+    <div className={`${BROWSE_LAYOUT_CLASS} justify-center flex flex-col`}>
       <BrowseBreadcrumbs crumbs={crumbs} />
-      <div className={showCrumbs ? "mt-5 min-h-screen min-w-0" : "min-h-screen min-w-0"}>{children}</div>
+      <div className={showCrumbs ? "min-w-0" : "min-h-screen min-w-0"}>{children}</div>
     </div>
   );
 }
