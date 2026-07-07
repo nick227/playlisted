@@ -89,6 +89,7 @@ export function ArtistVisual({
   const [avatarReloading, setAvatarReloading] = useState(false);
   const [frozenHeight, setFrozenHeight] = useState<number | null>(null);
   const lastRecordingIdRef = useRef<string | null>(null);
+  const reloadGenerationRef = useRef(0);
 
   const handleToggleMute = (e: React.MouseEvent) => {
     stopPlaybackFocusBubble(e);
@@ -164,22 +165,32 @@ export function ArtistVisual({
     if (!recordingId) return;
 
     const previousRecordingId = lastRecordingIdRef.current;
-    lastRecordingIdRef.current = recordingId;
     if (previousRecordingId === recordingId) return;
 
-    if (containerRef.current && previousRecordingId) {
+    const isTrackChange = previousRecordingId !== null;
+    if (!isTrackChange) {
+      lastRecordingIdRef.current = recordingId;
+      return;
+    }
+
+    const generation = ++reloadGenerationRef.current;
+
+    if (containerRef.current) {
       setFrozenHeight(containerRef.current.offsetHeight);
     }
     setSongTransitioning(true);
     setAvatarReloading(true);
 
     const flashTimeout = window.setTimeout(() => {
+      if (reloadGenerationRef.current !== generation) return;
       setSongTransitioning(false);
       setFrozenHeight(null);
     }, SONG_FLASH_MS);
 
     const avatarTimeout = window.setTimeout(() => {
+      if (reloadGenerationRef.current !== generation) return;
       setAvatarReloading(false);
+      lastRecordingIdRef.current = recordingId;
     }, AVATAR_RELOAD_MS);
 
     return () => {
