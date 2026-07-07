@@ -1,5 +1,5 @@
 type SwipeLoadingEdgeProps = {
-  direction: "top" | "bottom";
+  direction: "left" | "right";
   offset: number;
   previewLabel: string | null;
   edgeMessage: string | null;
@@ -16,7 +16,7 @@ export function SwipeLoadingEdge({
   const visible = offset > 8 || Boolean(edgeMessage) || isRefreshing;
   if (!visible) return null;
 
-  const positionClass = direction === "top" ? "top-3" : "bottom-3";
+  const edgeClass = direction === "left" ? "left-3" : "right-3";
   const label = edgeMessage ?? previewLabel;
 
   return (
@@ -28,7 +28,7 @@ export function SwipeLoadingEdge({
       ) : null}
       {label ? (
         <div
-          className={`pointer-events-none absolute inset-x-0 z-20 flex justify-center ${positionClass}`}
+          className={`pointer-events-none absolute inset-y-0 z-20 flex max-w-[min(12rem,40vw)] items-center ${edgeClass}`}
         >
           <span className="rounded-full border border-white/10 bg-black/70 px-3 py-1 text-xs font-medium text-white/80 shadow-lg backdrop-blur">
             {label}

@@ -12,6 +12,8 @@ const SWIPE_EXCLUDED_SELECTOR = [
   ".sidebar-nav-content",
 ].join(",");
 
+/** Horizontal browse swipes: left = next, right = previous. */
+
 export const SWIPE_AXIS_THRESHOLD_PX = 12;
 export const SWIPE_COMMIT_THRESHOLD_PX = 80;
 export const SWIPE_VELOCITY_THRESHOLD = 0.35;

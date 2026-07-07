@@ -32,9 +32,9 @@ type DragState = {
   pointerId: number;
   startX: number;
   startY: number;
-  lastY: number;
+  lastX: number;
   lastTime: number;
-  velocityY: number;
+  velocityX: number;
   moved: boolean;
   direction: SwipeDirection | null;
 };
@@ -44,9 +44,9 @@ const IDLE_DRAG: DragState = {
   pointerId: -1,
   startX: 0,
   startY: 0,
-  lastY: 0,
+  lastX: 0,
   lastTime: 0,
-  velocityY: 0,
+  velocityX: 0,
   moved: false,
   direction: null,
 };
@@ -149,9 +149,9 @@ export function SwipeBrowseShell({
         pointerId: event.pointerId,
         startX: event.clientX,
         startY: event.clientY,
-        lastY: event.clientY,
+        lastX: event.clientX,
         lastTime: now,
-        velocityY: 0,
+        velocityX: 0,
         moved: false,
         direction: null,
       };
@@ -168,18 +168,18 @@ export function SwipeBrowseShell({
       const deltaY = event.clientY - drag.startY;
 
       if (!drag.moved) {
-        if (Math.abs(deltaY) < SWIPE_AXIS_THRESHOLD_PX) return;
-        if (Math.abs(deltaY) <= Math.abs(deltaX)) return;
+        if (Math.abs(deltaX) < SWIPE_AXIS_THRESHOLD_PX) return;
+        if (Math.abs(deltaX) <= Math.abs(deltaY)) return;
         drag.moved = true;
-        drag.direction = deltaY < 0 ? "next" : "prev";
+        drag.direction = deltaX < 0 ? "next" : "prev";
         setIsDragging(true);
         shellRef.current?.setPointerCapture(event.pointerId);
       }
 
       const now = performance.now();
       const elapsed = Math.max(1, now - drag.lastTime);
-      drag.velocityY = (event.clientY - drag.lastY) / elapsed;
-      drag.lastY = event.clientY;
+      drag.velocityX = (event.clientX - drag.lastX) / elapsed;
+      drag.lastX = event.clientX;
       drag.lastTime = now;
 
       const direction = drag.direction;
@@ -187,13 +187,13 @@ export function SwipeBrowseShell({
 
       const result = neighborsQuery.data;
       const hasTarget = result ? neighborAt(result, direction) !== null : false;
-      const rawOffset = direction === "next" ? deltaY : -deltaY;
+      const pullDistance = direction === "next" ? -deltaX : deltaX;
       const offset = hasTarget
-        ? Math.max(-SWIPE_BOUNCE_MAX_PX, Math.min(SWIPE_BOUNCE_MAX_PX, rawOffset * 0.35))
-        : -rubberBandOffset(Math.abs(rawOffset), SWIPE_BOUNCE_MAX_PX);
+        ? Math.max(-SWIPE_BOUNCE_MAX_PX, Math.min(SWIPE_BOUNCE_MAX_PX, deltaX * 0.35))
+        : Math.sign(deltaX) * rubberBandOffset(Math.abs(deltaX), SWIPE_BOUNCE_MAX_PX);
 
       setPullOffset(offset);
-      maybePrefetch(direction, Math.abs(rawOffset));
+      maybePrefetch(direction, pullDistance);
       event.preventDefault();
     },
     [disabled, maybePrefetch, neighborsQuery.data],
@@ -209,9 +209,9 @@ export function SwipeBrowseShell({
       }
 
       const direction = drag.direction;
-      const deltaY = event.clientY - drag.startY;
-      const pullDistance = direction === "next" ? -deltaY : deltaY;
-      const velocity = direction === "next" ? -drag.velocityY : drag.velocityY;
+      const deltaX = event.clientX - drag.startX;
+      const pullDistance = direction === "next" ? -deltaX : deltaX;
+      const velocity = direction === "next" ? -drag.velocityX : drag.velocityX;
       const committed =
         drag.moved &&
         direction !== null &&
@@ -252,7 +252,7 @@ export function SwipeBrowseShell({
   return (
     <div
       ref={shellRef}
-      className={`relative touch-pan-x select-none ${isDragging ? "cursor-grabbing" : ""}`}
+      className={`relative touch-pan-y select-none ${isDragging ? "cursor-grabbing" : ""}`}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={finishPointer}
@@ -261,7 +261,7 @@ export function SwipeBrowseShell({
       onClickCapture={suppressClickAfterSwipe}
     >
       <SwipeLoadingEdge
-        direction={pullOffset < 0 ? "top" : "bottom"}
+        direction={pullOffset < 0 ? "left" : "right"}
         offset={Math.abs(pullOffset)}
         previewLabel={previewLabel}
         edgeMessage={edgeMessage}
@@ -269,7 +269,7 @@ export function SwipeBrowseShell({
       />
       <div
         className={isDragging ? "" : "transition-transform duration-200 ease-out"}
-        style={{ transform: pullOffset !== 0 ? `translateY(${pullOffset}px)` : undefined }}
+        style={{ transform: pullOffset !== 0 ? `translateX(${pullOffset}px)` : undefined }}
       >
         {children}
       </div>
