@@ -2,6 +2,7 @@
 
 @theme {
   --font-sans: Inter, ui-sans-serif, system-ui, sans-serif;
+  --font-serif: Lora, Georgia, "Times New Roman", serif;
 
   --container-8xl: 96rem;
 
@@ -40,6 +41,29 @@
   --play-focus-layer-bottom: calc(var(--spacing-player) + 1rem);
 
   --animate-fade-in: fade-in 500ms ease-out forwards;
+  --animate-library-exhibit-rise: library-exhibit-rise 680ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes library-exhibit-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.library-exhibit-enter {
+  animation: var(--animate-library-exhibit-rise);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .library-exhibit-enter {
+    animation: none;
+  }
 }
 
 @keyframes fade-in {

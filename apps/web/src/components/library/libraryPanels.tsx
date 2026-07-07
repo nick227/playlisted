@@ -1,4 +1,4 @@
-import type { LibraryArtist, LibraryGenre, LibrarySong, PlaylistListResponse } from "@playlisted/client-sdk";
+import type { LibraryArtist, LibraryGenre, LibrarySong } from "@playlisted/client-sdk";
 import { ChevronRight, Pause, Play, Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
@@ -35,7 +35,7 @@ import {
 import { LibraryPlaylistFilter } from "@/components/library/LibraryPlaylistFilter";
 import { LibraryPlaylistSortBar } from "@/components/library/LibraryPlaylistSortBar";
 import { LibrarySongSortBar } from "@/components/library/LibrarySongSortBar";
-import { LibraryTrackRow } from "@/components/library/LibraryTrackRow";
+import { LibraryTrackList } from "@/components/library/LibraryTrackList";
 import {
   useLibraryArtists,
   useLibraryGenres,
@@ -43,27 +43,11 @@ import {
   useLibraryPlaylists,
   useLibrarySongs,
 } from "@/hooks/useLibrary";
-import {
-  artistPath,
-  ARTISTS_PATH,
-  genrePath,
-  GENRES_PATH,
-  PLAYLISTS_PATH,
-  SONGS_PATH,
-} from "@/lib/browsePaths";
+import { genrePath } from "@/lib/browsePaths";
 import { librarySongToQueueTrack } from "@/lib/queueTrack";
-import { coverFallback, playlistPath } from "@/lib/routes";
+import { coverFallback } from "@/lib/routes";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 import { useRadioPlayer } from "@/providers/RadioPlayerProvider";
-
-type PlaylistPreview = PlaylistListResponse["data"][number];
-
-export interface RootPreviewData {
-  genres: LibraryGenre[];
-  artists: LibraryArtist[];
-  playlists: PlaylistPreview[];
-  songs: LibrarySong[];
-}
 
 export function PanelSkeleton() {
   return (
@@ -103,99 +87,7 @@ export function PanelHeader({
 }
 
 function TracksList({ songs }: { songs: LibrarySong[] }) {
-  const { playTrack, currentTrack, isPlaying, togglePlay, ensurePlayback } = useAudioPlayer();
-
-  function handlePlay(song: LibrarySong) {
-    if (currentTrack?.id === song.id) {
-      if (isPlaying) {
-        togglePlay();
-      } else {
-        ensurePlayback();
-      }
-      return;
-    }
-    const queue = songs.map((s) => librarySongToQueueTrack(s));
-    playTrack(librarySongToQueueTrack(song), queue, { sourceContext: "library" }, {
-      segmentLabel: "Library",
-    });
-  }
-
-  return (
-    <div className="min-w-0">
-      {songs.map((song) => (
-        <LibraryTrackRow
-          key={song.id}
-          song={song}
-          onPlay={() => handlePlay(song)}
-          queueTrack={librarySongToQueueTrack(song)}
-        />
-      ))}
-    </div>
-  );
-}
-
-function SongPreviewChip({ song, queue }: { song: LibrarySong; queue: LibrarySong[] }) {
-  const { playTrack, currentTrack, isPlaying, togglePlay, ensurePlayback } = useAudioPlayer();
-  const isActive = currentTrack?.id === song.id;
-
-  function handleClick(e: React.MouseEvent) {
-    e.stopPropagation();
-    if (isActive) {
-      if (isPlaying) {
-        togglePlay();
-      } else {
-        ensurePlayback();
-      }
-      return;
-    }
-    playTrack(
-      librarySongToQueueTrack(song),
-      queue.map((s) => librarySongToQueueTrack(s)),
-      { sourceContext: "library" },
-      { segmentLabel: "Library" },
-    );
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={handleClick}
-      className="group/chip flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] py-1.5 pl-1.5 pr-3 text-xs transition-colors hover:border-white/20 hover:bg-white/[0.07]"
-    >
-      <div className="relative h-5 w-5 shrink-0 overflow-hidden rounded-sm">
-        {song.artworkUrl ? (
-          <img src={song.artworkUrl} alt="" className="h-full w-full object-cover" />
-        ) : (
-          <div className="h-full w-full" style={{ background: coverFallback(song.title) }} />
-        )}
-        <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover/chip:opacity-100">
-          {isActive && isPlaying ? (
-            <Pause size={8} className="text-white" fill="currentColor" />
-          ) : (
-            <Play size={8} className="ml-px text-white" fill="currentColor" />
-          )}
-        </div>
-      </div>
-      <span className="max-w-[140px] truncate text-white/60 transition-colors group-hover/chip:text-white/90">
-        {song.title}
-      </span>
-      <span className="shrink-0 text-white/25 transition-colors group-hover/chip:text-white/40">
-        {song.uploader.displayName}
-      </span>
-    </button>
-  );
-}
-
-function GenrePreviewChip({ genre }: { genre: LibraryGenre }) {
-  return (
-    <Link
-      to={genrePath(genre.slug)}
-      onClick={(e) => e.stopPropagation()}
-      className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs text-white/60 transition-colors hover:border-white/20 hover:bg-white/[0.07] hover:text-white/90"
-    >
-      {genre.name}
-    </Link>
-  );
+  return <LibraryTrackList songs={songs} />;
 }
 
 function GenreSongThumb({ song, queue }: { song: LibrarySong; queue: LibrarySong[] }) {
@@ -334,127 +226,6 @@ function GenreCard({ genre }: { genre: LibraryGenre }) {
         </div>
       </div>
     </article>
-  );
-}
-
-function ArtistPreviewChip({ artist }: { artist: LibraryArtist }) {
-  return (
-    <Link
-      to={artistPath(artist.username)}
-      onClick={(e) => e.stopPropagation()}
-      className="group/chip flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] py-1.5 pl-1.5 pr-3 text-xs transition-colors hover:border-white/20 hover:bg-white/[0.07]"
-    >
-      <div className="h-5 w-5 shrink-0 overflow-hidden rounded-full">
-        {artist.avatarUrl ? (
-          <img src={artist.avatarUrl} alt="" className="h-full w-full object-cover" />
-        ) : (
-          <div className="h-full w-full" style={{ background: coverFallback(artist.displayName) }} />
-        )}
-      </div>
-      <span className="max-w-[140px] truncate text-white/60 transition-colors group-hover/chip:text-white/90">
-        {artist.displayName}
-      </span>
-    </Link>
-  );
-}
-
-function PlaylistPreviewChip({ playlist }: { playlist: PlaylistPreview }) {
-  return (
-    <Link
-      to={playlistPath({ id: playlist.id, href: playlist.href })}
-      onClick={(e) => e.stopPropagation()}
-      className="group/chip flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] py-1.5 pl-1.5 pr-3 text-xs transition-colors hover:border-white/20 hover:bg-white/[0.07]"
-    >
-      <div className="h-5 w-5 shrink-0 overflow-hidden rounded-sm">
-        {playlist.coverArtUrl ? (
-          <img src={playlist.coverArtUrl} alt="" className="h-full w-full object-cover" />
-        ) : (
-          <div className="h-full w-full" style={{ background: coverFallback(playlist.title) }} />
-        )}
-      </div>
-      <span className="max-w-[140px] truncate text-white/60 transition-colors group-hover/chip:text-white/90">
-        {playlist.title}
-      </span>
-    </Link>
-  );
-}
-
-const SECTION_PATHS = {
-  Songs: SONGS_PATH,
-  Genres: GENRES_PATH,
-  Artists: ARTISTS_PATH,
-  Playlists: PLAYLISTS_PATH,
-} as const;
-
-export function RootPanel({
-  genreCount,
-  artistCount,
-  playlistCount,
-  songCount,
-  previews,
-}: {
-  genreCount: number;
-  artistCount: number;
-  playlistCount: number;
-  songCount: number;
-  previews: RootPreviewData;
-}) {
-  const entries = [
-    {
-      label: "Songs" as const,
-      description: "Every public recording in the catalog.",
-      count: songCount,
-      chips: previews.songs.map((s) => <SongPreviewChip key={s.id} song={s} queue={previews.songs} />),
-    },
-    {
-      label: "Genres" as const,
-      description: "All sounds, organized by texture and tradition.",
-      count: genreCount,
-      chips: previews.genres.map((g) => <GenrePreviewChip key={g.slug} genre={g} />),
-    },
-    {
-      label: "Artists" as const,
-      description: "The voices and makers behind the catalog.",
-      count: artistCount,
-      chips: previews.artists.map((a) => <ArtistPreviewChip key={a.id} artist={a} />),
-    },
-    {
-      label: "Playlists" as const,
-      description: "Curated collections from the community.",
-      count: playlistCount,
-      chips: previews.playlists.map((p) => <PlaylistPreviewChip key={p.id} playlist={p} />),
-    },
-  ];
-
-  return (
-    <div className="py-2">
-      {entries.map((entry, i) => (
-        <div key={entry.label} className={i > 0 ? "border-t border-white/[0.06]" : ""}>
-          <Link to={SECTION_PATHS[entry.label]} className="group block w-full text-left">
-            <div className="flex items-start justify-between gap-6 py-4">
-              <div className="min-w-0 flex-1">
-                <p className="text-lg lg:text-[clamp(6rem,6vw,7rem)] font-extrabold leading-none tracking-tighter text-white transition-colors group-hover:text-[var(--color-brand)]">
-                  {entry.label}
-                </p>
-                <p className="mt-3 max-w-sm text-sm text-[var(--color-text-subtle)]">{entry.description}</p>
-              </div>
-              <div className="flex shrink-0 items-center gap-3 pt-2">
-                <span className="tabular-nums text-3xl font-bold text-white/20 transition-colors group-hover:text-white/40">
-                  {entry.count}
-                </span>
-                <ChevronRight
-                  size={22}
-                  className="text-white/20 transition-all group-hover:translate-x-1 group-hover:text-white/70"
-                />
-              </div>
-            </div>
-          </Link>
-          {entry.chips.length > 0 && (
-            <div className="flex flex-wrap gap-2 pb-8">{entry.chips}</div>
-          )}
-        </div>
-      ))}
-    </div>
   );
 }
 

@@ -2,62 +2,53 @@ import { useMemo } from "react";
 
 import {
   EMPTY_LIBRARY_ARTISTS,
-  EMPTY_LIBRARY_GENRES,
   EMPTY_LIBRARY_SONGS,
   EMPTY_PLAYLISTS,
 } from "@/components/library/libraryFilterUtils";
 import { LibraryBrowseLayout } from "@/components/library/LibraryBrowseLayout";
-import { RootPanel, type RootPreviewData } from "@/components/library/libraryPanels";
+import { MuseumFeed } from "@/components/library/museum/MuseumFeed";
+import { PanelSkeleton } from "@/components/library/libraryPanels";
 import {
   useLibraryArtists,
-  useLibraryGenres,
   useLibraryPlaylists,
   useLibrarySongs,
 } from "@/hooks/useLibrary";
-import { libraryRootCrumbs } from "@/lib/browsePaths";
-
-function sample<T>(arr: T[], n: number): T[] {
-  if (arr.length <= n) return arr;
-  const copy = [...arr];
-  for (let i = copy.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [copy[i], copy[j]] = [copy[j], copy[i]];
-  }
-  return copy.slice(0, n);
-}
+import { LIBRARY_FEED_LAYOUT_CLASS, libraryRootCrumbs } from "@/lib/browsePaths";
 
 export function SpatialLibraryBrowser() {
-  const genresQuery = useLibraryGenres();
   const artistsQuery = useLibraryArtists();
   const playlistsQuery = useLibraryPlaylists();
-  const songsQuery = useLibrarySongs();
+  const songsQuery = useLibrarySongs(null, true, 100);
 
-  const allGenres = genresQuery.data?.data
-    ? genresQuery.data.data.filter((g) => g.songCount > 0)
-    : EMPTY_LIBRARY_GENRES;
   const allArtists = artistsQuery.data?.data ?? EMPTY_LIBRARY_ARTISTS;
   const allPlaylists = playlistsQuery.data?.data ?? EMPTY_PLAYLISTS;
   const allSongs = songsQuery.data?.data ?? EMPTY_LIBRARY_SONGS;
 
-  const previews = useMemo<RootPreviewData>(
+  const pools = useMemo(
     () => ({
-      genres: sample(allGenres, 3),
-      artists: sample(allArtists, 3),
-      playlists: sample(allPlaylists, 3),
-      songs: sample(allSongs, 3),
+      artists: allArtists,
+      songs: allSongs,
+      playlists: allPlaylists,
     }),
-    [genresQuery.data, artistsQuery.data, playlistsQuery.data, songsQuery.data], // eslint-disable-line react-hooks/exhaustive-deps
+    [allArtists, allSongs, allPlaylists],
   );
 
+  const isLoading =
+    artistsQuery.isLoading ||
+    playlistsQuery.isLoading ||
+    songsQuery.isLoading;
+
+  if (isLoading) {
+    return (
+      <LibraryBrowseLayout crumbs={libraryRootCrumbs()} layoutClass={LIBRARY_FEED_LAYOUT_CLASS}>
+        <PanelSkeleton />
+      </LibraryBrowseLayout>
+    );
+  }
+
   return (
-    <LibraryBrowseLayout crumbs={libraryRootCrumbs()}>
-      <RootPanel
-        genreCount={allGenres.length}
-        artistCount={allArtists.length}
-        playlistCount={allPlaylists.length}
-        songCount={allSongs.length}
-        previews={previews}
-      />
+    <LibraryBrowseLayout crumbs={libraryRootCrumbs()} layoutClass={LIBRARY_FEED_LAYOUT_CLASS}>
+      <MuseumFeed pools={pools} />
     </LibraryBrowseLayout>
   );
 }

@@ -8,7 +8,7 @@ export function LibraryPage() {
   const [params] = useSearchParams();
   const genre = params.get("genre")?.trim();
 
-  usePageMeta({ title: "Library", description: "Browse all songs and playlists." });
+  usePageMeta({ title: "Library", description: "Browse artists, recordings, and playlists." });
 
   if (genre) {
     return <Navigate to={genrePath(genre)} replace />;

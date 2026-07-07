@@ -6,11 +6,16 @@ import { BROWSE_LAYOUT_CLASS, type BrowseCrumb } from "@/lib/browsePaths";
 interface LibraryBrowseLayoutProps {
   crumbs: BrowseCrumb[];
   children: ReactNode;
+  layoutClass?: string;
 }
 
-export function LibraryBrowseLayout({ crumbs, children }: LibraryBrowseLayoutProps) {
+export function LibraryBrowseLayout({
+  crumbs,
+  children,
+  layoutClass = BROWSE_LAYOUT_CLASS,
+}: LibraryBrowseLayoutProps) {
   return (
-    <div className={`${BROWSE_LAYOUT_CLASS} flex flex-col`}>
+    <div className={`${layoutClass} flex flex-col`}>
       <BrowseBreadcrumbs crumbs={crumbs} />
       <div className="min-w-0">{children}</div>
     </div>
