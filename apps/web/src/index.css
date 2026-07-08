@@ -734,12 +734,11 @@ a.focus-lane__overlay-secondary:hover {
 
 .focus-lane__overlay-reactions {
   right: 0;
-  top: 50%;
+  bottom: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.5rem;
-  transform: translateY(-50%);
 }
 
 .focus-lane__overlay-reactions .focus-lane__reactions {
