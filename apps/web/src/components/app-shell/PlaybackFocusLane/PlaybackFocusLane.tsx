@@ -166,8 +166,10 @@ export function PlaybackFocusLane({
   const layerVisible =
     overlayLane.layerVisible || (!titleIntroStillShowing && subtitleLane.layerVisible);
 
-  // Site-player minimize follows overlay timing, not lyric cues.
-  const shouldCollapseSitePlayer = !isRadio && hasOverlay && overlayLane.layerVisible;
+  // Keep the docked player collapsed for the whole theatre session — not overlay
+  // fixture blinks. Fixture remounts force-hide layerVisible briefly and would
+  // expand/collapse the bar on every title → song-info → artist swap.
+  const shouldCollapseSitePlayer = !isRadio && focusState.hasBodyFaded;
   const positionClassName = subtitlePositionClassName(subtitlePosition);
   const variantClass = overlayLane.variantClass || subtitleLane.variantClass;
 
