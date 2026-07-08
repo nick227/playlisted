@@ -1,11 +1,13 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
-import { useLocation } from "react-router-dom";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 import { useRadioPlayer } from "@/providers/RadioPlayerProvider";
 
 import { useTheatreTrackGestures } from "@/hooks/useTheatreTrackGestures";
+import { BROWSE_SWIPE_NAVIGATION_STATE } from "@/lib/browseNavigation/types";
 import { useSyncPlaybackBodyFocusHidden } from "@/lib/playbackBodyFocus";
+import { resolveRadioSwipeTarget } from "@/lib/radio/resolveRadioSwipeTarget";
 import { buildMainContentClassName, isRadioShellActive } from "./appShellLayout";
 import { BackgroundLayer } from "./BackgroundLayer";
 import { BottomPlayer } from "./BottomPlayer";
@@ -34,6 +36,7 @@ export function AppShell({ children }: AppShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sitePlayerFocusCollapsed, setSitePlayerFocusCollapsed] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   // --- Playback source -------------------------------------------------------
   const {
@@ -46,7 +49,7 @@ export function AppShell({ children }: AppShellProps) {
   } = usePlaybackFocusTrack();
 
   const { playerShellActive, currentTrack, togglePlay, playNext, playPrevious } = useAudioPlayer();
-  const { radioUiMounted, togglePlayback: toggleRadioPlayback } = useRadioPlayer();
+  const { radioUiMounted, togglePlayback: toggleRadioPlayback, activeStationSlug } = useRadioPlayer();
 
   // --- Cinematic body fade + focus lane --------------------------------------
   const playbackFocus = usePlaybackFocusBody({
@@ -61,10 +64,23 @@ export function AppShell({ children }: AppShellProps) {
 
   useSyncPlaybackBodyFocusHidden(playbackFocus.bodyFocusMode);
 
+  // Radio has no next/previous queue to advance through, so a swipe instead drops
+  // the listener onto a real page for whatever's currently playing.
+  const isRadioFocus = focusTrack?.sourceLabel === "Radio";
+  const handleRadioSwipe = useCallback(() => {
+    if (!radioNowPlaying) return;
+    // Same swipe-navigation marker the browse shell uses: skips the scroll-to-top
+    // reset and, with preserveTheatreFocus, keeps the theatre overlay faded through
+    // the route change instead of revealing chrome and re-fading a moment later.
+    navigate(resolveRadioSwipeTarget(radioNowPlaying, activeStationSlug), {
+      state: { intent: BROWSE_SWIPE_NAVIGATION_STATE, preserveTheatreFocus: true },
+    });
+  }, [activeStationSlug, navigate, radioNowPlaying]);
+
   useTheatreTrackGestures({
     enabled: playbackFocus.bodyFocusMode,
-    onTrackNext: playNext,
-    onTrackPrevious: playPrevious,
+    onTrackNext: isRadioFocus ? handleRadioSwipe : playNext,
+    onTrackPrevious: isRadioFocus ? handleRadioSwipe : playPrevious,
     onReveal: playbackFocus.revealPage,
   });
 

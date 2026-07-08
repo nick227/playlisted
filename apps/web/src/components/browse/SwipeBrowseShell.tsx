@@ -138,11 +138,16 @@ export function SwipeBrowseShell({
 
   const handlePointerDown = useCallback(
     (event: ReactPointerEvent<HTMLDivElement>) => {
+      // Clear any suppression left over from a prior swipe before we decide whether
+      // to track this gesture — otherwise a tap on a link shortly after an unrelated
+      // swipe elsewhere on the page (excluded targets return below) inherits the
+      // stale suppression window and its click gets silently swallowed.
+      clickSuppressionUntilRef.current = 0;
+
       if (disabled) return;
       if (event.pointerType === "mouse" && event.button !== 0) return;
       if (isSwipeExcludedTarget(event.target)) return;
 
-      clickSuppressionUntilRef.current = 0;
       const now = performance.now();
       dragRef.current = {
         active: true,
@@ -242,10 +247,9 @@ export function SwipeBrowseShell({
   );
 
   const suppressClickAfterSwipe = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
-    if (!dragRef.current.moved && performance.now() > clickSuppressionUntilRef.current) return;
+    if (performance.now() > clickSuppressionUntilRef.current) return;
     event.preventDefault();
     event.stopPropagation();
-    dragRef.current.moved = false;
     clickSuppressionUntilRef.current = 0;
   }, []);
 

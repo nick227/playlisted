@@ -9,13 +9,18 @@ import { playlistPath } from "@/lib/routes";
 
 export function CanonicalPlaylistPage() {
   const { username, slug } = useParams<{ username: string; slug: string }>();
-  const { data: playlist, isLoading, isFetching, isError, error } = usePlaylistByUsernameSlug(username, slug);
+  const { data: playlist, isLoading, isFetching, isPlaceholderData, isError, error } =
+    usePlaylistByUsernameSlug(username, slug);
   usePlaylistPageMeta(playlist);
   const navigate = useNavigate();
   const { hash } = useLocation();
 
   useEffect(() => {
     if (!playlist) return;
+    // keepPreviousData means `playlist` can still be the PREVIOUS route's playlist
+    // for a render or two after navigating here — don't redirect off of stale data,
+    // or this bounces straight back to the page the user just came from.
+    if (isPlaceholderData) return;
     if (username === playlist.owner.username && slug === playlist.slug) return;
     navigate(
       `${playlistPath({
@@ -26,9 +31,9 @@ export function CanonicalPlaylistPage() {
       })}${hash}`,
       { replace: true },
     );
-  }, [hash, navigate, playlist, username, slug]);
+  }, [hash, isPlaceholderData, navigate, playlist, username, slug]);
 
-  if (isLoading && !playlist) {
+  if ((isLoading || isPlaceholderData) && !isError) {
     return <PlaylistPageSkeleton />;
   }
 
