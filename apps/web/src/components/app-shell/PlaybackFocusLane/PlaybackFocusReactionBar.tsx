@@ -55,7 +55,7 @@ export function PlaybackFocusReactionBar({ recordingId, artistId }: PlaybackFocu
           id={artistId}
           variant="inline"
           inlineAlwaysVisible
-          className="focus-lane__reaction !h-8 !w-8 !rounded-full !border !border-white/12 !bg-white/[0.06] !p-0 !opacity-100 hover:!border-white/24 hover:!bg-white/12"
+          className="focus-lane__reaction !p-0 !opacity-100"
         />
       ) : null}
       {TRACK_REACTIONS.map((reaction) => {
