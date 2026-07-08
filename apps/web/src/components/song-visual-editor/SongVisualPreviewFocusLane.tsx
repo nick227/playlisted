@@ -174,6 +174,7 @@ export function SongVisualPreviewFocusLane({
           <FocusLaneOverlayContent
             fixture={overlayLane.displayFixture!}
             isPlaying={enabled}
+            withPlayer
           />
         </div>
       ) : null}

@@ -48,9 +48,8 @@ export function useFocusLaneArtistMeta(artistId: string | undefined, recording: 
           : null,
         artistUsername: artistQuery.data?.username ?? recording?.ownerUsername,
         libraryTrackGenres: libraryTrack?.genres ?? [],
-        libraryArtistGenres: libraryArtist?.genres ?? [],
       }),
-    [artistQuery.data?.username, libraryArtist?.genres, libraryTrack, recording],
+    [artistQuery.data?.username, libraryTrack, recording],
   );
 
   const displayGenres = useMemo(() => {
@@ -65,7 +64,6 @@ export function useFocusLaneArtistMeta(artistId: string | undefined, recording: 
   }, [genres, links.recordingGenres]);
 
   return {
-    artist: artistQuery.data,
     libraryTrack,
     links,
     displayGenres,

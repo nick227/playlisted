@@ -43,7 +43,7 @@ export function FocusLaneSubtitleContent({
     style.wordBreak = "break-word";
   }
 
-  return <SubtitleText text={fixture.text} variant="subtitle" customStyle={style} />;
+  return <SubtitleText text={fixture.text} customStyle={style} />;
 }
 
 type FocusLaneOverlayContentProps = {

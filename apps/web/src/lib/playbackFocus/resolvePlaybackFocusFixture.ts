@@ -163,15 +163,3 @@ export function getFixtureFadeOutMs(fixture: PlaybackFocusFixture): number {
   }
   return playbackFocusTiming.fallbackSubtitle.fadeOutMs;
 }
-
-export function getFixtureFadeInMs(fixture: PlaybackFocusFixture): number {
-  if (fixture.type === "none") return 0;
-  if (fixture.type === "subtitle") return playbackFocusTiming.focusLane.fadeInMs;
-  if (fixture.type === "finalFallback") {
-    return playbackFocusTiming.fallbackSubtitle.fadeInMs;
-  }
-  if (fixture.type === "fallbackSubtitle" && fixture.source === "title-intro") {
-    return playbackFocusTiming.titleIntro.fadeInMs;
-  }
-  return playbackFocusTiming.fallbackSubtitle.fadeInMs;
-}

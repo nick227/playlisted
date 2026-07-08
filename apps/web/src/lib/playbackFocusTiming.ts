@@ -10,7 +10,7 @@ export const playbackFocusTiming = {
   },
 
   body: {
-    delayMs: 6400,
+    delayMs: 3000,
     restoreDelayMs: 12000,
     fadeOutMs: 2000,
   },
@@ -20,7 +20,7 @@ export const playbackFocusTiming = {
     fadeInMs: 200,
     fadeOutMs: 450,
     exitBufferMs: 180,
-  },  
+  },
 
   artistVisual: {
     gapAfterTitleIntroMs: 0,
@@ -89,24 +89,6 @@ export function applyPlaybackFocusTimingCssVars(root: HTMLElement) {
   root.style.setProperty("--delay-artist-visual", ms(0));
   root.style.setProperty("--duration-artist-visual-fade-in", ms(playbackFocusTiming.artistVisual.fadeInMs));
   root.style.setProperty("--duration-artist-visual-fade-out", ms(playbackFocusTiming.artistVisual.fadeOutMs));
-
-  root.style.setProperty("--delay-fallback-subtitle", ms(0));
-  root.style.setProperty(
-    "--duration-fallback-subtitle-fade-in",
-    ms(playbackFocusTiming.fallbackSubtitle.fadeInMs),
-  );
-  root.style.setProperty(
-    "--duration-fallback-subtitle-fade-out",
-    ms(playbackFocusTiming.fallbackSubtitle.fadeOutMs),
-  );
-
-  root.style.setProperty("--delay-subtitle", ms(playbackFocusTiming.focusLane.delayMs));
-  root.style.setProperty("--duration-subtitle-fade-in", ms(playbackFocusTiming.focusLane.fadeInMs));
-  root.style.setProperty("--duration-subtitle-fade-out", ms(playbackFocusTiming.focusLane.fadeOutMs));
-  root.style.setProperty(
-    "--duration-subtitle-exit-buffer",
-    ms(playbackFocusTiming.focusLane.exitBufferMs),
-  );
 
   root.style.setProperty(
     "--duration-play-focus-miniview-fade",

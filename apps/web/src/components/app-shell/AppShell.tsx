@@ -142,6 +142,7 @@ export function AppShell({ children }: AppShellProps) {
       <PlaybackFocusLane
         focusState={playbackFocus.focusState}
         withPlayer={shellHasPlayer}
+        playerCollapsed={sitePlayerFocusCollapsed}
         onSitePlayerCollapseChange={setSitePlayerFocusCollapsed}
       />
       <QueuePanel />

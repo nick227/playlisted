@@ -28,6 +28,8 @@ import { useFocusLaneVisibility } from "./useFocusLaneVisibility";
 type PlaybackFocusLaneProps = {
   focusState: PlaybackFocusState;
   withPlayer?: boolean;
+  /** Mirrors AppShell's delayed site-player collapse so overlay bottom stays synced. */
+  playerCollapsed?: boolean;
   onSitePlayerCollapseChange?: (collapsed: boolean) => void;
 };
 
@@ -39,6 +41,7 @@ const SUBTITLE_POLL_MAX_ATTEMPTS = 20;
 export function PlaybackFocusLane({
   focusState,
   withPlayer = true,
+  playerCollapsed = false,
   onSitePlayerCollapseChange,
 }: PlaybackFocusLaneProps) {
   const { accessToken } = useAuth();
@@ -200,7 +203,7 @@ export function PlaybackFocusLane({
             fixture={overlayLane.displayFixture!}
             isPlaying={isPlaying}
             withPlayer={withPlayer}
-            playerCollapsed={shouldCollapseSitePlayer}
+            playerCollapsed={playerCollapsed}
           />
         </div>
       ) : null}

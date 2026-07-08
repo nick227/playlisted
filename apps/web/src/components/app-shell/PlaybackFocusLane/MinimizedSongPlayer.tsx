@@ -15,7 +15,6 @@ type MinimizedSongPlayerProps = {
   onExpand?: () => void;
   expandLabel?: string;
   withPlayer: boolean;
-  dockedToSitePlayer?: boolean;
   snapReveal?: boolean;
 };
 
@@ -28,7 +27,6 @@ export function MinimizedSongPlayer({
   onExpand,
   expandLabel = "Expand artist card",
   withPlayer,
-  dockedToSitePlayer = false,
   snapReveal = false,
 }: MinimizedSongPlayerProps) {
   const links = resolveArtistVisualLinks({
@@ -43,7 +41,6 @@ export function MinimizedSongPlayer({
         "focus-lane__mini-player",
         visible ? "is-visible" : "",
         withPlayer ? "" : "focus-lane__mini-player--no-player",
-        dockedToSitePlayer ? "focus-lane__mini-player--site-player-collapsed" : "",
         snapReveal ? "is-play-focus-revealing" : "",
       ]
         .filter(Boolean)

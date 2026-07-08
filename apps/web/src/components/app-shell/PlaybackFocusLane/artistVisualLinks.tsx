@@ -14,7 +14,6 @@ export type GenreLink = {
 export type ArtistVisualLinks = {
   artistHref: string | null;
   songHref: string | null;
-  artistGenres: GenreLink[];
   recordingGenres: GenreLink[];
 };
 
@@ -22,7 +21,6 @@ type ResolveArtistVisualLinksInput = {
   recording: FocusRecording | null | undefined;
   artistUsername?: string | null;
   libraryTrackGenres?: GenreLink[];
-  libraryArtistGenres?: GenreLink[];
 };
 
 function slugifyGenreLabel(label: string): string {
@@ -50,7 +48,6 @@ export function resolveArtistVisualLinks({
   recording,
   artistUsername,
   libraryTrackGenres = [],
-  libraryArtistGenres = [],
 }: ResolveArtistVisualLinksInput): ArtistVisualLinks {
   const username = artistUsername ?? recording?.ownerUsername ?? null;
   const artistHref = username ? profilePath(username) : null;
@@ -75,12 +72,9 @@ export function resolveArtistVisualLinks({
       : []),
   ]);
 
-  const artistGenres = uniqueGenres(libraryArtistGenres);
-
   return {
     artistHref,
     songHref,
-    artistGenres,
     recordingGenres,
   };
 }
