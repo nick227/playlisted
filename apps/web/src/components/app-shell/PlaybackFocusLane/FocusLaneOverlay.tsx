@@ -1,4 +1,5 @@
 import type { ProfileLink } from "@playlisted/client-sdk";
+import { Loader2 } from "lucide-react";
 import {
   useCallback,
   useEffect,
@@ -18,6 +19,7 @@ import { FocusLaneGenreLink, FocusLaneLink, type GenreLink } from "./artistVisua
 import { PlaybackFocusReactionBar } from "./PlaybackFocusReactionBar";
 
 const CONTROLS_IDLE_MS = 4000;
+const ART_RELOAD_MS = 2000;
 
 // Auto-hide is disabled while overlay positioning is still being dialed in —
 // flip this back on once layout is settled. The reveal/capture plumbing below
@@ -131,6 +133,38 @@ function OverlayLinkText({ label, href, className }: FocusLaneOverlayLink & { cl
   return <span className={`${className} block`}>{label}</span>;
 }
 
+/** Brief brand spinner on track-skip so chrome stays put while art/meta refresh. */
+function useOverlayArtReload(recordingId?: string) {
+  const [reloading, setReloading] = useState(false);
+  const lastRecordingIdRef = useRef<string | null>(null);
+  const generationRef = useRef(0);
+
+  useEffect(() => {
+    if (!recordingId) return;
+
+    const previousRecordingId = lastRecordingIdRef.current;
+    if (previousRecordingId === recordingId) return;
+
+    if (previousRecordingId === null) {
+      lastRecordingIdRef.current = recordingId;
+      return;
+    }
+
+    const generation = ++generationRef.current;
+    setReloading(true);
+
+    const timeout = window.setTimeout(() => {
+      if (generationRef.current !== generation) return;
+      setReloading(false);
+      lastRecordingIdRef.current = recordingId;
+    }, ART_RELOAD_MS);
+
+    return () => window.clearTimeout(timeout);
+  }, [recordingId]);
+
+  return reloading;
+}
+
 export function FocusLaneOverlay({
   imageUrl,
   imageAlt,
@@ -151,6 +185,7 @@ export function FocusLaneOverlay({
 }: FocusLaneOverlayProps) {
   const reveal = useFocusLaneOverlayReveal(recordingId ?? primary.label);
   const { volume, setVolume } = usePlaybackVolume();
+  const artReloading = useOverlayArtReload(recordingId);
 
   const clusterClassName = `focus-lane__overlay-cluster${reveal.visible ? "" : " is-dimmed"}`;
   const overlayClassName = [
@@ -162,10 +197,18 @@ export function FocusLaneOverlay({
     .filter(Boolean)
     .join(" ");
 
-  const art = imageUrl ? (
-    <img key={imageUrl} src={imageUrl} alt={imageAlt} className="focus-lane__overlay-art" />
-  ) : (
-    <div className="focus-lane__overlay-art focus-lane__overlay-art--fallback" aria-hidden />
+  const art = (
+    <div className="focus-lane__overlay-art-frame">
+      {artReloading ? (
+        <div className="focus-lane__overlay-art-loading" aria-busy="true" aria-label="Loading track">
+          <Loader2 className="focus-lane__overlay-art-spinner" aria-hidden />
+        </div>
+      ) : imageUrl ? (
+        <img key={imageUrl} src={imageUrl} alt={imageAlt} className="focus-lane__overlay-art" />
+      ) : (
+        <div className="focus-lane__overlay-art focus-lane__overlay-art--fallback" aria-hidden />
+      )}
+    </div>
   );
 
   const showSideRail = Boolean(recordingId || artistId);

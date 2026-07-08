@@ -97,10 +97,7 @@ export function AppShell({ children }: AppShellProps) {
     shellHasPlayer: reservePlayerSpace,
   });
 
-  useEffect(() => {
-    setSitePlayerFocusCollapsed(false);
-  }, [focusTrackKey]);
-
+  // Keep collapsed player while advancing tracks in theatre; only expand when body returns.
   useEffect(() => {
     if (!playbackFocus.bodyFocusMode) {
       setSitePlayerFocusCollapsed(false);

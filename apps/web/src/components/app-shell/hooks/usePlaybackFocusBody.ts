@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent, type RefObject, type SyntheticEvent } from "react";
 import { useLocation } from "react-router-dom";
 
+import { isTheatreSwipeSuppressed } from "@/lib/browseNavigation/swipeGesture";
 import { isBrowseSwipeNavigation } from "@/lib/browseNavigation/types";
 
 import { getPlaybackFocusBodyFadeSuppressed } from "@/lib/playbackFocusBodyFade";
@@ -314,6 +315,8 @@ export function usePlaybackFocusBody({
 
   const revealPage = useCallback(() => {
     if (isDisplaySettingsBodyRevealSuppressed()) return;
+    // Theatre track swipe commits first on the same pointerup — keep body faded.
+    if (isTheatreSwipeSuppressed()) return;
     if (!bodyFocusHidden && !miniViewVisible) return;
     armRevealClickSuppression();
     clearSnapRevealTimer();
@@ -372,9 +375,13 @@ export function usePlaybackFocusBody({
   const handleRevealPointerUp = useCallback((event: PointerEvent<HTMLElement> | SyntheticEvent) => {
     if (isPlaybackFocusInteractiveTarget(event.target)) return;
     consumeRevealEvent(event);
+    if (isTheatreSwipeSuppressed()) {
+      cancelRevealInteraction(event);
+      return;
+    }
     revealPage();
     finishRevealInteraction(event);
-  }, [consumeRevealEvent, finishRevealInteraction, revealPage]);
+  }, [cancelRevealInteraction, consumeRevealEvent, finishRevealInteraction, revealPage]);
 
   const bodyFocusMode =
     playFocusActive && bodyFocusHidden && !playbackFocusSuppressed && !bodyFadeDisabled;

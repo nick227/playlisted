@@ -3,8 +3,9 @@ import { useEffect, useRef } from "react";
 import {
   SWIPE_AXIS_THRESHOLD_PX,
   SWIPE_CLICK_SUPPRESS_MS,
-  SWIPE_COMMIT_THRESHOLD_PX,
-  SWIPE_VELOCITY_THRESHOLD,
+  THEATRE_SWIPE_COMMIT_THRESHOLD_PX,
+  THEATRE_SWIPE_VELOCITY_THRESHOLD,
+  armTheatreSwipeSuppress,
   isSwipeExcludedTarget,
 } from "@/lib/browseNavigation/swipeGesture";
 import type { SwipeDirection } from "@/lib/browseNavigation/types";
@@ -138,13 +139,17 @@ export function useTheatreTrackGestures({
       const committed =
         drag.moved &&
         direction !== null &&
-        (pullDistance >= SWIPE_COMMIT_THRESHOLD_PX || velocity >= SWIPE_VELOCITY_THRESHOLD);
+        (pullDistance >= THEATRE_SWIPE_COMMIT_THRESHOLD_PX ||
+          velocity >= THEATRE_SWIPE_VELOCITY_THRESHOLD);
 
       const revealTarget = event.target;
       const moved = drag.moved;
       resetDrag();
 
       if (committed && direction) {
+        // Capture-phase track skip runs before the reveal shield's pointerup —
+        // arm suppression so that same gesture cannot also restore the body.
+        armTheatreSwipeSuppress();
         clickSuppressionUntilRef.current = performance.now() + SWIPE_CLICK_SUPPRESS_MS;
         if (direction === "next") onTrackNextRef.current();
         else onTrackPreviousRef.current();

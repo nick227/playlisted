@@ -556,25 +556,74 @@ body {
   animation: fade-in 300ms ease-out;
 }
 
+.focus-lane__overlay-art-frame {
+  position: relative;
+  flex: 0 0 auto;
+  width: 3.25rem;
+  height: 3.25rem;
+}
+
+.focus-lane__overlay-art-frame .focus-lane__overlay-art {
+  width: 100%;
+  height: 100%;
+}
+
+.focus-lane__overlay-art-loading {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+  border-radius: inherit;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: linear-gradient(135deg, rgba(12, 16, 22, 0.92), rgba(18, 23, 31, 0.78));
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+}
+
+.focus-lane__overlay-art-spinner {
+  width: 1.15rem;
+  height: 1.15rem;
+  color: var(--color-brand);
+  animation: focus-lane-art-spin 0.85s linear infinite;
+}
+
+@keyframes focus-lane-art-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @media (min-width: 640px) {
-  .focus-lane__overlay-art {
+  .focus-lane__overlay-art,
+  .focus-lane__overlay-art-frame {
     width: 5rem;
     height: 5rem;
     border-radius: 0.875rem;
   }
+
+  .focus-lane__overlay-art-spinner {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
 }
 
-.focus-lane__overlay--center-middle .focus-lane__overlay-art {
+.focus-lane__overlay--center-middle .focus-lane__overlay-art,
+.focus-lane__overlay--center-middle .focus-lane__overlay-art-frame {
   width: 4.5rem;
   height: 4.5rem;
   border-radius: 0.75rem;
 }
 
 @media (min-width: 640px) {
-  .focus-lane__overlay--center-middle .focus-lane__overlay-art {
+  .focus-lane__overlay--center-middle .focus-lane__overlay-art,
+  .focus-lane__overlay--center-middle .focus-lane__overlay-art-frame {
     width: 7rem;
     height: 7rem;
     border-radius: 1rem;
+  }
+
+  .focus-lane__overlay--center-middle .focus-lane__overlay-art-spinner {
+    width: 2rem;
+    height: 2rem;
   }
 }
 
