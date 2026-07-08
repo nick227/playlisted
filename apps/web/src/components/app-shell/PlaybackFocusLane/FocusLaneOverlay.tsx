@@ -189,11 +189,39 @@ export function FocusLaneOverlay({
           <OverlayLinkText {...primary} className="focus-lane__overlay-primary" />
           {secondary ? <OverlayLinkText {...secondary} className="focus-lane__overlay-secondary" /> : null}
           {meta ? <span className="focus-lane__overlay-meta truncate">{meta}</span> : null}
-          {genres.length > 0 ? (
-            <div className="focus-lane__overlay-genres">
-              {genres.map((genre) => (
-                <FocusLaneGenreLink key={genre.slug} genre={genre} className="focus-lane__overlay-genre" />
-              ))}
+          {genres.length > 0 || profileLinks.length > 0 ? (
+            <div className="focus-lane__overlay-meta-row">
+              {genres.length > 0 ? (
+                <div className="focus-lane__overlay-genres">
+                  {genres.map((genre) => (
+                    <FocusLaneGenreLink key={genre.slug} genre={genre} className="focus-lane__overlay-genre" />
+                  ))}
+                </div>
+              ) : null}
+              {profileLinks.length > 0 ? (
+                <nav aria-label={profileLinksAriaLabel} className="focus-lane__overlay-links">
+                  {profileLinks.map((link) => {
+                    const platform = getProfileLinkPlatform(link.platform);
+                    const Icon = platform.icon;
+                    const label = link.label || platform.label;
+                    return (
+                      <a
+                        key={link.id}
+                        href={link.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        title={label}
+                        aria-label={label}
+                        className="focus-lane__overlay-link"
+                        onPointerDown={stopPlaybackFocusBubble}
+                        onClick={stopPlaybackFocusBubble}
+                      >
+                        <Icon size={16} className="sm:size-5" aria-hidden />
+                      </a>
+                    );
+                  })}
+                </nav>
+              ) : null}
             </div>
           ) : null}
         </div>
@@ -208,35 +236,6 @@ export function FocusLaneOverlay({
         >
           <PlaybackFocusReactionBar recordingId={recordingId} artistId={artistId} />
         </div>
-      ) : null}
-
-      {profileLinks.length > 0 ? (
-        <nav
-          aria-label={profileLinksAriaLabel}
-          className={`${clusterClassName} focus-lane__overlay-links`}
-          {...{ [PLAYBACK_FOCUS_INTERACTIVE_ATTR]: "" }}
-        >
-          {profileLinks.map((link) => {
-            const platform = getProfileLinkPlatform(link.platform);
-            const Icon = platform.icon;
-            const label = link.label || platform.label;
-            return (
-              <a
-                key={link.id}
-                href={link.url}
-                target="_blank"
-                rel="noreferrer"
-                title={label}
-                aria-label={label}
-                className="focus-lane__overlay-link"
-                onPointerDown={stopPlaybackFocusBubble}
-                onClick={stopPlaybackFocusBubble}
-              >
-                <Icon size={16} className="sm:size-6" aria-hidden />
-              </a>
-            );
-          })}
-        </nav>
       ) : null}
     </div>
   );
