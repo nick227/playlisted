@@ -25,6 +25,17 @@ function canShowFocusLane(focusState: PlaybackFocusState): boolean {
   return focusState.playFocusActive && focusState.hasBodyFaded;
 }
 
+/** Title-intro window including fade-out — lyrics must stay dark for the whole span. */
+export function isTitleIntroWindowActive(focusLaneElapsedMs: number): boolean {
+  const { titleStart, titleEnd } = getFocusLaneSequenceWindows();
+  const titleClearMs = titleEnd + playbackFocusTiming.titleIntro.fadeOutMs;
+  return focusLaneElapsedMs >= titleStart && focusLaneElapsedMs < titleClearMs;
+}
+
+export function isTitleIntroFixture(fixture: PlaybackFocusFixture | null | undefined): boolean {
+  return fixture?.type === "fallbackSubtitle" && fixture.source === "title-intro";
+}
+
 function resolveSyntheticFixture(input: {
   focusLaneElapsedMs: number;
   syntheticCues: SyntheticSubtitleCue[];
@@ -60,7 +71,10 @@ function resolveSyntheticFixture(input: {
   return null;
 }
 
-/** Lyric captions only — never blocked by or blocking the edge overlay. */
+/**
+ * Lyric captions — blocked during title-intro (incl. fade-out) so center card and
+ * captions never share the viewport. Ongoing artist overlay can still coexist.
+ */
 export function resolveSubtitleFixture(input: ResolvePlaybackFocusInput): PlaybackFocusFixture {
   const {
     currentTimeMs,
@@ -72,6 +86,14 @@ export function resolveSubtitleFixture(input: ResolvePlaybackFocusInput): Playba
   } = input;
 
   if (!canShowFocusLane(focusState) || !isPlaying) {
+    return { type: "none" };
+  }
+
+  const focusLaneElapsedMs = getFocusLaneElapsedMs(
+    currentTimeMs,
+    focusState.bodyFadedAtTrackMs,
+  );
+  if (isTitleIntroWindowActive(focusLaneElapsedMs)) {
     return { type: "none" };
   }
 
@@ -103,7 +125,7 @@ export function resolveSubtitleFixture(input: ResolvePlaybackFocusInput): Playba
 
 /**
  * Chromeless title/artist overlay windows based on focus-lane elapsed time.
- * Independent of lyric subtitles so both can show together.
+ * Independent of lyric subtitles except during title-intro exclusivity above.
  */
 export function resolveOverlayFixture(input: ResolvePlaybackFocusInput): PlaybackFocusFixture {
   const { currentTimeMs, syntheticCues, artist, recording, focusState, isPlaying } = input;
@@ -143,11 +165,14 @@ export function resolveOverlayFixture(input: ResolvePlaybackFocusInput): Playbac
   return { type: "none" };
 }
 
-/** Combined resolver kept for callers that only need a single lane fixture. Prefers lyrics when present. */
+/** Combined resolver: title-intro beats lyrics; otherwise lyrics beat ongoing overlay. */
 export function resolvePlaybackFocusFixture(input: ResolvePlaybackFocusInput): PlaybackFocusFixture {
+  const overlay = resolveOverlayFixture(input);
+  if (isTitleIntroFixture(overlay)) return overlay;
+
   const subtitle = resolveSubtitleFixture(input);
   if (subtitle.type !== "none") return subtitle;
-  return resolveOverlayFixture(input);
+  return overlay;
 }
 
 export function getFixtureFadeOutMs(fixture: PlaybackFocusFixture): number {

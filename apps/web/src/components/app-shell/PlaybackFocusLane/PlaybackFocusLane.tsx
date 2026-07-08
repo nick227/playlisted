@@ -6,6 +6,7 @@ import { useFocusLanePlayback } from "@/hooks/useFocusLanePlayback";
 import { useRecordingSubtitleStyle } from "@/hooks/useRecordingSubtitleStyle";
 import { buildSyntheticSubtitleCues } from "@/lib/playbackFocus/buildSyntheticCues";
 import {
+  isTitleIntroFixture,
   resolveOverlayFixture,
   resolveSubtitleFixture,
 } from "@/lib/playbackFocus/resolvePlaybackFocusFixture";
@@ -144,16 +145,26 @@ export function PlaybackFocusLane({
     [resolveInput],
   );
 
-  const subtitleLane = useFocusLaneVisibility(activeSubtitleFixture);
+  // Title-intro owns the viewport — gate lyrics before either visibility hook.
+  const gatedSubtitleFixture = isTitleIntroFixture(activeOverlayFixture)
+    ? ({ type: "none" } as const)
+    : activeSubtitleFixture;
+
+  const subtitleLane = useFocusLaneVisibility(gatedSubtitleFixture);
   const overlayLane = useFocusLaneVisibility(activeOverlayFixture);
 
+  // Also suppress if title-intro is still fading out in the display fixture.
+  const titleIntroStillShowing = isTitleIntroFixture(overlayLane.displayFixture);
   const hasOverlay = Boolean(
     overlayLane.displayFixture && overlayLane.displayFixture.type !== "none",
   );
   const hasSubtitle = Boolean(
-    subtitleLane.displayFixture && subtitleLane.displayFixture.type !== "none",
+    !titleIntroStillShowing &&
+      subtitleLane.displayFixture &&
+      subtitleLane.displayFixture.type !== "none",
   );
-  const layerVisible = subtitleLane.layerVisible || overlayLane.layerVisible;
+  const layerVisible =
+    overlayLane.layerVisible || (!titleIntroStillShowing && subtitleLane.layerVisible);
 
   // Site-player minimize follows overlay timing, not lyric cues.
   const shouldCollapseSitePlayer = !isRadio && hasOverlay && overlayLane.layerVisible;
@@ -211,9 +222,9 @@ export function PlaybackFocusLane({
         <div
           key={`subtitle:${subtitleLane.displayKey}`}
           className={`focus-lane__content focus-lane__content--subtitle${
-            subtitleLane.layerVisible ? " is-visible" : ""
+            !titleIntroStillShowing && subtitleLane.layerVisible ? " is-visible" : ""
           }`}
-          aria-hidden={!subtitleLane.layerVisible}
+          aria-hidden={titleIntroStillShowing || !subtitleLane.layerVisible}
         >
           <FocusLaneSubtitleContent
             fixture={subtitleLane.displayFixture!}

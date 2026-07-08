@@ -8,6 +8,7 @@ import { useFocusLaneVisibility } from "@/components/app-shell/PlaybackFocusLane
 import { useRecordingSubtitleStyle } from "@/hooks/useRecordingSubtitleStyle";
 import { buildSyntheticSubtitleCues } from "@/lib/playbackFocus/buildSyntheticCues";
 import {
+  isTitleIntroFixture,
   resolveOverlayFixture,
   resolveSubtitleFixture,
 } from "@/lib/playbackFocus/resolvePlaybackFocusFixture";
@@ -136,16 +137,24 @@ export function SongVisualPreviewFocusLane({
     [resolveInput],
   );
 
-  const subtitleLane = useFocusLaneVisibility(activeSubtitleFixture);
+  const gatedSubtitleFixture = isTitleIntroFixture(activeOverlayFixture)
+    ? ({ type: "none" } as const)
+    : activeSubtitleFixture;
+
+  const subtitleLane = useFocusLaneVisibility(gatedSubtitleFixture);
   const overlayLane = useFocusLaneVisibility(activeOverlayFixture);
 
+  const titleIntroStillShowing = isTitleIntroFixture(overlayLane.displayFixture);
   const hasOverlay = Boolean(
     overlayLane.displayFixture && overlayLane.displayFixture.type !== "none",
   );
   const hasSubtitle = Boolean(
-    subtitleLane.displayFixture && subtitleLane.displayFixture.type !== "none",
+    !titleIntroStillShowing &&
+      subtitleLane.displayFixture &&
+      subtitleLane.displayFixture.type !== "none",
   );
-  const layerVisible = subtitleLane.layerVisible || overlayLane.layerVisible;
+  const layerVisible =
+    overlayLane.layerVisible || (!titleIntroStillShowing && subtitleLane.layerVisible);
   const variantClass = overlayLane.variantClass || subtitleLane.variantClass;
 
   if (!canRenderTextOverlay || (!hasOverlay && !hasSubtitle)) {
@@ -182,9 +191,9 @@ export function SongVisualPreviewFocusLane({
         <div
           key={`subtitle:${subtitleLane.displayKey}`}
           className={`focus-lane__content focus-lane__content--subtitle${
-            subtitleLane.layerVisible ? " is-visible" : ""
+            !titleIntroStillShowing && subtitleLane.layerVisible ? " is-visible" : ""
           }`}
-          aria-hidden={!subtitleLane.layerVisible}
+          aria-hidden={titleIntroStillShowing || !subtitleLane.layerVisible}
         >
           <FocusLaneSubtitleContent
             fixture={subtitleLane.displayFixture!}
