@@ -527,6 +527,22 @@ body {
   }
 }
 
+/* Title-interval art: media cluster centered in the overlay frame. */
+.focus-lane__overlay--center-middle .focus-lane__overlay-media {
+  top: 50%;
+  right: auto;
+  bottom: auto;
+  left: 50%;
+  max-width: min(40rem, calc(100% - 5rem));
+  transform: translate(-50%, -50%);
+}
+
+@media (min-width: 640px) {
+  .focus-lane__overlay--center-middle .focus-lane__overlay-media {
+    max-width: min(48rem, calc(100% - 7rem));
+  }
+}
+
 .focus-lane__overlay-art {
   flex: 0 0 auto;
   width: 2.5rem;

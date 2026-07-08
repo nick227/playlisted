@@ -94,6 +94,8 @@ type FocusLaneOverlayLink = {
   href?: string | null;
 };
 
+export type FocusLaneOverlayPosition = "bottom-left" | "center-middle";
+
 export type FocusLaneOverlayProps = {
   imageUrl?: string | null;
   imageAlt: string;
@@ -108,6 +110,8 @@ export type FocusLaneOverlayProps = {
   artistId?: string;
   profileLinks?: ProfileLink[];
   profileLinksAriaLabel?: string;
+  /** Media cluster placement. Default anchors lower-left; center-middle for title intervals. */
+  position?: FocusLaneOverlayPosition;
   /** False when no docked media bar (radio page, dismissed player). */
   withPlayer?: boolean;
   /** True while the site bottom player is focus-collapsed to a thin peek. */
@@ -139,6 +143,7 @@ export function FocusLaneOverlay({
   artistId,
   profileLinks = [],
   profileLinksAriaLabel = "Social links",
+  position = "bottom-left",
   withPlayer = true,
   playerCollapsed = false,
 }: FocusLaneOverlayProps) {
@@ -147,6 +152,7 @@ export function FocusLaneOverlay({
   const clusterClassName = `focus-lane__overlay-cluster${reveal.visible ? "" : " is-dimmed"}`;
   const overlayClassName = [
     "focus-lane__overlay",
+    position === "center-middle" ? "focus-lane__overlay--center-middle" : "",
     withPlayer ? "" : "focus-lane__overlay--no-player",
     withPlayer && playerCollapsed ? "focus-lane__overlay--player-collapsed" : "",
   ]

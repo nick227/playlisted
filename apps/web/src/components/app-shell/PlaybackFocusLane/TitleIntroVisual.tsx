@@ -57,6 +57,7 @@ export function TitleIntroVisual({
       artistId={artistId}
       profileLinks={profileLinks}
       profileLinksAriaLabel={artistName ? `${artistName} social links` : "Artist social links"}
+      position="center-middle"
       withPlayer={withPlayer}
       playerCollapsed={playerCollapsed}
     />
