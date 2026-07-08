@@ -27,6 +27,7 @@ import { useFocusLaneVisibility } from "./useFocusLaneVisibility";
 
 type PlaybackFocusLaneProps = {
   focusState: PlaybackFocusState;
+  withPlayer?: boolean;
   onSitePlayerCollapseChange?: (collapsed: boolean) => void;
 };
 
@@ -37,6 +38,7 @@ const SUBTITLE_POLL_MAX_ATTEMPTS = 20;
 
 export function PlaybackFocusLane({
   focusState,
+  withPlayer = true,
   onSitePlayerCollapseChange,
 }: PlaybackFocusLaneProps) {
   const { accessToken } = useAuth();
@@ -197,6 +199,8 @@ export function PlaybackFocusLane({
           <FocusLaneOverlayContent
             fixture={overlayLane.displayFixture!}
             isPlaying={isPlaying}
+            withPlayer={withPlayer}
+            playerCollapsed={shouldCollapseSitePlayer}
           />
         </div>
       ) : null}

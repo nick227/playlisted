@@ -108,6 +108,10 @@ export type FocusLaneOverlayProps = {
   artistId?: string;
   profileLinks?: ProfileLink[];
   profileLinksAriaLabel?: string;
+  /** False when no docked media bar (radio page, dismissed player). */
+  withPlayer?: boolean;
+  /** True while the site bottom player is focus-collapsed to a thin peek. */
+  playerCollapsed?: boolean;
 };
 
 function OverlayLinkText({ label, href, className }: FocusLaneOverlayLink & { className: string }) {
@@ -135,10 +139,19 @@ export function FocusLaneOverlay({
   artistId,
   profileLinks = [],
   profileLinksAriaLabel = "Social links",
+  withPlayer = true,
+  playerCollapsed = false,
 }: FocusLaneOverlayProps) {
   const reveal = useFocusLaneOverlayReveal(recordingId ?? primary.label);
 
   const clusterClassName = `focus-lane__overlay-cluster${reveal.visible ? "" : " is-dimmed"}`;
+  const overlayClassName = [
+    "focus-lane__overlay",
+    withPlayer ? "" : "focus-lane__overlay--no-player",
+    withPlayer && playerCollapsed ? "focus-lane__overlay--player-collapsed" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   const art = imageUrl ? (
     <img key={imageUrl} src={imageUrl} alt={imageAlt} className="focus-lane__overlay-art" />
@@ -148,7 +161,7 @@ export function FocusLaneOverlay({
 
   return (
     <div
-      className="focus-lane__overlay"
+      className={overlayClassName}
       onPointerDownCapture={reveal.handlePointerDownCapture}
       onClickCapture={reveal.handleClickCapture}
       onFocusCapture={reveal.handleFocusCapture}
@@ -168,7 +181,7 @@ export function FocusLaneOverlay({
           {eyebrow || isPlaying ? (
             <div className="flex min-w-0 items-center gap-1.5">
               {isPlaying ? (
-                <PlaybackBars active playing className="origin-left shrink-0 scale-[0.5] sm:scale-[0.7]" />
+                <PlaybackBars active playing className="origin-left shrink-0 scale-[0.5] sm:scale-[0.9]" />
               ) : null}
               {eyebrow ? <span className="focus-lane__overlay-eyebrow truncate">{eyebrow}</span> : null}
             </div>
@@ -219,7 +232,7 @@ export function FocusLaneOverlay({
                 onPointerDown={stopPlaybackFocusBubble}
                 onClick={stopPlaybackFocusBubble}
               >
-                <Icon size={16} className="sm:size-5" aria-hidden />
+                <Icon size={16} className="sm:size-6" aria-hidden />
               </a>
             );
           })}

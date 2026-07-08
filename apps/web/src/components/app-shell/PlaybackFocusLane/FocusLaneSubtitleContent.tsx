@@ -49,9 +49,16 @@ export function FocusLaneSubtitleContent({
 type FocusLaneOverlayContentProps = {
   fixture: PlaybackFocusFixture;
   isPlaying?: boolean;
+  withPlayer?: boolean;
+  playerCollapsed?: boolean;
 };
 
-export function FocusLaneOverlayContent({ fixture, isPlaying }: FocusLaneOverlayContentProps) {
+export function FocusLaneOverlayContent({
+  fixture,
+  isPlaying,
+  withPlayer = true,
+  playerCollapsed = false,
+}: FocusLaneOverlayContentProps) {
   if (fixture.type === "fallbackSubtitle" && fixture.source === "title-intro") {
     return (
       <TitleIntroVisual
@@ -59,6 +66,8 @@ export function FocusLaneOverlayContent({ fixture, isPlaying }: FocusLaneOverlay
         artistName={fixture.artist?.artistName}
         recording={fixture.recording}
         isPlaying={isPlaying}
+        withPlayer={withPlayer}
+        playerCollapsed={playerCollapsed}
       />
     );
   }
@@ -77,6 +86,8 @@ export function FocusLaneOverlayContent({ fixture, isPlaying }: FocusLaneOverlay
         artistBio={artist?.bioLine}
         recording={recording}
         isPlaying={isPlaying}
+        withPlayer={withPlayer}
+        playerCollapsed={playerCollapsed}
       />
     );
   }

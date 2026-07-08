@@ -9,6 +9,8 @@ type ArtistVisualProps = {
   artistBio?: string | null;
   recording?: FocusRecording | null;
   isPlaying?: boolean;
+  withPlayer?: boolean;
+  playerCollapsed?: boolean;
 };
 
 export function ArtistVisual({
@@ -17,6 +19,8 @@ export function ArtistVisual({
   artistBio,
   recording,
   isPlaying = false,
+  withPlayer = true,
+  playerCollapsed = false,
 }: ArtistVisualProps) {
   const artistId = recording?.ownerId ?? undefined;
   const { links, displayGenres, profileLinks } = useFocusLaneArtistMeta(artistId, recording);
@@ -34,6 +38,8 @@ export function ArtistVisual({
       artistId={artistId}
       profileLinks={profileLinks}
       profileLinksAriaLabel={artistName ? `${artistName} social links` : "Artist social links"}
+      withPlayer={withPlayer}
+      playerCollapsed={playerCollapsed}
     />
   );
 }

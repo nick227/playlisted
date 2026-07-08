@@ -9,6 +9,8 @@ type TitleIntroVisualProps = {
   artistName?: string | null;
   recording?: FocusRecording | null;
   isPlaying?: boolean;
+  withPlayer?: boolean;
+  playerCollapsed?: boolean;
 };
 
 function formatRecordingType(recordingType: string | null | undefined): string | null {
@@ -25,6 +27,8 @@ export function TitleIntroVisual({
   artistName,
   recording,
   isPlaying = true,
+  withPlayer = true,
+  playerCollapsed = false,
 }: TitleIntroVisualProps) {
   const artistId = recording?.ownerId ?? undefined;
   const { links, displayGenres, profileLinks, libraryTrack } = useFocusLaneArtistMeta(artistId, recording);
@@ -53,6 +57,8 @@ export function TitleIntroVisual({
       artistId={artistId}
       profileLinks={profileLinks}
       profileLinksAriaLabel={artistName ? `${artistName} social links` : "Artist social links"}
+      withPlayer={withPlayer}
+      playerCollapsed={playerCollapsed}
     />
   );
 }
