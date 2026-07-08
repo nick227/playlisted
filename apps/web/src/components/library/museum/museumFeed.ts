@@ -2,16 +2,6 @@ import type { LibrarySong } from "@playlisted/client-sdk";
 
 import type { MuseumExhibit, MuseumPools } from "./museumTypes";
 
-const QUIET_ROOM_PHRASES = [
-  "Listen closer.",
-  "Between the notes.",
-  "A moment of quiet.",
-  "Voices in the hall.",
-  "Stay a while.",
-  "Sound becomes memory.",
-  "The room breathes.",
-] as const;
-
 const BATCH_PATTERN = [
   "artist-feature",
   "song-tracklist",
@@ -20,7 +10,6 @@ const BATCH_PATTERN = [
   "artist-grid",
   "listening-room",
   "playlist-grid",
-  "quiet-room",
 ] as const;
 
 function pick<T>(pool: T[], count: number, offset: number): T[] {
@@ -135,14 +124,6 @@ export function buildMuseumBatch(batchIndex: number, pools: MuseumPools): Museum
         playlists: pick(playlists, 3, offset + 1),
       });
       continue;
-    }
-
-    if (slot === "quiet-room") {
-      exhibits.push({
-        id: `quiet-${batchIndex}-${offset}`,
-        kind: "quiet-room",
-        phrase: QUIET_ROOM_PHRASES[offset % QUIET_ROOM_PHRASES.length],
-      });
     }
   }
 
