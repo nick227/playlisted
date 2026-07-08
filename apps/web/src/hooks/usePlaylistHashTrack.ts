@@ -52,7 +52,8 @@ export function usePlaylistHashTrack<TTrack extends HashTrack>(
     const target = findHashTrack(hash, tracks);
     if (!target) return;
 
-    const targetIndex = tracks.findIndex((track) => track.id === target.id);
+    const targetId = target.id;
+    const targetIndex = tracks.findIndex((track) => track.id === targetId);
     if (targetIndex < 0) return;
 
     if (playedHashRef.current !== hash) {
@@ -68,7 +69,7 @@ export function usePlaylistHashTrack<TTrack extends HashTrack>(
     function tick() {
       if (cancelled || attempts++ > MAX_ATTEMPTS) return;
 
-      const element = document.getElementById(`track-${target.id}`);
+      const element = document.getElementById(`track-${targetId}`);
       if (!element) {
         requestAnimationFrame(tick);
         return;
