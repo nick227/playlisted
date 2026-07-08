@@ -7,17 +7,13 @@ import type { CollectionRecording } from "@/components/collection/collectionType
 import { Skeleton } from "@/components/feedback/Skeleton";
 import { TrackList } from "@/components/tracks/TrackList";
 import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
-import { PlaybackBars } from "@/features/playback-indicators/PlaybackBars";
 import { useAddCollectionPlaylist, useCollectionPlaylists } from "@/hooks/useCollections";
 import { useAuthAction } from "@/hooks/useAuthAction";
 import { usePlaylistByUsernameSlug } from "@/hooks/usePlaylistByUsernameSlug";
-import { formatPlayCount } from "@/lib/format";
 import { artistProfileTrackOrigin } from "@/lib/playbackOrigin";
 import { coverFallback, playlistPath, studioCollectionEditPath } from "@/lib/routes";
 import { useAudioPlayer, type QueueTrack } from "@/providers/AudioPlayerProvider";
 import { useAuth } from "@/providers/AuthProvider";
-
-import { computePlaylistStreams } from "./artistProfileUtils";
 
 type PlaylistSummary = UserDetail["publicPlaylists"][number];
 
@@ -61,7 +57,7 @@ export function ArtistProfileCollectionPanel({ playlist, owner, editHref }: Arti
     ownerName: owner.displayName,
     artistImageUrl: owner.avatarUrl,
   }));
-  const totalStreams = computePlaylistStreams(recordings);
+  const description = playlist.description?.trim() || detail?.description?.trim() || "";
 
   const bannerBackgroundStyle = playlist.coverArtUrl
     ? { backgroundImage: `url(${playlist.coverArtUrl})` }
@@ -154,20 +150,15 @@ export function ArtistProfileCollectionPanel({ playlist, owner, editHref }: Arti
   });
 
   return (
-    <article className="min-w-0 overflow-x-clip">
-      <div className="relative min-h-[220px] overflow-hidden rounded-xl border border-white/8 md:min-h-[260px]">
+    <article className="min-w-0 overflow-x-clip mt-20">
+      <div className="playlist-hero-card relative min-h-[320px] overflow-hidden border border-white/8 md:min-h-[380px]">
         <div
           className="absolute inset-0 scale-105 bg-cover bg-center transition-transform duration-700"
           style={bannerBackgroundStyle}
           aria-hidden="true"
         />
-        <div className="absolute inset-0" aria-hidden="true" />
         <div
-          className="absolute"
-          aria-hidden="true"
-        />
-        <div
-          className="absolute"
+          className="absolute inset-0 bg-gradient-to-b from-black/75 via-black/25 to-black/55"
           aria-hidden="true"
         />
 
@@ -181,75 +172,66 @@ export function ArtistProfileCollectionPanel({ playlist, owner, editHref }: Arti
         />
         {isPlaying ? <CollectionBannerLightning /> : null}
 
-        <div className="relative z-10 flex min-h-[220px] flex-col justify-between p-5 md:min-h-[260px] md:p-6">
-          <div className="flex items-start justify-between gap-3">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-black/30 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/75 backdrop-blur-sm">
-              {isActive ? (
-                <PlaybackBars active={isActive} playing={isPlaying} variant="row-compact" className="!mb-0" />
-              ) : null}
-              <span>{playlist.itemCount} tracks</span>
-            </div>
-            {isOwner ? (
-              <Link
-                to={editHref ?? studioCollectionEditPath(playlist.id)}
-                className="shrink-0 rounded-full border border-white/20 bg-black/30 px-3 py-1 text-xs font-semibold text-white backdrop-blur-sm transition hover:border-[var(--color-brand)] hover:text-[var(--color-brand)]"
-              >
-                Edit
-              </Link>
-            ) : null}
-          </div>
-
-          <div className="mt-auto flex items-end gap-4 md:gap-5">
-            <button
-              type="button"
-              onClick={playAll}
-              aria-label={isPlaying ? `Pause ${playlist.title}` : `Play ${playlist.title}`}
-              className="group/play relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-white/25 bg-black/90 text-white shadow-[0_8px_32px_rgba(0,0,0,0.45)] backdrop-blur-md transition hover:scale-105 hover:border-white/40 hover:bg-white/20 md:h-16 md:w-16"
-            >
-              {isPlaying ? (
-                <Pause size={22} fill="currentColor" />
-              ) : (
-                <Play size={22} className="ml-0.5" fill="currentColor" />
-              )}
-            </button>
-
-            <div className="min-w-0 flex-1 pb-0.5">
-              <h3 className="text-2xl font-semibold leading-tight tracking-tight text-white md:text-3xl">
+        <div className="relative z-10 flex min-h-[320px] flex-col p-5 md:min-h-[380px] md:p-7">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0 max-w-[min(100%,28rem)] pr-2">
+              <h3 className="text-3xl font-semibold leading-[1.05] tracking-tight text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.55)] md:text-4xl">
                 <Link
                   to={href}
-                  className="break-words bg-black/50 rounded-sm p-2 transition hover:text-[var(--color-brand)] hover:underline"
+                  className="break-words transition hover:text-[var(--color-brand)]"
                 >
                   {playlist.title}
                 </Link>
               </h3>
-              <p className="mt-2 text-sm text-white/65 bg-black/50 rounded-sm p-1 w-fit">
-                {!isLoading && recordings.length > 0
-                  ? `${formatPlayCount(totalStreams) || "0"} streams`
-                  : "Loading streams…"}
-              </p>
-
-              <div className="mt-3 flex flex-wrap items-center gap-3">
-                <div className="inline-flex items-center gap-1.5 rounded-full border border-white/12 bg-black/50 px-3 py-1 text-sm text-white">
-                  <FavoriteHeartButton
-                    target="playlist"
-                    id={playlist.id}
-                    variant="inline"
-                    className="!opacity-100 !p-0"
-                  />
-                  Like
-                </div>
-                {status === "authenticated" && !isOwner ? (
-                  <button
-                    type="button"
-                    onClick={handleFollow}
-                    disabled={addCollection.isPending || isFollowing}
-                    className="rounded-full border border-white/12 bg-black/25 px-3 py-1 text-sm text-white transition hover:border-white/50 hover:text-white disabled:opacity-50"
-                  >
-                    {isFollowing ? "Following" : addCollection.isPending ? "Following…" : "Follow"}
-                  </button>
-                ) : null}
-              </div>
+              {description ? (
+                <p className="mt-2 line-clamp-2 text-base leading-snug text-white/75 drop-shadow-[0_1px_8px_rgba(0,0,0,0.45)] md:text-lg">
+                  {description}
+                </p>
+              ) : null}
             </div>
+
+            <div className="flex shrink-0 items-center gap-2">
+              {isOwner ? (
+                <Link
+                  to={editHref ?? studioCollectionEditPath(playlist.id)}
+                  className="rounded-full border border-white/20 bg-black/35 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-sm transition hover:border-[var(--color-brand)] hover:text-[var(--color-brand)]"
+                >
+                  Edit
+                </Link>
+              ) : null}
+              {status === "authenticated" && !isOwner ? (
+                <button
+                  type="button"
+                  onClick={handleFollow}
+                  disabled={addCollection.isPending || isFollowing}
+                  className="rounded-full border border-white/20 bg-black/35 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-sm transition hover:border-white/50 disabled:opacity-50"
+                >
+                  {isFollowing ? "Following" : addCollection.isPending ? "Following…" : "Follow"}
+                </button>
+              ) : null}
+              <FavoriteHeartButton
+                target="playlist"
+                id={playlist.id}
+                variant="inline"
+                inlineAlwaysVisible
+                className="!rounded-full !bg-black/45 !p-2 !text-white backdrop-blur-sm hover:!bg-black/60"
+              />
+            </div>
+          </div>
+
+          <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
+            <button
+              type="button"
+              onClick={playAll}
+              aria-label={isPlaying ? `Pause ${playlist.title}` : `Play ${playlist.title}`}
+              className="pointer-events-auto flex h-16 w-16 items-center justify-center rounded-full border border-white/30 bg-black/80 text-white shadow-[0_10px_40px_rgba(0,0,0,0.5)] backdrop-blur-md transition hover:scale-105 hover:border-white/50 md:h-20 md:w-20"
+            >
+              {isPlaying ? (
+                <Pause size={26} fill="currentColor" />
+              ) : (
+                <Play size={26} className="ml-0.5" fill="currentColor" />
+              )}
+            </button>
           </div>
         </div>
       </div>
