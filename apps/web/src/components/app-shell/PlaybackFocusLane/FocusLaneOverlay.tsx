@@ -9,8 +9,10 @@ import {
 } from "react";
 
 import { getProfileLinkPlatform } from "@/components/profile/profileLinks";
+import { VerticalVolumeControl } from "@/components/playback/VerticalVolumeControl";
 import { PlaybackBars } from "@/features/playback-indicators/PlaybackBars";
 import { PLAYBACK_FOCUS_INTERACTIVE_ATTR, stopPlaybackFocusBubble } from "@/lib/playbackFocus/interactiveTarget";
+import { usePlaybackVolume } from "@/providers/PlaybackVolumeProvider";
 
 import { FocusLaneGenreLink, FocusLaneLink, type GenreLink } from "./artistVisualLinks";
 import { PlaybackFocusReactionBar } from "./PlaybackFocusReactionBar";
@@ -121,12 +123,12 @@ export type FocusLaneOverlayProps = {
 function OverlayLinkText({ label, href, className }: FocusLaneOverlayLink & { className: string }) {
   if (href) {
     return (
-      <FocusLaneLink to={href} title={label} className={`${className} block truncate`}>
+      <FocusLaneLink to={href} title={label} className={`${className} block`}>
         {label}
       </FocusLaneLink>
     );
   }
-  return <span className={`${className} block truncate`}>{label}</span>;
+  return <span className={`${className} block`}>{label}</span>;
 }
 
 export function FocusLaneOverlay({
@@ -148,6 +150,7 @@ export function FocusLaneOverlay({
   playerCollapsed = false,
 }: FocusLaneOverlayProps) {
   const reveal = useFocusLaneOverlayReveal(recordingId ?? primary.label);
+  const { volume, setVolume } = usePlaybackVolume();
 
   const clusterClassName = `focus-lane__overlay-cluster${reveal.visible ? "" : " is-dimmed"}`;
   const overlayClassName = [
@@ -164,6 +167,8 @@ export function FocusLaneOverlay({
   ) : (
     <div className="focus-lane__overlay-art focus-lane__overlay-art--fallback" aria-hidden />
   );
+
+  const showSideRail = Boolean(recordingId || artistId);
 
   return (
     <div
@@ -233,7 +238,7 @@ export function FocusLaneOverlay({
         </div>
       </div>
 
-      {recordingId || artistId ? (
+      {showSideRail ? (
         <div
           className={`${clusterClassName} focus-lane__overlay-reactions`}
           onPointerDown={stopPlaybackFocusBubble}
@@ -241,6 +246,12 @@ export function FocusLaneOverlay({
           {...{ [PLAYBACK_FOCUS_INTERACTIVE_ATTR]: "" }}
         >
           <PlaybackFocusReactionBar recordingId={recordingId} artistId={artistId} />
+          <VerticalVolumeControl
+            variant="focus-lane"
+            volume={volume}
+            onVolumeChange={setVolume}
+            className="focus-lane__overlay-volume"
+          />
         </div>
       ) : null}
     </div>

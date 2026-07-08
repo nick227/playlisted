@@ -90,7 +90,7 @@ export function PlaybackFocusReactionBar({ recordingId, artistId }: PlaybackFocu
               handleReactionClick(id);
             }}
           >
-            <Icon size={16} strokeWidth={isActive ? 2.4 : 2} aria-hidden />
+            <Icon size={18} strokeWidth={isActive ? 2.4 : 2} aria-hidden />
           </button>
         );
       })}

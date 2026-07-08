@@ -4,7 +4,7 @@ import { useCallback, useState } from "react";
 type VerticalVolumeControlProps = {
   volume: number;
   onVolumeChange: (volume: number) => void;
-  variant?: "player" | "radio";
+  variant?: "player" | "radio" | "focus-lane";
   className?: string;
 };
 
@@ -27,18 +27,29 @@ export function VerticalVolumeControl({
   }, []);
 
   const isRadio = variant === "radio";
-  const shellClass = isRadio ? "h-11 w-11" : "h-8 w-8 md:h-9 md:w-9";
-  const buttonClass = isRadio
-    ? "relative z-10 flex h-11 w-11 items-center justify-center rounded-full border border-white/[0.08] bg-[var(--color-surface)]/80 text-white/72 shadow-lg shadow-black/20 transition hover:border-white/20 hover:bg-white/[0.09] hover:text-white"
-    : "relative z-10 grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white/5 text-[var(--color-text-muted)] transition hover:bg-white/10 hover:text-white md:h-9 md:w-9";
+  const isFocusLane = variant === "focus-lane";
+  const shellClass = isFocusLane
+    ? "h-[2.5rem] w-[2.5rem] sm:h-12 sm:w-12"
+    : isRadio
+      ? "h-11 w-11"
+      : "h-8 w-8 md:h-9 md:w-9";
+  const buttonClass = isFocusLane
+    ? "focus-lane__reaction relative z-10"
+    : isRadio
+      ? "relative z-10 flex h-11 w-11 items-center justify-center rounded-full border border-white/[0.08] bg-[var(--color-surface)]/80 text-white/72 shadow-lg shadow-black/20 transition hover:border-white/20 hover:bg-white/[0.09] hover:text-white"
+      : "relative z-10 grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white/5 text-[var(--color-text-muted)] transition hover:bg-white/10 hover:text-white md:h-9 md:w-9";
 
-  const popoverClass = isRadio
-    ? "absolute bottom-full left-1/2 z-50 mb-3 flex h-36 w-11 -translate-x-1/2 items-center justify-center rounded-full border border-white/[0.08] bg-black/70 py-4 shadow-2xl shadow-black/40 backdrop-blur-md transition"
-    : "absolute bottom-full left-1/2 z-50 mb-2 flex h-32 w-10 -translate-x-1/2 items-center justify-center rounded-2xl border border-[var(--color-border)] bg-[var(--color-canvas-alt)] py-3 shadow-xl transition md:mb-3 md:h-36 md:w-11";
+  const popoverClass = isFocusLane
+    ? "absolute bottom-full left-1/2 z-50 mb-3 flex h-36 w-[2.5rem] -translate-x-1/2 items-center justify-center rounded-full border border-white/12 bg-black/70 py-4 shadow-2xl shadow-black/40 backdrop-blur-md transition sm:w-12"
+    : isRadio
+      ? "absolute bottom-full left-1/2 z-50 mb-3 flex h-36 w-11 -translate-x-1/2 items-center justify-center rounded-full border border-white/[0.08] bg-black/70 py-4 shadow-2xl shadow-black/40 backdrop-blur-md transition"
+      : "absolute bottom-full left-1/2 z-50 mb-2 flex h-32 w-10 -translate-x-1/2 items-center justify-center rounded-2xl border border-[var(--color-border)] bg-[var(--color-canvas-alt)] py-3 shadow-xl transition md:mb-3 md:h-36 md:w-11";
 
-  const sliderClass = isRadio
+  const sliderClass = isFocusLane || isRadio
     ? "h-24 w-2 cursor-pointer accent-white [direction:rtl] [writing-mode:vertical-lr]"
     : "h-20 w-2 cursor-pointer accent-[var(--color-brand)] [direction:rtl] [writing-mode:vertical-lr] md:h-24";
+
+  const iconSize = isFocusLane ? 18 : isRadio ? 18 : 16;
 
   return (
     <div
@@ -48,7 +59,9 @@ export function VerticalVolumeControl({
       onBlur={handleBlur}
     >
       <span
-        className={`pointer-events-none absolute bottom-0 left-1/2 z-0 -translate-x-1/2 ${isRadio ? "h-48 w-11" : "h-40 w-10 md:h-44 md:w-11"}`}
+        className={`pointer-events-none absolute bottom-0 left-1/2 z-0 -translate-x-1/2 ${
+          isFocusLane ? "h-48 w-[2.5rem] sm:w-12" : isRadio ? "h-48 w-11" : "h-40 w-10 md:h-44 md:w-11"
+        }`}
         aria-hidden="true"
       />
       <div
@@ -76,7 +89,7 @@ export function VerticalVolumeControl({
         aria-expanded={popoverOpen}
         onClick={() => setPinnedOpen((open) => !open)}
       >
-        {isMuted ? <VolumeX size={isRadio ? 18 : 16} /> : <Volume2 size={isRadio ? 18 : 16} />}
+        {isMuted ? <VolumeX size={iconSize} /> : <Volume2 size={iconSize} />}
       </button>
     </div>
   );
