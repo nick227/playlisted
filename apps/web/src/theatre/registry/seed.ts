@@ -13,7 +13,7 @@ import { spinAmpPackage } from '../packages/spin-amp'
 import { weatherSpeakerPackage } from '../packages/weather-speaker'
 import { stopMotionFlowerStormPackage } from '../packages/stop-motion-flower-storm'
 import { impossibleAquariumPackage } from '../packages/impossible-aquarium'
-import { signalOrganismPackage } from '../packages/signal-organism'
+//import { signalOrganismPackage } from '../packages/signal-organism'
 import { monsterCrewPackage } from '../packages/monster-crew'
 import { liminalDoomPackage } from '../packages/liminal-doom'
 import { eqBarsPackage } from '../packages/eq-bars'
@@ -66,7 +66,7 @@ registerObjectTheatreInSeed([
   weatherSpeakerPackage,
   stopMotionFlowerStormPackage,
   impossibleAquariumPackage,
-  signalOrganismPackage,
+  //signalOrganismPackage,
   monsterCrewPackage,
   liminalDoomPackage,
   eqBarsPackage,
