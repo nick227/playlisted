@@ -1,11 +1,14 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 
 import { useFocusLanePlayback } from "@/hooks/useFocusLanePlayback";
 import { useRecordingSubtitleStyle } from "@/hooks/useRecordingSubtitleStyle";
 import { buildSyntheticSubtitleCues } from "@/lib/playbackFocus/buildSyntheticCues";
-import { resolvePlaybackFocusFixture } from "@/lib/playbackFocus/resolvePlaybackFocusFixture";
+import {
+  resolveOverlayFixture,
+  resolveSubtitleFixture,
+} from "@/lib/playbackFocus/resolvePlaybackFocusFixture";
 import { toFocusArtist, toFocusRecording } from "@/lib/playbackFocus/toFocusRecording";
 import type { PlaybackFocusState } from "@/lib/playbackFocus/types";
 import {
@@ -19,17 +22,12 @@ import { useSubtitleDisplay } from "@/lib/subtitleDisplay";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 import { useAuth } from "@/providers/AuthProvider";
 
-import { FocusLaneSubtitleContent } from "./FocusLaneSubtitleContent";
-import { MinimizedSongPlayer } from "./MinimizedSongPlayer";
-import { useArtistVisualMinimized } from "./useArtistVisualMinimized";
+import { FocusLaneOverlayContent, FocusLaneSubtitleContent } from "./FocusLaneSubtitleContent";
 import { useFocusLaneVisibility } from "./useFocusLaneVisibility";
 
 type PlaybackFocusLaneProps = {
   focusState: PlaybackFocusState;
-  withPlayer?: boolean;
   onSitePlayerCollapseChange?: (collapsed: boolean) => void;
-  onMiniPlayerActiveChange?: (active: boolean) => void;
-  onReturn?: () => void;
 };
 
 const SUBTITLE_POLL_INTERVAL_MS = 3000;
@@ -39,17 +37,13 @@ const SUBTITLE_POLL_MAX_ATTEMPTS = 20;
 
 export function PlaybackFocusLane({
   focusState,
-  withPlayer = false,
   onSitePlayerCollapseChange,
-  onMiniPlayerActiveChange,
-  onReturn,
 }: PlaybackFocusLaneProps) {
   const { accessToken } = useAuth();
   const { playbackContext } = useAudioPlayer();
   const { subtitlesEnabled } = useSubtitleDisplay();
   const { track, isPlaying, currentTime, isRadio } = useFocusLanePlayback();
   const queryClient = useQueryClient();
-  const [siteMiniPlayerDocked, setSiteMiniPlayerDocked] = useState(false);
 
   const recording = useMemo(
     () => toFocusRecording(track, isRadio ? undefined : playbackContext),
@@ -111,19 +105,18 @@ export function PlaybackFocusLane({
 
   const currentTimeMs = currentTime * 1000;
 
-  const activeFixture = useMemo(
-    () =>
-      resolvePlaybackFocusFixture({
-        currentTimeMs,
-        subtitleSegments: subtitles?.segments,
-        subtitleReady: subtitles?.status === "READY",
-        syntheticCues,
-        artist,
-        recording,
-        focusState,
-        subtitlesEnabled,
-        isPlaying,
-      }),
+  const resolveInput = useMemo(
+    () => ({
+      currentTimeMs,
+      subtitleSegments: subtitles?.segments,
+      subtitleReady: subtitles?.status === "READY",
+      syntheticCues,
+      artist,
+      recording,
+      focusState,
+      subtitlesEnabled,
+      isPlaying,
+    }),
     [
       artist,
       currentTimeMs,
@@ -137,32 +130,40 @@ export function PlaybackFocusLane({
     ],
   );
 
-  const { displayFixture, displayKey, layerVisible, variantClass } = useFocusLaneVisibility(activeFixture);
-  const { minimized: artistVisualMinimized, minimize: minimizeArtistVisual, expand: expandArtistVisual } =
-    useArtistVisualMinimized(recording?.id, focusState.hasBodyFaded);
+  const activeSubtitleFixture = useMemo(
+    () => resolveSubtitleFixture(resolveInput),
+    [resolveInput],
+  );
+  const activeOverlayFixture = useMemo(
+    () => resolveOverlayFixture(resolveInput),
+    [resolveInput],
+  );
 
-  const artistVisualPosition =
-    displayFixture?.type === "finalFallback" ||
-    (displayFixture?.type === "fallbackSubtitle" && displayFixture.source !== "title-intro");
-  const positionClassName = subtitlePositionClassName(artistVisualPosition ? "middle" : subtitlePosition);
+  const subtitleLane = useFocusLaneVisibility(activeSubtitleFixture);
+  const overlayLane = useFocusLaneVisibility(activeOverlayFixture);
 
-  const isSubtitleFixture = displayFixture?.type === "subtitle";
-  const isArtistVisualFixture = artistVisualPosition;
-  const miniPlayerRequested = isSubtitleFixture || (isArtistVisualFixture && artistVisualMinimized);
-  const showMiniPlayer = layerVisible && miniPlayerRequested;
-  const shouldCollapseSitePlayer = !isRadio && miniPlayerRequested;
+  const hasOverlay = Boolean(
+    overlayLane.displayFixture && overlayLane.displayFixture.type !== "none",
+  );
+  const hasSubtitle = Boolean(
+    subtitleLane.displayFixture && subtitleLane.displayFixture.type !== "none",
+  );
+  const layerVisible = subtitleLane.layerVisible || overlayLane.layerVisible;
+
+  // Site-player minimize follows overlay timing, not lyric cues.
+  const shouldCollapseSitePlayer = !isRadio && hasOverlay && overlayLane.layerVisible;
+  const positionClassName = subtitlePositionClassName(subtitlePosition);
+  const variantClass = overlayLane.variantClass || subtitleLane.variantClass;
 
   useEffect(() => {
     if (!onSitePlayerCollapseChange) return;
 
     if (!shouldCollapseSitePlayer) {
-      setSiteMiniPlayerDocked(false);
       onSitePlayerCollapseChange(false);
       return;
     }
 
     const timeout = window.setTimeout(() => {
-      setSiteMiniPlayerDocked(true);
       onSitePlayerCollapseChange(true);
     }, 180);
 
@@ -171,61 +172,50 @@ export function PlaybackFocusLane({
     };
   }, [onSitePlayerCollapseChange, shouldCollapseSitePlayer]);
 
-  const handleExpandMiniPlayer = () => {
-    setSiteMiniPlayerDocked(false);
-    onSitePlayerCollapseChange?.(false);
-    if (isArtistVisualFixture && artistVisualMinimized) {
-      expandArtistVisual();
-      return;
-    }
-    onReturn?.();
-  };
-
-  useEffect(() => {
-    onMiniPlayerActiveChange?.(showMiniPlayer);
-    return () => onMiniPlayerActiveChange?.(false);
-  }, [onMiniPlayerActiveChange, showMiniPlayer]);
-
   if (!recording?.id || !focusState.hasBodyFaded || !isPlaying) {
     return null;
   }
 
-  if (!displayFixture || displayFixture.type === "none") {
+  if (!hasOverlay && !hasSubtitle) {
     return null;
   }
 
   return createPortal(
-    <>
-      <div
-        data-focus-lane
-        className={`focus-lane${layerVisible ? " is-visible" : ""}${variantClass}${positionClassName}`}
-        aria-hidden={!layerVisible}
-      >
-        <div key={displayKey} className="focus-lane__content">
-          <FocusLaneSubtitleContent
-            fixture={displayFixture}
-            customSubtitleStyle={customSubtitleStyle}
-            subtitleStyleId={subtitleStyleId}
-            currentTimeSec={currentTime}
+    <div
+      data-focus-lane
+      className={`focus-lane${layerVisible ? " is-visible" : ""}${variantClass}${positionClassName}`}
+      aria-hidden={!layerVisible}
+    >
+      {hasOverlay ? (
+        <div
+          key={`overlay:${overlayLane.displayKey}`}
+          className={`focus-lane__content focus-lane__content--overlay${
+            overlayLane.layerVisible ? " is-visible" : ""
+          }`}
+          aria-hidden={!overlayLane.layerVisible}
+        >
+          <FocusLaneOverlayContent
+            fixture={overlayLane.displayFixture!}
             isPlaying={isPlaying}
-            onMinimizeArtistVisual={minimizeArtistVisual}
-            onCloseArtistVisual={onReturn}
-            artistVisualMinimized={artistVisualMinimized}
           />
         </div>
-      </div>
-      <MinimizedSongPlayer
-        recording={recording}
-        artistName={artist?.artistName ?? recording.ownerName ?? undefined}
-        artistUsername={recording.ownerUsername}
-        visible={showMiniPlayer}
-        showExpand={showMiniPlayer}
-        onExpand={handleExpandMiniPlayer}
-        expandLabel={isArtistVisualFixture && artistVisualMinimized ? "Expand artist card" : "Return to page"}
-        withPlayer={withPlayer}
-        dockedToSitePlayer={siteMiniPlayerDocked}
-      />
-    </>,
+      ) : null}
+      {hasSubtitle ? (
+        <div
+          key={`subtitle:${subtitleLane.displayKey}`}
+          className={`focus-lane__content focus-lane__content--subtitle${
+            subtitleLane.layerVisible ? " is-visible" : ""
+          }`}
+          aria-hidden={!subtitleLane.layerVisible}
+        >
+          <FocusLaneSubtitleContent
+            fixture={subtitleLane.displayFixture!}
+            customSubtitleStyle={customSubtitleStyle}
+            subtitleStyleId={subtitleStyleId}
+          />
+        </div>
+      ) : null}
+    </div>,
     document.body,
   );
 }

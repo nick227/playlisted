@@ -1,10 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 
-import { FocusLaneSubtitleContent } from "@/components/app-shell/PlaybackFocusLane/FocusLaneSubtitleContent";
+import {
+  FocusLaneOverlayContent,
+  FocusLaneSubtitleContent,
+} from "@/components/app-shell/PlaybackFocusLane/FocusLaneSubtitleContent";
 import { useFocusLaneVisibility } from "@/components/app-shell/PlaybackFocusLane/useFocusLaneVisibility";
 import { useRecordingSubtitleStyle } from "@/hooks/useRecordingSubtitleStyle";
 import { buildSyntheticSubtitleCues } from "@/lib/playbackFocus/buildSyntheticCues";
-import { resolvePlaybackFocusFixture } from "@/lib/playbackFocus/resolvePlaybackFocusFixture";
+import {
+  resolveOverlayFixture,
+  resolveSubtitleFixture,
+} from "@/lib/playbackFocus/resolvePlaybackFocusFixture";
 import { toFocusArtist } from "@/lib/playbackFocus/toFocusRecording";
 import type { FocusRecording } from "@/lib/playbackFocus/types";
 import { useSubtitleDisplay } from "@/lib/subtitleDisplay";
@@ -95,23 +101,22 @@ export function SongVisualPreviewFocusLane({
     return () => window.removeEventListener(RECORDING_SUBTITLES_DISABLED_EVENT, handleSubtitlesDisabledChange);
   }, [recording.id]);
 
-  const activeFixture = useMemo(
-    () =>
-      resolvePlaybackFocusFixture({
-        currentTimeMs: currentTimeSec * 1000,
-        subtitleSegments: subtitles?.segments,
-        subtitleReady: subtitles?.status === "READY",
-        syntheticCues: buildSyntheticSubtitleCues(recording),
-        artist: toFocusArtist(recording),
-        recording,
-        focusState: {
-          playFocusActive: canRenderTextOverlay,
-          hasBodyFaded: canRenderTextOverlay,
-          bodyFadedAtTrackMs: canRenderTextOverlay ? 0 : null,
-        },
-        subtitlesEnabled,
-        isPlaying: canRenderTextOverlay,
-      }),
+  const resolveInput = useMemo(
+    () => ({
+      currentTimeMs: currentTimeSec * 1000,
+      subtitleSegments: subtitles?.segments,
+      subtitleReady: subtitles?.status === "READY",
+      syntheticCues: buildSyntheticSubtitleCues(recording),
+      artist: toFocusArtist(recording),
+      recording,
+      focusState: {
+        playFocusActive: canRenderTextOverlay,
+        hasBodyFaded: canRenderTextOverlay,
+        bodyFadedAtTrackMs: canRenderTextOverlay ? 0 : null,
+      },
+      subtitlesEnabled,
+      isPlaying: canRenderTextOverlay,
+    }),
     [
       canRenderTextOverlay,
       currentTimeSec,
@@ -122,9 +127,28 @@ export function SongVisualPreviewFocusLane({
     ],
   );
 
-  const { displayFixture, displayKey, layerVisible, variantClass } = useFocusLaneVisibility(activeFixture);
+  const activeSubtitleFixture = useMemo(
+    () => resolveSubtitleFixture(resolveInput),
+    [resolveInput],
+  );
+  const activeOverlayFixture = useMemo(
+    () => resolveOverlayFixture(resolveInput),
+    [resolveInput],
+  );
 
-  if (!canRenderTextOverlay || !displayFixture || displayFixture.type === "none") {
+  const subtitleLane = useFocusLaneVisibility(activeSubtitleFixture);
+  const overlayLane = useFocusLaneVisibility(activeOverlayFixture);
+
+  const hasOverlay = Boolean(
+    overlayLane.displayFixture && overlayLane.displayFixture.type !== "none",
+  );
+  const hasSubtitle = Boolean(
+    subtitleLane.displayFixture && subtitleLane.displayFixture.type !== "none",
+  );
+  const layerVisible = subtitleLane.layerVisible || overlayLane.layerVisible;
+  const variantClass = overlayLane.variantClass || subtitleLane.variantClass;
+
+  if (!canRenderTextOverlay || (!hasOverlay && !hasSubtitle)) {
     return null;
   }
 
@@ -139,15 +163,35 @@ export function SongVisualPreviewFocusLane({
       ].join(" ")}
       aria-hidden={!layerVisible}
     >
-      <div key={displayKey} className="focus-lane__content">
-        <FocusLaneSubtitleContent
-          fixture={displayFixture}
-          customSubtitleStyle={customSubtitleStyle}
-          subtitleStyleId={subtitleStyleId}
-          currentTimeSec={currentTimeSec}
-          isPlaying={enabled}
-        />
-      </div>
+      {hasOverlay ? (
+        <div
+          key={`overlay:${overlayLane.displayKey}`}
+          className={`focus-lane__content focus-lane__content--overlay${
+            overlayLane.layerVisible ? " is-visible" : ""
+          }`}
+          aria-hidden={!overlayLane.layerVisible}
+        >
+          <FocusLaneOverlayContent
+            fixture={overlayLane.displayFixture!}
+            isPlaying={enabled}
+          />
+        </div>
+      ) : null}
+      {hasSubtitle ? (
+        <div
+          key={`subtitle:${subtitleLane.displayKey}`}
+          className={`focus-lane__content focus-lane__content--subtitle${
+            subtitleLane.layerVisible ? " is-visible" : ""
+          }`}
+          aria-hidden={!subtitleLane.layerVisible}
+        >
+          <FocusLaneSubtitleContent
+            fixture={subtitleLane.displayFixture!}
+            customSubtitleStyle={customSubtitleStyle}
+            subtitleStyleId={subtitleStyleId}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }

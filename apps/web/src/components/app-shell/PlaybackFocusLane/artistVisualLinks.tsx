@@ -107,7 +107,7 @@ export function FocusLaneLink({ to, className = "", title, children }: FocusLane
 
 export function FocusLaneGenreLink({
   genre,
-  className = "focus-lane__artist-genre-link",
+  className = "focus-lane__overlay-genre",
 }: {
   genre: GenreLink;
   className?: string;

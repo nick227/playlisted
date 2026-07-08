@@ -60,14 +60,12 @@ function resolveSyntheticFixture(input: {
   return null;
 }
 
-export function resolvePlaybackFocusFixture(input: ResolvePlaybackFocusInput): PlaybackFocusFixture {
+/** Lyric captions only — never blocked by or blocking the edge overlay. */
+export function resolveSubtitleFixture(input: ResolvePlaybackFocusInput): PlaybackFocusFixture {
   const {
     currentTimeMs,
     subtitleSegments,
     subtitleReady,
-    syntheticCues,
-    artist,
-    recording,
     focusState,
     subtitlesEnabled,
     isPlaying,
@@ -77,24 +75,41 @@ export function resolvePlaybackFocusFixture(input: ResolvePlaybackFocusInput): P
     return { type: "none" };
   }
 
-  const currentTimeSec = currentTimeMs / 1000;
+  if (!(subtitlesEnabled && subtitleReady && subtitleSegments?.length)) {
+    return { type: "none" };
+  }
 
-  if (subtitlesEnabled && subtitleReady && subtitleSegments?.length && isPlaying) {
-    const flowSegment = resolveSubtitleSegmentAtTime(
-      subtitleSegments,
-      currentTimeSec,
-      playbackFocusTiming.subtitleFlow.minGapForArtistVisualMs / 1000,
-    );
-    if (flowSegment) {
-      const text = flowSegment.segment.text.trim();
-      if (text) {
-        return {
-          type: "subtitle",
-          text,
-          cueId: `real:${flowSegment.segment.start}-${flowSegment.segment.end}`,
-        };
-      }
-    }
+  const currentTimeSec = currentTimeMs / 1000;
+  const flowSegment = resolveSubtitleSegmentAtTime(
+    subtitleSegments,
+    currentTimeSec,
+    playbackFocusTiming.subtitleFlow.minGapForArtistVisualMs / 1000,
+  );
+  if (!flowSegment) {
+    return { type: "none" };
+  }
+
+  const text = flowSegment.segment.text.trim();
+  if (!text) {
+    return { type: "none" };
+  }
+
+  return {
+    type: "subtitle",
+    text,
+    cueId: `real:${flowSegment.segment.start}-${flowSegment.segment.end}`,
+  };
+}
+
+/**
+ * Chromeless title/artist overlay windows based on focus-lane elapsed time.
+ * Independent of lyric subtitles so both can show together.
+ */
+export function resolveOverlayFixture(input: ResolvePlaybackFocusInput): PlaybackFocusFixture {
+  const { currentTimeMs, syntheticCues, artist, recording, focusState, isPlaying } = input;
+
+  if (!canShowFocusLane(focusState) || !isPlaying) {
+    return { type: "none" };
   }
 
   const focusLaneElapsedMs = getFocusLaneElapsedMs(
@@ -102,13 +117,17 @@ export function resolvePlaybackFocusFixture(input: ResolvePlaybackFocusInput): P
     focusState.bodyFadedAtTrackMs,
   );
 
-  const synthetic = resolveSyntheticFixture({ focusLaneElapsedMs, syntheticCues, artist, recording });
+  const synthetic = resolveSyntheticFixture({
+    focusLaneElapsedMs,
+    syntheticCues,
+    artist,
+    recording,
+  });
   if (synthetic) {
     return synthetic;
   }
 
   const { fallbackStart } = getFocusLaneSequenceWindows();
-
   const title = recording?.title?.trim();
   if (title && focusLaneElapsedMs >= fallbackStart) {
     return {
@@ -122,6 +141,13 @@ export function resolvePlaybackFocusFixture(input: ResolvePlaybackFocusInput): P
   }
 
   return { type: "none" };
+}
+
+/** Combined resolver kept for callers that only need a single lane fixture. Prefers lyrics when present. */
+export function resolvePlaybackFocusFixture(input: ResolvePlaybackFocusInput): PlaybackFocusFixture {
+  const subtitle = resolveSubtitleFixture(input);
+  if (subtitle.type !== "none") return subtitle;
+  return resolveOverlayFixture(input);
 }
 
 export function getFixtureFadeOutMs(fixture: PlaybackFocusFixture): number {

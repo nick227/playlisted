@@ -33,7 +33,6 @@ export function AppShell({ children }: AppShellProps) {
   const mainRef = useRef<HTMLElement | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sitePlayerFocusCollapsed, setSitePlayerFocusCollapsed] = useState(false);
-  const [focusLaneMiniPlayerActive, setFocusLaneMiniPlayerActive] = useState(false);
   const location = useLocation();
 
   // --- Playback source -------------------------------------------------------
@@ -132,7 +131,7 @@ export function AppShell({ children }: AppShellProps) {
       />
 
       <PlaybackFocusLayer
-        visible={playbackFocus.miniViewMode && !focusLaneMiniPlayerActive}
+        visible={playbackFocus.miniViewMode}
         track={focusTrack}
         onReturn={playbackFocus.revealPage}
         withPlayer={shellHasPlayer}
@@ -142,10 +141,7 @@ export function AppShell({ children }: AppShellProps) {
       <BottomPlayer collapsedByFocusLane={sitePlayerFocusCollapsed} />
       <PlaybackFocusLane
         focusState={playbackFocus.focusState}
-        withPlayer={shellHasPlayer}
         onSitePlayerCollapseChange={setSitePlayerFocusCollapsed}
-        onMiniPlayerActiveChange={setFocusLaneMiniPlayerActive}
-        onReturn={playbackFocus.revealPage}
       />
       <QueuePanel />
     </div>
