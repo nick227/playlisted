@@ -135,7 +135,7 @@ export function ArtistProfileView({
           />
 
           {sortedPlaylists.length > 0 ? (
-            <section className="min-w-0 space-y-8">
+            <section className="min-w-0 pt-20">
               {sortedPlaylists.map((playlist) => (
                 <ArtistProfileCollectionPanel
                   key={playlist.id}

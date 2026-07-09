@@ -23,18 +23,6 @@ type ArtistProfileCollectionPanelProps = {
   editHref?: string;
 };
 
-function CollectionBannerLightning() {
-  return (
-    <div className="collection-banner-lightning" aria-hidden="true">
-      <div className="collection-banner-lightning__flash" />
-      <span className="collection-banner-lightning__bolt collection-banner-lightning__bolt--1" />
-      <span className="collection-banner-lightning__bolt collection-banner-lightning__bolt--2" />
-      <span className="collection-banner-lightning__bolt collection-banner-lightning__bolt--3" />
-      <div className="collection-banner-lightning__edge" />
-    </div>
-  );
-}
-
 export function ArtistProfileCollectionPanel({ playlist, owner, editHref }: ArtistProfileCollectionPanelProps) {
   const pendingPlayRef = useRef(false);
   const { user, status } = useAuth();
@@ -150,7 +138,12 @@ export function ArtistProfileCollectionPanel({ playlist, owner, editHref }: Arti
   });
 
   return (
-    <article className="min-w-0 overflow-x-clip mt-20">
+    <article
+      className={[
+        "min-w-0 overflow-x-clip pb-20",
+        isActive ? "bg-[var(--color-canvas)]" : "",
+      ].join(" ")}
+    >
       <div className="playlist-hero-card relative min-h-[320px] overflow-hidden border border-white/8 md:min-h-[380px]">
         <div
           className="absolute inset-0 scale-105 bg-cover bg-center transition-transform duration-700"
@@ -158,7 +151,10 @@ export function ArtistProfileCollectionPanel({ playlist, owner, editHref }: Arti
           aria-hidden="true"
         />
         <div
-          className="absolute inset-0 bg-gradient-to-b from-black/75 via-black/25 to-black/55"
+          className={[
+            "collection-banner-shade absolute inset-0 bg-gradient-to-b from-black/75 via-black/25 to-black/55",
+            isPlaying ? "is-playing" : "",
+          ].join(" ")}
           aria-hidden="true"
         />
 
@@ -170,7 +166,6 @@ export function ArtistProfileCollectionPanel({ playlist, owner, editHref }: Arti
           ].join(" ")}
           aria-hidden="true"
         />
-        {isPlaying ? <CollectionBannerLightning /> : null}
 
         <div className="relative z-10 flex min-h-[320px] flex-col p-5 md:min-h-[380px] md:p-7">
           <div className="flex items-start justify-between gap-4">
@@ -236,7 +231,7 @@ export function ArtistProfileCollectionPanel({ playlist, owner, editHref }: Arti
         </div>
       </div>
 
-      <div className="mt-4 px-1">
+      <div className="px-1 pt-4">
         {isLoading ? (
           <div className="space-y-2">
             {Array.from({ length: Math.min(playlist.itemCount, 4) }).map((_, index) => (
