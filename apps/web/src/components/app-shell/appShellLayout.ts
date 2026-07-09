@@ -23,7 +23,7 @@ export function buildMainContentClassName({
   shellHasPlayer,
 }: MainContentLayoutOptions): string {
   const visibility = [
-    "player-shell-transition play-focus-content flex-1 min-h-0 min-w-0 overflow-x-clip md:px-8 flex flex-col",
+    "player-shell-transition bg-[var(--color-canvas)] play-focus-content flex-1 min-h-0 min-w-0 overflow-x-clip md:px-8 flex flex-col",
     bodyFocusMode ? "is-play-focus-hidden" : "",
     snapReveal ? "is-play-focus-revealing" : "",
     contentInputGuarded ? "is-play-focus-input-guarded" : "",

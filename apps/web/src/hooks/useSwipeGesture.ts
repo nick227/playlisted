@@ -44,6 +44,15 @@ type SwipeGestureOptions = {
   clickSuppressMs?: number;
   verticalDominanceRatio?: number;
   isExcludedTarget?: (target: EventTarget | null) => boolean;
+  /**
+   * Backdrop-style consumers (e.g. the theatre shield) have no legitimate
+   * content of their own to receive a click. When set, every pointerdown/click
+   * that lands on the surface is unconditionally consumed instead of only
+   * being suppressed after a real swipe — this closes the gap where a plain
+   * tap-to-dismiss leaves the trailing native `click` event free to fall
+   * through to whatever briefly remains underneath mid-dismiss.
+   */
+  consumeAllClicks?: boolean;
   onHorizontalSwipe?: (direction: SwipeDirection) => void;
   onVerticalSwipe?: (direction: VerticalSwipeDirection) => void;
   onTap?: () => void;
@@ -85,6 +94,7 @@ export function useSwipeGesture({
   clickSuppressMs = SWIPE_CLICK_SUPPRESS_MS,
   verticalDominanceRatio = 1.25,
   isExcludedTarget,
+  consumeAllClicks = false,
   onHorizontalSwipe,
   onVerticalSwipe,
   onTap,
@@ -108,6 +118,7 @@ export function useSwipeGesture({
       if (event.pointerType === "mouse" && event.button !== 0) return;
       if (isExcludedTarget?.(event.target)) return;
 
+      if (consumeAllClicks) event.preventDefault();
       clickSuppressionUntilRef.current = 0;
       dragRef.current = {
         active: true,
@@ -121,7 +132,7 @@ export function useSwipeGesture({
       captureTargetRef.current = event.currentTarget;
       event.currentTarget.setPointerCapture(event.pointerId);
     },
-    [enabled, isExcludedTarget],
+    [consumeAllClicks, enabled, isExcludedTarget],
   );
 
   const handlePointerMove = useCallback(
@@ -181,7 +192,7 @@ export function useSwipeGesture({
 
       resetDrag();
 
-      if (moved) {
+      if (moved || consumeAllClicks) {
         clickSuppressionUntilRef.current = performance.now() + clickSuppressMs;
         event.preventDefault();
         event.stopPropagation();
@@ -212,6 +223,7 @@ export function useSwipeGesture({
     },
     [
       clickSuppressMs,
+      consumeAllClicks,
       horizontalCommitPx,
       onHorizontalSwipe,
       onTap,
@@ -241,12 +253,12 @@ export function useSwipeGesture({
 
   const suppressClickAfterSwipe = useCallback(
     (event: SyntheticEvent) => {
-      if (performance.now() > clickSuppressionUntilRef.current) return;
+      if (!consumeAllClicks && performance.now() > clickSuppressionUntilRef.current) return;
       event.preventDefault();
       event.stopPropagation();
       clickSuppressionUntilRef.current = 0;
     },
-    [],
+    [consumeAllClicks],
   );
 
   return {

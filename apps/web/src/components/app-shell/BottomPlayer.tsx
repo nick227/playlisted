@@ -4,7 +4,6 @@ import {
   Play,
   SkipBack,
   SkipForward,
-  X,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
@@ -34,10 +33,7 @@ const playerFooterClass =
   "fixed inset-x-0 bottom-0 z-[10000] w-full isolate overflow-visible border-t border-[var(--color-border)] bg-[var(--color-canvas-alt)] pb-[env(safe-area-inset-bottom,0px)] md:pb-0";
 
 const playerBodyClass =
-  "relative flex h-[var(--spacing-player-mobile)] w-full min-w-0 max-w-full flex-col justify-center gap-1.5 px-4 py-2 md:grid md:h-[var(--spacing-player)] md:grid-cols-3 md:items-center md:gap-2 md:px-4";
-
-const mobileActionButtonClass =
-  "grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white/5 text-[var(--color-text-muted)] transition hover:bg-white/10 hover:text-white";
+  "relative flex h-[var(--spacing-player-mobile)] w-full min-w-0 max-w-full items-center gap-3 px-4 py-2.5 md:grid md:h-[var(--spacing-player)] md:grid-cols-3 md:items-center md:gap-2 md:px-4 md:py-2";
 
 type BottomPlayerProps = {
   collapsedByFocusLane?: boolean;
@@ -55,7 +51,6 @@ export function BottomPlayer({ collapsedByFocusLane = false }: BottomPlayerProps
     playNext,
     playPrevious,
     setQueueOpen,
-    closePlayback,
     autoplayEnabled,
     autoplayNextSegment,
     upNextPipeline,
@@ -67,7 +62,6 @@ export function BottomPlayer({ collapsedByFocusLane = false }: BottomPlayerProps
     audioRef: radioAudioRef,
     radioUiMounted,
     togglePlayback: toggleRadioPlayback,
-    pauseRadio,
   } = useRadioPlayer();
   const { volume, setVolume } = usePlaybackVolume();
   const { currentTime, duration, seek } = usePlaybackTransport();
@@ -117,11 +111,6 @@ export function BottomPlayer({ collapsedByFocusLane = false }: BottomPlayerProps
   const progress = shellDuration > 0 ? (shellCurrentTime / shellDuration) * 100 : 0;
   const sitePlayerActive = Boolean(currentTrack ?? dismiss?.track);
   const showQueueControls = sitePlayerActive && !playerBarExiting;
-
-  function handleClosePlayer() {
-    pauseRadio();
-    closePlayback();
-  }
 
   if (!displayTrack) {
     return null;
@@ -193,42 +182,48 @@ export function BottomPlayer({ collapsedByFocusLane = false }: BottomPlayerProps
           className={`bottom-player__body ${playerBodyClass}`}
           aria-hidden={collapsedByFocusLane}
         >
-          <button
-            type="button"
-            onClick={handleClosePlayer}
-            className="bottom-player__close-mobile"
-            aria-label="Close player and stop playback"
-            disabled={playerBarExiting}
-          >
-            <X size={16} />
-          </button>
-          <div className="bottom-player__section bottom-player__section--track group/card flex min-w-0 items-start gap-3 md:items-center">
-            {displayTrack.artworkUrl ? (
-              <img
-                src={displayTrack.artworkUrl}
-                alt=""
-                className="h-12 w-12 shrink-0 rounded object-cover"
-              />
-            ) : (
-              <div className="h-12 w-12 shrink-0 rounded" style={artStyle} />
-            )}
+          <div className="bottom-player__section bottom-player__section--track group/card flex min-w-0 flex-1 items-center gap-3">
+            <div className="relative h-10 w-10 shrink-0 md:h-12 md:w-12">
+              {displayTrack.artworkUrl ? (
+                <img
+                  src={displayTrack.artworkUrl}
+                  alt=""
+                  className="h-full w-full rounded object-cover"
+                />
+              ) : (
+                <div className="h-full w-full rounded" style={artStyle} />
+              )}
+              <button
+                type="button"
+                onClick={radioDisplayTrack ? () => void toggleRadioPlayback() : togglePlay}
+                aria-label={shellIsPlaying ? "Pause" : "Play"}
+                className="absolute inset-0 grid place-items-center rounded bg-black/35 text-white transition hover:bg-black/45 md:hidden"
+                disabled={playerBarExiting}
+              >
+                {shellIsPlaying ? (
+                  <Pause size={17} fill="currentColor" />
+                ) : (
+                  <Play size={17} fill="currentColor" className="ml-0.5" />
+                )}
+              </button>
+            </div>
             <div className="min-w-0 flex-1">
-              <div className="flex w-full min-w-0 items-start justify-between gap-2 md:justify-start md:items-center">
+              <div className="flex w-full min-w-0 items-center justify-between gap-2 md:justify-start">
                 <div className="contents md:flex md:min-w-0 md:max-w-full md:items-center md:gap-1.5">
                   {songHref ? (
                     <Link
                       to={songHref}
-                      className="block min-w-0 flex-1 cursor-pointer truncate pr-1 text-sm font-medium leading-5 text-white hover:underline md:pr-0"
+                      className="block min-w-0 flex-1 cursor-pointer truncate pr-1 text-[15px] font-medium leading-[1.05] text-white hover:underline md:pr-0 md:text-sm md:leading-5"
                     >
                       {displayTrack.title}
                     </Link>
                   ) : (
-                    <p className="min-w-0 flex-1 truncate pr-1 text-sm font-medium leading-5 text-white md:pr-0">
+                    <p className="min-w-0 flex-1 truncate pr-1 text-[15px] font-medium leading-[1.05] text-white md:pr-0 md:text-sm md:leading-5">
                       {displayTrack.title}
                     </p>
                   )}
                   <FavoriteHeartButton
-                    className="h-7 w-7 shrink-0 cursor-pointer self-start md:self-center"
+                    className="h-7 w-7 shrink-0 cursor-pointer self-center"
                     target="recording"
                     id={displayTrack.id}
                     variant="inline"
@@ -274,7 +269,7 @@ export function BottomPlayer({ collapsedByFocusLane = false }: BottomPlayerProps
               ) : null}
             </div>
           </div>
-          <div className="bottom-player__section bottom-player__section--controls flex flex-col items-center justify-center gap-2 md:gap-1.5">
+          <div className="bottom-player__section bottom-player__section--controls hidden flex-col items-center justify-center gap-2 md:flex md:gap-1.5">
             <div className="flex items-center gap-4 md:gap-4">
               {showQueueControls ? (
                 <button type="button" onClick={playPrevious} className="text-[var(--color-text-muted)] hover:text-white">
@@ -319,23 +314,6 @@ export function BottomPlayer({ collapsedByFocusLane = false }: BottomPlayerProps
               />
               <span>{formatDuration(shellDuration)}</span>
             </div>
-          </div>
-          <div className="bottom-player__section bottom-player__section--actions bottom-player__actions-mobile">
-            <VerticalVolumeControl
-              volume={volume}
-              onVolumeChange={setVolume}
-              variant="player"
-            />
-            {showQueueControls ? (
-              <button
-                type="button"
-                onClick={() => setQueueOpen(true)}
-                className={`${mobileActionButtonClass} relative z-[60]`}
-                aria-label="Next songs"
-              >
-                <ListMusic size={18} />
-              </button>
-            ) : null}
           </div>
           <div className="bottom-player__section bottom-player__section--actions bottom-player__actions-desktop">
             <VerticalVolumeControl

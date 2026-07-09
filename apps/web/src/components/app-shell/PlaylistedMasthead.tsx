@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { Radio } from "lucide-react";
 
 /** Full wordmark for mobile top bar (search closed). Mini mark when search is open. */
 export type PlaylistedMastheadVariant = "full" | "mini";
@@ -28,7 +29,7 @@ export function PlaylistedMasthead({
         )}
       </span>
       {showLogo && variant === "full" ? (
-        <img src="/favicon.svg" alt="" className="h-7 w-7 shrink-0" />
+        <Radio size={13} className="shrink-0 text-[var(--color-brand)]" />
       ) : null}
     </Link>
   );

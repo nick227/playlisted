@@ -40,9 +40,38 @@ export function MuseumShowcase({
 
   return (
     <MuseumBankSection
-      label="Spotlight"
+      label="Library"
       type="songSpotlight"
     >
+      <div className="mx-4 flex gap-2 text-sm">
+            <Link
+              to="/artists"
+              className=""
+            >
+              Artists
+            </Link>
+            •
+            <Link
+              to="/favorites"
+              className=""
+            >
+              Favorites
+            </Link>
+            •
+            <Link
+              to="/genres"
+              className=""
+            >
+              Genres
+            </Link>
+            •
+            <Link
+              to="/playlists"
+              className=""
+            >
+              Playlists
+            </Link>
+      </div>
       <MuseumPanel padding="roomy" className="">
         <div className="grid min-w-0 gap-8 lg:grid-cols-[minmax(0,14rem)_minmax(0,1fr)_minmax(11rem,13rem)] lg:items-start">
           <div className="min-w-0">

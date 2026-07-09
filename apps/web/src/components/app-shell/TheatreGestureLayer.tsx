@@ -48,6 +48,7 @@ export function TheatreGestureLayer({
     enabled: visible,
     axis: "both",
     isExcludedTarget: isTheatreControlTarget,
+    consumeAllClicks: true,
     onHorizontalSwipe: handleHorizontalSwipe,
     onVerticalSwipe: handleVerticalSwipe,
     onTap: onReveal,
