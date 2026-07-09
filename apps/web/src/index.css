@@ -858,6 +858,13 @@ a.focus-lane__overlay-secondary:hover {
   gap: 0.5rem;
 }
 
+@media (min-width: 640px) {
+  .focus-lane__overlay-reactions {
+    bottom: 50%;
+    transform: translateY(50%);
+  }
+}
+
 .focus-lane__overlay-reactions .focus-lane__reactions {
   flex-direction: column;
 }
