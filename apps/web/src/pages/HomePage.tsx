@@ -48,7 +48,7 @@ export function HomePage() {
   });
 
   return (
-    <div className="mx-auto h-full max-w-[var(--size-container-max,90rem)] overflow-hidden">
+    <div className="mx-auto h-full w-full overflow-hidden">
       <Suspense fallback={<EmbeddedRadioFallback />}>
         <RadioPage isEmbedded />
       </Suspense>

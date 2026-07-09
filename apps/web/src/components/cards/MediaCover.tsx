@@ -6,7 +6,7 @@ import { coverFallback } from "@/lib/routes";
 interface MediaCoverProps {
   title: string;
   imageUrl?: string | null;
-  shape?: "square" | "circle";
+  shape?: "square" | "circle" | "rounded-sm";
   /** Tailwind aspect class, e.g. aspect-[2/1]. Defaults to aspect-square. */
   aspectClass?: string;
   loading?: "eager" | "lazy";
@@ -31,7 +31,7 @@ export function MediaCover({
   isActive = false,
   showPlaybackBars = false,
 }: MediaCoverProps) {
-  const rounded = shape === "circle" ? "rounded-full" : "rounded-lg";
+  const rounded = shape === "circle" ? "rounded-full" : shape === "rounded-sm" ? "rounded-sm" : "rounded-lg";
   const showOverlay = Boolean(onPlay);
 
   return (

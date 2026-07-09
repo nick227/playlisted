@@ -41,27 +41,26 @@ export function MuseumShowcase({
   return (
     <MuseumBankSection
       label="Spotlight"
-      href={artistPath(artist.username)}
-      hrefLabel="Profile"
       type="songSpotlight"
     >
       <MuseumPanel padding="roomy" className="">
-        <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,14rem)_minmax(0,1fr)_minmax(11rem,13rem)] lg:items-start">
+        <div className="grid min-w-0 gap-8 lg:grid-cols-[minmax(0,14rem)_minmax(0,1fr)_minmax(11rem,13rem)] lg:items-start">
           <div className="min-w-0">
-            <div className="w-32 md:w-44 lg:w-full">
+            <div className="w-full">
               <SmartArtistCard
                 id={artist.id}
                 username={artist.username}
                 displayName={artist.displayName}
                 avatarUrl={artist.avatarUrl}
-                shape="circle"
+                shape="rounded-sm"
                 className="relative w-full"
                 playbackOrigin={`library:showcase:${artist.id}`}
+                hideDetails
               />
             </div>
             <Link
               to={artistPath(artist.username)}
-              className="mt-3 block text-[clamp(1.8rem,4vw,2.4rem)] font-semibold leading-none text-white transition hover:text-white/80"
+              className="mt-5 block text-[clamp(1.8rem,4vw,2.4rem)] font-semibold leading-none text-white transition hover:text-white/80"
             >
               {artist.displayName}
             </Link>

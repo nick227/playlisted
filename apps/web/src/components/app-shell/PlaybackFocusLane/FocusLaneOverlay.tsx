@@ -119,6 +119,8 @@ export type FocusLaneOverlayProps = {
   withPlayer?: boolean;
   /** True while the site bottom player is focus-collapsed to a thin peek. */
   playerCollapsed?: boolean;
+  /** Title-intro overlays share this component but should not duplicate persistent chrome. */
+  showSideRail?: boolean;
 };
 
 function OverlayLinkText({ label, href, className }: FocusLaneOverlayLink & { className: string }) {
@@ -180,6 +182,7 @@ export function FocusLaneOverlay({
   position = "bottom-left",
   withPlayer = true,
   playerCollapsed = false,
+  showSideRail = true,
 }: FocusLaneOverlayProps) {
   const reveal = useFocusLaneOverlayReveal(recordingId ?? primary.label);
   const { volume, setVolume } = usePlaybackVolume();
@@ -209,7 +212,7 @@ export function FocusLaneOverlay({
     </div>
   );
 
-  const showSideRail = Boolean(recordingId || artistId);
+  const shouldShowSideRail = showSideRail && Boolean(recordingId || artistId);
 
   return (
     <div
@@ -276,7 +279,7 @@ export function FocusLaneOverlay({
         </div>
       </div>
 
-      {showSideRail ? (
+      {shouldShowSideRail ? (
         <div
           className={`${clusterClassName} focus-lane__overlay-reactions`}
           onPointerDown={stopPlaybackFocusBubble}

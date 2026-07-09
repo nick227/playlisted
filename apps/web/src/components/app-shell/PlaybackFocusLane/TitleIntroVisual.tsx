@@ -46,6 +46,7 @@ export function TitleIntroVisual({
       position="center-middle"
       withPlayer={withPlayer}
       playerCollapsed={playerCollapsed}
+      showSideRail={false}
     />
   );
 }

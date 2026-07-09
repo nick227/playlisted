@@ -29,6 +29,19 @@ export function flux(context: PublicAnimationContext): number {
   return context.shared.features?.flux?.overall ?? 0;
 }
 
+/** Per-band onset flux — spikes on transient attacks, distinct from sustained band level. */
+export function fluxBass(context: PublicAnimationContext): number {
+  return context.shared.features?.flux?.bass ?? 0;
+}
+
+export function fluxMid(context: PublicAnimationContext): number {
+  return context.shared.features?.flux?.mids ?? 0;
+}
+
+export function fluxHigh(context: PublicAnimationContext): number {
+  return context.shared.features?.flux?.highs ?? 0;
+}
+
 export function centroid(context: PublicAnimationContext): number {
   return context.shared.features?.centroid ?? 0.5;
 }

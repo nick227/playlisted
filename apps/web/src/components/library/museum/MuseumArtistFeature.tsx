@@ -25,28 +25,27 @@ export function MuseumArtistFeature({
 
   return (
     <MuseumBankSection
-      label="Spotlight"
-      href={artistPath(artist.username)}
-      hrefLabel="Profile"
+      label="Featured"
       type="songSpotlight"
     >
       <MuseumPanel padding="roomy">
-        <div className="grid min-w-0 gap-4 md:grid-cols-[minmax(0,13rem)_minmax(0,1fr)] md:items-start">
+        <div className="grid min-w-0 gap-8 md:grid-cols-[minmax(0,13rem)_minmax(0,1fr)] md:items-start">
           <div className="min-w-0">
-            <div className="w-32 md:w-full">
+            <div className="w-full">
               <SmartArtistCard
                 id={artist.id}
                 username={artist.username}
                 displayName={artist.displayName}
                 avatarUrl={artist.avatarUrl}
-                shape="circle"
+                shape="rounded-sm"
                 className="w-full"
                 playbackOrigin={`library:artist:${artist.id}`}
+                hideDetails
               />
             </div>
             <Link
               to={artistPath(artist.username)}
-              className="mt-3 block text-2xl font-semibold leading-tight text-white transition hover:text-white/80"
+              className="mt-5 block text-2xl font-semibold leading-tight text-white transition hover:text-white/80"
             >
               {artist.displayName}
             </Link>

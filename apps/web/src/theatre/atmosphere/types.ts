@@ -6,7 +6,19 @@ export type AtmosphereFxGlobalMode = "off" | "subtle" | "normal" | "strong";
 
 export type AtmosphereFxIntensity = "subtle" | "normal" | "strong";
 
-export type AtmosphereFxCategory = "glow" | "vignette" | "bars" | "radial" | "color";
+export type AtmosphereFxCategory =
+  | "glow"
+  | "vignette"
+  | "bars"
+  | "radial"
+  | "color"
+  | "sonar"
+  | "glitch"
+  | "shatter"
+  | "laser"
+  | "glyph"
+  | "firefly"
+  | "warp";
 
 export type AtmosphereFxPresetStatus = "draft" | "reviewed" | "published" | "disabled";
 

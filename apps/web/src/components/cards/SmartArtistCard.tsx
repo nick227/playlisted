@@ -22,8 +22,9 @@ export interface SmartArtistCardProps {
   avatarUrl?: string | null;
   subtitle?: string | null;
   className?: string;
-  shape?: "square" | "circle";
+  shape?: "square" | "circle" | "rounded-sm";
   playbackOrigin?: string;
+  hideDetails?: boolean;
 }
 
 export function SmartArtistCard({
@@ -35,6 +36,7 @@ export function SmartArtistCard({
   className,
   shape = "square",
   playbackOrigin,
+  hideDetails = false,
 }: SmartArtistCardProps) {
   const { accessToken } = useAuth();
   const { setQueue, togglePlay, activeOriginKey, isPlaying: playerIsPlaying } = useAudioPlayer();
@@ -93,12 +95,14 @@ export function SmartArtistCard({
         />
         <FavoriteHeartButton target="artist" id={id} />
       </div>
-      <Link to={profilePath(username)} className="min-w-0 transition-opacity hover:opacity-80">
-        <p className="truncate text-sm font-semibold text-white">{displayName}</p>
-        {subtitle ? (
-          <p className="mt-0.5 truncate text-xs text-[var(--color-text-muted)]">{subtitle}</p>
-        ) : null}
-      </Link>
+      {!hideDetails ? (
+        <Link to={profilePath(username)} className="mt-3 min-w-0 transition-opacity hover:opacity-80">
+          <p className="truncate text-sm font-semibold text-white">{displayName}</p>
+          {subtitle ? (
+            <p className="mt-0.5 truncate text-xs text-[var(--color-text-muted)]">{subtitle}</p>
+          ) : null}
+        </Link>
+      ) : null}
     </div>
   );
 }

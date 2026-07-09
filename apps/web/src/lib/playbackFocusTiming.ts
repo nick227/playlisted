@@ -31,7 +31,7 @@ export const playbackFocusTiming = {
 
   titleIntro: {
     delayMs: 1000,
-    minVisibleMs: 10000,
+    minVisibleMs: 100000,
     fadeInMs: 900,
     fadeOutMs: 650,
   },
