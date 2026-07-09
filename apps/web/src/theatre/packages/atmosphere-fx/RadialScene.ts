@@ -43,7 +43,7 @@ export class AtmosphereRadialScene extends CanvasAnimation {
 
   private reseed(force = false) {
     if (!force && this.layers.length >= 2) return;
-    const count = 2 + Math.floor(this.rng() * 3);
+    const count = 1 + Math.floor(this.rng() * 2);
     const roles: Layer["role"][] = ["bass", "mid", "high", "mix"];
     this.layers = Array.from({ length: count }, (_, i) => ({
       recipe: pickFractalRecipe(this.rng),
@@ -160,13 +160,13 @@ export class AtmosphereRadialScene extends CanvasAnimation {
     }
 
     if (this.fx === "pop" && this.fxLife > 0) {
-      const pops = 24;
+      const pops = 12;
       for (let i = 0; i < pops; i++) {
         const a = (i / pops) * Math.PI * 2 + t * 2;
-        const rad = maxR * (0.15 + (i % 5) * 0.12) * (0.8 + this.fxLife);
-        this.ctx.fillStyle = `hsla(${(this.fxHue + i * 15) % 360}, 100%, 70%, ${this.fxLife * 0.5 * g})`;
+        const rad = maxR * (0.18 + (i % 4) * 0.14) * (0.8 + this.fxLife);
+        this.ctx.fillStyle = `hsla(${(this.fxHue + i * 18) % 360}, 100%, 72%, ${this.fxLife * 0.65 * g})`;
         this.ctx.beginPath();
-        this.ctx.arc(cx + Math.cos(a) * rad, cy + Math.sin(a) * rad, 2 + punch * 4 + hi * 2, 0, Math.PI * 2);
+        this.ctx.arc(cx + Math.cos(a) * rad, cy + Math.sin(a) * rad, 4 + punch * 6 + hi * 3, 0, Math.PI * 2);
         this.ctx.fill();
       }
     }
