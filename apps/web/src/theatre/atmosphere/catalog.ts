@@ -53,7 +53,7 @@ export const ATMOSPHERE_FX_PRESETS: AtmosphereFxPresetDef[] = [
   {
     id: "radial",
     name: "Multi-Shape",
-    description: "Infinite fractal patterns — Julia orbits, IFS dust, phyllotaxis, trees, mandalas; 100 size = full screen.",
+    description: "Infinite fractal patterns — roses, vortices, lattices, Julia/IFS/trees + hit FX; 100 size = full screen.",
     animationId: "atmosphereRadial",
     author: "playlisted",
     source: "platform",

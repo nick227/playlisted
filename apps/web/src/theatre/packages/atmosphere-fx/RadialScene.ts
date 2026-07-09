@@ -20,6 +20,7 @@ type Layer = {
   recipe: FractalRecipe;
   role: "bass" | "mid" | "high" | "mix";
   hueDrift: number;
+  scaleBias: number;
 };
 
 /**
@@ -40,24 +41,27 @@ export class AtmosphereRadialScene extends CanvasAnimation {
   private morph = 0;
   private holdSec = 0;
   private nextHold = 5;
+  private slashAng = 0;
 
   private reseed(force = false) {
-    if (!force && this.layers.length >= 2) return;
-    const count = 1 + Math.floor(this.rng() * 2);
+    if (!force && this.layers.length >= 1) return;
+    const count = 1 + Math.floor(this.rng() * 3);
     const roles: Layer["role"][] = ["bass", "mid", "high", "mix"];
     this.layers = Array.from({ length: count }, (_, i) => ({
       recipe: pickFractalRecipe(this.rng),
       role: roles[i % roles.length]!,
       hueDrift: this.rng() * 360,
+      scaleBias: 0.75 + this.rng() * 0.45,
     }));
   }
 
   private triggerFx(strength: number) {
     this.fx = pickFxMode(this.rng);
-    this.fxLife = 0.4 + strength * 0.7 + this.rng() * 0.35;
+    this.fxLife = 0.35 + strength * 0.75 + this.rng() * 0.4;
     this.fxHue = this.rng() * 360;
+    this.slashAng = this.rng() * Math.PI * 2;
     if (this.fx === "scramble") this.scramble = 1;
-    if (this.fx === "none" && this.rng() < 0.4) this.reseed(true);
+    if (this.fx === "none" && this.rng() < 0.45) this.reseed(true);
   }
 
   protected draw(context: PublicAnimationContext) {
@@ -87,11 +91,27 @@ export class AtmosphereRadialScene extends CanvasAnimation {
     this.holdSec += delta;
     if (this.holdSec >= this.nextHold || triggers.chaosHit) {
       this.holdSec = 0;
-      this.nextHold = 3.5 + this.rng() * 8;
-      if (this.rng() < 0.75) this.reseed(true);
-      else if (this.layers.length) {
+      this.nextHold = 2.5 + this.rng() * 9;
+      const roll = this.rng();
+      if (roll < 0.55) this.reseed(true);
+      else if (roll < 0.8 && this.layers.length) {
         const i = Math.floor(this.rng() * this.layers.length);
         this.layers[i]!.recipe = pickFractalRecipe(this.rng);
+      } else if (this.layers.length) {
+        // Mutate in place — keep kind, refresh weight/mood/scale
+        const layer = this.layers[Math.floor(this.rng() * this.layers.length)]!;
+        const next = pickFractalRecipe(this.rng);
+        layer.recipe = {
+          ...layer.recipe,
+          weight: next.weight,
+          mood: next.mood,
+          hueSeed: next.hueSeed,
+          density: next.density,
+          scale: next.scale,
+          mirror: next.mirror,
+          spin: next.spin,
+        };
+        layer.scaleBias = 0.7 + this.rng() * 0.5;
       }
     }
 
@@ -109,7 +129,6 @@ export class AtmosphereRadialScene extends CanvasAnimation {
     const h = this.cssHeight;
     const cx = w * 0.5;
     const cy = h * 0.5;
-    // 100 = half-diagonal radius → pattern reaches all corners (full screen)
     const maxR = (Math.hypot(w, h) * 0.5 * RADIAL_MAX_CIRCUMFERENCE_PCT) / 100
       * Math.min(1.25, Math.max(0.75, g));
 
@@ -118,10 +137,19 @@ export class AtmosphereRadialScene extends CanvasAnimation {
 
     if (this.fx === "wash" && this.fxLife > 0) {
       const wash = this.ctx.createRadialGradient(cx, cy, 0, cx, cy, maxR * 1.2);
-      wash.addColorStop(0, `hsla(${this.fxHue}, 75%, 45%, ${this.fxLife * 0.32 * g})`);
-      wash.addColorStop(0.55, `hsla(${(this.fxHue + 90) % 360}, 70%, 35%, ${this.fxLife * 0.16 * g})`);
+      wash.addColorStop(0, `hsla(${this.fxHue}, 80%, 48%, ${this.fxLife * 0.36 * g})`);
+      wash.addColorStop(0.55, `hsla(${(this.fxHue + 90) % 360}, 75%, 35%, ${this.fxLife * 0.18 * g})`);
       wash.addColorStop(1, "hsla(0,0%,0%,0)");
       this.ctx.fillStyle = wash;
+      this.ctx.fillRect(0, 0, w, h);
+    }
+
+    if (this.fx === "bloom" && this.fxLife > 0) {
+      const bloom = this.ctx.createRadialGradient(cx, cy, 0, cx, cy, maxR * (0.35 + this.fxLife * 0.5));
+      bloom.addColorStop(0, `hsla(${this.fxHue}, 95%, 70%, ${this.fxLife * 0.55 * g})`);
+      bloom.addColorStop(0.45, `hsla(${(this.fxHue + 40) % 360}, 85%, 45%, ${this.fxLife * 0.22 * g})`);
+      bloom.addColorStop(1, "hsla(0,0%,0%,0)");
+      this.ctx.fillStyle = bloom;
       this.ctx.fillRect(0, 0, w, h);
     }
 
@@ -133,12 +161,12 @@ export class AtmosphereRadialScene extends CanvasAnimation {
         : layer.role === "high" ? hi
         : (b + m + hi) / 3;
 
-      layer.hueDrift = (layer.hueDrift + delta * (12 + band * 55 + hi * 35) + (triggers.beat ? 10 : 0)) % 360;
+      layer.hueDrift = (layer.hueDrift + delta * (10 + band * 50 + hi * 30) * layer.recipe.spin + (triggers.beat ? 10 : 0)) % 360;
       const recipe: FractalRecipe = {
         ...layer.recipe,
         hueSeed: (layer.recipe.hueSeed + layer.hueDrift) % 360,
-        twist: layer.recipe.twist + this.morph * (0.15 + band * 0.4),
-        scale: layer.recipe.scale * (0.85 + band * 0.45 + punch * 0.12 + (triggers.beat ? 0.08 : 0)),
+        twist: layer.recipe.twist + this.morph * (0.12 + band * 0.35) * layer.recipe.spin,
+        scale: layer.recipe.scale * layer.scaleBias * (0.85 + band * 0.45 + punch * 0.12 + (triggers.beat ? 0.08 : 0)),
       };
 
       drawFractalPattern({
@@ -146,7 +174,7 @@ export class AtmosphereRadialScene extends CanvasAnimation {
         recipe,
         cx,
         cy,
-        maxR: maxR * (0.7 + li * 0.12),
+        maxR: maxR * (0.65 + li * 0.15 + layer.scaleBias * 0.1),
         g,
         t,
         bass: b,
@@ -160,7 +188,7 @@ export class AtmosphereRadialScene extends CanvasAnimation {
     }
 
     if (this.fx === "pop" && this.fxLife > 0) {
-      const pops = 12;
+      const pops = 10 + Math.floor(punch * 8);
       for (let i = 0; i < pops; i++) {
         const a = (i / pops) * Math.PI * 2 + t * 2;
         const rad = maxR * (0.18 + (i % 4) * 0.14) * (0.8 + this.fxLife);
@@ -171,13 +199,39 @@ export class AtmosphereRadialScene extends CanvasAnimation {
       }
     }
 
+    if (this.fx === "ring" && this.fxLife > 0) {
+      const expand = 1 - this.fxLife;
+      for (let i = 0; i < 3; i++) {
+        const rad = maxR * (0.2 + expand * 0.85 + i * 0.08);
+        this.ctx.strokeStyle = `hsla(${(this.fxHue + i * 40) % 360}, 90%, 65%, ${this.fxLife * (0.55 - i * 0.12) * g})`;
+        this.ctx.lineWidth = 3 + punch * 5 + (2 - i) * 2;
+        this.ctx.beginPath();
+        this.ctx.arc(cx, cy, rad, 0, Math.PI * 2);
+        this.ctx.stroke();
+      }
+    }
+
+    if (this.fx === "slash" && this.fxLife > 0) {
+      for (let i = 0; i < 4; i++) {
+        const a = this.slashAng + i * (Math.PI / 4) + t * 0.5;
+        const len = maxR * (0.9 + punch * 0.3);
+        this.ctx.strokeStyle = `hsla(${(this.fxHue + i * 25) % 360}, 95%, 70%, ${this.fxLife * 0.55 * g})`;
+        this.ctx.lineWidth = 3 + punch * 6 + hi * 2;
+        this.ctx.lineCap = "round";
+        this.ctx.beginPath();
+        this.ctx.moveTo(cx - Math.cos(a) * len, cy - Math.sin(a) * len);
+        this.ctx.lineTo(cx + Math.cos(a) * len, cy + Math.sin(a) * len);
+        this.ctx.stroke();
+      }
+    }
+
     if (this.scramble > 0.05) {
-      for (let k = 0; k < 3; k++) {
+      for (let k = 0; k < 2 + Math.floor(this.scramble * 2); k++) {
         const seedRng = createSeededRng(((t * 80) | 0) * 911 + k * 173 + (this.fxHue | 0));
         const recipe = pickFractalRecipe(seedRng);
         drawFractalPattern({
           ctx: this.ctx,
-          recipe: { ...recipe, scale: recipe.scale * this.scramble * (0.4 + seedRng() * 0.5) },
+          recipe: { ...recipe, scale: recipe.scale * this.scramble * (0.35 + seedRng() * 0.55), mirror: false },
           cx,
           cy,
           maxR,
@@ -194,7 +248,6 @@ export class AtmosphereRadialScene extends CanvasAnimation {
       }
     }
 
-    // Soft core
     const coreR = maxR * (0.04 + e * 0.05 + r * 0.03 + (triggers.beat ? 0.03 : 0));
     const core = this.ctx.createRadialGradient(cx, cy, 0, cx, cy, coreR * 4);
     core.addColorStop(0, `hsla(${this.layers[0]?.hueDrift ?? 0}, 90%, 75%, ${(0.4 + punch * 0.3) * g})`);
