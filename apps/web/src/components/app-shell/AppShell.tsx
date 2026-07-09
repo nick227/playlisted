@@ -103,12 +103,10 @@ export function AppShell({ children }: AppShellProps) {
     shellHasPlayer: reservePlayerSpace,
   });
 
-  // Keep collapsed player while advancing tracks in theatre; only expand when body returns.
+  // Keep the docked player minimized whenever playback focus owns the viewport.
   useEffect(() => {
-    if (!playbackFocus.bodyFocusMode) {
-      setSitePlayerFocusCollapsed(false);
-    }
-  }, [playbackFocus.bodyFocusMode]);
+    setSitePlayerFocusCollapsed(playbackFocus.bodyFocusMode && shellHasPlayer);
+  }, [playbackFocus.bodyFocusMode, shellHasPlayer]);
 
   return (
     <div className="relative flex h-dvh min-h-0 w-full max-w-full overflow-hidden bg-transparent">
@@ -148,7 +146,6 @@ export function AppShell({ children }: AppShellProps) {
         focusState={playbackFocus.focusState}
         withPlayer={shellHasPlayer}
         playerCollapsed={sitePlayerFocusCollapsed}
-        onSitePlayerCollapseChange={setSitePlayerFocusCollapsed}
       />
       <QueuePanel />
     </div>

@@ -29,7 +29,6 @@ type PlaybackFocusLaneProps = {
   withPlayer?: boolean;
   /** Mirrors AppShell's delayed site-player collapse so overlay bottom stays synced. */
   playerCollapsed?: boolean;
-  onSitePlayerCollapseChange?: (collapsed: boolean) => void;
 };
 
 const SUBTITLE_POLL_INTERVAL_MS = 3000;
@@ -41,7 +40,6 @@ export function PlaybackFocusLane({
   focusState,
   withPlayer = true,
   playerCollapsed = false,
-  onSitePlayerCollapseChange,
 }: PlaybackFocusLaneProps) {
   const { accessToken } = useAuth();
   const { playbackContext } = useAudioPlayer();
@@ -157,30 +155,9 @@ export function PlaybackFocusLane({
   );
   const layerVisible = overlayLane.layerVisible || subtitleLane.layerVisible || titleIntroLane.layerVisible;
 
-  // Keep the docked player collapsed for the whole theatre session — not overlay
-  // fixture blinks. Fixture remounts force-hide layerVisible briefly and would
-  // expand/collapse the bar on every title → song-info → artist swap.
-  const shouldCollapseSitePlayer = !isRadio && focusState.hasBodyFaded;
   const positionClassName = subtitlePositionClassName(subtitlePosition);
   const variantClass =
     titleIntroLane.variantClass || subtitleLane.variantClass || overlayLane.variantClass;
-
-  useEffect(() => {
-    if (!onSitePlayerCollapseChange) return;
-
-    if (!shouldCollapseSitePlayer) {
-      onSitePlayerCollapseChange(false);
-      return;
-    }
-
-    const timeout = window.setTimeout(() => {
-      onSitePlayerCollapseChange(true);
-    }, 180);
-
-    return () => {
-      window.clearTimeout(timeout);
-    };
-  }, [onSitePlayerCollapseChange, shouldCollapseSitePlayer]);
 
   if (!recording?.id || !focusState.hasBodyFaded || !isPlaying) {
     return null;
