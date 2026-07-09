@@ -1,4 +1,4 @@
-import { PublishStatus, RecordingType, Visibility } from "@prisma/client";
+import { PublishStatus, RecordingType, Visibility, Prisma } from "@prisma/client";
 import { Router } from "express";
 
 import { getAllGenres, getAllSubgenres } from "../utils/genresDictionary.js";
@@ -14,6 +14,7 @@ import { failSubtitleIfStale } from "../lib/subtitles/staleness.js";
 import { mapSubtitleSummary, subtitleInclude } from "../lib/subtitles/summary.js";
 import { mapRecordingSubtitleStyle, isSubtitlePosition, isSubtitleStyleId } from "../lib/subtitles/styleSettings.js";
 import { srtToSegments, vttToSrt } from "../lib/subtitles/srtUtils.js";
+import { sanitizeAtmosphereFxJson, validateAtmosphereFxBody } from "../lib/visualMedia/atmosphereFx.js";
 import { transcriptsRouter } from "./transcripts.js";
 
 const DEFAULT_PAGE = 1;
@@ -45,6 +46,7 @@ function mapRecordingSummary(recording: any) {
     playCount: recording.playCount,
     subtitlesDisabled: recording.subtitlesDisabled,
     ...mapRecordingSubtitleStyle(recording),
+    atmosphereFx: sanitizeAtmosphereFxJson(recording.atmosphereFxJson ?? null),
     subtitle: mapSubtitleSummary(recording.subtitles, recording.subtitlesDisabled),
     createdAt: recording.createdAt.toISOString(),
     updatedAt: recording.updatedAt.toISOString(),
@@ -196,6 +198,7 @@ recordingsRouter.patch("/:recordingId", async (req, res, next) => {
       subtitlesDisabled?: boolean;
       subtitlePosition?: string;
       subtitleStyleId?: string;
+      atmosphereFx?: unknown;
     };
     const data: Record<string, unknown> = {};
 
@@ -236,6 +239,19 @@ recordingsRouter.patch("/:recordingId", async (req, res, next) => {
         });
       }
       data.subtitleStyleId = body.subtitleStyleId;
+    }
+
+    if (body.atmosphereFx !== undefined) {
+      const parsed = validateAtmosphereFxBody(body.atmosphereFx);
+      if (!parsed.ok) {
+        return res.status(400).json({
+          error: "invalid_atmosphere_fx",
+          message: parsed.message,
+        });
+      }
+      data.atmosphereFxJson = parsed.value === null
+        ? Prisma.DbNull
+        : (parsed.value as Prisma.InputJsonValue);
     }
 
     if (Object.keys(data).length === 0) {

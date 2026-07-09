@@ -13,6 +13,7 @@ export async function loadRecordingForVisualAccess(recordingId: string) {
       uploaderId: true,
       visibility: true,
       status: true,
+      atmosphereFxJson: true,
     },
   });
 }

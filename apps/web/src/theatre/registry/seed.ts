@@ -17,6 +17,7 @@ import { impossibleAquariumPackage } from '../packages/impossible-aquarium'
 import { monsterCrewPackage } from '../packages/monster-crew'
 import { liminalDoomPackage } from '../packages/liminal-doom'
 import { eqBarsPackage } from '../packages/eq-bars'
+import { atmosphereFxPackage } from '../packages/atmosphere-fx'
 import { cheechChongPackage } from '../packages/cheech-chong'
 import { rainPackage } from '../packages/rain'
 import { puppetDancerPackage } from '../packages/puppet-dancer'
@@ -70,6 +71,7 @@ registerObjectTheatreInSeed([
   monsterCrewPackage,
   liminalDoomPackage,
   eqBarsPackage,
+  atmosphereFxPackage,
   rainPackage,
   puppetDancerPackage,
   goopyPackage,

@@ -49,7 +49,7 @@ describe('mapSongVisualMediaApiResponse', () => {
       attachments: [],
     })
 
-    expect(resolved).toEqual({ attachments: [], policy: 'defaultOnly' })
+    expect(resolved).toEqual({ attachments: [], policy: 'defaultOnly', atmosphereFx: null })
   })
 
   it('uses enabled attachment policies defensively when top-level policy is stale', () => {

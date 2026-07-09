@@ -1,6 +1,7 @@
 import type {
   BeatFxEffect,
   BeatFxIntensity,
+  SongAtmosphereFx,
   SongVisualPolicy,
   TrackVisualMediaResolution,
   VisualMediaAttachment,
@@ -13,6 +14,8 @@ const MAX_TIMELINE_SEC = 86_400
 const VALID_OBJECT_FITS = new Set<NonNullable<VisualMediaPlayback['objectFit']>>(['cover', 'contain'])
 const VALID_BEAT_FX_INTENSITIES = new Set<BeatFxIntensity>(['subtle', 'normal', 'strong'])
 const VALID_BEAT_FX_EFFECTS = new Set<BeatFxEffect>(['scale', 'brightness', 'dropPunch'])
+const VALID_ATMOSPHERE_MODES = new Set<SongAtmosphereFx['mode']>(['inherit', 'off', 'subtle', 'normal', 'strong'])
+const MAX_ATMOSPHERE_PRESET_ID = 128
 
 function finiteNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value)
@@ -46,10 +49,24 @@ function sanitizeBeatFx(value: VisualMediaBeatFx | null | undefined): VisualMedi
   return Object.keys(next).length > 0 ? next : undefined
 }
 
+function sanitizeAtmosphereFx(value: SongAtmosphereFx | null | undefined): SongAtmosphereFx | null {
+  if (!value || typeof value !== 'object') return null
+  if (typeof value.mode !== 'string' || !VALID_ATMOSPHERE_MODES.has(value.mode)) return null
+  let presetId: string | null = null
+  if (typeof value.presetId === 'string') {
+    const trimmed = value.presetId.trim().slice(0, MAX_ATMOSPHERE_PRESET_ID)
+    presetId = trimmed.length > 0 ? trimmed : null
+  } else if (value.presetId === null) {
+    presetId = null
+  }
+  return { mode: value.mode, presetId }
+}
+
 export type SongVisualMediaApiResponse = {
   songId: string
   recordingId: string
   policy: SongVisualPolicy
+  atmosphereFx?: SongAtmosphereFx | null
   attachments: Array<{
     id: string
     songId: string
@@ -137,5 +154,6 @@ export function mapSongVisualMediaApiResponse(
   return {
     attachments,
     policy: resolveAttachmentPolicy(response.attachments, response.policy),
+    atmosphereFx: sanitizeAtmosphereFx(response.atmosphereFx),
   }
 }

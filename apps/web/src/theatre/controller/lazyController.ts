@@ -33,6 +33,7 @@ interface RealTheatreController extends EventTarget {
   setAutoRotation(enabled: boolean): void
   setClipDuration(durationMs: number | null): void
   setTrackContext(track: { segmentId?: string | null; trackId?: string | null } | null): void
+  setSongAtmosphereFx(song: { mode: 'inherit' | 'off' | 'subtle' | 'normal' | 'strong'; presetId: string | null } | null): void
 }
 
 const THEATRE_RELOAD_KEY = 'playlisted:theatre:chunk-reload-attempted'
@@ -205,6 +206,20 @@ class LazyTheatreController extends EventTarget {
         if (this._pendingTrackContext !== undefined) {
           real.setTrackContext(this._pendingTrackContext)
         }
+      })
+    }
+  }
+
+  public setSongAtmosphereFx(
+    song: { mode: 'inherit' | 'off' | 'subtle' | 'normal' | 'strong'; presetId: string | null } | null,
+  ) {
+    if (this._real) {
+      this._real.setSongAtmosphereFx(song)
+      return
+    }
+    if (song) {
+      void this._load().then(real => {
+        real.setSongAtmosphereFx(song)
       })
     }
   }

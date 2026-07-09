@@ -55,12 +55,13 @@ function makeAttachment(id: string, order: number): SongVisualAttachmentRecord {
 }
 
 function seedCache(queryClient: QueryClient, recordingId: string, attachments: SongVisualAttachmentRecord[]) {
-  const data: SongVisualMediaRecord = {
-    songId: "song-1",
-    recordingId,
-    policy: "preferAttached",
-    attachments,
-  };
+	  const data: SongVisualMediaRecord = {
+	    songId: "song-1",
+	    recordingId,
+	    policy: "preferAttached",
+	    atmosphereFx: null,
+	    attachments,
+	  };
   queryClient.setQueryData(songVisualQueryKey(recordingId), data);
   return data;
 }

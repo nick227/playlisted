@@ -20,6 +20,7 @@ import {
   validateAttachmentBody,
   type AttachmentValidationIssue,
 } from "../../lib/visualMedia/validateAttachment.js";
+import { sanitizeAtmosphereFxJson, validateAtmosphereFxBody } from "../../lib/visualMedia/atmosphereFx.js";
 
 export const songVisualMediaRouter = Router();
 
@@ -55,7 +56,7 @@ songVisualMediaRouter.get("/:songId/visual-media", async (req, res, next) => {
     }
 
     const attachments = await listSongVisualAttachments(songId);
-    res.json(buildSongVisualMediaResponse(songId, attachments));
+    res.json(buildSongVisualMediaResponse(songId, attachments, access.recording));
   } catch (error) {
     next(error);
   }
@@ -111,6 +112,50 @@ songVisualMediaRouter.post("/:songId/visual-media", async (req, res, next) => {
     });
 
     res.status(201).json(mapSongVisualAttachment(attachment, songId));
+  } catch (error) {
+    next(error);
+  }
+});
+
+songVisualMediaRouter.patch("/:songId/visual-media/atmosphere-fx", async (req, res, next) => {
+  try {
+    const auth = await requireAuth(req, res);
+    if (!auth) return;
+
+    const songId = parseSongId(req);
+    const access = await assertRecordingVisualWriteAccess(songId, auth.user.id, auth.user.role);
+    if (!access.ok) {
+      return res.status(access.status).json({ error: access.error, message: access.message });
+    }
+
+    const body = req.body as { atmosphereFx?: unknown };
+    if (!("atmosphereFx" in body)) {
+      return res.status(400).json({
+        error: "invalid_request",
+        message: "atmosphereFx is required.",
+      });
+    }
+
+    const parsed = validateAtmosphereFxBody(body.atmosphereFx);
+    if (!parsed.ok) {
+      return res.status(400).json({ error: "invalid_atmosphere_fx", message: parsed.message });
+    }
+
+    const updated = await prisma.recording.update({
+      where: { id: songId },
+      data: {
+        atmosphereFxJson: parsed.value === null
+          ? Prisma.DbNull
+          : (parsed.value as Prisma.InputJsonValue),
+      },
+      select: { atmosphereFxJson: true },
+    });
+
+    res.json({
+      songId,
+      recordingId: songId,
+      atmosphereFx: sanitizeAtmosphereFxJson(updated.atmosphereFxJson),
+    });
   } catch (error) {
     next(error);
   }

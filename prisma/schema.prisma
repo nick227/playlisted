@@ -205,6 +205,8 @@ model Recording {
   subtitlesDisabled   Boolean       @default(false)
   subtitlePosition    String        @default("middle") @db.VarChar(16)
   subtitleStyleId     String        @default("classic") @db.VarChar(32)
+  /// Song Atmosphere FX: { mode: inherit|off|subtle|normal|strong, presetId: string|null }
+  atmosphereFxJson    Json?
   createdAt           DateTime      @default(now())
   updatedAt           DateTime      @updatedAt
 

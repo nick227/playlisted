@@ -8,6 +8,7 @@ import { useRadioPlayer } from "@/providers/RadioPlayerProvider";
 import { useAuth } from "@/providers/AuthProvider";
 
 import { ActiveMediaPanel } from "./ActiveMediaPanel";
+import { AtmosphereFxPanel } from "./AtmosphereFxPanel";
 import { SongVisualAssetLibrary } from "./SongVisualAssetLibrary";
 import { SongVisualEditorPreview } from "./SongVisualEditorPreview";
 import { SongVisualEditorTimeline } from "./SongVisualEditorTimeline";
@@ -143,7 +144,7 @@ function SongVisualEditorModalInner({
                   showOverlays={showOverlays}
                 />
               </div>
-              <div className="min-w-0 md:col-span-2">
+              <div className="min-w-0 space-y-2.5 md:col-span-2">
                 <ActiveMediaPanel
                   attachments={editor.attachments}
                   timelineClips={editor.timelineClips}
@@ -155,6 +156,11 @@ function SongVisualEditorModalInner({
                   onSelectClip={editor.selectAttachment}
                   onToggleClipStage={(attachmentId, enabled) => editor.setAttachmentEnabled(attachmentId, enabled)}
                   selectedAttachmentId={editor.selectedAttachmentId}
+                />
+                <AtmosphereFxPanel
+                  value={editor.atmosphereFx}
+                  disabled={editor.isBusy}
+                  onChange={editor.setAtmosphereFx}
                 />
               </div>
             </div>

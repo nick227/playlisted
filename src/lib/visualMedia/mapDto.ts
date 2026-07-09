@@ -1,5 +1,6 @@
 import type { SongVisualAttachment, VisualMediaAsset } from "@prisma/client";
 
+import { sanitizeAtmosphereFxJson } from "./atmosphereFx.js";
 import {
   sanitizeBeatFxJson,
   sanitizeLabel,
@@ -21,6 +22,10 @@ import {
 } from "./types.js";
 
 type AttachmentWithAsset = SongVisualAttachment & { mediaAsset: VisualMediaAsset };
+
+type RecordingAtmosphereSource = {
+  atmosphereFxJson?: unknown;
+};
 
 export function mapVisualMediaAsset(asset: VisualMediaAsset): VisualMediaAssetDto {
   return {
@@ -76,11 +81,13 @@ function resolveEnabledVisualPolicy(attachments: AttachmentWithAsset[]): Theatre
 export function buildSongVisualMediaResponse(
   recordingId: string,
   attachments: AttachmentWithAsset[],
+  recording?: RecordingAtmosphereSource | null,
 ): SongVisualMediaResponse {
   return {
     songId: recordingId,
     recordingId,
     policy: resolveEnabledVisualPolicy(attachments),
+    atmosphereFx: sanitizeAtmosphereFxJson(recording?.atmosphereFxJson ?? null),
     attachments: attachments.map((attachment) => mapSongVisualAttachment(attachment, recordingId)),
   };
 }

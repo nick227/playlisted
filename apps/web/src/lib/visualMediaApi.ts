@@ -1,6 +1,6 @@
 import { uploadVisualMediaFile } from "@/lib/visualMediaUpload";
 import { normalizeVisualMediaUrl, visualMediaUploadPathKey } from "@/lib/visualMediaUrl";
-import type { SongVisualPolicy, VisualMediaBeatFx } from "@/theatre/media/types";
+import type { SongAtmosphereFx, SongVisualPolicy, VisualMediaBeatFx } from "@/theatre/media/types";
 
 export type { VisualUploadPhase, VisualUploadProgress, PendingVisualUpload } from "@/lib/visualUploadProgress";
 export { uploadVisualMediaFile, type VisualUploadOptions } from "@/lib/visualMediaUpload";
@@ -50,6 +50,7 @@ export type SongVisualMediaRecord = {
   songId: string;
   recordingId: string;
   policy: SongVisualPolicy;
+  atmosphereFx: SongAtmosphereFx | null;
   attachments: SongVisualAttachmentRecord[];
 };
 
@@ -202,6 +203,26 @@ export async function fetchSongVisualAttachments(recordingId: string, accessToke
     credentials: "include",
   });
   return parseJson<SongVisualMediaRecord>(response);
+}
+
+export async function updateSongAtmosphereFx(
+  recordingId: string,
+  accessToken: string,
+  atmosphereFx: SongAtmosphereFx | null,
+) {
+  const response = await fetch(
+    `${apiBase()}/api/v1/songs/${encodeURIComponent(recordingId)}/visual-media/atmosphere-fx`,
+    {
+      method: "PATCH",
+      headers: {
+        ...authHeaders(accessToken),
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ atmosphereFx }),
+      credentials: "include",
+    },
+  );
+  return parseJson<{ songId: string; recordingId: string; atmosphereFx: SongAtmosphereFx | null }>(response);
 }
 
 export async function attachSongVisualMedia(

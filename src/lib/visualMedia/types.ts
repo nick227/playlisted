@@ -40,10 +40,16 @@ export type SongVisualAttachmentDto = {
   updatedAt: string;
 };
 
+export type SongAtmosphereFxDto = {
+  mode: "inherit" | "off" | "subtle" | "normal" | "strong";
+  presetId: string | null;
+};
+
 export type SongVisualMediaResponse = {
   songId: string;
   recordingId: string;
   policy: TheatreSongVisualPolicy;
+  atmosphereFx: SongAtmosphereFxDto | null;
   attachments: SongVisualAttachmentDto[];
 };
 

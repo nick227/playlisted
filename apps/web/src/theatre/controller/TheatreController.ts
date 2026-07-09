@@ -23,7 +23,7 @@ import { isUserMediaPresetId, resolvePreset } from '../media/resolvePreset'
 import { resolveTimelinePlaybackDecision } from '../media/TimelinePlaybackDirector'
 import { resolveTimelinePresetId } from '../media/timelineClipPick'
 import { hydrateTrackVisualMedia } from '../media/hydrateTrackVisualMedia'
-import { lookupTrackVisualMediaKey } from '../media/resolveTrackVisualMedia'
+import { lookupTrackVisualMediaKey, resolveTrackVisualMedia } from '../media/resolveTrackVisualMedia'
 import { resolveSegmentIntro } from '../segmentIntro/resolveSegmentIntro'
 import { getPackageIdForPreset } from '../registry/packageRotation'
 import { buildAnimationFrameContext, mergePresetLayerOptions, withTheatreInitContext } from './theatreFrameContext'
@@ -35,6 +35,9 @@ import { theatreBreadcrumb } from './theatreBreadcrumbs'
 import { isPresetQuarantined, quarantinePreset } from './presetQuarantine'
 import { isObjectTheatrePreset } from '../packages/object-spinner-mover'
 import { USER_VIDEO_MEDIA_ID } from '../media/userMediaEngine'
+import { AtmosphereFxLayer } from '../atmosphere/AtmosphereFxLayer'
+import type { SongAtmosphereFx } from '../atmosphere/types'
+import { subscribeAtmosphereFxSettings } from '../atmosphere/atmosphereFxStore'
 
 export type TheatreRotationPolicy = {
   minSceneMs: number
@@ -65,6 +68,7 @@ function isVideoPresetId(presetId: string | null | undefined): boolean {
 
 class TheatreController extends EventTarget {
   private deck: TheatreSceneDeck | null = null
+  private atmosphereLayer = new AtmosphereFxLayer()
   private overlay: HTMLElement | null = null
   private overrideEl: HTMLMediaElement | null = null
   private audioEl: HTMLMediaElement | null = null
@@ -91,10 +95,16 @@ class TheatreController extends EventTarget {
   private lastManualPresetStart = 0
   private manualChangeActiveUntil = 0
   private preloadTimerId: number | null = null
+  private unsubAtmosphereSettings: (() => void) | null = null
 
   private readonly onVisibilityChange = () => {
-    if (document.hidden && this.state.active) this.deck?.pause()
-    else if (!document.hidden && this.state.active) this.deck?.resume()
+    if (document.hidden && this.state.active) {
+      this.deck?.pause()
+      this.atmosphereLayer.pause()
+    } else if (!document.hidden && this.state.active) {
+      this.deck?.resume()
+      this.atmosphereLayer.resume()
+    }
   }
 
   public state = {
@@ -114,6 +124,10 @@ class TheatreController extends EventTarget {
     super()
     this.rebindAudio()
     window.addEventListener('visibilitychange', this.onVisibilityChange)
+    this.unsubAtmosphereSettings = subscribeAtmosphereFxSettings(() => {
+      if (!this.state.active || !this.overlay || !this.frameContext) return
+      void this.atmosphereLayer.sync(this.overlay, this.frameContext, this.state.fxEnabled)
+    })
   }
 
   /** Full teardown for HMR / module unload — does not await bridge.exit(). */
@@ -128,6 +142,8 @@ class TheatreController extends EventTarget {
     this.state.presetId = null
 
     window.removeEventListener('visibilitychange', this.onVisibilityChange)
+    this.unsubAtmosphereSettings?.()
+    this.unsubAtmosphereSettings = null
     this.analyserConnection = null
     this.clearBackgroundEnterTimer()
     this.stopFeatureLoop()
@@ -139,6 +155,7 @@ class TheatreController extends EventTarget {
     this.overlay?.remove()
     this.overlay = null
     document.body.classList.remove('theatre-active')
+    void this.atmosphereLayer.teardown()
     void this.deck?.exit()
     this.deck = null
   }
@@ -217,6 +234,7 @@ class TheatreController extends EventTarget {
       this.fxSelector.clearCandidate()
       this.songVisualHydrationPending = false
       this.visualMediaHydration = null
+      this.atmosphereLayer.setSongOverride(null)
       return
     }
 
@@ -229,6 +247,7 @@ class TheatreController extends EventTarget {
     this.lastTimelineClipPresetId = null
     clearDynamicPresets()
     this.fxSelector.clearCandidate()
+    this.atmosphereLayer.setSongOverride(null)
 
     this.songVisualHydrationPending = true
     this.visualMediaHydration = hydrateTrackVisualMedia(track, { forceNetwork: true })
@@ -242,7 +261,21 @@ class TheatreController extends EventTarget {
       })
   }
 
+  /** Song-level Atmosphere FX override (Recording). Null clears to inherit. */
+  public setSongAtmosphereFx(song: SongAtmosphereFx | null) {
+    this.atmosphereLayer.setSongOverride(song)
+    if (this.state.active && this.overlay && this.frameContext) {
+      void this.atmosphereLayer.sync(this.overlay, this.frameContext, this.state.fxEnabled)
+    }
+  }
+
   private async reconcileVisualMediaAfterHydrate() {
+    const resolved = resolveTrackVisualMedia(this.trackContext)
+    this.atmosphereLayer.setSongOverride(resolved.atmosphereFx ?? null)
+    if (this.state.active && this.overlay && this.frameContext) {
+      void this.atmosphereLayer.sync(this.overlay, this.frameContext, this.state.fxEnabled)
+    }
+
     if (!this.state.active) return
 
     await this.syncAttachedOnlyPlaybackAfterHydrate()
@@ -1192,6 +1225,7 @@ class TheatreController extends EventTarget {
     if (initialPresetId) {
       await this.deck.enterInitial(initialPresetId, factories, ctx)
     }
+    await this.atmosphereLayer.sync(overlay, ctx, this.state.fxEnabled)
     
     if (!this.stillCurrent(token)) {
       await this.abortStaleTransition(token, overlay)
@@ -1251,6 +1285,7 @@ class TheatreController extends EventTarget {
       }
 
       this.deck?.renderFrame(this.buildRenderFrameContext(frameCtx))
+      this.atmosphereLayer.renderFrame(this.buildRenderFrameContext(frameCtx))
       this.featureLoopId = requestAnimationFrame(loop)
     }
     this.featureLoopId = requestAnimationFrame(loop)
@@ -1284,6 +1319,7 @@ class TheatreController extends EventTarget {
       
       destroyTheatreDevPanel()
 
+      await this.atmosphereLayer.teardown()
       if (this.deck) await this.deck.exit()
       if (!this.stillCurrent(token)) return
 

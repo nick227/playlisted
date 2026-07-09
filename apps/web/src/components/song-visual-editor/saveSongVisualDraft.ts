@@ -4,11 +4,12 @@ import {
   attachSongVisualMedia,
   detachSongVisualMedia,
   fetchSongVisualAttachments,
+  updateSongAtmosphereFx,
   updateSongVisualAttachment,
   type SongVisualAttachmentRecord,
   type SongVisualMediaRecord,
 } from "@/lib/visualMediaApi";
-import type { SongVisualPolicy } from "@/theatre/media/types";
+import type { SongAtmosphereFx, SongVisualPolicy } from "@/theatre/media/types";
 import { clearRemoteTrackVisualMedia } from "@/theatre/media/resolveTrackVisualMedia";
 
 import { attachmentsListEqual, isDraftAttachmentId } from "./draftSongVisualAttachments";
@@ -20,8 +21,15 @@ type SaveSongVisualDraftArgs = {
   queryClient: QueryClient;
   draftAttachments: SongVisualAttachmentRecord[];
   draftPolicy: SongVisualPolicy;
+  draftAtmosphereFx: SongAtmosphereFx;
   serverData: SongVisualMediaRecord;
 };
+
+function atmosphereEqual(a: SongAtmosphereFx | null | undefined, b: SongAtmosphereFx | null | undefined): boolean {
+  const left = a ?? { mode: "inherit" as const, presetId: null };
+  const right = b ?? { mode: "inherit" as const, presetId: null };
+  return left.mode === right.mode && left.presetId === right.presetId;
+}
 
 export async function saveSongVisualDraft({
   recordingId,
@@ -29,6 +37,7 @@ export async function saveSongVisualDraft({
   queryClient,
   draftAttachments,
   draftPolicy,
+  draftAtmosphereFx,
   serverData,
 }: SaveSongVisualDraftArgs) {
   const serverAttachments = serverData.attachments;
@@ -83,6 +92,10 @@ export async function saveSongVisualDraft({
           updateSongVisualAttachment(recordingId, attachment.id, accessToken, { policy: draftPolicy }),
         ),
     );
+  }
+
+  if (!atmosphereEqual(draftAtmosphereFx, serverData.atmosphereFx)) {
+    await updateSongAtmosphereFx(recordingId, accessToken, draftAtmosphereFx);
   }
 
   const fresh = await fetchSongVisualAttachments(recordingId, accessToken);

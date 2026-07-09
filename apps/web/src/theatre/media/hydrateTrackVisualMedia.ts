@@ -33,7 +33,7 @@ export async function fetchSongVisualMedia(recordingId: string): Promise<TrackVi
   })
 
   if (response.status === 404) {
-    return { attachments: [], policy: 'defaultOnly' }
+    return { attachments: [], policy: 'defaultOnly', atmosphereFx: null }
   }
 
   if (!response.ok) {
@@ -55,7 +55,7 @@ export async function hydrateTrackVisualMedia(
 ): Promise<TrackVisualMediaResolution> {
   const key = lookupTrackVisualMediaKey(track)
   if (!key) {
-    return { attachments: [], policy: 'defaultOnly' }
+    return { attachments: [], policy: 'defaultOnly', atmosphereFx: null }
   }
 
   if (hasLocalTrackVisualMediaOverride(key)) {
@@ -72,7 +72,7 @@ export async function hydrateTrackVisualMedia(
     setRemoteTrackVisualMedia(key, resolved)
     return resolved
   } catch {
-    return getRemoteTrackVisualMedia(key) ?? { attachments: [], policy: 'defaultOnly' }
+    return getRemoteTrackVisualMedia(key) ?? { attachments: [], policy: 'defaultOnly', atmosphereFx: null }
   }
 }
 

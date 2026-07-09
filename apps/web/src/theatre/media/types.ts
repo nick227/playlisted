@@ -46,8 +46,16 @@ export type SongVisualPolicy =
   | 'attachedOnly'
   | 'mixAttachedAndDefault'
 
+export type AtmosphereFxMode = 'inherit' | 'off' | 'subtle' | 'normal' | 'strong'
+
+export type SongAtmosphereFx = {
+  mode: AtmosphereFxMode
+  presetId: string | null
+}
+
 export type TrackVisualMediaResolution = {
   attachments: VisualMediaAttachment[]
   policy: SongVisualPolicy
+  atmosphereFx?: SongAtmosphereFx | null
   audioSensitivity?: AudioSensitivity
 }

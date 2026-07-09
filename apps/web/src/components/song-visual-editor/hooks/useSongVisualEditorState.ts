@@ -17,7 +17,7 @@ import {
   type VisualUploadProgress,
   type PendingVisualUpload,
 } from "@/lib/visualMediaApi";
-import type { VisualMediaBeatFx } from "@/theatre/media/types";
+import type { SongAtmosphereFx, VisualMediaBeatFx } from "@/theatre/media/types";
 import { clearRemoteTrackVisualMedia } from "@/theatre/media/resolveTrackVisualMedia";
 
 import {
@@ -65,6 +65,15 @@ type UseSongVisualEditorStateArgs = {
 };
 
 const EDITOR_VISUAL_POLICY: SongVisualAttachmentRecord["policy"] = "attachedOnly";
+const DEFAULT_ATMOSPHERE: SongAtmosphereFx = { mode: "inherit", presetId: null };
+
+function atmosphereFromServer(data: SongVisualMediaRecord | undefined): SongAtmosphereFx {
+  return data?.atmosphereFx ?? DEFAULT_ATMOSPHERE;
+}
+
+function atmosphereEqual(a: SongAtmosphereFx, b: SongAtmosphereFx): boolean {
+  return a.mode === b.mode && a.presetId === b.presetId;
+}
 
 function draftPolicyForEditor(data: SongVisualMediaRecord | undefined): SongVisualAttachmentRecord["policy"] {
   if (!data?.attachments.some((attachment) => attachment.enabled)) {
@@ -98,6 +107,7 @@ export function useSongVisualEditorState({
   const [clipboard, setClipboard] = useState<ClipClipboard | null>(null);
   const [draftAttachments, setDraftAttachments] = useState<SongVisualAttachmentRecord[] | null>(null);
   const [draftPolicy, setDraftPolicy] = useState<SongVisualAttachmentRecord["policy"] | null>(null);
+  const [draftAtmosphereFx, setDraftAtmosphereFx] = useState<SongAtmosphereFx | null>(null);
 
   const attachmentsQuery = useQuery({
     queryKey: songVisualQueryKey(recordingId),
@@ -118,10 +128,12 @@ export function useSongVisualEditorState({
     if (!attachmentsQuery.data || draftAttachments != null) return;
     setDraftAttachments(draftAttachmentsForEditor(attachmentsQuery.data));
     setDraftPolicy(draftPolicyForEditor(attachmentsQuery.data));
+    setDraftAtmosphereFx(atmosphereFromServer(attachmentsQuery.data));
   }, [attachmentsQuery.data, draftAttachments]);
 
   const serverData = attachmentsQuery.data;
   const attachments = draftAttachments ?? serverData?.attachments ?? [];
+  const atmosphereFx = draftAtmosphereFx ?? atmosphereFromServer(serverData);
   const timelineDurationSec = durationSeconds && durationSeconds > 0 ? durationSeconds : 120;
 
   const timelineClips = useMemo(
@@ -130,10 +142,11 @@ export function useSongVisualEditorState({
   );
 
   const isDirty = useMemo(() => {
-    if (!serverData || draftAttachments == null || draftPolicy == null) return false;
+    if (!serverData || draftAttachments == null || draftPolicy == null || draftAtmosphereFx == null) return false;
     if (draftPolicy !== draftPolicyForEditor(serverData)) return true;
+    if (!atmosphereEqual(draftAtmosphereFx, atmosphereFromServer(serverData))) return true;
     return !attachmentsListEqual(draftAttachments, serverData.attachments);
-  }, [draftAttachments, draftPolicy, serverData]);
+  }, [draftAttachments, draftAtmosphereFx, draftPolicy, serverData]);
 
   const updateDraft = useCallback((updater: (current: SongVisualAttachmentRecord[]) => SongVisualAttachmentRecord[]) => {
     setDraftAttachments((current) => updater(current ?? []));
@@ -189,7 +202,7 @@ export function useSongVisualEditorState({
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      if (!serverData || draftAttachments == null || draftPolicy == null) {
+      if (!serverData || draftAttachments == null || draftPolicy == null || draftAtmosphereFx == null) {
         throw new Error("Editor is still loading.");
       }
       return saveSongVisualDraft({
@@ -198,6 +211,7 @@ export function useSongVisualEditorState({
         queryClient,
         draftAttachments,
         draftPolicy,
+        draftAtmosphereFx,
         serverData,
       });
     },
@@ -205,6 +219,7 @@ export function useSongVisualEditorState({
       setError(null);
       setDraftAttachments(draftAttachmentsForEditor(fresh));
       setDraftPolicy(draftPolicyForEditor(fresh));
+      setDraftAtmosphereFx(atmosphereFromServer(fresh));
       clearRemoteTrackVisualMedia(recordingId);
     },
     onError: (err) => setError(err instanceof Error ? err.message : "Save failed."),
@@ -540,7 +555,12 @@ export function useSongVisualEditorState({
     if (!serverData) return;
     setDraftAttachments(draftAttachmentsForEditor(serverData));
     setDraftPolicy(draftPolicyForEditor(serverData));
+    setDraftAtmosphereFx(atmosphereFromServer(serverData));
     setError(null);
+  }
+
+  function setAtmosphereFx(next: SongAtmosphereFx) {
+    setDraftAtmosphereFx(next);
   }
 
   const isUploading = uploadMutation.isPending;
@@ -554,6 +574,7 @@ export function useSongVisualEditorState({
 
   return {
     attachments,
+    atmosphereFx,
     assets: assetsQuery.data ?? [],
     userLibraryImages: userLibraryImagesQuery.data ?? [],
     timelineClips,
@@ -580,6 +601,7 @@ export function useSongVisualEditorState({
     attachLibraryRow,
     deleteAsset: deleteAssetMutation.mutate,
     setClipAudioPulse,
+    setAtmosphereFx,
     setAttachmentEnabled,
     resizeClip,
     resizeClipStart,
