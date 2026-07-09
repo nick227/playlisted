@@ -3,9 +3,11 @@ import type { PublicAnimationContext } from "../../author/types";
 import { bass, beatPunch, env, high, intensityGain, mid } from "./audio";
 import { hsla, moodTone, ShiftingMoodPalette } from "./atmosphereMood";
 
-type GlowStyle = "aurora" | "spot" | "shaft" | "ember" | "halo";
+type GlowStyle = "aurora" | "spot" | "shaft" | "ember" | "halo" | "amorphous";
 
-const STYLES: GlowStyle[] = ["aurora", "spot", "shaft", "ember", "halo"];
+const STYLES: GlowStyle[] = ["aurora", "spot", "shaft", "ember", "halo", "amorphous"];
+
+export const GLOW_EFFECT_TUNING = 80; // 0-100 tuning constant for glow intensity
 
 /**
  * Volumetric glow — morphing moods + rotating styles:
@@ -14,7 +16,7 @@ const STYLES: GlowStyle[] = ["aurora", "spot", "shaft", "ember", "halo"];
 export class AtmosphereGlowScene extends CanvasAnimation {
   private palette = new ShiftingMoodPalette();
   private lastT = 0;
-  private style: GlowStyle = "aurora";
+  private style: GlowStyle = "amorphous";
   private holdSec = 0;
   private nextHold = 6;
   private styleSpin = Math.random() * Math.PI * 2;
@@ -112,6 +114,59 @@ export class AtmosphereGlowScene extends CanvasAnimation {
         this.ctx.arc(sx, sy, 1.5 + punch * 3 + (i % 3), 0, Math.PI * 2);
         this.ctx.fill();
       }
+    }
+
+    if (this.style === "amorphous") {
+      const effectScale = Math.max(0, Math.min(100, GLOW_EFFECT_TUNING)) / 100;
+      
+      // Bass - Deep, intense, slow moving
+      const bx = cx + Math.cos(t * 0.25 + this.styleSpin) * w * 0.35;
+      const by = cy + Math.sin(t * 0.15 + this.styleSpin) * h * 0.35;
+      const bRad = Math.max(w, h) * (0.3 + b * 0.3 * effectScale); // Smaller radius for distinction
+      const bGlow = this.ctx.createRadialGradient(bx, by, 0, bx, by, bRad);
+      bGlow.addColorStop(0, hsla(pal.a, tone.s + 20, tone.l + 10, (0.4 + b * 0.6) * g * effectScale)); // More intense core
+      bGlow.addColorStop(0.3, hsla(pal.a, tone.s + 15, tone.l, (0.2 + b * 0.3) * g * effectScale)); // Sharp falloff
+      bGlow.addColorStop(1, "hsla(0,0%,0%,0)");
+      this.ctx.fillStyle = bGlow;
+      this.ctx.fillRect(0, 0, w, h);
+      
+      // Mid - Medium size, slightly faster, distinct path
+      const mx = cx + Math.sin(t * 0.4 - this.styleSpin * 1.5) * w * 0.4;
+      const my = cy + Math.cos(t * 0.5 - this.styleSpin * 1.5) * h * 0.2;
+      const mRad = Math.max(w, h) * (0.25 + m * 0.25 * effectScale);
+      const mGlow = this.ctx.createRadialGradient(mx, my, 0, mx, my, mRad);
+      mGlow.addColorStop(0, hsla(pal.b, tone.s + 25, tone.l + 15, (0.45 + m * 0.5) * g * effectScale));
+      mGlow.addColorStop(0.3, hsla(pal.b, tone.s + 20, tone.l + 5, (0.25 + m * 0.3) * g * effectScale));
+      mGlow.addColorStop(1, "hsla(0,0%,0%,0)");
+      this.ctx.fillStyle = mGlow;
+      this.ctx.fillRect(0, 0, w, h);
+      
+      // High - Smaller, faster, sharper
+      const hx = cx + Math.cos(t * 0.6 + this.styleSpin * 2) * w * 0.2;
+      const hy = cy + Math.sin(t * 0.7 + this.styleSpin * 2) * h * 0.4;
+      const hRad = Math.max(w, h) * (0.15 + hi * 0.25 * effectScale);
+      const hGlow = this.ctx.createRadialGradient(hx, hy, 0, hx, hy, hRad);
+      hGlow.addColorStop(0, hsla(pal.c, tone.s + 30, tone.l + 25, (0.5 + hi * 0.7) * g * effectScale));
+      hGlow.addColorStop(0.2, hsla(pal.c, tone.s + 20, tone.l + 10, (0.3 + hi * 0.4) * g * effectScale));
+      hGlow.addColorStop(1, "hsla(0,0%,0%,0)");
+      this.ctx.fillStyle = hGlow;
+      this.ctx.fillRect(0, 0, w, h);
+
+      // Envelope / Punch - Central dynamic glow, very intense on beat
+      const envRad = Math.max(w, h) * (0.15 + (e + punch) * 0.3 * effectScale);
+      const envGlow = this.ctx.createRadialGradient(cx, cy, 0, cx, cy, envRad);
+      envGlow.addColorStop(0, hsla(pal.accent, 100, tone.l + 35, (0.5 + e * 0.4 + punch * 0.8) * g * effectScale));
+      envGlow.addColorStop(0.4, hsla(pal.accent, 95, tone.l + 15, (0.2 + e * 0.2 + punch * 0.4) * g * effectScale));
+      envGlow.addColorStop(1, "hsla(0,0%,0%,0)");
+      this.ctx.fillStyle = envGlow;
+      this.ctx.fillRect(0, 0, w, h);
+      
+      // Ambient morphing background (darken slightly so intense glows stand out)
+      const ambient = this.ctx.createLinearGradient(0, 0, w, h);
+      ambient.addColorStop(0, hsla(pal.a, tone.s, tone.l - 20, (0.04 + e * 0.05) * g * effectScale));
+      ambient.addColorStop(1, hsla(pal.accent, tone.s, tone.l - 20, (0.04 + e * 0.05) * g * effectScale));
+      this.ctx.fillStyle = ambient;
+      this.ctx.fillRect(0, 0, w, h);
     }
 
     // Edge corona always

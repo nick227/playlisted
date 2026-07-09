@@ -35,7 +35,6 @@ export function FocusLaneSubtitleContent({
       <TitleIntroVisual
         title={fixture.text}
         artistName={fixture.artist?.artistName}
-        artist={fixture.artist}
         recording={fixture.recording}
       />
     );

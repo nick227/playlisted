@@ -3,9 +3,11 @@ import type { PublicAnimationContext } from "../../author/types";
 import { bass, beatPunch, env, high, intensityGain, mid } from "./audio";
 import { hsla, moodTone, ShiftingMoodPalette } from "./atmosphereMood";
 
-type WashStyle = "ribbons" | "curtains" | "tide" | "prism" | "smoke";
+type WashStyle = "ribbons" | "curtains" | "tide" | "prism" | "smoke" | "synth";
 
-const STYLES: WashStyle[] = ["ribbons", "curtains", "tide", "prism", "smoke"];
+const STYLES: WashStyle[] = ["ribbons", "curtains", "tide", "prism", "smoke", "synth"];
+
+export const SYNTH_EFFECT_TUNING = 80; // 0-100 tuning constant for synthesizer effect
 
 /**
  * Liquid color wash — morphing moods + rotating flow styles:
@@ -14,7 +16,7 @@ const STYLES: WashStyle[] = ["ribbons", "curtains", "tide", "prism", "smoke"];
 export class AtmosphereColorWashScene extends CanvasAnimation {
   private palette = new ShiftingMoodPalette();
   private lastT = 0;
-  private style: WashStyle = "ribbons";
+  private style: WashStyle = "synth";
   private holdSec = 0;
   private nextHold = 6;
   private phase = Math.random() * Math.PI * 2;
@@ -112,6 +114,66 @@ export class AtmosphereColorWashScene extends CanvasAnimation {
         grad.addColorStop(1, hsla(bh + 80, tone.s, tone.l - 5, 0));
         this.ctx.fillStyle = grad;
         this.ctx.fillRect(x0 - w * 0.08, 0, w * 0.16, h);
+      }
+    }
+
+    if (this.style === "synth") {
+      const effectScale = Math.max(0, Math.min(100, SYNTH_EFFECT_TUNING)) / 100;
+      
+      const cols = Math.floor(2 + e * 5 * effectScale + b * 2);
+      const rows = Math.floor(2 + m * 5 * effectScale + hi * 3);
+      const cellW = w / cols;
+      const cellH = h / rows;
+      
+      for (let c = 0; c < cols; c++) {
+        for (let r = 0; r < rows; r++) {
+          const cellIndex = c + r * cols;
+          // Random threshold that shifts with music
+          const popThreshold = 0.6 - (e * 0.4) - (effectScale * 0.3) - (punch * 0.25);
+          const rand = Math.sin(t * 8 + cellIndex * 2.1 + this.phase);
+          
+          if (rand > popThreshold || (punch > 0.5 && Math.cos(cellIndex + t * 4) > 0)) {
+            // Complex color mapping using hi, mid, bass and cell position
+            const ch = pal.a + cellIndex * 25 + hi * 150 + b * 80;
+            const lum = (0.2 + punch * 0.5 + hi * 0.5 + b * 0.4) * g * effectScale;
+            this.ctx.fillStyle = hsla(ch, tone.s + 20, tone.l + 10, lum);
+            
+            const shapeRand = Math.cos(cellIndex * 3.7 + t * 2.5 + b * 6);
+            
+            if (shapeRand > 0.4) {
+               // Cascade of round spheres in a line
+               const spheres = Math.floor(2 + hi * 5 + punch * 3 + 2);
+               for (let s = 0; s < spheres; s++) {
+                  const sy = cellH * 0.5;
+                  const sx = cellW * ((s + 0.5) / spheres);
+                  const radius = (cellW / spheres) * 0.45 * (1 + b * 0.8 + punch * 0.5);
+                  this.ctx.beginPath();
+                  this.ctx.arc(c * cellW + sx, r * cellH + sy, radius, 0, Math.PI * 2);
+                  this.ctx.fill();
+               }
+            } else if (shapeRand < -0.4) {
+               // Top or bottom half flash in different colors
+               const isTop = Math.sin(t * 12 + cellIndex * 5 + punch * 5) > 0;
+               const halfH = cellH / 2;
+               
+               this.ctx.fillRect(c * cellW, r * cellH + (isTop ? 0 : halfH), cellW, halfH);
+               
+               // The other half in a different color
+               const chAlt = ch + 90 + hi * 90;
+               this.ctx.fillStyle = hsla(chAlt, tone.s + 10, tone.l, lum * 0.8);
+               this.ctx.fillRect(c * cellW, r * cellH + (isTop ? halfH : 0), cellW, halfH);
+            } else {
+               // Full cell flash with occasional inner grid
+               if (hi > 0.4 && shapeRand > 0) {
+                 this.ctx.fillRect(c * cellW, r * cellH, cellW, cellH);
+                 this.ctx.fillStyle = hsla(ch + 180, tone.s, tone.l + 15, lum * 1.2);
+                 this.ctx.fillRect(c * cellW + cellW*0.25, r * cellH + cellH*0.25, cellW*0.5, cellH*0.5);
+               } else {
+                 this.ctx.fillRect(c * cellW, r * cellH, cellW, cellH);
+               }
+            }
+          }
+        }
       }
     }
 

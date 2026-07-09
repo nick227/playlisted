@@ -273,7 +273,7 @@ export function FavoritesPage() {
 
   const chartsSection = (
     <Section title="" subtitle="" className="mt-2">
-      <div className="overflow-hidden rounded-xl border border-[var(--color-border)]">
+      <div className="overflow-hidden rounded-xl">
         <ChartsFilterBar
           tab={chartState.tab}
           range={chartState.range}

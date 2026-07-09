@@ -6,7 +6,6 @@ import { useFocusLanePlayback } from "@/hooks/useFocusLanePlayback";
 import { useRecordingSubtitleStyle } from "@/hooks/useRecordingSubtitleStyle";
 import { buildSyntheticSubtitleCues } from "@/lib/playbackFocus/buildSyntheticCues";
 import {
-  isTitleIntroFixture,
   resolveOverlayFixture,
   resolveSubtitleFixture,
   resolveTitleIntroFixture,

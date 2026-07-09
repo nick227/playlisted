@@ -79,6 +79,21 @@ export const ATMOSPHERE_FX_PRESETS: AtmosphereFxPresetDef[] = [
     mobileSafe: true,
     adminFeatured: true,
   },
+  {
+    id: "kaleidoscope",
+    name: "Kaleidoscope",
+    description: "Infinite fractal procedural kaleidoscope responding to track energy and moods.",
+    animationId: "atmosphereKaleidoscope",
+    author: "playlisted",
+    source: "platform",
+    status: "published",
+    category: "radial",
+    defaultIntensity: "normal",
+    performanceCost: 3,
+    reducedMotionSafe: false,
+    mobileSafe: true,
+    adminFeatured: true,
+  },
 ];
 
 const byId = new Map(ATMOSPHERE_FX_PRESETS.map((preset) => [preset.id, preset]));

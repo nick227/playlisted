@@ -6,7 +6,7 @@ export type PlaybackFocusFixture =
   | { type: "finalFallback"; key: string; title: string; artistName?: string | null; artist?: FocusArtist | null; recording?: FocusRecording | null }
   | { type: "none" };
 
-export type SyntheticSubtitleSource = "title-intro" | "artist-info" | "song-info" | "system";
+export type SyntheticSubtitleSource = "title-intro" | "system";
 
 export type SyntheticSubtitleCue = {
   id: string;

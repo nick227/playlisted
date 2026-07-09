@@ -13,10 +13,10 @@ import type {
 function findActiveSyntheticCue(
   cues: SyntheticSubtitleCue[],
   currentTimeMs: number,
-  source?: SyntheticSubtitleCue["source"],
+  source: SyntheticSubtitleCue["source"],
 ): SyntheticSubtitleCue | undefined {
   return cues
-    .filter((cue) => (source ? cue.source === source : true))
+    .filter((cue) => cue.source === source)
     .filter((cue) => currentTimeMs >= cue.startMs && currentTimeMs < cue.endMs)
     .sort((left, right) => right.priority - left.priority)[0];
 }
@@ -55,18 +55,6 @@ function resolveSyntheticFixture(input: {
     };
   }
 
-  const fallbackCue = findActiveSyntheticCue(syntheticCues, focusLaneElapsedMs);
-  if (fallbackCue?.text.trim() && fallbackCue.source !== "title-intro") {
-    return {
-      type: "fallbackSubtitle",
-      text: fallbackCue.text.trim(),
-      key: fallbackCue.id,
-      source: fallbackCue.source,
-      artist: artist,
-      recording: recording,
-    };
-  }
-
   return null;
 }
 
@@ -82,9 +70,6 @@ export function resolveSubtitleFixture(input: ResolvePlaybackFocusInput): Playba
     focusState,
     subtitlesEnabled,
     isPlaying,
-    syntheticCues,
-    artist,
-    recording,
   } = input;
 
   if (!canShowFocusLane(focusState) || !isPlaying) {
@@ -101,15 +86,6 @@ export function resolveSubtitleFixture(input: ResolvePlaybackFocusInput): Playba
   }
 
   if (!(subtitlesEnabled && subtitleReady && subtitleSegments?.length)) {
-    const synthetic = resolveSyntheticFixture({
-      focusLaneElapsedMs,
-      syntheticCues,
-      artist,
-      recording,
-    });
-    if (synthetic && !isTitleIntroFixture(synthetic)) {
-      return synthetic;
-    }
     return { type: "none" };
   }
 
@@ -120,15 +96,6 @@ export function resolveSubtitleFixture(input: ResolvePlaybackFocusInput): Playba
     playbackFocusTiming.subtitleFlow.minGapForArtistVisualMs / 1000,
   );
   if (!flowSegment) {
-    const synthetic = resolveSyntheticFixture({
-      focusLaneElapsedMs,
-      syntheticCues,
-      artist,
-      recording,
-    });
-    if (synthetic && !isTitleIntroFixture(synthetic)) {
-      return synthetic;
-    }
     return { type: "none" };
   }
 
@@ -177,17 +144,11 @@ export function resolveTitleIntroFixture(input: ResolvePlaybackFocusInput): Play
  * Independent of lyric subtitles except during title-intro exclusivity above.
  */
 export function resolveOverlayFixture(input: ResolvePlaybackFocusInput): PlaybackFocusFixture {
-  const { currentTimeMs, syntheticCues, artist, recording, focusState, isPlaying } = input;
+  const { artist, recording, focusState, isPlaying } = input;
 
   if (!canShowFocusLane(focusState) || !isPlaying) {
     return { type: "none" };
   }
-
-  const focusLaneElapsedMs = getFocusLaneElapsedMs(
-    currentTimeMs,
-    focusState.bodyFadedAtTrackMs,
-  );
-
 
   const title = recording?.title?.trim();
   if (title) {

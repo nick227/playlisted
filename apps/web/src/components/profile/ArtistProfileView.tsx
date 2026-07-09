@@ -117,7 +117,7 @@ export function ArtistProfileView({
       endLabel="artists"
       isRefreshing={isRefreshing}
     >
-      <div className="mx-auto w-full min-w-0 max-w-3xl overflow-x-clip bg-[var(--color-canvas)]/80 shadow-[0_0_20px_rgba(0,0,0,0.5)]  pb-4">
+      <div className="mx-auto w-full min-w-0 max-w-3xl overflow-x-clip bg-[var(--color-canvas)]/80 pb-4">
         <div className="px-4 py-2">
           <BrowseBreadcrumbs crumbs={browseCrumbs} />
         </div>

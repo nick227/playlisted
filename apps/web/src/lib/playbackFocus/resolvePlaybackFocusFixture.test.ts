@@ -28,6 +28,7 @@ const baseInput: ResolvePlaybackFocusInput = {
     playFocusActive: true,
     hasBodyFaded: true,
     bodyFadedAtTrackMs: 0,
+    titleIntroStartedAtMs: 0,
   },
   subtitlesEnabled: true,
   isPlaying: true,
@@ -51,6 +52,7 @@ describe("resolvePlaybackFocusFixture", () => {
           playFocusActive: true,
           hasBodyFaded: false,
           bodyFadedAtTrackMs: null,
+          titleIntroStartedAtMs: null,
         },
       }),
     ).toEqual({ type: "none" });

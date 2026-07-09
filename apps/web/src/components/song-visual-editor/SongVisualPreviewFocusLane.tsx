@@ -114,6 +114,7 @@ export function SongVisualPreviewFocusLane({
         playFocusActive: canRenderTextOverlay,
         hasBodyFaded: canRenderTextOverlay,
         bodyFadedAtTrackMs: canRenderTextOverlay ? 0 : null,
+        titleIntroStartedAtMs: canRenderTextOverlay ? 0 : null,
       },
       subtitlesEnabled,
       isPlaying: canRenderTextOverlay,

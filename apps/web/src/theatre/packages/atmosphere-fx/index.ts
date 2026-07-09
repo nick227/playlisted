@@ -5,6 +5,7 @@ import {
   atmosphereGlowFactory,
   atmosphereRadialFactory,
   atmosphereVignetteFactory,
+  atmosphereKaleidoscopeFactory,
 } from "./AtmosphereFxScenes";
 import { atmosphereFxManifest } from "./manifest";
 
@@ -57,6 +58,15 @@ export const atmosphereFxPackage: AnimationPackage = {
       factory: atmosphereColorWashFactory,
       visualType: "canvas",
       mood: "calm",
+      role: "overlay",
+      weight: 0,
+    },
+    {
+      id: "atmosphereKaleidoscope",
+      label: "Atmosphere Kaleidoscope",
+      factory: atmosphereKaleidoscopeFactory,
+      visualType: "canvas",
+      mood: "dynamic",
       role: "overlay",
       weight: 0,
     },

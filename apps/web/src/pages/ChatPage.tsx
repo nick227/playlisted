@@ -93,7 +93,7 @@ export function ChatPage() {
         ref={chatScrollRef}
         className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain"
       >
-        <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col justify-end px-4 py-4 md:px-6 bg-[var(--color-canvas)]/80 shadow-[0_0_20px_rgba(0,0,0,0.5)] ">
+        <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col justify-end px-4 py-4 md:px-6 bg-[var(--color-canvas)]/80">
           {chatMessages.length === 0 ? (
             <p className="pb-2 text-center text-sm text-[var(--color-text-subtle)]">
               No messages yet — say hi!
