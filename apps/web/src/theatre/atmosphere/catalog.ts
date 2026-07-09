@@ -53,7 +53,7 @@ export const ATMOSPHERE_FX_PRESETS: AtmosphereFxPresetDef[] = [
   {
     id: "radial",
     name: "Multi-Shape",
-    description: "Procedural laser/digital multi-shape field — infinite geometric permutations, music-driven morph, color wash/pop/scramble.",
+    description: "Infinite fractal patterns — Julia orbits, IFS dust, phyllotaxis, trees, mandalas; 100 size = full screen.",
     animationId: "atmosphereRadial",
     author: "playlisted",
     source: "platform",
