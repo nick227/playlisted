@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent, type RefObject, type SyntheticEvent } from "react";
 import { useLocation } from "react-router-dom";
 
-import { isTheatreSwipeSuppressed } from "@/lib/browseNavigation/swipeGesture";
+import { isTheatreSwipeSuppressed } from "@/lib/gestures/swipeGesture";
 import { isBrowseSwipeNavigation } from "@/lib/browseNavigation/types";
 
 import { getPlaybackFocusBodyFadeSuppressed } from "@/lib/playbackFocusBodyFade";

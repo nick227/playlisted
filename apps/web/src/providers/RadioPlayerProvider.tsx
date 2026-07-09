@@ -31,6 +31,7 @@ interface RadioPlayerContextValue {
   volume: number;
   setVolume: (volume: number) => void;
   togglePlayback: () => Promise<void>;
+  skipRadioTrack: (direction?: "next" | "prev") => void;
   playStation: (slug: string | null) => void;
   pauseRadio: () => void;
   registerRadioUi: () => void;
@@ -47,7 +48,19 @@ interface RadioPlayerContextValue {
   setActiveStationSlug: (slug: string | null) => void;
 }
 
+type RadioStation = Awaited<ReturnType<typeof api.radio.get>>;
+type RadioNowPlaying = NonNullable<RadioStation["nowPlaying"]>;
+type RadioRecording = RadioStation["upNext"][number];
+
 const RadioPlayerContext = createContext<RadioPlayerContextValue | null>(null);
+
+function toSkippedNowPlaying(track: RadioRecording): RadioNowPlaying {
+  return {
+    ...track,
+    startedAt: new Date().toISOString(),
+    elapsedSeconds: 0,
+  };
+}
 
 export function RadioPlayerProvider({ children }: { children: ReactNode }) {
   const {
@@ -71,6 +84,7 @@ export function RadioPlayerProvider({ children }: { children: ReactNode }) {
   const [chatMounted, setChatMounted] = useState(false);
   const [activeStationSlug, setActiveStationSlug] = useState<string | null>(null);
   const [requestedStationSlug, setRequestedStationSlug] = useState<string | null | undefined>(undefined);
+  const [localSkipNowPlaying, setLocalSkipNowPlaying] = useState<RadioNowPlaying | null>(null);
 
   const listenerId = useMemo(() => {
     if (!listenerIdRef.current) listenerIdRef.current = getListenerId();
@@ -90,7 +104,8 @@ export function RadioPlayerProvider({ children }: { children: ReactNode }) {
   const refetchRadio = radioQuery.refetch;
 
   const station = radioQuery.data;
-  const nowPlaying = station?.nowPlaying;
+  const stationNowPlaying = station?.nowPlaying;
+  const nowPlaying = localSkipNowPlaying ?? stationNowPlaying;
   const isLive = station?.status === "LIVE" && Boolean(nowPlaying);
   const radioArtworkUrl = nowPlaying?.artworkUrl ?? null;
 
@@ -122,6 +137,7 @@ export function RadioPlayerProvider({ children }: { children: ReactNode }) {
   const pauseRadio = useCallback(() => {
     clearTransitionRetry();
     setRequestedStationSlug(undefined);
+    setLocalSkipNowPlaying(null);
     if (!siteControlledRef.current) {
       audioRef.current?.pause();
     }
@@ -180,7 +196,7 @@ export function RadioPlayerProvider({ children }: { children: ReactNode }) {
   ]);
 
   const syncAndPlayRadio = useCallback(
-    async (track: NonNullable<typeof nowPlaying>) => {
+    async (track: RadioNowPlaying) => {
       if (siteControlledRef.current) return false;
       const audio = audioRef.current;
       if (!audio || !track.audioUrl) return false;
@@ -220,6 +236,7 @@ export function RadioPlayerProvider({ children }: { children: ReactNode }) {
   const scheduleTransitionRefetch = useCallback(
     (attempt = 0) => {
       clearTransitionRetry();
+      setLocalSkipNowPlaying(null);
       transitionRetryTimerRef.current = window.setTimeout(() => {
         void refetchRadio().then(async ({ data }) => {
           const nextTrack = data?.status === "LIVE" ? data.nowPlaying : null;
@@ -252,7 +269,8 @@ export function RadioPlayerProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!playing) return;
-    if (!isLive || !nowPlaying?.audioUrl) {
+    if (localSkipNowPlaying) return;
+    if (!stationNowPlaying?.audioUrl || station?.status !== "LIVE") {
       clearTransitionRetry();
       audioRef.current?.pause();
       setPlaying(false);
@@ -262,19 +280,20 @@ export function RadioPlayerProvider({ children }: { children: ReactNode }) {
     clearTransitionRetry();
     if (
       audioRef.current?.ended &&
-      audioRef.current.src === getAudioHref(nowPlaying.audioUrl) &&
-      isRadioElapsedAtEnd(nowPlaying.elapsedSeconds, nowPlaying.durationSeconds)
+      audioRef.current.src === getAudioHref(stationNowPlaying.audioUrl) &&
+      isRadioElapsedAtEnd(stationNowPlaying.elapsedSeconds, stationNowPlaying.durationSeconds)
     ) {
       scheduleTransitionRefetch();
       return;
     }
-    void syncAndPlayRadio(nowPlaying);
+    void syncAndPlayRadio(stationNowPlaying);
   }, [
     clearTransitionRetry,
-    isLive,
-    nowPlaying,
+    localSkipNowPlaying,
     playing,
     scheduleTransitionRefetch,
+    station?.status,
+    stationNowPlaying,
     syncAndPlayRadio,
     unbindTheatreFromRadio,
   ]);
@@ -312,10 +331,43 @@ export function RadioPlayerProvider({ children }: { children: ReactNode }) {
     }
   }, [nowPlaying, pauseRadio, playing, syncAndPlayRadio, yieldPlaybackToRadio]);
 
+  const skipRadioTrack = useCallback((direction: "next" | "prev" = "next") => {
+    if (!stationNowPlaying || !station?.upNext?.length) return;
+
+    const visibleQueue = [stationNowPlaying, ...station.upNext];
+    const currentId = localSkipNowPlaying?.id ?? stationNowPlaying.id;
+    const currentIndex = Math.max(0, visibleQueue.findIndex((track) => track.id === currentId));
+    const offset = direction === "prev" ? -1 : 1;
+    const nextIndex = (currentIndex + offset + visibleQueue.length) % visibleQueue.length;
+    const nextTrack = visibleQueue[nextIndex];
+    if (!nextTrack?.audioUrl) return;
+
+    clearTransitionRetry();
+    const skippedNowPlaying = toSkippedNowPlaying(nextTrack);
+    setLocalSkipNowPlaying(skippedNowPlaying);
+    siteControlledRef.current = false;
+    suppressNextSitePauseRef.current = true;
+    yieldPlaybackToRadio();
+    void syncAndPlayRadio(skippedNowPlaying)
+      .finally(() => {
+        window.setTimeout(() => {
+          suppressNextSitePauseRef.current = false;
+        }, 0);
+      });
+  }, [
+    clearTransitionRetry,
+    localSkipNowPlaying?.id,
+    station,
+    stationNowPlaying,
+    syncAndPlayRadio,
+    yieldPlaybackToRadio,
+  ]);
+
   const playStation = useCallback((slug: string | null) => {
     siteControlledRef.current = false;
     suppressNextSitePauseRef.current = true;
     clearTransitionRetry();
+    setLocalSkipNowPlaying(null);
     setActiveStationSlug(slug);
     setRequestedStationSlug(slug);
     void yieldPlaybackToRadio();
@@ -377,6 +429,7 @@ export function RadioPlayerProvider({ children }: { children: ReactNode }) {
       volume,
       setVolume,
       togglePlayback,
+      skipRadioTrack,
       playStation,
       pauseRadio,
       registerRadioUi,
@@ -392,7 +445,7 @@ export function RadioPlayerProvider({ children }: { children: ReactNode }) {
       activeStationSlug,
       setActiveStationSlug,
     }),
-    [playing, volume, setVolume, togglePlayback, playStation, pauseRadio, registerRadioUi, unregisterRadioUi, uiMounted, registerChatUi, unregisterChatUi, listenerId, radioQuery, station, nowPlaying, isLive, activeStationSlug],
+    [playing, volume, setVolume, togglePlayback, skipRadioTrack, playStation, pauseRadio, registerRadioUi, unregisterRadioUi, uiMounted, registerChatUi, unregisterChatUi, listenerId, radioQuery, station, nowPlaying, isLive, activeStationSlug],
   );
 
   return (

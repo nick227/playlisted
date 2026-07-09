@@ -170,6 +170,7 @@ export function BottomPlayer({ collapsedByFocusLane = false }: BottomPlayerProps
   return createPortal(
     <footer
       data-bottom-player
+      data-gesture-exclude
       className={`${playerFooterClass}${playerBarExiting ? " bottom-player--exit pointer-events-none" : ""}${
         collapsedByFocusLane ? " bottom-player--focus-collapsed" : ""
       }`}

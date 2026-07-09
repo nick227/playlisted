@@ -120,7 +120,9 @@ interface AudioPlayerContextValue {
   ) => boolean;
   togglePlay: () => void;
   playNext: () => void;
+  skipNextTrack: () => void;
   playPrevious: () => void;
+  playPreviousTrack: () => void;
   skipToUpNext: () => void;
   appendToQueue: (track: QueueTrack) => void;
   appendUpNextSegment: (segment: UpNextSegment) => void;
@@ -738,6 +740,41 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     void advanceProgram();
   }, [loadTrack, advanceProgram, shiftOriginToTrack, completeAutoplaySegmentIfNeeded]);
 
+  const skipNextTrack = useCallback(() => {
+    const end = segmentEndIndexRef.current;
+    const q = queueRef.current;
+    const idx = queueIndexRef.current;
+
+    if (shuffleRef.current && end > 0) {
+      let next: number;
+      do {
+        next = Math.floor(Math.random() * (end + 1));
+      } while (next === idx && end > 0);
+      setQueueIndex(next);
+      shiftOriginToTrack(q[next].id);
+      loadTrack(q[next]);
+      return;
+    }
+
+    if (idx < end) {
+      const next = idx + 1;
+      setQueueIndex(next);
+      shiftOriginToTrack(q[next].id);
+      loadTrack(q[next]);
+      return;
+    }
+
+    if (repeatRef.current === "all" && q.length > 0) {
+      setQueueIndex(0);
+      shiftOriginToTrack(q[0].id);
+      loadTrack(q[0]);
+      return;
+    }
+
+    completeAutoplaySegmentIfNeeded();
+    void advanceProgram();
+  }, [loadTrack, advanceProgram, shiftOriginToTrack, completeAutoplaySegmentIfNeeded]);
+
   const skipToUpNext = useCallback(() => {
     if (upNextPipelineRef.current.length === 0 && !autoplayRef.current) return;
     if (advancingRef.current) return;
@@ -758,6 +795,15 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       audio.currentTime = 0;
       return;
     }
+    if (queueIndex > 0) {
+      const prev = queueIndex - 1;
+      setQueueIndex(prev);
+      shiftOriginToTrack(queue[prev].id);
+      loadTrack(queue[prev]);
+    }
+  }, [queue, queueIndex, loadTrack, shiftOriginToTrack]);
+
+  const playPreviousTrack = useCallback(() => {
     if (queueIndex > 0) {
       const prev = queueIndex - 1;
       setQueueIndex(prev);
@@ -1053,7 +1099,9 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       adoptExternalPlayback,
       togglePlay,
       playNext,
+      skipNextTrack,
       playPrevious,
+      playPreviousTrack,
       skipToUpNext,
       appendToQueue,
       appendUpNextSegment,
@@ -1096,7 +1144,9 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       adoptExternalPlayback,
       togglePlay,
       playNext,
+      skipNextTrack,
       playPrevious,
+      playPreviousTrack,
       skipToUpNext,
       appendToQueue,
       appendUpNextSegment,

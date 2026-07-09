@@ -1,13 +1,11 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 import { useRadioPlayer } from "@/providers/RadioPlayerProvider";
 
-import { useTheatreTrackGestures } from "@/hooks/useTheatreTrackGestures";
-import { BROWSE_SWIPE_NAVIGATION_STATE } from "@/lib/browseNavigation/types";
+import type { SwipeDirection } from "@/lib/browseNavigation/types";
 import { useSyncPlaybackBodyFocusHidden } from "@/lib/playbackBodyFocus";
-import { resolveRadioSwipeTarget } from "@/lib/radio/resolveRadioSwipeTarget";
 import { buildMainContentClassName, isRadioShellActive } from "./appShellLayout";
 import { BackgroundLayer } from "./BackgroundLayer";
 import { BottomPlayer } from "./BottomPlayer";
@@ -18,9 +16,9 @@ import { useResumePlaybackAfterNav } from "./hooks/useResumePlaybackAfterNav";
 import { useRouteScrollReset } from "./hooks/useRouteScrollReset";
 import { PlaybackFocusLane } from "./PlaybackFocusLane/PlaybackFocusLane";
 import { PlaybackFocusLayer } from "./PlaybackFocusLayer";
-import { PlaybackFocusRevealShield } from "./PlaybackFocusRevealShield";
 import { QueuePanel } from "./QueuePanel";
 import { Sidebar } from "./Sidebar";
+import { TheatreGestureLayer } from "./TheatreGestureLayer";
 import { TopBar } from "./TopBar";
 
 interface AppShellProps {
@@ -36,7 +34,6 @@ export function AppShell({ children }: AppShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sitePlayerFocusCollapsed, setSitePlayerFocusCollapsed] = useState(false);
   const location = useLocation();
-  const navigate = useNavigate();
 
   // --- Playback source -------------------------------------------------------
   const {
@@ -48,8 +45,8 @@ export function AppShell({ children }: AppShellProps) {
     radioNowPlaying,
   } = usePlaybackFocusTrack();
 
-  const { playerShellActive, currentTrack, togglePlay, playNext, playPrevious } = useAudioPlayer();
-  const { radioUiMounted, togglePlayback: toggleRadioPlayback, activeStationSlug } = useRadioPlayer();
+  const { playerShellActive, currentTrack, togglePlay, skipNextTrack, playPreviousTrack } = useAudioPlayer();
+  const { radioUiMounted, togglePlayback: toggleRadioPlayback, skipRadioTrack } = useRadioPlayer();
 
   // --- Cinematic body fade + focus lane --------------------------------------
   const playbackFocus = usePlaybackFocusBody({
@@ -64,25 +61,18 @@ export function AppShell({ children }: AppShellProps) {
 
   useSyncPlaybackBodyFocusHidden(playbackFocus.bodyFocusMode);
 
-  // Radio has no next/previous queue to advance through, so a swipe instead drops
-  // the listener onto a real page for whatever's currently playing.
-  const isRadioFocus = focusTrack?.sourceLabel === "Radio";
-  const handleRadioSwipe = useCallback(() => {
-    if (!radioNowPlaying) return;
-    // Same swipe-navigation marker the browse shell uses: skips the scroll-to-top
-    // reset and, with preserveTheatreFocus, keeps the theatre overlay faded through
-    // the route change instead of revealing chrome and re-fading a moment later.
-    navigate(resolveRadioSwipeTarget(radioNowPlaying, activeStationSlug), {
-      state: { intent: BROWSE_SWIPE_NAVIGATION_STATE, preserveTheatreFocus: true },
-    });
-  }, [activeStationSlug, navigate, radioNowPlaying]);
-
-  useTheatreTrackGestures({
-    enabled: playbackFocus.bodyFocusMode,
-    onTrackNext: isRadioFocus ? handleRadioSwipe : playNext,
-    onTrackPrevious: isRadioFocus ? handleRadioSwipe : playPrevious,
-    onReveal: playbackFocus.revealPage,
-  });
+  const isRadioFocus = focusTrack?.source === "radio";
+  const skipPlayback = useCallback(
+    (direction: SwipeDirection) => {
+      if (isRadioFocus) {
+        skipRadioTrack(direction);
+        return;
+      }
+      if (direction === "next") skipNextTrack();
+      else playPreviousTrack();
+    },
+    [isRadioFocus, playPreviousTrack, skipNextTrack, skipRadioTrack],
+  );
 
   // --- Global shortcuts + navigation side effects ----------------------------
   useResumePlaybackAfterNav(location.pathname, radioPlaying);
@@ -137,10 +127,11 @@ export function AppShell({ children }: AppShellProps) {
         </main>
       </div>
 
-      <PlaybackFocusRevealShield
+      <TheatreGestureLayer
         visible={playbackFocus.revealShieldVisible}
         withPlayer={shellHasPlayer}
-        {...playbackFocus.revealShieldHandlers}
+        onSkip={skipPlayback}
+        onReveal={playbackFocus.revealPage}
       />
 
       <PlaybackFocusLayer

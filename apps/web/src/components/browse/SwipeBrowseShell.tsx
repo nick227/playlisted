@@ -1,8 +1,6 @@
 import {
   useCallback,
-  useRef,
   useState,
-  type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -11,45 +9,20 @@ import { useNavigate } from "react-router-dom";
 import { neighborAt } from "@/lib/browseNavigation/neighborAt";
 import { prefetchBrowseTarget } from "@/lib/browseNavigation/prefetchBrowseTarget";
 import {
-  SWIPE_AXIS_THRESHOLD_PX,
   SWIPE_BOUNCE_MAX_PX,
-  SWIPE_CLICK_SUPPRESS_MS,
   SWIPE_COMMIT_THRESHOLD_PX,
   SWIPE_PREFETCH_RATIO,
-  SWIPE_VELOCITY_THRESHOLD,
-  isSwipeExcludedTarget,
+  SWIPE_VELOCITY_THRESHOLD_PX_PER_MS,
+  isGestureExcludedTarget,
   rubberBandOffset,
-} from "@/lib/browseNavigation/swipeGesture";
+} from "@/lib/gestures/swipeGesture";
+import { useSwipeGesture } from "@/hooks/useSwipeGesture";
 import type { BrowseNeighborsResult, SwipeDirection } from "@/lib/browseNavigation/types";
 import { BROWSE_SWIPE_NAVIGATION_STATE } from "@/lib/browseNavigation/types";
 import { usePlaybackBodyFocusHidden } from "@/lib/playbackBodyFocus";
 import { useAuth } from "@/providers/AuthProvider";
 
 import { SwipeLoadingEdge } from "./SwipeLoadingEdge";
-
-type DragState = {
-  active: boolean;
-  pointerId: number;
-  startX: number;
-  startY: number;
-  lastX: number;
-  lastTime: number;
-  velocityX: number;
-  moved: boolean;
-  direction: SwipeDirection | null;
-};
-
-const IDLE_DRAG: DragState = {
-  active: false,
-  pointerId: -1,
-  startX: 0,
-  startY: 0,
-  lastX: 0,
-  lastTime: 0,
-  velocityX: 0,
-  moved: false,
-  direction: null,
-};
 
 type SwipeBrowseShellProps = {
   neighborsKey: string;
@@ -72,15 +45,11 @@ export function SwipeBrowseShell({
   const bodyFocusHidden = usePlaybackBodyFocusHidden();
   const disabled = bodyFocusHidden;
 
-  const shellRef = useRef<HTMLDivElement | null>(null);
-  const dragRef = useRef<DragState>({ ...IDLE_DRAG });
-  const clickSuppressionUntilRef = useRef(0);
-  const prefetchedDirectionRef = useRef<SwipeDirection | null>(null);
-
   const [pullOffset, setPullOffset] = useState(0);
   const [edgeMessage, setEdgeMessage] = useState<string | null>(null);
   const [previewLabel, setPreviewLabel] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [prefetchedDirection, setPrefetchedDirection] = useState<SwipeDirection | null>(null);
 
   const neighborsQuery = useQuery({
     queryKey: ["browse-neighbors", neighborsKey],
@@ -91,7 +60,7 @@ export function SwipeBrowseShell({
   const resetPull = useCallback(() => {
     setPullOffset(0);
     setPreviewLabel(null);
-    prefetchedDirectionRef.current = null;
+    setPrefetchedDirection(null);
   }, []);
 
   const showEdgeMessage = useCallback((message: string) => {
@@ -120,7 +89,7 @@ export function SwipeBrowseShell({
 
   const maybePrefetch = useCallback(
     (direction: SwipeDirection, pullDistance: number) => {
-      if (prefetchedDirectionRef.current === direction) return;
+      if (prefetchedDirection === direction) return;
       if (pullDistance < SWIPE_COMMIT_THRESHOLD_PX * SWIPE_PREFETCH_RATIO) return;
 
       const result = neighborsQuery.data;
@@ -129,67 +98,15 @@ export function SwipeBrowseShell({
       const target = neighborAt(result, direction);
       if (!target) return;
 
-      prefetchedDirectionRef.current = direction;
+      setPrefetchedDirection(direction);
       setPreviewLabel(target.label);
       void prefetchBrowseTarget(queryClient, target, accessToken);
     },
-    [accessToken, neighborsQuery.data, queryClient],
+    [accessToken, neighborsQuery.data, prefetchedDirection, queryClient],
   );
 
-  const handlePointerDown = useCallback(
-    (event: ReactPointerEvent<HTMLDivElement>) => {
-      // Clear any suppression left over from a prior swipe before we decide whether
-      // to track this gesture — otherwise a tap on a link shortly after an unrelated
-      // swipe elsewhere on the page (excluded targets return below) inherits the
-      // stale suppression window and its click gets silently swallowed.
-      clickSuppressionUntilRef.current = 0;
-
-      if (disabled) return;
-      if (event.pointerType === "mouse" && event.button !== 0) return;
-      if (isSwipeExcludedTarget(event.target)) return;
-
-      const now = performance.now();
-      dragRef.current = {
-        active: true,
-        pointerId: event.pointerId,
-        startX: event.clientX,
-        startY: event.clientY,
-        lastX: event.clientX,
-        lastTime: now,
-        velocityX: 0,
-        moved: false,
-        direction: null,
-      };
-    },
-    [disabled],
-  );
-
-  const handlePointerMove = useCallback(
-    (event: ReactPointerEvent<HTMLDivElement>) => {
-      const drag = dragRef.current;
-      if (!drag.active || drag.pointerId !== event.pointerId || disabled) return;
-
-      const deltaX = event.clientX - drag.startX;
-      const deltaY = event.clientY - drag.startY;
-
-      if (!drag.moved) {
-        if (Math.abs(deltaX) < SWIPE_AXIS_THRESHOLD_PX) return;
-        if (Math.abs(deltaX) <= Math.abs(deltaY)) return;
-        drag.moved = true;
-        drag.direction = deltaX < 0 ? "next" : "prev";
-        setIsDragging(true);
-        shellRef.current?.setPointerCapture(event.pointerId);
-      }
-
-      const now = performance.now();
-      const elapsed = Math.max(1, now - drag.lastTime);
-      drag.velocityX = (event.clientX - drag.lastX) / elapsed;
-      drag.lastX = event.clientX;
-      drag.lastTime = now;
-
-      const direction = drag.direction;
-      if (!direction) return;
-
+  const updatePull = useCallback(
+    (direction: SwipeDirection, deltaX: number) => {
       const result = neighborsQuery.data;
       const hasTarget = result ? neighborAt(result, direction) !== null : false;
       const pullDistance = direction === "next" ? -deltaX : deltaX;
@@ -199,70 +116,58 @@ export function SwipeBrowseShell({
 
       setPullOffset(offset);
       maybePrefetch(direction, pullDistance);
-      event.preventDefault();
     },
-    [disabled, maybePrefetch, neighborsQuery.data],
+    [maybePrefetch, neighborsQuery.data],
   );
 
-  const finishPointer = useCallback(
-    (event: ReactPointerEvent<HTMLDivElement>) => {
-      const drag = dragRef.current;
-      if (!drag.active || drag.pointerId !== event.pointerId) return;
-
-      if (shellRef.current?.hasPointerCapture(event.pointerId)) {
-        shellRef.current.releasePointerCapture(event.pointerId);
-      }
-
-      const direction = drag.direction;
-      const deltaX = event.clientX - drag.startX;
-      const pullDistance = direction === "next" ? -deltaX : deltaX;
-      const velocity = direction === "next" ? -drag.velocityX : drag.velocityX;
-      const committed =
-        drag.moved &&
-        direction !== null &&
-        (pullDistance >= SWIPE_COMMIT_THRESHOLD_PX || velocity >= SWIPE_VELOCITY_THRESHOLD);
-
-      dragRef.current = { ...IDLE_DRAG };
+  const handleSwipeFinish = useCallback(
+    ({ axis, deltaX, committed }: { axis: "horizontal" | "vertical" | null; deltaX: number; committed: boolean }) => {
       setIsDragging(false);
 
-      if (drag.moved) {
-        clickSuppressionUntilRef.current = performance.now() + SWIPE_CLICK_SUPPRESS_MS;
-      }
+      if (committed || axis !== "horizontal") return;
 
-      if (committed && direction) {
-        void commitNavigation(direction);
-        return;
-      }
-
-      if (drag.moved && direction) {
-        const result = neighborsQuery.data;
-        if (result && neighborAt(result, direction) === null && pullDistance > SWIPE_AXIS_THRESHOLD_PX) {
-          showEdgeMessage(`No more ${endLabel}`);
-        }
+      const direction = deltaX < 0 ? "next" : "prev";
+      const pullDistance = direction === "next" ? -deltaX : deltaX;
+      const result = neighborsQuery.data;
+      if (result && neighborAt(result, direction) === null && pullDistance > 0) {
+        showEdgeMessage(`No more ${endLabel}`);
       }
 
       resetPull();
     },
-    [commitNavigation, endLabel, neighborsQuery.data, resetPull, showEdgeMessage],
+    [endLabel, neighborsQuery.data, resetPull, showEdgeMessage],
   );
 
-  const suppressClickAfterSwipe = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
-    if (performance.now() > clickSuppressionUntilRef.current) return;
-    event.preventDefault();
-    event.stopPropagation();
-    clickSuppressionUntilRef.current = 0;
-  }, []);
+  const gestureHandlers = useSwipeGesture({
+    enabled: !disabled,
+    axis: "horizontal",
+    horizontalCommitPx: SWIPE_COMMIT_THRESHOLD_PX,
+    velocityThreshold: SWIPE_VELOCITY_THRESHOLD_PX_PER_MS,
+    isExcludedTarget: isGestureExcludedTarget,
+    onIntentStart: () => setIsDragging(true),
+    onDrag: info => {
+      if (info.axis !== "horizontal") return;
+      updatePull(info.horizontalDirection, info.deltaX);
+    },
+    onHorizontalSwipe: direction => {
+      void commitNavigation(direction);
+    },
+    onFinish: handleSwipeFinish,
+    onCancel: () => {
+      setIsDragging(false);
+      resetPull();
+    },
+  });
 
   return (
     <div
-      ref={shellRef}
       className={`relative touch-pan-y select-none ${isDragging ? "cursor-grabbing" : ""}`}
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={finishPointer}
-      onPointerCancel={finishPointer}
-      onLostPointerCapture={finishPointer}
-      onClickCapture={suppressClickAfterSwipe}
+      onPointerDown={gestureHandlers.onPointerDown}
+      onPointerMove={gestureHandlers.onPointerMove}
+      onPointerUp={gestureHandlers.onPointerUp}
+      onPointerCancel={gestureHandlers.onPointerCancel}
+      onLostPointerCapture={gestureHandlers.onLostPointerCapture}
+      onClickCapture={gestureHandlers.onClick}
     >
       <SwipeLoadingEdge
         direction={pullOffset < 0 ? "left" : "right"}

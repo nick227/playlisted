@@ -152,7 +152,7 @@ export function TrackEditActionMenu({
   }
 
   return (
-    <div ref={rootRef} className="relative">
+    <div ref={rootRef} data-gesture-exclude className="relative">
       <button
         type="button"
         aria-label={`Track actions for ${title}`}

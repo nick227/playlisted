@@ -56,7 +56,7 @@ export function MediaActionMenu({
   }
 
   return (
-    <div ref={rootRef} className={`relative ${className}`}>
+    <div ref={rootRef} data-gesture-exclude className={`relative ${className}`}>
       <button
         type="button"
         aria-label={ariaLabel}

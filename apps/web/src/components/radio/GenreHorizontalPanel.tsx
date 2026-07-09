@@ -297,6 +297,7 @@ export function GenreHorizontalPanel({
         </button>
         <div
           ref={scrollerRef}
+          data-gesture-exclude
           onWheel={handleWheel}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}

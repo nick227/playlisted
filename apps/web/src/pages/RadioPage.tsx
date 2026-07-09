@@ -9,7 +9,13 @@ import { VerticalVolumeControl } from "@/components/playback/VerticalVolumeContr
 import { GenreHorizontalPanel } from "@/components/radio/GenreHorizontalPanel";
 import { PlaybackBars } from "@/features/playback-indicators/PlaybackBars";
 import { useLibraryGenres } from "@/hooks/useLibrary";
+import { useSwipeGesture } from "@/hooks/useSwipeGesture";
 import { authedApi } from "@/lib/authedApi";
+import {
+  SWIPE_COMMIT_THRESHOLD_PX,
+  SWIPE_VELOCITY_THRESHOLD_PX_PER_MS,
+  isGestureExcludedTarget,
+} from "@/lib/gestures/swipeGesture";
 import { coverFallback, playlistPath, profilePath, studioCollectionEditPath } from "@/lib/routes";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { useAuth } from "@/providers/AuthProvider";
@@ -122,6 +128,10 @@ export function RadioPage({ isEmbedded: _isEmbedded = false }: { isEmbedded?: bo
     () => (genreData?.data ?? []).filter((genre) => genre.songCount > 0),
     [genreData?.data],
   );
+  const radioStationSlugs = useMemo(
+    () => [null, ...genres.map((genre) => genre.slug)] as Array<string | null>,
+    [genres],
+  );
   const activeGenre = useMemo(
     () => genres.find((genre) => genre.slug === activeStationSlug) ?? null,
     [activeStationSlug, genres],
@@ -198,6 +208,20 @@ export function RadioPage({ isEmbedded: _isEmbedded = false }: { isEmbedded?: bo
     submissionCollectionMutation.mutate();
   }
 
+  const radioBodySwipeHandlers = useSwipeGesture({
+    enabled: radioStationSlugs.length > 1,
+    axis: "horizontal",
+    horizontalCommitPx: SWIPE_COMMIT_THRESHOLD_PX,
+    velocityThreshold: SWIPE_VELOCITY_THRESHOLD_PX_PER_MS,
+    isExcludedTarget: isGestureExcludedTarget,
+    onHorizontalSwipe: (direction) => {
+      const activeIndex = Math.max(0, radioStationSlugs.findIndex((slug) => slug === activeStationSlug));
+      const offset = direction === "next" ? 1 : -1;
+      const nextIndex = (activeIndex + offset + radioStationSlugs.length) % radioStationSlugs.length;
+      playStation(radioStationSlugs[nextIndex]);
+    },
+  });
+
   const pageHeight = "h-full max-h-full";
   const artworkClassName =
     "aspect-square max-h-full w-full max-w-full rounded-[1.4rem] border border-white/[0.08] bg-white/5 bg-cover bg-center shadow-[0_26px_80px_rgba(0,0,0,0.44)]";
@@ -207,7 +231,13 @@ export function RadioPage({ isEmbedded: _isEmbedded = false }: { isEmbedded?: bo
 
   return (
     <div
-      className={`relative isolate -mx-4 flex min-w-0 items-center justify-center overflow-x-hidden px-4 py-3 sm:-mx-6 sm:px-6 sm:py-6 lg:-mx-8 lg:px-8 ${pageHeight}`}
+      className={`relative isolate -mx-4 flex min-w-0 touch-pan-y select-none items-center justify-center overflow-x-hidden px-4 py-3 sm:-mx-6 sm:px-6 sm:py-6 lg:-mx-8 lg:px-8 ${pageHeight}`}
+      onPointerDown={radioBodySwipeHandlers.onPointerDown}
+      onPointerMove={radioBodySwipeHandlers.onPointerMove}
+      onPointerUp={radioBodySwipeHandlers.onPointerUp}
+      onPointerCancel={radioBodySwipeHandlers.onPointerCancel}
+      onLostPointerCapture={radioBodySwipeHandlers.onLostPointerCapture}
+      onClickCapture={radioBodySwipeHandlers.onClick}
     >
       <div className="mx-auto flex min-h-0 w-full min-w-0 max-w-full flex-col items-center justify-center gap-2 overflow-x-hidden rounded-lg bg-[var(--color-canvas)]/80 py-6 sm:gap-0 lg:px-12">
         {radioQuery.isError ? (

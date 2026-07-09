@@ -5,6 +5,7 @@ import { MinimizedSongPlayer } from "./PlaybackFocusLane/MinimizedSongPlayer";
 export type PlaybackFocusTrack = {
   id: string;
   title: string;
+  source: "site" | "radio";
   artworkUrl?: string | null;
   ownerName?: string | null;
   ownerUsername?: string | null;

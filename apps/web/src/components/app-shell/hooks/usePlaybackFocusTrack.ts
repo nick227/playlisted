@@ -48,6 +48,7 @@ export function usePlaybackFocusTrack() {
       return {
         id: radioNowPlaying.id,
         title: radioNowPlaying.title,
+        source: "radio",
         artworkUrl: radioNowPlaying.artworkUrl,
         ownerName: radioNowPlaying.uploader.displayName,
         ownerUsername: radioNowPlaying.uploader.username,
@@ -63,6 +64,7 @@ export function usePlaybackFocusTrack() {
       return {
         id: currentTrack.id,
         title: currentTrack.title,
+        source: "site",
         artworkUrl: currentTrack.artworkUrl,
         ownerName: currentTrack.ownerName,
         ownerUsername: currentTrack.ownerUsername ?? playbackContext.playlistOwnerUsername,
