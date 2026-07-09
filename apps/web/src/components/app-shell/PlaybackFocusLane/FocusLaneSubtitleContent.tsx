@@ -30,11 +30,23 @@ export function FocusLaneSubtitleContent({
   customSubtitleStyle,
   subtitleStyleId,
 }: FocusLaneSubtitleContentProps) {
-  if (fixture.type !== "subtitle") return null;
+  if (fixture.type === "fallbackSubtitle" && fixture.source === "title-intro") {
+    return (
+      <TitleIntroVisual
+        title={fixture.text}
+        artistName={fixture.artist?.artistName}
+        artist={fixture.artist}
+        recording={fixture.recording}
+      />
+    );
+  }
 
-  let style = customSubtitleStyle ? { ...customSubtitleStyle } : undefined;
+  if (fixture.type !== "subtitle" && fixture.type !== "fallbackSubtitle") return null;
+
+  let style: CSSProperties | undefined = customSubtitleStyle ? { ...customSubtitleStyle } : undefined;
   const preset = subtitleStyleId ? getSubtitleStylePreset(subtitleStyleId) : undefined;
-  if (preset?.dynamicSize && style) {
+  if (preset?.dynamicSize || fixture.type === "fallbackSubtitle") {
+    style = style || {};
     style.fontSize = computeDynamicFontSize(fixture.text);
     style.width = "100%";
     style.maxWidth = "100vw";
@@ -59,18 +71,6 @@ export function FocusLaneOverlayContent({
   withPlayer = true,
   playerCollapsed = false,
 }: FocusLaneOverlayContentProps) {
-  if (fixture.type === "fallbackSubtitle" && fixture.source === "title-intro") {
-    return (
-      <TitleIntroVisual
-        title={fixture.text}
-        artistName={fixture.artist?.artistName}
-        recording={fixture.recording}
-        withPlayer={withPlayer}
-        playerCollapsed={playerCollapsed}
-      />
-    );
-  }
-
   if (fixture.type === "fallbackSubtitle" || fixture.type === "finalFallback") {
     const artist = fixture.artist;
     const recording = fixture.recording;

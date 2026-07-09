@@ -16,7 +16,7 @@ export function LibraryBrowseLayout({
 }: LibraryBrowseLayoutProps) {
   return (
     <div className={`${layoutClass} flex flex-col`}>
-      <BrowseBreadcrumbs crumbs={crumbs} />ssss
+      <BrowseBreadcrumbs crumbs={crumbs} />
       <div className="min-w-0 flex-1">{children}</div>
     </div>
   );

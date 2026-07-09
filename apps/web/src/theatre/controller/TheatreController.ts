@@ -37,7 +37,7 @@ import { isObjectTheatrePreset } from '../packages/object-spinner-mover'
 import { USER_VIDEO_MEDIA_ID } from '../media/userMediaEngine'
 import { AtmosphereFxLayer } from '../atmosphere/AtmosphereFxLayer'
 import type { SongAtmosphereFx } from '../atmosphere/types'
-import { subscribeAtmosphereFxSettings } from '../atmosphere/atmosphereFxStore'
+import { getAtmosphereFxSettings, subscribeAtmosphereFxSettings } from '../atmosphere/atmosphereFxStore'
 
 export type TheatreRotationPolicy = {
   minSceneMs: number
@@ -110,7 +110,7 @@ class TheatreController extends EventTarget {
   public state = {
     active: false,
     canEnter: false,
-    /** User preference: top-bar toggle. When false, no theatre FX run. */
+    /** User preference: top-bar theatre scene toggle. Atmosphere FX is controlled separately. */
     fxEnabled: true,
     mode: null as TheatreMode | null,
     presetId: null as string | null,
@@ -125,8 +125,7 @@ class TheatreController extends EventTarget {
     this.rebindAudio()
     window.addEventListener('visibilitychange', this.onVisibilityChange)
     this.unsubAtmosphereSettings = subscribeAtmosphereFxSettings(() => {
-      if (!this.state.active || !this.overlay || !this.frameContext) return
-      void this.atmosphereLayer.sync(this.overlay, this.frameContext, this.state.fxEnabled)
+      void this.onAtmosphereSettingsChanged()
     })
   }
 
@@ -179,12 +178,38 @@ class TheatreController extends EventTarget {
     this.dispatchEvent(new Event('change'))
   }
 
+  private atmosphereFxRequested(): boolean {
+    return getAtmosphereFxSettings().mode !== 'off'
+  }
+
+  private runtimeRequested(): boolean {
+    return this.state.fxEnabled || this.atmosphereFxRequested()
+  }
+
+  private async onAtmosphereSettingsChanged() {
+    if (this.state.active && this.overlay && this.frameContext) {
+      const atmosphereActive = await this.atmosphereLayer.sync(this.overlay, this.frameContext)
+      if (!this.state.fxEnabled && !atmosphereActive) {
+        await this.exit({ rearmBackground: false })
+        return
+      }
+      this.dispatchEvent(new Event('change'))
+      return
+    }
+
+    if (this.state.canEnter && this.atmosphereFxRequested()) {
+      this.ensureBackgroundIfNeeded()
+    } else {
+      this.dispatchEvent(new Event('change'))
+    }
+  }
+
   /** Called by React whenever playback readiness changes. Single source of truth for canEnter. */
   public setCanEnter(canEnter: boolean) {
     const changed = this.state.canEnter !== canEnter
     if (changed) this.state.canEnter = canEnter
 
-    if (canEnter && this.state.fxEnabled) {
+    if (canEnter && this.runtimeRequested()) {
       this.ensureBackgroundIfNeeded()
     } else if (this.state.active && this.state.mode === 'background') {
       this.clearBackgroundEnterTimer()
@@ -196,8 +221,8 @@ class TheatreController extends EventTarget {
     if (changed) this.dispatchEvent(new Event('change'))
   }
 
-  /** Top-bar theatre toggle: enable/disable visual FX without exit→re-enter fighting. */
-  public setFxEnabled(enabled: boolean) {
+  /** Top-bar theatre toggle: enable/disable scene FX independently from Atmosphere FX. */
+  public async setFxEnabled(enabled: boolean) {
     if (this.state.fxEnabled === enabled) return
 
     this.state.fxEnabled = enabled
@@ -206,10 +231,20 @@ class TheatreController extends EventTarget {
     if (!enabled) {
       this.clearBackgroundEnterTimer()
       if (this.state.active) {
-        void this.exit({ rearmBackground: false })
+        await this.stopSceneFx()
+        const atmosphereActive = this.overlay && this.frameContext
+          ? await this.atmosphereLayer.sync(this.overlay, this.frameContext)
+          : false
+        if (!atmosphereActive) {
+          await this.exit({ rearmBackground: false })
+        }
       }
     } else if (this.state.canEnter) {
-      this.ensureBackgroundIfNeeded()
+      if (this.state.active && this.overlay && this.frameContext && !this.deck) {
+        await this.startSceneFx(this.overlay, this.frameContext, this.state.mode ?? 'background')
+      } else {
+        this.ensureBackgroundIfNeeded()
+      }
     }
 
     this.dispatchEvent(new Event('change'))
@@ -265,7 +300,11 @@ class TheatreController extends EventTarget {
   public setSongAtmosphereFx(song: SongAtmosphereFx | null) {
     this.atmosphereLayer.setSongOverride(song)
     if (this.state.active && this.overlay && this.frameContext) {
-      void this.atmosphereLayer.sync(this.overlay, this.frameContext, this.state.fxEnabled)
+      void this.atmosphereLayer.sync(this.overlay, this.frameContext).then((atmosphereActive) => {
+        if (!this.state.fxEnabled && !atmosphereActive) {
+          void this.exit({ rearmBackground: false })
+        }
+      })
     }
   }
 
@@ -273,7 +312,11 @@ class TheatreController extends EventTarget {
     const resolved = resolveTrackVisualMedia(this.trackContext)
     this.atmosphereLayer.setSongOverride(resolved.atmosphereFx ?? null)
     if (this.state.active && this.overlay && this.frameContext) {
-      void this.atmosphereLayer.sync(this.overlay, this.frameContext, this.state.fxEnabled)
+      void this.atmosphereLayer.sync(this.overlay, this.frameContext).then((atmosphereActive) => {
+        if (!this.state.fxEnabled && !atmosphereActive) {
+          void this.exit({ rearmBackground: false })
+        }
+      })
     }
 
     if (!this.state.active) return
@@ -372,8 +415,62 @@ class TheatreController extends EventTarget {
     void this.rotateRandomPreset()
   }
 
+  private async stopSceneFx() {
+    this.clearManualPresetTimer()
+    this.clearPreloadTimer()
+    this.manualPresetLatest = null
+    this.state.presetId = null
+    this.fxSelector.clearCandidate()
+    this.rotationPreloadTriggered = false
+    destroyTheatreDevPanel()
+    if (this.deck) {
+      await this.deck.cancelInFlight()
+      await this.deck.exit()
+      this.deck = null
+    }
+  }
+
+  private async startSceneFx(overlay: HTMLElement, ctx: AnimationContext, mode: TheatreMode): Promise<string | null> {
+    await this.ensureVisualMediaHydrated()
+
+    const pickCtx = this.buildFxPickContext(true)
+    let selectedPreset = null
+    const introPresetId = resolveSegmentIntro({
+      artworkUrl: this.state.artworkUrl,
+      pickCtx,
+    })
+    if (introPresetId) {
+      selectedPreset = resolvePreset(introPresetId)
+    } else {
+      selectedPreset = this.fxSelector.consumeNext(pickCtx)
+      const attachedOnlyPresetId = resolveAttachedOnlyTimelinePresetId(pickCtx)
+      if (attachedOnlyPresetId && selectedPreset?.id !== attachedOnlyPresetId) {
+        selectedPreset = resolvePreset(attachedOnlyPresetId)
+      }
+    }
+
+    const initialPresetId = selectedPreset?.id ?? null
+    const { policy } = this.buildFrameContextWithAudio(0, ctx.shared?.time)
+
+    this.deck = new TheatreSceneDeck(overlay)
+
+    if (mode === 'immersive') {
+      this.mountImmersiveControls(overlay, initialPresetId)
+      createTheatreDevPanel(overlay, this.deck)
+    }
+
+    const factories = this.buildFactoriesForPreset(selectedPreset, policy.maxLayers)
+    if (initialPresetId) {
+      await this.deck.enterInitial(initialPresetId, factories, ctx)
+    }
+
+    this.state.presetId = initialPresetId
+    this.resetRotationHold(performance.now())
+    return initialPresetId
+  }
+
   private ensureBackgroundIfNeeded() {
-    if (!this.state.canEnter || !this.state.fxEnabled || this.state.active || this.transitioning || this.backgroundEnterTimerId !== null) return
+    if (!this.state.canEnter || !this.runtimeRequested() || this.state.active || this.transitioning || this.backgroundEnterTimerId !== null) return
 
     if (playbackFocusTiming.theatre.delayMs <= 0) {
       void this.enterBackground()
@@ -382,7 +479,7 @@ class TheatreController extends EventTarget {
 
     this.backgroundEnterTimerId = window.setTimeout(() => {
       this.backgroundEnterTimerId = null
-      if (this.state.canEnter && this.state.fxEnabled && !this.state.active && !this.transitioning) {
+      if (this.state.canEnter && this.runtimeRequested() && !this.state.active && !this.transitioning) {
         void this.enterBackground()
       }
     }, playbackFocusTiming.theatre.delayMs)
@@ -564,6 +661,7 @@ class TheatreController extends EventTarget {
     this.extractor = null
     this.frameContext = null
     if (this.deck && this.deck.getInstances().length > 0) await this.deck.exit()
+    this.deck = null
     if (overlay) this.discardOverlay(overlay)
     if (!this.state.active) {
       this.state.presetId = null
@@ -663,7 +761,7 @@ class TheatreController extends EventTarget {
   }
 
   private async changeToTimelineFallbackPreset() {
-    if (!this.state.active || this.transitioning) return
+    if (!this.state.active || !this.state.fxEnabled || this.transitioning) return
     const pickCtx = this.buildFxPickContext()
     if (pickCtx.songVisualPolicy === 'attachedOnly') {
       if ((pickCtx.timelineClips?.length ?? 0) > 0) {
@@ -696,7 +794,7 @@ class TheatreController extends EventTarget {
   }
 
   public async onPlaybackSegmentChanged() {
-    if (!this.state.active || this.transitioning) return
+    if (!this.state.active || !this.state.fxEnabled || this.transitioning) return
 
     await this.ensureVisualMediaHydrated()
 
@@ -720,6 +818,7 @@ class TheatreController extends EventTarget {
 
   public async rotateRandomPreset() {
     if (!this.state.active) return
+    if (!this.state.fxEnabled) return
     if (this.transitioning) return
     if (!this.canRotateNow(performance.now(), LEGACY_EXTERNAL_ROTATE_MIN_MS)) return
 
@@ -755,6 +854,7 @@ class TheatreController extends EventTarget {
   }
 
   private requestManualPresetChange(presetId: string) {
+    if (!this.state.fxEnabled) return
     if (!this.state.active || !this.overlay) return
     if (isPresetQuarantined(presetId)) {
       theatreBreadcrumb('manual:quarantined-skip', { presetId })
@@ -878,6 +978,7 @@ class TheatreController extends EventTarget {
     destroyTheatreDevPanel()
     await this.deck?.cancelInFlight()
     if (this.deck) await this.deck.exit()
+    this.deck = null
 
     this.clearOverlayBoundsTracking()
     if (overlay?.parentElement) overlay.parentElement.removeChild(overlay)
@@ -994,7 +1095,7 @@ class TheatreController extends EventTarget {
   }
 
   private async runPreloadNext() {
-    if (!this.state.active || !this.deck || this.deck.getNextPresetId() || this.transitioning) return
+    if (!this.state.active || !this.state.fxEnabled || !this.deck || this.deck.getNextPresetId() || this.transitioning) return
     if (this.isManualChangeCooldownActive() || this.manualPresetLatest) return
     if (this.shouldSuppressSiteFxRotation()) return
 
@@ -1010,12 +1111,15 @@ class TheatreController extends EventTarget {
   public async toggle() {
     if (!this.audioEl) this.rebindAudio()
     if (this.transitioning) return
-    if (this.state.active) return this.exit()
+    if (this.state.active) {
+      if (this.state.fxEnabled) return this.setFxEnabled(false)
+      return this.setFxEnabled(true)
+    }
     return this.enter()
   }
 
   public async enterBackground() {
-    if (!this.state.fxEnabled || this.state.active || this.transitioning) return
+    if (!this.runtimeRequested() || this.state.active || this.transitioning) return
 
     this.clearStaleOverlay()
 
@@ -1030,6 +1134,7 @@ class TheatreController extends EventTarget {
 
   public async enter() {
     if (this.state.active || this.transitioning) return
+    this.state.fxEnabled = true
 
     const token = this.bumpTransitionToken()
     this.transitioning = true
@@ -1187,33 +1292,7 @@ class TheatreController extends EventTarget {
     this.audioBus.reset()
     this.fxSelector.clearCandidate()
 
-    await this.ensureVisualMediaHydrated()
-
-    const pickCtx = this.buildFxPickContext(true)
-    let selectedPreset = null
-    const introPresetId = resolveSegmentIntro({
-      artworkUrl: this.state.artworkUrl,
-      pickCtx,
-    })
-    if (introPresetId) {
-      selectedPreset = resolvePreset(introPresetId)
-    } else {
-      selectedPreset = this.fxSelector.consumeNext(pickCtx)
-      const attachedOnlyPresetId = resolveAttachedOnlyTimelinePresetId(pickCtx)
-      if (attachedOnlyPresetId && selectedPreset?.id !== attachedOnlyPresetId) {
-        selectedPreset = resolvePreset(attachedOnlyPresetId)
-      }
-    }
-    const initialPresetId = selectedPreset?.id ?? null
-
-    const { ctx, policy } = this.buildFrameContextWithAudio(0)
-
-    this.deck = new TheatreSceneDeck(overlay)
-
-    if (!isBackground) {
-      this.mountImmersiveControls(overlay, initialPresetId)
-      createTheatreDevPanel(overlay, this.deck)
-    }
+    const { ctx } = this.buildFrameContextWithAudio(0)
 
     if (!this.stillCurrent(token)) {
       await this.abortStaleTransition(token, overlay)
@@ -1221,14 +1300,23 @@ class TheatreController extends EventTarget {
     }
 
     this.frameContext = ctx
-    const factories = this.buildFactoriesForPreset(selectedPreset, policy.maxLayers)
-    if (initialPresetId) {
-      await this.deck.enterInitial(initialPresetId, factories, ctx)
+    let initialPresetId: string | null = null
+    if (this.state.fxEnabled) {
+      initialPresetId = await this.startSceneFx(overlay, ctx, mode)
     }
-    await this.atmosphereLayer.sync(overlay, ctx, this.state.fxEnabled)
+    const atmosphereActive = await this.atmosphereLayer.sync(overlay, ctx)
     
     if (!this.stillCurrent(token)) {
       await this.abortStaleTransition(token, overlay)
+      return
+    }
+
+    if (!this.state.fxEnabled && !atmosphereActive) {
+      this.frameContext = null
+      this.extractor = null
+      this.audioBus.reset()
+      this.discardOverlay(overlay)
+      this.dispatchEvent(new Event('change'))
       return
     }
 
@@ -1269,7 +1357,7 @@ class TheatreController extends EventTarget {
         frameCtx.shared.audio = audioSnapshot
       }
       
-      if (this.autoRotateEnabled && this.state.active && !this.transitioning) {
+      if (this.state.fxEnabled && this.deck && this.autoRotateEnabled && this.state.active && !this.transitioning) {
         const suppressTimelineRotation = this.syncTimelineClipPlayback(now)
         if (!suppressTimelineRotation) {
           const resolved = this.resolveActiveRotationPolicy()
@@ -1284,8 +1372,10 @@ class TheatreController extends EventTarget {
         }
       }
 
-      const renderCtx = this.buildRenderFrameContext(frameCtx)
-      this.deck?.renderFrame(renderCtx)
+      if (this.state.fxEnabled && this.deck) {
+        const renderCtx = this.buildRenderFrameContext(frameCtx)
+        this.deck.renderFrame(renderCtx)
+      }
       // Pass base frame context (no scene-preset option merge) so atmosphere
       // keeps its own intensity / blendMode across frames.
       this.atmosphereLayer.renderFrame(frameCtx)
@@ -1323,7 +1413,9 @@ class TheatreController extends EventTarget {
       destroyTheatreDevPanel()
 
       await this.atmosphereLayer.teardown()
-      if (this.deck) await this.deck.exit()
+      const exitedDeck = this.deck
+      if (exitedDeck) await exitedDeck.exit()
+      this.deck = null
       if (!this.stillCurrent(token)) return
 
       this.clearOverlayBoundsTracking()
@@ -1333,7 +1425,7 @@ class TheatreController extends EventTarget {
       this.state.presetId = null
 
       theatreBreadcrumb('exit:complete')
-      this.deck?.assertInvariants('exit:complete')
+      exitedDeck?.assertInvariants('exit:complete')
       this.dispatchEvent(new Event('exit'))
       this.dispatchEvent(new Event('change'))
     } finally {
@@ -1341,7 +1433,7 @@ class TheatreController extends EventTarget {
         this.transitioning = false
         const shouldRearm =
           opts?.rearmBackground !== false &&
-          this.state.fxEnabled &&
+          this.runtimeRequested() &&
           this.state.canEnter
         if (shouldRearm) {
           this.ensureBackgroundIfNeeded()

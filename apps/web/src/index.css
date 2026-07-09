@@ -204,6 +204,43 @@ body {
   transition-duration: var(--duration-title-intro-fade-in);
 }
 
+.focus-lane--title-intro .focus-lane__content--subtitle {
+  transition-duration: var(--duration-title-intro-fade-out);
+}
+
+.focus-lane--title-intro .focus-lane__content--subtitle.is-visible {
+  transition-duration: var(--duration-title-intro-fade-in);
+}
+
+.focus-lane__title-intro-visual {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 800px;
+  padding: 0 1rem;
+}
+
+.focus-lane__title-intro-title {
+  font-size: clamp(2.25rem, 7vmin, 4.5rem);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: #fff;
+  margin: 0;
+  text-wrap: balance;
+}
+
+.focus-lane__title-intro-artist {
+  font-size: clamp(1.25rem, 3.5vmin, 2.25rem);
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.75);
+  margin: 0;
+}
+
 .focus-lane__content--subtitle {
   display: grid;
   place-items: inherit;
@@ -1661,4 +1698,11 @@ a.focus-lane__overlay-secondary:hover {
 
 .hidden {
   display: none;
+}
+
+.museum-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+  padding-bottom: 1.5rem;
 }

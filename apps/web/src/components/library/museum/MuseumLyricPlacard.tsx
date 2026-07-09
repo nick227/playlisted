@@ -44,7 +44,7 @@ export function MuseumLyricPlacard({ song }: MuseumLyricPlacardProps) {
       hrefLabel="Open"
       type="special"
     >
-      <MuseumPanel padding="roomy" className="bg-white/[0.045]">
+      <MuseumPanel padding="roomy">
         <blockquote className="w-full text-[clamp(1.35rem,3vw,2.35rem)] font-semibold leading-tight text-white/88">
           {line ? `"${line}"` : "..."}
         </blockquote>

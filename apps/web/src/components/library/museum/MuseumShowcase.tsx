@@ -45,7 +45,7 @@ export function MuseumShowcase({
       hrefLabel="Profile"
       type="songSpotlight"
     >
-      <MuseumPanel padding="roomy" className="bg-white/[0.045]">
+      <MuseumPanel padding="roomy" className="">
         <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,14rem)_minmax(0,1fr)_minmax(11rem,13rem)] lg:items-start">
           <div className="min-w-0">
             <div className="w-32 md:w-44 lg:w-full">

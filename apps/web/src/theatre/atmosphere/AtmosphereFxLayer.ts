@@ -34,29 +34,29 @@ export class AtmosphereFxLayer {
     return this.songOverride;
   }
 
-  async sync(overlay: HTMLElement, ctx: AnimationContext, theatreFxEnabled: boolean) {
+  async sync(overlay: HTMLElement, ctx: AnimationContext): Promise<boolean> {
     const settings = getAtmosphereFxSettings();
     const resolved = resolveAtmosphereFx({
       globalMode: settings.mode,
       globalPresetId: settings.presetId,
       song: this.songOverride,
-      theatreFxEnabled,
       reducedMotion: Boolean(ctx.shared?.reducedMotion),
       lowPower: Boolean(ctx.shared?.lowPower),
     });
 
     if (!resolved.active) {
-      if (!this.bridge && !this.host) return;
+      if (!this.bridge && !this.host) return false;
       await this.teardown();
-      return;
+      return false;
     }
 
     const key = `${resolved.animationId}:${resolved.intensity}:${resolved.intensityGain}`;
-    if (this.activeKey === key && this.bridge && this.host?.isConnected) return;
+    if (this.activeKey === key && this.bridge && this.host?.isConnected) return true;
 
     await this.teardown();
     await this.mount(overlay, ctx, resolved);
     this.activeKey = key;
+    return true;
   }
 
   renderFrame(ctx: AnimationContext) {

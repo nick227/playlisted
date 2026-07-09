@@ -23,8 +23,6 @@ export type ResolveAtmosphereFxInput = {
   globalPresetId: string | null;
   /** Song / recording override. */
   song: SongAtmosphereFx | null | undefined;
-  /** Theatre FX master toggle. */
-  theatreFxEnabled: boolean;
   reducedMotion: boolean;
   lowPower: boolean;
 };
@@ -36,14 +34,11 @@ function asIntensity(mode: AtmosphereFxMode | AtmosphereFxGlobalMode): Atmospher
 
 /**
  * Resolve one final atmosphere config.
- * Priority: global off → theatre off → song off → policy → published preset + intensity.
+ * Priority: global off → song off → policy → published preset + intensity.
  */
 export function resolveAtmosphereFx(input: ResolveAtmosphereFxInput): ResolvedAtmosphereFx {
   if (input.globalMode === "off") {
     return { active: false, reason: "global-off" };
-  }
-  if (!input.theatreFxEnabled) {
-    return { active: false, reason: "theatre-off" };
   }
 
   const songMode = input.song?.mode ?? "inherit";

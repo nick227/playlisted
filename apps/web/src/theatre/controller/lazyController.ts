@@ -9,6 +9,8 @@
  * change their import path.
  */
 
+import { getAtmosphereFxSettings, subscribeAtmosphereFxSettings } from '../atmosphere/atmosphereFxStore'
+
 interface RealTheatreController extends EventTarget {
   state: {
     active: boolean
@@ -97,7 +99,31 @@ class LazyTheatreController extends EventTarget {
   private _pendingAutoRotate: boolean = false
   private _pendingFxEnabled: boolean | null = null
 
+  constructor() {
+    super()
+    subscribeAtmosphereFxSettings(() => {
+      if (this._real) {
+        this.dispatchEvent(new Event('change'))
+        return
+      }
+      this.dispatchEvent(new Event('change'))
+      if (this.state.canEnter && this._runtimeRequested()) {
+        void this._load().then(real => {
+          if (this.state.canEnter) real.setCanEnter(true)
+        })
+      }
+    })
+  }
+
   // ── Private load ──────────────────────────────────────────────────────────
+
+  private _atmosphereFxRequested(): boolean {
+    return getAtmosphereFxSettings().mode !== 'off'
+  }
+
+  private _runtimeRequested(): boolean {
+    return this.state.fxEnabled || this._atmosphereFxRequested()
+  }
 
   private async _load(): Promise<RealTheatreController> {
     if (this._real) return this._real
@@ -233,7 +259,7 @@ class LazyTheatreController extends EventTarget {
     if (this.state.canEnter === canEnter) return
     this.state.canEnter = canEnter
     this.dispatchEvent(new Event('change'))
-    if (canEnter && this.state.fxEnabled) {
+    if (canEnter && this._runtimeRequested()) {
       void this._load().then(real => {
         if (this._pendingTrackContext !== undefined) {
           real.setTrackContext(this._pendingTrackContext)
@@ -262,9 +288,9 @@ class LazyTheatreController extends EventTarget {
     }
   }
 
-  public async exit() {
-    if (this._real) return this._real.exit()
-    if (this._loadPromise) return (await this._load()).exit()
+  public async exit(opts?: { rearmBackground?: boolean }) {
+    if (this._real) return this._real.exit(opts)
+    if (this._loadPromise) return (await this._load()).exit(opts)
   }
 
   // ── Heavy methods — trigger load ──────────────────────────────────────────

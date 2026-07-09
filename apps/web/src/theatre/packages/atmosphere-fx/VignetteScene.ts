@@ -15,7 +15,7 @@ import {
  * Matte coverage from screen edges inward.
  * 0 = thin comic border; 100 = aperture collapses — edges meet at center.
  */
-export const VIGNETTE_MAX_SIZE_PCT = 55;
+export const VIGNETTE_MAX_SIZE_PCT = 15;
 
 /**
  * Comic graphical vignette — dancing colored perimeter matte.

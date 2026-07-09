@@ -37,7 +37,7 @@ export type SongAtmosphereFx = {
 /** Final resolved config for the theatre post-FX layer. */
 export type ResolvedAtmosphereFx = {
   active: false;
-  reason: "global-off" | "song-off" | "unavailable" | "policy" | "theatre-off";
+  reason: "global-off" | "song-off" | "unavailable" | "policy";
 } | {
   active: true;
   presetId: string;

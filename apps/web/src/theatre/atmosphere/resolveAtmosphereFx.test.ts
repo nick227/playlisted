@@ -8,7 +8,6 @@ describe("resolveAtmosphereFx", () => {
       globalMode: "off",
       globalPresetId: "glow",
       song: { mode: "strong", presetId: "bars" },
-      theatreFxEnabled: true,
       reducedMotion: false,
       lowPower: false,
     });
@@ -20,7 +19,6 @@ describe("resolveAtmosphereFx", () => {
       globalMode: "normal",
       globalPresetId: "glow",
       song: { mode: "off", presetId: "radial" },
-      theatreFxEnabled: true,
       reducedMotion: false,
       lowPower: false,
     });
@@ -32,7 +30,6 @@ describe("resolveAtmosphereFx", () => {
       globalMode: "subtle",
       globalPresetId: "glow",
       song: { mode: "inherit", presetId: "vignette" },
-      theatreFxEnabled: true,
       reducedMotion: false,
       lowPower: false,
     });
@@ -48,7 +45,6 @@ describe("resolveAtmosphereFx", () => {
       globalMode: "normal",
       globalPresetId: "glow",
       song: { mode: "inherit", presetId: null },
-      theatreFxEnabled: true,
       reducedMotion: false,
       lowPower: true,
     });

@@ -49,6 +49,7 @@ export type PlaybackFocusState = {
   playFocusActive: boolean;
   hasBodyFaded: boolean;
   bodyFadedAtTrackMs: number | null;
+  titleIntroStartedAtMs: number | null;
 };
 
 export type ResolvePlaybackFocusInput = {

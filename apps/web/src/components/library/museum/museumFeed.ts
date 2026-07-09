@@ -5,12 +5,12 @@ import { MUSEUM_BANK_COUNTS } from "./museumUi";
 
 const BATCH_PATTERN = [
   "artist-feature",
+  "listening-room",
   "artist-grid",
   "playlist-grid",
   "lyric-placard",
   "song-grid",
   "song-tracklist",
-  "listening-room",
   "square-grid",
   "artist-feature",
   "playlist-grid",

@@ -5,7 +5,6 @@ import { isTheatreSwipeSuppressed } from "@/lib/gestures/swipeGesture";
 import { isBrowseSwipeNavigation } from "@/lib/browseNavigation/types";
 
 import { getPlaybackFocusBodyFadeSuppressed } from "@/lib/playbackFocusBodyFade";
-import { bodyFadedAtTrackMsForArtistVisual } from "@/lib/playbackFocus/focusLaneSequence";
 import {
   displaySettingsBodyRevealSuppressRemainingMs,
   isDisplaySettingsBodyRevealSuppressed,
@@ -15,6 +14,7 @@ import { usePlaybackFocusSuppressed } from "@/lib/playbackFocusSuppression";
 import type { PlaybackFocusState } from "@/lib/playbackFocus/types";
 import { playbackFocusTiming, playbackFocusUserActivityEnabled } from "@/lib/playbackFocusTiming";
 import { useSubtitleDisplay } from "@/lib/subtitleDisplay";
+import { useAtmosphereFxSettings } from "@/theatre/atmosphere";
 
 import { useTheatreMode } from "../useTheatreMode";
 
@@ -67,6 +67,7 @@ export function usePlaybackFocusBody({
   const playbackFocusSuppressed = usePlaybackFocusSuppressed();
   const { subtitlesEnabled } = useSubtitleDisplay();
   const { theatreFxEnabled } = useTheatreMode();
+  const { settings: atmosphereSettings } = useAtmosphereFxSettings();
   const location = useLocation();
 
   const bodyFocusTimerRef = useRef<number | null>(null);
@@ -83,6 +84,7 @@ export function usePlaybackFocusBody({
 
   const [bodyFocusHidden, setBodyFocusHidden] = useState(false);
   const [bodyFadedAtTrackMs, setBodyFadedAtTrackMs] = useState<number | null>(null);
+  const [titleIntroStartedAtMs, setTitleIntroStartedAtMs] = useState<number | null>(null);
   const [miniViewVisible, setMiniViewVisible] = useState(false);
   const [snapReveal, setSnapReveal] = useState(false);
   const [revealInteractionActive, setRevealInteractionActive] = useState(false);
@@ -91,7 +93,7 @@ export function usePlaybackFocusBody({
   const fadeConfig = getPlaybackFocusBodyFadeSuppressed({
     pathname,
     subtitlesEnabled,
-    theatreFxEnabled,
+    theatreFxEnabled: theatreFxEnabled || atmosphereSettings.mode !== "off",
   });
   const bodyFadeDisabled = fadeConfig.disabled;
   const customBodyDelayMs = fadeConfig.delayMs;
@@ -159,6 +161,7 @@ export function usePlaybackFocusBody({
     ) {
       setBodyFocusHidden(false);
       setBodyFadedAtTrackMs(null);
+      setTitleIntroStartedAtMs(null);
       setMiniViewVisible(false);
     }
     if (!playFocusActive || playbackFocusSuppressed || bodyFadeDisabled) return;
@@ -171,6 +174,7 @@ export function usePlaybackFocusBody({
     bodyFocusTimerRef.current = window.setTimeout(() => {
       setBodyFocusHidden(true);
       setBodyFadedAtTrackMs(currentTimeMsRef.current);
+      setTitleIntroStartedAtMs(currentTimeMsRef.current);
       bodyFocusTimerRef.current = null;
     }, bodyDelayMs);
 
@@ -199,6 +203,7 @@ export function usePlaybackFocusBody({
       clearFocusTimer();
       setBodyFocusHidden(false);
       setBodyFadedAtTrackMs(null);
+      setTitleIntroStartedAtMs(null);
       setMiniViewVisible(false);
       clearRevealClickSuppressTimer();
     };
@@ -229,7 +234,8 @@ export function usePlaybackFocusBody({
       !bodyFadeDisabled
     ) {
       clearFocusTimer();
-      setBodyFadedAtTrackMs(bodyFadedAtTrackMsForArtistVisual(currentTimeMsRef.current));
+      setBodyFadedAtTrackMs(0);
+      setTitleIntroStartedAtMs(0);
       setMiniViewVisible(false);
       return () => {
         clearFocusTimer();
@@ -243,6 +249,7 @@ export function usePlaybackFocusBody({
       clearFocusTimer();
       setBodyFocusHidden(false);
       setBodyFadedAtTrackMs(null);
+      setTitleIntroStartedAtMs(null);
       setMiniViewVisible(false);
       clearRevealClickSuppressTimer();
       return;
@@ -256,7 +263,8 @@ export function usePlaybackFocusBody({
       !bodyFadeDisabled
     ) {
       clearFocusTimer();
-      setBodyFadedAtTrackMs(bodyFadedAtTrackMsForArtistVisual(currentTimeMsRef.current));
+      setBodyFadedAtTrackMs(0);
+      setTitleIntroStartedAtMs(0);
       setMiniViewVisible(false);
       return () => {
         clearFocusTimer();
@@ -408,8 +416,9 @@ export function usePlaybackFocusBody({
       playFocusActive: playFocusActive && !playbackFocusSuppressed,
       hasBodyFaded: bodyFocusMode,
       bodyFadedAtTrackMs: bodyFocusMode ? bodyFadedAtTrackMs : null,
+      titleIntroStartedAtMs: bodyFocusMode ? titleIntroStartedAtMs : null,
     }),
-    [bodyFadedAtTrackMs, bodyFocusMode, playFocusActive, playbackFocusSuppressed],
+    [bodyFadedAtTrackMs, bodyFocusMode, playFocusActive, playbackFocusSuppressed, titleIntroStartedAtMs],
   );
 
   return {

@@ -28,8 +28,7 @@ function canShowFocusLane(focusState: PlaybackFocusState): boolean {
 /** Title-intro window including fade-out — lyrics must stay dark for the whole span. */
 export function isTitleIntroWindowActive(focusLaneElapsedMs: number): boolean {
   const { titleStart, titleEnd } = getFocusLaneSequenceWindows();
-  const titleClearMs = titleEnd + playbackFocusTiming.titleIntro.fadeOutMs;
-  return focusLaneElapsedMs >= titleStart && focusLaneElapsedMs < titleClearMs;
+  return focusLaneElapsedMs >= titleStart && focusLaneElapsedMs < titleEnd;
 }
 
 export function isTitleIntroFixture(fixture: PlaybackFocusFixture | null | undefined): boolean {
@@ -83,6 +82,9 @@ export function resolveSubtitleFixture(input: ResolvePlaybackFocusInput): Playba
     focusState,
     subtitlesEnabled,
     isPlaying,
+    syntheticCues,
+    artist,
+    recording,
   } = input;
 
   if (!canShowFocusLane(focusState) || !isPlaying) {
@@ -91,13 +93,23 @@ export function resolveSubtitleFixture(input: ResolvePlaybackFocusInput): Playba
 
   const focusLaneElapsedMs = getFocusLaneElapsedMs(
     currentTimeMs,
-    focusState.bodyFadedAtTrackMs,
+    focusState.titleIntroStartedAtMs,
   );
+
   if (isTitleIntroWindowActive(focusLaneElapsedMs)) {
     return { type: "none" };
   }
 
   if (!(subtitlesEnabled && subtitleReady && subtitleSegments?.length)) {
+    const synthetic = resolveSyntheticFixture({
+      focusLaneElapsedMs,
+      syntheticCues,
+      artist,
+      recording,
+    });
+    if (synthetic && !isTitleIntroFixture(synthetic)) {
+      return synthetic;
+    }
     return { type: "none" };
   }
 
@@ -108,6 +120,15 @@ export function resolveSubtitleFixture(input: ResolvePlaybackFocusInput): Playba
     playbackFocusTiming.subtitleFlow.minGapForArtistVisualMs / 1000,
   );
   if (!flowSegment) {
+    const synthetic = resolveSyntheticFixture({
+      focusLaneElapsedMs,
+      syntheticCues,
+      artist,
+      recording,
+    });
+    if (synthetic && !isTitleIntroFixture(synthetic)) {
+      return synthetic;
+    }
     return { type: "none" };
   }
 
@@ -121,6 +142,34 @@ export function resolveSubtitleFixture(input: ResolvePlaybackFocusInput): Playba
     text,
     cueId: `real:${flowSegment.segment.start}-${flowSegment.segment.end}`,
   };
+}
+
+/**
+ * Chromeless title intro overlay.
+ */
+export function resolveTitleIntroFixture(input: ResolvePlaybackFocusInput): PlaybackFocusFixture {
+  const { currentTimeMs, syntheticCues, artist, recording, focusState, isPlaying } = input;
+
+  if (!canShowFocusLane(focusState) || !isPlaying) {
+    return { type: "none" };
+  }
+
+  const focusLaneElapsedMs = getFocusLaneElapsedMs(
+    currentTimeMs,
+    focusState.titleIntroStartedAtMs,
+  );
+
+  const synthetic = resolveSyntheticFixture({
+    focusLaneElapsedMs,
+    syntheticCues,
+    artist,
+    recording,
+  });
+  if (synthetic && isTitleIntroFixture(synthetic)) {
+    return synthetic;
+  }
+
+  return { type: "none" };
 }
 
 /**
@@ -139,19 +188,9 @@ export function resolveOverlayFixture(input: ResolvePlaybackFocusInput): Playbac
     focusState.bodyFadedAtTrackMs,
   );
 
-  const synthetic = resolveSyntheticFixture({
-    focusLaneElapsedMs,
-    syntheticCues,
-    artist,
-    recording,
-  });
-  if (synthetic) {
-    return synthetic;
-  }
 
-  const { fallbackStart } = getFocusLaneSequenceWindows();
   const title = recording?.title?.trim();
-  if (title && focusLaneElapsedMs >= fallbackStart) {
+  if (title) {
     return {
       type: "finalFallback",
       key: `final-song-title:${recording?.id ?? title}`,
@@ -165,14 +204,14 @@ export function resolveOverlayFixture(input: ResolvePlaybackFocusInput): Playbac
   return { type: "none" };
 }
 
-/** Combined resolver: title-intro beats lyrics; otherwise lyrics beat ongoing overlay. */
 export function resolvePlaybackFocusFixture(input: ResolvePlaybackFocusInput): PlaybackFocusFixture {
-  const overlay = resolveOverlayFixture(input);
-  if (isTitleIntroFixture(overlay)) return overlay;
+  const titleIntro = resolveTitleIntroFixture(input);
+  if (titleIntro.type !== "none") return titleIntro;
 
   const subtitle = resolveSubtitleFixture(input);
   if (subtitle.type !== "none") return subtitle;
-  return overlay;
+  
+  return resolveOverlayFixture(input);
 }
 
 export function getFixtureFadeOutMs(fixture: PlaybackFocusFixture): number {

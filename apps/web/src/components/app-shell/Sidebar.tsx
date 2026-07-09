@@ -186,8 +186,8 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
               {discoverLinks.map((link) => (
                 <NavItem key={link.to} {...link} onClick={onClose} />
               ))}
-              <NavItem to={FAVORITES_PATH} label="Charts" icon={Heart} onClick={onClose} end />
               <NavItem to={LIBRARY_PATH} label="Library" icon={Heart} onClick={onClose} end />
+              <NavItem to={FAVORITES_PATH} label="Charts" icon={Heart} onClick={onClose} end />
               <NavItem to={profileNavPath} label="Profile" icon={Home} onClick={onClose} end />
               {showAdminLink ? (
                 <NavItem

@@ -25,7 +25,7 @@ export function MuseumFeed({ pools }: MuseumFeedProps) {
   }
 
   return (
-    <div className="min-w-0 space-y-7 md:space-y-9">
+    <div className="min-w-0 space-y-7 md:space-y-9 museum-feed">
       {exhibits.map((exhibit) => (
         <MuseumExhibitShell key={exhibit.id}>
           {exhibit.kind === "showcase" ? (

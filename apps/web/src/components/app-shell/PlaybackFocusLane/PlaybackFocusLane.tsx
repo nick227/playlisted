@@ -9,6 +9,7 @@ import {
   isTitleIntroFixture,
   resolveOverlayFixture,
   resolveSubtitleFixture,
+  resolveTitleIntroFixture,
 } from "@/lib/playbackFocus/resolvePlaybackFocusFixture";
 import { toFocusArtist, toFocusRecording } from "@/lib/playbackFocus/toFocusRecording";
 import type { PlaybackFocusState } from "@/lib/playbackFocus/types";
@@ -144,34 +145,32 @@ export function PlaybackFocusLane({
     () => resolveOverlayFixture(resolveInput),
     [resolveInput],
   );
+  const activeTitleIntroFixture = useMemo(
+    () => resolveTitleIntroFixture(resolveInput),
+    [resolveInput],
+  );
 
-  // Title-intro owns the viewport — gate lyrics before either visibility hook.
-  const gatedSubtitleFixture = isTitleIntroFixture(activeOverlayFixture)
-    ? ({ type: "none" } as const)
-    : activeSubtitleFixture;
-
-  const subtitleLane = useFocusLaneVisibility(gatedSubtitleFixture);
+  const subtitleLane = useFocusLaneVisibility(activeSubtitleFixture);
   const overlayLane = useFocusLaneVisibility(activeOverlayFixture);
+  const titleIntroLane = useFocusLaneVisibility(activeTitleIntroFixture);
 
-  // Also suppress if title-intro is still fading out in the display fixture.
-  const titleIntroStillShowing = isTitleIntroFixture(overlayLane.displayFixture);
   const hasOverlay = Boolean(
     overlayLane.displayFixture && overlayLane.displayFixture.type !== "none",
   );
   const hasSubtitle = Boolean(
-    !titleIntroStillShowing &&
-      subtitleLane.displayFixture &&
-      subtitleLane.displayFixture.type !== "none",
+    subtitleLane.displayFixture && subtitleLane.displayFixture.type !== "none",
   );
-  const layerVisible =
-    overlayLane.layerVisible || (!titleIntroStillShowing && subtitleLane.layerVisible);
+  const hasTitleIntro = Boolean(
+    titleIntroLane.displayFixture && titleIntroLane.displayFixture.type !== "none",
+  );
+  const layerVisible = overlayLane.layerVisible || subtitleLane.layerVisible || titleIntroLane.layerVisible;
 
   // Keep the docked player collapsed for the whole theatre session — not overlay
   // fixture blinks. Fixture remounts force-hide layerVisible briefly and would
   // expand/collapse the bar on every title → song-info → artist swap.
   const shouldCollapseSitePlayer = !isRadio && focusState.hasBodyFaded;
   const positionClassName = subtitlePositionClassName(subtitlePosition);
-  const variantClass = overlayLane.variantClass || subtitleLane.variantClass;
+  const variantClass = overlayLane.variantClass || titleIntroLane.variantClass || subtitleLane.variantClass;
 
   useEffect(() => {
     if (!onSitePlayerCollapseChange) return;
@@ -194,7 +193,7 @@ export function PlaybackFocusLane({
     return null;
   }
 
-  if (!hasOverlay && !hasSubtitle) {
+  if (!hasOverlay && !hasSubtitle && !hasTitleIntro) {
     return null;
   }
 
@@ -224,14 +223,27 @@ export function PlaybackFocusLane({
         <div
           key={`subtitle:${subtitleLane.displayKey}`}
           className={`focus-lane__content focus-lane__content--subtitle${
-            !titleIntroStillShowing && subtitleLane.layerVisible ? " is-visible" : ""
+            subtitleLane.layerVisible ? " is-visible" : ""
           }`}
-          aria-hidden={titleIntroStillShowing || !subtitleLane.layerVisible}
+          aria-hidden={!subtitleLane.layerVisible}
         >
           <FocusLaneSubtitleContent
             fixture={subtitleLane.displayFixture!}
             customSubtitleStyle={customSubtitleStyle}
             subtitleStyleId={subtitleStyleId}
+          />
+        </div>
+      ) : null}
+      {hasTitleIntro ? (
+        <div
+          key={`title-intro:${titleIntroLane.displayKey}`}
+          className={`focus-lane__content focus-lane__content--subtitle${
+            titleIntroLane.layerVisible ? " is-visible" : ""
+          }`}
+          aria-hidden={!titleIntroLane.layerVisible}
+        >
+          <FocusLaneSubtitleContent
+            fixture={titleIntroLane.displayFixture!}
           />
         </div>
       ) : null}
