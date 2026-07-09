@@ -1,10 +1,11 @@
 import registry from '../registry'
 import { AnimationContext, AnimationFactory } from '../core/IAnimation'
-import AudioFeatureExtractor from '../audio/AudioFeatureExtractor'
-import { TheatreAudioBus } from '../audio/TheatreAudioBus'
+import AudioFeatureExtractor, { type Features } from '../audio/AudioFeatureExtractor'
+import { TheatreAudioBus, type TheatreAudioSnapshot } from '../audio/TheatreAudioBus'
 import {
   createRotationPolicyState,
   DEFAULT_FLUX_GATE_THRESHOLD,
+  evaluateRotationPolicy,
   LEGACY_EXTERNAL_ROTATE_MIN_MS,
   LEGACY_ROTATION_COMPAT,
   RotationPolicy,
@@ -37,7 +38,13 @@ import { isObjectTheatrePreset } from '../packages/object-spinner-mover'
 import { USER_VIDEO_MEDIA_ID } from '../media/userMediaEngine'
 import { AtmosphereFxLayer } from '../atmosphere/AtmosphereFxLayer'
 import type { SongAtmosphereFx } from '../atmosphere/types'
-import { getAtmosphereFxSettings, subscribeAtmosphereFxSettings } from '../atmosphere/atmosphereFxStore'
+import { getAtmosphereFxVisibility, subscribeAtmosphereFxVisibility } from '../atmosphere/atmosphereFxStore'
+import {
+  ATMOSPHERE_ROTATION_FREQUENCY_PCT,
+  atmosphereRotationTiming,
+  computeAtmosphereHoldBounds,
+} from '../atmosphere/atmosphereRotationTiming'
+import { pickNextAtmosphereState, type AtmospherePick } from '../atmosphere/pickAtmosphereState'
 
 export type TheatreRotationPolicy = {
   minSceneMs: number
@@ -96,6 +103,9 @@ class TheatreController extends EventTarget {
   private manualChangeActiveUntil = 0
   private preloadTimerId: number | null = null
   private unsubAtmosphereSettings: (() => void) | null = null
+  private atmosphereRotationState: { startedAtMs: number; hasPicked: boolean } = { startedAtMs: 0, hasPicked: false }
+  private atmosphereRotationDelayUntilMs = 0
+  private activeAtmospherePresetId: string | null = null
 
   private readonly onVisibilityChange = () => {
     if (document.hidden && this.state.active) {
@@ -124,7 +134,7 @@ class TheatreController extends EventTarget {
     super()
     this.rebindAudio()
     window.addEventListener('visibilitychange', this.onVisibilityChange)
-    this.unsubAtmosphereSettings = subscribeAtmosphereFxSettings(() => {
+    this.unsubAtmosphereSettings = subscribeAtmosphereFxVisibility(() => {
       void this.onAtmosphereSettingsChanged()
     })
   }
@@ -179,7 +189,7 @@ class TheatreController extends EventTarget {
   }
 
   private atmosphereFxRequested(): boolean {
-    return getAtmosphereFxSettings().mode !== 'off'
+    return getAtmosphereFxVisibility()
   }
 
   private runtimeRequested(): boolean {
@@ -188,6 +198,7 @@ class TheatreController extends EventTarget {
 
   private async onAtmosphereSettingsChanged() {
     if (this.state.active && this.overlay && this.frameContext) {
+      this.performFirstAtmospherePickIfNeeded(performance.now())
       const atmosphereActive = await this.atmosphereLayer.sync(this.overlay, this.frameContext)
       if (!this.state.fxEnabled && !atmosphereActive) {
         await this.exit({ rearmBackground: false })
@@ -383,6 +394,92 @@ class TheatreController extends EventTarget {
 
   private canRotateNow(nowMs = performance.now(), minHoldMs = this.rotationPolicy.config.minHoldMs): boolean {
     return nowMs - this.rotationState.presetStartedAtMs >= minHoldMs
+  }
+
+  /** Music-driven Atmosphere FX auto-rotation — independent of scene FX rotation
+   * above (no fxEnabled/autoRotateEnabled/deck gating), so atmosphere keeps
+   * exploring on its own timeline. Reuses evaluateRotationPolicy verbatim. */
+  private applyAtmospherePick(pick: AtmospherePick) {
+    this.activeAtmospherePresetId = pick.presetId
+    this.atmosphereLayer.setAutoPick(pick)
+    if (this.overlay && this.frameContext) {
+      // Fire-and-forget, but never let a mount/teardown rejection become an
+      // unhandled promise rejection — atmosphere faults must stay contained.
+      void this.atmosphereLayer.sync(this.overlay, this.frameContext).catch(() => { /* ignore */ })
+    }
+  }
+
+  private resetAtmosphereRotationState() {
+    this.atmosphereRotationState = { startedAtMs: 0, hasPicked: false }
+    this.atmosphereRotationDelayUntilMs = 0
+    this.activeAtmospherePresetId = null
+  }
+
+  /**
+   * Makes the engine's first pick happen synchronously (not on the next RAF
+   * frame) so callers that check atmosphere's resolved-active state right
+   * after entering theatre (e.g. the "nothing to show, discard overlay" gate
+   * in enterInner/onAtmosphereSettingsChanged) see the real outcome instead
+   * of a not-yet-computed null. Safe to call repeatedly — no-ops once picked.
+   */
+  private performFirstAtmospherePickIfNeeded(nowMs: number, audioEnergy = 0) {
+    if (this.atmosphereRotationState.hasPicked) return
+    if (!getAtmosphereFxVisibility()) return
+    const reducedMotion = Boolean(this.frameContext?.shared?.reducedMotion)
+    this.applyAtmospherePick(
+      pickNextAtmosphereState({ audioEnergy, reducedMotion, frequencyPct: ATMOSPHERE_ROTATION_FREQUENCY_PCT }),
+    )
+    this.atmosphereRotationState = { startedAtMs: nowMs, hasPicked: true }
+    this.atmosphereRotationDelayUntilMs = nowMs + atmosphereRotationTiming.delayMs
+  }
+
+  private tickAtmosphereRotation(nowMs: number, audio?: TheatreAudioSnapshot, features?: Features) {
+    // Deliberately NOT gated on this.transitioning — that flag belongs to scene
+    // crossfades (toggles on every scene rotation / manual preset change) and
+    // atmosphere must stay fully independent of scene FX, same principle as
+    // its render call below. Coupling to it previously forced a fresh
+    // "first pick" on every scene crossfade, re-mounting atmosphere far more
+    // often than intended.
+    if (!this.state.active || !getAtmosphereFxVisibility()) {
+      this.atmosphereRotationState.hasPicked = false
+      return
+    }
+
+    const audioEnergy = features?.env ?? features?.rms ?? 0
+    const reducedMotion = Boolean(this.frameContext?.shared?.reducedMotion)
+
+    if (!this.atmosphereRotationState.hasPicked) {
+      // Should already have happened synchronously in enterInner(); this is
+      // just a backstop (e.g. atmosphere turned visible again mid-session).
+      this.performFirstAtmospherePickIfNeeded(nowMs, audioEnergy)
+      return
+    }
+
+    if (nowMs < this.atmosphereRotationDelayUntilMs) return
+
+    const bounds = computeAtmosphereHoldBounds()
+    const decision = evaluateRotationPolicy(
+      {
+        nowMs,
+        presetStartedAtMs: this.atmosphereRotationState.startedAtMs,
+        activePresetId: this.activeAtmospherePresetId,
+        audio,
+        features,
+      },
+      { mode: 'timedMusicAware', ...bounds, gate: { kind: 'beatOrChaosOrDropEdge' } },
+    )
+
+    if (decision.action !== 'rotate') return
+
+    this.applyAtmospherePick(
+      pickNextAtmosphereState({
+        excludePresetId: this.activeAtmospherePresetId,
+        audioEnergy,
+        reducedMotion,
+        frequencyPct: ATMOSPHERE_ROTATION_FREQUENCY_PCT,
+      }),
+    )
+    this.atmosphereRotationState.startedAtMs = nowMs
   }
 
   private shouldSuppressSiteFxRotation(): boolean {
@@ -1304,6 +1401,12 @@ class TheatreController extends EventTarget {
     if (this.state.fxEnabled) {
       initialPresetId = await this.startSceneFx(overlay, ctx, mode)
     }
+    // Make the rotation engine's first pick happen now, synchronously — the
+    // RAF loop (where it would otherwise happen) hasn't started yet, and the
+    // "nothing to show" gate just below needs to see the real outcome rather
+    // than a not-yet-computed null (which previously made atmosphere-only
+    // mode, i.e. fxEnabled=false, always bounce back out on entry).
+    this.performFirstAtmospherePickIfNeeded(performance.now())
     const atmosphereActive = await this.atmosphereLayer.sync(overlay, ctx)
     
     if (!this.stillCurrent(token)) {
@@ -1376,9 +1479,14 @@ class TheatreController extends EventTarget {
         const renderCtx = this.buildRenderFrameContext(frameCtx)
         this.deck.renderFrame(renderCtx)
       }
+      // Atmosphere rotation/render must never be able to take the whole loop
+      // down — a fault in any one scene would otherwise stop core theatre
+      // (and, since this loop also drives audio-reactive scene visuals,
+      // playback would appear to "just stop").
+      try { this.tickAtmosphereRotation(now, audioSnapshot, featuresRef) } catch { /* ignore */ }
       // Pass base frame context (no scene-preset option merge) so atmosphere
       // keeps its own intensity / blendMode across frames.
-      this.atmosphereLayer.renderFrame(frameCtx)
+      try { this.atmosphereLayer.renderFrame(frameCtx) } catch { /* ignore */ }
       this.featureLoopId = requestAnimationFrame(loop)
     }
     this.featureLoopId = requestAnimationFrame(loop)
@@ -1413,6 +1521,11 @@ class TheatreController extends EventTarget {
       destroyTheatreDevPanel()
 
       await this.atmosphereLayer.teardown()
+      // TheatreController is a page-lifetime singleton — without this, a
+      // second enter() within the same session would see stale hasPicked/
+      // startedAtMs and immediately force-rotate using elapsed time measured
+      // from the previous session instead of starting fresh with a grace period.
+      this.resetAtmosphereRotationState()
       const exitedDeck = this.deck
       if (exitedDeck) await exitedDeck.exit()
       this.deck = null

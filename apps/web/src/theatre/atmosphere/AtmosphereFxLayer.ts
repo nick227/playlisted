@@ -2,13 +2,14 @@ import AnimationBridge from "../controller/AnimationBridge";
 import type { AnimationContext, AnimationFactory, InternalAnimationOptions } from "../core/IAnimation";
 import { withTheatreInitContext } from "../controller/theatreFrameContext";
 import registry from "../registry";
-import { getAtmosphereFxSettings } from "./atmosphereFxStore";
+import { getAtmosphereFxVisibility } from "./atmosphereFxStore";
+import type { AtmospherePick } from "./pickAtmosphereState";
 import { resolveAtmosphereFx } from "./resolveAtmosphereFx";
 import type { ResolvedAtmosphereFx, SongAtmosphereFx } from "./types";
 
 const LAYER_Z = 102;
 
-function blendModeForPreset(presetId: string): string {
+export function blendModeForPreset(presetId: string): string {
   // Scenes that paint dark values need normal; additive scenes use screen.
   if (presetId === "vignette" || presetId === "bars") return "normal";
   return "screen";
@@ -25,6 +26,21 @@ export class AtmosphereFxLayer {
   private activeKey: string | null = null;
   private songOverride: SongAtmosphereFx | null = null;
   private layerOptions: InternalAnimationOptions | null = null;
+  private autoPick: AtmospherePick | null = null;
+  /** Serializes sync()/teardown() calls — the rotation engine, song-override
+   * changes, and visibility toggles can all call in around the same time, and
+   * overlapping async mount/teardown would otherwise race and corrupt
+   * this.bridge/this.host (leaking mounted canvases). */
+  private opChain: Promise<unknown> = Promise.resolve();
+
+  private enqueue<T>(fn: () => Promise<T>): Promise<T> {
+    const result = this.opChain.then(fn, fn);
+    this.opChain = result.then(
+      () => undefined,
+      () => undefined,
+    );
+    return result;
+  }
 
   setSongOverride(song: SongAtmosphereFx | null) {
     this.songOverride = song;
@@ -34,11 +50,21 @@ export class AtmosphereFxLayer {
     return this.songOverride;
   }
 
+  /** Current rotation-engine pick. Passing null means "no opinion yet." */
+  setAutoPick(pick: AtmospherePick | null) {
+    this.autoPick = pick;
+  }
+
   async sync(overlay: HTMLElement, ctx: AnimationContext): Promise<boolean> {
-    const settings = getAtmosphereFxSettings();
+    return this.enqueue(() => this.syncInner(overlay, ctx));
+  }
+
+  private async syncInner(overlay: HTMLElement, ctx: AnimationContext): Promise<boolean> {
     const resolved = resolveAtmosphereFx({
-      globalMode: settings.mode,
-      globalPresetId: settings.presetId,
+      hidden: !getAtmosphereFxVisibility(),
+      globalPresetId: this.autoPick?.presetId ?? null,
+      globalIntensity: this.autoPick?.intensity ?? "normal",
+      fxAmount: this.autoPick?.fxAmount,
       song: this.songOverride,
       reducedMotion: Boolean(ctx.shared?.reducedMotion),
       lowPower: Boolean(ctx.shared?.lowPower),
@@ -46,14 +72,14 @@ export class AtmosphereFxLayer {
 
     if (!resolved.active) {
       if (!this.bridge && !this.host) return false;
-      await this.teardown();
+      await this.teardownInner();
       return false;
     }
 
-    const key = `${resolved.animationId}:${resolved.intensity}:${resolved.intensityGain}`;
+    const key = `${resolved.animationId}:${resolved.intensity}:${resolved.intensityGain}:${resolved.fxAmount ?? "default"}`;
     if (this.activeKey === key && this.bridge && this.host?.isConnected) return true;
 
-    await this.teardown();
+    await this.teardownInner();
     await this.mount(overlay, ctx, resolved);
     this.activeKey = key;
     return true;
@@ -80,6 +106,10 @@ export class AtmosphereFxLayer {
   }
 
   async teardown() {
+    return this.enqueue(() => this.teardownInner());
+  }
+
+  private async teardownInner() {
     if (this.bridge) {
       await this.bridge.exit({ presetId: "atmosphere-fx" });
       this.bridge = null;
@@ -116,6 +146,7 @@ export class AtmosphereFxLayer {
       intensity: resolved.intensityGain,
       sensitivity: resolved.intensityGain,
       preset: resolved.intensity === "strong" ? "chaos" : resolved.intensity === "subtle" ? "tame" : "vivid",
+      fxAmount: resolved.fxAmount,
     };
 
     const layerOptions = this.layerOptions;

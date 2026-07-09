@@ -8,9 +8,7 @@ import { useFocusLaneVisibility } from "@/components/app-shell/PlaybackFocusLane
 import { useRecordingSubtitleStyle } from "@/hooks/useRecordingSubtitleStyle";
 import { buildSyntheticSubtitleCues } from "@/lib/playbackFocus/buildSyntheticCues";
 import {
-  isTitleIntroFixture,
-  resolveOverlayFixture,
-  resolveSubtitleFixture,
+  resolvePlaybackFocusLaneState,
 } from "@/lib/playbackFocus/resolvePlaybackFocusFixture";
 import { toFocusArtist } from "@/lib/playbackFocus/toFocusRecording";
 import type { FocusRecording } from "@/lib/playbackFocus/types";
@@ -105,6 +103,7 @@ export function SongVisualPreviewFocusLane({
   const resolveInput = useMemo(
     () => ({
       currentTimeMs: currentTimeSec * 1000,
+      currentEpochMs: currentTimeSec * 1000,
       subtitleSegments: subtitles?.segments,
       subtitleReady: subtitles?.status === "READY",
       syntheticCues: buildSyntheticSubtitleCues(recording),
@@ -115,6 +114,7 @@ export function SongVisualPreviewFocusLane({
         hasBodyFaded: canRenderTextOverlay,
         bodyFadedAtTrackMs: canRenderTextOverlay ? 0 : null,
         titleIntroStartedAtMs: canRenderTextOverlay ? 0 : null,
+        titleIntroStartedAtEpochMs: canRenderTextOverlay ? 0 : null,
       },
       subtitlesEnabled,
       isPlaying: canRenderTextOverlay,
@@ -129,36 +129,30 @@ export function SongVisualPreviewFocusLane({
     ],
   );
 
-  const activeSubtitleFixture = useMemo(
-    () => resolveSubtitleFixture(resolveInput),
-    [resolveInput],
-  );
-  const activeOverlayFixture = useMemo(
-    () => resolveOverlayFixture(resolveInput),
+  const focusLaneState = useMemo(
+    () => resolvePlaybackFocusLaneState(resolveInput),
     [resolveInput],
   );
 
-  const gatedSubtitleFixture = isTitleIntroFixture(activeOverlayFixture)
-    ? ({ type: "none" } as const)
-    : activeSubtitleFixture;
+  const subtitleLane = useFocusLaneVisibility(focusLaneState.subtitle);
+  const overlayLane = useFocusLaneVisibility(focusLaneState.overlay);
+  const titleIntroLane = useFocusLaneVisibility(focusLaneState.titleIntro);
 
-  const subtitleLane = useFocusLaneVisibility(gatedSubtitleFixture);
-  const overlayLane = useFocusLaneVisibility(activeOverlayFixture);
-
-  const titleIntroStillShowing = isTitleIntroFixture(overlayLane.displayFixture);
   const hasOverlay = Boolean(
     overlayLane.displayFixture && overlayLane.displayFixture.type !== "none",
   );
   const hasSubtitle = Boolean(
-    !titleIntroStillShowing &&
-      subtitleLane.displayFixture &&
+    subtitleLane.displayFixture &&
       subtitleLane.displayFixture.type !== "none",
   );
+  const hasTitleIntro = Boolean(
+    titleIntroLane.displayFixture && titleIntroLane.displayFixture.type !== "none",
+  );
   const layerVisible =
-    overlayLane.layerVisible || (!titleIntroStillShowing && subtitleLane.layerVisible);
-  const variantClass = overlayLane.variantClass || subtitleLane.variantClass;
+    overlayLane.layerVisible || subtitleLane.layerVisible || titleIntroLane.layerVisible;
+  const variantClass = titleIntroLane.variantClass || subtitleLane.variantClass || overlayLane.variantClass;
 
-  if (!canRenderTextOverlay || (!hasOverlay && !hasSubtitle)) {
+  if (!canRenderTextOverlay || (!hasOverlay && !hasSubtitle && !hasTitleIntro)) {
     return null;
   }
 
@@ -192,14 +186,28 @@ export function SongVisualPreviewFocusLane({
         <div
           key={`subtitle:${subtitleLane.displayKey}`}
           className={`focus-lane__content focus-lane__content--subtitle${
-            !titleIntroStillShowing && subtitleLane.layerVisible ? " is-visible" : ""
+            subtitleLane.layerVisible ? " is-visible" : ""
           }`}
-          aria-hidden={titleIntroStillShowing || !subtitleLane.layerVisible}
+          aria-hidden={!subtitleLane.layerVisible}
         >
           <FocusLaneSubtitleContent
             fixture={subtitleLane.displayFixture!}
             customSubtitleStyle={customSubtitleStyle}
             subtitleStyleId={subtitleStyleId}
+          />
+        </div>
+      ) : null}
+      {hasTitleIntro ? (
+        <div
+          key={`title-intro:${titleIntroLane.displayKey}`}
+          className={`focus-lane__content focus-lane__content--subtitle${
+            titleIntroLane.layerVisible ? " is-visible" : ""
+          }`}
+          aria-hidden={!titleIntroLane.layerVisible}
+        >
+          <FocusLaneSubtitleContent
+            fixture={titleIntroLane.displayFixture!}
+            withPlayer
           />
         </div>
       ) : null}

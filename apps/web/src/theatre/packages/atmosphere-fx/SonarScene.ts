@@ -1,6 +1,6 @@
 import { CanvasAnimation } from "../../core/CanvasAnimation";
 import type { PublicAnimationContext } from "../../author/types";
-import { bass, beatPunch, centroid, env, high, intensityGain, mid } from "./audio";
+import { bass, beatPunch, centroid, env, fxAmountOr, high, intensityGain, mid } from "./audio";
 import { hsla, moodTone, ShiftingMoodPalette } from "./atmosphereMood";
 
 type SonarStyle = "ping" | "sonarSweep" | "targetLock" | "concentricBloom" | "doublePulse";
@@ -95,7 +95,7 @@ export class AtmosphereSonarScene extends CanvasAnimation {
     const h = this.cssHeight;
     const cx = w * 0.5;
     const cy = h * 0.5;
-    const maxR = Math.hypot(w, h) * 0.5 * (SONAR_MAX_RADIUS_PCT / 100);
+    const maxR = Math.hypot(w, h) * 0.5 * (fxAmountOr(context, SONAR_MAX_RADIUS_PCT) / 100);
 
     // Ambient "breathing" ping so the field never sits fully still in quiet stretches.
     this.breathSec += delta;

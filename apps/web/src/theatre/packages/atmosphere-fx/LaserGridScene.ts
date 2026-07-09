@@ -1,6 +1,6 @@
 import { CanvasAnimation } from "../../core/CanvasAnimation";
 import type { PublicAnimationContext } from "../../author/types";
-import { bass, beatPunch, centroid, env, high, intensityGain, mid } from "./audio";
+import { bass, beatPunch, centroid, env, fxAmountOr, high, intensityGain, mid } from "./audio";
 import { hsla, moodTone, ShiftingMoodPalette } from "./atmosphereMood";
 
 type GridStyle = "gridTunnel" | "hexTunnel" | "radialSweep" | "crossFire" | "scanPlane";
@@ -132,7 +132,7 @@ export class AtmosphereLaserGridScene extends CanvasAnimation {
     const cx = w * 0.5;
     const cy = h * 0.46;
     const focal = Math.min(w, h) * 0.62;
-    const depthReach = LASER_GRID_DEPTH_PCT / 100;
+    const depthReach = fxAmountOr(context, LASER_GRID_DEPTH_PCT) / 100;
     const zFar = 5 + depthReach * 15;
     const haze = 0.14 + e * 0.32;
     const hueDrift = cen * 100;

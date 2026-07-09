@@ -1,6 +1,6 @@
 import { CanvasAnimation } from "../../core/CanvasAnimation";
 import type { PublicAnimationContext } from "../../author/types";
-import { bass, beatPunch, env, high, intensityGain, mid } from "./audio";
+import { bass, beatPunch, env, fxAmountOr, high, intensityGain, mid } from "./audio";
 import { hsla, moodTone, ShiftingMoodPalette } from "./atmosphereMood";
 
 type GlowStyle = "aurora" | "spot" | "shaft" | "ember" | "halo" | "amorphous";
@@ -117,7 +117,7 @@ export class AtmosphereGlowScene extends CanvasAnimation {
     }
 
     if (this.style === "amorphous") {
-      const effectScale = Math.max(0, Math.min(100, GLOW_EFFECT_TUNING)) / 100;
+      const effectScale = Math.max(0, Math.min(100, fxAmountOr(context, GLOW_EFFECT_TUNING))) / 100;
       
       // Bass - Deep, intense, slow moving
       const bx = cx + Math.cos(t * 0.25 + this.styleSpin) * w * 0.35;

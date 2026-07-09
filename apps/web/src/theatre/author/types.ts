@@ -17,6 +17,8 @@ export type TheatreLayerOptions = {
   sensitivity?: number
   intensity?: number
   preset?: TriggerPreset
+  /** 0-100 per-scene fx amount override (Atmosphere FX rotation engine only). */
+  fxAmount?: number
 }
 
 /** Immutable snapshot of extracted audio features passed to authors each frame. */

@@ -1,6 +1,6 @@
 import { CanvasAnimation } from "../../core/CanvasAnimation";
 import type { PublicAnimationContext } from "../../author/types";
-import { bass, beatPunch, env, high, intensityGain, mid } from "./audio";
+import { bass, beatPunch, env, fxAmountOr, high, intensityGain, mid } from "./audio";
 import { hsla, moodTone, ShiftingMoodPalette } from "./atmosphereMood";
 
 type ShatterStyle = "spiderweb" | "starburstCrack" | "shard" | "bulletHole" | "iceCrack";
@@ -146,7 +146,7 @@ export class AtmosphereShatterScene extends CanvasAnimation {
     const w = this.cssWidth;
     const h = this.cssHeight;
     const diag = Math.hypot(w, h);
-    const maxLen = diag * (SHATTER_SPREAD_PCT / 100) * (this.style === "bulletHole" ? 0.5 : 1);
+    const maxLen = diag * (fxAmountOr(context, SHATTER_SPREAD_PCT) / 100) * (this.style === "bulletHole" ? 0.5 : 1);
 
     const bassEdge = b - this.prevBass;
     this.prevBass = b;

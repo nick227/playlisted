@@ -9,7 +9,7 @@
  * change their import path.
  */
 
-import { getAtmosphereFxSettings, subscribeAtmosphereFxSettings } from '../atmosphere/atmosphereFxStore'
+import { getAtmosphereFxVisibility, subscribeAtmosphereFxVisibility } from '../atmosphere/atmosphereFxStore'
 
 interface RealTheatreController extends EventTarget {
   state: {
@@ -101,7 +101,7 @@ class LazyTheatreController extends EventTarget {
 
   constructor() {
     super()
-    subscribeAtmosphereFxSettings(() => {
+    subscribeAtmosphereFxVisibility(() => {
       if (this._real) {
         this.dispatchEvent(new Event('change'))
         return
@@ -118,7 +118,7 @@ class LazyTheatreController extends EventTarget {
   // ── Private load ──────────────────────────────────────────────────────────
 
   private _atmosphereFxRequested(): boolean {
-    return getAtmosphereFxSettings().mode !== 'off'
+    return getAtmosphereFxVisibility()
   }
 
   private _runtimeRequested(): boolean {

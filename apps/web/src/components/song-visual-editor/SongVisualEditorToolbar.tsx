@@ -1,9 +1,11 @@
 import { Loader2, MousePointer2, Pause, Play, Scissors, Upload, Subtitles } from "lucide-react";
 import type { ReactNode } from "react";
 import { editorToggleClass } from "./editorToggle";
+import { AtmosphereFxPanel } from "./AtmosphereFxPanel";
 
 import { formatVisualUploadProgressLabel } from "@/lib/visualUploadProgress";
 import type { VisualUploadProgress } from "@/lib/visualUploadProgress";
+import type { SongAtmosphereFx } from "@/theatre/media/types";
 
 export type TimelineEditMode = "select" | "cut";
 
@@ -26,6 +28,8 @@ type SongVisualEditorToolbarProps = {
   onCancel: () => void;
   showOverlays: boolean;
   onToggleOverlays: () => void;
+  atmosphereFx: SongAtmosphereFx;
+  onAtmosphereFxChange: (next: SongAtmosphereFx) => void;
 };
 
 export function SongVisualEditorToolbar({
@@ -45,6 +49,8 @@ export function SongVisualEditorToolbar({
   onCancel,
   showOverlays,
   onToggleOverlays,
+  atmosphereFx,
+  onAtmosphereFxChange,
 }: SongVisualEditorToolbarProps) {
   return (
     <div className="flex min-w-0 items-center gap-x-1 gap-y-2 overflow-x-auto rounded-lg border border-white/10 bg-black/20 py-2 [-webkit-overflow-scrolling:touch] sm:flex-nowrap">
@@ -90,6 +96,10 @@ export function SongVisualEditorToolbar({
           <Subtitles size={13} />
         </ToolbarIconButton>
       </ToolbarButtonGroup>
+
+      <ToolbarDivider />
+
+      <AtmosphereFxPanel value={atmosphereFx} disabled={isBusy} onChange={onAtmosphereFxChange} />
 
       <button
         type="button"

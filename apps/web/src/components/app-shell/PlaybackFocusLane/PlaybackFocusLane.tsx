@@ -6,9 +6,7 @@ import { useFocusLanePlayback } from "@/hooks/useFocusLanePlayback";
 import { useRecordingSubtitleStyle } from "@/hooks/useRecordingSubtitleStyle";
 import { buildSyntheticSubtitleCues } from "@/lib/playbackFocus/buildSyntheticCues";
 import {
-  resolveOverlayFixture,
-  resolveSubtitleFixture,
-  resolveTitleIntroFixture,
+  resolvePlaybackFocusLaneState,
 } from "@/lib/playbackFocus/resolvePlaybackFocusFixture";
 import { toFocusArtist, toFocusRecording } from "@/lib/playbackFocus/toFocusRecording";
 import type { PlaybackFocusState } from "@/lib/playbackFocus/types";
@@ -110,10 +108,12 @@ export function PlaybackFocusLane({
   );
 
   const currentTimeMs = currentTime * 1000;
+  const currentEpochMs = performance.now();
 
   const resolveInput = useMemo(
     () => ({
       currentTimeMs,
+      currentEpochMs,
       subtitleSegments: subtitles?.segments,
       subtitleReady: subtitles?.status === "READY",
       syntheticCues,
@@ -125,6 +125,7 @@ export function PlaybackFocusLane({
     }),
     [
       artist,
+      currentEpochMs,
       currentTimeMs,
       focusState,
       isPlaying,
@@ -136,22 +137,14 @@ export function PlaybackFocusLane({
     ],
   );
 
-  const activeSubtitleFixture = useMemo(
-    () => resolveSubtitleFixture(resolveInput),
-    [resolveInput],
-  );
-  const activeOverlayFixture = useMemo(
-    () => resolveOverlayFixture(resolveInput),
-    [resolveInput],
-  );
-  const activeTitleIntroFixture = useMemo(
-    () => resolveTitleIntroFixture(resolveInput),
+  const focusLaneState = useMemo(
+    () => resolvePlaybackFocusLaneState(resolveInput),
     [resolveInput],
   );
 
-  const subtitleLane = useFocusLaneVisibility(activeSubtitleFixture);
-  const overlayLane = useFocusLaneVisibility(activeOverlayFixture);
-  const titleIntroLane = useFocusLaneVisibility(activeTitleIntroFixture);
+  const subtitleLane = useFocusLaneVisibility(focusLaneState.subtitle);
+  const overlayLane = useFocusLaneVisibility(focusLaneState.overlay);
+  const titleIntroLane = useFocusLaneVisibility(focusLaneState.titleIntro);
 
   const hasOverlay = Boolean(
     overlayLane.displayFixture && overlayLane.displayFixture.type !== "none",
@@ -169,7 +162,8 @@ export function PlaybackFocusLane({
   // expand/collapse the bar on every title → song-info → artist swap.
   const shouldCollapseSitePlayer = !isRadio && focusState.hasBodyFaded;
   const positionClassName = subtitlePositionClassName(subtitlePosition);
-  const variantClass = overlayLane.variantClass || titleIntroLane.variantClass || subtitleLane.variantClass;
+  const variantClass =
+    titleIntroLane.variantClass || subtitleLane.variantClass || overlayLane.variantClass;
 
   useEffect(() => {
     if (!onSitePlayerCollapseChange) return;
@@ -243,6 +237,8 @@ export function PlaybackFocusLane({
         >
           <FocusLaneSubtitleContent
             fixture={titleIntroLane.displayFixture!}
+            withPlayer={withPlayer}
+            playerCollapsed={playerCollapsed}
           />
         </div>
       ) : null}

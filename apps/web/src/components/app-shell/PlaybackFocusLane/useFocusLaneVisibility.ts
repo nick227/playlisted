@@ -7,9 +7,10 @@ import type { PlaybackFocusFixture } from "@/lib/playbackFocus/types";
 function fixtureVariantClass(fixture: PlaybackFocusFixture | null): string {
   if (!fixture || fixture.type === "none") return "";
   if (fixture.type === "subtitle") return " focus-lane--subtitle";
+  if (fixture.type === "titleIntro") return " focus-lane--title-intro";
   if (fixture.type === "finalFallback") return " focus-lane--artist-visual";
-  if (fixture.source === "title-intro") return " focus-lane--title-intro";
-  return " focus-lane--artist-visual";
+  const _exhaustive: never = fixture;
+  return _exhaustive;
 }
 
 export function useFocusLaneVisibility(activeFixture: PlaybackFocusFixture) {

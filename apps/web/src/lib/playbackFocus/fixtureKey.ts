@@ -2,9 +2,17 @@ import type { PlaybackFocusFixture } from "@/lib/playbackFocus/types";
 
 export function focusLaneFixtureKey(fixture: PlaybackFocusFixture | null): string {
   if (!fixture || fixture.type === "none") return "none";
-  if (fixture.type === "subtitle") return `subtitle:${fixture.cueId}`;
-  if (fixture.type === "fallbackSubtitle") return `fallback:${fixture.key}`;
-  if (fixture.type === "finalFallback") return "final:artist-visual";
-  const _exhaustive: never = fixture;
-  return _exhaustive;
+
+  switch (fixture.type) {
+    case "subtitle":
+      return `subtitle:${fixture.cueId}`;
+    case "titleIntro":
+      return `title-intro:${fixture.key}`;
+    case "finalFallback":
+      return `final:${fixture.key}`;
+    default: {
+      const _exhaustive: never = fixture;
+      return _exhaustive;
+    }
+  }
 }

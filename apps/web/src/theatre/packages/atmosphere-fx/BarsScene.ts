@@ -1,6 +1,6 @@
 import { CanvasAnimation } from "../../core/CanvasAnimation";
 import type { PublicAnimationContext } from "../../author/types";
-import { barsSpectrum, bass, beatPunch, env, high, intensityGain, mid } from "./audio";
+import { barsSpectrum, bass, beatPunch, env, fxAmountOr, high, intensityGain, mid } from "./audio";
 import { coolHueAt, hotHueAt, ShiftingBarsPalette } from "./barsPalette";
 
 /** Max bar travel as % of viewport height (100 ≈ full screen). */
@@ -48,7 +48,7 @@ export class AtmosphereBarsScene extends CanvasAnimation {
     const w = this.cssWidth;
     const h = this.cssHeight;
     const floorY = h;
-    const maxH = h * (BARS_MAX_HEIGHT_PCT / 100) * Math.min(1.35, Math.max(0.85, g));
+    const maxH = h * (fxAmountOr(context, BARS_MAX_HEIGHT_PCT) / 100) * Math.min(1.35, Math.max(0.85, g));
     const count = Math.max(32, Math.min(64, Math.floor(w / 16)));
     const target = barsSpectrum(context, count);
 

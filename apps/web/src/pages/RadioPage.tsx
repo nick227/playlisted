@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { BarChart2, Pause, Play, Radio, Users, Upload } from "lucide-react";
+import { BarChart2, Pause, Play, Radio, Users, Upload, Library } from "lucide-react";
 
 import { DEFAULT_COLLECTION_TITLE } from "@/components/studio/studioCollectionUtils";
 import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
@@ -119,7 +119,7 @@ export function RadioPage({ isEmbedded: _isEmbedded = false }: { isEmbedded?: bo
     unregisterRadioUi,
   } = useRadioPlayer();
 
-  const { currentTrack } = useAudioPlayer();
+  const { currentTrack, playbackContext } = useAudioPlayer();
   const { volume, setVolume } = usePlaybackVolume();
   const { data: genreData } = useLibraryGenres({ minSongCount: 1 });
   const queryClient = useQueryClient();
@@ -227,7 +227,19 @@ export function RadioPage({ isEmbedded: _isEmbedded = false }: { isEmbedded?: bo
       playStation(radioStationSlugs[nextIndex]);
     },
     onVerticalSwipe: (direction) => {
-      if (direction === "up") navigate("/favorites");
+      if (direction === "up") {
+        if (playbackContext.playlistId) {
+          navigate(
+            playlistPath({
+              id: playbackContext.playlistId,
+              slug: playbackContext.playlistSlug,
+              username: playbackContext.playlistOwnerUsername,
+            }),
+          );
+        } else {
+          navigate("/library");
+        }
+      }
     },
   });
 
@@ -236,7 +248,7 @@ export function RadioPage({ isEmbedded: _isEmbedded = false }: { isEmbedded?: bo
     "aspect-square max-h-full w-full max-w-full touch-none select-none rounded-[1.4rem] border border-white/[0.08] bg-white/5 bg-cover bg-center shadow-[0_26px_80px_rgba(0,0,0,0.44)] [-webkit-user-drag:none]";
   const titleText = displayTitle ?? "Radio";
   const titleSurfaceClassName =
-  "box-border block w-full max-w-full min-w-0 overflow-hidden truncate whitespace-nowrap bg-[var(--color-canvas)]/80 p-2 text-center";
+  "box-border block w-full max-w-full min-w-0 overflow-hidden truncate whitespace-nowrap px-2 text-center";
 
   return (
     <div
@@ -248,7 +260,7 @@ export function RadioPage({ isEmbedded: _isEmbedded = false }: { isEmbedded?: bo
       onLostPointerCapture={radioBodySwipeHandlers.onLostPointerCapture}
       onClickCapture={radioBodySwipeHandlers.onClick}
     >
-      <div className="mx-auto flex min-h-0 w-full min-w-0 max-w-full flex-col items-center justify-center gap-2 overflow-x-hidden rounded-lg bg-[var(--color-canvas)]/80 py-6 sm:gap-0 lg:px-12">
+      <div className="mx-auto max-w-3xl flex min-h-0 min-w-0 flex-col items-center justify-center gap-2 overflow-x-hidden rounded-lg bg-[var(--color-canvas)]/80 py-6 sm:gap-0 lg:px-12">
         {radioQuery.isError ? (
           <div className="w-full shrink-0 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-center text-sm text-red-200 shadow-lg shadow-black/20 backdrop-blur">
             Couldn&apos;t load radio.{" "}
@@ -301,7 +313,7 @@ export function RadioPage({ isEmbedded: _isEmbedded = false }: { isEmbedded?: bo
         </div>
 
         <div className="flex w-full max-w-[min(100%,380px)] min-w-0 shrink-0 flex-col items-center justify-start text-center sm:mt-7 sm:min-h-[9.35rem]">
-          <p className="mb-1 flex h-5 w-full max-w-full min-w-0 items-center justify-center gap-2 truncate rounded-full bg-[var(--color-canvas)] px-2 py-1 text-xs font-semibold uppercase text-white/42 sm:mb-3">
+          <p className="mb-1 flex h-5 w-full max-w-full min-w-0 items-center justify-center gap-2 truncate px-2 py-1 text-xs font-semibold uppercase text-white/42 sm:mb-3">
             <Radio size={13} className="shrink-0 text-[var(--color-brand)]" />
             <span className="min-w-0 truncate">{genreStationName ?? station?.name ?? "Playlisted Radio"}</span>
           </p>
@@ -400,6 +412,13 @@ export function RadioPage({ isEmbedded: _isEmbedded = false }: { isEmbedded?: bo
             aria-label="Music Charts"
           >
             <BarChart2 size={17} className="text-[var(--color-brand)]" />
+          </Link>
+          <Link
+            to="/library"
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-white/[0.08] text-white shadow-lg shadow-black/25 backdrop-blur transition hover:border-[var(--color-brand)]/40 hover:bg-white/[0.09] bg-[var(--color-surface)]/80"
+            aria-label="Library"
+          >
+            <Library size={17} className="text-[var(--color-brand)]" />
           </Link>
         </div>
         <GenreHorizontalPanel

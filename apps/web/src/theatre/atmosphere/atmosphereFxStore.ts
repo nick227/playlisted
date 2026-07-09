@@ -1,55 +1,21 @@
 import { useSyncExternalStore } from "react";
 
-import { DEFAULT_ATMOSPHERE_FX_PRESET_ID, isPublishedAtmosphereFxPreset } from "./catalog";
-import type { AtmosphereFxGlobalMode } from "./types";
+const STORAGE_KEY = "playlisted.atmosphereFx.visible";
 
-const STORAGE_KEY = "playlisted.atmosphereFx.settings";
-
-export type AtmosphereFxSettings = {
-  mode: AtmosphereFxGlobalMode;
-  presetId: string;
-};
-
-const DEFAULT_SETTINGS: AtmosphereFxSettings = {
-  mode: "off",
-  presetId: DEFAULT_ATMOSPHERE_FX_PRESET_ID,
-};
-
-let settings: AtmosphereFxSettings = readStoredSettings();
+let visible = readStoredVisible();
 const listeners = new Set<() => void>();
 
-function isGlobalMode(value: unknown): value is AtmosphereFxGlobalMode {
-  return value === "off" || value === "subtle" || value === "normal" || value === "strong";
-}
-
-function readStoredSettings(): AtmosphereFxSettings {
-  if (typeof window === "undefined") return { ...DEFAULT_SETTINGS };
+function readStoredVisible(): boolean {
+  if (typeof window === "undefined") return true;
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { ...DEFAULT_SETTINGS };
-    const parsed = JSON.parse(raw) as Partial<AtmosphereFxSettings>;
-    const mode = isGlobalMode(parsed.mode) ? parsed.mode : DEFAULT_SETTINGS.mode;
-    const presetId =
-      typeof parsed.presetId === "string" && isPublishedAtmosphereFxPreset(parsed.presetId)
-        ? parsed.presetId
-        : DEFAULT_SETTINGS.presetId;
-    return { mode, presetId };
+    return window.localStorage.getItem(STORAGE_KEY) !== "0";
   } catch {
-    return { ...DEFAULT_SETTINGS };
+    return true;
   }
 }
 
 function emit() {
   listeners.forEach((listener) => listener());
-}
-
-function persist(next: AtmosphereFxSettings) {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-  } catch {
-    // Preference is optional; keep in-memory state.
-  }
 }
 
 function subscribe(listener: () => void) {
@@ -59,46 +25,40 @@ function subscribe(listener: () => void) {
   };
 }
 
-export function subscribeAtmosphereFxSettings(listener: () => void) {
+function getSnapshot() {
+  return visible;
+}
+
+export function subscribeAtmosphereFxVisibility(listener: () => void) {
   return subscribe(listener);
 }
 
-function getSnapshot() {
-  return settings;
+export function getAtmosphereFxVisibility(): boolean {
+  return visible;
 }
 
-export function getAtmosphereFxSettings(): AtmosphereFxSettings {
-  return settings;
-}
-
-export function setAtmosphereFxSettings(patch: Partial<AtmosphereFxSettings>) {
-  const next: AtmosphereFxSettings = {
-    mode: isGlobalMode(patch.mode) ? patch.mode : settings.mode,
-    presetId:
-      typeof patch.presetId === "string" && isPublishedAtmosphereFxPreset(patch.presetId)
-        ? patch.presetId
-        : settings.presetId,
-  };
-  if (next.mode === settings.mode && next.presetId === settings.presetId) return;
-  settings = next;
-  persist(next);
+export function setAtmosphereFxVisible(next: boolean) {
+  if (visible === next) return;
+  visible = next;
+  if (typeof window !== "undefined") {
+    try {
+      window.localStorage.setItem(STORAGE_KEY, next ? "1" : "0");
+    } catch {
+      // Preference is optional; keep the in-memory toggle working.
+    }
+  }
   emit();
 }
 
-export function setAtmosphereFxMode(mode: AtmosphereFxGlobalMode) {
-  setAtmosphereFxSettings({ mode });
+export function toggleAtmosphereFxVisible() {
+  setAtmosphereFxVisible(!visible);
 }
 
-export function setAtmosphereFxPresetId(presetId: string) {
-  setAtmosphereFxSettings({ presetId });
-}
-
-export function useAtmosphereFxSettings() {
-  const current = useSyncExternalStore(subscribe, getSnapshot, () => DEFAULT_SETTINGS);
+export function useAtmosphereFxVisibility() {
+  const atmosphereFxVisible = useSyncExternalStore(subscribe, getSnapshot, () => true);
   return {
-    settings: current,
-    setAtmosphereFxSettings,
-    setAtmosphereFxMode,
-    setAtmosphereFxPresetId,
+    visible: atmosphereFxVisible,
+    setAtmosphereFxVisible,
+    toggleAtmosphereFxVisible,
   };
 }

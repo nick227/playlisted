@@ -8,7 +8,6 @@ import { useRadioPlayer } from "@/providers/RadioPlayerProvider";
 import { useAuth } from "@/providers/AuthProvider";
 
 import { ActiveMediaPanel } from "./ActiveMediaPanel";
-import { AtmosphereFxPanel } from "./AtmosphereFxPanel";
 import { SongVisualAssetLibrary } from "./SongVisualAssetLibrary";
 import { SongVisualEditorPreview } from "./SongVisualEditorPreview";
 import { SongVisualEditorTimeline } from "./SongVisualEditorTimeline";
@@ -142,6 +141,7 @@ function SongVisualEditorModalInner({
                   onTogglePlayback={playback.togglePlayback}
                   canPlay={Boolean(recording.audioUrl)}
                   showOverlays={showOverlays}
+                  atmosphereFx={editor.atmosphereFx}
                 />
               </div>
               <div className="min-w-0 space-y-2.5 md:col-span-2">
@@ -156,11 +156,6 @@ function SongVisualEditorModalInner({
                   onSelectClip={editor.selectAttachment}
                   onToggleClipStage={(attachmentId, enabled) => editor.setAttachmentEnabled(attachmentId, enabled)}
                   selectedAttachmentId={editor.selectedAttachmentId}
-                />
-                <AtmosphereFxPanel
-                  value={editor.atmosphereFx}
-                  disabled={editor.isBusy}
-                  onChange={editor.setAtmosphereFx}
                 />
               </div>
             </div>
@@ -182,6 +177,8 @@ function SongVisualEditorModalInner({
               onCancel={handleClose}
               showOverlays={showOverlays}
               onToggleOverlays={() => setShowOverlays(!showOverlays)}
+              atmosphereFx={editor.atmosphereFx}
+              onAtmosphereFxChange={editor.setAtmosphereFx}
             />
 
             {editor.error ? (

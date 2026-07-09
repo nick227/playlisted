@@ -12,6 +12,8 @@ type FocusLaneSubtitleContentProps = {
   fixture: PlaybackFocusFixture;
   customSubtitleStyle?: CSSProperties;
   subtitleStyleId?: string;
+  withPlayer?: boolean;
+  playerCollapsed?: boolean;
 };
 
 function computeDynamicFontSize(text: string): string {
@@ -29,22 +31,26 @@ export function FocusLaneSubtitleContent({
   fixture,
   customSubtitleStyle,
   subtitleStyleId,
+  withPlayer = true,
+  playerCollapsed = false,
 }: FocusLaneSubtitleContentProps) {
-  if (fixture.type === "fallbackSubtitle" && fixture.source === "title-intro") {
+  if (fixture.type === "titleIntro") {
     return (
       <TitleIntroVisual
-        title={fixture.text}
+        title={fixture.title}
         artistName={fixture.artist?.artistName}
         recording={fixture.recording}
+        withPlayer={withPlayer}
+        playerCollapsed={playerCollapsed}
       />
     );
   }
 
-  if (fixture.type !== "subtitle" && fixture.type !== "fallbackSubtitle") return null;
+  if (fixture.type !== "subtitle") return null;
 
   let style: CSSProperties | undefined = customSubtitleStyle ? { ...customSubtitleStyle } : undefined;
   const preset = subtitleStyleId ? getSubtitleStylePreset(subtitleStyleId) : undefined;
-  if (preset?.dynamicSize || fixture.type === "fallbackSubtitle") {
+  if (preset?.dynamicSize) {
     style = style || {};
     style.fontSize = computeDynamicFontSize(fixture.text);
     style.width = "100%";
@@ -70,16 +76,13 @@ export function FocusLaneOverlayContent({
   withPlayer = true,
   playerCollapsed = false,
 }: FocusLaneOverlayContentProps) {
-  if (fixture.type === "fallbackSubtitle" || fixture.type === "finalFallback") {
+  if (fixture.type === "finalFallback") {
     const artist = fixture.artist;
     const recording = fixture.recording;
 
     return (
       <ArtistVisual
-        artistName={
-          artist?.artistName ||
-          (fixture.type === "finalFallback" ? fixture.artistName ?? undefined : undefined)
-        }
+        artistName={(artist?.artistName || fixture.artistName) ?? undefined}
         imageUrl={artist?.imageUrl ?? undefined}
         artistBio={artist?.bioLine}
         recording={recording}

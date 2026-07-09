@@ -1,6 +1,6 @@
 import { CanvasAnimation } from "../../core/CanvasAnimation";
 import type { PublicAnimationContext } from "../../author/types";
-import { bass, beatPunch, env, high, intensityGain, mid } from "./audio";
+import { bass, beatPunch, env, fxAmountOr, high, intensityGain, mid } from "./audio";
 import { hsla, moodTone, ShiftingMoodPalette } from "./atmosphereMood";
 
 export const KALEIDOSCOPE_SIZE_TUNING = 80; // 0-100 tuning constant
@@ -57,7 +57,7 @@ export class AtmosphereKaleidoscopeScene extends CanvasAnimation {
     
     this.ctx.globalCompositeOperation = "lighter";
     
-    const effectScale = Math.max(0, Math.min(100, KALEIDOSCOPE_SIZE_TUNING)) / 100;
+    const effectScale = Math.max(0, Math.min(100, fxAmountOr(context, KALEIDOSCOPE_SIZE_TUNING))) / 100;
     const angleStep = (Math.PI * 2) / this.currentSegments;
     
     // Base radius scales with bass, punch and the tuning constant

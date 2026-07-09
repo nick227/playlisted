@@ -1,6 +1,6 @@
 import { CanvasAnimation } from "../../core/CanvasAnimation";
 import type { PublicAnimationContext } from "../../author/types";
-import { bass, beatPunch, env, high, intensityGain, mid } from "./audio";
+import { bass, beatPunch, env, fxAmountOr, high, intensityGain, mid } from "./audio";
 import { hsla, moodTone, ShiftingMoodPalette } from "./atmosphereMood";
 import {
   apertureRadiusMul,
@@ -94,7 +94,7 @@ export class AtmosphereVignetteScene extends CanvasAnimation {
     const cy = h * 0.5;
 
     // Size: 100 → aperture radius ~0 (edges meet in middle)
-    const size = Math.min(1, Math.max(0, VIGNETTE_MAX_SIZE_PCT / 100));
+    const size = Math.min(1, Math.max(0, fxAmountOr(context, VIGNETTE_MAX_SIZE_PCT) / 100));
     const maxR = Math.hypot(w, h) * 0.52;
     const open = Math.max(0, 1 - size);
     const baseR = maxR * open * (0.92 - this.pop * 0.08 - b * 0.04) + (open <= 0.02 ? 0 : 4);

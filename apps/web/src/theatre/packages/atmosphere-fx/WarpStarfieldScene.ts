@@ -1,6 +1,6 @@
 import { CanvasAnimation } from "../../core/CanvasAnimation";
 import type { PublicAnimationContext } from "../../author/types";
-import { bass, beatPunch, centroid, env, high, intensityGain, mid } from "./audio";
+import { bass, beatPunch, centroid, env, fxAmountOr, high, intensityGain, mid } from "./audio";
 import { hsla, moodTone, ShiftingMoodPalette } from "./atmosphereMood";
 
 type WarpStyle = "hyperspace" | "vortexPull" | "driftField" | "gridWarp" | "novaBurst";
@@ -92,7 +92,7 @@ export class AtmosphereWarpStarfieldScene extends CanvasAnimation {
 
     const pal = this.palette.tick(delta, punch);
     const tone = moodTone(pal.mood, hi);
-    const speedScale = Math.max(0.1, Math.min(1.6, WARP_SPEED_PCT / 100));
+    const speedScale = Math.max(0.1, Math.min(1.6, fxAmountOr(context, WARP_SPEED_PCT) / 100));
 
     const w = this.cssWidth;
     const h = this.cssHeight;

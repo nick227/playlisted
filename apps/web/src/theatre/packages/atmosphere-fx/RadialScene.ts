@@ -1,6 +1,6 @@
 import { CanvasAnimation } from "../../core/CanvasAnimation";
 import type { PublicAnimationContext } from "../../author/types";
-import { bass, beatPunch, env, high, intensityGain, mid, rms } from "./audio";
+import { bass, beatPunch, env, fxAmountOr, high, intensityGain, mid, rms } from "./audio";
 import {
   createSeededRng,
   drawFractalPattern,
@@ -129,7 +129,7 @@ export class AtmosphereRadialScene extends CanvasAnimation {
     const h = this.cssHeight;
     const cx = w * 0.5;
     const cy = h * 0.5;
-    const maxR = (Math.hypot(w, h) * 0.5 * RADIAL_MAX_CIRCUMFERENCE_PCT) / 100
+    const maxR = (Math.hypot(w, h) * 0.5 * fxAmountOr(context, RADIAL_MAX_CIRCUMFERENCE_PCT)) / 100
       * Math.min(1.25, Math.max(0.75, g));
 
     this.ctx.clearRect(0, 0, w, h);

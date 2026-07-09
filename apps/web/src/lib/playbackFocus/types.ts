@@ -2,11 +2,24 @@ import type { SubtitleSegment } from "@/lib/subtitles";
 
 export type PlaybackFocusFixture =
   | { type: "subtitle"; text: string; cueId: string }
-  | { type: "fallbackSubtitle"; text: string; key: string; source: SyntheticSubtitleSource; artist?: FocusArtist | null; recording?: FocusRecording | null }
-  | { type: "finalFallback"; key: string; title: string; artistName?: string | null; artist?: FocusArtist | null; recording?: FocusRecording | null }
+  | {
+      type: "titleIntro";
+      key: string;
+      title: string;
+      artist?: FocusArtist | null;
+      recording?: FocusRecording | null;
+    }
+  | {
+      type: "finalFallback";
+      key: string;
+      title: string;
+      artistName?: string | null;
+      artist?: FocusArtist | null;
+      recording?: FocusRecording | null;
+    }
   | { type: "none" };
 
-export type SyntheticSubtitleSource = "title-intro" | "system";
+export type SyntheticSubtitleSource = "title-intro";
 
 export type SyntheticSubtitleCue = {
   id: string;
@@ -50,10 +63,12 @@ export type PlaybackFocusState = {
   hasBodyFaded: boolean;
   bodyFadedAtTrackMs: number | null;
   titleIntroStartedAtMs: number | null;
+  titleIntroStartedAtEpochMs: number | null;
 };
 
 export type ResolvePlaybackFocusInput = {
   currentTimeMs: number;
+  currentEpochMs: number;
   subtitleSegments: SubtitleSegment[] | null | undefined;
   subtitleReady: boolean;
   syntheticCues: SyntheticSubtitleCue[];

@@ -30,13 +30,13 @@ export const playbackFocusTiming = {
   },
 
   titleIntro: {
-    delayMs: 1000,
-    minVisibleMs: 100000,
+    delayMs: 100,
+    minVisibleMs: 7000,
     fadeInMs: 900,
     fadeOutMs: 650,
   },
 
-  fallbackSubtitle: {
+  finalFallback: {
     gapAfterArtistMs: 15000,
     fadeInMs: 900,
     fadeOutMs: 650,

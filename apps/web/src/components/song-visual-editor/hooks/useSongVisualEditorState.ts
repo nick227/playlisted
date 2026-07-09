@@ -65,7 +65,7 @@ type UseSongVisualEditorStateArgs = {
 };
 
 const EDITOR_VISUAL_POLICY: SongVisualAttachmentRecord["policy"] = "attachedOnly";
-const DEFAULT_ATMOSPHERE: SongAtmosphereFx = { mode: "inherit", presetId: null };
+const DEFAULT_ATMOSPHERE: SongAtmosphereFx = { mode: "off", presetId: null };
 
 function atmosphereFromServer(data: SongVisualMediaRecord | undefined): SongAtmosphereFx {
   return data?.atmosphereFx ?? DEFAULT_ATMOSPHERE;

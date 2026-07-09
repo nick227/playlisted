@@ -1,9 +1,6 @@
 /** Song / global intensity. `inherit` only valid on song override. */
 export type AtmosphereFxMode = "inherit" | "off" | "subtle" | "normal" | "strong";
 
-/** Global user preference — no `inherit`. */
-export type AtmosphereFxGlobalMode = "off" | "subtle" | "normal" | "strong";
-
 export type AtmosphereFxIntensity = "subtle" | "normal" | "strong";
 
 export type AtmosphereFxCategory =
@@ -38,6 +35,12 @@ export type AtmosphereFxPresetDef = {
   reducedMotionSafe: boolean;
   mobileSafe: boolean;
   adminFeatured?: boolean;
+  /** Floor for the rotation engine's random 0-100 fxAmount pick. Most scenes
+   * are tuned in the 45-100 range so the generic floor works fine, but a few
+   * (e.g. Bars, Vignette) have a deliberately low/subtle tuned default that
+   * the generic floor would always override upward — set a lower floor for
+   * those so the rotation engine can still land near their intended look. */
+  minAmountPct?: number;
 };
 
 /** Persisted song-level override (Recording). */
@@ -56,4 +59,6 @@ export type ResolvedAtmosphereFx = {
   animationId: string;
   intensity: AtmosphereFxIntensity;
   intensityGain: number;
+  /** 0-100 per-scene fx amount override, set by the rotation engine's pick. */
+  fxAmount?: number;
 };

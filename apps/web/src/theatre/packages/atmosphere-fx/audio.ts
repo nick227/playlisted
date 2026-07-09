@@ -5,6 +5,13 @@ export function intensityGain(context: PublicAnimationContext): number {
   return typeof raw === "number" && Number.isFinite(raw) ? Math.max(0, Math.min(1.5, raw)) : 0.75;
 }
 
+/** Reads the rotation engine's 0-100 fx amount override, falling back to the
+ * scene's own default tunable when none is set (e.g. song-editor preview). */
+export function fxAmountOr(context: PublicAnimationContext, fallbackPct: number): number {
+  const raw = context.options.fxAmount;
+  return typeof raw === "number" && Number.isFinite(raw) ? Math.max(0, Math.min(100, raw)) : fallbackPct;
+}
+
 export function env(context: PublicAnimationContext): number {
   return context.shared.features?.env ?? 0;
 }

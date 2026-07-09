@@ -1,13 +1,9 @@
-import { listAtmosphereFxPresets } from "@/theatre/atmosphere/catalog";
-import type { AtmosphereFxMode, SongAtmosphereFx } from "@/theatre/media/types";
+import { Sparkles } from "lucide-react";
 
-const MODES: { value: AtmosphereFxMode; label: string }[] = [
-  { value: "inherit", label: "Inherit" },
-  { value: "off", label: "Off" },
-  { value: "subtle", label: "Subtle" },
-  { value: "normal", label: "Normal" },
-  { value: "strong", label: "Strong" },
-];
+import { listAtmosphereFxPresets } from "@/theatre/atmosphere/catalog";
+import type { SongAtmosphereFx } from "@/theatre/media/types";
+
+import { editorToggleClass } from "./editorToggle";
 
 type AtmosphereFxPanelProps = {
   value: SongAtmosphereFx;
@@ -15,60 +11,50 @@ type AtmosphereFxPanelProps = {
   onChange: (next: SongAtmosphereFx) => void;
 };
 
+/**
+ * Compact toolbar control — on/off toggle + preset picker, no intensity
+ * choice. When on, intensity is always "inherit" (music-driven): every
+ * atmosphere scene already reacts continuously to live audio, so a fixed
+ * subtle/normal/strong pin only ever fought that instead of adding anything.
+ */
 export function AtmosphereFxPanel({ value, disabled, onChange }: AtmosphereFxPanelProps) {
   const presets = listAtmosphereFxPresets();
-  const presetDisabled = disabled || value.mode === "off";
+  const enabled = value.mode !== "off";
 
   return (
-    <div className="w-full min-w-0 overflow-hidden rounded-lg border border-white/10 bg-black/25">
-      <div className="border-b border-white/5 px-2.5 py-1.5">
-        <span className="text-[10px] font-semibold uppercase tracking-wide text-white/40">
-          Atmosphere FX
-        </span>
-      </div>
-      <div className="space-y-2.5 px-2.5 py-2.5">
-        <p className="text-[11px] leading-snug text-white/35">
-          Rendered as a full-frame audio-reactive overlay.
-        </p>
-        <label className="block space-y-1">
-          <span className="text-[10px] uppercase tracking-wide text-white/40">Intensity</span>
-          <select
-            className="w-full rounded-md border border-white/10 bg-black/40 px-2 py-1.5 text-xs text-white"
-            disabled={disabled}
-            value={value.mode}
-            onChange={(event) =>
-              onChange({ ...value, mode: event.target.value as AtmosphereFxMode })
-            }
-          >
-            {MODES.map((mode) => (
-              <option key={mode.value} value={mode.value}>
-                {mode.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="block space-y-1">
-          <span className="text-[10px] uppercase tracking-wide text-white/40">Preset</span>
-          <select
-            className="w-full rounded-md border border-white/10 bg-black/40 px-2 py-1.5 text-xs text-white disabled:opacity-40"
-            disabled={presetDisabled}
-            value={value.presetId ?? ""}
-            onChange={(event) =>
-              onChange({
-                ...value,
-                presetId: event.target.value ? event.target.value : null,
-              })
-            }
-          >
-            <option value="">Default (Glow)</option>
-            {presets.map((preset) => (
-              <option key={preset.id} value={preset.id}>
-                {preset.name}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
+    <div className="inline-flex shrink-0 items-center gap-1">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => onChange({ ...value, mode: enabled ? "off" : "inherit" })}
+        className={editorToggleClass(enabled, Boolean(disabled), "h-7 w-7 justify-center px-0 text-[11px]")}
+        aria-pressed={enabled}
+        aria-label={enabled ? "Hide atmosphere fx" : "Show atmosphere fx"}
+        title={enabled ? "Hide atmosphere fx" : "Show atmosphere fx"}
+      >
+        <Sparkles size={13} />
+      </button>
+      {enabled ? (
+        <select
+          className="h-7 rounded-md border border-white/15 bg-white/5 px-2 text-[11px] font-medium text-white/85 disabled:cursor-not-allowed disabled:opacity-40"
+          disabled={disabled}
+          value={value.presetId ?? ""}
+          onChange={(event) =>
+            onChange({
+              ...value,
+              presetId: event.target.value ? event.target.value : null,
+            })
+          }
+          aria-label="Atmosphere fx preset"
+        >
+          <option value="">Default (Glow)</option>
+          {presets.map((preset) => (
+            <option key={preset.id} value={preset.id}>
+              {preset.name}
+            </option>
+          ))}
+        </select>
+      ) : null}
     </div>
   );
 }

@@ -1,10 +1,5 @@
-import {
-  DEFAULT_ATMOSPHERE_FX_PRESET_ID,
-  getAtmosphereFxPreset,
-  isPublishedAtmosphereFxPreset,
-} from "./catalog";
+import { getAtmosphereFxPreset, isPublishedAtmosphereFxPreset } from "./catalog";
 import type {
-  AtmosphereFxGlobalMode,
   AtmosphereFxIntensity,
   AtmosphereFxMode,
   ResolvedAtmosphereFx,
@@ -18,26 +13,34 @@ const INTENSITY_GAIN: Record<AtmosphereFxIntensity, number> = {
 };
 
 export type ResolveAtmosphereFxInput = {
-  /** Global user pref. Off always wins and must mean zero runtime cost. */
-  globalMode: AtmosphereFxGlobalMode;
+  /** Site-wide hide/show. Always wins and must mean zero runtime cost. */
+  hidden: boolean;
+  /** Current rotation-engine pick. null = the engine picked "nothing" this cycle. */
   globalPresetId: string | null;
+  globalIntensity: AtmosphereFxIntensity;
+  /** 0-100 per-scene fx amount from the rotation engine's pick, if any. */
+  fxAmount?: number;
   /** Song / recording override. */
   song: SongAtmosphereFx | null | undefined;
   reducedMotion: boolean;
   lowPower: boolean;
 };
 
-function asIntensity(mode: AtmosphereFxMode | AtmosphereFxGlobalMode): AtmosphereFxIntensity | null {
+function asIntensity(mode: AtmosphereFxMode): AtmosphereFxIntensity | null {
   if (mode === "subtle" || mode === "normal" || mode === "strong") return mode;
   return null;
 }
 
 /**
  * Resolve one final atmosphere config.
- * Priority: global off → song off → policy → published preset + intensity.
+ * Priority: hidden → song off → policy → published preset + intensity.
+ * A global pick of "nothing this cycle" (globalPresetId null) does not itself
+ * disable atmosphere — it only means the rotation engine has no opinion right
+ * now, so a song-level override can still surface. Only `hidden` is the hard,
+ * always-wins kill switch.
  */
 export function resolveAtmosphereFx(input: ResolveAtmosphereFxInput): ResolvedAtmosphereFx {
-  if (input.globalMode === "off") {
+  if (input.hidden) {
     return { active: false, reason: "global-off" };
   }
 
@@ -51,12 +54,16 @@ export function resolveAtmosphereFx(input: ResolveAtmosphereFxInput): ResolvedAt
   }
 
   const songPresetId = input.song?.presetId ?? null;
+  const songPresetActive = Boolean(songPresetId && isPublishedAtmosphereFxPreset(songPresetId));
   const presetId =
-    (songPresetId && isPublishedAtmosphereFxPreset(songPresetId) ? songPresetId : null)
+    (songPresetActive ? songPresetId : null)
     ?? (input.globalPresetId && isPublishedAtmosphereFxPreset(input.globalPresetId)
       ? input.globalPresetId
-      : null)
-    ?? DEFAULT_ATMOSPHERE_FX_PRESET_ID;
+      : null);
+
+  if (!presetId) {
+    return { active: false, reason: "policy" };
+  }
 
   const preset = getAtmosphereFxPreset(presetId);
   if (!preset || preset.status !== "published") {
@@ -67,8 +74,7 @@ export function resolveAtmosphereFx(input: ResolveAtmosphereFxInput): ResolvedAt
     return { active: false, reason: "policy" };
   }
 
-  let intensity: AtmosphereFxIntensity =
-    asIntensity(songMode) ?? asIntensity(input.globalMode) ?? preset.defaultIntensity;
+  let intensity: AtmosphereFxIntensity = asIntensity(songMode) ?? input.globalIntensity;
 
   if (input.reducedMotion && intensity === "strong") {
     intensity = "subtle";
@@ -84,5 +90,9 @@ export function resolveAtmosphereFx(input: ResolveAtmosphereFxInput): ResolvedAt
     animationId: preset.animationId,
     intensity,
     intensityGain: INTENSITY_GAIN[intensity],
+    // fxAmount belongs to whichever preset the rotation engine actually picked
+    // this cycle — if the song's own preset won instead, the engine's fxAmount
+    // was tuned for a different (unrelated) preset and must not carry over.
+    fxAmount: songPresetActive ? undefined : input.fxAmount,
   };
 }

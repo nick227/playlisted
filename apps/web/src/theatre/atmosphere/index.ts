@@ -1,4 +1,4 @@
-export type { AtmosphereFxMode, AtmosphereFxGlobalMode, AtmosphereFxIntensity, AtmosphereFxCategory, AtmosphereFxPresetStatus, AtmosphereFxPresetDef, SongAtmosphereFx, ResolvedAtmosphereFx } from "./types";
+export type { AtmosphereFxMode, AtmosphereFxIntensity, AtmosphereFxCategory, AtmosphereFxPresetStatus, AtmosphereFxPresetDef, SongAtmosphereFx, ResolvedAtmosphereFx } from "./types";
 export {
   ATMOSPHERE_FX_PRESETS,
   DEFAULT_ATMOSPHERE_FX_PRESET_ID,
@@ -8,11 +8,18 @@ export {
 } from "./catalog";
 export { resolveAtmosphereFx } from "./resolveAtmosphereFx";
 export {
-  getAtmosphereFxSettings,
-  setAtmosphereFxSettings,
-  setAtmosphereFxMode,
-  setAtmosphereFxPresetId,
-  subscribeAtmosphereFxSettings,
-  useAtmosphereFxSettings,
+  getAtmosphereFxVisibility,
+  setAtmosphereFxVisible,
+  toggleAtmosphereFxVisible,
+  subscribeAtmosphereFxVisibility,
+  useAtmosphereFxVisibility,
 } from "./atmosphereFxStore";
+export {
+  ATMOSPHERE_ROTATION_FREQUENCY_PCT,
+  atmosphereRotationTiming,
+  computeAtmosphereHoldBounds,
+} from "./atmosphereRotationTiming";
+export type { AtmosphereHoldBounds } from "./atmosphereRotationTiming";
+export { pickNextAtmosphereState } from "./pickAtmosphereState";
+export type { AtmospherePick } from "./pickAtmosphereState";
 export { AtmosphereFxLayer } from "./AtmosphereFxLayer";

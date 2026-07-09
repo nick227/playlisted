@@ -35,6 +35,9 @@ export const ATMOSPHERE_FX_PRESETS: AtmosphereFxPresetDef[] = [
     reducedMotionSafe: true,
     mobileSafe: true,
     adminFeatured: true,
+    // Tuned default (VIGNETTE_MAX_SIZE_PCT) is 15 — a much lower baseline
+    // than the generic rotation floor, so give it its own low floor.
+    minAmountPct: 5,
   },
   {
     id: "bars",
@@ -49,6 +52,10 @@ export const ATMOSPHERE_FX_PRESETS: AtmosphereFxPresetDef[] = [
     performanceCost: 2,
     reducedMotionSafe: false,
     mobileSafe: true,
+    // Tuned default (BARS_MAX_HEIGHT_PCT) is 3 — deliberately near-floor so
+    // notes "shoot" dramatically off a quiet baseline; the generic rotation
+    // floor would always override that upward, so give it its own floor.
+    minAmountPct: 0,
   },
   {
     id: "radial",

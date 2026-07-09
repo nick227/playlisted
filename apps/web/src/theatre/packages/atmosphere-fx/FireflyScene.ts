@@ -1,6 +1,6 @@
 import { CanvasAnimation } from "../../core/CanvasAnimation";
 import type { PublicAnimationContext } from "../../author/types";
-import { bass, beatPunch, centroid, env, flux, high, intensityGain, mid } from "./audio";
+import { bass, beatPunch, centroid, env, flux, fxAmountOr, high, intensityGain, mid } from "./audio";
 import { hsla, moodTone, ShiftingMoodPalette } from "./atmosphereMood";
 
 type SwarmBehavior = "driftCloud" | "spiralOrbit" | "chaosScatter" | "twinCluster" | "streamFlow";
@@ -55,8 +55,8 @@ export class AtmosphereFireflyScene extends CanvasAnimation {
   private cloudCy = 0.5;
   private clusterBlend = 0;
 
-  private buildSwarm(w: number, h: number) {
-    const density = Math.max(0.1, Math.min(1, FIREFLY_COUNT_PCT / 100));
+  private buildSwarm(w: number, h: number, countPct: number) {
+    const density = Math.max(0.1, Math.min(1, countPct / 100));
     const count = Math.max(12, Math.round(15 + density * 75));
     this.agents = [];
     for (let i = 0; i < count; i++) {
@@ -106,7 +106,7 @@ export class AtmosphereFireflyScene extends CanvasAnimation {
     const w = this.cssWidth;
     const h = this.cssHeight;
     if (this.agents.length === 0 || Math.abs(w - this.prevW) > 40) {
-      this.buildSwarm(w, h);
+      this.buildSwarm(w, h, fxAmountOr(context, FIREFLY_COUNT_PCT));
       this.prevW = w;
     }
 

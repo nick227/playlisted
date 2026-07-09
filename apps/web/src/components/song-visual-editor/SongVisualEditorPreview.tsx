@@ -2,6 +2,7 @@ import { Pause, Play } from "lucide-react";
 import { useMemo, useRef, type RefObject } from "react";
 
 import type { VisualMediaAssetRecord } from "@/lib/visualMediaApi";
+import type { SongAtmosphereFx } from "@/theatre/media/types";
 
 import { useSongVisualTheatrePreview } from "./hooks/useSongVisualTheatrePreview";
 import { readClipAudioPulse } from "./audioPulse";

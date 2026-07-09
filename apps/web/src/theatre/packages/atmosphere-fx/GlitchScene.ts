@@ -8,6 +8,7 @@ import {
   fluxBass,
   fluxHigh,
   fluxMid,
+  fxAmountOr,
   high,
   intensityGain,
   mid,
@@ -202,7 +203,7 @@ export class AtmosphereGlitchScene extends CanvasAnimation {
 
     const pal = this.palette.tick(delta, punch);
     const tone = moodTone(pal.mood, hi);
-    const intensity = Math.max(0, Math.min(1, GLITCH_INTENSITY_PCT / 100));
+    const intensity = Math.max(0, Math.min(1, fxAmountOr(context, GLITCH_INTENSITY_PCT) / 100));
 
     const w = this.cssWidth;
     const h = this.cssHeight;

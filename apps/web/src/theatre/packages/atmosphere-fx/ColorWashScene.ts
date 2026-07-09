@@ -1,6 +1,6 @@
 import { CanvasAnimation } from "../../core/CanvasAnimation";
 import type { PublicAnimationContext } from "../../author/types";
-import { bass, beatPunch, env, high, intensityGain, mid } from "./audio";
+import { bass, beatPunch, env, fxAmountOr, high, intensityGain, mid } from "./audio";
 import { hsla, moodTone, ShiftingMoodPalette } from "./atmosphereMood";
 
 type WashStyle = "ribbons" | "curtains" | "tide" | "prism" | "smoke" | "synth";
@@ -118,7 +118,7 @@ export class AtmosphereColorWashScene extends CanvasAnimation {
     }
 
     if (this.style === "synth") {
-      const effectScale = Math.max(0, Math.min(100, SYNTH_EFFECT_TUNING)) / 100;
+      const effectScale = Math.max(0, Math.min(100, fxAmountOr(context, SYNTH_EFFECT_TUNING))) / 100;
       
       const cols = Math.floor(2 + e * 5 * effectScale + b * 2);
       const rows = Math.floor(2 + m * 5 * effectScale + hi * 3);

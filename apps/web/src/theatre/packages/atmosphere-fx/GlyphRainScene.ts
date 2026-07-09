@@ -1,6 +1,6 @@
 import { CanvasAnimation } from "../../core/CanvasAnimation";
 import type { PublicAnimationContext } from "../../author/types";
-import { bass, beatPunch, centroid, env, fluxHigh, high, intensityGain, mid } from "./audio";
+import { bass, beatPunch, centroid, env, fluxHigh, fxAmountOr, high, intensityGain, mid } from "./audio";
 import { hsla, moodTone, ShiftingMoodPalette } from "./atmosphereMood";
 
 type GlyphSet = "runes" | "alchemical" | "greekSigil" | "binaryHex" | "tallyGlitch";
@@ -63,8 +63,8 @@ export class AtmosphereGlyphRainScene extends CanvasAnimation {
   private flickerAccum = 0;
   private prevW = 0;
 
-  private buildColumns(w: number, h: number) {
-    const density = Math.max(0, Math.min(1, GLYPH_DENSITY_PCT / 100));
+  private buildColumns(w: number, h: number, densityPct: number) {
+    const density = Math.max(0, Math.min(1, densityPct / 100));
     const gap = Math.max(14, 42 - density * 26);
     const cols = Math.max(4, Math.ceil(w / gap));
     this.columns = [];
@@ -103,7 +103,7 @@ export class AtmosphereGlyphRainScene extends CanvasAnimation {
     const w = this.cssWidth;
     const h = this.cssHeight;
     if (this.columns.length === 0 || Math.abs(w - this.prevW) > 40) {
-      this.buildColumns(w, h);
+      this.buildColumns(w, h, fxAmountOr(context, GLYPH_DENSITY_PCT));
       this.prevW = w;
     }
 
