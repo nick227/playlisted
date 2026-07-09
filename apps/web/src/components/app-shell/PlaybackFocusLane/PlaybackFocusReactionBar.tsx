@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
 import { useRecordingReactions } from "@/hooks/useRecordingReactions";
 import {
   canToggleRecordingReaction,
@@ -11,14 +10,12 @@ import {
 import { stopPlaybackFocusBubble } from "@/lib/playbackFocus/interactiveTarget";
 
 const POP_MS = 420;
-const TRACK_REACTIONS = RECORDING_REACTIONS.filter((reaction) => reaction.id !== "love");
 
 type PlaybackFocusReactionBarProps = {
   recordingId?: string;
-  artistId?: string;
 };
 
-export function PlaybackFocusReactionBar({ recordingId, artistId }: PlaybackFocusReactionBarProps) {
+export function PlaybackFocusReactionBar({ recordingId }: PlaybackFocusReactionBarProps) {
   const { activeIds, isAuthenticated, toggleReaction } = useRecordingReactions(recordingId);
   const [popReaction, setPopReaction] = useState<RecordingReactionId | null>(null);
   const popTimerRef = useRef<number | null>(null);
@@ -45,20 +42,11 @@ export function PlaybackFocusReactionBar({ recordingId, artistId }: PlaybackFocu
     <div
       className="focus-lane__reactions"
       role="toolbar"
-      aria-label="Artist and track reactions"
+      aria-label="Track reactions"
       onPointerDown={stopPlaybackFocusBubble}
       onClick={stopPlaybackFocusBubble}
     >
-      {artistId ? (
-        <FavoriteHeartButton
-          target="artist"
-          id={artistId}
-          variant="inline"
-          inlineAlwaysVisible
-          className="focus-lane__reaction !p-0 !opacity-100"
-        />
-      ) : null}
-      {TRACK_REACTIONS.map((reaction) => {
+      {RECORDING_REACTIONS.map((reaction) => {
         const { id, icon: Icon } = reaction;
         const isActive = activeIds.has(id);
         const isPopping = popReaction === id;
@@ -67,6 +55,7 @@ export function PlaybackFocusReactionBar({ recordingId, artistId }: PlaybackFocu
           hasRecording: Boolean(recordingId),
         });
         const title = reactionButtonTitle(reaction, { isAuthenticated, isActive });
+        const isLove = id === "love";
 
         return (
           <button
@@ -75,6 +64,7 @@ export function PlaybackFocusReactionBar({ recordingId, artistId }: PlaybackFocu
             className={[
               "focus-lane__reaction",
               isActive ? "is-active" : "",
+              isLove && isActive ? "is-love" : "",
               isPopping ? "is-pop" : "",
               !canToggle ? "is-disabled" : "",
             ]
@@ -90,7 +80,12 @@ export function PlaybackFocusReactionBar({ recordingId, artistId }: PlaybackFocu
               handleReactionClick(id);
             }}
           >
-            <Icon size={18} strokeWidth={isActive ? 2.4 : 2} aria-hidden />
+            <Icon
+              size={18}
+              strokeWidth={isActive ? 2.4 : 2}
+              fill={isLove && isActive ? "currentColor" : "none"}
+              aria-hidden
+            />
           </button>
         );
       })}

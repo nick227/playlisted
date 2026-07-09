@@ -283,7 +283,7 @@ export function FocusLaneOverlay({
           onClick={stopPlaybackFocusBubble}
           {...{ [PLAYBACK_FOCUS_INTERACTIVE_ATTR]: "" }}
         >
-          <PlaybackFocusReactionBar recordingId={recordingId} artistId={artistId} />
+          <PlaybackFocusReactionBar recordingId={recordingId} />
           <VerticalVolumeControl
             variant="focus-lane"
             volume={volume}

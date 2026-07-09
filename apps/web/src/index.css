@@ -252,6 +252,13 @@ body {
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-brand) 35%, transparent);
 }
 
+.focus-lane__reaction.is-active.is-love {
+  border-color: color-mix(in srgb, #ef4444 70%, white 10%);
+  background: color-mix(in srgb, #ef4444 28%, transparent);
+  color: #ef4444;
+  box-shadow: 0 0 0 1px color-mix(in srgb, #ef4444 35%, transparent);
+}
+
 .focus-lane__reaction.is-pop {
   transform: scale(1.14);
   box-shadow: 0 0 18px color-mix(in srgb, var(--color-brand) 45%, transparent);
