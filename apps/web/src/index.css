@@ -246,26 +246,26 @@ body {
 }
 
 .focus-lane__reaction.is-active.is-love {
-  --reaction-accent: #ef4444;
+  --reaction-accent: #c48b8b;
 }
 
 .focus-lane__reaction.is-active.is-fire {
-  --reaction-accent: #f97316;
+  --reaction-accent: #c9a07a;
 }
 
 .focus-lane__reaction.is-active.is-sparkle {
-  --reaction-accent: #eab308;
+  --reaction-accent: #b8a88a;
 }
 
 .focus-lane__reaction.is-active.is-thumbs {
-  --reaction-accent: #22c55e;
+  --reaction-accent: #8fad9a;
 }
 
 .focus-lane__reaction.is-active {
-  border-color: color-mix(in srgb, var(--reaction-accent) 70%, white 10%);
-  background: color-mix(in srgb, var(--reaction-accent) 28%, transparent);
-  color: var(--reaction-accent);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--reaction-accent) 35%, transparent);
+  border-color: color-mix(in srgb, var(--reaction-accent) 55%, white 12%);
+  background: color-mix(in srgb, var(--reaction-accent) 22%, transparent);
+  color: color-mix(in srgb, var(--reaction-accent) 88%, white 12%);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--reaction-accent) 22%, transparent);
 }
 
 .focus-lane__reaction.is-pop {
@@ -275,7 +275,7 @@ body {
 
 .focus-lane__reaction.is-active.is-pop {
   transform: scale(1.2);
-  box-shadow: 0 0 18px color-mix(in srgb, var(--reaction-accent) 45%, transparent);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--reaction-accent) 28%, transparent);
 }
 
 .focus-lane__reaction:disabled,
@@ -1098,6 +1098,7 @@ a.focus-lane__overlay-secondary:hover {
   position: fixed;
   inset: var(--spacing-topbar) 0 var(--spacing-player-safe-mobile) 0;
   z-index: 45;
+  touch-action: none;
   cursor: default;
   border: 0;
   padding: 0;
