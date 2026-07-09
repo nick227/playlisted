@@ -362,7 +362,7 @@ export function RadioPage({ isEmbedded: _isEmbedded = false }: { isEmbedded?: bo
           </div>
         </div>
 
-        <div className="flex h-16 shrink-0 items-center justify-center gap-4 sm:mt-8">
+        <div className="flex h-16 shrink-0 items-center justify-center gap-4 my-4">
           <VerticalVolumeControl
             volume={volume}
             onVolumeChange={setVolume}
@@ -396,7 +396,7 @@ export function RadioPage({ isEmbedded: _isEmbedded = false }: { isEmbedded?: bo
           )}
         </div>
 
-        <div className="flex shrink-0 items-center justify-center gap-2 sm:mt-8">
+        <div className="flex shrink-0 items-center justify-center gap-2 mb-8">
           <button
             type="button"
             onClick={handleSubmitSong}

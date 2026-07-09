@@ -406,6 +406,7 @@ body {
 .song-visual-preview__focus-lane .focus-lane__overlay-media {
   max-width: calc(100% - 2.5rem);
   gap: 0.4rem;
+  z-index: 10062;
 }
 
 .song-visual-preview__focus-lane .focus-lane__overlay-art {
@@ -588,6 +589,7 @@ body {
   background: rgba(255, 255, 255, 0.14);
   padding: 0.5rem 0.75rem;
   border-radius: 0.5rem;
+  z-index: 10062;
 }
 
 @media (min-width: 640px) {

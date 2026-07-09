@@ -47,6 +47,7 @@ export function TitleIntroVisual({
       withPlayer={withPlayer}
       playerCollapsed={playerCollapsed}
       showSideRail={false}
+      className="!bg-black/80"
     />
   );
 }

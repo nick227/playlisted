@@ -107,6 +107,7 @@ export type FocusLaneOverlayProps = {
   primary: FocusLaneOverlayLink;
   secondary?: FocusLaneOverlayLink | null;
   meta?: string | null;
+  className?: string;
   genres?: GenreLink[];
   isPlaying?: boolean;
   recordingId?: string;
@@ -176,6 +177,7 @@ export function FocusLaneOverlay({
   genres = [],
   isPlaying = false,
   recordingId,
+  className,
   artistId,
   profileLinks = [],
   profileLinksAriaLabel = "Social links",
@@ -193,7 +195,7 @@ export function FocusLaneOverlay({
     "focus-lane__overlay",
     position === "center-middle" ? "focus-lane__overlay--center-middle" : "",
     withPlayer ? "" : "focus-lane__overlay--no-player",
-    withPlayer && playerCollapsed ? "focus-lane__overlay--player-collapsed" : "",
+    withPlayer && playerCollapsed ? "focus-lane__overlay--player-collapsed" : ""
   ]
     .filter(Boolean)
     .join(" ");
@@ -222,7 +224,7 @@ export function FocusLaneOverlay({
       onFocusCapture={reveal.handleFocusCapture}
     >
       <div
-        className={`${clusterClassName} focus-lane__overlay-media`}
+        className={`${clusterClassName} ${className || ""} focus-lane__overlay-media`}
         {...{ [PLAYBACK_FOCUS_INTERACTIVE_ATTR]: "" }}
       >
         {imageHref ? (
