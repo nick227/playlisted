@@ -80,10 +80,10 @@ function MagicFont({
 
   return (
     <span
-      className="block w-full min-w-0 max-w-full overflow-hidden break-words [overflow-wrap:anywhere]"
+      className="block w-full min-w-0 max-w-full overflow-hidden text-center break-words [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] [overflow-wrap:anywhere]"
       style={{
         fontSize: `${fontSize}px`,
-        lineHeight: 1,
+        lineHeight: 1.05,
       }}
     >
       {text}
@@ -198,19 +198,20 @@ export function RadioPage({ isEmbedded: _isEmbedded = false }: { isEmbedded?: bo
   }
 
   const pageHeight = "h-full max-h-full";
-  const radioCardMaxWidth = "max-w-[min(92vw,30rem)]";
+  /** Exact width — not max-width — so title/genre min-content cannot resize the card. */
+  const radioCardWidth = "w-[min(100%,30rem)]";
   const artworkClassName =
     "aspect-square max-h-full w-full max-w-full rounded-[1.4rem] border border-white/[0.08] bg-white/5 bg-cover bg-center shadow-[0_26px_80px_rgba(0,0,0,0.44)]";
   const titleText = displayTitle ?? "Radio";
   const titleSurfaceClassName =
-    "box-border block w-full min-w-0 max-w-full overflow-hidden rounded-sm bg-[var(--color-canvas)]/80 p-2 text-center shadow-[0_0_20px_rgba(0,0,0,0.5)] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] [overflow-wrap:anywhere] [word-break:break-word]";
+    "absolute inset-0 box-border flex items-center justify-center overflow-hidden rounded-sm bg-[var(--color-canvas)]/80 p-2 text-center shadow-[0_0_20px_rgba(0,0,0,0.5)]";
 
   return (
     <div
       className={`relative isolate -mx-4 flex min-w-0 items-center justify-center overflow-x-clip px-4 py-3 sm:-mx-6 sm:px-6 sm:py-6 lg:-mx-8 lg:px-8 ${pageHeight}`}
     >
       <div
-        className={`mx-auto flex w-full min-w-0 ${radioCardMaxWidth} [contain:inline-size] min-h-0 flex-col items-center justify-center gap-2 overflow-x-clip rounded-lg bg-[var(--color-canvas)]/80 py-6 shadow-[0_0_20px_rgba(0,0,0,0.5)] sm:gap-0 lg:px-12`}
+        className={`mx-auto flex ${radioCardWidth} shrink-0 [contain:inline-size] min-h-0 flex-col items-center justify-center gap-2 overflow-hidden rounded-lg bg-[var(--color-canvas)]/80 py-6 shadow-[0_0_20px_rgba(0,0,0,0.5)] sm:gap-0 lg:px-8`}
       >
         {radioQuery.isError ? (
           <div className="w-full shrink-0 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-center text-sm text-red-200 shadow-lg shadow-black/20 backdrop-blur">
@@ -226,23 +227,25 @@ export function RadioPage({ isEmbedded: _isEmbedded = false }: { isEmbedded?: bo
         ) : null}
 
 
-        <div className="flex h-8 shrink-0 items-center justify-center gap-2 rounded-full border border-white/[0.08] px-3 text-xs font-semibold uppercase text-white/78">
-          <PlaybackBars
-            active={genreStationActive || isLive}
-            playing={activePlaying}
-            variant="thumb"
-            barCount={7}
-          />
-          <span className="text-[var(--color-brand)]">{statusLabel}</span>
-          {!genreStationActive && isLive && station?.listenerCount != null ? (
-            <span className="flex items-center gap-1 border-l border-white/10 pl-2 text-white/72">
-              <Users size={12} />
-              {station.listenerCount}
-            </span>
-          ) : null}
+        <div className="flex h-8 w-full shrink-0 items-center justify-center gap-2 px-3 text-xs font-semibold uppercase text-white/78">
+          <div className="flex h-8 max-w-full items-center justify-center gap-2 overflow-hidden rounded-full border border-white/[0.08] px-3">
+            <PlaybackBars
+              active={genreStationActive || isLive}
+              playing={activePlaying}
+              variant="thumb"
+              barCount={7}
+            />
+            <span className="text-[var(--color-brand)]">{statusLabel}</span>
+            {!genreStationActive && isLive && station?.listenerCount != null ? (
+              <span className="flex items-center gap-1 border-l border-white/10 pl-2 text-white/72">
+                <Users size={12} />
+                {station.listenerCount}
+              </span>
+            ) : null}
+          </div>
         </div>
 
-        <div className="relative flex min-h-0 w-full max-w-[min(74vw,23rem)] items-center justify-center">
+        <div className="relative flex min-h-0 w-full max-w-[23rem] items-center justify-center px-4">
           <div className="absolute -inset-4 -z-10 rounded-[2rem] blur-xl" />
           {playlistUrl ? (
             <Link
@@ -260,12 +263,12 @@ export function RadioPage({ isEmbedded: _isEmbedded = false }: { isEmbedded?: bo
           )}
         </div>
 
-        <div className="grid w-full min-w-0 max-w-full shrink-0 [contain:inline-size] grid-cols-1 justify-items-center text-center sm:mt-7 sm:min-h-[9.35rem]">
-          <p className="mb-1 flex h-5 w-full min-w-0 max-w-full items-center justify-center gap-2 truncate rounded-full bg-[var(--color-canvas)] px-2 py-1 text-xs font-semibold uppercase text-white/42 sm:mb-3">
+        <div className="grid w-full shrink-0 grid-cols-1 justify-items-stretch px-4 text-center sm:mt-7 sm:min-h-[9.35rem]">
+          <p className="mb-1 flex h-5 w-full items-center justify-center gap-2 overflow-hidden rounded-full bg-[var(--color-canvas)] px-2 py-1 text-xs font-semibold uppercase text-white/42 sm:mb-3">
             <Radio size={13} className="shrink-0 text-[var(--color-brand)]" />
             <span className="min-w-0 truncate">{genreStationName ?? station?.name ?? "Playlisted Radio"}</span>
           </p>
-          <h1 className="radio-song-title box-border grid w-full min-w-0 max-w-full grid-cols-1 overflow-hidden text-center font-black leading-none text-white sm:min-h-[4.9rem]">
+          <h1 className="radio-song-title relative h-[4.9rem] w-full overflow-hidden text-center font-black leading-none text-white">
             {playlistUrl ? (
               <Link
                 to={playlistUrl}
@@ -280,7 +283,7 @@ export function RadioPage({ isEmbedded: _isEmbedded = false }: { isEmbedded?: bo
             )}
           </h1>
 
-          <p className="mt-1 h-7 w-full min-w-0 max-w-full truncate rounded-sm px-4 text-base leading-7 text-[var(--color-text-muted)] shadow-[0_0_20px_rgba(0,0,0,0.5)] sm:mt-3">
+          <p className="mt-1 h-7 w-full truncate rounded-sm px-4 text-base leading-7 text-[var(--color-text-muted)] shadow-[0_0_20px_rgba(0,0,0,0.5)] sm:mt-3">
             {displayArtistName ? (
               displayArtistUsername ? (
                 <Link to={profilePath(displayArtistUsername)} className="block truncate hover:text-white transition">
@@ -293,8 +296,8 @@ export function RadioPage({ isEmbedded: _isEmbedded = false }: { isEmbedded?: bo
           </p>
         </div>
 
-        <div className="w-full max-w-[min(74vw,23rem)] shrink-0 sm:mt-1">
-          <div className="flex shadow-[0_0_20px_rgba(0,0,0,0.5)] rounded-sm p-2 h-5 items-center justify-between text-[0.7rem] font-medium text-white/36">
+        <div className="w-full max-w-[23rem] shrink-0 px-4 sm:mt-1">
+          <div className="flex h-5 items-center justify-between rounded-sm p-2 text-[0.7rem] font-medium text-white/36 shadow-[0_0_20px_rgba(0,0,0,0.5)]">
             <span>{elapsedLabel ?? "Live"}</span>
             <span>{durationLabel ?? "On air"}</span>
           </div>
