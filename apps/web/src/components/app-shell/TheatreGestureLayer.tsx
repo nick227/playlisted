@@ -72,6 +72,7 @@ export function TheatreGestureLayer({
       className={buildRevealShieldClassName(withPlayer)}
       role="button"
       tabIndex={0}
+      data-swipe-surface
       aria-label="Show page content"
       onKeyDown={handleKeyDown}
       {...gestureHandlers}

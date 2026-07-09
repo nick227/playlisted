@@ -21,6 +21,7 @@ interface TrackListProps {
   playlistContext?: PlaylistTrackContext;
   onPlay: (recording: Recording, index: number) => void;
   playbackOriginForTrack?: (recording: Recording, index: number) => string | undefined;
+  activeWhenTrackMatches?: boolean;
   editMode?: boolean;
   onRemove?: (recordingId: string) => void;
   onMoveUp?: (recordingId: string) => void;
@@ -42,6 +43,7 @@ export function TrackList({
   playlistContext,
   onPlay,
   playbackOriginForTrack,
+  activeWhenTrackMatches,
   editMode,
   onRemove,
   onMoveUp,
@@ -88,6 +90,7 @@ export function TrackList({
             artworkUrl={recording.artworkUrl ?? fallbackArtworkUrl}
             onPlay={() => onPlay(recording, index)}
             playbackOrigin={playbackOriginForTrack?.(recording, index)}
+            activeWhenTrackMatches={activeWhenTrackMatches}
             recordingHref={
               playlistContext
                 ? playlistRecordingPath(

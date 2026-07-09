@@ -30,15 +30,18 @@ export function ArtistProfileCollectionPanel({ playlist, owner, editHref }: Arti
   const savedCollections = useCollectionPlaylists(100);
   const addCollection = useAddCollectionPlaylist();
   const { data: detail, isLoading } = usePlaylistByUsernameSlug(owner.username, playlist.slug);
-  const { setQueue, currentTrack, togglePlay, ensurePlayback, playbackContext, activeOriginKey, state } = useAudioPlayer();
+  const { setQueue, currentTrack, togglePlay, ensurePlayback, playbackContext, state } = useAudioPlayer();
 
-  const isActive = playbackContext.playlistId === playlist.id;
+  const recordings = (detail?.recordings ?? []) as CollectionRecording[];
+  const playlistContainsCurrentTrack = Boolean(
+    currentTrack?.id && recordings.some((recording) => recording.id === currentTrack.id),
+  );
+  const isActive = playbackContext.playlistId === playlist.id || playlistContainsCurrentTrack;
   const isPlaying = isActive && state === "playing";
   const isOwner = user?.id === owner.id;
   const isFollowing =
     isOwner || (savedCollections.data?.data.some((item) => item.id === playlist.id) ?? false);
 
-  const recordings = (detail?.recordings ?? []) as CollectionRecording[];
   const queueTracks: QueueTrack[] = recordings.map((recording) => ({
     ...recording,
     playlistTitle: playlist.title,
@@ -104,7 +107,7 @@ export function ArtistProfileCollectionPanel({ playlist, owner, editHref }: Arti
   function playTrack(recording: CollectionRecording, index: number) {
     const playbackOrigin = artistProfileTrackOrigin(playlist.id, recording.id);
 
-    if (currentTrack?.id === recording.id && activeOriginKey === playbackOrigin) {
+    if (currentTrack?.id === recording.id) {
       if (state === "playing") {
         togglePlay();
       } else {
@@ -253,6 +256,7 @@ export function ArtistProfileCollectionPanel({ playlist, owner, editHref }: Arti
             }}
             onPlay={playTrack}
             playbackOriginForTrack={(recording) => artistProfileTrackOrigin(playlist.id, recording.id)}
+            activeWhenTrackMatches={playlistContainsCurrentTrack}
           />
         )}
       </div>

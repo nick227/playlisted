@@ -45,6 +45,7 @@ interface TrackRowProps {
   error?: string;
   onPlay?: () => void;
   playbackOrigin?: string;
+  activeWhenTrackMatches?: boolean;
   editMode?: boolean;
   canMoveUp?: boolean;
   canMoveDown?: boolean;
@@ -78,6 +79,7 @@ export function TrackRow({
   error,
   onPlay,
   playbackOrigin,
+  activeWhenTrackMatches,
   editMode,
   canMoveUp,
   canMoveDown,
@@ -89,7 +91,8 @@ export function TrackRow({
   shareUrl,
 }: TrackRowProps) {
   const { accessToken } = useAuth();
-  const { isActive, trackIsPlaying } = useTrackPlayback(recordingId, playbackOrigin);
+  const { isActive, trackMatches, trackIsPlaying } = useTrackPlayback(recordingId, playbackOrigin);
+  const rowIsActive = isActive || Boolean(activeWhenTrackMatches && trackMatches);
   const showActions = !editMode && queueTrack && shareUrl;
   const [isSubtitleModalOpen, setSubtitleModalOpen] = useState(false);
   const [isVisualEditorOpen, setVisualEditorOpen] = useState(false);
@@ -162,7 +165,7 @@ export function TrackRow({
             handlePlaybackIntent();
           }}
           className={`absolute left-1/2 top-1/2 z-10 flex h-6 w-6 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-black/60 text-white transition hover:bg-black/80 ${
-            isActive ? "text-[var(--color-brand)]" : ""
+            rowIsActive ? "text-[var(--color-brand)]" : ""
           }`}
           aria-label={trackIsPlaying ? "Pause track" : "Play track"}
           title={trackIsPlaying ? "Pause" : "Play"}
@@ -227,13 +230,13 @@ export function TrackRow({
             to={recordingHref}
             onClick={handleRecordingLinkClick}
             className={`block truncate text-sm font-medium hover:underline ${
-              isActive ? "text-[var(--color-brand)]" : "text-white"
+              rowIsActive ? "text-[var(--color-brand)]" : "text-white"
             }`}
           >
             {title}
           </Link>
         ) : (
-          <p className={`truncate text-sm font-medium ${isActive ? "text-[var(--color-brand)]" : "text-white"}`}>
+          <p className={`truncate text-sm font-medium ${rowIsActive ? "text-[var(--color-brand)]" : "text-white"}`}>
             {title}
           </p>
         )
@@ -283,7 +286,7 @@ export function TrackRow({
       <WaveformTrackRow
         id={recordingId}
         audioUrl={audioUrl}
-        isActive={isActive}
+        isActive={rowIsActive}
         isPlaying={trackIsPlaying}
         onPlay={onPlay ? handlePlaybackIntent : undefined}
         imageUrl={artworkUrl}

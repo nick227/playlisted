@@ -312,7 +312,10 @@ export function RadioPage({ isEmbedded: _isEmbedded = false }: { isEmbedded?: bo
 	          )}
         </div>
 
-        <div className="flex w-full max-w-[min(100%,380px)] min-w-0 shrink-0 flex-col items-center justify-start text-center sm:mt-7 sm:min-h-[9.35rem]">
+        <div
+          data-radio-gesture-surface
+          className="flex w-full max-w-[min(100%,380px)] min-w-0 shrink-0 flex-col items-center justify-start text-center sm:mt-7 sm:min-h-[9.35rem]"
+        >
           <p className="mb-1 flex h-5 w-full max-w-full min-w-0 items-center justify-center gap-2 truncate px-2 py-1 text-xs font-semibold uppercase text-white/42 sm:mb-3">
             <Radio size={13} className="shrink-0 text-[var(--color-brand)]" />
             <span className="min-w-0 truncate">{genreStationName ?? station?.name ?? "Playlisted Radio"}</span>
@@ -345,7 +348,7 @@ export function RadioPage({ isEmbedded: _isEmbedded = false }: { isEmbedded?: bo
           </p>
         </div>
 
-        <div className="w-full max-w-[min(74vw,23rem)] shrink-0 sm:mt-1">
+        <div data-radio-gesture-surface className="w-full max-w-[min(74vw,23rem)] shrink-0 sm:mt-1">
           <div className="flex rounded-sm p-2 h-5 items-center justify-between text-[0.7rem] font-medium text-white/36">
             <span>{elapsedLabel ?? "Live"}</span>
             <span>{durationLabel ?? "On air"}</span>

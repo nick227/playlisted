@@ -57,6 +57,10 @@ export function artistProfileTrackOrigin(playlistId: string, recordingId: string
   return playbackOriginKey("artist-profile", "playlist", playlistId, recordingId);
 }
 
+export function collectionTrackOrigin(playlistId: string, recordingId: string): string {
+  return playbackOriginKey("collection", "playlist", playlistId, recordingId);
+}
+
 export function artistProfileArtistOrigin(userId: string): string {
   return playbackOriginKey("artist-profile", "artist", userId);
 }

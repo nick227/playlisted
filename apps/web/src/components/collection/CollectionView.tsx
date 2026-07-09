@@ -23,6 +23,8 @@ export interface CollectionViewProps {
   mode?: CollectionViewMode;
   onPlayAll?: (shuffle: boolean) => void;
   onPlayTrack?: (recording: CollectionRecording, index: number) => void;
+  playbackOriginForTrack?: (recording: CollectionRecording, index: number) => string | undefined;
+  activeWhenTrackMatches?: boolean;
   playlistIsPlaying?: boolean;
   playlistIsPaused?: boolean;
   onTitleChange?: (title: string) => void;
@@ -323,6 +325,8 @@ export function CollectionView({
   mode = "view",
   onPlayAll,
   onPlayTrack,
+  playbackOriginForTrack,
+  activeWhenTrackMatches,
   playlistIsPlaying,
   playlistIsPaused,
   onTitleChange,
@@ -585,6 +589,8 @@ export function CollectionView({
               ownerName={playlist.owner.displayName}
               playlistContext={playlistContext}
               onPlay={handlePlayRecording}
+              playbackOriginForTrack={playbackOriginForTrack}
+              activeWhenTrackMatches={activeWhenTrackMatches}
               editMode
               onRemove={onRemoveTrack}
               onMoveUp={onMoveTrackUp}
@@ -606,6 +612,8 @@ export function CollectionView({
             ownerName={playlist.owner.displayName}
             playlistContext={playlistContext}
             onPlay={handlePlayRecording}
+            playbackOriginForTrack={playbackOriginForTrack}
+            activeWhenTrackMatches={activeWhenTrackMatches}
           />
         )}
       </div>

@@ -14,6 +14,7 @@ import { usePlaylistHashTrack } from "@/hooks/usePlaylistHashTrack";
 import { usePlaylists } from "@/hooks/usePlaylists";
 import { BROWSE_LAYOUT_CLASS, playlistBrowseCrumbs } from "@/lib/browsePaths";
 import { resolvePlaylistBrowseSequence } from "@/lib/browseNavigation/resolvePlaylistNeighbors";
+import { collectionTrackOrigin } from "@/lib/playbackOrigin";
 import { recordingHash } from "@/lib/routes";
 import { useAudioPlayer, type QueueTrack } from "@/providers/AudioPlayerProvider";
 import { useAuth } from "@/providers/AuthProvider";
@@ -47,7 +48,10 @@ export function PlaylistDetailView({ playlist, isRefreshing = false }: PlaylistD
     [playlist.owner.displayName, playlist.owner.username, playlist.slug, playlist.title, recordings],
   );
 
-  const playlistHasCurrent = playbackContext.playlistId === playlist.id;
+  const playlistContainsCurrentTrack = Boolean(
+    currentTrack?.id && recordings.some((recording) => recording.id === currentTrack.id),
+  );
+  const playlistHasCurrent = playbackContext.playlistId === playlist.id || playlistContainsCurrentTrack;
   const playlistIsPlaying = playlistHasCurrent && state === "playing";
   const playlistIsPaused = playlistHasCurrent && state === "paused";
   const isInCollections =
@@ -66,6 +70,7 @@ export function PlaylistDetailView({ playlist, isRefreshing = false }: PlaylistD
 
     const tracks = shuffle ? [...queueTracks].sort(() => Math.random() - 0.5) : queueTracks;
     if (tracks.length > 0) {
+      const origin = collectionTrackOrigin(playlist.id, tracks[0].id);
       setQueue(
         tracks,
         0,
@@ -75,7 +80,7 @@ export function PlaylistDetailView({ playlist, isRefreshing = false }: PlaylistD
           playlistSlug: playlist.slug,
           sourceContext: "playlist",
         },
-        { segmentLabel: playlist.title },
+        { segmentLabel: playlist.title, playbackOrigin: origin, originScope: "track" },
       );
     }
   }, [
@@ -92,27 +97,14 @@ export function PlaylistDetailView({ playlist, isRefreshing = false }: PlaylistD
   ]);
 
   const playRecording = useCallback((recording: CollectionRecording, index: number) => {
-    if (currentTrack?.id === recording.id) {
-      if (playbackContext.playlistId === playlist.id) {
-        if (state === "playing") {
-          togglePlay();
-        } else {
-          ensurePlayback();
-        }
-        return;
-      }
+    const playbackOrigin = collectionTrackOrigin(playlist.id, recording.id);
 
-      setQueue(
-        queueTracks,
-        index,
-        {
-          playlistId: playlist.id,
-          playlistOwnerUsername: playlist.owner.username,
-          playlistSlug: playlist.slug,
-          sourceContext: "playlist",
-        },
-        { segmentLabel: playlist.title },
-      );
+    if (currentTrack?.id === recording.id) {
+      if (state === "playing") {
+        togglePlay();
+      } else {
+        ensurePlayback();
+      }
       return;
     }
 
@@ -125,11 +117,10 @@ export function PlaylistDetailView({ playlist, isRefreshing = false }: PlaylistD
         playlistSlug: playlist.slug,
         sourceContext: "playlist",
       },
-      { segmentLabel: playlist.title },
+      { segmentLabel: playlist.title, playbackOrigin, originScope: "track" },
     );
   }, [
     currentTrack?.id,
-    playbackContext.playlistId,
     state,
     playlist.id,
     playlist.owner.username,
@@ -142,13 +133,13 @@ export function PlaylistDetailView({ playlist, isRefreshing = false }: PlaylistD
   ]);
 
   useEffect(() => {
-    if (playbackContext.playlistId !== playlist.id || !currentTrack) return;
+    if (!currentTrack) return;
     if (!recordings.some((recording) => recording.id === currentTrack.id)) return;
 
     const nextHash = recordingHash(currentTrack.title);
     if (window.location.hash === nextHash) return;
     window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}${nextHash}`);
-  }, [currentTrack, playbackContext.playlistId, playlist.id, recordings]);
+  }, [currentTrack, recordings]);
 
   const browseCrumbs = playlistBrowseCrumbs(
     { displayName: playlist.owner.displayName, username: playlist.owner.username },
@@ -177,6 +168,8 @@ export function PlaylistDetailView({ playlist, isRefreshing = false }: PlaylistD
             mode="view"
             onPlayAll={playAll}
             onPlayTrack={playRecording}
+            playbackOriginForTrack={(recording) => collectionTrackOrigin(playlist.id, recording.id)}
+            activeWhenTrackMatches={playlistContainsCurrentTrack}
             playlistIsPlaying={playlistIsPlaying}
             playlistIsPaused={playlistIsPaused}
             onAddCollection={

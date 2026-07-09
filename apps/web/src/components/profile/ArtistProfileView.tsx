@@ -40,7 +40,7 @@ export function ArtistProfileView({
   const relatedArtistLimit = 12;
   const { data: related } = useTopArtists("30d", relatedArtistLimit + 1);
   const { user: authUser } = useAuth();
-  const { setQueue, togglePlay, ensurePlayback, activeOriginKey, state } = useAudioPlayer();
+  const { setQueue, currentTrack, togglePlay, ensurePlayback, activeOriginKey, state } = useAudioPlayer();
   const { tracks, isLoading: tracksLoading } = useArtistTracks(user.id);
 
   const isOwner = authUser?.id === user.id;
@@ -52,7 +52,11 @@ export function ArtistProfileView({
   const displayName = preview?.displayName ?? user.displayName;
   const browseCrumbs = artistDetailCrumbs(displayName);
   const playbackOrigin = artistProfileArtistOrigin(user.id);
-  const artistHasCurrent = activeOriginKey === playbackOrigin;
+  const artistContainsCurrentTrack = Boolean(
+    currentTrack?.id &&
+      (currentTrack.uploaderId === user.id || tracks.some((track) => track.id === currentTrack.id)),
+  );
+  const artistHasCurrent = activeOriginKey === playbackOrigin || artistContainsCurrentTrack;
   const artistIsPlaying = artistHasCurrent && state === "playing";
   const artistIsPaused = artistHasCurrent && state === "paused";
   const queueTracks = useMemo(

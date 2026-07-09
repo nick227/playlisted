@@ -138,6 +138,7 @@ export function AppShell({ children }: AppShellProps) {
         visible={playbackFocus.miniViewMode}
         track={focusTrack}
         onReturn={playbackFocus.revealPage}
+        onSkip={skipPlayback}
         withPlayer={shellHasPlayer}
         snapReveal={playbackFocus.snapReveal}
       />

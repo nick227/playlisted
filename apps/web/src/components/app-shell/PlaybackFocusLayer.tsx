@@ -1,4 +1,5 @@
 import type { FocusRecording } from "@/lib/playbackFocus/types";
+import type { SwipeDirection } from "@/lib/browseNavigation/types";
 
 import { MinimizedSongPlayer } from "./PlaybackFocusLane/MinimizedSongPlayer";
 
@@ -20,6 +21,7 @@ type PlaybackFocusLayerProps = {
   visible: boolean;
   track: PlaybackFocusTrack | null;
   onReturn: () => void;
+  onSkip?: (direction: SwipeDirection) => void;
   withPlayer: boolean;
   snapReveal: boolean;
 };
@@ -41,6 +43,7 @@ export function PlaybackFocusLayer({
   visible,
   track,
   onReturn,
+  onSkip,
   withPlayer,
   snapReveal,
 }: PlaybackFocusLayerProps) {
@@ -54,6 +57,7 @@ export function PlaybackFocusLayer({
       visible={visible}
       showExpand
       onExpand={onReturn}
+      onSkip={onSkip}
       expandLabel="Return to page"
       withPlayer={withPlayer}
       snapReveal={snapReveal}

@@ -1,6 +1,14 @@
 import { Maximize2 } from "lucide-react";
+import { useCallback } from "react";
 
 import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
+import { useSwipeGesture } from "@/hooks/useSwipeGesture";
+import type { SwipeDirection } from "@/lib/browseNavigation/types";
+import {
+  SWIPE_CLICK_SUPPRESS_MS,
+  armTheatreSwipeSuppress,
+  isGestureExcludedTarget,
+} from "@/lib/gestures/swipeGesture";
 import { PLAYBACK_FOCUS_INTERACTIVE_ATTR, stopPlaybackFocusBubble } from "@/lib/playbackFocus/interactiveTarget";
 import type { FocusRecording } from "@/lib/playbackFocus/types";
 
@@ -13,10 +21,18 @@ type MinimizedSongPlayerProps = {
   visible: boolean;
   showExpand: boolean;
   onExpand?: () => void;
+  onSkip?: (direction: SwipeDirection) => void;
   expandLabel?: string;
   withPlayer: boolean;
   snapReveal?: boolean;
 };
+
+function isMiniPlayerGestureExcludedTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return false;
+  if (target.closest(".focus-lane__mini-player-expand, .focus-lane__mini-player-favorite")) return true;
+  if (target.closest(".focus-lane__mini-player-card")) return false;
+  return isGestureExcludedTarget(target);
+}
 
 export function MinimizedSongPlayer({
   recording,
@@ -25,6 +41,7 @@ export function MinimizedSongPlayer({
   visible,
   showExpand,
   onExpand,
+  onSkip,
   expandLabel = "Expand artist card",
   withPlayer,
   snapReveal = false,
@@ -32,6 +49,24 @@ export function MinimizedSongPlayer({
   const links = resolveArtistVisualLinks({
     recording,
     artistUsername: artistUsername ?? recording.ownerUsername,
+  });
+
+  const handleHorizontalSwipe = useCallback(
+    (direction: SwipeDirection) => {
+      armTheatreSwipeSuppress(SWIPE_CLICK_SUPPRESS_MS);
+      onSkip?.(direction);
+    },
+    [onSkip],
+  );
+
+  const gestureHandlers = useSwipeGesture({
+    enabled: visible && Boolean(onSkip),
+    axis: "horizontal",
+    isExcludedTarget: isMiniPlayerGestureExcludedTarget,
+    onIntentStart: axis => {
+      if (axis === "horizontal") armTheatreSwipeSuppress(SWIPE_CLICK_SUPPRESS_MS);
+    },
+    onHorizontalSwipe: handleHorizontalSwipe,
   });
 
   return (
@@ -46,6 +81,12 @@ export function MinimizedSongPlayer({
         .filter(Boolean)
         .join(" ")}
       aria-hidden={!visible}
+      onPointerDown={gestureHandlers.onPointerDown}
+      onPointerMove={gestureHandlers.onPointerMove}
+      onPointerUp={gestureHandlers.onPointerUp}
+      onPointerCancel={gestureHandlers.onPointerCancel}
+      onLostPointerCapture={gestureHandlers.onLostPointerCapture}
+      onClickCapture={gestureHandlers.onClick}
     >
       <div className="focus-lane__mini-player-card">
         {links.songHref ? (
