@@ -114,11 +114,11 @@ function drawJuliaOrbit(input: DrawFractalInput) {
 
 /** Recursive spiral tree — organic fractal branching. */
 function drawSpiralTree(input: DrawFractalInput, depth: number, x: number, y: number, ang: number, len: number) {
-  const { ctx, recipe, g, t, bass, mid, high, env, punch, beat } = input;
+  const { ctx, recipe, g, t, bass, mid, high, env, beat } = input;
   if (depth <= 0 || len < 2) return;
   const x2 = x + Math.cos(ang) * len;
   const y2 = y + Math.sin(ang) * len;
-  ctx.strokeStyle = hsla(recipe.hueSeed + depth * 28 + t * 15, 70, 40 + depth * 25, (0.14 + env * 0.18) * g);
+  ctx.strokeStyle = hsla(recipe.hueSeed + depth * 28 + t * 15, 70, 40 + mid * 25, (0.14 + env * 0.18) * g);
   ctx.lineWidth = Math.max(0.6, depth * 0.7 + bass);
   ctx.beginPath();
   ctx.moveTo(x, y);
