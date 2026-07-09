@@ -8,7 +8,8 @@ export function TopBarBrand({ mobileSearchOpen }: TopBarBrandProps) {
   return (
     <PlaylistedMasthead
       variant={mobileSearchOpen ? "mini" : "full"}
-      className="shrink-0 text-base transition-opacity duration-300 motion-reduce:transition-none sm:hidden"
+      showLogo={!mobileSearchOpen}
+      className="shrink-0 text-lg transition-opacity duration-300 motion-reduce:transition-none sm:hidden"
     />
   );
 }

@@ -8,6 +8,7 @@ export type PlaybackFocusBodyFadeConfig = {
 export function getPlaybackFocusBodyFadeConfig(pathname: string, user?: AuthUser | null): PlaybackFocusBodyFadeConfig {
   if (pathname === "/admin" || pathname.startsWith("/admin/")) return { disabled: true };
   if (pathname === "/login" || pathname === "/register") return { disabled: false, delayMs: 6330000 };
+  if (pathname === "/library") return { disabled: false, delayMs: 15000 };
   if (pathname === "/favorites" || pathname === "/favorites/") return { disabled: false, delayMs: 10000 };
   if (pathname === "/chat" || pathname.startsWith("/chat/")) return { disabled: true };
   if (pathname === "/settings" || pathname.startsWith("/settings/")) return { disabled: true };

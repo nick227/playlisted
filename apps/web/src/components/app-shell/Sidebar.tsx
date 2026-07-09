@@ -151,7 +151,7 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
           type="button"
           className="fixed inset-0 z-[10055] bg-black/60 lg:hidden"
           onClick={onClose}
-        aria-label="Close menu"
+          aria-label="Close menu"
         />
       ) : null}
       <aside
@@ -162,7 +162,7 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
           if (event.currentTarget.contains(event.relatedTarget)) return;
           scheduleNavFade();
         }}
-        className={`w-[var(--spacing-sidebar)] max-w-[85vw] shrink-0 flex-col transition-transform lg:translate-x-0 lg:bg-transparent lg:shadow-none lg:backdrop-blur-none ${
+        className={`max-lg:fixed max-lg:left-0 max-lg:top-0 max-lg:z-[10060] max-lg:flex max-lg:h-dvh max-lg:bg-[var(--color-canvas)] max-lg:shadow-2xl max-lg:shadow-black/40 w-[var(--spacing-sidebar)] max-w-[85vw] shrink-0 flex-col transition-transform lg:translate-x-0 lg:bg-transparent lg:shadow-none lg:backdrop-blur-none ${
           mobileOpen
             ? "translate-x-0"
             : "-translate-x-full max-lg:invisible max-lg:pointer-events-none lg:translate-x-0"

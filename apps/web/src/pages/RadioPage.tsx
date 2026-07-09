@@ -239,6 +239,8 @@ export function RadioPage({ isEmbedded: _isEmbedded = false }: { isEmbedded?: bo
         } else {
           navigate("/library");
         }
+      } else if (direction === "down") {
+        navigate("/library");
       }
     },
   });

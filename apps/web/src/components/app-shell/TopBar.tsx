@@ -14,7 +14,7 @@ interface TopBarProps {
  * Top bar layout uses Tailwind `sm` (640px) as the mobile/desktop split.
  *
  * MOBILE (< sm) — two masthead + search states:
- *   • Closed (default): hamburger · full "Playlisted" wordmark · [search icon + actions right-aligned]
+ *   • Closed (default): hamburger · full "Playlisted" wordmark + logo · [search icon + actions right-aligned]
  *   • Open:             hamburger · "PL" mini mark · expanded search field · actions
  *     (blurring the input restores closed view after 2s; Escape / pick result closes immediately)
  *
