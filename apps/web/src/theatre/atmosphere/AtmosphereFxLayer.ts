@@ -9,9 +9,8 @@ import type { ResolvedAtmosphereFx, SongAtmosphereFx } from "./types";
 const LAYER_Z = 102;
 
 function blendModeForPreset(presetId: string): string {
-  // Dark FX (vignette) must use normal — screen blend discards black.
-  if (presetId === "vignette") return "normal";
-  if (presetId === "bars" || presetId === "radial") return "normal";
+  // Scenes that paint dark values need normal; additive scenes use screen.
+  if (presetId === "vignette" || presetId === "bars") return "normal";
   return "screen";
 }
 

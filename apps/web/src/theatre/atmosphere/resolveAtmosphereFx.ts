@@ -12,9 +12,9 @@ import type {
 } from "./types";
 
 const INTENSITY_GAIN: Record<AtmosphereFxIntensity, number> = {
-  subtle: 0.45,
-  normal: 0.75,
-  strong: 1,
+  subtle: 0.65,
+  normal: 1,
+  strong: 1.35,
 };
 
 export type ResolveAtmosphereFxInput = {
