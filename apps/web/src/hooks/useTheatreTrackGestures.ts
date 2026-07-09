@@ -42,16 +42,19 @@ type UseTheatreTrackGesturesOptions = {
   onReveal: () => void;
 };
 
-function isTheatreGestureBlockedTarget(target: EventTarget | null): boolean {
+function isTheatreSwipeControlTarget(target: EventTarget | null): boolean {
   if (!(target instanceof Element)) return false;
+  if (target.closest(".play-focus-theatre-hit-area")) return false;
   return Boolean(
     target.closest(
       [
-        "[data-bottom-player]",
-        ".topbar-chrome",
-        ".sidebar-nav-content",
-        ".bottom-player",
-        "[data-playback-focus-interactive]",
+        "a",
+        "button",
+        "input",
+        "select",
+        "textarea",
+        "[role='button']",
+        "[role='link']",
       ].join(","),
     ),
   );
@@ -59,7 +62,7 @@ function isTheatreGestureBlockedTarget(target: EventTarget | null): boolean {
 
 function shouldRevealTapTarget(target: EventTarget | null): boolean {
   if (isPlaybackFocusInteractiveTarget(target)) return false;
-  if (isTheatreGestureBlockedTarget(target)) return false;
+  if (isTheatreSwipeControlTarget(target)) return false;
   if (isSwipeExcludedTarget(target)) return false;
   return true;
 }
@@ -90,7 +93,7 @@ export function useTheatreTrackGestures({
 
     const onPointerDown = (event: PointerEvent) => {
       if (event.pointerType === "mouse" && event.button !== 0) return;
-      if (isTheatreGestureBlockedTarget(event.target)) return;
+      if (isTheatreSwipeControlTarget(event.target)) return;
 
       clickSuppressionUntilRef.current = 0;
       const now = performance.now();
@@ -119,6 +122,10 @@ export function useTheatreTrackGestures({
         if (Math.abs(deltaX) <= Math.abs(deltaY)) return;
         drag.moved = true;
         drag.direction = deltaX < 0 ? "next" : "prev";
+        // Once horizontal intent is clear, keep the reveal shield and any
+        // synthetic click from treating this as a tap.
+        armTheatreSwipeSuppress();
+        clickSuppressionUntilRef.current = performance.now() + SWIPE_CLICK_SUPPRESS_MS;
       }
 
       const now = performance.now();
@@ -126,6 +133,7 @@ export function useTheatreTrackGestures({
       drag.velocityX = (event.clientX - drag.lastX) / elapsed;
       drag.lastX = event.clientX;
       drag.lastTime = now;
+      event.preventDefault();
     };
 
     const onPointerFinish = (event: PointerEvent) => {
@@ -146,11 +154,13 @@ export function useTheatreTrackGestures({
       const moved = drag.moved;
       resetDrag();
 
-      if (committed && direction) {
-        // Capture-phase track skip runs before the reveal shield's pointerup —
-        // arm suppression so that same gesture cannot also restore the body.
+      if (moved) {
         armTheatreSwipeSuppress();
         clickSuppressionUntilRef.current = performance.now() + SWIPE_CLICK_SUPPRESS_MS;
+        event.preventDefault();
+      }
+
+      if (committed && direction) {
         if (direction === "next") onTrackNextRef.current();
         else onTrackPreviousRef.current();
         return;
@@ -164,7 +174,6 @@ export function useTheatreTrackGestures({
 
     const onClickCapture = (event: MouseEvent) => {
       if (performance.now() > clickSuppressionUntilRef.current) return;
-      if (isPlaybackFocusInteractiveTarget(event.target)) return;
       event.preventDefault();
       event.stopPropagation();
     };
