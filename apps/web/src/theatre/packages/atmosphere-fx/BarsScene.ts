@@ -4,7 +4,7 @@ import { barsSpectrum, bass, beatPunch, env, high, intensityGain, mid } from "./
 import { coolHueAt, hotHueAt, ShiftingBarsPalette } from "./barsPalette";
 
 /** Max bar travel as % of viewport height (100 ≈ full screen). */
-export const BARS_MAX_HEIGHT_PCT = 10;
+export const BARS_MAX_HEIGHT_PCT = 3;
 
 type Ripple = {
   origin: number;
@@ -144,8 +144,8 @@ export class AtmosphereBarsScene extends CanvasAnimation {
 
     const fog = this.ctx.createLinearGradient(0, h * 0.35, 0, h);
     fog.addColorStop(0, "hsla(0, 0%, 0%, 0)");
-    fog.addColorStop(0.55, `hsla(${pal.fog}, 50%, 12%, ${(0.1 + e * 0.16) * g})`);
-    fog.addColorStop(1, `hsla(${coolHueAt(pal, 0.3)}, 60%, 10%, ${(0.22 + b * 0.2) * g})`);
+    fog.addColorStop(0.55, `hsla(${pal.fog}, 35%, 8%, ${(0.14 + e * 0.18) * g})`);
+    fog.addColorStop(1, `hsla(${coolHueAt(pal, 0.3)}, 40%, 6%, ${(0.28 + b * 0.22) * g})`);
     this.ctx.fillStyle = fog;
     this.ctx.fillRect(0, 0, w, h);
 
@@ -154,7 +154,7 @@ export class AtmosphereBarsScene extends CanvasAnimation {
 
     this.ctx.globalCompositeOperation = "lighter";
 
-    // Ghost trails of peaks
+    // Ghost trails of peaks — muted club smoke
     for (let i = 0; i < count; i++) {
       const ghost = this.peaks[i]!;
       if (ghost < 0.02) continue;
@@ -162,8 +162,8 @@ export class AtmosphereBarsScene extends CanvasAnimation {
       const gh = ghost * maxH;
       const tNorm = i / Math.max(1, count - 1);
       const ghostGrad = this.ctx.createLinearGradient(x, floorY - gh, x, floorY);
-      ghostGrad.addColorStop(0, `hsla(${coolHueAt(pal, tNorm)}, 90%, 70%, ${(0.05 + hi * 0.08) * g})`);
-      ghostGrad.addColorStop(1, `hsla(${coolHueAt(pal, 1 - tNorm)}, 70%, 40%, ${(0.03 + e * 0.05) * g})`);
+      ghostGrad.addColorStop(0, `hsla(${coolHueAt(pal, tNorm)}, 55%, 42%, ${(0.04 + hi * 0.06) * g})`);
+      ghostGrad.addColorStop(1, `hsla(${coolHueAt(pal, 1 - tNorm)}, 40%, 22%, ${(0.03 + e * 0.04) * g})`);
       this.ctx.fillStyle = ghostGrad;
       this.ctx.fillRect(x - 2, floorY - gh, barW + 4, gh);
     }
@@ -182,8 +182,9 @@ export class AtmosphereBarsScene extends CanvasAnimation {
       const hotHue = hotHueAt(pal, tNorm);
       const hit = Math.min(1, flash * 1.5 + (v > 0.4 ? (v - 0.4) * 1.8 : 0));
       const hue = coolHue + (((hotHue - coolHue + 540) % 360) - 180) * hit;
-      const sat = 72 + hit * 28;
-      const light = 40 + hit * 42 + punch * 10;
+      // Dark body, neon only on hits — goth club, not candy
+      const sat = 48 + hit * 42;
+      const light = 22 + hit * 38 + punch * 8;
 
       if (hit > 0.2) {
         const bloom = this.ctx.createRadialGradient(
@@ -194,30 +195,30 @@ export class AtmosphereBarsScene extends CanvasAnimation {
           floorY - bh * 0.5,
           bh * 0.6,
         );
-        bloom.addColorStop(0, `hsla(${hotHue}, 100%, 70%, ${hit * 0.4 * g})`);
+        bloom.addColorStop(0, `hsla(${hotHue}, 90%, 55%, ${hit * 0.32 * g})`);
         bloom.addColorStop(1, "hsla(0,0%,0%,0)");
         this.ctx.fillStyle = bloom;
         this.ctx.fillRect(x - barW, floorY - bh - 24, barW * 3, bh + 48);
       }
 
       const grad = this.ctx.createLinearGradient(x, floorY - bh, x, floorY);
-      grad.addColorStop(0, `hsla(${hue}, ${sat}%, ${Math.min(94, light + 20)}%, ${(0.8 + hit * 0.2) * g})`);
-      grad.addColorStop(0.35, `hsla(${hue}, ${sat}%, ${light}%, ${(0.6 + hit * 0.3) * g})`);
-      grad.addColorStop(0.75, `hsla(${coolHue}, 65%, 35%, ${(0.35 + e * 0.2) * g})`);
-      grad.addColorStop(1, `hsla(${pal.fog}, 50%, 18%, ${(0.2 + b * 0.15) * g})`);
+      grad.addColorStop(0, `hsla(${hue}, ${sat}%, ${Math.min(72, light + 14)}%, ${(0.75 + hit * 0.2) * g})`);
+      grad.addColorStop(0.35, `hsla(${hue}, ${sat}%, ${light}%, ${(0.55 + hit * 0.28) * g})`);
+      grad.addColorStop(0.75, `hsla(${coolHue}, 45%, 18%, ${(0.32 + e * 0.18) * g})`);
+      grad.addColorStop(1, `hsla(${pal.fog}, 30%, 8%, ${(0.22 + b * 0.15) * g})`);
       this.ctx.fillStyle = grad;
       this.ctx.fillRect(x, floorY - bh, barW, bh);
 
       if (hit > 0.18) {
-        this.ctx.fillStyle = `hsla(${hotHue}, 100%, 88%, ${hit * 0.6 * g})`;
+        this.ctx.fillStyle = `hsla(${hotHue}, 95%, 68%, ${hit * 0.5 * g})`;
         this.ctx.fillRect(x + barW * 0.28, floorY - bh, barW * 0.44, bh);
       }
 
       const sparkY = floorY - ph;
-      this.ctx.fillStyle = `hsla(${hit > 0.25 ? hotHue : coolHue}, 100%, ${75 + hit * 20}%, ${(0.55 + hit * 0.45) * g})`;
+      this.ctx.fillStyle = `hsla(${hit > 0.25 ? hotHue : coolHue}, 90%, ${55 + hit * 25}%, ${(0.5 + hit * 0.4) * g})`;
       this.ctx.fillRect(x - 1, sparkY - 4 - hit * 8, barW + 2, 3 + hit * 5);
       if (hit > 0.4) {
-        this.ctx.fillStyle = `hsla(${pal.spark}, 100%, 90%, ${hit * 0.75 * g})`;
+        this.ctx.fillStyle = `hsla(${pal.spark}, 95%, 70%, ${hit * 0.65 * g})`;
         this.ctx.fillRect(x + barW * 0.15, sparkY - 16 - punch * 10, barW * 0.7, 2);
       }
 
@@ -225,7 +226,7 @@ export class AtmosphereBarsScene extends CanvasAnimation {
       if (emberH > 2) {
         const ember = this.ctx.createLinearGradient(x, floorY - emberH, x, floorY);
         ember.addColorStop(0, "hsla(0,0%,0%,0)");
-        ember.addColorStop(1, `hsla(${hue}, 90%, 60%, ${(0.22 + hit * 0.35) * g})`);
+        ember.addColorStop(1, `hsla(${hue}, 70%, 40%, ${(0.2 + hit * 0.3) * g})`);
         this.ctx.fillStyle = ember;
         this.ctx.fillRect(x, floorY - emberH, barW, emberH);
       }
