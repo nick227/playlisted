@@ -25,6 +25,72 @@ function formatTime(totalSeconds?: number | null) {
   return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
 }
 
+type MagicFontProps = {
+  children: string;
+  minFontSize?: number;
+  maxFontSize?: number;
+  minChars?: number;
+  maxChars?: number;
+};
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
+
+function countTextLength(text: string): number {
+  return [...text.trim()].length;
+}
+
+function calculateFontSize(
+  text: string,
+  {
+    minFontSize = 24,
+    maxFontSize = 64,
+    minChars = 25,
+    maxChars = 35,
+  }: Omit<MagicFontProps, "children"> = {},
+): number {
+  const charRange = maxChars - minChars;
+
+  if (charRange <= 0) {
+    return maxFontSize;
+  }
+
+  const length = clamp(countTextLength(text), minChars, maxChars);
+  const progress = (length - minChars) / charRange;
+
+  return maxFontSize - progress * (maxFontSize - minFontSize);
+}
+
+function MagicFont({
+  children,
+  minFontSize = 16,
+  maxFontSize = 24,
+  minChars = 10,
+  maxChars = 65,
+}: MagicFontProps) {
+  const text = children.trim();
+
+  const fontSize = calculateFontSize(text, {
+    minFontSize,
+    maxFontSize,
+    minChars,
+    maxChars,
+  });
+
+  return (
+    <span
+      style={{
+        display: "block",
+        fontSize: `${fontSize}px`,
+        lineHeight: 1,
+      }}
+    >
+      {text}
+    </span>
+  );
+}
+
 export function RadioPage({ isEmbedded: _isEmbedded = false }: { isEmbedded?: boolean }) {
   const { status, user, accessToken } = useAuth();
   const {
@@ -131,79 +197,12 @@ export function RadioPage({ isEmbedded: _isEmbedded = false }: { isEmbedded?: bo
     submissionCollectionMutation.mutate();
   }
 
-  /* Magic font */
-
-  type MagicFontProps = {
-    children: string;
-    minFontSize?: number;
-    maxFontSize?: number;
-    minChars?: number;
-    maxChars?: number;
-  };
-  
-  function clamp(value: number, min: number, max: number): number {
-    return Math.min(max, Math.max(min, value));
-  }
-  
-  function countTextLength(text: string): number {
-    return [...text.trim()].length;
-  }
-  
-  function calculateFontSize(
-    text: string,
-    {
-      minFontSize = 24,
-      maxFontSize = 64,
-      minChars = 25,
-      maxChars = 35,
-    }: Omit<MagicFontProps, "children"> = {},
-  ): number {
-    const charRange = maxChars - minChars;
-  
-    if (charRange <= 0) {
-      return maxFontSize;
-    }
-  
-    const length = clamp(countTextLength(text), minChars, maxChars);
-    const progress = (length - minChars) / charRange;
-  
-    return maxFontSize - progress * (maxFontSize - minFontSize);
-  }
-  
-  function MagicFont({
-    children,
-    minFontSize = 16,
-    maxFontSize = 24,
-    minChars = 10,
-    maxChars = 65,
-  }: MagicFontProps) {
-    const text = children.trim();
-  
-    const fontSize = calculateFontSize(text, {
-      minFontSize,
-      maxFontSize,
-      minChars,
-      maxChars,
-    });
-  
-    return (
-      <span
-        style={{
-          display: "block",
-          fontSize: `${fontSize}px`,
-          lineHeight: 1,
-        }}
-      >
-        {text}
-      </span>
-    );
-  }
-
-  /* End Magic font */
-
   const pageHeight = "h-full max-h-full";
   const artworkClassName =
     "aspect-square max-h-full w-full max-w-full rounded-[1.4rem] border border-white/[0.08] bg-white/5 bg-cover bg-center shadow-[0_26px_80px_rgba(0,0,0,0.44)]";
+  const titleText = displayTitle ?? "Radio";
+  const titleSurfaceClassName =
+    "w-full max-w-full overflow-hidden rounded-sm bg-[var(--color-canvas)]/80 p-2 shadow-[0_0_20px_rgba(0,0,0,0.5)] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]";
 
   return (
     <div
@@ -263,17 +262,17 @@ export function RadioPage({ isEmbedded: _isEmbedded = false }: { isEmbedded?: bo
             <Radio size={13} className="shrink-0 text-[var(--color-brand)]" />
             <span className="truncate">{genreStationName ?? station?.name ?? "Playlisted Radio"}</span>
           </p>
-          <h1 className="grid max-w-full place-items-center overflow-hidden text-balance text-[clamp(1.5rem,7vw,3.75rem)] font-black leading-[0.98] text-white line-height-none sm:min-h-[4.9rem]">
+          <h1 className="radio-song-title box-border w-[min(100%,380px)] min-w-0 shrink-0 overflow-hidden text-center font-black leading-none text-white sm:min-h-[4.9rem]">
             {playlistUrl ? (
               <Link
                 to={playlistUrl}
-                className="overflow-hidden transition hover:text-[var(--color-brand)] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] bg-[var(--color-canvas)]/80 shadow-[0_0_20px_rgba(0,0,0,0.5)]  rounded-sm p-2"
+                className={`${titleSurfaceClassName} transition hover:text-[var(--color-brand)]`}
               >
-                <MagicFont>{displayTitle ?? "Radio"}</MagicFont>
+                <MagicFont>{titleText}</MagicFont>
               </Link>
             ) : (
-              <span className="overflow-hidden [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] bg-[var(--color-canvas)]/80 shadow-[0_0_20px_rgba(0,0,0,0.5)]  rounded-sm">
-                {displayTitle ?? "Radio"}
+              <span className={titleSurfaceClassName}>
+                <MagicFont>{titleText}</MagicFont>
               </span>
             )}
           </h1>
