@@ -1,15 +1,31 @@
 import type { LibrarySong } from "@playlisted/client-sdk";
 
 import type { MuseumExhibit, MuseumPools } from "./museumTypes";
+import { MUSEUM_BANK_COUNTS } from "./museumUi";
 
 const BATCH_PATTERN = [
   "artist-feature",
-  "song-tracklist",
+  "artist-grid",
+  "playlist-grid",
   "lyric-placard",
   "song-grid",
-  "artist-grid",
+  "song-tracklist",
   "listening-room",
+  "square-grid",
+  "artist-feature",
   "playlist-grid",
+  "lyric-placard",
+  "song-grid",
+  "song-tracklist",
+  "listening-room",
+  "square-grid",
+  "artist-feature",
+  "playlist-grid",
+  "lyric-placard",
+  "song-grid",
+  "song-tracklist",
+  "listening-room",
+  "song-grid",
 ] as const;
 
 function pick<T>(pool: T[], count: number, offset: number): T[] {
@@ -21,7 +37,11 @@ function pick<T>(pool: T[], count: number, offset: number): T[] {
   return out;
 }
 
-function songsForArtist(songs: LibrarySong[], artistId: string, limit: number): LibrarySong[] {
+function songsForArtist(
+  songs: LibrarySong[],
+  artistId: string,
+  limit: number,
+): LibrarySong[] {
   return songs.filter((song) => song.uploaderId === artistId).slice(0, limit);
 }
 
@@ -31,25 +51,31 @@ function lyricCandidates(songs: LibrarySong[]): LibrarySong[] {
   return songs.filter((song) => Boolean(song.description?.trim()));
 }
 
-export function buildMuseumBatch(batchIndex: number, pools: MuseumPools): MuseumExhibit[] {
+export function buildMuseumBatch(
+  batchIndex: number,
+  pools: MuseumPools,
+): MuseumExhibit[] {
   const { artists, songs, playlists } = pools;
-  if (artists.length === 0 && songs.length === 0 && playlists.length === 0) return [];
+  if (artists.length === 0 && songs.length === 0 && playlists.length === 0)
+    return [];
 
   const exhibits: MuseumExhibit[] = [];
   const baseOffset = batchIndex * BATCH_PATTERN.length;
 
   if (batchIndex === 0 && artists.length > 0) {
     const artist = artists[0];
-    const artistSongs = songsForArtist(songs, artist.id, 5);
-    const lyricPool = lyricCandidates(artistSongs.length > 0 ? artistSongs : songs);
+    const artistSongs = songsForArtist(songs, artist.id, 3);
+    const lyricPool = lyricCandidates(
+      artistSongs.length > 0 ? artistSongs : songs,
+    );
     exhibits.push({
       id: `showcase-${artist.id}`,
       kind: "showcase",
       artist,
-      songs: artistSongs.length > 0 ? artistSongs : pick(songs, 5, 0),
+      songs: artistSongs.length > 0 ? artistSongs : pick(songs, 3, 0),
       playlist: playlists[0],
       lyricSong: lyricPool[0],
-      peers: pick(artists, 4, 1),
+      peers: pick(artists, MUSEUM_BANK_COUNTS.circleRow, 1),
     });
   }
 
@@ -63,7 +89,7 @@ export function buildMuseumBatch(batchIndex: number, pools: MuseumPools): Museum
         id: `artist-feature-${batchIndex}-${artist.id}`,
         kind: "artist-feature",
         artist,
-        songs: songsForArtist(songs, artist.id, 5),
+        songs: songsForArtist(songs, artist.id, 3),
       });
       continue;
     }
@@ -72,7 +98,7 @@ export function buildMuseumBatch(batchIndex: number, pools: MuseumPools): Museum
       exhibits.push({
         id: `song-tracklist-${batchIndex}-${offset}`,
         kind: "song-tracklist",
-        songs: pick(songs, 6, offset * 2),
+        songs: pick(songs, MUSEUM_BANK_COUNTS.trackRow, offset * 2),
       });
       continue;
     }
@@ -81,7 +107,16 @@ export function buildMuseumBatch(batchIndex: number, pools: MuseumPools): Museum
       exhibits.push({
         id: `song-grid-${batchIndex}-${offset}`,
         kind: "song-grid",
-        songs: pick(songs, 4, offset * 2),
+        songs: pick(songs, MUSEUM_BANK_COUNTS.cinematicRow, offset * 2),
+      });
+      continue;
+    }
+
+    if (slot === "square-grid" && songs.length > 0) {
+      exhibits.push({
+        id: `square-grid-${batchIndex}-${offset}`,
+        kind: "square-grid",
+        songs: pick(songs, MUSEUM_BANK_COUNTS.squareGrid, offset * 3),
       });
       continue;
     }
@@ -102,7 +137,7 @@ export function buildMuseumBatch(batchIndex: number, pools: MuseumPools): Museum
       exhibits.push({
         id: `artist-grid-${batchIndex}-${offset}`,
         kind: "artist-grid",
-        artists: pick(artists, 4, offset + 2),
+        artists: pick(artists, MUSEUM_BANK_COUNTS.circleRow, offset + 2),
       });
       continue;
     }
@@ -113,6 +148,7 @@ export function buildMuseumBatch(batchIndex: number, pools: MuseumPools): Museum
         id: `listening-${batchIndex}-${playlist.id}`,
         kind: "listening-room",
         playlist,
+        songs: pick(songs, MUSEUM_BANK_COUNTS.trackRow, offset * 2),
       });
       continue;
     }
@@ -121,7 +157,7 @@ export function buildMuseumBatch(batchIndex: number, pools: MuseumPools): Museum
       exhibits.push({
         id: `playlist-grid-${batchIndex}-${offset}`,
         kind: "playlist-grid",
-        playlists: pick(playlists, 3, offset + 1),
+        playlists: pick(playlists, MUSEUM_BANK_COUNTS.portraitGrid, offset + 1),
       });
       continue;
     }
@@ -130,7 +166,10 @@ export function buildMuseumBatch(batchIndex: number, pools: MuseumPools): Museum
   return exhibits;
 }
 
-export function shuffleMuseumPools(pools: MuseumPools, seed = Date.now()): MuseumPools {
+export function shuffleMuseumPools(
+  pools: MuseumPools,
+  seed = Date.now(),
+): MuseumPools {
   let state = seed >>> 0;
   const rand = () => {
     state = (state * 1664525 + 1013904223) >>> 0;

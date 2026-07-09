@@ -9,11 +9,20 @@ interface MuseumSongThumbProps {
   song: LibrarySong;
   queue: LibrarySong[];
   showMeta?: boolean;
+  variant?: "square" | "cinematic";
 }
 
-export function MuseumSongThumb({ song, queue, showMeta = false }: MuseumSongThumbProps) {
-  const { playTrack, currentTrack, isPlaying, togglePlay, ensurePlayback } = useAudioPlayer();
+export function MuseumSongThumb({
+  song,
+  queue,
+  showMeta = false,
+  variant = "square",
+}: MuseumSongThumbProps) {
+  const { playTrack, currentTrack, isPlaying, togglePlay, ensurePlayback } =
+    useAudioPlayer();
   const { isActive, isPlaying: playing } = useTrackPlayback(song.id);
+  const aspectClass =
+    variant === "cinematic" ? "aspect-video" : "aspect-square";
 
   function handlePlay() {
     if (currentTrack?.id === song.id) {
@@ -31,7 +40,9 @@ export function MuseumSongThumb({ song, queue, showMeta = false }: MuseumSongThu
 
   return (
     <div className="flex min-w-0 flex-col">
-      <div className="relative aspect-square w-full overflow-hidden rounded-lg">
+      <div
+        className={`relative w-full overflow-hidden rounded-lg ${aspectClass}`}
+      >
         <MediaCover
           title={song.title}
           imageUrl={song.artworkUrl}
@@ -44,8 +55,12 @@ export function MuseumSongThumb({ song, queue, showMeta = false }: MuseumSongThu
       </div>
       {showMeta ? (
         <>
-          <p className="mt-2 truncate text-xs font-medium text-white/80">{song.title}</p>
-          <p className="truncate text-[10px] text-white/35">{song.uploader.displayName}</p>
+          <p className="mt-2 truncate text-xs font-medium text-white/80">
+            {song.title}
+          </p>
+          <p className="truncate text-[10px] text-white/35">
+            {song.uploader.displayName}
+          </p>
         </>
       ) : null}
     </div>

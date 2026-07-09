@@ -3,7 +3,7 @@ import type { LibrarySong } from "@playlisted/client-sdk";
 import { LibraryTrackList } from "@/components/library/LibraryTrackList";
 import { SONGS_PATH } from "@/lib/browsePaths";
 
-import { MuseumSectionHeader, MuseumTrackPanel } from "./museumUi";
+import { MuseumBankSection, MuseumTrackPanel } from "./museumUi";
 
 interface MuseumTrackListSectionProps {
   songs: LibrarySong[];
@@ -19,11 +19,10 @@ export function MuseumTrackListSection({
   if (songs.length === 0) return null;
 
   return (
-    <section className="min-w-0">
-      <MuseumSectionHeader label={label} href={viewAllHref} />
+    <MuseumBankSection label={label} href={viewAllHref} type="trackRow">
       <MuseumTrackPanel>
         <LibraryTrackList songs={songs} />
       </MuseumTrackPanel>
-    </section>
+    </MuseumBankSection>
   );
 }

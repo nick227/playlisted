@@ -68,6 +68,12 @@ function calculateFontSize(
   return maxFontSize - progress * (maxFontSize - minFontSize);
 }
 
+function isRadioGestureExcludedTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return false;
+  if (target.closest("[data-radio-gesture-surface]")) return false;
+  return isGestureExcludedTarget(target);
+}
+
 function MagicFont({
   children,
   minFontSize = 16,
@@ -210,28 +216,31 @@ export function RadioPage({ isEmbedded: _isEmbedded = false }: { isEmbedded?: bo
 
   const radioBodySwipeHandlers = useSwipeGesture({
     enabled: radioStationSlugs.length > 1,
-    axis: "horizontal",
+    axis: "both",
     horizontalCommitPx: SWIPE_COMMIT_THRESHOLD_PX,
     velocityThreshold: SWIPE_VELOCITY_THRESHOLD_PX_PER_MS,
-    isExcludedTarget: isGestureExcludedTarget,
+    isExcludedTarget: isRadioGestureExcludedTarget,
     onHorizontalSwipe: (direction) => {
       const activeIndex = Math.max(0, radioStationSlugs.findIndex((slug) => slug === activeStationSlug));
       const offset = direction === "next" ? 1 : -1;
       const nextIndex = (activeIndex + offset + radioStationSlugs.length) % radioStationSlugs.length;
       playStation(radioStationSlugs[nextIndex]);
     },
+    onVerticalSwipe: (direction) => {
+      if (direction === "up") navigate("/favorites");
+    },
   });
 
   const pageHeight = "h-full max-h-full";
   const artworkClassName =
-    "aspect-square max-h-full w-full max-w-full rounded-[1.4rem] border border-white/[0.08] bg-white/5 bg-cover bg-center shadow-[0_26px_80px_rgba(0,0,0,0.44)]";
+    "aspect-square max-h-full w-full max-w-full touch-none select-none rounded-[1.4rem] border border-white/[0.08] bg-white/5 bg-cover bg-center shadow-[0_26px_80px_rgba(0,0,0,0.44)] [-webkit-user-drag:none]";
   const titleText = displayTitle ?? "Radio";
   const titleSurfaceClassName =
   "box-border block w-full max-w-full min-w-0 overflow-hidden truncate whitespace-nowrap bg-[var(--color-canvas)]/80 p-2 text-center";
 
   return (
     <div
-      className={`relative isolate -mx-4 flex min-w-0 touch-pan-y select-none items-center justify-center overflow-x-hidden px-4 py-3 sm:-mx-6 sm:px-6 sm:py-6 lg:-mx-8 lg:px-8 ${pageHeight}`}
+      className={`relative isolate -mx-4 flex min-w-0 touch-none select-none items-center justify-center overflow-x-hidden px-4 py-3 sm:-mx-6 sm:px-6 sm:py-6 lg:-mx-8 lg:px-8 ${pageHeight}`}
       onPointerDown={radioBodySwipeHandlers.onPointerDown}
       onPointerMove={radioBodySwipeHandlers.onPointerMove}
       onPointerUp={radioBodySwipeHandlers.onPointerUp}
@@ -273,19 +282,22 @@ export function RadioPage({ isEmbedded: _isEmbedded = false }: { isEmbedded?: bo
         <div className="relative flex min-h-0 w-full max-w-[min(74vw,23rem)] items-center justify-center">
           <div className="absolute -inset-4 -z-10 rounded-[2rem] blur-xl" />
           {playlistUrl ? (
-            <Link
-              to={playlistUrl}
-              className={`${artworkClassName} block transition duration-300 hover:scale-[1.012] hover:brightness-105`}
-              style={artStyle}
+	            <Link
+	              to={playlistUrl}
+	              data-radio-gesture-surface
+	              draggable={false}
+	              onDragStart={(event) => event.preventDefault()}
+	              className={`${artworkClassName} block transition duration-300 hover:scale-[1.012] hover:brightness-105`}
+	              style={artStyle}
               aria-label={`Go to playlist: ${
                 genreStationActive
                   ? currentTrack?.playlistTitle ?? displayTitle ?? "current recording"
                   : nowPlaying?.playlist.title ?? "current recording"
               }`}
-            />
-          ) : (
-            <div className={artworkClassName} style={artStyle} />
-          )}
+	            />
+	          ) : (
+	            <div data-radio-gesture-surface className={artworkClassName} style={artStyle} />
+	          )}
         </div>
 
         <div className="flex w-full max-w-[min(100%,380px)] min-w-0 shrink-0 flex-col items-center justify-start text-center sm:mt-7 sm:min-h-[9.35rem]">

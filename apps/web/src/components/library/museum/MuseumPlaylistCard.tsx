@@ -11,10 +11,22 @@ interface MuseumPlaylistCardProps {
   playlist: PlaylistSummary;
   className?: string;
   elevated?: boolean;
+  aspect?: "square" | "portrait" | "cinematic";
 }
 
-export function MuseumPlaylistCard({ playlist, className, elevated = false }: MuseumPlaylistCardProps) {
+export function MuseumPlaylistCard({
+  playlist,
+  className,
+  elevated = false,
+  aspect = "square",
+}: MuseumPlaylistCardProps) {
   const { play, isActive, isPlaying } = useLibraryPlaylistPlayback();
+  const coverAspect =
+    aspect === "portrait"
+      ? "aspect-[3/4]"
+      : aspect === "cinematic"
+        ? "aspect-video"
+        : "aspect-square";
   const href = playlistPath({
     id: playlist.id,
     username: playlist.owner.username,
@@ -26,10 +38,12 @@ export function MuseumPlaylistCard({ playlist, className, elevated = false }: Mu
       <div
         className={[
           "relative w-full overflow-hidden rounded-xl",
-          elevated ? "shadow-[0_22px_60px_rgba(0,0,0,0.38)] ring-1 ring-white/10" : "",
+          elevated
+            ? "shadow-[0_22px_60px_rgba(0,0,0,0.38)] ring-1 ring-white/10"
+            : "",
         ].join(" ")}
       >
-        <div className="relative aspect-square w-full">
+        <div className={`relative w-full ${coverAspect}`}>
           <MediaCover
             title={playlist.title}
             imageUrl={playlist.coverArtUrl}
@@ -42,9 +56,16 @@ export function MuseumPlaylistCard({ playlist, className, elevated = false }: Mu
         </div>
         <FavoriteHeartButton target="playlist" id={playlist.id} />
       </div>
-      <Link to={href} className="mt-2.5 min-w-0 transition-opacity hover:opacity-85">
-        <p className="truncate text-sm font-medium text-white">{playlist.title}</p>
-        <p className="truncate text-xs text-[var(--color-text-muted)]">{playlist.owner.displayName}</p>
+      <Link
+        to={href}
+        className="mt-2.5 min-w-0 transition-opacity hover:opacity-85"
+      >
+        <p className="truncate text-sm font-medium text-white">
+          {playlist.title}
+        </p>
+        <p className="truncate text-xs text-[var(--color-text-muted)]">
+          {playlist.owner.displayName}
+        </p>
       </Link>
     </div>
   );

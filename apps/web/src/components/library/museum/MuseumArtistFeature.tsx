@@ -6,14 +6,9 @@ import { SmartArtistCard } from "@/components/cards/SmartArtistCard";
 import { artistPath } from "@/lib/browsePaths";
 
 import {
-  MUSEUM_COL_LEFT,
-  MUSEUM_COL_RIGHT,
-  MUSEUM_EXHIBIT_RADIUS,
-  MUSEUM_GRID,
-  MuseumArtBackdrop,
-  MuseumExhibitFrame,
+  MuseumBankSection,
   MuseumGenrePills,
-  MuseumSectionHeader,
+  MuseumPanel,
   MuseumTrackPanel,
 } from "./museumUi";
 
@@ -22,55 +17,55 @@ interface MuseumArtistFeatureProps {
   songs: LibrarySong[];
 }
 
-export function MuseumArtistFeature({ artist, songs }: MuseumArtistFeatureProps) {
+export function MuseumArtistFeature({
+  artist,
+  songs,
+}: MuseumArtistFeatureProps) {
   const genreLabels = artist.genres.map((genre) => genre.name).slice(0, 2);
 
   return (
-    <article className={`relative min-w-0 overflow-hidden ${MUSEUM_EXHIBIT_RADIUS}`}>
-      <MuseumArtBackdrop imageUrl={artist.avatarUrl} title={artist.displayName} intensity="soft" />
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[var(--color-canvas)] via-[var(--color-canvas)]/88 to-[var(--color-canvas)]/94" />
-
-      <MuseumExhibitFrame className="relative">
-        <div className={MUSEUM_GRID}>
-          <div className={`${MUSEUM_COL_LEFT} hidden md:block`}>
-            <MuseumSectionHeader label="Artist" />
-          </div>
-          <div className={`${MUSEUM_COL_RIGHT} hidden md:block`}>
-            <MuseumSectionHeader label="From this artist" href={artistPath(artist.username)} hrefLabel="Profile" />
-          </div>
-
-          <div className={MUSEUM_COL_LEFT}>
-            <SmartArtistCard
-              id={artist.id}
-              username={artist.username}
-              displayName={artist.displayName}
-              avatarUrl={artist.avatarUrl}
-              shape="circle"
-              className="w-full max-w-[12rem]"
-              playbackOrigin={`library:artist:${artist.id}`}
-            />
+    <MuseumBankSection
+      label="Spotlight"
+      href={artistPath(artist.username)}
+      hrefLabel="Profile"
+      type="songSpotlight"
+    >
+      <MuseumPanel padding="roomy">
+        <div className="grid min-w-0 gap-4 md:grid-cols-[minmax(0,13rem)_minmax(0,1fr)] md:items-start">
+          <div className="min-w-0">
+            <div className="w-32 md:w-full">
+              <SmartArtistCard
+                id={artist.id}
+                username={artist.username}
+                displayName={artist.displayName}
+                avatarUrl={artist.avatarUrl}
+                shape="circle"
+                className="w-full"
+                playbackOrigin={`library:artist:${artist.id}`}
+              />
+            </div>
             <Link
               to={artistPath(artist.username)}
-              className="mt-5 block text-2xl font-light tracking-tight text-white transition hover:text-[var(--color-brand)] md:text-[2rem]"
+              className="mt-3 block text-2xl font-semibold leading-tight text-white transition hover:text-white/80"
             >
               {artist.displayName}
             </Link>
             <MuseumGenrePills labels={genreLabels} />
           </div>
 
-          <div className={MUSEUM_COL_RIGHT}>
-            {songs.length > 0 ? (
-              <MuseumTrackPanel>
-                <LibraryTrackList songs={songs} />
-              </MuseumTrackPanel>
-            ) : (
-              <div className="flex min-h-32 items-center rounded-2xl border border-white/[0.06] bg-white/[0.02] px-5 py-4">
-                <p className="text-sm text-white/35">New work from this artist will appear here.</p>
-              </div>
-            )}
-          </div>
+          {songs.length > 0 ? (
+            <MuseumTrackPanel>
+              <LibraryTrackList songs={songs} />
+            </MuseumTrackPanel>
+          ) : (
+            <div className="flex min-h-28 items-center rounded-xl border border-white/[0.07] bg-black/15 px-4 py-3">
+              <p className="text-sm text-white/40">
+                New work from this artist will appear here.
+              </p>
+            </div>
+          )}
         </div>
-      </MuseumExhibitFrame>
-    </article>
+      </MuseumPanel>
+    </MuseumBankSection>
   );
 }

@@ -6,7 +6,7 @@ import { MuseumQuietRoom } from "./MuseumQuietRoom";
 import { MuseumShowcase } from "./MuseumShowcase";
 import { MuseumTrackListSection } from "./MuseumTrackListSection";
 import { MuseumTypedGrid } from "./MuseumTypedGrid";
-import { MuseumExhibitDivider, MuseumExhibitShell } from "./museumUi";
+import { MuseumExhibitShell } from "./museumUi";
 import { useMuseumInfiniteFeed } from "./useMuseumInfiniteFeed";
 
 interface MuseumFeedProps {
@@ -25,15 +25,9 @@ export function MuseumFeed({ pools }: MuseumFeedProps) {
   }
 
   return (
-    <div className="min-w-0 space-y-14 md:space-y-20">
-      {exhibits.map((exhibit, index) => (
+    <div className="min-w-0 space-y-7 md:space-y-9">
+      {exhibits.map((exhibit) => (
         <MuseumExhibitShell key={exhibit.id}>
-          {index > 0 ? (
-            <div className="pb-14 md:pb-20">
-              <MuseumExhibitDivider />
-            </div>
-          ) : null}
-
           {exhibit.kind === "showcase" ? (
             <MuseumShowcase
               artist={exhibit.artist}
@@ -44,21 +38,41 @@ export function MuseumFeed({ pools }: MuseumFeedProps) {
             />
           ) : null}
           {exhibit.kind === "artist-feature" ? (
-            <MuseumArtistFeature artist={exhibit.artist} songs={exhibit.songs} />
+            <MuseumArtistFeature
+              artist={exhibit.artist}
+              songs={exhibit.songs}
+            />
           ) : null}
-          {exhibit.kind === "lyric-placard" ? <MuseumLyricPlacard song={exhibit.song} /> : null}
-          {exhibit.kind === "quiet-room" ? <MuseumQuietRoom phrase={exhibit.phrase} /> : null}
+          {exhibit.kind === "lyric-placard" ? (
+            <MuseumLyricPlacard song={exhibit.song} />
+          ) : null}
+          {exhibit.kind === "quiet-room" ? (
+            <MuseumQuietRoom phrase={exhibit.phrase} />
+          ) : null}
           {exhibit.kind === "song-tracklist" ? (
-            <MuseumTrackListSection songs={exhibit.songs} label={exhibit.label} />
+            <MuseumTrackListSection
+              songs={exhibit.songs}
+              label={exhibit.label}
+            />
           ) : null}
-          {exhibit.kind === "song-grid" ? <MuseumTypedGrid kind="songs" songs={exhibit.songs} /> : null}
+          {exhibit.kind === "song-grid" ? (
+            <MuseumTypedGrid kind="songs" songs={exhibit.songs} />
+          ) : null}
+          {exhibit.kind === "square-grid" ? (
+            <MuseumTypedGrid kind="square-songs" songs={exhibit.songs} />
+          ) : null}
           {exhibit.kind === "artist-grid" ? (
             <MuseumTypedGrid kind="artists" artists={exhibit.artists} />
           ) : null}
           {exhibit.kind === "playlist-grid" ? (
             <MuseumTypedGrid kind="playlists" playlists={exhibit.playlists} />
           ) : null}
-          {exhibit.kind === "listening-room" ? <MuseumListeningRoom playlist={exhibit.playlist} /> : null}
+          {exhibit.kind === "listening-room" ? (
+            <MuseumListeningRoom
+              playlist={exhibit.playlist}
+              songs={exhibit.songs}
+            />
+          ) : null}
         </MuseumExhibitShell>
       ))}
 

@@ -1,4 +1,8 @@
-import type { LibraryArtist, LibrarySong, PlaylistSummary } from "@playlisted/client-sdk";
+import type {
+  LibraryArtist,
+  LibrarySong,
+  PlaylistSummary,
+} from "@playlisted/client-sdk";
 import { Link } from "react-router-dom";
 
 import { LibraryTrackList } from "@/components/library/LibraryTrackList";
@@ -8,19 +12,10 @@ import { artistPath } from "@/lib/browsePaths";
 import { MuseumLyricSnippet } from "./MuseumLyricSnippet";
 import { MuseumPlaylistCard } from "./MuseumPlaylistCard";
 import {
-  MUSEUM_COL_LEFT,
-  MUSEUM_COL_LYRIC,
-  MUSEUM_COL_PEERS,
-  MUSEUM_COL_PLAYLIST,
-  MUSEUM_COL_TRACKS,
-  MUSEUM_COL_FULL,
-  MUSEUM_EXHIBIT_RADIUS,
-  MUSEUM_GRID,
-  MuseumArtBackdrop,
-  MuseumExhibitFrame,
+  MuseumBankSection,
   MuseumGenrePills,
   MuseumPanel,
-  MuseumSectionHeader,
+  MuseumScrollRow,
   MuseumTrackPanel,
 } from "./museumUi";
 
@@ -32,33 +27,28 @@ export interface MuseumShowcaseProps {
   peers: LibraryArtist[];
 }
 
-export function MuseumShowcase({ artist, songs, playlist, lyricSong, peers }: MuseumShowcaseProps) {
-  const backdropUrl = songs[0]?.artworkUrl ?? artist.avatarUrl;
-  const featuredSongs = songs.slice(0, 5);
-  const peerArtists = peers.filter((peer) => peer.id !== artist.id).slice(0, 3);
+export function MuseumShowcase({
+  artist,
+  songs,
+  playlist,
+  lyricSong,
+  peers,
+}: MuseumShowcaseProps) {
+  const featuredSongs = songs.slice(0, 3);
+  const peerArtists = peers.filter((peer) => peer.id !== artist.id).slice(0, 8);
   const genreLabels = artist.genres.map((genre) => genre.name).slice(0, 3);
 
   return (
-    <section className={`relative min-w-0 overflow-hidden ${MUSEUM_EXHIBIT_RADIUS}`}>
-      <MuseumArtBackdrop imageUrl={backdropUrl} title={artist.displayName} intensity="bold" />
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[var(--color-canvas)]/15 via-[var(--color-canvas)]/72 to-[var(--color-canvas)]" />
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-[var(--color-brand)]/10 to-transparent" />
-
-      <MuseumExhibitFrame className="relative">
-        <div className={MUSEUM_GRID}>
-          <div className={`${MUSEUM_COL_LEFT} hidden md:block`}>
-            <MuseumSectionHeader label="Featured artist" />
-          </div>
-          <div className={`${MUSEUM_COL_TRACKS} hidden md:block`}>
-            <MuseumSectionHeader label="Recordings" />
-          </div>
-          <div className={`${MUSEUM_COL_PLAYLIST} hidden md:block`}>
-            <MuseumSectionHeader label="Playlist" />
-          </div>
-
-          <div className={MUSEUM_COL_LEFT}>
-            <div className="relative w-full max-w-[12rem]">
-              <div className="absolute -inset-2 rounded-full bg-[var(--color-brand)]/12 blur-xl" aria-hidden />
+    <MuseumBankSection
+      label="Spotlight"
+      href={artistPath(artist.username)}
+      hrefLabel="Profile"
+      type="songSpotlight"
+    >
+      <MuseumPanel padding="roomy" className="bg-white/[0.045]">
+        <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,14rem)_minmax(0,1fr)_minmax(11rem,13rem)] lg:items-start">
+          <div className="min-w-0">
+            <div className="w-32 md:w-44 lg:w-full">
               <SmartArtistCard
                 id={artist.id}
                 username={artist.username}
@@ -71,65 +61,73 @@ export function MuseumShowcase({ artist, songs, playlist, lyricSong, peers }: Mu
             </div>
             <Link
               to={artistPath(artist.username)}
-              className="mt-5 block text-[clamp(1.75rem,4vw,2.65rem)] font-extralight leading-[0.98] tracking-tight text-white transition hover:text-[var(--color-brand)]"
+              className="mt-3 block text-[clamp(1.8rem,4vw,2.4rem)] font-semibold leading-none text-white transition hover:text-white/80"
             >
               {artist.displayName}
             </Link>
             <MuseumGenrePills labels={genreLabels} />
           </div>
 
-          <div className={MUSEUM_COL_TRACKS}>
-            {featuredSongs.length > 0 ? (
-              <MuseumTrackPanel>
-                <LibraryTrackList songs={featuredSongs} />
-              </MuseumTrackPanel>
-            ) : (
-              <MuseumPanel padding="roomy" className="flex min-h-44 items-center text-sm text-white/40">
-                No recordings yet.
-              </MuseumPanel>
-            )}
-          </div>
+          {featuredSongs.length > 0 ? (
+            <MuseumTrackPanel>
+              <LibraryTrackList songs={featuredSongs} />
+            </MuseumTrackPanel>
+          ) : (
+            <MuseumPanel
+              padding="roomy"
+              className="flex min-h-36 items-center text-sm text-white/40"
+            >
+              No recordings yet.
+            </MuseumPanel>
+          )}
 
-          <div className={MUSEUM_COL_PLAYLIST}>
+          <div className="min-w-0">
             {playlist ? (
-              <MuseumPlaylistCard playlist={playlist} className="w-full" elevated />
+              <MuseumPlaylistCard
+                playlist={playlist}
+                className="w-full max-w-[13rem]"
+                aspect="portrait"
+                elevated
+              />
             ) : (
-              <MuseumPanel padding="roomy" className="flex aspect-square items-center justify-center text-sm text-white/40">
+              <MuseumPanel
+                padding="roomy"
+                className="flex aspect-[3/4] items-center justify-center text-sm text-white/40"
+              >
                 No playlists yet.
               </MuseumPanel>
             )}
           </div>
 
-          {lyricSong ? (
-            <div className={MUSEUM_COL_LYRIC}>
-              <MuseumSectionHeader label="Lyrics" />
-              <MuseumLyricSnippet song={lyricSong} variant="showcase" />
-            </div>
-          ) : null}
+          {lyricSong || peerArtists.length > 0 ? (
+            <div className="min-w-0 lg:col-span-3">
+              {lyricSong ? (
+                <MuseumLyricSnippet song={lyricSong} variant="showcase" />
+              ) : null}
 
-          {peerArtists.length > 0 ? (
-            <div className={lyricSong ? MUSEUM_COL_PEERS : MUSEUM_COL_FULL}>
-              <MuseumSectionHeader label="More artists" />
-              <MuseumPanel padding="roomy" className="bg-black/15">
-                <div className="grid grid-cols-3 gap-4">
-                  {peerArtists.map((peer) => (
-                    <SmartArtistCard
-                      key={peer.id}
-                      id={peer.id}
-                      username={peer.username}
-                      displayName={peer.displayName}
-                      avatarUrl={peer.avatarUrl}
-                      shape="circle"
-                      className="min-w-0 w-full"
-                      playbackOrigin={`library:showcase-peer:${peer.id}`}
-                    />
-                  ))}
+              {peerArtists.length > 0 ? (
+                <div className={lyricSong ? "mt-4" : ""}>
+                  <MuseumScrollRow variant="circle">
+                    {peerArtists.map((peer) => (
+                      <div key={peer.id} className="min-w-0">
+                        <SmartArtistCard
+                          id={peer.id}
+                          username={peer.username}
+                          displayName={peer.displayName}
+                          avatarUrl={peer.avatarUrl}
+                          shape="circle"
+                          className="min-w-0 w-full"
+                          playbackOrigin={`library:showcase-peer:${peer.id}`}
+                        />
+                      </div>
+                    ))}
+                  </MuseumScrollRow>
                 </div>
-              </MuseumPanel>
+              ) : null}
             </div>
           ) : null}
         </div>
-      </MuseumExhibitFrame>
-    </section>
+      </MuseumPanel>
+    </MuseumBankSection>
   );
 }
