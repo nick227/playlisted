@@ -8,6 +8,7 @@ import {
   Home,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { NavLink, Link, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { components } from "@playlisted/client-sdk";
@@ -143,7 +144,7 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
     return clearBlurTimer;
   }, [clearBlurTimer, mobileOpen, scheduleNavFade, showNav]);
 
-  return (
+  const sidebar = (
     <>
       {mobileOpen ? (
         <button
@@ -161,7 +162,7 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
           if (event.currentTarget.contains(event.relatedTarget)) return;
           scheduleNavFade();
         }}
-        className={`fixed left-0 top-0 z-[10060] flex h-full w-[var(--spacing-sidebar)] max-w-[85vw] shrink-0 flex-col transition-transform lg:z-50 lg:translate-x-0 lg:bg-transparent lg:shadow-none lg:backdrop-blur-none ${
+        className={`fixed left-0 top-0 z-[10060] flex h-full w-[var(--spacing-sidebar)] max-w-[85vw] shrink-0 flex-col transition-transform lg:translate-x-0 lg:bg-transparent lg:shadow-none lg:backdrop-blur-none ${
           mobileOpen
             ? "translate-x-0"
             : "-translate-x-full max-lg:invisible max-lg:pointer-events-none lg:translate-x-0"
@@ -276,4 +277,6 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
       </aside>
     </>
   );
+
+  return createPortal(sidebar, document.body);
 }

@@ -2,6 +2,7 @@ import { Pause, Play } from "lucide-react";
 import { useMemo, useRef, type RefObject } from "react";
 
 import type { VisualMediaAssetRecord } from "@/lib/visualMediaApi";
+import { DEFAULT_ATMOSPHERE_FX_PRESET_ID, getAtmosphereFxPreset } from "@/theatre/atmosphere/catalog";
 import type { SongAtmosphereFx } from "@/theatre/media/types";
 
 import { useSongVisualTheatrePreview } from "./hooks/useSongVisualTheatrePreview";
@@ -22,6 +23,12 @@ function previewAspectRatio(
   if (media.width <= 1 && media.height <= 1) return DEFAULT_ASPECT;
   const native = media.width / media.height;
   return Math.min(native, MAX_PREVIEW_ASPECT);
+}
+
+function selectedAtmosphereName(atmosphereFx: SongAtmosphereFx) {
+  if (atmosphereFx.mode === "off") return null;
+  const presetId = atmosphereFx.presetId ?? DEFAULT_ATMOSPHERE_FX_PRESET_ID;
+  return getAtmosphereFxPreset(presetId)?.name ?? "Glow";
 }
 
 type SongVisualEditorPreviewProps = {
@@ -51,6 +58,7 @@ export function SongVisualEditorPreview({
   const attachment = clip?.attachment ?? null;
   const media = attachment?.mediaAsset ?? null;
   const audioPulse = attachment ? readClipAudioPulse(attachment) : false;
+  const atmosphereName = selectedAtmosphereName(atmosphereFx);
 
   useSongVisualTheatrePreview({
     containerRef,
@@ -81,6 +89,13 @@ export function SongVisualEditorPreview({
         {!media ? (
           <div className="pointer-events-none absolute inset-0 z-[5] flex items-center justify-center px-6 text-center text-sm text-white/35">
             Add media to preview visuals
+          </div>
+        ) : null}
+
+        {atmosphereName ? (
+          <div className="pointer-events-none absolute left-3 top-3 z-20 max-w-[calc(100%-1.5rem)] rounded-md border border-white/10 bg-black/55 px-2.5 py-1 text-[11px] font-semibold text-white/85 shadow-lg backdrop-blur-sm">
+            <span className="text-white/45">Atmosphere</span>{" "}
+            <span className="text-white">{atmosphereName}</span>
           </div>
         ) : null}
 
