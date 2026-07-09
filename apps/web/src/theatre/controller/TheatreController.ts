@@ -1284,8 +1284,11 @@ class TheatreController extends EventTarget {
         }
       }
 
-      this.deck?.renderFrame(this.buildRenderFrameContext(frameCtx))
-      this.atmosphereLayer.renderFrame(this.buildRenderFrameContext(frameCtx))
+      const renderCtx = this.buildRenderFrameContext(frameCtx)
+      this.deck?.renderFrame(renderCtx)
+      // Pass base frame context (no scene-preset option merge) so atmosphere
+      // keeps its own intensity / blendMode across frames.
+      this.atmosphereLayer.renderFrame(frameCtx)
       this.featureLoopId = requestAnimationFrame(loop)
     }
     this.featureLoopId = requestAnimationFrame(loop)
