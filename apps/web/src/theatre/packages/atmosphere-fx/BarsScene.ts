@@ -1,14 +1,19 @@
 import { CanvasAnimation } from "../../core/CanvasAnimation";
 import type { PublicAnimationContext } from "../../author/types";
-import { bass, beatPunch, env, high, hueFromAudio, intensityGain, mid, spectrumProxy } from "./audio";
+import { bass, beatPunch, env, high, intensityGain, mid, spectrumProxy } from "./audio";
 
-/** Stadium spectrum architecture — mirrored walls, floor reflection, peak flares. */
+/**
+ * Magical spectral EQ — bottom-anchored giant bars.
+ * Quiet = cool ghost cyan/violet. Hits = hot magenta/gold flash.
+ */
 export class AtmosphereBarsScene extends CanvasAnimation {
   private peaks: number[] = [];
+  private smooth: number[] = [];
+  private hitFlash: number[] = [];
 
   protected draw(context: PublicAnimationContext) {
     const g = intensityGain(context);
-    const e = Math.max(0.1, env(context));
+    const e = Math.max(0.08, env(context));
     const b = bass(context);
     const m = mid(context);
     const hi = high(context);
@@ -16,86 +21,157 @@ export class AtmosphereBarsScene extends CanvasAnimation {
     const t = context.shared.time.elapsed * 0.001;
     const w = this.cssWidth;
     const h = this.cssHeight;
-    const hue = hueFromAudio(context, 160);
-    const count = Math.max(24, Math.floor(w / 28));
-    const spectrum = spectrumProxy(context, count);
+    const floorY = h;
+    // ~4–5× prior visual mass: bars can climb most of the viewport.
+    const maxH = h * (0.72 + b * 0.12 + punch * 0.06) * Math.min(1.35, g);
+    const count = Math.max(28, Math.min(56, Math.floor(w / 18)));
+    const raw = spectrumProxy(context, count);
 
-    if (this.peaks.length !== count) this.peaks = spectrum.map((v) => v);
+    if (this.peaks.length !== count) {
+      this.peaks = raw.map((v) => v);
+      this.smooth = raw.map((v) => v);
+      this.hitFlash = raw.map(() => 0);
+    }
+
+    // Contrast curve: quiet stays low, hits slam hard.
+    const spectrum = raw.map((v, i) => {
+      const shaped = Math.pow(Math.min(1.25, v), 1.55) * (0.55 + e * 0.55);
+      const bandBoost =
+        i < count * 0.25 ? 1 + b * 0.55
+        : i > count * 0.7 ? 1 + hi * 0.65
+        : 1 + m * 0.35;
+      return Math.min(1.35, shaped * bandBoost);
+    });
+
     for (let i = 0; i < count; i++) {
-      this.peaks[i] = Math.max(spectrum[i]!, (this.peaks[i] ?? 0) * (0.96 - punch * 0.02));
+      const target = spectrum[i]!;
+      const prev = this.smooth[i] ?? 0;
+      // Fast attack, slower release — hits read as distinct strikes.
+      const attack = target > prev ? 0.55 : 0.12;
+      this.smooth[i] = prev + (target - prev) * attack;
+      this.peaks[i] = Math.max(this.smooth[i]!, (this.peaks[i] ?? 0) * (0.965 - punch * 0.02));
+      const rising = target - prev;
+      if (rising > 0.12 || (punch > 0.4 && target > 0.45)) {
+        this.hitFlash[i] = Math.min(1, (this.hitFlash[i] ?? 0) + rising * 2.2 + punch * 0.25);
+      } else {
+        this.hitFlash[i] = (this.hitFlash[i] ?? 0) * 0.86;
+      }
     }
 
     this.ctx.clearRect(0, 0, w, h);
 
-    // Floor glow plane
-    const floorY = h * 0.78;
-    const floor = this.ctx.createLinearGradient(0, floorY, 0, h);
-    floor.addColorStop(0, `hsla(${hue}, 70%, 40%, ${(0.08 + e * 0.15) * g})`);
-    floor.addColorStop(1, "hsla(0,0%,0%,0)");
-    this.ctx.fillStyle = floor;
-    this.ctx.fillRect(0, floorY, w, h - floorY);
+    // Deep stage fog rising from the floor
+    const fog = this.ctx.createLinearGradient(0, h * 0.35, 0, h);
+    fog.addColorStop(0, "hsla(260, 40%, 8%, 0)");
+    fog.addColorStop(0.55, `hsla(250, 50%, 12%, ${(0.12 + e * 0.18) * g})`);
+    fog.addColorStop(1, `hsla(220, 60%, 10%, ${(0.28 + b * 0.2) * g})`);
+    this.ctx.fillStyle = fog;
+    this.ctx.fillRect(0, 0, w, h);
 
+    // Ghost afterimage layer (previous peaks, cool)
     const gap = w / count;
-    const barW = gap * 0.62;
-    const maxH = h * (0.42 + b * 0.18) * g;
+    const barW = Math.max(4, gap * 0.7);
 
-    // Mirrored side walls
-    this.drawWall(spectrum, true, hue, g);
-    this.drawWall(spectrum, false, hue, g);
-
-    // Main front bars + reflection
+    this.ctx.globalCompositeOperation = "lighter";
     for (let i = 0; i < count; i++) {
-      const v = spectrum[i]!;
-      const peak = this.peaks[i]!;
+      const ghost = this.peaks[i]!;
       const x = i * gap + (gap - barW) * 0.5;
-      const bh = Math.max(4, v * maxH);
+      const gh = Math.max(2, ghost * maxH * 0.92);
+      const ghostGrad = this.ctx.createLinearGradient(x, floorY - gh, x, floorY);
+      ghostGrad.addColorStop(0, `hsla(190, 90%, 70%, ${(0.06 + hi * 0.08) * g})`);
+      ghostGrad.addColorStop(1, `hsla(270, 70%, 40%, ${(0.04 + e * 0.06) * g})`);
+      this.ctx.fillStyle = ghostGrad;
+      this.ctx.fillRect(x - 2, floorY - gh, barW + 4, gh);
+    }
+
+    // Main spectral bars
+    for (let i = 0; i < count; i++) {
+      const v = this.smooth[i]!;
+      const peak = this.peaks[i]!;
+      const flash = this.hitFlash[i] ?? 0;
+      const x = i * gap + (gap - barW) * 0.5;
+      const bh = Math.max(6, v * maxH);
       const ph = Math.max(bh, peak * maxH);
-      const barHue = (hue + i * (180 / count) + m * 40) % 360;
+      const tNorm = i / Math.max(1, count - 1);
+
+      // Cool ghost base → hot hit contrast
+      const coolHue = 195 + tNorm * 70; // cyan → violet
+      const hotHue = 320 + tNorm * 40; // magenta → gold-ish via lightness
+      const hit = Math.min(1, flash * 1.4 + (v > 0.55 ? (v - 0.55) * 2 : 0));
+      const hue = coolHue + (hotHue - coolHue) * hit;
+      const sat = 70 + hit * 30;
+      const light = 42 + hit * 38 + punch * 8;
+
+      // Soft bloom behind hot bars
+      if (hit > 0.25) {
+        const bloom = this.ctx.createRadialGradient(
+          x + barW * 0.5,
+          floorY - bh * 0.7,
+          0,
+          x + barW * 0.5,
+          floorY - bh * 0.5,
+          bh * 0.55,
+        );
+        bloom.addColorStop(0, `hsla(${hotHue}, 100%, 70%, ${hit * 0.35 * g})`);
+        bloom.addColorStop(1, "hsla(0,0%,0%,0)");
+        this.ctx.fillStyle = bloom;
+        this.ctx.fillRect(x - barW, floorY - bh - 20, barW * 3, bh + 40);
+      }
 
       const grad = this.ctx.createLinearGradient(x, floorY - bh, x, floorY);
-      grad.addColorStop(0, `hsla(${barHue}, 95%, 75%, ${(0.55 + punch * 0.2) * g})`);
-      grad.addColorStop(0.5, `hsla(${(barHue + 30) % 360}, 85%, 55%, ${(0.45 + e * 0.2) * g})`);
-      grad.addColorStop(1, `hsla(${(barHue + 60) % 360}, 70%, 35%, ${(0.25 + b * 0.2) * g})`);
+      grad.addColorStop(0, `hsla(${hue}, ${sat}%, ${Math.min(92, light + 18)}%, ${(0.75 + hit * 0.25) * g})`);
+      grad.addColorStop(0.35, `hsla(${hue}, ${sat}%, ${light}%, ${(0.55 + hit * 0.3) * g})`);
+      grad.addColorStop(0.75, `hsla(${coolHue}, 65%, 35%, ${(0.35 + e * 0.2) * g})`);
+      grad.addColorStop(1, `hsla(230, 50%, 18%, ${(0.2 + b * 0.15) * g})`);
       this.ctx.fillStyle = grad;
+      // Slight rounded feel via overlapping rects
       this.ctx.fillRect(x, floorY - bh, barW, bh);
 
-      // Peak cap
-      this.ctx.fillStyle = `hsla(${barHue}, 100%, 85%, ${(0.5 + hi * 0.3) * g})`;
-      this.ctx.fillRect(x, floorY - ph - 3, barW, 3);
+      // Inner bright core on hits
+      if (hit > 0.2) {
+        this.ctx.fillStyle = `hsla(${hotHue}, 100%, 88%, ${hit * 0.55 * g})`;
+        this.ctx.fillRect(x + barW * 0.28, floorY - bh, barW * 0.44, bh);
+      }
 
-      // Reflection
-      const refl = this.ctx.createLinearGradient(x, floorY, x, floorY + bh * 0.45);
-      refl.addColorStop(0, `hsla(${barHue}, 80%, 50%, ${(0.2 + e * 0.15) * g})`);
-      refl.addColorStop(1, "hsla(0,0%,0%,0)");
-      this.ctx.fillStyle = refl;
-      this.ctx.fillRect(x, floorY, barW, bh * 0.45);
+      // Peak spark (distinct strike marker)
+      const sparkY = floorY - ph;
+      this.ctx.fillStyle = `hsla(${hit > 0.3 ? hotHue : coolHue}, 100%, ${75 + hit * 20}%, ${(0.55 + hit * 0.45) * g})`;
+      this.ctx.fillRect(x - 1, sparkY - 4 - hit * 6, barW + 2, 3 + hit * 4);
+      if (hit > 0.45) {
+        this.ctx.fillStyle = `hsla(50, 100%, 90%, ${hit * 0.7 * g})`;
+        this.ctx.fillRect(x + barW * 0.15, sparkY - 14 - punch * 8, barW * 0.7, 2);
+      }
+
+      // Base ember at floor contact (stays on-screen)
+      const ember = this.ctx.createLinearGradient(x, floorY - Math.min(bh, 40), x, floorY);
+      ember.addColorStop(0, "hsla(0,0%,0%,0)");
+      ember.addColorStop(1, `hsla(${hue}, 90%, 60%, ${(0.2 + hit * 0.35) * g})`);
+      this.ctx.fillStyle = ember;
+      this.ctx.fillRect(x, floorY - Math.min(bh, 40), barW, Math.min(bh, 40));
     }
 
-    // Top horizon arc
-    this.ctx.strokeStyle = `hsla(${hue}, 90%, 70%, ${(0.15 + punch * 0.2 + hi * 0.15) * g})`;
-    this.ctx.lineWidth = 2 + punch * 3;
+    // Spectral ribbon riding the peaks (ghost synthesizer voice)
     this.ctx.beginPath();
-    this.ctx.moveTo(0, h * 0.12);
     for (let i = 0; i < count; i++) {
       const x = (i + 0.5) * gap;
-      const y = h * 0.12 - spectrum[i]! * h * 0.08 * g + Math.sin(t * 2 + i * 0.3) * 2;
-      this.ctx.lineTo(x, y);
+      const y = floorY - this.peaks[i]! * maxH - 10 - Math.sin(t * 3 + i * 0.4) * 3;
+      if (i === 0) this.ctx.moveTo(x, y);
+      else this.ctx.lineTo(x, y);
     }
+    this.ctx.strokeStyle = `hsla(185, 100%, 75%, ${(0.2 + punch * 0.25 + hi * 0.2) * g})`;
+    this.ctx.lineWidth = 2 + punch * 3;
     this.ctx.stroke();
-  }
+    this.ctx.strokeStyle = `hsla(320, 100%, 70%, ${(0.12 + punch * 0.2) * g})`;
+    this.ctx.lineWidth = 1;
+    this.ctx.stroke();
 
-  private drawWall(spectrum: number[], left: boolean, hue: number, g: number) {
-    const w = this.cssWidth;
-    const h = this.cssHeight;
-    const count = spectrum.length;
-    const wallW = w * 0.14;
-    for (let i = 0; i < Math.min(12, count); i++) {
-      const v = spectrum[left ? i : count - 1 - i]!;
-      const y = h * 0.15 + (i / 12) * h * 0.55;
-      const bw = Math.max(3, v * wallW * g);
-      const x = left ? 0 : w - bw;
-      this.ctx.fillStyle = `hsla(${(hue + i * 12) % 360}, 80%, 55%, ${(0.12 + v * 0.25) * g})`;
-      this.ctx.fillRect(x, y, bw, Math.max(2, h * 0.035));
-    }
+    // Floor contact glow line
+    const contact = this.ctx.createLinearGradient(0, floorY - 8, 0, floorY);
+    contact.addColorStop(0, "hsla(0,0%,0%,0)");
+    contact.addColorStop(1, `hsla(200, 90%, 60%, ${(0.2 + e * 0.25 + punch * 0.2) * g})`);
+    this.ctx.fillStyle = contact;
+    this.ctx.fillRect(0, floorY - 10, w, 10);
+
+    this.ctx.globalCompositeOperation = "source-over";
   }
 }

@@ -39,7 +39,7 @@ export const ATMOSPHERE_FX_PRESETS: AtmosphereFxPresetDef[] = [
   {
     id: "bars",
     name: "Bars",
-    description: "Stadium spectrum walls with mirrored architecture and peak flares.",
+    description: "Bottom-anchored ghostly spectral EQ — cool cyan/violet quiet, hot magenta/gold hits.",
     animationId: "atmosphereBars",
     author: "playlisted",
     source: "platform",
