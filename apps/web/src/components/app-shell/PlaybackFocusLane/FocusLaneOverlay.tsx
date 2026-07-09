@@ -104,7 +104,6 @@ export type FocusLaneOverlayProps = {
   imageUrl?: string | null;
   imageAlt: string;
   imageHref?: string | null;
-  eyebrow?: string | null;
   primary: FocusLaneOverlayLink;
   secondary?: FocusLaneOverlayLink | null;
   meta?: string | null;
@@ -169,7 +168,6 @@ export function FocusLaneOverlay({
   imageUrl,
   imageAlt,
   imageHref,
-  eyebrow,
   primary,
   secondary,
   meta,
@@ -232,15 +230,12 @@ export function FocusLaneOverlay({
           art
         )}
         <div className="focus-lane__overlay-body">
-          {eyebrow || isPlaying ? (
-            <div className="flex min-w-0 items-center gap-1.5">
-              {isPlaying ? (
-                <PlaybackBars active playing className="origin-left shrink-0 scale-[0.5] sm:scale-[0.9]" />
-              ) : null}
-              {eyebrow ? <span className="focus-lane__overlay-eyebrow truncate">{eyebrow}</span> : null}
-            </div>
-          ) : null}
-          <OverlayLinkText {...primary} className="focus-lane__overlay-primary" />
+          <div className="flex min-w-0 items-center gap-2.5">
+            <OverlayLinkText {...primary} className="focus-lane__overlay-primary min-w-0" />
+            {isPlaying ? (
+              <PlaybackBars active playing className="focus-lane__overlay-playback-bars" />
+            ) : null}
+          </div>
           {secondary ? <OverlayLinkText {...secondary} className="focus-lane__overlay-secondary" /> : null}
           {meta ? <span className="focus-lane__overlay-meta truncate">{meta}</span> : null}
           {genres.length > 0 || profileLinks.length > 0 ? (

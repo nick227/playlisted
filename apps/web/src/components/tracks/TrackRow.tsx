@@ -296,7 +296,7 @@ export function TrackRow({
             </div>
             {(creator ?? meta) ? (
               <>
-                <span className="mx-1.5 opacity-50">·</span>
+                <span className="mx-1.5 opacity-50 wf-span">·</span>
                 <span className="truncate">{creator ?? meta}</span>
               </>
             ) : null}

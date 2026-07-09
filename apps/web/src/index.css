@@ -361,10 +361,17 @@ body {
 }
 
 .song-visual-preview__focus-lane .focus-lane__overlay-secondary,
-.song-visual-preview__focus-lane .focus-lane__overlay-eyebrow,
 .song-visual-preview__focus-lane .focus-lane__overlay-meta,
 .song-visual-preview__focus-lane .focus-lane__overlay-genre {
   font-size: 0.55rem;
+}
+
+.song-visual-preview__focus-lane .focus-lane__overlay-playback-bars {
+  --bar-width: 1.5px;
+  --bar-gap: 1.5px;
+  width: 0.7rem;
+  height: 0.7rem;
+  flex: 0 0 0.7rem;
 }
 
 .focus-lane__mini-player {
@@ -517,7 +524,7 @@ body {
   bottom: 0;
   display: flex;
   min-width: 0;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.75rem;
 }
 
@@ -534,16 +541,9 @@ body {
   right: auto;
   bottom: auto;
   left: 50%;
-  width: min(36rem, calc(100% - 5.5rem));
-  max-width: min(36rem, calc(100% - 5.5rem));
+  width: min(800px, 100%);
+  max-width: min(450px, 100%);
   transform: translate(-50%, -50%);
-}
-
-@media (min-width: 640px) {
-  .focus-lane__overlay--center-middle .focus-lane__overlay-media {
-    width: min(52rem, calc(100% - 8rem));
-    max-width: min(52rem, calc(100% - 8rem));
-  }
 }
 
 .focus-lane__overlay-art {
@@ -655,13 +655,23 @@ body {
   }
 }
 
-.focus-lane__overlay-eyebrow {
-  color: rgba(255, 255, 255, 0.65);
-  font-size: 0.6875rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6);
+.focus-lane__overlay-playback-bars {
+  --bar-width: 2.5px;
+  --bar-gap: 2.5px;
+  width: 1rem;
+  height: 1.125rem;
+  flex: 0 0 1rem;
+  opacity: 0.95;
+}
+
+@media (min-width: 640px) {
+  .focus-lane__overlay-playback-bars {
+    --bar-width: 3.5px;
+    --bar-gap: 3.5px;
+    width: 1.5rem;
+    height: 1.8rem;
+    flex: 0 0 1.5rem;
+  }
 }
 
 .focus-lane__overlay-primary {
@@ -714,8 +724,8 @@ a.focus-lane__overlay-secondary:hover {
 }
 
 .focus-lane__overlay--center-middle .focus-lane__overlay-primary {
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
 }
 
 .focus-lane__overlay--center-middle .focus-lane__overlay-secondary {
@@ -754,12 +764,8 @@ a.focus-lane__overlay-secondary:hover {
 }
 
 @media (min-width: 640px) {
-  .focus-lane__overlay-eyebrow {
-    font-size: 0.875rem;
-  }
-
   .focus-lane__overlay-primary {
-    font-size: 1.5rem;
+    font-size: 2.5rem;
   }
 
   .focus-lane__overlay-secondary {

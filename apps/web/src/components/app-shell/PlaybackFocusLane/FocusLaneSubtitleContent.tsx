@@ -65,7 +65,6 @@ export function FocusLaneOverlayContent({
         title={fixture.text}
         artistName={fixture.artist?.artistName}
         recording={fixture.recording}
-        isPlaying={isPlaying}
         withPlayer={withPlayer}
         playerCollapsed={playerCollapsed}
       />

@@ -33,7 +33,7 @@ export function LibraryTrackRow({ song, onPlay }: LibraryTrackRowProps) {
         <PlaybackBars active={isActive} playing={trackIsPlaying} variant="row-compact" className="mb-[2px]" />
         <span className="tabular-nums leading-none">{formatDuration(song.durationSeconds)}</span>
       </div>
-      <span className="mx-1.5 opacity-50">·</span>
+      <span className="mx-1.5 opacity-50 library-track-row-span">·</span>
       <Link
         to={libraryArtistPath(song)}
         className="truncate hover:text-white hover:underline"
