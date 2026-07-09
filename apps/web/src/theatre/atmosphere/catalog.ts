@@ -9,7 +9,7 @@ export const ATMOSPHERE_FX_PRESETS: AtmosphereFxPresetDef[] = [
   {
     id: "glow",
     name: "Glow",
-    description: "Volumetric aurora bloom with light shafts and drifting orbs.",
+    description: "Volumetric light — aurora shafts, spots, embers, halo; morphing void/neon/blood moods.",
     animationId: "atmosphereGlow",
     author: "playlisted",
     source: "platform",
@@ -24,7 +24,7 @@ export const ATMOSPHERE_FX_PRESETS: AtmosphereFxPresetDef[] = [
   {
     id: "vignette",
     name: "Vignette",
-    description: "Cinematic iris crush with rotating petals and chromatic rim.",
+    description: "Cinematic crush — iris, petals, tunnel, blinds, eclipse; chromatic rim + mood morph.",
     animationId: "atmosphereVignette",
     author: "playlisted",
     source: "platform",
@@ -67,7 +67,7 @@ export const ATMOSPHERE_FX_PRESETS: AtmosphereFxPresetDef[] = [
   {
     id: "color-wash",
     name: "Color Wash",
-    description: "Liquid light theatre — flowing ribbons, prism bands, aurora curtains.",
+    description: "Liquid light — ribbons, curtains, tide, prism, smoke; morphing club moods.",
     animationId: "atmosphereColorWash",
     author: "playlisted",
     source: "platform",
