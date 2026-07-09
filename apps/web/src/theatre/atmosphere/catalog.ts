@@ -53,7 +53,7 @@ export const ATMOSPHERE_FX_PRESETS: AtmosphereFxPresetDef[] = [
   {
     id: "radial",
     name: "Radial",
-    description: "Cosmic pulse engine with spiral arms, shockwaves, and spectrum ring.",
+    description: "Living center organism — morphing biological edge, orbiting life, free-ranging color.",
     animationId: "atmosphereRadial",
     author: "playlisted",
     source: "platform",
