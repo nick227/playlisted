@@ -1,52 +1,74 @@
 import { CanvasAnimation } from "../../core/CanvasAnimation";
 import type { PublicAnimationContext } from "../../author/types";
 import { bass, beatPunch, env, high, intensityGain, mid, rms } from "./audio";
+import {
+  buildShapePoints,
+  createSeededRng,
+  pickFxMode,
+  pickShapeRecipe,
+  type FxMode,
+  type ShapeRecipe,
+} from "./radialGeometry";
 
-/**
- * Max entity size as % of min(viewport w, h).
- * Treated as max diameter — circumference scales with this ceiling.
- */
-export const RADIAL_MAX_CIRCUMFERENCE_PCT = 42;
+/** Max figure size as % of min(viewport w, h) — diameter ceiling. */
+export const RADIAL_MAX_CIRCUMFERENCE_PCT = 55;
 
-const EDGE_POINTS = 72;
-const SATELLITES = 5;
+const EDGE = 96;
 
-type Satellite = {
-  angle: number;
-  orbit: number;
-  phase: number;
-  size: number;
-  hueShift: number;
+type Layer = {
+  recipe: ShapeRecipe;
+  scale: number;
+  spin: number;
+  spinVel: number;
+  hue: number;
+  role: "bass" | "mid" | "high" | "mix";
 };
 
 /**
- * Living radial organism — amorphous center entity with morphing biological edge.
- * Bass = body pulse / lobe swell. Mid = undulation. High = membrane jitter.
- * Colors drift freely across the full hue range.
+ * Multi-shape laser / digital visualizer.
+ * Procedural geometry generators + music-driven morph + random color FX.
+ * Infinite permutations without hand-authored shapes.
  */
 export class AtmosphereRadialScene extends CanvasAnimation {
-  private edge = new Float32Array(EDGE_POINTS);
-  private edgeVel = new Float32Array(EDGE_POINTS);
-  private pulse = 0.35;
-  private pulseVel = 0;
-  private hueA = 200;
-  private hueB = 320;
-  private hueC = 40;
-  private satellites: Satellite[] = [];
+  private layers: Layer[] = [];
+  private warp = new Float32Array(EDGE);
+  private warpVel = new Float32Array(EDGE);
+  private rng = createSeededRng((Math.random() * 1e9) | 0);
+  private fx: FxMode = "none";
+  private fxLife = 0;
+  private fxHue = 0;
+  private scramble = 0;
   private lastElapsed = 0;
   private prevBass = 0;
   private prevMid = 0;
   private prevHigh = 0;
+  private morph = 0;
+  private holdSec = 0;
+  private nextHold = 6;
 
-  private ensureSatellites() {
-    if (this.satellites.length === SATELLITES) return;
-    this.satellites = Array.from({ length: SATELLITES }, (_, i) => ({
-      angle: (i / SATELLITES) * Math.PI * 2,
-      orbit: 0.55 + (i % 3) * 0.12,
-      phase: i * 1.7,
-      size: 0.08 + (i % 3) * 0.03,
-      hueShift: i * 47,
+  private reseedLayers(force = false) {
+    if (!force && this.layers.length >= 3) return;
+    const count = 3 + Math.floor(this.rng() * 3);
+    const roles: Layer["role"][] = ["bass", "mid", "high", "mix", "mix"];
+    this.layers = Array.from({ length: count }, (_, i) => ({
+      recipe: pickShapeRecipe(this.rng),
+      scale: 0.35 + i * 0.18 + this.rng() * 0.12,
+      spin: this.rng() * Math.PI * 2,
+      spinVel: (this.rng() - 0.5) * 0.8,
+      hue: this.rng() * 360,
+      role: roles[i % roles.length]!,
     }));
+  }
+
+  private triggerFx(strength: number) {
+    this.fx = pickFxMode(this.rng);
+    this.fxLife = 0.35 + strength * 0.7 + this.rng() * 0.4;
+    this.fxHue = this.rng() * 360;
+    if (this.fx === "scramble") this.scramble = 1;
+    if (this.fx === "none" && this.rng() < 0.35) {
+      // Occasional hard reshape on "none" roll during strong hits
+      this.reseedLayers(true);
+    }
   }
 
   protected draw(context: PublicAnimationContext) {
@@ -63,17 +85,9 @@ export class AtmosphereRadialScene extends CanvasAnimation {
       ? Math.min(0.05, Math.max(0.008, t - this.lastElapsed))
       : 1 / 60;
     this.lastElapsed = t;
-    this.ensureSatellites();
 
-    const w = this.cssWidth;
-    const h = this.cssHeight;
-    const cx = w * 0.5;
-    const cy = h * 0.5;
-    const minSide = Math.min(w, h);
-    // Diameter ceiling → radius
-    const maxR = (minSide * RADIAL_MAX_CIRCUMFERENCE_PCT) / 200;
+    this.reseedLayers();
 
-    // Independent band edges
     const bassEdge = Math.max(0, b - this.prevBass);
     const midEdge = Math.max(0, m - this.prevMid);
     const highEdge = Math.max(0, hi - this.prevHigh);
@@ -81,152 +95,164 @@ export class AtmosphereRadialScene extends CanvasAnimation {
     this.prevMid = m;
     this.prevHigh = hi;
 
-    // Free-ranging color drift (full hue circle, multiple channels)
-    this.hueA = (this.hueA + delta * (8 + hi * 40 + m * 18) + bassEdge * 25) % 360;
-    this.hueB = (this.hueB + delta * (12 + m * 35 + punch * 20) + midEdge * 30) % 360;
-    this.hueC = (this.hueC + delta * (18 + b * 22 + highEdge * 50) + (triggers.beat ? 15 : 0)) % 360;
-    if (triggers.chaosHit) {
-      this.hueA = (this.hueA + 40 + Math.random() * 80) % 360;
-      this.hueC = (this.hueC + 60 + Math.random() * 100) % 360;
+    // Reshape / FX on musical events
+    this.holdSec += delta;
+    if (this.holdSec >= this.nextHold || triggers.chaosHit) {
+      this.holdSec = 0;
+      this.nextHold = 4 + this.rng() * 9;
+      if (this.rng() < 0.7) this.reseedLayers(true);
+      else this.layers[Math.floor(this.rng() * this.layers.length)]!.recipe = pickShapeRecipe(this.rng);
     }
+    if (triggers.bassHit || bassEdge > 0.1) this.triggerFx(0.6 + b);
+    else if (triggers.highsHit || highEdge > 0.1) this.triggerFx(0.5 + hi);
+    else if (triggers.beat && punch > 0.5) this.triggerFx(0.45 + punch * 0.3);
+    else if (triggers.midsHit || midEdge > 0.1) this.triggerFx(0.4 + m);
 
-    // Core pulse — bass + intensity swell, springy
-    const pulseGoal = Math.min(
-      1,
-      0.28 + e * 0.35 + b * 0.45 + r * 0.15 + (triggers.bassHit ? 0.35 : 0) + (triggers.beat ? 0.25 : 0) + punch * 0.12,
-    );
-    this.pulseVel += (pulseGoal - this.pulse) * 22 * delta;
-    this.pulseVel *= Math.exp(-10 * delta);
-    this.pulse = Math.max(0.12, Math.min(1.15, this.pulse + this.pulseVel * delta));
-    if (bassEdge > 0.06 || triggers.bassHit) this.pulseVel += 2.8 + b * 3;
+    if (this.fxLife > 0) this.fxLife = Math.max(0, this.fxLife - delta);
+    else this.fx = "none";
+    this.scramble *= Math.exp(-3.5 * delta);
+    this.morph += delta * (0.4 + e * 1.2 + m * 0.8);
 
-    const baseR = maxR * (0.35 + this.pulse * 0.55) * Math.min(1.25, Math.max(0.8, g));
+    const w = this.cssWidth;
+    const h = this.cssHeight;
+    const cx = w * 0.5;
+    const cy = h * 0.5;
+    const maxR = (Math.min(w, h) * RADIAL_MAX_CIRCUMFERENCE_PCT) / 200;
 
-    // Morphing membrane — each vertex driven independently
-    for (let i = 0; i < EDGE_POINTS; i++) {
-      const u = i / EDGE_POINTS;
+    // Per-vertex audio warp: bass lobes, mid undulation, high jitter — independent
+    for (let i = 0; i < EDGE; i++) {
+      const u = i / EDGE;
       const ang = u * Math.PI * 2;
-      // Bass: large slow lobes (2–4 around body)
-      const lobe =
-        Math.sin(ang * 2 + t * (0.7 + b * 1.2)) * b * 0.22
-        + Math.sin(ang * 3 - t * 0.5) * b * 0.12;
-      // Mid: medium biological undulation
-      const undulate =
-        Math.sin(ang * 5 + t * (1.8 + m * 3)) * m * 0.16
-        + Math.sin(ang * 7 - t * 2.2 + m * 4) * m * 0.1;
-      // High: fine membrane jitter / cilia
-      const jitter =
-        Math.sin(ang * 13 + t * (8 + hi * 14)) * hi * 0.08
-        + Math.sin(ang * 21 - t * 11) * hi * 0.05;
-      // Note hits poke local regions
-      const notePoke =
-        (triggers.bassHit ? Math.cos(ang * 2 + t) * 0.12 : 0)
-        + (triggers.midsHit ? Math.sin(ang * 5 + t * 3) * 0.1 : 0)
-        + (triggers.highsHit ? Math.sin(ang * 17 + t * 9) * 0.07 : 0)
-        + (triggers.beat ? 0.06 : 0);
-
-      const goal = lobe + undulate + jitter + notePoke + (bassEdge + midEdge + highEdge) * 0.15;
-      const prev = this.edge[i]!;
-      this.edgeVel[i]! += (goal - prev) * 28 * delta;
-      this.edgeVel[i]! *= Math.exp(-12 * delta);
-      this.edge[i] = prev + this.edgeVel[i]! * delta;
+      const bassW = Math.sin(ang * (2 + (this.layers[0]?.recipe.sides ?? 3) % 4) + t * (1 + b)) * b * 0.35;
+      const midW = Math.sin(ang * 5 + t * (2 + m * 4)) * m * 0.28;
+      const highW = Math.sin(ang * 17 + t * (9 + hi * 12)) * hi * 0.18;
+      const note =
+        (triggers.bassHit ? Math.cos(ang * 2) * 0.2 : 0)
+        + (triggers.midsHit ? Math.sin(ang * 6) * 0.16 : 0)
+        + (triggers.highsHit ? Math.sin(ang * 19) * 0.12 : 0)
+        + (triggers.beat ? 0.1 : 0);
+      const goal = bassW + midW + highW + note + (bassEdge + midEdge + highEdge) * 0.2;
+      this.warpVel[i]! += (goal - this.warp[i]!) * 30 * delta;
+      this.warpVel[i]! *= Math.exp(-14 * delta);
+      this.warp[i] = this.warp[i]! + this.warpVel[i]! * delta;
     }
 
     this.ctx.clearRect(0, 0, w, h);
     this.ctx.globalCompositeOperation = "lighter";
 
-    // Soft aura
-    const aura = this.ctx.createRadialGradient(cx, cy, 0, cx, cy, baseR * 1.85);
-    aura.addColorStop(0, `hsla(${this.hueA}, 70%, 45%, ${(0.12 + e * 0.18 + punch * 0.1) * g})`);
-    aura.addColorStop(0.45, `hsla(${this.hueB}, 65%, 35%, ${(0.08 + m * 0.12) * g})`);
-    aura.addColorStop(1, "hsla(0,0%,0%,0)");
-    this.ctx.fillStyle = aura;
-    this.ctx.beginPath();
-    this.ctx.arc(cx, cy, baseR * 1.85, 0, Math.PI * 2);
-    this.ctx.fill();
-
-    // Interconnected satellites (orbiting life)
-    for (const sat of this.satellites) {
-      sat.angle += delta * (0.35 + m * 0.8 + hi * 0.4 + (triggers.midsHit ? 1.2 : 0));
-      const orbitR = baseR * (sat.orbit + b * 0.15 + Math.sin(t * 1.3 + sat.phase) * 0.08);
-      const sx = cx + Math.cos(sat.angle + sat.phase * 0.2) * orbitR;
-      const sy = cy + Math.sin(sat.angle + sat.phase * 0.2) * orbitR;
-      const sr = baseR * sat.size * (0.7 + e * 0.5 + punch * 0.25) * g;
-      const sh = (this.hueC + sat.hueShift) % 360;
-
-      // Tendril to core
-      this.ctx.strokeStyle = `hsla(${sh}, 70%, 55%, ${(0.1 + e * 0.15 + punch * 0.08) * g})`;
-      this.ctx.lineWidth = 1 + e * 2;
-      this.ctx.beginPath();
-      this.ctx.moveTo(cx, cy);
-      const mx = (cx + sx) * 0.5 + Math.sin(t * 2 + sat.phase) * baseR * 0.12;
-      const my = (cy + sy) * 0.5 + Math.cos(t * 1.7 + sat.phase) * baseR * 0.12;
-      this.ctx.quadraticCurveTo(mx, my, sx, sy);
-      this.ctx.stroke();
-
-      const blob = this.ctx.createRadialGradient(sx, sy, 0, sx, sy, sr * 2);
-      blob.addColorStop(0, `hsla(${sh}, 85%, 65%, ${(0.35 + punch * 0.2) * g})`);
-      blob.addColorStop(0.5, `hsla(${(sh + 40) % 360}, 70%, 45%, ${(0.15 + hi * 0.12) * g})`);
-      blob.addColorStop(1, "hsla(0,0%,0%,0)");
-      this.ctx.fillStyle = blob;
-      this.ctx.beginPath();
-      this.ctx.arc(sx, sy, sr * 2, 0, Math.PI * 2);
-      this.ctx.fill();
+    // Color wash FX backdrop
+    if (this.fx === "wash" && this.fxLife > 0) {
+      const wash = this.ctx.createRadialGradient(cx, cy, 0, cx, cy, maxR * 2.2);
+      wash.addColorStop(0, `hsla(${this.fxHue}, 80%, 50%, ${this.fxLife * 0.35 * g})`);
+      wash.addColorStop(0.5, `hsla(${(this.fxHue + 80) % 360}, 70%, 40%, ${this.fxLife * 0.18 * g})`);
+      wash.addColorStop(1, "hsla(0,0%,0%,0)");
+      this.ctx.fillStyle = wash;
+      this.ctx.fillRect(0, 0, w, h);
     }
 
-    // Main amorphous body path
-    const pts: { x: number; y: number }[] = [];
-    for (let i = 0; i < EDGE_POINTS; i++) {
-      const ang = (i / EDGE_POINTS) * Math.PI * 2 - Math.PI * 0.5;
-      const rr = Math.max(maxR * 0.08, Math.min(maxR, baseR * (1 + this.edge[i]!)));
-      pts.push({ x: cx + Math.cos(ang) * rr, y: cy + Math.sin(ang) * rr });
+    // Draw nested procedural layers (laser / digital artist stack)
+    for (let li = 0; li < this.layers.length; li++) {
+      const layer = this.layers[li]!;
+      const band =
+        layer.role === "bass" ? b
+        : layer.role === "mid" ? m
+        : layer.role === "high" ? hi
+        : (b + m + hi) / 3;
+
+      layer.spinVel += (band - 0.2) * 0.8 * delta;
+      layer.spinVel *= Math.exp(-2.5 * delta);
+      layer.spin += (layer.spinVel + (layer.role === "high" ? hi * 1.5 : 0.2 + e * 0.5)) * delta;
+      layer.hue = (layer.hue + delta * (10 + band * 50 + hi * 30) + (triggers.beat ? 8 : 0)) % 360;
+
+      const pulse = 0.55 + band * 0.55 + e * 0.25 + (triggers.beat ? 0.12 : 0) + punch * 0.08;
+      const scale = maxR * layer.scale * pulse * Math.min(1.3, Math.max(0.75, g));
+      const scrambleOff = this.scramble > 0.05
+        ? Math.sin(t * 17 + li * 5.1) * maxR * 0.12 * this.scramble
+        : 0;
+
+      // Rotate recipe twist live
+      const liveRecipe: ShapeRecipe = {
+        ...layer.recipe,
+        twist: layer.recipe.twist + layer.spin,
+      };
+
+      const pts = buildShapePoints(liveRecipe, cx + scrambleOff, cy - scrambleOff * 0.4, scale, EDGE, this.morph + li, this.warp);
+
+      // Inner pattern: spokes / grid chords
+      const spokes = liveRecipe.spokes;
+      this.ctx.strokeStyle = `hsla(${layer.hue}, 75%, 55%, ${(0.08 + band * 0.2 + punch * 0.1) * g})`;
+      this.ctx.lineWidth = 1;
+      for (let s = 0; s < spokes; s++) {
+        const a = (s / spokes) * Math.PI * 2 + layer.spin;
+        const rr = scale * (0.2 + band * 0.5);
+        this.ctx.beginPath();
+        this.ctx.moveTo(cx, cy);
+        this.ctx.lineTo(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr);
+        this.ctx.stroke();
+      }
+
+      // Nested echoes
+      for (let nest = liveRecipe.nest; nest >= 1; nest--) {
+        const nestScale = nest / liveRecipe.nest;
+        this.ctx.beginPath();
+        for (let i = 0; i < pts.length; i++) {
+          const p = pts[i]!;
+          const x = cx + (p.x - cx) * nestScale;
+          const y = cy + (p.y - cy) * nestScale;
+          if (i === 0) this.ctx.moveTo(x, y);
+          else this.ctx.lineTo(x, y);
+        }
+        this.ctx.closePath();
+        const alpha = (0.1 + band * 0.25 + (nest === liveRecipe.nest ? 0.15 : 0)) * g;
+        this.ctx.strokeStyle = `hsla(${(layer.hue + nest * 25) % 360}, 85%, ${45 + band * 30}%, ${alpha})`;
+        this.ctx.lineWidth = (nest === liveRecipe.nest ? 2.2 : 1) + band * 2 + punch;
+        this.ctx.stroke();
+        if (nest === liveRecipe.nest) {
+          this.ctx.fillStyle = `hsla(${layer.hue}, 70%, 40%, ${(0.06 + e * 0.1 + punch * 0.08) * g})`;
+          this.ctx.fill();
+        }
+      }
+
+      // Color pop FX — flash vertices
+      if (this.fx === "pop" && this.fxLife > 0) {
+        for (let i = 0; i < pts.length; i += 3) {
+          const p = pts[i]!;
+          this.ctx.fillStyle = `hsla(${(this.fxHue + i * 9) % 360}, 100%, 70%, ${this.fxLife * 0.55 * g})`;
+          this.ctx.beginPath();
+          this.ctx.arc(p.x, p.y, 2 + punch * 3 + hi * 2, 0, Math.PI * 2);
+          this.ctx.fill();
+        }
+      }
     }
 
-    // Filled organism body
-    this.ctx.beginPath();
-    for (let i = 0; i < pts.length; i++) {
-      const p0 = pts[i]!;
-      const p1 = pts[(i + 1) % pts.length]!;
-      if (i === 0) this.ctx.moveTo(p0.x, p0.y);
-      const mx = (p0.x + p1.x) * 0.5;
-      const my = (p0.y + p1.y) * 0.5;
-      this.ctx.quadraticCurveTo(p0.x, p0.y, mx, my);
+    // Scramble FX — chaotic secondary polygons (time-seeded, stable within a frame)
+    if (this.scramble > 0.05) {
+      for (let k = 0; k < 4; k++) {
+        const seedRng = createSeededRng(((t * 100) | 0) * 997 + k * 131 + (this.fxHue | 0));
+        const recipe = pickShapeRecipe(seedRng);
+        const sc = maxR * (0.2 + seedRng() * 0.5) * this.scramble;
+        const pts = buildShapePoints(recipe, cx, cy, sc, 48, this.morph * 2 + k, this.warp);
+        this.ctx.beginPath();
+        for (let i = 0; i < pts.length; i++) {
+          if (i === 0) this.ctx.moveTo(pts[i]!.x, pts[i]!.y);
+          else this.ctx.lineTo(pts[i]!.x, pts[i]!.y);
+        }
+        this.ctx.closePath();
+        this.ctx.strokeStyle = `hsla(${(this.fxHue + k * 70) % 360}, 90%, 60%, ${this.scramble * 0.35 * g})`;
+        this.ctx.lineWidth = 1 + this.scramble * 2;
+        this.ctx.stroke();
+      }
     }
-    this.ctx.closePath();
 
-    const body = this.ctx.createRadialGradient(cx, cy, 0, cx, cy, baseR);
-    body.addColorStop(0, `hsla(${this.hueA}, 80%, 60%, ${(0.45 + punch * 0.25 + e * 0.15) * g})`);
-    body.addColorStop(0.4, `hsla(${this.hueB}, 75%, 45%, ${(0.28 + m * 0.2) * g})`);
-    body.addColorStop(0.75, `hsla(${this.hueC}, 70%, 35%, ${(0.16 + b * 0.15) * g})`);
-    body.addColorStop(1, `hsla(${this.hueA}, 60%, 25%, 0)`);
-    this.ctx.fillStyle = body;
-    this.ctx.fill();
-
-    // Membrane edge stroke — music-reactive outline
+    // Core laser node
+    const coreR = maxR * (0.06 + e * 0.08 + r * 0.05 + (triggers.beat ? 0.05 : 0));
+    const core = this.ctx.createRadialGradient(cx, cy, 0, cx, cy, coreR * 3);
+    core.addColorStop(0, `hsla(${this.layers[0]?.hue ?? 0}, 100%, 80%, ${(0.5 + punch * 0.35) * g})`);
+    core.addColorStop(0.4, `hsla(${this.layers[1]?.hue ?? 120}, 85%, 50%, ${(0.2 + e * 0.2) * g})`);
+    core.addColorStop(1, "hsla(0,0%,0%,0)");
+    this.ctx.fillStyle = core;
     this.ctx.beginPath();
-    for (let i = 0; i < pts.length; i++) {
-      const p0 = pts[i]!;
-      const p1 = pts[(i + 1) % pts.length]!;
-      if (i === 0) this.ctx.moveTo(p0.x, p0.y);
-      this.ctx.quadraticCurveTo(p0.x, p0.y, (p0.x + p1.x) * 0.5, (p0.y + p1.y) * 0.5);
-    }
-    this.ctx.closePath();
-    this.ctx.strokeStyle = `hsla(${this.hueC}, 90%, 70%, ${(0.35 + hi * 0.35 + punch * 0.25) * g})`;
-    this.ctx.lineWidth = 1.5 + hi * 3 + punch * 2;
-    this.ctx.stroke();
-    this.ctx.strokeStyle = `hsla(${this.hueA}, 85%, 55%, ${(0.15 + b * 0.2) * g})`;
-    this.ctx.lineWidth = 3 + b * 4;
-    this.ctx.stroke();
-
-    // Inner nucleus
-    const nucR = baseR * (0.18 + e * 0.1 + (triggers.beat ? 0.08 : 0));
-    const nuc = this.ctx.createRadialGradient(cx, cy, 0, cx, cy, nucR * 2);
-    nuc.addColorStop(0, `hsla(${this.hueB}, 95%, 75%, ${(0.55 + punch * 0.3) * g})`);
-    nuc.addColorStop(0.45, `hsla(${this.hueA}, 80%, 50%, ${(0.25 + e * 0.2) * g})`);
-    nuc.addColorStop(1, "hsla(0,0%,0%,0)");
-    this.ctx.fillStyle = nuc;
-    this.ctx.beginPath();
-    this.ctx.arc(cx, cy, nucR * 2, 0, Math.PI * 2);
+    this.ctx.arc(cx, cy, coreR * 3, 0, Math.PI * 2);
     this.ctx.fill();
 
     this.ctx.globalCompositeOperation = "source-over";

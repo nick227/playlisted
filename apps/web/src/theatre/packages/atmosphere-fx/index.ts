@@ -44,7 +44,7 @@ export const atmosphereFxPackage: AnimationPackage = {
     },
     {
       id: "atmosphereRadial",
-      label: "Atmosphere Radial",
+      label: "Atmosphere Multi-Shape",
       factory: atmosphereRadialFactory,
       visualType: "canvas",
       mood: "dynamic",

@@ -52,8 +52,8 @@ export const ATMOSPHERE_FX_PRESETS: AtmosphereFxPresetDef[] = [
   },
   {
     id: "radial",
-    name: "Radial",
-    description: "Living center organism — morphing biological edge, orbiting life, free-ranging color.",
+    name: "Multi-Shape",
+    description: "Procedural laser/digital multi-shape field — infinite geometric permutations, music-driven morph, color wash/pop/scramble.",
     animationId: "atmosphereRadial",
     author: "playlisted",
     source: "platform",
