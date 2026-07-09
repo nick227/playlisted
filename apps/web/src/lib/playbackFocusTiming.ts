@@ -4,9 +4,9 @@ export const playbackFocusUserActivityEnabled = true;
 export const playbackFocusTiming = {
   theatre: {
     delayMs: 0,
-    fadeInMs: 3200,
-    fadeOutMs: 3200,
-    exitBufferMs: 1200,
+    fadeInMs: 1200,
+    fadeOutMs: 200,
+    exitBufferMs: 200,
   },
 
   body: {
