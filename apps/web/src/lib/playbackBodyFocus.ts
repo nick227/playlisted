@@ -1,5 +1,7 @@
 import { useEffect, useSyncExternalStore } from "react";
 
+export const PLAYBACK_BODY_FOCUS_RETURN_EVENT = "playback-body-focus:return";
+
 let bodyFocusHidden = false;
 const listeners = new Set<() => void>();
 
@@ -33,4 +35,8 @@ export function useSyncPlaybackBodyFocusHidden(active: boolean) {
     setPlaybackBodyFocusHidden(active);
     return () => setPlaybackBodyFocusHidden(false);
   }, [active]);
+}
+
+export function requestPlaybackBodyFocusReturn() {
+  window.dispatchEvent(new CustomEvent(PLAYBACK_BODY_FOCUS_RETURN_EVENT));
 }

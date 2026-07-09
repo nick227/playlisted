@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 
 import { AppLink } from "@/components/navigation/AppLink";
 import { genrePath } from "@/lib/browsePaths";
+import { requestPlaybackBodyFocusReturn } from "@/lib/playbackBodyFocus";
 import type { FocusRecording } from "@/lib/playbackFocus/types";
 import { playlistRecordingPath, profilePath } from "@/lib/routes";
 import { stopPlaybackFocusBubble } from "@/lib/playbackFocus/interactiveTarget";
@@ -93,6 +94,7 @@ export function FocusLaneLink({ to, className = "", title, children }: FocusLane
       title={title}
       className={className}
       onPointerDown={stopPlaybackFocusBubble}
+      onClick={requestPlaybackBodyFocusReturn}
     >
       {children}
     </AppLink>

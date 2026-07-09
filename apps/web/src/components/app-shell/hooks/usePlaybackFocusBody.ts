@@ -4,6 +4,7 @@ import { useLocation } from "react-router-dom";
 import { isTheatreSwipeSuppressed } from "@/lib/gestures/swipeGesture";
 import { isBrowseSwipeNavigation } from "@/lib/browseNavigation/types";
 
+import { PLAYBACK_BODY_FOCUS_RETURN_EVENT } from "@/lib/playbackBodyFocus";
 import { getPlaybackFocusBodyFadeSuppressed } from "@/lib/playbackFocusBodyFade";
 import {
   displaySettingsBodyRevealSuppressRemainingMs,
@@ -196,6 +197,39 @@ export function usePlaybackFocusBody({
     playFocusActive,
     playbackFocusSuppressed,
   ]);
+
+  const returnBodyForNavigation = useCallback(() => {
+    clearFocusTimer();
+    clearSnapRevealTimer();
+    clearRevealInteractionTimer();
+    clearRevealClickSuppressTimer();
+    bodyFocusHiddenRef.current = false;
+    setBodyFocusHidden(false);
+    setBodyFadedAtTrackMs(null);
+    setTitleIntroStartedAtMs(null);
+    setTitleIntroStartedAtEpochMs(null);
+    setMiniViewVisible(false);
+    setSnapReveal(false);
+    setRevealInteractionActive(false);
+
+    if (playFocusActive && !playbackFocusSuppressedRef.current && !bodyFadeDisabledRef.current) {
+      armPlayFocus("activity");
+    }
+  }, [
+    armPlayFocus,
+    clearFocusTimer,
+    clearRevealClickSuppressTimer,
+    clearRevealInteractionTimer,
+    clearSnapRevealTimer,
+    playFocusActive,
+  ]);
+
+  useEffect(() => {
+    window.addEventListener(PLAYBACK_BODY_FOCUS_RETURN_EVENT, returnBodyForNavigation);
+    return () => {
+      window.removeEventListener(PLAYBACK_BODY_FOCUS_RETURN_EVENT, returnBodyForNavigation);
+    };
+  }, [returnBodyForNavigation]);
 
   // Disable fade timers when focus is suppressed or body fade is off for this route.
   useEffect(() => {

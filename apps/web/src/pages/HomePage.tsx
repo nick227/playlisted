@@ -1,5 +1,6 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { usePageMeta } from "@/hooks/usePageMeta";
+import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 
 const RadioPage = lazy(() =>
   import("@/pages/RadioPage").then((mod) => ({ default: mod.RadioPage })),
@@ -46,6 +47,12 @@ export function HomePage() {
     title: "Home",
     description: "Music charts and curated playlists for independent artists.",
   });
+
+  const { closePlayback } = useAudioPlayer();
+
+  useEffect(() => {
+    closePlayback();
+  }, [closePlayback]);
 
   return (
     <div className="mx-auto h-full w-full overflow-hidden">
