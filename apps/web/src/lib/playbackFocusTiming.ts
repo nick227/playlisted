@@ -4,13 +4,13 @@ export const playbackFocusUserActivityEnabled = true;
 export const playbackFocusTiming = {
   theatre: {
     delayMs: 0,
-    fadeInMs: 1200,
+    fadeInMs: 3200,
     fadeOutMs: 3200,
     exitBufferMs: 1200,
   },
 
   body: {
-    delayMs: 6000,
+    delayMs: 5000,
     restoreDelayMs: 15000,
     fadeOutMs: 2000,
   },
@@ -30,7 +30,7 @@ export const playbackFocusTiming = {
 
   titleIntro: {
     delayMs: 0,
-    minVisibleMs: 7000,
+    minVisibleMs: 10000,
     fadeInMs: 900,
     fadeOutMs: 650,
   },
@@ -47,13 +47,12 @@ export const playbackFocusTiming = {
     minGapForArtistVisualMs: 2000,
   },
 
-  miniView: {
-    delayMs: 600000,
-    fadeInMs: 620,
-  },
-
   sidebarNav: {
     blurDelayMs: 0,
+    fadeMs: 620,
+  },
+
+  revealShield: {
     fadeMs: 620,
   },
 
@@ -89,10 +88,7 @@ export function applyPlaybackFocusTimingCssVars(root: HTMLElement) {
   root.style.setProperty("--duration-artist-visual-fade-in", ms(playbackFocusTiming.artistVisual.fadeInMs));
   root.style.setProperty("--duration-artist-visual-fade-out", ms(playbackFocusTiming.artistVisual.fadeOutMs));
 
-  root.style.setProperty(
-    "--duration-play-focus-miniview-fade",
-    ms(playbackFocusTiming.miniView.fadeInMs),
-  );
+  root.style.setProperty("--duration-play-focus-reveal-shield-fade", ms(playbackFocusTiming.revealShield.fadeMs));
   root.style.setProperty("--duration-play-focus-body-fade", ms(playbackFocusTiming.body.fadeOutMs));
   root.style.setProperty("--duration-sidebar-nav-fade", ms(playbackFocusTiming.sidebarNav.fadeMs));
   root.style.setProperty("--duration-topbar-bg-fade", ms(playbackFocusTiming.topBarBgFade.fadeMs));

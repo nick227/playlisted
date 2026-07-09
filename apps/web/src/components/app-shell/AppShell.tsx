@@ -15,7 +15,6 @@ import { usePlayerSpacebarShortcut } from "./hooks/usePlayerSpacebarShortcut";
 import { useResumePlaybackAfterNav } from "./hooks/useResumePlaybackAfterNav";
 import { useRouteScrollReset } from "./hooks/useRouteScrollReset";
 import { PlaybackFocusLane } from "./PlaybackFocusLane/PlaybackFocusLane";
-import { PlaybackFocusLayer } from "./PlaybackFocusLayer";
 import { QueuePanel } from "./QueuePanel";
 import { Sidebar } from "./Sidebar";
 import { TheatreGestureLayer } from "./TheatreGestureLayer";
@@ -52,7 +51,6 @@ export function AppShell({ children }: AppShellProps) {
   const playbackFocus = usePlaybackFocusBody({
     playFocusActive,
     focusTrackKey,
-    focusTrackSourceLabel: focusTrack?.sourceLabel,
     currentTimeMsRef,
     scrollContainerRef: mainRef,
     pathname: location.pathname,
@@ -130,15 +128,6 @@ export function AppShell({ children }: AppShellProps) {
         withPlayer={shellHasPlayer}
         onSkip={skipPlayback}
         onReveal={playbackFocus.revealPage}
-      />
-
-      <PlaybackFocusLayer
-        visible={playbackFocus.miniViewMode}
-        track={focusTrack}
-        onReturn={playbackFocus.revealPage}
-        onSkip={skipPlayback}
-        withPlayer={shellHasPlayer}
-        snapReveal={playbackFocus.snapReveal}
       />
 
       <BottomPlayer collapsedByFocusLane={sitePlayerFocusCollapsed} />

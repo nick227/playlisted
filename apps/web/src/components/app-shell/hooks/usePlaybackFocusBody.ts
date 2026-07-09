@@ -24,7 +24,6 @@ type PlayFocusArmReason = "initial" | "activity";
 type UsePlaybackFocusBodyOptions = {
   playFocusActive: boolean;
   focusTrackKey: string;
-  focusTrackSourceLabel?: string;
   currentTimeMsRef: RefObject<number>;
   scrollContainerRef?: RefObject<HTMLElement | null>;
   pathname: string;
@@ -59,7 +58,6 @@ function isNativeInteractiveTarget(target: EventTarget | null): boolean {
 export function usePlaybackFocusBody({
   playFocusActive,
   focusTrackKey,
-  focusTrackSourceLabel,
   currentTimeMsRef,
   scrollContainerRef,
   pathname,
@@ -72,11 +70,11 @@ export function usePlaybackFocusBody({
   const location = useLocation();
 
   const bodyFocusTimerRef = useRef<number | null>(null);
-  const miniViewTimerRef = useRef<number | null>(null);
   const snapRevealTimerRef = useRef<number | null>(null);
   const revealInteractionTimerRef = useRef<number | null>(null);
   const revealClickSuppressTimerRef = useRef<number | null>(null);
   const revealClickSuppressUntilRef = useRef(0);
+  const bodyRestoreUntilRef = useRef(0);
   const previousFocusTrackKeyRef = useRef(focusTrackKey);
   const previousLocationKeyRef = useRef(`${pathname}\n${search}`);
   const bodyFocusHiddenRef = useRef(false);
@@ -87,7 +85,6 @@ export function usePlaybackFocusBody({
   const [bodyFadedAtTrackMs, setBodyFadedAtTrackMs] = useState<number | null>(null);
   const [titleIntroStartedAtMs, setTitleIntroStartedAtMs] = useState<number | null>(null);
   const [titleIntroStartedAtEpochMs, setTitleIntroStartedAtEpochMs] = useState<number | null>(null);
-  const [miniViewVisible, setMiniViewVisible] = useState(false);
   const [snapReveal, setSnapReveal] = useState(false);
   const [revealInteractionActive, setRevealInteractionActive] = useState(false);
   const [contentInputGuarded, setContentInputGuarded] = useState(false);
@@ -116,10 +113,6 @@ export function usePlaybackFocusBody({
     if (bodyFocusTimerRef.current !== null) {
       window.clearTimeout(bodyFocusTimerRef.current);
       bodyFocusTimerRef.current = null;
-    }
-    if (miniViewTimerRef.current !== null) {
-      window.clearTimeout(miniViewTimerRef.current);
-      miniViewTimerRef.current = null;
     }
   }, []);
 
@@ -156,6 +149,10 @@ export function usePlaybackFocusBody({
 
   const armPlayFocus = useCallback((reason: PlayFocusArmReason = "initial") => {
     clearFocusTimer();
+    const effectiveReason =
+      reason === "activity" || performance.now() < bodyRestoreUntilRef.current
+        ? "activity"
+        : "initial";
     if (
       !isDisplaySettingsBodyRevealSuppressed() ||
       !bodyFocusHiddenRef.current ||
@@ -165,12 +162,11 @@ export function usePlaybackFocusBody({
       setBodyFadedAtTrackMs(null);
       setTitleIntroStartedAtMs(null);
       setTitleIntroStartedAtEpochMs(null);
-      setMiniViewVisible(false);
     }
     if (!playFocusActive || playbackFocusSuppressed || bodyFadeDisabled) return;
 
     const bodyDelayMs =
-      reason === "activity"
+      effectiveReason === "activity"
         ? playbackFocusTiming.body.restoreDelayMs
         : (customBodyDelayMs ?? playbackFocusTiming.body.delayMs);
 
@@ -181,19 +177,11 @@ export function usePlaybackFocusBody({
       setTitleIntroStartedAtEpochMs(performance.now());
       bodyFocusTimerRef.current = null;
     }, bodyDelayMs);
-
-    if (focusTrackSourceLabel === "Radio") {
-      miniViewTimerRef.current = window.setTimeout(() => {
-        setMiniViewVisible(true);
-        miniViewTimerRef.current = null;
-      }, playbackFocusTiming.miniView.delayMs);
-    }
   }, [
     bodyFadeDisabled,
     clearFocusTimer,
     currentTimeMsRef,
     customBodyDelayMs,
-    focusTrackSourceLabel,
     playFocusActive,
     playbackFocusSuppressed,
   ]);
@@ -203,12 +191,12 @@ export function usePlaybackFocusBody({
     clearSnapRevealTimer();
     clearRevealInteractionTimer();
     clearRevealClickSuppressTimer();
+    bodyRestoreUntilRef.current = performance.now() + playbackFocusTiming.body.restoreDelayMs;
     bodyFocusHiddenRef.current = false;
     setBodyFocusHidden(false);
     setBodyFadedAtTrackMs(null);
     setTitleIntroStartedAtMs(null);
     setTitleIntroStartedAtEpochMs(null);
-    setMiniViewVisible(false);
     setSnapReveal(false);
     setRevealInteractionActive(false);
 
@@ -238,11 +226,11 @@ export function usePlaybackFocusBody({
     const revealBody = () => {
       if (!playbackFocusSuppressedRef.current && !bodyFadeDisabledRef.current) return;
       clearFocusTimer();
+      bodyRestoreUntilRef.current = 0;
       setBodyFocusHidden(false);
       setBodyFadedAtTrackMs(null);
       setTitleIntroStartedAtMs(null);
       setTitleIntroStartedAtEpochMs(null);
-      setMiniViewVisible(false);
       clearRevealClickSuppressTimer();
     };
 
@@ -275,7 +263,6 @@ export function usePlaybackFocusBody({
       setBodyFadedAtTrackMs(0);
       setTitleIntroStartedAtMs(0);
       setTitleIntroStartedAtEpochMs(performance.now());
-      setMiniViewVisible(false);
       return () => {
         clearFocusTimer();
         clearSnapRevealTimer();
@@ -286,11 +273,11 @@ export function usePlaybackFocusBody({
 
     if (!playFocusActive) {
       clearFocusTimer();
+      bodyRestoreUntilRef.current = 0;
       setBodyFocusHidden(false);
       setBodyFadedAtTrackMs(null);
       setTitleIntroStartedAtMs(null);
       setTitleIntroStartedAtEpochMs(null);
-      setMiniViewVisible(false);
       clearRevealClickSuppressTimer();
       return;
     }
@@ -306,7 +293,6 @@ export function usePlaybackFocusBody({
       setBodyFadedAtTrackMs(0);
       setTitleIntroStartedAtMs(0);
       setTitleIntroStartedAtEpochMs(performance.now());
-      setMiniViewVisible(false);
       return () => {
         clearFocusTimer();
         clearSnapRevealTimer();
@@ -366,7 +352,8 @@ export function usePlaybackFocusBody({
     if (isDisplaySettingsBodyRevealSuppressed()) return;
     // Theatre track swipe commits first on the same pointerup — keep body faded.
     if (isTheatreSwipeSuppressed()) return;
-    if (!bodyFocusHidden && !miniViewVisible) return;
+    if (!bodyFocusHidden) return;
+    bodyRestoreUntilRef.current = performance.now() + playbackFocusTiming.body.restoreDelayMs;
     armRevealClickSuppression();
     clearSnapRevealTimer();
     setSnapReveal(true);
@@ -375,7 +362,7 @@ export function usePlaybackFocusBody({
       setSnapReveal(false);
       snapRevealTimerRef.current = null;
     }, playbackFocusTiming.snapRevealMs);
-  }, [armPlayFocus, armRevealClickSuppression, bodyFocusHidden, clearSnapRevealTimer, miniViewVisible]);
+  }, [armPlayFocus, armRevealClickSuppression, bodyFocusHidden, clearSnapRevealTimer]);
 
   useEffect(() => {
     const onClickCapture = (event: MouseEvent) => {
@@ -434,7 +421,6 @@ export function usePlaybackFocusBody({
 
   const bodyFocusMode =
     playFocusActive && bodyFocusHidden && !playbackFocusSuppressed && !bodyFadeDisabled;
-  const miniViewMode = playFocusActive && miniViewVisible && !playbackFocusSuppressed;
   const revealShieldVisible = bodyFocusMode || snapReveal || revealInteractionActive;
 
   useEffect(() => {
@@ -472,7 +458,6 @@ export function usePlaybackFocusBody({
 
   return {
     bodyFocusMode,
-    miniViewMode,
     revealShieldVisible,
     snapReveal,
     contentInputGuarded,

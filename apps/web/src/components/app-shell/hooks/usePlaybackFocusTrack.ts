@@ -4,7 +4,19 @@ import { usePlaybackTransport } from "@/hooks/usePlaybackTransport";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 import { useRadioPlayer } from "@/providers/RadioPlayerProvider";
 
-import type { PlaybackFocusTrack } from "../PlaybackFocusLayer";
+export type PlaybackFocusTrack = {
+  id: string;
+  title: string;
+  source: "site" | "radio";
+  artworkUrl?: string | null;
+  ownerName?: string | null;
+  ownerUsername?: string | null;
+  playlistId?: string | null;
+  playlistTitle?: string | null;
+  playlistSlug?: string | null;
+  sourceLabel?: string;
+  sourceHref?: string;
+};
 
 /** Resolves the active playback focus track from site player or radio. */
 export function usePlaybackFocusTrack() {
