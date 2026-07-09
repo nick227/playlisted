@@ -24,7 +24,7 @@ export const ATMOSPHERE_FX_PRESETS: AtmosphereFxPresetDef[] = [
   {
     id: "vignette",
     name: "Vignette",
-    description: "Cinematic crush — iris, petals, tunnel, blinds, eclipse; chromatic rim + mood morph.",
+    description: "Comic dancing perimeter matte — shifting angular aperture, colored rim, note ticks; 100 size = edges meet at center.",
     animationId: "atmosphereVignette",
     author: "playlisted",
     source: "platform",
