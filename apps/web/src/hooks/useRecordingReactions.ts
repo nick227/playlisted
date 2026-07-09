@@ -18,6 +18,12 @@ function reactionsQueryKey(recordingId: string) {
   return ["me", "reactions", "recordings", recordingId] as const;
 }
 
+type ToggleReactionVars = {
+  reactionId: RecordingReactionId;
+  /** Whether this reaction was already active before the toggle. */
+  wasActive: boolean;
+};
+
 export function useRecordingReactions(recordingId: string | undefined) {
   const { accessToken, status } = useAuth();
   const isAuthenticated = status === "authenticated" && Boolean(accessToken);
@@ -36,27 +42,27 @@ export function useRecordingReactions(recordingId: string | undefined) {
   );
 
   const toggle = useMutation({
-    mutationFn: async (reactionId: RecordingReactionId) => {
+    mutationFn: async ({ reactionId, wasActive }: ToggleReactionVars) => {
       if (!recordingId) return;
       const def = getRecordingReactionDef(reactionId);
       if (!canToggleRecordingReaction(def, { isAuthenticated, hasRecording: true })) return;
 
       const kind = reactionKindForId(reactionId);
-      const current = queryClient.getQueryData<RecordingReactionsResponse>(queryKey);
-      const isActive = current?.kinds.includes(kind) ?? false;
-      if (isActive) {
+      // Use wasActive from before onMutate — reading the cache here would see the
+      // optimistic flip and call the opposite endpoint.
+      if (wasActive) {
         await client.me.removeRecordingReaction(recordingId, kind);
         return;
       }
       await client.me.addRecordingReaction(recordingId, kind);
     },
-    onMutate: async (reactionId) => {
+    onMutate: async ({ reactionId, wasActive }) => {
       if (!recordingId) return;
       await queryClient.cancelQueries({ queryKey });
       const previous = queryClient.getQueryData<RecordingReactionsResponse>(queryKey);
       const kind = reactionKindForId(reactionId);
       const nextKinds = new Set(previous?.kinds ?? []);
-      if (nextKinds.has(kind)) {
+      if (wasActive) {
         nextKinds.delete(kind);
       } else {
         nextKinds.add(kind);
@@ -67,10 +73,16 @@ export function useRecordingReactions(recordingId: string | undefined) {
       });
       return { previous };
     },
-    onError: (_error, _reactionId, context) => {
+    onError: (_error, _vars, context) => {
+      if (!recordingId) return;
       if (context?.previous) {
         queryClient.setQueryData(queryKey, context.previous);
+        return;
       }
+      queryClient.setQueryData<RecordingReactionsResponse>(queryKey, {
+        recordingId,
+        kinds: [],
+      });
     },
     onSettled: () => {
       if (!recordingId) return;
@@ -83,7 +95,10 @@ export function useRecordingReactions(recordingId: string | undefined) {
     if (!canToggleRecordingReaction(def, { isAuthenticated, hasRecording: Boolean(recordingId) })) {
       return;
     }
-    toggle.mutate(reactionId);
+    const kind = reactionKindForId(reactionId);
+    const current = queryClient.getQueryData<RecordingReactionsResponse>(queryKey);
+    const wasActive = current?.kinds.includes(kind) ?? false;
+    toggle.mutate({ reactionId, wasActive });
   };
 
   return {
