@@ -134,6 +134,10 @@ export function useSongVisualEditorState({
   const serverData = attachmentsQuery.data;
   const attachments = draftAttachments ?? serverData?.attachments ?? [];
   const atmosphereFx = draftAtmosphereFx ?? atmosphereFromServer(serverData);
+  const editorServerAttachments = useMemo(
+    () => (serverData ? draftAttachmentsForEditor(serverData) : []),
+    [serverData],
+  );
   const timelineDurationSec = durationSeconds && durationSeconds > 0 ? durationSeconds : 120;
 
   const timelineClips = useMemo(
@@ -145,8 +149,8 @@ export function useSongVisualEditorState({
     if (!serverData || draftAttachments == null || draftPolicy == null || draftAtmosphereFx == null) return false;
     if (draftPolicy !== draftPolicyForEditor(serverData)) return true;
     if (!atmosphereEqual(draftAtmosphereFx, atmosphereFromServer(serverData))) return true;
-    return !attachmentsListEqual(draftAttachments, serverData.attachments);
-  }, [draftAttachments, draftAtmosphereFx, draftPolicy, serverData]);
+    return !attachmentsListEqual(draftAttachments, editorServerAttachments);
+  }, [draftAttachments, draftAtmosphereFx, draftPolicy, editorServerAttachments, serverData]);
 
   const updateDraft = useCallback((updater: (current: SongVisualAttachmentRecord[]) => SongVisualAttachmentRecord[]) => {
     setDraftAttachments((current) => updater(current ?? []));

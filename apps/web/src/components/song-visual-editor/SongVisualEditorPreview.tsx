@@ -33,6 +33,7 @@ type SongVisualEditorPreviewProps = {
   onTogglePlayback: () => void;
   canPlay: boolean;
   showOverlays: boolean;
+  atmosphereFx: SongAtmosphereFx;
 };
 
 export function SongVisualEditorPreview({
@@ -44,6 +45,7 @@ export function SongVisualEditorPreview({
   onTogglePlayback,
   canPlay,
   showOverlays,
+  atmosphereFx,
 }: SongVisualEditorPreviewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const attachment = clip?.attachment ?? null;
@@ -55,6 +57,7 @@ export function SongVisualEditorPreview({
     audioRef,
     clip,
     isPlaying,
+    atmosphereFx,
   });
 
   const aspectRatio = useMemo(
@@ -68,16 +71,18 @@ export function SongVisualEditorPreview({
         className="group/preview relative w-full max-w-full max-h-[34vh] overflow-hidden rounded-xl border border-white/10 bg-black text-left"
         style={{ aspectRatio }}
       >
+        {/* Always mounted (even with no media clip) — Atmosphere FX is a
+            full-frame ambient layer independent of any specific attachment. */}
+        <div
+          ref={containerRef}
+          className="pointer-events-none absolute inset-0 [&_*]:pointer-events-none"
+        />
+
         {!media ? (
-          <div className="flex h-full w-full items-center justify-center px-6 text-center text-sm text-white/35">
+          <div className="pointer-events-none absolute inset-0 z-[5] flex items-center justify-center px-6 text-center text-sm text-white/35">
             Add media to preview visuals
           </div>
-        ) : (
-          <div
-            ref={containerRef}
-            className="pointer-events-none absolute inset-0 [&_*]:pointer-events-none"
-          />
-        )}
+        ) : null}
 
         {showOverlays ? (
           <SongVisualPreviewFocusLane
