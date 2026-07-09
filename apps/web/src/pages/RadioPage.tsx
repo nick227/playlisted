@@ -80,7 +80,7 @@ function MagicFont({
 
   return (
     <span
-      className="block w-full max-w-full overflow-hidden break-words [overflow-wrap:anywhere]"
+      className="block w-full min-w-0 max-w-full overflow-hidden break-words [overflow-wrap:anywhere]"
       style={{
         fontSize: `${fontSize}px`,
         lineHeight: 1,
@@ -198,17 +198,20 @@ export function RadioPage({ isEmbedded: _isEmbedded = false }: { isEmbedded?: bo
   }
 
   const pageHeight = "h-full max-h-full";
+  const radioCardMaxWidth = "max-w-[min(92vw,30rem)]";
   const artworkClassName =
     "aspect-square max-h-full w-full max-w-full rounded-[1.4rem] border border-white/[0.08] bg-white/5 bg-cover bg-center shadow-[0_26px_80px_rgba(0,0,0,0.44)]";
   const titleText = displayTitle ?? "Radio";
   const titleSurfaceClassName =
-    "box-border block w-full max-w-full min-w-0 overflow-hidden rounded-sm bg-[var(--color-canvas)]/80 p-2 text-center shadow-[0_0_20px_rgba(0,0,0,0.5)] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] [overflow-wrap:anywhere]";
+    "box-border block w-full min-w-0 max-w-full overflow-hidden rounded-sm bg-[var(--color-canvas)]/80 p-2 text-center shadow-[0_0_20px_rgba(0,0,0,0.5)] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] [overflow-wrap:anywhere] [word-break:break-word]";
 
   return (
     <div
-      className={`relative isolate -mx-4 flex min-w-0 items-center justify-center overflow-x-hidden px-4 py-3 sm:-mx-6 sm:px-6 sm:py-6 lg:-mx-8 lg:px-8 ${pageHeight}`}
+      className={`relative isolate -mx-4 flex min-w-0 items-center justify-center overflow-x-clip px-4 py-3 sm:-mx-6 sm:px-6 sm:py-6 lg:-mx-8 lg:px-8 ${pageHeight}`}
     >
-      <div className="mx-auto flex min-h-0 w-full min-w-0 max-w-full flex-col items-center justify-center gap-2 overflow-x-hidden rounded-lg bg-[var(--color-canvas)]/80 py-6 shadow-[0_0_20px_rgba(0,0,0,0.5)] sm:gap-0 lg:px-12">
+      <div
+        className={`mx-auto flex w-full min-w-0 ${radioCardMaxWidth} [contain:inline-size] min-h-0 flex-col items-center justify-center gap-2 overflow-x-clip rounded-lg bg-[var(--color-canvas)]/80 py-6 shadow-[0_0_20px_rgba(0,0,0,0.5)] sm:gap-0 lg:px-12`}
+      >
         {radioQuery.isError ? (
           <div className="w-full shrink-0 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-center text-sm text-red-200 shadow-lg shadow-black/20 backdrop-blur">
             Couldn&apos;t load radio.{" "}
@@ -257,12 +260,12 @@ export function RadioPage({ isEmbedded: _isEmbedded = false }: { isEmbedded?: bo
           )}
         </div>
 
-        <div className="flex w-full max-w-[min(100%,380px)] min-w-0 shrink-0 flex-col items-center justify-start text-center sm:mt-7 sm:min-h-[9.35rem]">
-          <p className="mb-1 flex h-5 w-full max-w-full min-w-0 items-center justify-center gap-2 truncate rounded-full bg-[var(--color-canvas)] px-2 py-1 text-xs font-semibold uppercase text-white/42 sm:mb-3">
+        <div className="grid w-full min-w-0 max-w-full shrink-0 [contain:inline-size] grid-cols-1 justify-items-center text-center sm:mt-7 sm:min-h-[9.35rem]">
+          <p className="mb-1 flex h-5 w-full min-w-0 max-w-full items-center justify-center gap-2 truncate rounded-full bg-[var(--color-canvas)] px-2 py-1 text-xs font-semibold uppercase text-white/42 sm:mb-3">
             <Radio size={13} className="shrink-0 text-[var(--color-brand)]" />
             <span className="min-w-0 truncate">{genreStationName ?? station?.name ?? "Playlisted Radio"}</span>
           </p>
-          <h1 className="radio-song-title box-border w-full min-w-0 overflow-hidden text-center font-black leading-none text-white sm:min-h-[4.9rem]">
+          <h1 className="radio-song-title box-border grid w-full min-w-0 max-w-full grid-cols-1 overflow-hidden text-center font-black leading-none text-white sm:min-h-[4.9rem]">
             {playlistUrl ? (
               <Link
                 to={playlistUrl}
@@ -277,10 +280,10 @@ export function RadioPage({ isEmbedded: _isEmbedded = false }: { isEmbedded?: bo
             )}
           </h1>
 
-          <p className="mt-1 h-7 w-full max-w-full min-w-0 truncate rounded-sm px-4 text-base leading-7 text-[var(--color-text-muted)] shadow-[0_0_20px_rgba(0,0,0,0.5)] sm:mt-3">
+          <p className="mt-1 h-7 w-full min-w-0 max-w-full truncate rounded-sm px-4 text-base leading-7 text-[var(--color-text-muted)] shadow-[0_0_20px_rgba(0,0,0,0.5)] sm:mt-3">
             {displayArtistName ? (
               displayArtistUsername ? (
-                <Link to={profilePath(displayArtistUsername)} className="hover:text-white transition">
+                <Link to={profilePath(displayArtistUsername)} className="block truncate hover:text-white transition">
                   {displayArtistName}
                 </Link>
               ) : (

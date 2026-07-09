@@ -283,9 +283,9 @@ export function GenreHorizontalPanel({
   }
 
   return (
-    <div className="w-full max-w-[min(92vw,30rem)] min-w-0 shrink-0 sm:mt-6">
+    <div className="w-full min-w-0 max-w-full shrink-0 sm:mt-6">
       <h6 className="mb-2 w-full text-sm font-semibold text-white/58 opacity-0 lg:opacity-100">More Channels</h6>
-      <div className="relative w-full min-w-0">
+      <div className="relative w-full min-w-0 max-w-full">
         <button
           type="button"
           onClick={() => scrollByPage(-1)}
@@ -305,7 +305,7 @@ export function GenreHorizontalPanel({
           onLostPointerCapture={endDrag}
           onClickCapture={suppressClickAfterDrag}
           onScroll={handleNativeScroll}
-          className={`genre-horizontal-panel w-full min-w-0 touch-pan-x select-none overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
+          className={`genre-horizontal-panel w-full min-w-0 max-w-full touch-pan-x select-none overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
             isDragging ? "cursor-grabbing" : "cursor-grab"
           }`}
           style={{
