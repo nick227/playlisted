@@ -55,7 +55,6 @@ export function PlaybackFocusReactionBar({ recordingId }: PlaybackFocusReactionB
           hasRecording: Boolean(recordingId),
         });
         const title = reactionButtonTitle(reaction, { isAuthenticated, isActive });
-        const isLove = id === "love";
 
         return (
           <button
@@ -63,8 +62,8 @@ export function PlaybackFocusReactionBar({ recordingId }: PlaybackFocusReactionB
             type="button"
             className={[
               "focus-lane__reaction",
+              `is-${id}`,
               isActive ? "is-active" : "",
-              isLove && isActive ? "is-love" : "",
               isPopping ? "is-pop" : "",
               !canToggle ? "is-disabled" : "",
             ]
@@ -83,7 +82,7 @@ export function PlaybackFocusReactionBar({ recordingId }: PlaybackFocusReactionB
             <Icon
               size={18}
               strokeWidth={isActive ? 2.4 : 2}
-              fill={isLove && isActive ? "currentColor" : "none"}
+              fill={id === "love" && isActive ? "currentColor" : "none"}
               aria-hidden
             />
           </button>

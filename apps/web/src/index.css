@@ -245,18 +245,27 @@ body {
   color: #fff;
 }
 
-.focus-lane__reaction.is-active {
-  border-color: color-mix(in srgb, var(--color-brand) 70%, white 10%);
-  background: color-mix(in srgb, var(--color-brand) 28%, transparent);
-  color: #fff;
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-brand) 35%, transparent);
+.focus-lane__reaction.is-active.is-love {
+  --reaction-accent: #ef4444;
 }
 
-.focus-lane__reaction.is-active.is-love {
-  border-color: color-mix(in srgb, #ef4444 70%, white 10%);
-  background: color-mix(in srgb, #ef4444 28%, transparent);
-  color: #ef4444;
-  box-shadow: 0 0 0 1px color-mix(in srgb, #ef4444 35%, transparent);
+.focus-lane__reaction.is-active.is-fire {
+  --reaction-accent: #f97316;
+}
+
+.focus-lane__reaction.is-active.is-sparkle {
+  --reaction-accent: #eab308;
+}
+
+.focus-lane__reaction.is-active.is-thumbs {
+  --reaction-accent: #22c55e;
+}
+
+.focus-lane__reaction.is-active {
+  border-color: color-mix(in srgb, var(--reaction-accent) 70%, white 10%);
+  background: color-mix(in srgb, var(--reaction-accent) 28%, transparent);
+  color: var(--reaction-accent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--reaction-accent) 35%, transparent);
 }
 
 .focus-lane__reaction.is-pop {
@@ -266,6 +275,7 @@ body {
 
 .focus-lane__reaction.is-active.is-pop {
   transform: scale(1.2);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--reaction-accent) 45%, transparent);
 }
 
 .focus-lane__reaction:disabled,
