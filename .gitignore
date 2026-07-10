@@ -18,6 +18,7 @@ apps/web/dist/
 .env.local
 .env.*.local
 !.env.example
+private/
 
 # Prisma
 .prisma/

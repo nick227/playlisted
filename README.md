@@ -93,6 +93,71 @@ npm run dev:full
 
 ---
 
+## Environment variables
+
+Start with `.env.example`, then add service-specific values as needed.
+
+### Core app
+
+| Variable | Required | Notes |
+|----------|----------|-------|
+| `DATABASE_URL` | Yes | MySQL connection string. Railway MySQL sets this automatically. |
+| `NODE_ENV` | Production | Use `production` on deployed services. |
+| `PORT` | No | API port, defaults to `4000`. |
+| `HOST` | No | Bind host, defaults to `0.0.0.0`. |
+| `TRUST_PROXY` | Production | Set to `1` behind Railway/proxies. |
+| `VITE_API_BASE_URL` | Split web/API only | Leave empty when the built SPA is served by the API. Set to the API origin for a separate frontend. |
+| `CORS_ORIGIN` | Split web/API only | Frontend origin allowed to call the API. |
+| `PUBLIC_SITE_URL` | Recommended | Canonical public site URL for share previews and absolute URLs. |
+| `ENABLE_API_DOCS` | Optional | Set `1` to expose `/docs` and `/openapi.yaml` in production. |
+
+### Google login and registration
+
+| Variable | Required | Notes |
+|----------|----------|-------|
+| `GOOGLE_CLIENT_ID` | Yes, for Google auth | OAuth client ID from Google Cloud Console. |
+| `GOOGLE_CLIENT_SECRET` | Yes, for Google auth | OAuth client secret from Google Cloud Console. |
+| `WEB_APP_URL` | Production recommended | Public web app origin, e.g. `https://playlisted.com`. Used after Google redirects back. |
+| `API_PUBLIC_URL` | Production recommended | Public API origin, e.g. `https://api.playlisted.com` or the same origin as the app. |
+| `GOOGLE_REDIRECT_URI` | Optional | Override callback URL. Defaults to `${API_PUBLIC_URL}/api/v1/auth/google/callback` when `API_PUBLIC_URL` is set. |
+| `GOOGLE_OAUTH_STATE_SECRET` | Recommended | HMAC secret for signed OAuth state. Falls back to `SESSION_SECRET`, then `GOOGLE_CLIENT_SECRET`. |
+| `OAUTH_ALLOWED_WEB_ORIGINS` | Split web/API recommended | Comma-separated allowed frontend origins for OAuth return redirects. Localhost HTTP origins are allowed in dev. |
+
+In Google Cloud Console, add this authorized redirect URI:
+
+```text
+https://your-api-or-app-origin.example.com/api/v1/auth/google/callback
+```
+
+For local split dev, the default callback is:
+
+```text
+http://localhost:4000/api/v1/auth/google/callback
+```
+
+### Uploads and media
+
+| Variable | Required | Notes |
+|----------|----------|-------|
+| `UPLOADS_DIR` | No | Local upload directory, defaults to `uploads`. |
+| `MEDIA_BASE_URL` | No | Public base path for local uploads, defaults to `/uploads`. |
+| `STORAGE_PROVIDER` | Split services recommended | Set `r2` when web/API and workers need shared uploaded media. |
+| `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME` | R2 only | Cloudflare R2 credentials. |
+| `R2_PUBLIC_BASE_URL` or `UPLOADS_PUBLIC_BASE_URL` | R2 only | Public bucket/base URL for stored uploads. |
+
+### Subtitles
+
+| Variable | Required | Notes |
+|----------|----------|-------|
+| `SUBTITLES_PROVIDER` | Worker | `disabled`, `local-python`, `whisper`, or `modal`. Production worker expects `modal` unless explicitly overridden. |
+| `SUBTITLES_ENABLED` | No | Set `false` to disable subtitle processing. |
+| `SUBTITLES_WORKER_REQUIRE_MODAL` | Production worker | Set `true` to fail closed unless Modal is configured. |
+| `SUBTITLES_MODAL_ENABLED`, `MODAL_SUBTITLES_URL`, `MODAL_SUBTITLES_TOKEN` | Modal worker | Required for Modal subtitle jobs. |
+| `SUBTITLES_MODAL_DAILY_MAX_JOBS`, `SUBTITLES_MODAL_MONTHLY_BUDGET_CENTS`, `SUBTITLES_MODAL_MAX_AUDIO_SECONDS` | Modal worker | Optional cost and duration guardrails. |
+| `OPENAI_API_KEY` | Whisper provider only | Used by the OpenAI Whisper subtitle provider. |
+
+---
+
 ## Scripts worth knowing
 
 | Command | Does |

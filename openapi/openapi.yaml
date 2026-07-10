@@ -189,6 +189,91 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /api/v1/auth/google:
+    get:
+      tags: [ Auth ]
+      operationId: startGoogleAuth
+      summary: Start Google OAuth sign-in
+      parameters:
+        - name: mode
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [ login, register ]
+        - name: returnTo
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: webOrigin
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uri
+      responses:
+        '302':
+          description: Redirects to Google
+        '503':
+          description: Google OAuth is not configured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/auth/google/callback:
+    get:
+      tags: [ Auth ]
+      operationId: completeGoogleAuth
+      summary: Complete Google OAuth sign-in
+      parameters:
+        - name: code
+          in: query
+          required: false
+          allowReserved: true
+          schema:
+            type: string
+        - name: state
+          in: query
+          required: false
+          allowReserved: true
+          schema:
+            type: string
+        - name: error
+          in: query
+          required: false
+          allowReserved: true
+          schema:
+            type: string
+        - name: iss
+          in: query
+          required: false
+          allowReserved: true
+          schema:
+            type: string
+        - name: scope
+          in: query
+          required: false
+          allowReserved: true
+          schema:
+            type: string
+        - name: authuser
+          in: query
+          required: false
+          allowReserved: true
+          schema:
+            type: string
+        - name: prompt
+          in: query
+          required: false
+          allowReserved: true
+          schema:
+            type: string
+      responses:
+        '302':
+          description: Redirects to the web app with an auth result
+
   /api/v1/auth/me:
     get:
       tags: [ Auth ]

@@ -43,6 +43,8 @@ type SwipeGestureOptions = {
   axisThresholdPx?: number;
   clickSuppressMs?: number;
   verticalDominanceRatio?: number;
+  /** Required margin (as a ratio) one axis must lead the other by before the initial intent axis locks. */
+  axisLockDominanceRatio?: number;
   isExcludedTarget?: (target: EventTarget | null) => boolean;
   /**
    * Backdrop-style consumers (e.g. the theatre shield) have no legitimate
@@ -74,14 +76,26 @@ type SwipeGestureOptions = {
   }) => void;
 };
 
-function resolveIntentAxis(axis: SwipeAxis, deltaX: number, deltaY: number): SwipeIntentAxis | null {
+function resolveIntentAxis(
+  axis: SwipeAxis,
+  deltaX: number,
+  deltaY: number,
+  dominanceRatio: number,
+): SwipeIntentAxis | null {
   const absX = Math.abs(deltaX);
   const absY = Math.abs(deltaY);
 
   if (axis === "horizontal") return absX > absY ? "horizontal" : null;
   if (axis === "vertical") return absY > absX ? "vertical" : null;
-  if (absX === absY) return null;
-  return absX > absY ? "horizontal" : "vertical";
+  // Both axes are live (e.g. theatre skip + reveal). A bare majority at the
+  // 12px threshold locks in on the first noisy sample of a real swipe, so a
+  // deliberate horizontal flick with a hair of vertical jitter often
+  // mis-locks "vertical" and can never fire the skip for the rest of the
+  // gesture. Require a clear margin before locking; ambiguous movement keeps
+  // waiting for the next sample instead of guessing.
+  if (absX > absY * dominanceRatio) return "horizontal";
+  if (absY > absX * dominanceRatio) return "vertical";
+  return null;
 }
 
 export function useSwipeGesture({
@@ -93,6 +107,7 @@ export function useSwipeGesture({
   axisThresholdPx = SWIPE_AXIS_THRESHOLD_PX,
   clickSuppressMs = SWIPE_CLICK_SUPPRESS_MS,
   verticalDominanceRatio = 1.25,
+  axisLockDominanceRatio = 1.25,
   isExcludedTarget,
   consumeAllClicks = false,
   onHorizontalSwipe,
@@ -147,7 +162,7 @@ export function useSwipeGesture({
 
       if (!drag.moved) {
         if (Math.max(absX, absY) < axisThresholdPx) return;
-        const intentAxis = resolveIntentAxis(axis, deltaX, deltaY);
+        const intentAxis = resolveIntentAxis(axis, deltaX, deltaY, axisLockDominanceRatio);
         if (!intentAxis) return;
         drag.moved = true;
         drag.intentAxis = intentAxis;
@@ -167,7 +182,7 @@ export function useSwipeGesture({
       event.preventDefault();
       event.stopPropagation();
     },
-    [axis, axisThresholdPx, enabled, onDrag, onIntentStart],
+    [axis, axisLockDominanceRatio, axisThresholdPx, enabled, onDrag, onIntentStart],
   );
 
   const finishPointer = useCallback(

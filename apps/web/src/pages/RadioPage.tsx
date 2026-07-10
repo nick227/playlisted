@@ -119,7 +119,7 @@ export function RadioPage({ isEmbedded: _isEmbedded = false }: { isEmbedded?: bo
     unregisterRadioUi,
   } = useRadioPlayer();
 
-  const { currentTrack, playbackContext } = useAudioPlayer();
+  const { currentTrack } = useAudioPlayer();
   const { volume, setVolume } = usePlaybackVolume();
   const { data: genreData } = useLibraryGenres({ minSongCount: 1 });
   const queryClient = useQueryClient();
@@ -227,21 +227,7 @@ export function RadioPage({ isEmbedded: _isEmbedded = false }: { isEmbedded?: bo
       playStation(radioStationSlugs[nextIndex]);
     },
     onVerticalSwipe: (direction) => {
-      if (direction === "up") {
-        navigate("/library");
-      } else if (direction === "down") {
-        if (playbackContext.playlistId) {
-          navigate(
-            playlistPath({
-              id: playbackContext.playlistId,
-              slug: playbackContext.playlistSlug,
-              username: playbackContext.playlistOwnerUsername,
-            }),
-          );
-        } else {
-          navigate("/library");
-        }
-      }
+      if (direction === "up") navigate("/library");
     },
   });
 

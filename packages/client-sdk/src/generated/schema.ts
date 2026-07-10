@@ -123,6 +123,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/google": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Start Google OAuth sign-in */
+        get: operations["startGoogleAuth"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/google/callback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Complete Google OAuth sign-in */
+        get: operations["completeGoogleAuth"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/me": {
         parameters: {
             query?: never;
@@ -967,6 +1001,23 @@ export interface paths {
         head?: never;
         /** Update recording metadata */
         patch: operations["updateRecording"];
+        trace?: never;
+    };
+    "/api/v1/recordings/{recordingId}/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update recording tags */
+        patch: operations["updateRecordingTags"];
         trace?: never;
     };
     "/api/v1/recordings/{recordingId}/subtitles": {
@@ -3160,6 +3211,63 @@ export interface operations {
             };
         };
     };
+    startGoogleAuth: {
+        parameters: {
+            query?: {
+                mode?: "login" | "register";
+                returnTo?: string;
+                webOrigin?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Redirects to Google */
+            302: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Google OAuth is not configured */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    completeGoogleAuth: {
+        parameters: {
+            query?: {
+                code?: string;
+                state?: string;
+                error?: string;
+                iss?: string;
+                scope?: string;
+                authuser?: string;
+                prompt?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Redirects to the web app with an auth result */
+            302: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     getMe: {
         parameters: {
             query?: never;
@@ -5340,6 +5448,70 @@ export interface operations {
                 };
             };
             /** @description Invalid recording metadata */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Recording not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    updateRecordingTags: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recordingId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    tagSlugs: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description Tags updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordingDetail"];
+                };
+            };
+            /** @description Invalid tags */
             400: {
                 headers: {
                     [name: string]: unknown;

@@ -1,15 +1,18 @@
 import type { FormEvent } from "react";
-import { useState } from "react";
-import { Link, Navigate, useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 
 import { AuthField } from "@/components/auth/AuthField";
+import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
+import { readOAuthSession } from "@/lib/googleAuth";
 import { useAuth } from "@/providers/AuthProvider";
 import { panelPathForRole } from "@/lib/routes";
 import { usePageMeta } from "@/hooks/usePageMeta";
 
 export function RegisterPage() {
   const navigate = useNavigate();
-  const { status, register, getErrorMessage } = useAuth();
+  const location = useLocation();
+  const { status, register, completeOAuthSession, getErrorMessage } = useAuth();
 
   usePageMeta({ title: "Sign up", description: "Create your free Playlisted account." });
   const [displayName, setDisplayName] = useState("");
@@ -18,6 +21,30 @@ export function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const searchParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
+  const queryFrom = searchParams.get("from");
+  const from = queryFrom?.startsWith("/") ? queryFrom : "/";
+
+  useEffect(() => {
+    const oauthError = searchParams.get("oauthError");
+    if (oauthError) {
+      setError(oauthError);
+      navigate("/register", { replace: true });
+      return;
+    }
+
+    const oauthSession = searchParams.get("oauthSession");
+    if (!oauthSession) return;
+
+    try {
+      const newUser = completeOAuthSession(readOAuthSession(oauthSession));
+      const destination = from !== "/" ? from : panelPathForRole(newUser.role) ?? "/";
+      navigate(destination, { replace: true });
+    } catch {
+      setError("Google registration could not be completed. Please try again.");
+      navigate("/register", { replace: true });
+    }
+  }, [completeOAuthSession, from, navigate, searchParams]);
 
   if (status === "authenticated") {
     return <Navigate to="/" replace />;
@@ -50,12 +77,8 @@ export function RegisterPage() {
 
   return (
     <div>
-      <h2 className="text-3xl font-extrabold tracking-tight text-white">Start your journey</h2>
-      <p className="mt-2 text-sm text-[var(--color-text-muted)]">
-        Free to join. Upload tracks, listen to music, and hang out.
-      </p>
 
-      <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+      <form onSubmit={handleSubmit} className="space-y-5">
         <AuthField
           label="Display name"
           name="displayName"
@@ -112,6 +135,10 @@ export function RegisterPage() {
           {submitting ? "Creating account…" : "Create account"}
         </button>
       </form>
+
+      <div className="mt-8">
+        <GoogleAuthButton mode="register" returnTo={from} />
+      </div>
 
       <p className="mt-8 text-center text-sm text-[var(--color-text-muted)]">
         Already have an account?{" "}

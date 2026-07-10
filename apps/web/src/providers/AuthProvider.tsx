@@ -1,4 +1,4 @@
-import type { AuthUser, LoginRequest, RegisterRequest } from "@playlisted/client-sdk";
+import type { AuthResponse, AuthUser, LoginRequest, RegisterRequest } from "@playlisted/client-sdk";
 import { PlaylistedApiError } from "@playlisted/client-sdk";
 import {
   createContext,
@@ -21,6 +21,7 @@ interface AuthContextValue {
   accessToken: string | null;
   login: (body: LoginRequest) => Promise<AuthUser>;
   register: (body: RegisterRequest) => Promise<AuthUser>;
+  completeOAuthSession: (response: AuthResponse) => AuthUser;
   logout: () => Promise<void>;
   refreshUser: () => Promise<AuthUser | null>;
   getErrorMessage: (error: unknown) => string;
@@ -105,6 +106,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return result.user;
   }, []);
 
+  const completeOAuthSession = useCallback((response: AuthResponse) => {
+    applySession(response.accessToken, response.expiresAt, response.user);
+    setAccessToken(response.accessToken);
+    setUser(response.user);
+    setStatus("authenticated");
+    return response.user;
+  }, []);
+
   useEffect(() => {
     const session = loadSession();
     if (!session) {
@@ -142,11 +151,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       accessToken,
       login,
       register,
+      completeOAuthSession,
       logout,
       refreshUser,
       getErrorMessage,
     }),
-    [status, user, accessToken, login, register, logout, refreshUser, getErrorMessage],
+    [status, user, accessToken, login, register, completeOAuthSession, logout, refreshUser, getErrorMessage],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
