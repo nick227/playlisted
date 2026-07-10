@@ -6,7 +6,6 @@ import { Link } from "react-router-dom";
 import { SmartArtistCard } from "@/components/cards/SmartArtistCard";
 import { SmartPlaylistCard } from "@/components/cards/SmartPlaylistCard";
 import { Skeleton } from "@/components/feedback/Skeleton";
-import { LibraryArtistFilter } from "@/components/library/LibraryArtistFilter";
 import {
   createLibraryGenreSelectionStore,
   LibraryGenreFilter,
@@ -32,9 +31,6 @@ import {
   type SortDirection,
   type SongSortKey,
 } from "@/components/library/libraryFilterUtils";
-import { LibraryPlaylistFilter } from "@/components/library/LibraryPlaylistFilter";
-import { LibraryPlaylistSortBar } from "@/components/library/LibraryPlaylistSortBar";
-import { LibrarySongSortBar } from "@/components/library/LibrarySongSortBar";
 import { LibraryTrackList } from "@/components/library/LibraryTrackList";
 import {
   useLibraryArtists,
@@ -212,7 +208,7 @@ function GenreCard({ genre }: { genre: LibraryGenre }) {
               ))}
             </div>
           ) : previewSongs.length > 0 ? (
-            <div className="grid grid-cols-6 gap-3 sm:grid-cols-6">
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
               {previewSongs.slice(0, 6).map((song) => (
                 <GenreSongThumb key={song.id} song={song} queue={previewSongs} />
               ))}
@@ -308,7 +304,7 @@ function ArtistResults({
   }
 
   return (
-    <div className="mt-10 grid grid-cols-6 gap-4">
+    <div className="mt-10 grid grid-cols-3 lg:grid-cols-6 gap-4">
       {filteredArtists.map((artist) => (
         <SmartArtistCard
           key={artist.id}
@@ -346,18 +342,6 @@ export function PlaylistsPanel() {
     <div>
       <PanelHeader label="Playlists" count={allPlaylists.length} />
       {genresLoading ? <GenreFilterSkeleton /> : <LibraryGenreFilter genres={genres} store={genreStore} />}
-      <LibraryPlaylistFilter
-        playlists={allPlaylists}
-        suggestedPlaylists={suggestedPlaylists}
-        filterQuery={searchQuery}
-        onFilterQueryChange={setSearchQuery}
-      />
-      <LibraryPlaylistSortBar
-        sortKey={sortKey}
-        sortDirection={sortDirection}
-        onSortKeyChange={setSortKey}
-        onSortDirectionChange={setSortDirection}
-      />
       <PlaylistResults
         genreStore={genreStore}
         searchQuery={searchQuery}
@@ -417,7 +401,7 @@ function PlaylistResults({
   }
 
   return (
-    <div className="mt-10 grid grid-cols-6 gap-4">
+    <div className="mt-10 grid grid-cols-3 lg:grid-cols-6 gap-4">
       {playlists.map((playlist) => (
         <SmartPlaylistCard
           key={playlist.id}
@@ -456,18 +440,6 @@ export function SongsPanel() {
     <div>
       <PanelHeader label="Songs" count={allSongsQuery.data?.data.length ?? 0} unit="recording" />
       <LibraryGenreFilter genres={genres} store={genreStore} />
-      <LibraryArtistFilter
-        artists={artists}
-        suggestedArtists={suggestedArtists}
-        selectedArtistId={artistId}
-        onSelect={setArtistId}
-      />
-      <LibrarySongSortBar
-        sortKey={sortKey}
-        sortDirection={sortDirection}
-        onSortKeyChange={setSortKey}
-        onSortDirectionChange={setSortDirection}
-      />
       <SongResults
         allSongs={allSongsQuery.data?.data ?? EMPTY_LIBRARY_SONGS}
         artistId={artistId}

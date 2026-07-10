@@ -50,21 +50,21 @@ export function MuseumShowcase({
             >
               Artists
             </Link>
-            •
+            /
             <Link
-              to="/favorites"
+              to="/songs"
               className=""
             >
-              Favorites
+              Songs
             </Link>
-            •
+            /
             <Link
               to="/genres"
               className=""
             >
               Genres
             </Link>
-            •
+            /
             <Link
               to="/playlists"
               className=""

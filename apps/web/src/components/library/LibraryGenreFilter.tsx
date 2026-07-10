@@ -161,12 +161,12 @@ export const LibraryGenreFilter = memo(function LibraryGenreFilter({
       </div>
 
       {canExpand && (
-        <div className="flex justify-end">
+        <div className="flex justify-center">
           
         <button
           type="button"
           onClick={() => setExpanded((value) => !value)}
-          className="mt-2 text-xs font-medium text-white/40 transition-colors hover:text-white/75 mt-4"
+          className="mt-2 text-xs font-medium text-white/40 transition-colors hover:text-white/75 mt-4 border border-white/10 rounded-full px-3 py-1.5 hover:bg-white/[0.03] hover:border-white/20 active:bg-[var(--color-brand)]/15 active:border-[var(--color-brand)]/50 active:text-white"
           aria-expanded={expanded}
         >
           {expanded ? "Show less" : "Show more"}

@@ -410,7 +410,7 @@ export function MuseumSectionHeader({
   return (
     <div className="mb-2.5 flex min-h-6 items-center justify-between gap-4">
       <div className="min-w-0">
-        <h2 className="truncate text-base font-semibold leading-6 text-white md:text-lg px-4">
+        <h2 className="text-5xl font-extrabold tracking-tighter leading-none text-white md:text-6xl pl-4">
           {label}
         </h2>
       </div>
