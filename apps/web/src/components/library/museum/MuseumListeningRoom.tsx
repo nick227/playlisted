@@ -55,7 +55,7 @@ export function MuseumListeningRoom({
 
   return (
     <MuseumBankSection
-      label="Featured collection"
+      label="Specials"
       href={href}
       hrefLabel="Open"
       type="cinematicRow"

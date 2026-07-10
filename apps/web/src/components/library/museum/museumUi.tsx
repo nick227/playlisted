@@ -414,18 +414,6 @@ export function MuseumSectionHeader({
           {label}
         </h2>
       </div>
-      {href ? (
-        <Link
-          to={href}
-          className="shrink-0 text-sm font-medium text-white/58 transition hover:text-white"
-        >
-          {hrefLabel}
-        </Link>
-      ) : (
-        <span className="shrink-0 text-sm opacity-0" aria-hidden>
-          View all
-        </span>
-      )}
     </div>
   );
 }

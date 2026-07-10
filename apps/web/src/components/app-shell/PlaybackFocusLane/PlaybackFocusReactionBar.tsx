@@ -80,7 +80,6 @@ export function PlaybackFocusReactionBar({ recordingId }: PlaybackFocusReactionB
             }}
           >
             <Icon
-              size={18}
               strokeWidth={isActive ? 2.4 : 2}
               fill={id === "love" && isActive ? "currentColor" : "none"}
               aria-hidden
