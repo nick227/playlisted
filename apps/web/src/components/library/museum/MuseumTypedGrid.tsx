@@ -101,9 +101,9 @@ export function MuseumTypedGrid({
 
       {kind === "playlists" ? (
         <MuseumResponsiveGrid variant="portrait">
-          {playlists.map((playlist) => (
+          {playlists.map((playlist, index) => (
             <MuseumPlaylistCard
-              key={playlist.id}
+              key={`${playlist.id}-${index}`}
               playlist={playlist}
               className="min-w-0 w-full"
               aspect="portrait"

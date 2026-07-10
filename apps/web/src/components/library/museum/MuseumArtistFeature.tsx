@@ -9,19 +9,27 @@ import {
   MuseumBankSection,
   MuseumGenrePills,
   MuseumPanel,
+  MuseumScrollRow,
   MuseumTrackPanel,
 } from "./museumUi";
 
+const MIN_PORTRAIT_ITEMS = 5;
+
 interface MuseumArtistFeatureProps {
   artist: LibraryArtist;
+  artists: LibraryArtist[];
   songs: LibrarySong[];
 }
 
 export function MuseumArtistFeature({
   artist,
+  artists,
   songs,
 }: MuseumArtistFeatureProps) {
-  const genreLabels = artist.genres.map((genre) => genre.name).slice(0, 2);
+  const portraitArtists =
+    artists.length > 0
+      ? artists
+      : Array.from({ length: MIN_PORTRAIT_ITEMS }, () => artist);
 
   return (
     <MuseumBankSection
@@ -29,28 +37,32 @@ export function MuseumArtistFeature({
       type="songSpotlight"
     >
       <MuseumPanel padding="roomy">
-        <div className="grid min-w-0 gap-8 md:grid-cols-[minmax(0,13rem)_minmax(0,1fr)] md:items-start">
-          <div className="min-w-0">
-            <div className="w-full">
-              <SmartArtistCard
-                id={artist.id}
-                username={artist.username}
-                displayName={artist.displayName}
-                avatarUrl={artist.avatarUrl}
-                shape="rounded-sm"
-                className="w-full"
-                playbackOrigin={`library:artist:${artist.id}`}
-                hideDetails
-              />
-            </div>
-            <Link
-              to={artistPath(artist.username)}
-              className="mt-5 block text-2xl font-semibold leading-tight text-white transition hover:text-white/80"
-            >
-              {artist.displayName}
-            </Link>
-            <MuseumGenrePills labels={genreLabels} />
-          </div>
+        <div className="grid min-w-0 gap-8">
+          <MuseumScrollRow variant="portrait">
+            {portraitArtists.map((portraitArtist, index) => (
+              <div key={`${portraitArtist.id}-${index}`} className="min-w-0">
+                <SmartArtistCard
+                  id={portraitArtist.id}
+                  username={portraitArtist.username}
+                  displayName={portraitArtist.displayName}
+                  avatarUrl={portraitArtist.avatarUrl}
+                  shape="rounded-sm"
+                  className="w-full"
+                  playbackOrigin={`library:artist:${portraitArtist.id}`}
+                  hideDetails
+                />
+                <Link
+                  to={artistPath(portraitArtist.username)}
+                  className="mt-4 block text-xl font-semibold leading-tight text-white transition hover:text-white/80"
+                >
+                  {portraitArtist.displayName}
+                </Link>
+                <MuseumGenrePills
+                  labels={portraitArtist.genres.map((genre) => genre.name).slice(0, 2)}
+                />
+              </div>
+            ))}
+          </MuseumScrollRow>
 
           {songs.length > 0 ? (
             <MuseumTrackPanel>

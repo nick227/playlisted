@@ -13,6 +13,7 @@ export type MuseumExhibit =
       artist: LibraryArtist;
       songs: LibrarySong[];
       playlist?: PlaylistSummary;
+      playlists: PlaylistSummary[];
       lyricSong?: LibrarySong;
       peers: LibraryArtist[];
     }
@@ -20,6 +21,7 @@ export type MuseumExhibit =
       id: string;
       kind: "artist-feature";
       artist: LibraryArtist;
+      artists: LibraryArtist[];
       songs: LibrarySong[];
     }
   | { id: string; kind: "lyric-placard"; song: LibrarySong }

@@ -33,6 +33,7 @@ export function MuseumFeed({ pools }: MuseumFeedProps) {
               artist={exhibit.artist}
               songs={exhibit.songs}
               playlist={exhibit.playlist}
+              playlists={exhibit.playlists}
               lyricSong={exhibit.lyricSong}
               peers={exhibit.peers}
             />
@@ -40,6 +41,7 @@ export function MuseumFeed({ pools }: MuseumFeedProps) {
           {exhibit.kind === "artist-feature" ? (
             <MuseumArtistFeature
               artist={exhibit.artist}
+              artists={exhibit.artists}
               songs={exhibit.songs}
             />
           ) : null}

@@ -28,6 +28,8 @@ const BATCH_PATTERN = [
   "song-grid",
 ] as const;
 
+const MIN_PORTRAIT_GRID_ITEMS = 5;
+
 function pick<T>(pool: T[], count: number, offset: number): T[] {
   if (pool.length === 0) return [];
   const out: T[] = [];
@@ -74,6 +76,7 @@ export function buildMuseumBatch(
       artist,
       songs: artistSongs.length > 0 ? artistSongs : pick(songs, 3, 0),
       playlist: playlists[0],
+      playlists: pick(playlists, MIN_PORTRAIT_GRID_ITEMS, 0),
       lyricSong: lyricPool[0],
       peers: pick(artists, MUSEUM_BANK_COUNTS.circleRow, 1),
     });
@@ -89,6 +92,7 @@ export function buildMuseumBatch(
         id: `artist-feature-${batchIndex}-${artist.id}`,
         kind: "artist-feature",
         artist,
+        artists: pick(artists, MIN_PORTRAIT_GRID_ITEMS, offset + 1),
         songs: songsForArtist(songs, artist.id, 3),
       });
       continue;
@@ -154,10 +158,14 @@ export function buildMuseumBatch(
     }
 
     if (slot === "playlist-grid" && playlists.length > 0) {
+      const portraitCount = Math.max(
+        MUSEUM_BANK_COUNTS.portraitGrid,
+        MIN_PORTRAIT_GRID_ITEMS,
+      );
       exhibits.push({
         id: `playlist-grid-${batchIndex}-${offset}`,
         kind: "playlist-grid",
-        playlists: pick(playlists, MUSEUM_BANK_COUNTS.portraitGrid, offset + 1),
+        playlists: pick(playlists, portraitCount, offset + 1),
       });
       continue;
     }
