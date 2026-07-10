@@ -25,8 +25,6 @@ import {
   sortLibraryArtists,
   sortLibraryPlaylists,
   sortLibrarySongs,
-  topArtistsBySongCount,
-  topPlaylistsByItemCount,
   type PlaylistSortKey,
   type SortDirection,
   type SongSortKey,
@@ -327,14 +325,13 @@ function ArtistResults({
 
 export function PlaylistsPanel() {
   const genreStore = useMemo(() => createLibraryGenreSelectionStore(), []);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [sortKey, setSortKey] = useState<PlaylistSortKey>("title");
-  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+  const [searchQuery] = useState("");
+  const [sortKey] = useState<PlaylistSortKey>("title");
+  const [sortDirection] = useState<SortDirection>("asc");
   const { data: genresData, isLoading: genresLoading } = useLibraryPlaylistGenres();
   const genres = genresData?.data ?? EMPTY_LIBRARY_GENRES;
   const allPlaylistsQuery = useLibraryPlaylists(null);
   const allPlaylists = allPlaylistsQuery.data?.data ?? EMPTY_PLAYLISTS;
-  const suggestedPlaylists = useMemo(() => topPlaylistsByItemCount(allPlaylists, 4), [allPlaylists]);
 
   if (allPlaylistsQuery.isLoading) return <PanelSkeleton />;
 
@@ -421,13 +418,10 @@ function PlaylistResults({
 
 export function SongsPanel() {
   const genreStore = useMemo(() => createLibraryGenreSelectionStore(), []);
-  const [artistId, setArtistId] = useState<string | null>(null);
-  const [sortKey, setSortKey] = useState<SongSortKey>("title");
-  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+  const [artistId] = useState<string | null>(null);
+  const [sortKey] = useState<SongSortKey>("title");
+  const [sortDirection] = useState<SortDirection>("asc");
 
-  const { data: artistsData } = useLibraryArtists();
-  const artists = artistsData?.data ?? EMPTY_LIBRARY_ARTISTS;
-  const suggestedArtists = useMemo(() => topArtistsBySongCount(artists, 4), [artists]);
   const allSongsQuery = useLibrarySongs(null);
   const genres = useMemo(
     () => genresFromSongs(allSongsQuery.data?.data ?? EMPTY_LIBRARY_SONGS),
