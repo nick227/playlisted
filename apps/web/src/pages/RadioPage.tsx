@@ -228,6 +228,8 @@ export function RadioPage({ isEmbedded: _isEmbedded = false }: { isEmbedded?: bo
     },
     onVerticalSwipe: (direction) => {
       if (direction === "up") {
+        navigate("/library");
+      } else if (direction === "down") {
         if (playbackContext.playlistId) {
           navigate(
             playlistPath({
@@ -239,8 +241,6 @@ export function RadioPage({ isEmbedded: _isEmbedded = false }: { isEmbedded?: bo
         } else {
           navigate("/library");
         }
-      } else if (direction === "down") {
-        navigate("/library");
       }
     },
   });

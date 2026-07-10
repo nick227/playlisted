@@ -74,7 +74,7 @@ export function PanelHeader({
 }) {
   return (
     <div>
-      <h2 className="text-5xl font-extrabold tracking-tighter leading-none text-white md:text-6xl">
+      <h2 className="text-5xl font-extrabold tracking-tighter leading-none text-white md:text-6xl mt-4">
         {label}
       </h2>
       {count != null && count > 0 && (
