@@ -141,6 +141,20 @@ export function resolveTitleIntroFixture(input: ResolvePlaybackFocusInput): Play
     return synthetic;
   }
 
+  // Once the brief artist card has finished, the song card identifies the
+  // recording for the remainder of playback.
+  const { artistEnd } = getFocusLaneSequenceWindows();
+  const title = recording?.title?.trim();
+  if (title && focusLaneElapsedMs >= artistEnd) {
+    return {
+      type: "titleIntro",
+      title,
+      key: `song-title:${recording?.id ?? title}`,
+      artist,
+      recording,
+    };
+  }
+
   return { type: "none" };
 }
 
@@ -149,14 +163,16 @@ export function resolveTitleIntroFixture(input: ResolvePlaybackFocusInput): Play
  * Independent of lyric subtitles except during title-intro exclusivity above.
  */
 export function resolveOverlayFixture(input: ResolvePlaybackFocusInput): PlaybackFocusFixture {
-  const { artist, recording, focusState, isPlaying } = input;
+  const { artist, recording, focusState, isPlaying, currentEpochMs } = input;
 
   if (!canShowFocusLane(focusState) || !isPlaying) {
     return { type: "none" };
   }
 
+  const elapsedMs = getFocusLaneElapsedMs(currentEpochMs, focusState.titleIntroStartedAtEpochMs);
+  const { fallbackStart, artistEnd } = getFocusLaneSequenceWindows();
   const title = recording?.title?.trim();
-  if (title) {
+  if (title && elapsedMs >= fallbackStart && elapsedMs < artistEnd) {
     return {
       type: "finalFallback",
       key: `final-song-title:${recording?.id ?? title}`,
@@ -182,7 +198,8 @@ export function resolvePlaybackFocusFixture(input: ResolvePlaybackFocusInput): P
 
 export function resolvePlaybackFocusLaneState(input: ResolvePlaybackFocusInput): PlaybackFocusLaneState {
   const titleIntro = resolveTitleIntroFixture(input);
-  const overlay = resolveOverlayFixture(input);
+  // Song and artist identity cards are mutually exclusive.
+  const overlay = titleIntro.type === "none" ? resolveOverlayFixture(input) : { type: "none" as const };
   const subtitle: PlaybackFocusFixture =
     titleIntro.type !== "none" ? { type: "none" } : resolveSubtitleFixture(input);
 

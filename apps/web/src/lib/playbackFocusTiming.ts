@@ -4,13 +4,13 @@ export const playbackFocusUserActivityEnabled = true;
 export const playbackFocusTiming = {
   theatre: {
     delayMs: 0,
-    fadeInMs: 1200,
+    fadeInMs: 200,
     fadeOutMs: 200,
     exitBufferMs: 200,
   },
 
   body: {
-    delayMs: 5000,
+    delayMs: 3000,
     restoreDelayMs: 15000,
     fadeOutMs: 2000,
   },
@@ -24,6 +24,7 @@ export const playbackFocusTiming = {
 
   artistVisual: {
     gapAfterTitleIntroMs: 400,
+    visibleMs: 5000,
     fadeInMs: 900,
     fadeOutMs: 900,
   },

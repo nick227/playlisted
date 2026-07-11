@@ -22,6 +22,7 @@ import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 import { useAuth } from "@/providers/AuthProvider";
 
 import { FocusLaneOverlayContent, FocusLaneSubtitleContent } from "./FocusLaneSubtitleContent";
+import { FocusLanePersistentControls } from "./FocusLaneOverlay";
 import { useFocusLaneVisibility } from "./useFocusLaneVisibility";
 
 type PlaybackFocusLaneProps = {
@@ -145,16 +146,18 @@ export function PlaybackFocusLane({
   const titleIntroLane = useFocusLaneVisibility(focusLaneState.titleIntro);
 
   const hasOverlay = Boolean(
-    overlayLane.displayFixture && overlayLane.displayFixture.type !== "none",
+    focusLaneState.titleIntro.type === "none" &&
+      overlayLane.displayFixture &&
+      overlayLane.displayFixture.type !== "none",
   );
   const hasSubtitle = Boolean(
     subtitleLane.displayFixture && subtitleLane.displayFixture.type !== "none",
   );
   const hasTitleIntro = Boolean(
-    titleIntroLane.displayFixture && titleIntroLane.displayFixture.type !== "none",
+    focusLaneState.overlay.type === "none" &&
+      titleIntroLane.displayFixture &&
+      titleIntroLane.displayFixture.type !== "none",
   );
-  const layerVisible = overlayLane.layerVisible || subtitleLane.layerVisible || titleIntroLane.layerVisible;
-
   const positionClassName = subtitlePositionClassName(subtitlePosition);
   const variantClass =
     titleIntroLane.variantClass || subtitleLane.variantClass || overlayLane.variantClass;
@@ -163,16 +166,17 @@ export function PlaybackFocusLane({
     return null;
   }
 
-  if (!hasOverlay && !hasSubtitle && !hasTitleIntro) {
-    return null;
-  }
-
   return createPortal(
     <div
       data-focus-lane
-      className={`focus-lane${layerVisible ? " is-visible" : ""}${variantClass}${positionClassName}`}
-      aria-hidden={!layerVisible}
+      className={`focus-lane is-visible${variantClass}${positionClassName}`}
+      aria-hidden={false}
     >
+      <FocusLanePersistentControls
+        recordingId={recording.id}
+        withPlayer={withPlayer}
+        playerCollapsed={playerCollapsed}
+      />
       {hasOverlay ? (
         <div
           key={`overlay:${overlayLane.displayKey}`}
@@ -214,6 +218,7 @@ export function PlaybackFocusLane({
         >
           <FocusLaneSubtitleContent
             fixture={titleIntroLane.displayFixture!}
+            isPlaying={isPlaying}
             withPlayer={withPlayer}
             playerCollapsed={playerCollapsed}
           />

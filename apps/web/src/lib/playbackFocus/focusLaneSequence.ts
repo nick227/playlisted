@@ -6,8 +6,9 @@ export function getFocusLaneSequenceWindows() {
   const titleStart = titleIntro.delayMs;
   const titleEnd = titleStart + titleIntro.minVisibleMs;
   const fallbackStart = titleEnd + titleIntro.fadeOutMs + artistVisual.gapAfterTitleIntroMs;
+  const artistEnd = fallbackStart + artistVisual.visibleMs;
 
-  return { titleStart, titleEnd, fallbackStart };
+  return { titleStart, titleEnd, fallbackStart, artistEnd };
 }
 
 export function getFocusLaneElapsedMs(currentTimeMs: number, bodyFadedAtTrackMs: number | null): number {
@@ -20,4 +21,3 @@ export function getFocusLaneElapsedMs(currentTimeMs: number, bodyFadedAtTrackMs:
 
   return elapsed;
 }
-

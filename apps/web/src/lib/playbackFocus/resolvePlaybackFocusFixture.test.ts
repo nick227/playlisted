@@ -105,7 +105,7 @@ describe("resolvePlaybackFocusFixture", () => {
 });
 
 describe("resolveSubtitleFixture / resolveOverlayFixture", () => {
-  it("keeps title-intro separate from the persistent overlay", () => {
+  it("keeps the initial song card exclusive", () => {
     const input = {
       ...baseInput,
       currentTimeMs: 1_500,
@@ -116,7 +116,7 @@ describe("resolveSubtitleFixture / resolveOverlayFixture", () => {
     const titleIntro = resolveTitleIntroFixture(input);
     expect(titleIntro.type).toBe("titleIntro");
     const overlay = resolveOverlayFixture(input);
-    expect(overlay.type).toBe("finalFallback");
+    expect(overlay.type).toBe("none");
   });
 
   it("suppresses lyrics through title-intro fade-out", () => {
@@ -156,19 +156,24 @@ describe("resolveSubtitleFixture / resolveOverlayFixture", () => {
     expect(overlay.type).toBe("finalFallback");
   });
 
-  it("keeps overlay timing when lyrics are absent", () => {
+  it("shows the artist only during its configured window", () => {
+    const { fallbackStart, artistEnd } = getFocusLaneSequenceWindows();
     const overlay = resolveOverlayFixture({
       ...baseInput,
+      currentEpochMs: fallbackStart + 1,
       subtitleSegments: [],
       subtitleReady: false,
     });
     expect(overlay.type).toBe("finalFallback");
+    expect(resolveOverlayFixture({ ...baseInput, currentEpochMs: artistEnd }).type).toBe("none");
   });
 
   it("uses recording identity in final overlay fixture keys", () => {
-    const first = resolveOverlayFixture(baseInput);
+    const { fallbackStart } = getFocusLaneSequenceWindows();
+    const first = resolveOverlayFixture({ ...baseInput, currentEpochMs: fallbackStart + 1 });
     const second = resolveOverlayFixture({
       ...baseInput,
+      currentEpochMs: fallbackStart + 1,
       recording: { id: "rec-2", title: "Song" },
     });
 
@@ -181,7 +186,7 @@ describe("resolveSubtitleFixture / resolveOverlayFixture", () => {
 });
 
 describe("resolvePlaybackFocusLaneState", () => {
-  it("prioritizes title-intro variant while allowing the overlay lane to coexist", () => {
+  it("prioritizes the song card without rendering the artist card", () => {
     const state = resolvePlaybackFocusLaneState({
       ...baseInput,
       currentEpochMs: 1_500,
@@ -191,7 +196,7 @@ describe("resolvePlaybackFocusLaneState", () => {
 
     expect(state.activeVariant).toBe("title-intro");
     expect(state.titleIntro.type).toBe("titleIntro");
-    expect(state.overlay.type).toBe("finalFallback");
+    expect(state.overlay.type).toBe("none");
     expect(state.subtitle.type).toBe("none");
   });
 
@@ -227,5 +232,18 @@ describe("resolvePlaybackFocusLaneState", () => {
 
     expect(state.titleIntro.type).toBe("titleIntro");
     expect(state.subtitle.type).toBe("none");
+  });
+
+  it("returns to the song card after the five-second artist card", () => {
+    const { artistEnd } = getFocusLaneSequenceWindows();
+    const state = resolvePlaybackFocusLaneState({
+      ...baseInput,
+      currentEpochMs: artistEnd,
+      currentTimeMs: artistEnd,
+    });
+
+    expect(playbackFocusTiming.artistVisual.visibleMs).toBe(5000);
+    expect(state.titleIntro.type).toBe("titleIntro");
+    expect(state.overlay.type).toBe("none");
   });
 });

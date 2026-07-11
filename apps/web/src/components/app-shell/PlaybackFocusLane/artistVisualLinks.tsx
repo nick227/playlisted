@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 
 import { AppLink } from "@/components/navigation/AppLink";
-import { genrePath } from "@/lib/browsePaths";
 import { requestPlaybackBodyFocusReturn } from "@/lib/playbackBodyFocus";
 import type { FocusRecording } from "@/lib/playbackFocus/types";
 import { playlistRecordingPath, profilePath } from "@/lib/routes";
@@ -98,23 +97,5 @@ export function FocusLaneLink({ to, className = "", title, children }: FocusLane
     >
       {children}
     </AppLink>
-  );
-}
-
-export function FocusLaneGenreLink({
-  genre,
-  className = "focus-lane__overlay-genre",
-}: {
-  genre: GenreLink;
-  className?: string;
-}) {
-  return (
-    <FocusLaneLink
-      to={genrePath(genre.slug)}
-      title={`Browse ${genre.name}`}
-      className={className}
-    >
-      {genre.name}
-    </FocusLaneLink>
   );
 }

@@ -55,6 +55,16 @@ type SwipeGestureOptions = {
    * through to whatever briefly remains underneath mid-dismiss.
    */
   consumeAllClicks?: boolean;
+  /**
+   * Skip `setPointerCapture` on pointerdown. Capture exists so a small
+   * element keeps receiving move/up events once the pointer strays outside
+   * its bounds — irrelevant for a listener already attached at the document
+   * root, which sees every event regardless. Capturing there anyway risks
+   * retargeting the synthesized touch `click` (and other compat mouse
+   * events) away from the element actually under the finger, breaking plain
+   * taps sitewide for the whole duration this gesture is enabled.
+   */
+  skipPointerCapture?: boolean;
   onHorizontalSwipe?: (direction: SwipeDirection) => void;
   onVerticalSwipe?: (direction: VerticalSwipeDirection) => void;
   onTap?: () => void;
@@ -110,6 +120,7 @@ export function useSwipeGesture({
   axisLockDominanceRatio = 1.25,
   isExcludedTarget,
   consumeAllClicks = false,
+  skipPointerCapture = false,
   onHorizontalSwipe,
   onVerticalSwipe,
   onTap,
@@ -144,10 +155,12 @@ export function useSwipeGesture({
         intentAxis: null,
         moved: false,
       };
-      captureTargetRef.current = event.currentTarget;
-      event.currentTarget.setPointerCapture(event.pointerId);
+      if (!skipPointerCapture) {
+        captureTargetRef.current = event.currentTarget;
+        event.currentTarget.setPointerCapture(event.pointerId);
+      }
     },
-    [consumeAllClicks, enabled, isExcludedTarget],
+    [consumeAllClicks, enabled, isExcludedTarget, skipPointerCapture],
   );
 
   const handlePointerMove = useCallback(
@@ -202,8 +215,24 @@ export function useSwipeGesture({
       const elapsed = Math.max(1, performance.now() - drag.startTime);
       const avgVelocityX = Math.abs(deltaX / elapsed);
       const avgVelocityY = Math.abs(deltaY / elapsed);
-      const moved = drag.moved;
-      const intentAxis = drag.intentAxis;
+      let moved = drag.moved;
+      let intentAxis = drag.intentAxis;
+
+      // On a busy main thread (real touch hardware under load) a fast flick
+      // can complete with zero intervening pointermove callbacks — the browser
+      // still guarantees pointerdown/pointerup delivery, but pointermove is the
+      // one event type it's free to coalesce or drop entirely. Without this,
+      // `moved` would stay false and the swipe would silently register as a
+      // tap instead. Fall back to resolving intent axis from the pointerup
+      // position itself so a real swipe is never lost just because we never
+      // saw it happen.
+      if (!moved && Math.max(absX, absY) >= axisThresholdPx) {
+        const fallbackAxis = resolveIntentAxis(axis, deltaX, deltaY, axisLockDominanceRatio);
+        if (fallbackAxis) {
+          intentAxis = fallbackAxis;
+          moved = true;
+        }
+      }
 
       resetDrag();
 
@@ -237,6 +266,9 @@ export function useSwipeGesture({
       if (!moved) onTap?.();
     },
     [
+      axis,
+      axisLockDominanceRatio,
+      axisThresholdPx,
       clickSuppressMs,
       consumeAllClicks,
       horizontalCommitPx,

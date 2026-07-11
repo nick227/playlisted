@@ -12,6 +12,7 @@ type FocusLaneSubtitleContentProps = {
   fixture: PlaybackFocusFixture;
   customSubtitleStyle?: CSSProperties;
   subtitleStyleId?: string;
+  isPlaying?: boolean;
   withPlayer?: boolean;
   playerCollapsed?: boolean;
 };
@@ -31,6 +32,7 @@ export function FocusLaneSubtitleContent({
   fixture,
   customSubtitleStyle,
   subtitleStyleId,
+  isPlaying = false,
   withPlayer = true,
   playerCollapsed = false,
 }: FocusLaneSubtitleContentProps) {
@@ -40,6 +42,7 @@ export function FocusLaneSubtitleContent({
         title={fixture.title}
         artistName={fixture.artist?.artistName}
         recording={fixture.recording}
+        isPlaying={isPlaying}
         withPlayer={withPlayer}
         playerCollapsed={playerCollapsed}
       />
@@ -84,7 +87,6 @@ export function FocusLaneOverlayContent({
       <ArtistVisual
         artistName={(artist?.artistName || fixture.artistName) ?? undefined}
         imageUrl={artist?.imageUrl ?? undefined}
-        artistBio={artist?.bioLine}
         recording={recording}
         isPlaying={isPlaying}
         withPlayer={withPlayer}

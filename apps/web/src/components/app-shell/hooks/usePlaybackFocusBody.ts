@@ -348,6 +348,16 @@ export function usePlaybackFocusBody({
     };
   }, [armPlayFocus, playFocusActive, scrollContainerRef]);
 
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && bodyFocusHidden) {
+        returnBodyForNavigation();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [bodyFocusHidden, returnBodyForNavigation]);
+
   const revealPage = useCallback(() => {
     if (isDisplaySettingsBodyRevealSuppressed()) return;
     // Theatre track swipe commits first on the same pointerup — keep body faded.

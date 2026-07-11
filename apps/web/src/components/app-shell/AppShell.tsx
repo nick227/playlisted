@@ -14,11 +14,13 @@ import { usePlaybackFocusTrack } from "./hooks/usePlaybackFocusTrack";
 import { usePlayerSpacebarShortcut } from "./hooks/usePlayerSpacebarShortcut";
 import { useResumePlaybackAfterNav } from "./hooks/useResumePlaybackAfterNav";
 import { useRouteScrollReset } from "./hooks/useRouteScrollReset";
+import { useTheatreSkipGesture } from "./hooks/useTheatreSkipGesture";
 import { PlaybackFocusLane } from "./PlaybackFocusLane/PlaybackFocusLane";
 import { QueuePanel } from "./QueuePanel";
 import { Sidebar } from "./Sidebar";
 import { TheatreGestureLayer } from "./TheatreGestureLayer";
 import { TopBar } from "./TopBar";
+import { useTheatreMode } from "./useTheatreMode";
 
 interface AppShellProps {
   children: ReactNode;
@@ -71,6 +73,16 @@ export function AppShell({ children }: AppShellProps) {
     },
     [isRadioFocus, playPreviousTrack, skipNextTrack, skipRadioTrack],
   );
+
+  // Sitewide swipe-to-skip while theatre FX plays behind a fully visible
+  // page; the reveal shield below only exists once chrome has idle-faded, so
+  // this covers everywhere else. Disabled while the shield is up so a single
+  // swipe isn't handled twice.
+  const { theatreActive } = useTheatreMode();
+  useTheatreSkipGesture({
+    enabled: theatreActive && !playbackFocus.revealShieldVisible,
+    onSkip: skipPlayback,
+  });
 
   // --- Global shortcuts + navigation side effects ----------------------------
   useResumePlaybackAfterNav(location.pathname, radioPlaying);

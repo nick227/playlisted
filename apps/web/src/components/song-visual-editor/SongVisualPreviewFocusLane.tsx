@@ -139,14 +139,18 @@ export function SongVisualPreviewFocusLane({
   const titleIntroLane = useFocusLaneVisibility(focusLaneState.titleIntro);
 
   const hasOverlay = Boolean(
-    overlayLane.displayFixture && overlayLane.displayFixture.type !== "none",
+    focusLaneState.titleIntro.type === "none" &&
+      overlayLane.displayFixture &&
+      overlayLane.displayFixture.type !== "none",
   );
   const hasSubtitle = Boolean(
     subtitleLane.displayFixture &&
       subtitleLane.displayFixture.type !== "none",
   );
   const hasTitleIntro = Boolean(
-    titleIntroLane.displayFixture && titleIntroLane.displayFixture.type !== "none",
+    focusLaneState.overlay.type === "none" &&
+      titleIntroLane.displayFixture &&
+      titleIntroLane.displayFixture.type !== "none",
   );
   const layerVisible =
     overlayLane.layerVisible || subtitleLane.layerVisible || titleIntroLane.layerVisible;
@@ -207,6 +211,7 @@ export function SongVisualPreviewFocusLane({
         >
           <FocusLaneSubtitleContent
             fixture={titleIntroLane.displayFixture!}
+            isPlaying={enabled}
             withPlayer
           />
         </div>

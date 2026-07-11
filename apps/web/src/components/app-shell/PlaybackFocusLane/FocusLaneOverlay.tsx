@@ -1,4 +1,3 @@
-import type { ProfileLink } from "@playlisted/client-sdk";
 import { Loader2 } from "lucide-react";
 import {
   useCallback,
@@ -9,13 +8,12 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 
-import { getProfileLinkPlatform } from "@/components/profile/profileLinks";
 import { VerticalVolumeControl } from "@/components/playback/VerticalVolumeControl";
 import { PlaybackBars } from "@/features/playback-indicators/PlaybackBars";
 import { PLAYBACK_FOCUS_INTERACTIVE_ATTR, stopPlaybackFocusBubble } from "@/lib/playbackFocus/interactiveTarget";
 import { usePlaybackVolume } from "@/providers/PlaybackVolumeProvider";
 
-import { FocusLaneGenreLink, FocusLaneLink, type GenreLink } from "./artistVisualLinks";
+import { FocusLaneLink, type GenreLink } from "./artistVisualLinks";
 import { PlaybackFocusReactionBar } from "./PlaybackFocusReactionBar";
 
 const CONTROLS_IDLE_MS = 4000;
@@ -98,30 +96,26 @@ type FocusLaneOverlayLink = {
   href?: string | null;
 };
 
-export type FocusLaneOverlayPosition = "bottom-left" | "center-middle";
-
 export type FocusLaneOverlayProps = {
   imageUrl?: string | null;
   imageAlt: string;
   imageHref?: string | null;
   primary: FocusLaneOverlayLink;
-  secondary?: FocusLaneOverlayLink | null;
-  meta?: string | null;
+  detail?: string | null;
   className?: string;
   genres?: GenreLink[];
   isPlaying?: boolean;
   recordingId?: string;
-  artistId?: string;
-  profileLinks?: ProfileLink[];
-  profileLinksAriaLabel?: string;
-  /** Media cluster placement. Default anchors lower-left; center-middle for title intervals. */
-  position?: FocusLaneOverlayPosition;
   /** False when no docked media bar (radio page, dismissed player). */
   withPlayer?: boolean;
   /** True while the site bottom player is focus-collapsed to a thin peek. */
   playerCollapsed?: boolean;
-  /** Title-intro overlays share this component but should not duplicate persistent chrome. */
-  showSideRail?: boolean;
+};
+
+type FocusLanePersistentControlsProps = {
+  recordingId: string;
+  withPlayer?: boolean;
+  playerCollapsed?: boolean;
 };
 
 function OverlayLinkText({ label, href, className }: FocusLaneOverlayLink & { className: string }) {
@@ -172,28 +166,21 @@ export function FocusLaneOverlay({
   imageAlt,
   imageHref,
   primary,
-  secondary,
-  meta,
+  detail,
   genres = [],
   isPlaying = false,
   recordingId,
   className,
-  artistId,
-  profileLinks = [],
-  profileLinksAriaLabel = "Social links",
-  position = "bottom-left",
   withPlayer = true,
   playerCollapsed = false,
-  showSideRail = true,
 }: FocusLaneOverlayProps) {
   const reveal = useFocusLaneOverlayReveal(recordingId ?? primary.label);
-  const { volume, setVolume } = usePlaybackVolume();
   const artReloading = useOverlayArtReload(recordingId);
 
   const clusterClassName = `focus-lane__overlay-cluster${reveal.visible ? "" : " is-dimmed"}`;
   const overlayClassName = [
     "focus-lane__overlay",
-    position === "center-middle" ? "focus-lane__overlay--center-middle" : "",
+    "focus-lane__overlay--center-middle",
     withPlayer ? "" : "focus-lane__overlay--no-player",
     withPlayer && playerCollapsed ? "focus-lane__overlay--player-collapsed" : ""
   ]
@@ -214,8 +201,6 @@ export function FocusLaneOverlay({
     </div>
   );
 
-  const shouldShowSideRail = showSideRail && Boolean(recordingId || artistId);
-
   return (
     <div
       className={overlayClassName}
@@ -235,68 +220,54 @@ export function FocusLaneOverlay({
           art
         )}
         <div className="focus-lane__overlay-body">
-          <div className="flex min-w-0 items-center gap-2.5">
+          <div className="min-w-0">
             <OverlayLinkText {...primary} className="focus-lane__overlay-primary min-w-0" />
-            {isPlaying ? (
-              <PlaybackBars active playing className="focus-lane__overlay-playback-bars" />
-            ) : null}
           </div>
-          {secondary ? <OverlayLinkText {...secondary} className="focus-lane__overlay-secondary" /> : null}
-          {meta ? <span className="focus-lane__overlay-meta truncate">{meta}</span> : null}
-          {genres.length > 0 || profileLinks.length > 0 ? (
-            <div className="focus-lane__overlay-meta-row">
-              {genres.length > 0 ? (
-                <div className="focus-lane__overlay-genres">
-                  {genres.map((genre) => (
-                    <FocusLaneGenreLink key={genre.slug} genre={genre} className="focus-lane__overlay-genre" />
-                  ))}
-                </div>
-              ) : null}
-              {profileLinks.length > 0 ? (
-                <nav aria-label={profileLinksAriaLabel} className="focus-lane__overlay-links">
-                  {profileLinks.map((link) => {
-                    const platform = getProfileLinkPlatform(link.platform);
-                    const Icon = platform.icon;
-                    const label = link.label || platform.label;
-                    return (
-                      <a
-                        key={link.id}
-                        href={link.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        title={label}
-                        aria-label={label}
-                        className="focus-lane__overlay-link"
-                        onPointerDown={stopPlaybackFocusBubble}
-                        onClick={stopPlaybackFocusBubble}
-                      >
-                        <Icon size={16} className="sm:size-5" aria-hidden />
-                      </a>
-                    );
-                  })}
-                </nav>
-              ) : null}
-            </div>
-          ) : null}
+          <span className="focus-lane__overlay-detail">{detail || "\u00a0"}</span>
+          <div className="focus-lane__overlay-status-row">
+            <span className="focus-lane__overlay-bars-slot" aria-hidden={!isPlaying}>
+              {isPlaying ? <PlaybackBars active playing className="focus-lane__overlay-playback-bars" /> : null}
+            </span>
+            {genres[0] ? <span className="focus-lane__overlay-genre-text">{genres[0].name}</span> : null}
+          </div>
         </div>
       </div>
 
-      {shouldShowSideRail ? (
-        <div
-          className={`${clusterClassName} focus-lane__overlay-reactions`}
-          onPointerDown={stopPlaybackFocusBubble}
-          onClick={stopPlaybackFocusBubble}
-          {...{ [PLAYBACK_FOCUS_INTERACTIVE_ATTR]: "" }}
-        >
-          <PlaybackFocusReactionBar recordingId={recordingId} />
-          <VerticalVolumeControl
-            variant="focus-lane"
-            volume={volume}
-            onVolumeChange={setVolume}
-            className="focus-lane__overlay-volume"
-          />
-        </div>
-      ) : null}
+    </div>
+  );
+}
+
+/** Persistent focus-mode chrome, intentionally independent of center content. */
+export function FocusLanePersistentControls({
+  recordingId,
+  withPlayer = true,
+  playerCollapsed = false,
+}: FocusLanePersistentControlsProps) {
+  const { volume, setVolume } = usePlaybackVolume();
+  const overlayClassName = [
+    "focus-lane__overlay",
+    withPlayer ? "" : "focus-lane__overlay--no-player",
+    withPlayer && playerCollapsed ? "focus-lane__overlay--player-collapsed" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  return (
+    <div className={overlayClassName}>
+      <div
+        className="focus-lane__overlay-cluster focus-lane__overlay-reactions"
+        onPointerDown={stopPlaybackFocusBubble}
+        onClick={stopPlaybackFocusBubble}
+        {...{ [PLAYBACK_FOCUS_INTERACTIVE_ATTR]: "" }}
+      >
+        <PlaybackFocusReactionBar recordingId={recordingId} />
+        <VerticalVolumeControl
+          variant="focus-lane"
+          volume={volume}
+          onVolumeChange={setVolume}
+          className="focus-lane__overlay-volume"
+        />
+      </div>
     </div>
   );
 }

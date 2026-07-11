@@ -11,7 +11,6 @@ import { Link, useLocation } from "react-router-dom";
 
 import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
 import { VerticalVolumeControl } from "@/components/playback/VerticalVolumeControl";
-import { formatDuration } from "@/lib/format";
 import { coverFallback, playlistPath, playlistRecordingPath, profilePath } from "@/lib/routes";
 import { usePlaybackTransport } from "@/hooks/usePlaybackTransport";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
@@ -33,7 +32,7 @@ const playerFooterClass =
   "fixed inset-x-0 bottom-0 z-[10000] w-full isolate overflow-visible border-t border-[var(--color-border)] bg-[var(--color-canvas-alt)] pb-[env(safe-area-inset-bottom,0px)] md:pb-0";
 
 const playerBodyClass =
-  "relative flex h-[var(--spacing-player-mobile)] w-full min-w-0 max-w-full items-center gap-3 px-4 py-2.5 md:grid md:h-[var(--spacing-player)] md:grid-cols-3 md:items-center md:gap-2 md:px-4 md:py-2";
+  "relative flex h-[var(--spacing-player-mobile)] w-full min-w-0 max-w-full items-center gap-3 px-4 py-2.5 md:h-[var(--spacing-player)] md:px-4 md:py-2";
 
 type BottomPlayerProps = {
   collapsedByFocusLane?: boolean;
@@ -64,7 +63,7 @@ export function BottomPlayer({ collapsedByFocusLane = false }: BottomPlayerProps
     togglePlayback: toggleRadioPlayback,
   } = useRadioPlayer();
   const { volume, setVolume } = usePlaybackVolume();
-  const { currentTime, duration, seek } = usePlaybackTransport();
+  const { currentTime, duration } = usePlaybackTransport();
 
   const [radioCurrentTime, setRadioCurrentTime] = useState(0);
 
@@ -182,7 +181,7 @@ export function BottomPlayer({ collapsedByFocusLane = false }: BottomPlayerProps
           className={`bottom-player__body ${playerBodyClass}`}
           aria-hidden={collapsedByFocusLane}
         >
-          <div className="bottom-player__section bottom-player__section--track group/card flex min-w-0 flex-1 items-center gap-3">
+          <div className="bottom-player__section bottom-player__section--track group/card flex min-w-0 flex-1 items-center gap-3 md:max-w-[calc(50%-6rem)]">
             <div className="relative h-10 w-10 shrink-0 md:h-12 md:w-12">
               {displayTrack.artworkUrl ? (
                 <img
@@ -269,50 +268,35 @@ export function BottomPlayer({ collapsedByFocusLane = false }: BottomPlayerProps
               ) : null}
             </div>
           </div>
-          <div className="bottom-player__section bottom-player__section--controls hidden flex-col items-center justify-center gap-2 md:flex md:gap-1.5">
-            <div className="flex items-center gap-4 md:gap-4">
+          <div className="bottom-player__section bottom-player__section--controls bottom-player__controls-desktop">
+            <div className="flex items-center gap-3">
               {showQueueControls ? (
-                <button type="button" onClick={playPrevious} className="text-[var(--color-text-muted)] hover:text-white">
-                  <SkipBack size={20} />
+                <button type="button" onClick={playPrevious} className="bottom-player__transport-button" aria-label="Previous song">
+                  <SkipBack size={18} />
                 </button>
               ) : (
-                <span className="h-5 w-5" aria-hidden />
+                <span className="h-9 w-9" aria-hidden />
               )}
               <button
                 type="button"
                 onClick={radioDisplayTrack ? () => void toggleRadioPlayback() : togglePlay}
                 aria-label={shellIsPlaying ? "Pause" : "Play"}
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-black"
+                className="bottom-player__play-button"
                 disabled={playerBarExiting}
               >
                 {shellIsPlaying ? (
-                  <Pause size={20} fill="currentColor" />
+                  <Pause size={18} fill="currentColor" />
                 ) : (
-                  <Play size={20} fill="currentColor" className="ml-0.5" />
+                  <Play size={18} fill="currentColor" className="ml-0.5" />
                 )}
               </button>
               {showQueueControls ? (
-                <button type="button" onClick={playNext} className="text-[var(--color-text-muted)] hover:text-white">
-                  <SkipForward size={20} />
+                <button type="button" onClick={playNext} className="bottom-player__transport-button" aria-label="Next song">
+                  <SkipForward size={18} />
                 </button>
               ) : (
-                <span className="h-5 w-5" aria-hidden />
+                <span className="h-9 w-9" aria-hidden />
               )}
-            </div>
-            <div className="flex items-center gap-2 text-[11px] leading-none text-[var(--color-text-subtle)] md:text-xs md:leading-normal">
-              <span>{formatDuration(shellCurrentTime)}</span>
-              <input
-                type="range"
-                min={0}
-                max={shellDuration || 100}
-                value={shellCurrentTime}
-                onChange={(e) => {
-                  if (!radioDisplayTrack) seek(Number(e.target.value));
-                }}
-                className="hidden w-48 md:block accent-[var(--color-brand)]"
-                disabled={playerBarExiting || Boolean(radioDisplayTrack)}
-              />
-              <span>{formatDuration(shellDuration)}</span>
             </div>
           </div>
           <div className="bottom-player__section bottom-player__section--actions bottom-player__actions-desktop">
@@ -324,14 +308,13 @@ export function BottomPlayer({ collapsedByFocusLane = false }: BottomPlayerProps
 
             {showQueueControls ? (
               <>
-                <div className="mx-1 h-4 w-px bg-white/10" />
                 <button
                   type="button"
                   onClick={() => setQueueOpen(true)}
-                  className="relative z-[60] text-[var(--color-text-muted)] transition hover:text-white"
+                  className="bottom-player__action-button relative z-[60]"
                   aria-label="Next songs"
                 >
-                  <ListMusic size={20} />
+                  <ListMusic size={18} />
                 </button>
               </>
             ) : null}
