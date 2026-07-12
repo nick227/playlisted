@@ -217,6 +217,10 @@ export function RadioPage({ isEmbedded: _isEmbedded = false }: { isEmbedded?: bo
   const radioBodySwipeHandlers = useSwipeGesture({
     enabled: radioStationSlugs.length > 1,
     axis: "both",
+    // The handler already lives on the full-page radio surface. Capturing the
+    // pointer here can retarget touch-generated clicks from the song/artist
+    // links to this container, so keep taps owned by their original target.
+    skipPointerCapture: true,
     horizontalCommitPx: SWIPE_COMMIT_THRESHOLD_PX,
     velocityThreshold: SWIPE_VELOCITY_THRESHOLD_PX_PER_MS,
     isExcludedTarget: isRadioGestureExcludedTarget,
