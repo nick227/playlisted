@@ -10,8 +10,6 @@ import {
 
 import { PlaybackBars } from "@/features/playback-indicators/PlaybackBars";
 import { PLAYBACK_FOCUS_INTERACTIVE_ATTR, stopPlaybackFocusBubble } from "@/lib/playbackFocus/interactiveTarget";
-import { usePlaybackVolume } from "@/providers/PlaybackVolumeProvider";
-
 import { FocusLaneLink, type GenreLink } from "./artistVisualLinks";
 import { PlaybackFocusReactionBar } from "./PlaybackFocusReactionBar";
 
@@ -242,7 +240,6 @@ export function FocusLanePersistentControls({
   withPlayer = true,
   playerCollapsed = false,
 }: FocusLanePersistentControlsProps) {
-  const { volume, setVolume } = usePlaybackVolume();
   const overlayClassName = [
     "focus-lane__overlay",
     withPlayer ? "" : "focus-lane__overlay--no-player",
