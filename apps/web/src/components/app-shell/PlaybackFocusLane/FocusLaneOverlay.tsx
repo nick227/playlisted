@@ -8,7 +8,6 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 
-import { VerticalVolumeControl } from "@/components/playback/VerticalVolumeControl";
 import { PlaybackBars } from "@/features/playback-indicators/PlaybackBars";
 import { PLAYBACK_FOCUS_INTERACTIVE_ATTR, stopPlaybackFocusBubble } from "@/lib/playbackFocus/interactiveTarget";
 import { usePlaybackVolume } from "@/providers/PlaybackVolumeProvider";
