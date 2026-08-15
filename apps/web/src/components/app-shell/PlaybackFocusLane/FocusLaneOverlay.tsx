@@ -261,12 +261,6 @@ export function FocusLanePersistentControls({
         {...{ [PLAYBACK_FOCUS_INTERACTIVE_ATTR]: "" }}
       >
         <PlaybackFocusReactionBar recordingId={recordingId} />
-        <VerticalVolumeControl
-          variant="focus-lane"
-          volume={volume}
-          onVolumeChange={setVolume}
-          className="focus-lane__overlay-volume"
-        />
       </div>
     </div>
   );
