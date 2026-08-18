@@ -36,20 +36,41 @@ export function FocusLaneSubtitleContent({
   withPlayer = true,
   playerCollapsed = false,
 }: FocusLaneSubtitleContentProps) {
-  if (fixture.type === "titleIntro") {
-    return (
-      <TitleIntroVisual
-        title={fixture.title}
-        artistName={fixture.artist?.artistName}
-        recording={fixture.recording}
-        isPlaying={isPlaying}
-        withPlayer={withPlayer}
-        playerCollapsed={playerCollapsed}
-      />
-    );
+  switch (fixture.type) {
+    case "titleIntro":
+      return (
+        <TitleIntroVisual
+          title={fixture.title}
+          artistName={fixture.artist?.artistName}
+          recording={fixture.recording}
+          isPlaying={isPlaying}
+          withPlayer={withPlayer}
+          playerCollapsed={playerCollapsed}
+          position="center-middle"
+        />
+      );
+    case "nowPlayingIdentity":
+      return (
+        <TitleIntroVisual
+          title={fixture.title}
+          artistName={fixture.artist?.artistName}
+          recording={fixture.recording}
+          isPlaying={isPlaying}
+          withPlayer={withPlayer}
+          playerCollapsed={playerCollapsed}
+          position="bottom-left"
+        />
+      );
+    case "subtitle":
+      break;
+    case "artistIntro":
+    case "none":
+      return null;
+    default: {
+      const _exhaustive: never = fixture;
+      return _exhaustive;
+    }
   }
-
-  if (fixture.type !== "subtitle") return null;
 
   let style: CSSProperties | undefined = customSubtitleStyle ? { ...customSubtitleStyle } : undefined;
   const preset = subtitleStyleId ? getSubtitleStylePreset(subtitleStyleId) : undefined;
@@ -79,7 +100,7 @@ export function FocusLaneOverlayContent({
   withPlayer = true,
   playerCollapsed = false,
 }: FocusLaneOverlayContentProps) {
-  if (fixture.type === "finalFallback") {
+  if (fixture.type === "artistIntro") {
     const artist = fixture.artist;
     const recording = fixture.recording;
 

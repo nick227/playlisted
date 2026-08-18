@@ -8,7 +8,8 @@ function fixtureVariantClass(fixture: PlaybackFocusFixture | null): string {
   if (!fixture || fixture.type === "none") return "";
   if (fixture.type === "subtitle") return " focus-lane--subtitle";
   if (fixture.type === "titleIntro") return " focus-lane--title-intro";
-  if (fixture.type === "finalFallback") return " focus-lane--artist-visual";
+  if (fixture.type === "artistIntro") return " focus-lane--artist-visual";
+  if (fixture.type === "nowPlayingIdentity") return " focus-lane--now-playing";
   const _exhaustive: never = fixture;
   return _exhaustive;
 }

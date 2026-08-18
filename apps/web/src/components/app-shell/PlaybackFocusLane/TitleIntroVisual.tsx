@@ -1,7 +1,7 @@
 import type { FocusRecording } from "@/lib/playbackFocus/types";
 import { formatDuration, formatPlayCount } from "@/lib/format";
 
-import { FocusLaneOverlay } from "./FocusLaneOverlay";
+import { FocusLaneOverlay, type FocusLaneOverlayPosition } from "./FocusLaneOverlay";
 import { useFocusLaneArtistMeta } from "./useFocusLaneArtistMeta";
 
 type TitleIntroVisualProps = {
@@ -11,6 +11,8 @@ type TitleIntroVisualProps = {
   isPlaying?: boolean;
   withPlayer?: boolean;
   playerCollapsed?: boolean;
+  /** Centered for the brief intro card, bottom-left for the persistent identity card. */
+  position: FocusLaneOverlayPosition;
 };
 
 export function TitleIntroVisual({
@@ -20,6 +22,7 @@ export function TitleIntroVisual({
   isPlaying = false,
   withPlayer = true,
   playerCollapsed = false,
+  position,
 }: TitleIntroVisualProps) {
   const artistId = recording?.ownerId ?? undefined;
   const { links, displayGenres, libraryTrack } = useFocusLaneArtistMeta(artistId, recording);
@@ -46,6 +49,7 @@ export function TitleIntroVisual({
       isPlaying={isPlaying}
       withPlayer={withPlayer}
       playerCollapsed={playerCollapsed}
+      position={position}
     />
   );
 }

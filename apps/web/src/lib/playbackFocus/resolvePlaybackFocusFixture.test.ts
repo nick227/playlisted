@@ -5,7 +5,7 @@ import { playbackFocusTiming } from "@/lib/playbackFocusTiming";
 import { buildSyntheticSubtitleCues } from "./buildSyntheticCues";
 import { getFocusLaneSequenceWindows } from "./focusLaneSequence";
 import {
-  resolveOverlayFixture,
+  resolveArtistIntroFixture,
   resolvePlaybackFocusLaneState,
   resolvePlaybackFocusFixture,
   resolveSubtitleFixture,
@@ -32,6 +32,7 @@ const baseInput: ResolvePlaybackFocusInput = {
   },
   subtitlesEnabled: true,
   isPlaying: true,
+  introTerminatedByLyric: false,
 };
 
 describe("resolvePlaybackFocusFixture", () => {
@@ -92,6 +93,7 @@ describe("resolvePlaybackFocusFixture", () => {
       ...baseInput,
       currentTimeMs: fallbackStart + 200,
       currentEpochMs: fallbackStart + 200,
+      introTerminatedByLyric: true,
       subtitleSegments: [
         {
           start: (fallbackStart + 100) / 1000,
@@ -104,7 +106,7 @@ describe("resolvePlaybackFocusFixture", () => {
   });
 });
 
-describe("resolveSubtitleFixture / resolveOverlayFixture", () => {
+describe("resolveSubtitleFixture / resolveArtistIntroFixture", () => {
   it("keeps the initial song card exclusive", () => {
     const input = {
       ...baseInput,
@@ -115,8 +117,8 @@ describe("resolveSubtitleFixture / resolveOverlayFixture", () => {
     expect(resolveSubtitleFixture(input).type).toBe("none");
     const titleIntro = resolveTitleIntroFixture(input);
     expect(titleIntro.type).toBe("titleIntro");
-    const overlay = resolveOverlayFixture(input);
-    expect(overlay.type).toBe("none");
+    const artistIntro = resolveArtistIntroFixture(input);
+    expect(artistIntro.type).toBe("none");
   });
 
   it("suppresses lyrics through title-intro fade-out", () => {
@@ -131,7 +133,7 @@ describe("resolveSubtitleFixture / resolveOverlayFixture", () => {
     expect(resolveSubtitleFixture(input).type).toBe("none");
   });
 
-  it("allows lyrics with final artist overlay after title-intro", () => {
+  it("suppresses lyrics during the artist-card window when the intro has not been interrupted", () => {
     const { fallbackStart } = getFocusLaneSequenceWindows();
     const input = {
       ...baseInput,
@@ -145,48 +147,70 @@ describe("resolveSubtitleFixture / resolveOverlayFixture", () => {
         },
       ],
     };
+
+    expect(resolveSubtitleFixture(input).type).toBe("none");
+    const artistIntro = resolveArtistIntroFixture(input);
+    expect(artistIntro.type).toBe("artistIntro");
+  });
+
+  it("lets a real lyric during the artist-card window terminate the intro", () => {
+    const { fallbackStart } = getFocusLaneSequenceWindows();
+    const input = {
+      ...baseInput,
+      currentTimeMs: fallbackStart + 200,
+      currentEpochMs: fallbackStart + 200,
+      introTerminatedByLyric: true,
+      subtitleSegments: [
+        {
+          start: (fallbackStart + 100) / 1000,
+          end: (fallbackStart + 800) / 1000,
+          text: "hello",
+        },
+      ],
+    };
+
     const subtitle = resolveSubtitleFixture(input);
-    const overlay = resolveOverlayFixture(input);
+    const artistIntro = resolveArtistIntroFixture(input);
 
     expect(subtitle).toEqual({
       type: "subtitle",
       text: "hello",
       cueId: `real:${(fallbackStart + 100) / 1000}-${(fallbackStart + 800) / 1000}`,
     });
-    expect(overlay.type).toBe("finalFallback");
+    expect(artistIntro.type).toBe("none");
   });
 
   it("shows the artist only during its configured window", () => {
     const { fallbackStart, artistEnd } = getFocusLaneSequenceWindows();
-    const overlay = resolveOverlayFixture({
+    const artistIntro = resolveArtistIntroFixture({
       ...baseInput,
       currentEpochMs: fallbackStart + 1,
       subtitleSegments: [],
       subtitleReady: false,
     });
-    expect(overlay.type).toBe("finalFallback");
-    expect(resolveOverlayFixture({ ...baseInput, currentEpochMs: artistEnd }).type).toBe("none");
+    expect(artistIntro.type).toBe("artistIntro");
+    expect(resolveArtistIntroFixture({ ...baseInput, currentEpochMs: artistEnd }).type).toBe("none");
   });
 
-  it("uses recording identity in final overlay fixture keys", () => {
+  it("uses recording identity in artist-intro fixture keys", () => {
     const { fallbackStart } = getFocusLaneSequenceWindows();
-    const first = resolveOverlayFixture({ ...baseInput, currentEpochMs: fallbackStart + 1 });
-    const second = resolveOverlayFixture({
+    const first = resolveArtistIntroFixture({ ...baseInput, currentEpochMs: fallbackStart + 1 });
+    const second = resolveArtistIntroFixture({
       ...baseInput,
       currentEpochMs: fallbackStart + 1,
       recording: { id: "rec-2", title: "Song" },
     });
 
-    expect(first.type).toBe("finalFallback");
-    expect(second.type).toBe("finalFallback");
-    if (first.type === "finalFallback" && second.type === "finalFallback") {
+    expect(first.type).toBe("artistIntro");
+    expect(second.type).toBe("artistIntro");
+    if (first.type === "artistIntro" && second.type === "artistIntro") {
       expect(first.key).not.toBe(second.key);
     }
   });
 });
 
 describe("resolvePlaybackFocusLaneState", () => {
-  it("prioritizes the song card without rendering the artist card", () => {
+  it("prioritizes the title card without rendering the artist card", () => {
     const state = resolvePlaybackFocusLaneState({
       ...baseInput,
       currentEpochMs: 1_500,
@@ -196,11 +220,33 @@ describe("resolvePlaybackFocusLaneState", () => {
 
     expect(state.activeVariant).toBe("title-intro");
     expect(state.titleIntro.type).toBe("titleIntro");
-    expect(state.overlay.type).toBe("none");
+    expect(state.artistIntro.type).toBe("none");
     expect(state.subtitle.type).toBe("none");
   });
 
-  it("allows subtitle and overlay lanes after title-intro fade-out", () => {
+  it("allows the subtitle lane after title-intro fade-out once a lyric terminates the intro", () => {
+    const { fallbackStart } = getFocusLaneSequenceWindows();
+    const state = resolvePlaybackFocusLaneState({
+      ...baseInput,
+      currentTimeMs: fallbackStart + 200,
+      currentEpochMs: fallbackStart + 200,
+      introTerminatedByLyric: true,
+      subtitleSegments: [
+        {
+          start: (fallbackStart + 100) / 1000,
+          end: (fallbackStart + 800) / 1000,
+          text: "hello",
+        },
+      ],
+    });
+
+    expect(state.activeVariant).toBe("subtitle");
+    expect(state.titleIntro.type).toBe("none");
+    expect(state.artistIntro.type).toBe("none");
+    expect(state.subtitle.type).toBe("subtitle");
+  });
+
+  it("keeps the artist card active alongside a not-yet-terminated intro after title-intro fade-out", () => {
     const { fallbackStart } = getFocusLaneSequenceWindows();
     const state = resolvePlaybackFocusLaneState({
       ...baseInput,
@@ -215,26 +261,41 @@ describe("resolvePlaybackFocusLaneState", () => {
       ],
     });
 
-    expect(state.activeVariant).toBe("subtitle");
+    expect(state.activeVariant).toBe("artist-intro");
     expect(state.titleIntro.type).toBe("none");
-    expect(state.overlay.type).toBe("finalFallback");
-    expect(state.subtitle.type).toBe("subtitle");
+    expect(state.artistIntro.type).toBe("artistIntro");
+    expect(state.subtitle.type).toBe("none");
   });
 
-  it("keeps title-intro visible for the configured wall-clock duration even when track time is already advanced", () => {
+  it("keeps title-intro visible for the configured wall-clock duration on an instrumental opening", () => {
     const halfVisible = playbackFocusTiming.titleIntro.delayMs + playbackFocusTiming.titleIntro.minVisibleMs / 2;
     const state = resolvePlaybackFocusLaneState({
       ...baseInput,
       currentTimeMs: 5_000,
       currentEpochMs: halfVisible,
-      subtitleSegments: [{ start: 5, end: 6, text: "halfway lyric" }],
+      introTerminatedByLyric: false,
+      subtitleSegments: [{ start: 20, end: 21, text: "later lyric" }],
     });
 
     expect(state.titleIntro.type).toBe("titleIntro");
     expect(state.subtitle.type).toBe("none");
   });
 
-  it("returns to the song card after the five-second artist card", () => {
+  it("lets a lyric at the halfway point terminate the title-intro card early", () => {
+    const halfVisible = playbackFocusTiming.titleIntro.delayMs + playbackFocusTiming.titleIntro.minVisibleMs / 2;
+    const state = resolvePlaybackFocusLaneState({
+      ...baseInput,
+      currentTimeMs: 5_000,
+      currentEpochMs: halfVisible,
+      introTerminatedByLyric: true,
+      subtitleSegments: [{ start: 5, end: 6, text: "halfway lyric" }],
+    });
+
+    expect(state.titleIntro.type).toBe("none");
+    expect(state.subtitle.type).toBe("subtitle");
+  });
+
+  it("moves to the persistent identity card after the five-second artist card, center lane empty", () => {
     const { artistEnd } = getFocusLaneSequenceWindows();
     const state = resolvePlaybackFocusLaneState({
       ...baseInput,
@@ -243,7 +304,25 @@ describe("resolvePlaybackFocusLaneState", () => {
     });
 
     expect(playbackFocusTiming.artistVisual.visibleMs).toBe(5000);
-    expect(state.titleIntro.type).toBe("titleIntro");
-    expect(state.overlay.type).toBe("none");
+    expect(state.titleIntro.type).toBe("none");
+    expect(state.artistIntro.type).toBe("none");
+    expect(state.nowPlayingIdentity.type).toBe("nowPlayingIdentity");
+  });
+
+  it("never lets the center lane show anything but a subtitle cue or nothing past the intro sequence", () => {
+    const { artistEnd } = getFocusLaneSequenceWindows();
+
+    for (const elapsedMs of [artistEnd, artistEnd + 1_000, artistEnd + 60_000]) {
+      const state = resolvePlaybackFocusLaneState({
+        ...baseInput,
+        currentEpochMs: elapsedMs,
+        currentTimeMs: elapsedMs,
+        introTerminatedByLyric: false,
+        subtitleSegments: [],
+      });
+
+      expect(state.titleIntro.type).toBe("none");
+      expect(state.artistIntro.type).toBe("none");
+    }
   });
 });

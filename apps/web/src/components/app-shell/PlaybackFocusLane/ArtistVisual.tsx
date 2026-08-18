@@ -34,6 +34,7 @@ export function ArtistVisual({
       recordingId={recording?.id}
       withPlayer={withPlayer}
       playerCollapsed={playerCollapsed}
+      position="center-middle"
     />
   );
 }

@@ -10,10 +10,17 @@ export type PlaybackFocusFixture =
       recording?: FocusRecording | null;
     }
   | {
-      type: "finalFallback";
+      type: "artistIntro";
       key: string;
       title: string;
       artistName?: string | null;
+      artist?: FocusArtist | null;
+      recording?: FocusRecording | null;
+    }
+  | {
+      type: "nowPlayingIdentity";
+      key: string;
+      title: string;
       artist?: FocusArtist | null;
       recording?: FocusRecording | null;
     }
@@ -77,4 +84,6 @@ export type ResolvePlaybackFocusInput = {
   focusState: PlaybackFocusState;
   subtitlesEnabled: boolean;
   isPlaying: boolean;
+  /** True once real playback has reached a real lyric cue, ending the intro sequence early and for good. */
+  introTerminatedByLyric: boolean;
 };

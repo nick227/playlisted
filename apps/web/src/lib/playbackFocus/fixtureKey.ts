@@ -8,8 +8,10 @@ export function focusLaneFixtureKey(fixture: PlaybackFocusFixture | null): strin
       return `subtitle:${fixture.cueId}`;
     case "titleIntro":
       return `title-intro:${fixture.key}`;
-    case "finalFallback":
-      return `final:${fixture.key}`;
+    case "artistIntro":
+      return `artist-intro:${fixture.key}`;
+    case "nowPlayingIdentity":
+      return `now-playing:${fixture.key}`;
     default: {
       const _exhaustive: never = fixture;
       return _exhaustive;

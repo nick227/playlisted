@@ -93,6 +93,8 @@ type FocusLaneOverlayLink = {
   href?: string | null;
 };
 
+export type FocusLaneOverlayPosition = "bottom-left" | "center-middle";
+
 export type FocusLaneOverlayProps = {
   imageUrl?: string | null;
   imageAlt: string;
@@ -107,6 +109,8 @@ export type FocusLaneOverlayProps = {
   withPlayer?: boolean;
   /** True while the site bottom player is focus-collapsed to a thin peek. */
   playerCollapsed?: boolean;
+  /** No default on purpose — every caller must decide where this card lives. */
+  position: FocusLaneOverlayPosition;
 };
 
 type FocusLanePersistentControlsProps = {
@@ -170,6 +174,7 @@ export function FocusLaneOverlay({
   className,
   withPlayer = true,
   playerCollapsed = false,
+  position,
 }: FocusLaneOverlayProps) {
   const reveal = useFocusLaneOverlayReveal(recordingId ?? primary.label);
   const artReloading = useOverlayArtReload(recordingId);
@@ -177,7 +182,7 @@ export function FocusLaneOverlay({
   const clusterClassName = `focus-lane__overlay-cluster${reveal.visible ? "" : " is-dimmed"}`;
   const overlayClassName = [
     "focus-lane__overlay",
-    "focus-lane__overlay--center-middle",
+    position === "center-middle" ? "focus-lane__overlay--center-middle" : "",
     withPlayer ? "" : "focus-lane__overlay--no-player",
     withPlayer && playerCollapsed ? "focus-lane__overlay--player-collapsed" : ""
   ]

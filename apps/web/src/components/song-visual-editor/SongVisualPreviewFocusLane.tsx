@@ -1,12 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 
-import {
-  FocusLaneOverlayContent,
-  FocusLaneSubtitleContent,
-} from "@/components/app-shell/PlaybackFocusLane/FocusLaneSubtitleContent";
-import { useFocusLaneVisibility } from "@/components/app-shell/PlaybackFocusLane/useFocusLaneVisibility";
+import { FocusLaneLayerContent } from "@/components/app-shell/PlaybackFocusLane/FocusLaneLayerContent";
+import { useFocusLaneLayers } from "@/components/app-shell/PlaybackFocusLane/useFocusLaneLayers";
 import { useRecordingSubtitleStyle } from "@/hooks/useRecordingSubtitleStyle";
 import { buildSyntheticSubtitleCues } from "@/lib/playbackFocus/buildSyntheticCues";
+import { computeIntroTerminatedByLyric } from "@/lib/playbackFocus/introTermination";
 import {
   resolvePlaybackFocusLaneState,
 } from "@/lib/playbackFocus/resolvePlaybackFocusFixture";
@@ -100,12 +98,23 @@ export function SongVisualPreviewFocusLane({
     return () => window.removeEventListener(RECORDING_SUBTITLES_DISABLED_EVENT, handleSubtitlesDisabledChange);
   }, [recording.id]);
 
+  const subtitleReady = subtitles?.status === "READY";
+
+  // Pure recompute (not a latch): scrubbing backward should re-show the
+  // intro cards for authoring/preview purposes, unlike real playback.
+  const introTerminatedByLyric = computeIntroTerminatedByLyric({
+    subtitlesEnabled,
+    subtitleReady,
+    subtitleSegments: subtitles?.segments,
+    currentTimeMs: currentTimeSec * 1000,
+  });
+
   const resolveInput = useMemo(
     () => ({
       currentTimeMs: currentTimeSec * 1000,
       currentEpochMs: currentTimeSec * 1000,
       subtitleSegments: subtitles?.segments,
-      subtitleReady: subtitles?.status === "READY",
+      subtitleReady,
       syntheticCues: buildSyntheticSubtitleCues(recording),
       artist: toFocusArtist(recording),
       recording,
@@ -118,13 +127,15 @@ export function SongVisualPreviewFocusLane({
       },
       subtitlesEnabled,
       isPlaying: canRenderTextOverlay,
+      introTerminatedByLyric,
     }),
     [
       canRenderTextOverlay,
       currentTimeSec,
+      introTerminatedByLyric,
       recording,
+      subtitleReady,
       subtitles?.segments,
-      subtitles?.status,
       subtitlesEnabled,
     ],
   );
@@ -134,29 +145,10 @@ export function SongVisualPreviewFocusLane({
     [resolveInput],
   );
 
-  const subtitleLane = useFocusLaneVisibility(focusLaneState.subtitle);
-  const overlayLane = useFocusLaneVisibility(focusLaneState.overlay);
-  const titleIntroLane = useFocusLaneVisibility(focusLaneState.titleIntro);
+  const layers = useFocusLaneLayers(focusLaneState);
+  const { layerVisible, variantClass, hasAnyLayer } = layers;
 
-  const hasOverlay = Boolean(
-    focusLaneState.titleIntro.type === "none" &&
-      overlayLane.displayFixture &&
-      overlayLane.displayFixture.type !== "none",
-  );
-  const hasSubtitle = Boolean(
-    subtitleLane.displayFixture &&
-      subtitleLane.displayFixture.type !== "none",
-  );
-  const hasTitleIntro = Boolean(
-    focusLaneState.overlay.type === "none" &&
-      titleIntroLane.displayFixture &&
-      titleIntroLane.displayFixture.type !== "none",
-  );
-  const layerVisible =
-    overlayLane.layerVisible || subtitleLane.layerVisible || titleIntroLane.layerVisible;
-  const variantClass = titleIntroLane.variantClass || subtitleLane.variantClass || overlayLane.variantClass;
-
-  if (!canRenderTextOverlay || (!hasOverlay && !hasSubtitle && !hasTitleIntro)) {
+  if (!canRenderTextOverlay || !hasAnyLayer) {
     return null;
   }
 
@@ -171,51 +163,13 @@ export function SongVisualPreviewFocusLane({
       ].join(" ")}
       aria-hidden={!layerVisible}
     >
-      {hasOverlay ? (
-        <div
-          key={`overlay:${overlayLane.displayKey}`}
-          className={`focus-lane__content focus-lane__content--overlay${
-            overlayLane.layerVisible ? " is-visible" : ""
-          }`}
-          aria-hidden={!overlayLane.layerVisible}
-        >
-          <FocusLaneOverlayContent
-            fixture={overlayLane.displayFixture!}
-            isPlaying={enabled}
-            withPlayer
-          />
-        </div>
-      ) : null}
-      {hasSubtitle ? (
-        <div
-          key={`subtitle:${subtitleLane.displayKey}`}
-          className={`focus-lane__content focus-lane__content--subtitle${
-            subtitleLane.layerVisible ? " is-visible" : ""
-          }`}
-          aria-hidden={!subtitleLane.layerVisible}
-        >
-          <FocusLaneSubtitleContent
-            fixture={subtitleLane.displayFixture!}
-            customSubtitleStyle={customSubtitleStyle}
-            subtitleStyleId={subtitleStyleId}
-          />
-        </div>
-      ) : null}
-      {hasTitleIntro ? (
-        <div
-          key={`title-intro:${titleIntroLane.displayKey}`}
-          className={`focus-lane__content focus-lane__content--subtitle${
-            titleIntroLane.layerVisible ? " is-visible" : ""
-          }`}
-          aria-hidden={!titleIntroLane.layerVisible}
-        >
-          <FocusLaneSubtitleContent
-            fixture={titleIntroLane.displayFixture!}
-            isPlaying={enabled}
-            withPlayer
-          />
-        </div>
-      ) : null}
+      <FocusLaneLayerContent
+        layers={layers}
+        isPlaying={enabled}
+        withPlayer
+        customSubtitleStyle={customSubtitleStyle}
+        subtitleStyleId={subtitleStyleId}
+      />
     </div>
   );
 }

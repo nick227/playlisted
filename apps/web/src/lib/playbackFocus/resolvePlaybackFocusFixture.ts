@@ -10,11 +10,12 @@ import type {
   SyntheticSubtitleCue,
 } from "@/lib/playbackFocus/types";
 
-export type PlaybackFocusVariant = "title-intro" | "artist-visual" | "subtitle" | null;
+export type PlaybackFocusVariant = "title-intro" | "artist-intro" | "now-playing-identity" | "subtitle" | null;
 
 export type PlaybackFocusLaneState = {
   titleIntro: PlaybackFocusFixture;
-  overlay: PlaybackFocusFixture;
+  artistIntro: PlaybackFocusFixture;
+  nowPlayingIdentity: PlaybackFocusFixture;
   subtitle: PlaybackFocusFixture;
   activeVariant: PlaybackFocusVariant;
 };
@@ -34,10 +35,13 @@ function canShowFocusLane(focusState: PlaybackFocusState): boolean {
   return focusState.playFocusActive && focusState.hasBodyFaded;
 }
 
-/** Title-intro window including fade-out — lyrics must stay dark for the whole span. */
-export function isTitleIntroWindowActive(focusLaneElapsedMs: number): boolean {
-  const { titleStart, fallbackStart } = getFocusLaneSequenceWindows();
-  return focusLaneElapsedMs >= titleStart && focusLaneElapsedMs < fallbackStart;
+/**
+ * Full intro-sequence window (title card + artist card) — lyrics stay dark
+ * for the whole span unless a real lyric terminates the intro early.
+ */
+export function isIntroSequenceWindowActive(focusLaneElapsedMs: number): boolean {
+  const { titleStart, artistEnd } = getFocusLaneSequenceWindows();
+  return focusLaneElapsedMs >= titleStart && focusLaneElapsedMs < artistEnd;
 }
 
 function resolveTitleIntroSyntheticFixture(input: {
@@ -63,8 +67,8 @@ function resolveTitleIntroSyntheticFixture(input: {
 }
 
 /**
- * Lyric captions — blocked during title-intro (incl. fade-out) so center card and
- * captions never share the viewport. Ongoing artist overlay can still coexist.
+ * Lyric captions — blocked for the whole intro sequence (title card + artist
+ * card) unless a real lyric has already cut the intro short.
  */
 export function resolveSubtitleFixture(input: ResolvePlaybackFocusInput): PlaybackFocusFixture {
   const {
@@ -75,6 +79,7 @@ export function resolveSubtitleFixture(input: ResolvePlaybackFocusInput): Playba
     focusState,
     subtitlesEnabled,
     isPlaying,
+    introTerminatedByLyric,
   } = input;
 
   if (!canShowFocusLane(focusState) || !isPlaying) {
@@ -86,7 +91,7 @@ export function resolveSubtitleFixture(input: ResolvePlaybackFocusInput): Playba
     focusState.titleIntroStartedAtEpochMs,
   );
 
-  if (isTitleIntroWindowActive(focusLaneElapsedMs)) {
+  if (!introTerminatedByLyric && isIntroSequenceWindowActive(focusLaneElapsedMs)) {
     return { type: "none" };
   }
 
@@ -117,12 +122,12 @@ export function resolveSubtitleFixture(input: ResolvePlaybackFocusInput): Playba
 }
 
 /**
- * Chromeless title intro overlay.
+ * Chromeless title intro overlay (phase 1).
  */
 export function resolveTitleIntroFixture(input: ResolvePlaybackFocusInput): PlaybackFocusFixture {
-  const { currentEpochMs, syntheticCues, artist, recording, focusState, isPlaying } = input;
+  const { currentEpochMs, syntheticCues, artist, recording, focusState, isPlaying, introTerminatedByLyric } = input;
 
-  if (!canShowFocusLane(focusState) || !isPlaying) {
+  if (!canShowFocusLane(focusState) || !isPlaying || introTerminatedByLyric) {
     return { type: "none" };
   }
 
@@ -131,41 +136,24 @@ export function resolveTitleIntroFixture(input: ResolvePlaybackFocusInput): Play
     focusState.titleIntroStartedAtEpochMs,
   );
 
-  const synthetic = resolveTitleIntroSyntheticFixture({
-    focusLaneElapsedMs,
-    syntheticCues,
-    artist,
-    recording,
-  });
-  if (synthetic?.type === "titleIntro") {
-    return synthetic;
-  }
-
-  // Once the brief artist card has finished, the song card identifies the
-  // recording for the remainder of playback.
-  const { artistEnd } = getFocusLaneSequenceWindows();
-  const title = recording?.title?.trim();
-  if (title && focusLaneElapsedMs >= artistEnd) {
-    return {
-      type: "titleIntro",
-      title,
-      key: `song-title:${recording?.id ?? title}`,
+  return (
+    resolveTitleIntroSyntheticFixture({
+      focusLaneElapsedMs,
+      syntheticCues,
       artist,
       recording,
-    };
-  }
-
-  return { type: "none" };
+    }) ?? { type: "none" }
+  );
 }
 
 /**
- * Chromeless title/artist overlay windows based on focus-lane elapsed time.
- * Independent of lyric subtitles except during title-intro exclusivity above.
+ * Chromeless artist overlay (phase 2) — brief artist-name/art card following
+ * the title-intro card.
  */
-export function resolveOverlayFixture(input: ResolvePlaybackFocusInput): PlaybackFocusFixture {
-  const { artist, recording, focusState, isPlaying, currentEpochMs } = input;
+export function resolveArtistIntroFixture(input: ResolvePlaybackFocusInput): PlaybackFocusFixture {
+  const { artist, recording, focusState, isPlaying, currentEpochMs, introTerminatedByLyric } = input;
 
-  if (!canShowFocusLane(focusState) || !isPlaying) {
+  if (!canShowFocusLane(focusState) || !isPlaying || introTerminatedByLyric) {
     return { type: "none" };
   }
 
@@ -174,8 +162,8 @@ export function resolveOverlayFixture(input: ResolvePlaybackFocusInput): Playbac
   const title = recording?.title?.trim();
   if (title && elapsedMs >= fallbackStart && elapsedMs < artistEnd) {
     return {
-      type: "finalFallback",
-      key: `final-song-title:${recording?.id ?? title}`,
+      type: "artistIntro",
+      key: `artist-intro:${recording?.id ?? title}`,
       title,
       artistName: recording?.ownerName?.trim() || null,
       artist: artist,
@@ -186,50 +174,91 @@ export function resolveOverlayFixture(input: ResolvePlaybackFocusInput): Playbac
   return { type: "none" };
 }
 
+/**
+ * Persistent, bottom-left identity card — active once the intro sequence has
+ * finished naturally or been cut short by a real lyric. Independent of
+ * lyric subtitles: different screen space, so the two can coexist.
+ */
+export function resolveNowPlayingIdentityFixture(input: ResolvePlaybackFocusInput): PlaybackFocusFixture {
+  const { currentEpochMs, recording, artist, focusState, isPlaying, introTerminatedByLyric } = input;
+
+  if (!canShowFocusLane(focusState) || !isPlaying) {
+    return { type: "none" };
+  }
+
+  const elapsedMs = getFocusLaneElapsedMs(currentEpochMs, focusState.titleIntroStartedAtEpochMs);
+  const { artistEnd } = getFocusLaneSequenceWindows();
+  const title = recording?.title?.trim();
+  if (title && (elapsedMs >= artistEnd || introTerminatedByLyric)) {
+    return {
+      type: "nowPlayingIdentity",
+      key: `now-playing:${recording?.id ?? title}`,
+      title,
+      artist,
+      recording,
+    };
+  }
+
+  return { type: "none" };
+}
+
 export function resolvePlaybackFocusFixture(input: ResolvePlaybackFocusInput): PlaybackFocusFixture {
   const titleIntro = resolveTitleIntroFixture(input);
   if (titleIntro.type !== "none") return titleIntro;
 
+  const artistIntro = resolveArtistIntroFixture(input);
+  if (artistIntro.type !== "none") return artistIntro;
+
   const subtitle = resolveSubtitleFixture(input);
   if (subtitle.type !== "none") return subtitle;
-  
-  return resolveOverlayFixture(input);
+
+  return resolveNowPlayingIdentityFixture(input);
 }
 
 export function resolvePlaybackFocusLaneState(input: ResolvePlaybackFocusInput): PlaybackFocusLaneState {
   const titleIntro = resolveTitleIntroFixture(input);
-  // Song and artist identity cards are mutually exclusive.
-  const overlay = titleIntro.type === "none" ? resolveOverlayFixture(input) : { type: "none" as const };
-  const subtitle: PlaybackFocusFixture =
-    titleIntro.type !== "none" ? { type: "none" } : resolveSubtitleFixture(input);
+  // Title and artist intro cards are mutually exclusive.
+  const artistIntro = titleIntro.type === "none" ? resolveArtistIntroFixture(input) : { type: "none" as const };
+  const introActive = titleIntro.type !== "none" || artistIntro.type !== "none";
+  const subtitle: PlaybackFocusFixture = introActive ? { type: "none" } : resolveSubtitleFixture(input);
+  // Persistent identity lives bottom-left and never competes with subtitles for center stage.
+  const nowPlayingIdentity = resolveNowPlayingIdentityFixture(input);
 
   const activeVariant: PlaybackFocusVariant =
     titleIntro.type !== "none"
       ? "title-intro"
-      : subtitle.type !== "none"
-        ? "subtitle"
-        : overlay.type !== "none"
-          ? "artist-visual"
-          : null;
+      : artistIntro.type !== "none"
+        ? "artist-intro"
+        : subtitle.type !== "none"
+          ? "subtitle"
+          : nowPlayingIdentity.type !== "none"
+            ? "now-playing-identity"
+            : null;
 
   return {
     titleIntro,
-    overlay,
+    artistIntro,
+    nowPlayingIdentity,
     subtitle,
     activeVariant,
   };
 }
 
 export function getFixtureFadeOutMs(fixture: PlaybackFocusFixture): number {
-  if (fixture.type === "none") return 0;
-  if (fixture.type === "subtitle") {
-    return playbackFocusTiming.focusLane.fadeOutMs + playbackFocusTiming.focusLane.exitBufferMs;
+  switch (fixture.type) {
+    case "none":
+      return 0;
+    case "subtitle":
+      return playbackFocusTiming.focusLane.fadeOutMs + playbackFocusTiming.focusLane.exitBufferMs;
+    case "titleIntro":
+      return playbackFocusTiming.titleIntro.fadeOutMs;
+    case "artistIntro":
+      return playbackFocusTiming.finalFallback.fadeOutMs;
+    case "nowPlayingIdentity":
+      return playbackFocusTiming.artistVisual.fadeOutMs;
+    default: {
+      const _exhaustive: never = fixture;
+      return _exhaustive;
+    }
   }
-  if (fixture.type === "finalFallback") {
-    return playbackFocusTiming.finalFallback.fadeOutMs;
-  }
-  if (fixture.type === "titleIntro") {
-    return playbackFocusTiming.titleIntro.fadeOutMs;
-  }
-  return playbackFocusTiming.finalFallback.fadeOutMs;
 }

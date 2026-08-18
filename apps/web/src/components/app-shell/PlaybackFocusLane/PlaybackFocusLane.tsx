@@ -10,6 +10,7 @@ import {
 } from "@/lib/playbackFocus/resolvePlaybackFocusFixture";
 import { toFocusArtist, toFocusRecording } from "@/lib/playbackFocus/toFocusRecording";
 import type { PlaybackFocusState } from "@/lib/playbackFocus/types";
+import { useIntroTerminationLatch } from "@/lib/playbackFocus/useIntroTerminationLatch";
 import {
   fetchRecordingSubtitles,
   RECORDING_SUBTITLES_DISABLED_EVENT,
@@ -21,9 +22,9 @@ import { useSubtitleDisplay } from "@/lib/subtitleDisplay";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 import { useAuth } from "@/providers/AuthProvider";
 
-import { FocusLaneOverlayContent, FocusLaneSubtitleContent } from "./FocusLaneSubtitleContent";
+import { FocusLaneLayerContent } from "./FocusLaneLayerContent";
 import { FocusLanePersistentControls } from "./FocusLaneOverlay";
-import { useFocusLaneVisibility } from "./useFocusLaneVisibility";
+import { useFocusLaneLayers } from "./useFocusLaneLayers";
 
 type PlaybackFocusLaneProps = {
   focusState: PlaybackFocusState;
@@ -108,29 +109,40 @@ export function PlaybackFocusLane({
 
   const currentTimeMs = currentTime * 1000;
   const currentEpochMs = performance.now();
+  const subtitleReady = subtitles?.status === "READY";
+
+  const introTerminatedByLyric = useIntroTerminationLatch({
+    trackKey: recording?.id,
+    subtitlesEnabled,
+    subtitleReady,
+    subtitleSegments: subtitles?.segments,
+    currentTimeMs,
+  });
 
   const resolveInput = useMemo(
     () => ({
       currentTimeMs,
       currentEpochMs,
       subtitleSegments: subtitles?.segments,
-      subtitleReady: subtitles?.status === "READY",
+      subtitleReady,
       syntheticCues,
       artist,
       recording,
       focusState,
       subtitlesEnabled,
       isPlaying,
+      introTerminatedByLyric,
     }),
     [
       artist,
       currentEpochMs,
       currentTimeMs,
       focusState,
+      introTerminatedByLyric,
       isPlaying,
       recording,
+      subtitleReady,
       subtitles?.segments,
-      subtitles?.status,
       subtitlesEnabled,
       syntheticCues,
     ],
@@ -141,26 +153,9 @@ export function PlaybackFocusLane({
     [resolveInput],
   );
 
-  const subtitleLane = useFocusLaneVisibility(focusLaneState.subtitle);
-  const overlayLane = useFocusLaneVisibility(focusLaneState.overlay);
-  const titleIntroLane = useFocusLaneVisibility(focusLaneState.titleIntro);
-
-  const hasOverlay = Boolean(
-    focusLaneState.titleIntro.type === "none" &&
-      overlayLane.displayFixture &&
-      overlayLane.displayFixture.type !== "none",
-  );
-  const hasSubtitle = Boolean(
-    subtitleLane.displayFixture && subtitleLane.displayFixture.type !== "none",
-  );
-  const hasTitleIntro = Boolean(
-    focusLaneState.overlay.type === "none" &&
-      titleIntroLane.displayFixture &&
-      titleIntroLane.displayFixture.type !== "none",
-  );
+  const layers = useFocusLaneLayers(focusLaneState);
   const positionClassName = subtitlePositionClassName(subtitlePosition);
-  const variantClass =
-    titleIntroLane.variantClass || subtitleLane.variantClass || overlayLane.variantClass;
+  const variantClass = layers.variantClass;
 
   if (!recording?.id || !focusState.hasBodyFaded || !isPlaying) {
     return null;
@@ -177,53 +172,14 @@ export function PlaybackFocusLane({
         withPlayer={withPlayer}
         playerCollapsed={playerCollapsed}
       />
-      {hasOverlay ? (
-        <div
-          key={`overlay:${overlayLane.displayKey}`}
-          className={`focus-lane__content focus-lane__content--overlay${
-            overlayLane.layerVisible ? " is-visible" : ""
-          }`}
-          aria-hidden={!overlayLane.layerVisible}
-        >
-          <FocusLaneOverlayContent
-            fixture={overlayLane.displayFixture!}
-            isPlaying={isPlaying}
-            withPlayer={withPlayer}
-            playerCollapsed={playerCollapsed}
-          />
-        </div>
-      ) : null}
-      {hasSubtitle ? (
-        <div
-          key={`subtitle:${subtitleLane.displayKey}`}
-          className={`focus-lane__content focus-lane__content--subtitle${
-            subtitleLane.layerVisible ? " is-visible" : ""
-          }`}
-          aria-hidden={!subtitleLane.layerVisible}
-        >
-          <FocusLaneSubtitleContent
-            fixture={subtitleLane.displayFixture!}
-            customSubtitleStyle={customSubtitleStyle}
-            subtitleStyleId={subtitleStyleId}
-          />
-        </div>
-      ) : null}
-      {hasTitleIntro ? (
-        <div
-          key={`title-intro:${titleIntroLane.displayKey}`}
-          className={`focus-lane__content focus-lane__content--subtitle${
-            titleIntroLane.layerVisible ? " is-visible" : ""
-          }`}
-          aria-hidden={!titleIntroLane.layerVisible}
-        >
-          <FocusLaneSubtitleContent
-            fixture={titleIntroLane.displayFixture!}
-            isPlaying={isPlaying}
-            withPlayer={withPlayer}
-            playerCollapsed={playerCollapsed}
-          />
-        </div>
-      ) : null}
+      <FocusLaneLayerContent
+        layers={layers}
+        isPlaying={isPlaying}
+        withPlayer={withPlayer}
+        playerCollapsed={playerCollapsed}
+        customSubtitleStyle={customSubtitleStyle}
+        subtitleStyleId={subtitleStyleId}
+      />
     </div>,
     document.body,
   );
