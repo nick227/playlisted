@@ -15,7 +15,7 @@ const r2BaseUrl = (process.env.R2_PUBLIC_BASE_URL ?? process.env.UPLOADS_PUBLIC_
 const maxBytes = Number(process.env.SUBTITLE_MAINTENANCE_MAX_BYTES ?? 100_000_000);
 let prisma: PrismaClient;
 
-type Command = "list" | "migrate" | "queue" | "fail-stale" | "status" | "inspect" | "delete-legacy" | "help";
+type Command = "list" | "migrate" | "queue" | "fail-stale" | "exclude-backlog" | "status" | "inspect" | "delete-legacy" | "help";
 
 type Args = {
   command: Command;
@@ -49,6 +49,7 @@ function parseArgs(): Args {
     command === "migrate" ||
     command === "queue" ||
     command === "fail-stale" ||
+    command === "exclude-backlog" ||
     command === "status" ||
     command === "inspect" ||
     command === "delete-legacy" ||
@@ -177,6 +178,7 @@ Commands:
   queue --id=<recordingId> [--apply] [--include-ready]
   queue --limit=5 [--apply] [--include-failed]
   fail-stale [--apply]
+  exclude-backlog [--apply]
   status
   inspect --id=<recordingId>
   delete-legacy --id=<recordingId> [--apply] [--include-not-ready]
@@ -186,9 +188,20 @@ Apply guard:
   SUBTITLE_MAINTENANCE_CONFIRM=${requiredConfirm} npm run subtitles:maintenance -- migrate --id=... --apply
 
 fail-stale:
-  Marks all QUEUED and PROCESSING subtitle rows as FAILED. Use this to clear orphaned
-  rows left by songs uploaded when no subtitle worker was running.
+  Marks PROCESSING subtitle rows past the staleness window as FAILED (a worker died
+  mid-job). Does NOT touch QUEUED rows — QUEUED can legitimately mean "waiting on a
+  provider pause or duration cap," not just "abandoned." Use exclude-backlog if you
+  actually want to clear the QUEUED backlog.
   SUBTITLE_MAINTENANCE_CONFIRM=${requiredConfirm} npm run subtitles:maintenance -- fail-stale --apply
+
+exclude-backlog:
+  One-time cutover action, not a routine cleanup. Marks EVERY current QUEUED and
+  PROCESSING subtitle row as FAILED, permanently — there is no undo and nothing is
+  retried afterward. Intended use: right before enabling the cost-safe Modal worker
+  in production, run this once so the worker never drains the pre-cutover backlog.
+  Pair it with SUBTITLES_PROCESS_AFTER on the worker (see docs/subtitles-pipeline.md)
+  so an old row can never be woken by a re-queue (e.g. an audio change) either.
+  SUBTITLE_MAINTENANCE_CONFIRM=${requiredConfirm} npm run subtitles:maintenance -- exclude-backlog --apply
 
 Legacy deletion:
   --delete-legacy also requires LEGACY_DELETE_UPLOADS_DIR and only deletes files from that mounted uploads root.
@@ -951,6 +964,42 @@ async function deleteLegacy(args: Args) {
 async function failStale(args: Args) {
   requireApplyConfirmation(args.apply);
 
+  // QUEUED is no longer necessarily "abandoned" — the worker deliberately
+  // leaves rows QUEUED when the Modal provider is paused or the daily/monthly
+  // duration cap is hit, and requeues them again later. Only PROCESSING (a
+  // worker died mid-job) is genuinely stale here; that matches the worker's
+  // own failStaleProcessingRows(). Use `queue` to force-requeue/reset rows
+  // that are actually stuck.
+  const processing = await prisma.recordingSubtitle.count({ where: { status: "PROCESSING" } });
+
+  console.log(`PROCESSING rows: ${processing}`);
+  console.log(`Total to fail: ${processing}`);
+
+  if (!args.apply) {
+    console.log("Dry run complete. No rows were changed. Pass --apply to commit.");
+    return;
+  }
+
+  const pResult = await prisma.recordingSubtitle.updateMany({
+    where: { status: "PROCESSING" },
+    data: { status: "FAILED", errorMessage: "Marked failed by maintenance script (was stuck processing)." },
+  });
+
+  console.log(`Marked FAILED: ${pResult.count} PROCESSING.`);
+}
+
+const BACKLOG_EXCLUSION_MESSAGE =
+  "Excluded from processing: this row predates the subtitle cost-containment cutover " +
+  "(exclude-backlog was run). Not retried automatically — regenerate manually if this recording still needs subtitles.";
+
+/**
+ * One-time cutover action: fail every currently queued/in-flight subtitle row,
+ * permanently, so enabling the Modal worker never drains a historical backlog.
+ * Deliberately not a routine command — see the `exclude-backlog` help text.
+ */
+async function excludeBacklog(args: Args) {
+  requireApplyConfirmation(args.apply);
+
   const [queued, processing] = await Promise.all([
     prisma.recordingSubtitle.count({ where: { status: "QUEUED" } }),
     prisma.recordingSubtitle.count({ where: { status: "PROCESSING" } }),
@@ -958,7 +1007,7 @@ async function failStale(args: Args) {
 
   console.log(`QUEUED rows: ${queued}`);
   console.log(`PROCESSING rows: ${processing}`);
-  console.log(`Total to fail: ${queued + processing}`);
+  console.log(`Total to exclude permanently: ${queued + processing}`);
 
   if (!args.apply) {
     console.log("Dry run complete. No rows were changed. Pass --apply to commit.");
@@ -968,14 +1017,15 @@ async function failStale(args: Args) {
   const [qResult, pResult] = await Promise.all([
     prisma.recordingSubtitle.updateMany({
       where: { status: "QUEUED" },
-      data: { status: "FAILED", errorMessage: "Marked failed by maintenance script (was never processed)." },
+      data: { status: "FAILED", errorMessage: BACKLOG_EXCLUSION_MESSAGE },
     }),
     prisma.recordingSubtitle.updateMany({
       where: { status: "PROCESSING" },
-      data: { status: "FAILED", errorMessage: "Marked failed by maintenance script (was stuck processing)." },
+      data: { status: "FAILED", errorMessage: BACKLOG_EXCLUSION_MESSAGE },
     }),
   ]);
 
+  await appendAudit("backlog_excluded", { queuedExcluded: qResult.count, processingExcluded: pResult.count });
   console.log(`Marked FAILED: ${qResult.count} QUEUED, ${pResult.count} PROCESSING.`);
 }
 
@@ -988,6 +1038,7 @@ async function main() {
   if (args.command === "list") return list(args);
   if (args.command === "migrate") return migrate(args);
   if (args.command === "queue") return queue(args);
+  if (args.command === "exclude-backlog") return excludeBacklog(args);
   if (args.command === "fail-stale") return failStale(args);
   if (args.command === "status") return status();
   if (args.command === "inspect") return inspect(args);

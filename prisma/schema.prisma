@@ -361,6 +361,16 @@ model RecordingSubtitleAttempt {
   @@index([provider, startedAt])
 }
 
+/// Singleton-per-provider pause state. Any provider-level failure (auth,
+/// billing, rate-limit, 5xx, network/timeout) sets pausedUntil so a redeploy
+/// right after an incident doesn't immediately resume hammering the provider.
+model SubtitleProviderPause {
+  provider    String    @id @db.VarChar(32)
+  pausedUntil DateTime?
+  lastError   String?   @db.Text
+  updatedAt   DateTime  @updatedAt
+}
+
 model Tag {
   id        String   @id @default(cuid()) @db.VarChar(191)
   name      String   @unique @db.VarChar(64)

@@ -16,7 +16,7 @@ import YAML from "yaml";
 
 import { authRouter } from "./routes/auth.js";
 import { developerKeysRouter } from "./routes/developer/keys.js";
-import { developerKeyLimiter, ingestUploadLimiter, studioUploadLimiter } from "./lib/rateLimiter.js";
+import { developerKeyLimiter, ingestRecordingsLimiter, ingestUploadLimiter, studioUploadLimiter } from "./lib/rateLimiter.js";
 import { analyticsRouter } from "./routes/analytics.js";
 import { adminDashboardRouter } from "./routes/admin/dashboard.js";
 import { adminHomepageRouter } from "./routes/admin/homepage.js";
@@ -136,7 +136,7 @@ export function createApp(options: CreateAppOptions = {}) {
   app.use("/api/v1/admin/developer/keys", adminDeveloperKeysRouter);
   app.use("/api/v1/developer/keys", developerKeyLimiter, developerKeysRouter);
   app.use("/api/v1/ingest/playlists", ingestPlaylistsRouter);
-  app.use("/api/v1/ingest/recordings", ingestRecordingsRouter);
+  app.use("/api/v1/ingest/recordings", ingestRecordingsLimiter, ingestRecordingsRouter);
 
   if (!options.skipWeb) {
     installWebApp(app);

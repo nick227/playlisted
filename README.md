@@ -152,8 +152,10 @@ http://localhost:4000/api/v1/auth/google/callback
 | `SUBTITLES_PROVIDER` | Worker | `disabled`, `local-python`, `whisper`, or `modal`. Production worker expects `modal` unless explicitly overridden. |
 | `SUBTITLES_ENABLED` | No | Set `false` to disable subtitle processing. |
 | `SUBTITLES_WORKER_REQUIRE_MODAL` | Production worker | Set `true` to fail closed unless Modal is configured. |
-| `SUBTITLES_MODAL_ENABLED`, `MODAL_SUBTITLES_URL`, `MODAL_SUBTITLES_TOKEN` | Modal worker | Required for Modal subtitle jobs. |
-| `SUBTITLES_MODAL_DAILY_MAX_JOBS`, `SUBTITLES_MODAL_MONTHLY_BUDGET_CENTS`, `SUBTITLES_MODAL_MAX_AUDIO_SECONDS` | Modal worker | Optional cost and duration guardrails. |
+| `MODAL_SUBTITLES_URL`, `MODAL_SUBTITLES_TOKEN` | Modal worker | Required for Modal subtitle jobs. |
+| `SUBTITLES_MAX_AUDIO_SECONDS_PER_DAY`, `SUBTITLES_MAX_AUDIO_SECONDS_PER_MONTH` | Modal worker | Global audio-duration ceilings — the cost-containment backstop. Set well below Modal's free-credit allowance. |
+| `SUBTITLES_PROVIDER_FAILURE_COOLDOWN_MS` | Modal worker | Pause length after an auth/billing/rate-limit/5xx/network failure. |
+| `SUBTITLES_MAX_QUEUED_PER_ACCOUNT`, `SUBTITLES_MAX_QUEUED_SYSTEM` | Web service | Admission caps on `/api/v1/ingest/recordings`. |
 | `OPENAI_API_KEY` | Whisper provider only | Used by the OpenAI Whisper subtitle provider. |
 
 ---

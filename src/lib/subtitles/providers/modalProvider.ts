@@ -1,7 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-import { prisma } from "../../prisma.js";
 import type { SubtitleProviderInput, SubtitleProviderResult } from "./types.js";
 
 type ModalResponse = {
@@ -13,73 +12,38 @@ type ModalResponse = {
   segments?: { start: number; end: number; text: string }[];
 };
 
+/**
+ * Thrown for provider-level failures (auth, billing, rate-limit, 5xx,
+ * network/timeout, or missing config) — the worker requeues the job and
+ * pauses further Modal calls on this. Never thrown for a request/content
+ * problem (bad audio, oversized upload) — those are permanent per-file
+ * failures and should not pause the provider for everyone else.
+ */
+export class ModalProviderCallError extends Error {}
+
+// Modal rejected the request itself — not a provider health problem.
+const CONTENT_FAILURE_STATUSES = new Set([400, 413, 422]);
+
 function requireModalEnv(name: string) {
   const value = process.env[name];
   if (!value) throw new Error(`${name} is required for Modal subtitles.`);
   return value;
 }
 
-function startOfDay(date: Date) {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-}
-
-function startOfMonth(date: Date) {
-  return new Date(date.getFullYear(), date.getMonth(), 1);
-}
-
-async function assertModalBudget(input: SubtitleProviderInput) {
-  if (process.env.SUBTITLES_MODAL_ENABLED !== "true") {
-    throw new Error("Modal subtitles are not explicitly enabled.");
-  }
-
-  const maxAudioSeconds = Number(process.env.SUBTITLES_MODAL_MAX_AUDIO_SECONDS ?? process.env.SUBTITLES_MAX_AUDIO_SECONDS ?? 900);
-  if (input.durationSeconds > maxAudioSeconds) {
-    throw new Error(`Audio duration ${input.durationSeconds}s exceeds Modal subtitle limit ${maxAudioSeconds}s.`);
-  }
-
-  const dailyMaxJobs = Number(process.env.SUBTITLES_MODAL_DAILY_MAX_JOBS ?? 0);
-  const monthlyBudgetCents = Number(process.env.SUBTITLES_MODAL_MONTHLY_BUDGET_CENTS ?? 0);
-
-  if (dailyMaxJobs <= 0) throw new Error("SUBTITLES_MODAL_DAILY_MAX_JOBS must be greater than 0.");
-  if (monthlyBudgetCents <= 0) throw new Error("SUBTITLES_MODAL_MONTHLY_BUDGET_CENTS must be greater than 0.");
-
-  const now = new Date();
-  const [dailyJobs, monthlySpend] = await Promise.all([
-    prisma.recordingSubtitleAttempt.count({
-      where: {
-        provider: "modal",
-        startedAt: { gte: startOfDay(now) },
-      },
-    }),
-    prisma.recordingSubtitleAttempt.aggregate({
-      where: {
-        provider: "modal",
-        startedAt: { gte: startOfMonth(now) },
-      },
-      _sum: { costCents: true },
-    }),
-  ]);
-
-  // The worker creates the current attempt before provider budget checks run.
-  if (dailyJobs > dailyMaxJobs) {
-    throw new Error(`Modal daily subtitle job cap reached (${dailyJobs}/${dailyMaxJobs}).`);
-  }
-
-  const spentCents = monthlySpend._sum.costCents ?? 0;
-  if (spentCents >= monthlyBudgetCents) {
-    throw new Error(`Modal monthly subtitle budget reached (${spentCents}/${monthlyBudgetCents} cents).`);
-  }
-}
-
 export async function runModalProvider(input: SubtitleProviderInput): Promise<SubtitleProviderResult> {
   if (process.env.SUBTITLES_PROVIDER !== "modal") {
-    throw new Error("Modal provider selected without SUBTITLES_PROVIDER=modal.");
+    throw new ModalProviderCallError("Modal provider selected without SUBTITLES_PROVIDER=modal.");
   }
 
-  await assertModalBudget(input);
+  let url: string;
+  let token: string;
+  try {
+    url = requireModalEnv("MODAL_SUBTITLES_URL");
+    token = requireModalEnv("MODAL_SUBTITLES_TOKEN");
+  } catch (error) {
+    throw new ModalProviderCallError(error instanceof Error ? error.message : String(error));
+  }
 
-  const url = requireModalEnv("MODAL_SUBTITLES_URL");
-  const token = requireModalEnv("MODAL_SUBTITLES_TOKEN");
   const model = process.env.SUBTITLES_WHISPER_MODEL ?? "small";
   const audio = await fs.readFile(input.audioPath);
   const form = new FormData();
@@ -87,17 +51,28 @@ export async function runModalProvider(input: SubtitleProviderInput): Promise<Su
   form.set("wordTimestamps", "true");
   form.set("file", new Blob([audio]), path.basename(input.audioPath));
 
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-    body: form,
-  });
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: form,
+    });
+  } catch (error) {
+    throw new ModalProviderCallError(
+      `Modal request failed: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
 
   if (!response.ok) {
     const body = await response.text().catch(() => "");
-    throw new Error(`Modal subtitles failed (${response.status}): ${body || response.statusText}`);
+    const message = `Modal subtitles failed (${response.status}): ${body || response.statusText}`;
+    if (CONTENT_FAILURE_STATUSES.has(response.status)) {
+      throw new Error(message);
+    }
+    throw new ModalProviderCallError(message);
   }
 
   const payload = await response.json() as ModalResponse;

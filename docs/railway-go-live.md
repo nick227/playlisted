@@ -105,13 +105,17 @@ DATABASE_URL=${{MySQL.MYSQL_URL}}
 SUBTITLES_ENABLED=true
 SUBTITLES_PROVIDER=modal
 SUBTITLES_WORKER_REQUIRE_MODAL=true
-SUBTITLES_MODAL_ENABLED=true
-SUBTITLES_MODAL_DAILY_MAX_JOBS=3
-SUBTITLES_MODAL_MONTHLY_BUDGET_CENTS=300
-SUBTITLES_MODAL_MAX_AUDIO_SECONDS=900
 SUBTITLES_MAX_AUDIO_SECONDS=900
 SUBTITLES_WORKER_SLEEP_MS=5000
 SUBTITLES_WHISPER_MODEL=small
+
+# Cost containment (MVP, Modal free tier). These are an internal backstop —
+# Modal's own workspace/environment spend budget is the real hard-dollar
+# limit. Set these deliberately well below whatever Modal's actual
+# free-credit allowance is; don't design right up against the provider limit.
+SUBTITLES_MAX_AUDIO_SECONDS_PER_DAY=3600
+SUBTITLES_MAX_AUDIO_SECONDS_PER_MONTH=18000
+SUBTITLES_PROVIDER_FAILURE_COOLDOWN_MS=21600000
 
 MODAL_SUBTITLES_URL=https://your-modal-endpoint.example
 MODAL_SUBTITLES_TOKEN=replace-with-shared-secret
@@ -120,9 +124,31 @@ MODAL_SUBTITLES_TOKEN=replace-with-shared-secret
 UPLOADS_PUBLIC_BASE_URL=https://<public-bucket-host>
 ```
 
+Set these on the Railway **web** service too (admission control on `/api/v1/ingest/recordings`, checked before a subtitle row is ever queued):
+
+```env
+SUBTITLES_MAX_QUEUED_PER_ACCOUNT=10
+SUBTITLES_MAX_QUEUED_SYSTEM=50
+```
+
 The worker only processes rows that already exist with `status=QUEUED`. On boot it may reset stale `PROCESSING` rows back to `QUEUED`, then drain the queue. It never creates backfill rows during startup.
 
-The worker resolves local `/uploads/...` paths for dev and downloads HTTPS audio URLs, including R2 public URLs, to a temp file before sending work to Modal. If local audio is missing, remote download fails, or the downloaded file is empty, the job fails closed and records a failed attempt.
+The worker resolves local `/uploads/...` paths for dev and downloads HTTPS audio URLs, including R2 public URLs, to a temp file before sending work to Modal. If local audio is missing, remote download fails, or the downloaded file is empty, the job fails closed and records a failed attempt (this is a per-file content problem — it does not pause the provider).
+
+If Modal itself fails — auth, billing, rate-limit, 5xx, network/timeout — the job is left `QUEUED` (not failed) and the worker pauses further Modal calls for `SUBTITLES_PROVIDER_FAILURE_COOLDOWN_MS`. If the daily or monthly audio-duration ceiling is hit, the current job is also left `QUEUED` and the worker stops claiming further work until the next day/month. Neither case burns the backlog — subtitles just stop until the pause/cap clears. This is not a retry subsystem: nothing tracks attempts or schedules a retry, a row just sits in its ordinary `QUEUED` state and may get claimed again on a later poll like any other `QUEUED` row. A 400/413/422 response (bad request/content) is the one provider-facing failure that does mark the job `FAILED` — that's specific to the file, not the provider.
+
+### First-time production cutover (MVP policy: no backlog recovery)
+
+Existing `QUEUED` rows from before this pipeline exists are never drained — see [`subtitles-pipeline.md`](./subtitles-pipeline.md#backlog-policy-no-recovery-cost-safe-pipeline-starts-from-a-cutover). Sequence, in order:
+
+1. Make sure the worker service is not running (or `SUBTITLES_ENABLED=false`).
+2. Deploy the migration (adds `SubtitleProviderPause`) and the new code.
+3. Run the one-time exclusion: `SUBTITLE_MAINTENANCE_CONFIRM=SUBTITLE_MAINTENANCE npm run subtitles:maintenance -- exclude-backlog --apply` (dry-run first without `--apply`).
+4. Set `SUBTITLES_PROCESS_AFTER` on the worker to the cutover timestamp, so a stray re-queue of an old row can never be claimed either.
+5. Configure Modal's own workspace/environment spend budget — that's the real hard-dollar backstop; the app-level duration ceilings above are an earlier, more conservative throttle, not a substitute for it.
+6. Set `SUBTITLES_ENABLED=true` and deploy/restart the worker.
+
+From that point on, subtitle spend only belongs to recordings created after the cutover.
 
 ## Do Not Set In Production
 

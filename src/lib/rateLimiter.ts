@@ -27,6 +27,15 @@ export const ingestUploadLimiter = rateLimit({
   message: RATE_LIMIT_MESSAGE,
 });
 
+// Ingest recordings — creates paid subtitle-generation work, kept tight.
+export const ingestRecordingsLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 200,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: RATE_LIMIT_MESSAGE,
+});
+
 export const radioChatLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 20,

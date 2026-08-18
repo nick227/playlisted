@@ -7,7 +7,7 @@ vi.mock("../lib/prisma.js", () => ({
     uploadAsset: { findUnique: vi.fn() },
     playlist: { findFirst: vi.fn(), update: vi.fn() },
     recording: { findFirst: vi.fn(), create: vi.fn(), update: vi.fn() },
-    recordingSubtitle: { create: vi.fn(), upsert: vi.fn() },
+    recordingSubtitle: { create: vi.fn(), upsert: vi.fn(), count: vi.fn() },
     playlistItem: { aggregate: vi.fn(), create: vi.fn(), findMany: vi.fn() },
     $transaction: vi.fn(),
   },
@@ -87,6 +87,7 @@ beforeEach(() => {
   vi.mocked(prisma.apiKey.update).mockResolvedValue({} as any);
   vi.mocked(prisma.playlistItem.findMany).mockResolvedValue([] as any);
   vi.mocked(prisma.playlist.update).mockResolvedValue({} as any);
+  vi.mocked(prisma.recordingSubtitle.count).mockResolvedValue(0 as any);
 });
 
 const RECORDING_BODY = {
@@ -282,5 +283,61 @@ describe("recording ingest — idempotency and scoping", () => {
       .send({ externalSource: "desktop-sync", playlistExternalId: "pl-x", title: "T", audioUploadId: "upl_x" });
 
     expect(res.status).toBe(400);
+  });
+});
+
+describe("recording ingest — subtitle queue admission caps", () => {
+  it("returns 429 when the account's queued-subtitle count is at the cap", async () => {
+    mockApiKey();
+    vi.mocked(prisma.uploadAsset.findUnique).mockResolvedValue(AUDIO_ASSET as any);
+    vi.mocked(prisma.playlist.findFirst).mockResolvedValue(MOCK_PLAYLIST as any);
+    vi.mocked(prisma.recording.findFirst).mockResolvedValue(null);
+    vi.mocked(prisma.recordingSubtitle.count)
+      .mockResolvedValueOnce(10 as any) // per-account count, at SUBTITLES_MAX_QUEUED_PER_ACCOUNT default (10)
+      .mockResolvedValueOnce(1 as any); // system-wide count, well under cap
+
+    const res = await request(app)
+      .post("/api/v1/ingest/recordings")
+      .set("Authorization", `Bearer ${RAW_KEY}`)
+      .send(RECORDING_BODY);
+
+    expect(res.status).toBe(429);
+    expect(res.body.error).toBe("subtitle_queue_full");
+    expect(vi.mocked(prisma.recording.create)).not.toHaveBeenCalled();
+    expect(vi.mocked(prisma.$transaction)).not.toHaveBeenCalled();
+  });
+
+  it("returns 429 when the system-wide queued-subtitle count is at the cap", async () => {
+    mockApiKey();
+    vi.mocked(prisma.uploadAsset.findUnique).mockResolvedValue(AUDIO_ASSET as any);
+    vi.mocked(prisma.playlist.findFirst).mockResolvedValue(MOCK_PLAYLIST as any);
+    vi.mocked(prisma.recording.findFirst).mockResolvedValue(null);
+    vi.mocked(prisma.recordingSubtitle.count)
+      .mockResolvedValueOnce(2 as any) // per-account count, well under cap
+      .mockResolvedValueOnce(50 as any); // system-wide count, at SUBTITLES_MAX_QUEUED_SYSTEM default (50)
+
+    const res = await request(app)
+      .post("/api/v1/ingest/recordings")
+      .set("Authorization", `Bearer ${RAW_KEY}`)
+      .send(RECORDING_BODY);
+
+    expect(res.status).toBe(429);
+    expect(res.body.error).toBe("subtitle_queue_full");
+    expect(vi.mocked(prisma.recording.create)).not.toHaveBeenCalled();
+  });
+
+  it("allows recording creation when both queue caps have headroom", async () => {
+    mockSuccessfulCreate();
+    vi.mocked(prisma.recordingSubtitle.count)
+      .mockResolvedValueOnce(3 as any)
+      .mockResolvedValueOnce(20 as any);
+
+    const res = await request(app)
+      .post("/api/v1/ingest/recordings")
+      .set("Authorization", `Bearer ${RAW_KEY}`)
+      .send(RECORDING_BODY);
+
+    expect(res.status).toBe(201);
+    expect(res.body.created).toBe(true);
   });
 });

@@ -9,6 +9,9 @@ import { isSubtitleGenerationEnabled } from "../../lib/subtitles/providers/index
 
 export const ingestRecordingsRouter = Router();
 
+const maxQueuedPerAccount = Number(process.env.SUBTITLES_MAX_QUEUED_PER_ACCOUNT ?? 10);
+const maxQueuedSystem = Number(process.env.SUBTITLES_MAX_QUEUED_SYSTEM ?? 50);
+
 const RECORDING_SELECT = {
   id: true,
   uploaderId: true,
@@ -177,6 +180,28 @@ ingestRecordingsRouter.post("/", async (req, res, next) => {
 
       await syncPlaylistStats(updated.publishedPlaylistId);
       return res.status(200).json({ created: false, recording: mapRecording(updated) });
+    }
+
+    if (isSubtitleGenerationEnabled()) {
+      const [queuedForAccount, queuedSystemWide] = await Promise.all([
+        prisma.recordingSubtitle.count({
+          where: { status: "QUEUED", recording: { uploaderId: auth.user.id } },
+        }),
+        prisma.recordingSubtitle.count({ where: { status: "QUEUED" } }),
+      ]);
+
+      if (queuedForAccount >= maxQueuedPerAccount) {
+        return res.status(429).json({
+          error: "subtitle_queue_full",
+          message: `Your account already has ${queuedForAccount} subtitle jobs queued. Wait for some to finish before uploading more.`,
+        });
+      }
+      if (queuedSystemWide >= maxQueuedSystem) {
+        return res.status(429).json({
+          error: "subtitle_queue_full",
+          message: "The subtitle queue is at capacity. Try again later.",
+        });
+      }
     }
 
     // Retry loop guards against the PlaylistItem position unique-constraint race
