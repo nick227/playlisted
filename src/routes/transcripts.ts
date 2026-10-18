@@ -9,7 +9,7 @@ import { srtToSegments, vttToSrt } from "../lib/subtitles/srtUtils.js";
 import { segmentsToVtt } from "../lib/subtitles/vtt.js";
 import { Prisma } from "@prisma/client";
 import { canViewerAccessPlaylist } from "../lib/publicPlaylistFilter.js";
-import { getSubtitleProvider, runSubtitleProvider } from "../lib/subtitles/providers/index.js";
+import { getSubtitleProvider, isSubtitleGenerationEnabled, runSubtitleProvider } from "../lib/subtitles/providers/index.js";
 import { checkLocalPythonProvider } from "../lib/subtitles/providers/localPythonProvider.js";
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -260,7 +260,7 @@ transcriptsRouter.post("/generate", async (req, res, next) => {
     }
     if (recording.subtitlesDisabled) return subtitlesDisabledResponse(res);
 
-    if (process.env.SUBTITLES_ENABLED === "false" || getSubtitleProvider() === "disabled") {
+    if (!isSubtitleGenerationEnabled()) {
       return res.status(503).json({ error: "service_unavailable", message: "Subtitle generation is currently disabled." });
     }
 

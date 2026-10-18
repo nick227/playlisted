@@ -2,7 +2,6 @@ import type { LibrarySong, PlaylistSummary } from "@playlisted/client-sdk";
 import { Link } from "react-router-dom";
 
 import { LibraryTrackList } from "@/components/library/LibraryTrackList";
-import { usePlaylist } from "@/hooks/usePlaylist";
 import { profilePath, playlistPath } from "@/lib/routes";
 
 import { MuseumPlaylistCard } from "./MuseumPlaylistCard";
@@ -14,15 +13,16 @@ import {
 } from "./museumUi";
 
 interface MuseumListeningRoomProps {
+  title?: string;
   playlist: PlaylistSummary;
   songs: LibrarySong[];
 }
 
 export function MuseumListeningRoom({
+  title = "Specials",
   playlist,
   songs,
 }: MuseumListeningRoomProps) {
-  const { data: playlistDetail } = usePlaylist(playlist.id);
   const href = playlistPath({
     id: playlist.id,
     username: playlist.owner.username,
@@ -34,28 +34,10 @@ export function MuseumListeningRoom({
     .filter((tag) => tag.kind === "GENRE")
     .map((tag) => tag.name)
     .slice(0, 4);
-  const playlistSongs: LibrarySong[] =
-    playlistDetail?.recordings.slice(0, 6).map((recording) => ({
-      ...recording,
-      favoriteCount: 0,
-      uploader: recording.uploader ?? playlist.owner,
-      playlist: {
-        id: playlist.id,
-        slug: playlist.slug,
-        title: playlist.title,
-      },
-      genres: (recording.tags ?? playlist.tags ?? [])
-        .filter((tag) => tag.kind === "GENRE")
-        .map((tag) => ({
-          id: tag.id,
-          name: tag.name,
-          slug: tag.slug,
-        })),
-    })) ?? songs;
 
   return (
     <MuseumBankSection
-      label="Specials"
+      label={title}
       href={href}
       hrefLabel="Open"
       type="cinematicRow"
@@ -94,10 +76,10 @@ export function MuseumListeningRoom({
             <MuseumGenrePills labels={genreLabels} />
           </div>
 
-          {playlistSongs.length > 0 ? (
+          {songs.length > 0 ? (
             <div className="min-w-0 lg:col-span-2">
               <MuseumTrackPanel>
-                <LibraryTrackList songs={playlistSongs} />
+                <LibraryTrackList songs={songs} />
               </MuseumTrackPanel>
             </div>
           ) : null}

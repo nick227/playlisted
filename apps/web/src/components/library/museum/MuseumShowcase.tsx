@@ -19,9 +19,8 @@ import {
   MuseumTrackPanel,
 } from "./museumUi";
 
-const MIN_PORTRAIT_ITEMS = 5;
-
 export interface MuseumShowcaseProps {
+  title?: string;
   artist: LibraryArtist;
   songs: LibrarySong[];
   playlist?: PlaylistSummary;
@@ -31,6 +30,7 @@ export interface MuseumShowcaseProps {
 }
 
 export function MuseumShowcase({
+  title = "Spotlight",
   artist,
   songs,
   playlist,
@@ -39,56 +39,16 @@ export function MuseumShowcase({
   peers,
 }: MuseumShowcaseProps) {
   const featuredSongs = songs.slice(0, 3);
-  const peerArtists = peers.filter((peer) => peer.id !== artist.id).slice(0, 8);
-  const portraitSeed = [artist, ...peerArtists];
-  const portraitArtists = Array.from(
-    { length: Math.max(MIN_PORTRAIT_ITEMS, portraitSeed.length) },
-    (_, index) => portraitSeed[index % portraitSeed.length],
-  );
-  const playlistSeed = playlists.length > 0 ? playlists : playlist ? [playlist] : [];
-  const portraitPlaylists = playlistSeed.length
-    ? Array.from(
-        { length: Math.max(MIN_PORTRAIT_ITEMS, playlistSeed.length) },
-        (_, index) => playlistSeed[index % playlistSeed.length],
-      )
-    : [];
+  const portraitArtists = [artist, ...peers.filter((peer) => peer.id !== artist.id)];
+  const portraitPlaylists = playlists.length > 0 ? playlists : playlist ? [playlist] : [];
 
   return (
     <MuseumBankSection
-      label="Library"
+      label={title}
       type="songSpotlight"
     >
-      <div className="mx-4 flex gap-2 text-sm">
-            <Link
-              to="/artists"
-              className=""
-            >
-              Artists
-            </Link>
-            /
-            <Link
-              to="/songs"
-              className=""
-            >
-              Songs
-            </Link>
-            /
-            <Link
-              to="/genres"
-              className=""
-            >
-              Genres
-            </Link>
-            /
-            <Link
-              to="/playlists"
-              className=""
-            >
-              Playlists
-            </Link>
-      </div>
-      <MuseumPanel padding="roomy" className="">
-        <div className="grid min-w-0 gap-8">
+      <MuseumPanel>
+        <div className="grid min-w-0 gap-6 md:gap-8">
           <MuseumScrollRow variant="portrait">
             {portraitArtists.map((portraitArtist, index) => (
               <div key={`${portraitArtist.id}-${index}`} className="min-w-0">
@@ -104,7 +64,7 @@ export function MuseumShowcase({
                 />
                 <Link
                   to={artistPath(portraitArtist.username)}
-                  className="mt-4 block text-xl font-semibold leading-tight text-white transition hover:text-white/80"
+                  className="mt-2.5 block truncate text-sm font-semibold leading-5 text-white transition hover:text-white/80"
                 >
                   {portraitArtist.displayName}
                 </Link>
@@ -115,7 +75,7 @@ export function MuseumShowcase({
             ))}
           </MuseumScrollRow>
 
-          <div className="grid min-w-0 gap-8">
+          <div className="grid min-w-0 gap-6 md:gap-8">
             {featuredSongs.length > 0 ? (
               <MuseumTrackPanel>
                 <LibraryTrackList songs={featuredSongs} />
@@ -153,31 +113,9 @@ export function MuseumShowcase({
             )}
           </div>
 
-          {lyricSong || peerArtists.length > 0 ? (
+          {lyricSong ? (
             <div className="min-w-0">
-              {lyricSong ? (
-                <MuseumLyricSnippet song={lyricSong} variant="showcase" />
-              ) : null}
-
-              {peerArtists.length > 0 ? (
-                <div className={lyricSong ? "mt-4" : ""}>
-                  <MuseumScrollRow variant="circle">
-                    {peerArtists.map((peer) => (
-                      <div key={peer.id} className="min-w-0">
-                        <SmartArtistCard
-                          id={peer.id}
-                          username={peer.username}
-                          displayName={peer.displayName}
-                          avatarUrl={peer.avatarUrl}
-                          shape="circle"
-                          className="min-w-0 w-full"
-                          playbackOrigin={`library:showcase-peer:${peer.id}`}
-                        />
-                      </div>
-                    ))}
-                  </MuseumScrollRow>
-                </div>
-              ) : null}
+              <MuseumLyricSnippet song={lyricSong} variant="showcase" />
             </div>
           ) : null}
         </div>

@@ -55,10 +55,10 @@ export function MuseumSongThumb({
       </div>
       {showMeta ? (
         <>
-          <p className="mt-2 truncate text-xs font-medium text-white/80">
+          <p className="mt-2.5 truncate text-sm font-medium leading-5 text-white/90">
             {song.title}
           </p>
-          <p className="truncate text-[10px] text-white/35">
+          <p className="mt-0.5 truncate text-xs leading-4 text-white/50">
             {song.uploader.displayName}
           </p>
         </>

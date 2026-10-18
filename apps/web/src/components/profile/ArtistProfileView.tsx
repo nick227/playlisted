@@ -121,7 +121,7 @@ export function ArtistProfileView({
       endLabel="artists"
       isRefreshing={isRefreshing}
     >
-      <div className="mx-auto w-full min-w-0 max-w-3xl overflow-x-clip bg-[var(--color-canvas)]/80 pb-4">
+      <div className="mx-auto w-full min-w-0 max-w-6xl overflow-x-clip bg-[var(--color-canvas)]/80 pb-4">
         <div className="px-4 py-2">
           <BrowseBreadcrumbs crumbs={browseCrumbs} />
         </div>
@@ -139,7 +139,7 @@ export function ArtistProfileView({
           />
 
           {sortedPlaylists.length > 0 ? (
-            <section className="min-w-0 pt-20">
+            <section className="min-w-0 pt-20 grid grid-cols-3 gap-8 px-4">
               {sortedPlaylists.map((playlist) => (
                 <ArtistProfileCollectionPanel
                   key={playlist.id}

@@ -12,11 +12,19 @@ export function getSubtitleProvider(): SubtitleProviderName {
 }
 
 /**
+ * Subtitle generation is shelved alongside the theatre: nothing is queued,
+ * regenerated, or processed regardless of env. Flip to false to restore
+ * env-driven behavior (SUBTITLES_ENABLED / SUBTITLES_PROVIDER).
+ */
+export const SUBTITLE_GENERATION_SHELVED = true;
+
+/**
  * Whether automatic generation should queue jobs at all. When this is false,
  * creating QUEUED rows only manufactures guaranteed failures — skip them and
  * let creators add subtitles manually.
  */
 export function isSubtitleGenerationEnabled(): boolean {
+  if (SUBTITLE_GENERATION_SHELVED) return false;
   return process.env.SUBTITLES_ENABLED !== "false" && getSubtitleProvider() !== "disabled";
 }
 

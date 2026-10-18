@@ -1,3 +1,5 @@
+import { THEATRE_SHELVED } from "@/theatre/shelf";
+
 type MainContentLayoutOptions = {
   bodyFocusMode: boolean;
   snapReveal: boolean;
@@ -23,7 +25,9 @@ export function buildMainContentClassName({
   shellHasPlayer,
 }: MainContentLayoutOptions): string {
   const visibility = [
-    "player-shell-transition px-2 bg-[var(--color-canvas)] play-focus-content flex-1 min-h-0 min-w-0 overflow-x-clip md:px-8 flex flex-col",
+    "player-shell-transition px-2 play-focus-content flex-1 min-h-0 min-w-0 overflow-x-clip md:px-8 flex flex-col",
+    // Shelved theatre: let the song-art background layer show through the page.
+    THEATRE_SHELVED ? "bg-transparent" : "bg-[var(--color-canvas)]",
     bodyFocusMode ? "is-play-focus-hidden" : "",
     snapReveal ? "is-play-focus-revealing" : "",
     contentInputGuarded ? "is-play-focus-input-guarded" : "",

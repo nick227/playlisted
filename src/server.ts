@@ -1,3 +1,5 @@
+import http from "node:http";
+
 import type { ViteDevServer } from "vite";
 
 import { createApp, installAppErrorHandlers } from "./app.js";
@@ -13,18 +15,19 @@ const shutdownMs = Number(process.env.SHUTDOWN_TIMEOUT_MS ?? 10_000);
 const requestTimeoutMs = Number(process.env.REQUEST_TIMEOUT_MS ?? 30 * 60_000);
 
 let vite: ViteDevServer | undefined;
-let server: ReturnType<ReturnType<typeof createApp>["listen"]>;
+let server: http.Server;
 
 async function start() {
   const useViteDev = shouldUseViteDev();
   const app = createApp({ skipWeb: useViteDev });
+  server = http.createServer(app);
 
   if (useViteDev) {
-    vite = await installWebDev(app);
+    vite = await installWebDev(app, server);
     installAppErrorHandlers(app);
   }
 
-  server = app.listen(port, host, () => {
+  server.listen(port, host, () => {
     const mode = process.env.NODE_ENV ?? "development";
     console.log(`Playlisted listening on http://${host}:${port} (${mode})`);
     if (useViteDev) {

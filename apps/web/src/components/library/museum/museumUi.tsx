@@ -124,7 +124,7 @@ export function MuseumBankSection({
 }) {
   return (
     <section
-      className={["min-w-0", className ?? ""].join(" ")}
+      className={["bank min-w-0", className ?? ""].join(" ")}
       data-museum-container={type}
     >
       <MuseumSectionHeader label={label} href={href} hrefLabel={hrefLabel} />
@@ -161,14 +161,7 @@ export function MuseumScrollRow({
   > | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
-  const itemSize =
-    variant === "circle"
-      ? "[&>*]:w-[6.25rem] sm:[&>*]:w-[7.5rem] md:[&>*]:w-[8rem]"
-      : variant === "portrait"
-        ? "[&>*]:w-[10.25rem] sm:[&>*]:w-[11.5rem] md:[&>*]:w-[12.5rem]"
-        : variant === "cinematic"
-          ? "[&>*]:w-[17rem] sm:[&>*]:w-[20rem] md:[&>*]:w-[22rem]"
-          : "[&>*]:w-[8.75rem] sm:[&>*]:w-[10rem] md:[&>*]:w-[11rem]";
+  const itemSize = `museum-row--${variant}`;
 
   useEffect(() => {
     return () => {
@@ -358,8 +351,9 @@ export function MuseumScrollRow({
       onClickCapture={handleClickCapture}
       onWheel={handleWheel}
       className={[
-        "-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 pt-0.5 overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:-mx-5 md:gap-4 md:px-5",
-        "select-none touch-pan-x",
+        "museum-row flex snap-x snap-mandatory overflow-x-auto pb-2 pt-0.5 overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+        // Keep native vertical page panning and horizontal carousel swipes enabled.
+        "select-none touch-auto",
         isDragging ? "cursor-grabbing snap-none" : "cursor-grab",
         "[&>*]:shrink-0 [&>*]:snap-start",
         itemSize,
@@ -408,9 +402,9 @@ export function MuseumSectionHeader({
   hrefLabel?: string;
 }) {
   return (
-    <div className="mb-2.5 flex min-h-6 items-center justify-between gap-4">
+    <div className="mb-4 flex min-h-8 items-center justify-between gap-4 md:mb-5">
       <div className="min-w-0">
-        <h2 className="text-2xl font-extrabold tracking-tighter leading-none text-white md:text-2xl pl-2">
+        <h2 className="text-[1.375rem] font-bold tracking-tight leading-tight text-white md:text-[1.75rem]">
           {label}
         </h2>
       </div>
@@ -499,11 +493,11 @@ export function MuseumGenrePills({ labels }: { labels: string[] }) {
   if (labels.length === 0) return null;
 
   return (
-    <div className="mt-3 flex flex-wrap gap-2">
+    <div className="mt-2 flex flex-wrap gap-1.5">
       {labels.map((label) => (
         <span
           key={label}
-          className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-xs font-medium text-white/55"
+          className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[11px] font-medium text-white/55"
         >
           {label}
         </span>

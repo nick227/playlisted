@@ -261,7 +261,6 @@ export function FocusLanePersistentControls({
         onClick={stopPlaybackFocusBubble}
         {...{ [PLAYBACK_FOCUS_INTERACTIVE_ATTR]: "" }}
       >
-        <PlaybackFocusReactionBar recordingId={recordingId} />
       </div>
     </div>
   );

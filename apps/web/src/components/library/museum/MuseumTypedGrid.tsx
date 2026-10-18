@@ -39,6 +39,7 @@ const GRID_META: Record<
 };
 
 interface MuseumTypedGridProps {
+  title?: string;
   kind: MuseumGridKind;
   songs?: LibrarySong[];
   artists?: LibraryArtist[];
@@ -46,6 +47,7 @@ interface MuseumTypedGridProps {
 }
 
 export function MuseumTypedGrid({
+  title,
   kind,
   songs = [],
   artists = [],
@@ -62,7 +64,7 @@ export function MuseumTypedGrid({
 
   return (
     <MuseumBankSection
-      label={meta.label}
+      label={title ?? meta.label}
       href={meta.path}
       type={meta.container}
     >

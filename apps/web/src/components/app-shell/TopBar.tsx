@@ -1,5 +1,7 @@
 import { useState } from "react";
 
+import { THEATRE_SHELVED } from "@/theatre/shelf";
+
 import { TopBarActions } from "./TopBarActions";
 import { TopBarBrand } from "./TopBarBrand";
 import { TopBarMenuButton } from "./TopBarMenuButton";
@@ -31,7 +33,7 @@ export function TopBar({ onMenuClick, cinematicBgTransparent = false }: TopBarPr
     <header
       className={`topbar-chrome sticky top-0 z-40 flex h-[var(--spacing-topbar)] w-full min-w-0 max-w-full shrink-0 items-center gap-1.5 overflow-x-clip border-b border-[var(--color-border)] px-2 backdrop-blur-md sm:relative sm:gap-3 sm:px-4${
         cinematicBgTransparent ? " is-play-focus-bg-transparent" : ""
-      }`}
+      }${THEATRE_SHELVED ? " topbar-chrome--song-art" : ""}`}
     >
       <TopBarMenuButton onClick={onMenuClick} />
       <TopBarBrand mobileSearchOpen={mobileSearchOpen} />

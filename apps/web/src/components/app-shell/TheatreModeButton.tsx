@@ -10,6 +10,7 @@ import {
 } from "@/lib/playbackFocus/interactiveTarget";
 import { useSubtitleDisplay } from "@/lib/subtitleDisplay";
 import { useAtmosphereFxVisibility } from "@/theatre/atmosphere";
+import { THEATRE_SHELVED } from "@/theatre/shelf";
 
 const MENU_WIDTH_PX = 220;
 
@@ -131,9 +132,11 @@ export function TheatreModeButton() {
           className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-white hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40"
           title={
             theatreLoading
-              ? "Loading theatre..."
+              ? THEATRE_SHELVED ? "Loading song art..." : "Loading theatre..."
               : !theatreFxEnabled && !canEnterTheatre
-                ? "Play music to enable theatre visualizations"
+                ? THEATRE_SHELVED
+                  ? "Play music to show song art"
+                  : "Play music to enable theatre visualizations"
                 : ""
           }
         >
@@ -145,8 +148,11 @@ export function TheatreModeButton() {
               className={theatreFxEnabled ? "text-[var(--color-brand)]" : "text-[var(--color-text-muted)]"}
             />
           )}
-          {theatreFxEnabled ? "Hide theatre" : "Show theatre"}
+          {THEATRE_SHELVED
+            ? theatreFxEnabled ? "Hide song art" : "Show song art"
+            : theatreFxEnabled ? "Hide theatre" : "Show theatre"}
         </button>
+        {THEATRE_SHELVED ? null : (
         <button
           type="button"
           onClick={handleAtmosphereClick}
@@ -158,6 +164,7 @@ export function TheatreModeButton() {
           />
           {atmosphereVisible ? "Hide atmosphere fx" : "Show atmosphere fx"}
         </button>
+        )}
       </div>
     </div>
   ) : null;

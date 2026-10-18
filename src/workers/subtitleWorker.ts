@@ -5,7 +5,7 @@ import fs from "node:fs/promises";
 
 import { prisma } from "../lib/prisma.js";
 import { prepareSubtitleAudioFile } from "../lib/subtitles/audioFile.js";
-import { getSubtitleProvider, runSubtitleProvider } from "../lib/subtitles/providers/index.js";
+import { getSubtitleProvider, runSubtitleProvider, SUBTITLE_GENERATION_SHELVED } from "../lib/subtitles/providers/index.js";
 import { ModalProviderCallError } from "../lib/subtitles/providers/modalProvider.js";
 import {
   checkLocalPythonProvider,
@@ -432,7 +432,7 @@ async function main() {
   const provider = getSubtitleProvider();
   assertProductionProvider(provider);
 
-  if (process.env.SUBTITLES_ENABLED === "false") {
+  if (SUBTITLE_GENERATION_SHELVED || process.env.SUBTITLES_ENABLED === "false") {
     log("subtitle.worker.disabled");
     return;
   }

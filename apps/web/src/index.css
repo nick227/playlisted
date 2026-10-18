@@ -494,7 +494,7 @@ body {
   bottom: 0;
   display: flex;
   width: max-content;
-  max-width: calc(100% - 5rem);
+  max-width: 22em;
   min-width: 0;
   align-items: flex-start;
   gap: 0.75rem;
@@ -506,7 +506,6 @@ body {
 
 @media (min-width: 640px) {
   .focus-lane__overlay-media {
-    max-width: calc(100% - 6rem);
     gap: 1.125rem;
   }
 }
@@ -843,6 +842,37 @@ a.focus-lane__overlay-primary:hover {
   backdrop-filter: none;
 }
 
+/* Shelved theatre: song art idles in slowly, clears quickly on click. */
+.theatre-mount {
+  opacity: 0;
+  transition: opacity 300ms var(--ease-play-focus-fade);
+}
+
+.theatre-mount.is-song-art-visible {
+  opacity: 1;
+  transition-duration: var(--duration-play-focus-body-fade, 2000ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theatre-mount {
+    transition: none;
+  }
+}
+
+/* Shelved theatre: song art sits behind a visible UI, so dim it to a soft backdrop. */
+.theatre-overlay--song-art::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1000;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--color-canvas) 35%, transparent),
+    color-mix(in srgb, var(--color-canvas) 65%, transparent)
+  );
+}
+
 .theatre-overlay--immersive {
   z-index: 9998;
   background: radial-gradient(ellipse at center, rgba(8, 10, 14, 0.95) 0%, rgba(4, 6, 8, 0.98) 60%);
@@ -995,18 +1025,10 @@ a.focus-lane__overlay-primary:hover {
   transition: opacity 220ms ease;
   box-shadow: 
     /* Layer 1: Core intense light spill directly behind the sides */
-    0px 0px 40px 15px rgba(255, 255, 255, 0.4),
+    0px 0px 4px 5px rgba(255, 255, 255, 0.4),
     
     /* Layer 2: Massive, diffused ambient horizontal scatter */
-    0px 0px 120px 45px rgba(255, 255, 255, 0.15);
-}
-
-.collection-banner-glow.is-active {
-  opacity: 0.65;
-}
-
-.collection-banner-glow.is-playing {
-  animation: playback-thumb-breathe 1200ms ease-in-out infinite;
+    0px 0px 12px 5px rgba(255, 255, 255, 0.15);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1034,6 +1056,11 @@ a.focus-lane__overlay-primary:hover {
   transition:
     background-color var(--duration-topbar-bg-fade, 620ms) var(--ease-play-focus-fade),
     backdrop-filter var(--duration-topbar-bg-fade, 620ms) var(--ease-play-focus-fade);
+}
+
+/* Shelved theatre: frosted bar so the song art reads through it. */
+.topbar-chrome.topbar-chrome--song-art {
+  background-color: color-mix(in srgb, var(--color-canvas) 60%, transparent);
 }
 
 .topbar-chrome.is-play-focus-bg-transparent {
@@ -1633,8 +1660,36 @@ a.focus-lane__overlay-primary:hover {
 }
 
 .museum-feed {
+  --museum-card-gap: 0.75rem;
+  --museum-square-width: 9rem;
+  --museum-portrait-width: 9.5rem;
+  --museum-circle-width: 6.5rem;
+  --museum-cinematic-width: 16rem;
   display: flex;
   flex-direction: column;
   gap: 2.5rem;
-  padding-bottom: 1.5rem;
+  padding-bottom: 2rem;
+}
+
+/* One spacing scale for each shelf, independent of the selected content. */
+.museum-row {
+  gap: var(--museum-card-gap, 1rem);
+  scroll-padding-inline: 0;
+}
+
+.museum-row--square > * { width: var(--museum-square-width, 10rem); }
+.museum-row--portrait > * { width: var(--museum-portrait-width, 12rem); }
+.museum-row--circle > * { width: var(--museum-circle-width, 8rem); }
+.museum-row--cinematic > * { width: var(--museum-cinematic-width, 20rem); }
+
+@media (min-width: 768px) {
+  .museum-feed {
+    --museum-card-gap: 1rem;
+    --museum-square-width: 10.5rem;
+    --museum-portrait-width: 12rem;
+    --museum-circle-width: 8rem;
+    --museum-cinematic-width: 20rem;
+    gap: 3.5rem;
+    padding-bottom: 3rem;
+  }
 }

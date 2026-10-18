@@ -13,15 +13,15 @@ import {
   MuseumTrackPanel,
 } from "./museumUi";
 
-const MIN_PORTRAIT_ITEMS = 5;
-
 interface MuseumArtistFeatureProps {
+  title?: string;
   artist: LibraryArtist;
   artists: LibraryArtist[];
   songs: LibrarySong[];
 }
 
 export function MuseumArtistFeature({
+  title = "Featured",
   artist,
   artists,
   songs,
@@ -29,15 +29,15 @@ export function MuseumArtistFeature({
   const portraitArtists =
     artists.length > 0
       ? artists
-      : Array.from({ length: MIN_PORTRAIT_ITEMS }, () => artist);
+      : [artist];
 
   return (
     <MuseumBankSection
-      label="Featured"
+      label={title}
       type="songSpotlight"
     >
-      <MuseumPanel padding="roomy">
-        <div className="grid min-w-0 gap-8">
+      <MuseumPanel>
+        <div className="grid min-w-0 gap-6 md:gap-8">
           <MuseumScrollRow variant="portrait">
             {portraitArtists.map((portraitArtist, index) => (
               <div key={`${portraitArtist.id}-${index}`} className="min-w-0">
@@ -53,7 +53,7 @@ export function MuseumArtistFeature({
                 />
                 <Link
                   to={artistPath(portraitArtist.username)}
-                  className="mt-4 block text-xl font-semibold leading-tight text-white transition hover:text-white/80"
+                  className="mt-2.5 block truncate text-sm font-semibold leading-5 text-white transition hover:text-white/80"
                 >
                   {portraitArtist.displayName}
                 </Link>

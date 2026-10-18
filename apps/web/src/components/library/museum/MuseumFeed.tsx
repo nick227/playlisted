@@ -14,7 +14,7 @@ interface MuseumFeedProps {
 }
 
 export function MuseumFeed({ pools }: MuseumFeedProps) {
-  const { exhibits, sentinelRef } = useMuseumInfiniteFeed(pools);
+  const { exhibits, sentinelRef, hasMore } = useMuseumInfiniteFeed(pools);
 
   if (exhibits.length === 0) {
     return (
@@ -25,11 +25,12 @@ export function MuseumFeed({ pools }: MuseumFeedProps) {
   }
 
   return (
-    <div className="min-w-0 space-y-7 md:space-y-9 museum-feed">
+    <div className="museum-feed min-w-0">
       {exhibits.map((exhibit) => (
         <MuseumExhibitShell key={exhibit.id}>
           {exhibit.kind === "showcase" ? (
             <MuseumShowcase
+              title={exhibit.title}
               artist={exhibit.artist}
               songs={exhibit.songs}
               playlist={exhibit.playlist}
@@ -40,13 +41,14 @@ export function MuseumFeed({ pools }: MuseumFeedProps) {
           ) : null}
           {exhibit.kind === "artist-feature" ? (
             <MuseumArtistFeature
+              title={exhibit.title}
               artist={exhibit.artist}
               artists={exhibit.artists}
               songs={exhibit.songs}
             />
           ) : null}
           {exhibit.kind === "lyric-placard" ? (
-            <MuseumLyricPlacard song={exhibit.song} />
+            <MuseumLyricPlacard title={exhibit.title} song={exhibit.song} />
           ) : null}
           {exhibit.kind === "quiet-room" ? (
             <MuseumQuietRoom phrase={exhibit.phrase} />
@@ -54,23 +56,24 @@ export function MuseumFeed({ pools }: MuseumFeedProps) {
           {exhibit.kind === "song-tracklist" ? (
             <MuseumTrackListSection
               songs={exhibit.songs}
-              label={exhibit.label}
+              label={exhibit.title ?? exhibit.label}
             />
           ) : null}
           {exhibit.kind === "song-grid" ? (
-            <MuseumTypedGrid kind="songs" songs={exhibit.songs} />
+            <MuseumTypedGrid title={exhibit.title} kind="songs" songs={exhibit.songs} />
           ) : null}
           {exhibit.kind === "square-grid" ? (
-            <MuseumTypedGrid kind="square-songs" songs={exhibit.songs} />
+            <MuseumTypedGrid title={exhibit.title} kind="square-songs" songs={exhibit.songs} />
           ) : null}
           {exhibit.kind === "artist-grid" ? (
-            <MuseumTypedGrid kind="artists" artists={exhibit.artists} />
+            <MuseumTypedGrid title={exhibit.title} kind="artists" artists={exhibit.artists} />
           ) : null}
           {exhibit.kind === "playlist-grid" ? (
-            <MuseumTypedGrid kind="playlists" playlists={exhibit.playlists} />
+            <MuseumTypedGrid title={exhibit.title} kind="playlists" playlists={exhibit.playlists} />
           ) : null}
           {exhibit.kind === "listening-room" ? (
             <MuseumListeningRoom
+              title={exhibit.title}
               playlist={exhibit.playlist}
               songs={exhibit.songs}
             />
@@ -78,7 +81,7 @@ export function MuseumFeed({ pools }: MuseumFeedProps) {
         </MuseumExhibitShell>
       ))}
 
-      <div ref={sentinelRef} className="h-10" aria-hidden />
+      {hasMore ? <div ref={sentinelRef} className="h-10" aria-hidden /> : null}
     </div>
   );
 }

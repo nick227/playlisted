@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import type { Server } from "node:http";
 import path from "node:path";
 import type express from "express";
 import type { ViteDevServer } from "vite";
@@ -18,7 +19,7 @@ export function shouldUseViteDev(): boolean {
   return fs.existsSync(WEB_ROOT);
 }
 
-export async function installWebDev(app: express.Application): Promise<ViteDevServer> {
+export async function installWebDev(app: express.Application, httpServer: Server): Promise<ViteDevServer> {
   const { createServer: createViteServer } = await import("vite");
 
   const vite = await createViteServer({
@@ -28,6 +29,9 @@ export async function installWebDev(app: express.Application): Promise<ViteDevSe
       middlewareMode: true,
       // Railway (and other proxies) send a public Host header; allow when dev middleware is active.
       allowedHosts: [".railway.app", "localhost", "127.0.0.1", ".localhost"],
+      // Share the API's HTTP server so the HMR websocket rides the same port (4000)
+      // instead of a separate 24678 listener that proxies/port-forwards don't reach.
+      hmr: { server: httpServer },
     },
     appType: "spa",
   });

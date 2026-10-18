@@ -10,10 +10,11 @@ import { useLyricSnippet } from "./useLyricSnippet";
 import { MuseumBankSection, MuseumPanel } from "./museumUi";
 
 interface MuseumLyricPlacardProps {
+  title?: string;
   song: LibrarySong;
 }
 
-export function MuseumLyricPlacard({ song }: MuseumLyricPlacardProps) {
+export function MuseumLyricPlacard({ song, title = "Quote" }: MuseumLyricPlacardProps) {
   const hasReadySubtitle = song.subtitle?.status === "READY";
   const fallback = song.description ?? song.title;
   const line = useLyricSnippet(song.id, hasReadySubtitle, fallback);
@@ -39,7 +40,7 @@ export function MuseumLyricPlacard({ song }: MuseumLyricPlacardProps) {
 
   return (
     <MuseumBankSection
-      label="Quote"
+      label={title}
       href={libraryRecordingPath(song)}
       hrefLabel="Open"
       type="special"

@@ -1,4 +1,5 @@
 import { profilePath } from "@/lib/routes";
+import { THEATRE_SHELVED } from "@/theatre/shelf";
 
 export const LIBRARY_PATH = "/library";
 export const SONGS_PATH = "/songs";
@@ -8,12 +9,14 @@ export const ARTISTS_PATH = "/artists";
 export const PLAYLISTS_PATH = "/playlists";
 export const FAVORITES_PATH = "/favorites";
 
-/** Shared max-width for browse breadcrumbs and collection content. */
-export const BROWSE_LAYOUT_CLASS = "mx-auto w-full min-w-0 max-w-3xl shrink-0 overflow-x-clip bg-[var(--color-canvas)]/100 p-2";
+/** Shared max-width for browse breadcrumbs and collection content. Translucent while the song-art background is on. */
+export const BROWSE_LAYOUT_CLASS = `mx-auto w-full min-w-0 max-w-6xl shrink-0 overflow-x-clip ${
+  THEATRE_SHELVED ? "bg-transparent" : "bg-[var(--color-canvas)]/100"
+} p-2`;
 
 /** Wider layout for the library feed root. */
 export const LIBRARY_FEED_LAYOUT_CLASS =
-  "mx-auto w-full min-w-0 max-w-3xl py-6 shrink-0 overflow-x-clip bg-[var(--color-canvas)]/80";
+  "mx-auto w-full min-w-0 max-w-6xl px-4 py-6 sm:px-6 md:py-8 lg:px-8 shrink-0 overflow-x-clip bg-[var(--color-canvas)]/80";
 
 /** Artist profile breadcrumbs align with the wider profile layout below. */
 export const ARTIST_PROFILE_LAYOUT_CLASS = "mx-auto max-w-7xl";

@@ -16,6 +16,7 @@ import type { PlaybackFocusState } from "@/lib/playbackFocus/types";
 import { playbackFocusTiming, playbackFocusUserActivityEnabled } from "@/lib/playbackFocusTiming";
 import { useSubtitleDisplay } from "@/lib/subtitleDisplay";
 import { useAtmosphereFxVisibility } from "@/theatre/atmosphere";
+import { THEATRE_SHELVED } from "@/theatre/shelf";
 
 import { useTheatreMode } from "../useTheatreMode";
 
@@ -96,6 +97,8 @@ export function usePlaybackFocusBody({
   });
   const bodyFadeDisabled = fadeConfig.disabled;
   const customBodyDelayMs = fadeConfig.delayMs;
+  // Song art leads; content fades out once it has been up for a beat.
+  const songArtLeadMs = THEATRE_SHELVED && theatreFxEnabled ? playbackFocusTiming.songArt.contentFadeAfterMs : 0;
 
   useEffect(() => {
     bodyFocusHiddenRef.current = bodyFocusHidden;
@@ -166,9 +169,9 @@ export function usePlaybackFocusBody({
     if (!playFocusActive || playbackFocusSuppressed || bodyFadeDisabled) return;
 
     const bodyDelayMs =
-      effectiveReason === "activity"
+      (effectiveReason === "activity"
         ? playbackFocusTiming.body.restoreDelayMs
-        : (customBodyDelayMs ?? playbackFocusTiming.body.delayMs);
+        : (customBodyDelayMs ?? playbackFocusTiming.body.delayMs)) + songArtLeadMs;
 
     bodyFocusTimerRef.current = window.setTimeout(() => {
       setBodyFocusHidden(true);
@@ -184,6 +187,7 @@ export function usePlaybackFocusBody({
     customBodyDelayMs,
     playFocusActive,
     playbackFocusSuppressed,
+    songArtLeadMs,
   ]);
 
   const returnBodyForNavigation = useCallback(() => {

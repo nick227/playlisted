@@ -397,7 +397,7 @@ export function CollectionView({
         <div className="mb-6 flex flex-wrap items-center gap-3">{editToolbar}</div>
       ) : null}
 
-      <div className="flex flex-col lg:flex-row gap-8 rounded-lg bg-[var(--color-canvas)]/80 p-2">
+      <div className="flex flex-col lg:flex-row gap-8 rounded-lg p-2">
         <div className="mx-auto shrink-0 md:mx-0 flex justify-center align-center w-full lg:max-w-[50%]">
           <button
             type="button"

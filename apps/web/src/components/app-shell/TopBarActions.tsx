@@ -6,7 +6,6 @@ import { useAuth } from "@/providers/AuthProvider";
 
 import { AuthLinks } from "./AuthLinks";
 import { PanelShortcutLink } from "./PanelShortcutLink";
-import { TheatreModeButton } from "./TheatreModeButton";
 import { UserAccountMenu } from "./UserAccountMenu";
 
 interface TopBarActionsProps {
@@ -32,7 +31,6 @@ export function TopBarActions({ mobileSearchOpen }: TopBarActionsProps) {
         mobileSearchOpen ? "ml-auto" : "sm:ml-auto"
       }`}
     >
-      <TheatreModeButton />
 
       {status === "authenticated" && user ? (
         <>

@@ -37,7 +37,7 @@ export function MuseumPlaylistCard({
     <div className={`group/card flex min-w-0 flex-col ${className ?? ""}`}>
       <div
         className={[
-          "relative w-full overflow-hidden rounded-xl",
+          "relative w-full overflow-hidden rounded-lg",
           elevated
             ? "shadow-[0_22px_60px_rgba(0,0,0,0.38)] ring-1 ring-white/10"
             : "",
@@ -60,10 +60,10 @@ export function MuseumPlaylistCard({
         to={href}
         className="mt-2.5 min-w-0 transition-opacity hover:opacity-85"
       >
-        <p className="truncate text-sm font-medium text-white">
+        <p className="truncate text-sm font-medium leading-5 text-white">
           {playlist.title}
         </p>
-        <p className="truncate text-xs text-[var(--color-text-muted)]">
+        <p className="mt-0.5 truncate text-xs leading-4 text-[var(--color-text-muted)]">
           {playlist.owner.displayName}
         </p>
       </Link>

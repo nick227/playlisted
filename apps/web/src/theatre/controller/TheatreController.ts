@@ -37,6 +37,8 @@ import { isPresetQuarantined, quarantinePreset } from './presetQuarantine'
 import { isObjectTheatrePreset } from '../packages/object-spinner-mover'
 import { USER_VIDEO_MEDIA_ID } from '../media/userMediaEngine'
 import { AtmosphereFxLayer } from '../atmosphere/AtmosphereFxLayer'
+import { ALBUM_ART_INTRO_PRESET_ID } from '../packages/album-art/presets'
+import { THEATRE_SHELVED } from '../shelf'
 import type { SongAtmosphereFx } from '../atmosphere/types'
 import { getAtmosphereFxVisibility, subscribeAtmosphereFxVisibility } from '../atmosphere/atmosphereFxStore'
 import {
@@ -350,7 +352,7 @@ class TheatreController extends EventTarget {
   }
 
   private async syncAttachedOnlyPlaybackAfterHydrate() {
-    if (!this.state.active || this.transitioning) return
+    if (THEATRE_SHELVED || !this.state.active || this.transitioning) return
 
     const pickCtx = this.buildFxPickContext()
     if (pickCtx.songVisualPolicy !== 'attachedOnly') return
@@ -532,7 +534,7 @@ class TheatreController extends EventTarget {
 
     const pickCtx = this.buildFxPickContext(true)
     let selectedPreset = null
-    const introPresetId = resolveSegmentIntro({
+    const introPresetId = THEATRE_SHELVED ? ALBUM_ART_INTRO_PRESET_ID : resolveSegmentIntro({
       artworkUrl: this.state.artworkUrl,
       pickCtx,
     })
@@ -858,7 +860,7 @@ class TheatreController extends EventTarget {
   }
 
   private async changeToTimelineFallbackPreset() {
-    if (!this.state.active || !this.state.fxEnabled || this.transitioning) return
+    if (THEATRE_SHELVED || !this.state.active || !this.state.fxEnabled || this.transitioning) return
     const pickCtx = this.buildFxPickContext()
     if (pickCtx.songVisualPolicy === 'attachedOnly') {
       if ((pickCtx.timelineClips?.length ?? 0) > 0) {
@@ -896,7 +898,7 @@ class TheatreController extends EventTarget {
     await this.ensureVisualMediaHydrated()
 
     const pickCtx = this.buildFxPickContext()
-    const introPresetId = resolveSegmentIntro({
+    const introPresetId = THEATRE_SHELVED ? ALBUM_ART_INTRO_PRESET_ID : resolveSegmentIntro({
       artworkUrl: this.state.artworkUrl,
       pickCtx,
     })
@@ -914,6 +916,7 @@ class TheatreController extends EventTarget {
   }
 
   public async rotateRandomPreset() {
+    if (THEATRE_SHELVED) return
     if (!this.state.active) return
     if (!this.state.fxEnabled) return
     if (this.transitioning) return
@@ -951,6 +954,7 @@ class TheatreController extends EventTarget {
   }
 
   private requestManualPresetChange(presetId: string) {
+    if (THEATRE_SHELVED) return
     if (!this.state.fxEnabled) return
     if (!this.state.active || !this.overlay) return
     if (isPresetQuarantined(presetId)) {
@@ -1369,7 +1373,7 @@ class TheatreController extends EventTarget {
     const overlay = document.createElement('div')
     this.overlay = overlay
     overlay.className = isBackground
-      ? 'theatre-overlay theatre-overlay--background fixed inset-0 flex items-center justify-center'
+      ? `theatre-overlay theatre-overlay--background${THEATRE_SHELVED ? ' theatre-overlay--song-art' : ''} fixed inset-0 flex items-center justify-center`
       : 'theatre-overlay theatre-overlay--immersive fixed inset-x-0 top-0 flex items-center justify-center'
     overlay.style.pointerEvents = isBackground ? 'none' : 'auto'
 
@@ -1460,7 +1464,7 @@ class TheatreController extends EventTarget {
         frameCtx.shared.audio = audioSnapshot
       }
       
-      if (this.state.fxEnabled && this.deck && this.autoRotateEnabled && this.state.active && !this.transitioning) {
+      if (!THEATRE_SHELVED && this.state.fxEnabled && this.deck && this.autoRotateEnabled && this.state.active && !this.transitioning) {
         const suppressTimelineRotation = this.syncTimelineClipPlayback(now)
         if (!suppressTimelineRotation) {
           const resolved = this.resolveActiveRotationPolicy()

@@ -1,6 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import request from "supertest";
 
+// Generation is shelved in production; these tests cover the queue path for when it's restored.
+vi.mock("../lib/subtitles/providers/index.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../lib/subtitles/providers/index.js")>()),
+  isSubtitleGenerationEnabled: () => true,
+}));
+
 vi.mock("../lib/prisma.js", () => ({
   prisma: {
     apiKey: { findFirst: vi.fn(), update: vi.fn() },

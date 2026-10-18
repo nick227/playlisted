@@ -9,6 +9,12 @@ export const playbackFocusTiming = {
     exitBufferMs: 200,
   },
 
+  /** Shelved theatre: song art fades in first, page content follows. */
+  songArt: {
+    delayMs: 3000,
+    contentFadeAfterMs: 3000,
+  },
+
   body: {
     delayMs: 3000,
     restoreDelayMs: 15000,

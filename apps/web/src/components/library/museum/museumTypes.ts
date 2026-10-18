@@ -6,7 +6,7 @@ import type {
 
 export type MuseumGridKind = "songs" | "artists" | "playlists" | "square-songs";
 
-export type MuseumExhibit =
+export type MuseumExhibit = { title?: string } & (
   | {
       id: string;
       kind: "showcase";
@@ -36,7 +36,7 @@ export type MuseumExhibit =
       kind: "listening-room";
       playlist: PlaylistSummary;
       songs: LibrarySong[];
-    };
+    });
 
 export interface MuseumPools {
   artists: LibraryArtist[];

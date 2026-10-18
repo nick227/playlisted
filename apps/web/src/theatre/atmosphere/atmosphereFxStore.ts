@@ -1,5 +1,7 @@
 import { useSyncExternalStore } from "react";
 
+import { THEATRE_SHELVED } from "../shelf";
+
 const STORAGE_KEY = "playlisted.atmosphereFx.visible";
 
 let visible = readStoredVisible();
@@ -26,7 +28,7 @@ function subscribe(listener: () => void) {
 }
 
 function getSnapshot() {
-  return visible;
+  return !THEATRE_SHELVED && visible;
 }
 
 export function subscribeAtmosphereFxVisibility(listener: () => void) {
@@ -34,7 +36,7 @@ export function subscribeAtmosphereFxVisibility(listener: () => void) {
 }
 
 export function getAtmosphereFxVisibility(): boolean {
-  return visible;
+  return getSnapshot();
 }
 
 export function setAtmosphereFxVisible(next: boolean) {
@@ -55,7 +57,7 @@ export function toggleAtmosphereFxVisible() {
 }
 
 export function useAtmosphereFxVisibility() {
-  const atmosphereFxVisible = useSyncExternalStore(subscribe, getSnapshot, () => true);
+  const atmosphereFxVisible = useSyncExternalStore(subscribe, getSnapshot, () => !THEATRE_SHELVED);
   return {
     visible: atmosphereFxVisible,
     setAtmosphereFxVisible,

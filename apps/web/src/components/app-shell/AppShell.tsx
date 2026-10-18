@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 import { useRadioPlayer } from "@/providers/RadioPlayerProvider";
+import { THEATRE_SHELVED } from "@/theatre/shelf";
 
 import type { SwipeDirection } from "@/lib/browseNavigation/types";
 import { useSyncPlaybackBodyFocusHidden } from "@/lib/playbackBodyFocus";
@@ -14,6 +15,7 @@ import { usePlaybackFocusTrack } from "./hooks/usePlaybackFocusTrack";
 import { usePlayerSpacebarShortcut } from "./hooks/usePlayerSpacebarShortcut";
 import { useResumePlaybackAfterNav } from "./hooks/useResumePlaybackAfterNav";
 import { useRouteScrollReset } from "./hooks/useRouteScrollReset";
+import { useSongArtIdleReveal } from "./hooks/useSongArtIdleReveal";
 import { useTheatreSkipGesture } from "./hooks/useTheatreSkipGesture";
 import { PlaybackFocusLane } from "./PlaybackFocusLane/PlaybackFocusLane";
 import { QueuePanel } from "./QueuePanel";
@@ -78,10 +80,16 @@ export function AppShell({ children }: AppShellProps) {
   // page; the reveal shield below only exists once chrome has idle-faded, so
   // this covers everywhere else. Disabled while the shield is up so a single
   // swipe isn't handled twice.
-  const { theatreActive } = useTheatreMode();
+  const { theatreActive, theatreFxEnabled } = useTheatreMode();
   useTheatreSkipGesture({
-    enabled: theatreActive && !playbackFocus.revealShieldVisible,
+    enabled: !THEATRE_SHELVED && theatreActive && !playbackFocus.revealShieldVisible,
     onSkip: skipPlayback,
+  });
+
+  const songArtVisible = useSongArtIdleReveal({
+    enabled: THEATRE_SHELVED && theatreFxEnabled,
+    playFocusActive,
+    pathname: location.pathname,
   });
 
   // --- Global shortcuts + navigation side effects ----------------------------
@@ -120,7 +128,8 @@ export function AppShell({ children }: AppShellProps) {
 
   return (
     <div className="relative flex h-dvh min-h-0 w-full max-w-full overflow-hidden bg-transparent">
-      <BackgroundLayer />
+      {/* Art stays up while content is faded, so only a real reveal clears it. */}
+      <BackgroundLayer songArtVisible={!THEATRE_SHELVED || songArtVisible || playbackFocus.bodyFocusMode} />
 
       <Sidebar mobileOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
