@@ -72,36 +72,6 @@ export function ArtistProfileCollectionPanel({ playlist, owner, editHref }: Arti
     );
   }, [recordings, owner.username, playlist.id, playlist.slug, playlist.title, queueTracks, setQueue]);
 
-  function playAll() {
-    if (isActive) {
-      if (isPlaying) {
-        togglePlay();
-      } else {
-        ensurePlayback();
-      }
-      return;
-    }
-    if (queueTracks.length === 0) {
-      pendingPlayRef.current = true;
-      return;
-    }
-    setQueue(
-      queueTracks,
-      0,
-      {
-        playlistId: playlist.id,
-        playlistOwnerUsername: owner.username,
-        playlistSlug: playlist.slug,
-        sourceContext: "artist-profile",
-      },
-      {
-        segmentLabel: playlist.title,
-        playbackOrigin: artistProfileTrackOrigin(playlist.id, queueTracks[0].id),
-        originScope: "track",
-      },
-    );
-  }
-
   function playTrack(recording: CollectionRecording, index: number) {
     const playbackOrigin = artistProfileTrackOrigin(playlist.id, recording.id);
 
