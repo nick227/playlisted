@@ -4,7 +4,6 @@ import { useSearchParams } from "react-router-dom";
 import { ChartsFilterBar } from "@/components/charts/ChartsFilterBar";
 import { ChartsList } from "@/components/charts/ChartsList";
 import { MuseumSectionHeader } from "@/components/library/museum/museumUi";
-import { useLibraryGenres } from "@/hooks/useLibrary";
 import { parseChartsPageState, type ChartsPageState } from "@/lib/chartsPageState";
 
 const SITE_TOP_TEN_LIMIT = 10;
@@ -17,8 +16,6 @@ const SITE_TOP_TEN_LIMIT = 10;
 export function SiteTopTenSection() {
   const [params] = useSearchParams();
   const [chartState, setChartState] = useState<ChartsPageState>(() => parseChartsPageState(params));
-  const { data: genreData } = useLibraryGenres();
-  const genres = genreData?.data ?? [];
 
   const updateChartState = useCallback((patch: Partial<ChartsPageState>) => {
     setChartState((current) => {
@@ -33,13 +30,8 @@ export function SiteTopTenSection() {
       <MuseumSectionHeader label="Top ten" />
       <div className="overflow-hidden rounded-xl bg-[var(--color-canvas)]/80">
         <ChartsFilterBar
-          tab={chartState.tab}
           range={chartState.range}
-          genre={chartState.genre}
-          genres={genres}
-          onTabChange={(tab) => updateChartState({ tab })}
           onRangeChange={(range) => updateChartState({ range })}
-          onGenreChange={(genre) => updateChartState({ genre })}
         />
         <ChartsList
           tab={chartState.tab}
