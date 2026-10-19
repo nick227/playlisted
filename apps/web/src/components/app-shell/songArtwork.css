@@ -1,0 +1,32 @@
+.song-artwork,
+.song-artwork-image,
+.song-artwork-shade {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.song-artwork {
+  transition: opacity 500ms ease;
+}
+
+.song-artwork-image {
+  object-fit: cover;
+  transition: opacity 800ms ease;
+}
+
+.song-artwork-shade {
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--color-canvas) 35%, transparent),
+    color-mix(in srgb, var(--color-canvas) 65%, transparent)
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .song-artwork,
+  .song-artwork-image {
+    transition: none;
+  }
+}

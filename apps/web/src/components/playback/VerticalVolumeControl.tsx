@@ -31,18 +31,18 @@ export function VerticalVolumeControl({
   const shellClass = isFocusLane
     ? "focus-lane__volume-shell"
     : isRadio
-      ? "h-11 w-11"
+      ? "h-10 w-10"
       : "h-8 w-8 md:h-9 md:w-9";
   const buttonClass = isFocusLane
     ? "focus-lane__reaction relative z-10"
     : isRadio
-      ? "relative z-10 flex h-11 w-11 items-center justify-center rounded-full border border-white/[0.08] bg-[var(--color-surface)]/80 text-white/72 shadow-lg shadow-black/20 transition hover:border-white/20 hover:bg-white/[0.09] hover:text-white"
+      ? "relative z-10 flex h-10 w-10 items-center justify-center rounded-full text-[var(--color-text-muted)] transition hover:bg-white/[0.06] hover:text-white"
       : "relative z-10 grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white/5 text-[var(--color-text-muted)] transition hover:bg-white/10 hover:text-white md:h-9 md:w-9";
 
   const popoverClass = isFocusLane
     ? "focus-lane__volume-popover -translate-x-1/2"
     : isRadio
-      ? "absolute bottom-full left-1/2 z-50 mb-3 flex h-36 w-11 -translate-x-1/2 items-center justify-center rounded-full border border-white/[0.08] bg-black/70 py-4 shadow-2xl shadow-black/40 backdrop-blur-md transition"
+      ? "absolute bottom-full left-1/2 z-50 mb-2 flex h-36 w-10 -translate-x-1/2 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface-elevated)] py-4 shadow-xl transition"
       : "absolute bottom-full left-1/2 z-50 mb-2 flex h-32 w-10 -translate-x-1/2 items-center justify-center rounded-2xl border border-[var(--color-border)] bg-[var(--color-canvas-alt)] py-3 shadow-xl transition md:mb-3 md:h-36 md:w-11";
 
   const sliderClass = isFocusLane || isRadio
@@ -60,7 +60,7 @@ export function VerticalVolumeControl({
     >
       <span
         className={`pointer-events-none absolute bottom-0 left-1/2 z-0 -translate-x-1/2 ${
-          isFocusLane ? "focus-lane__volume-hover-target" : isRadio ? "h-48 w-11" : "h-40 w-10 md:h-44 md:w-11"
+          isFocusLane ? "focus-lane__volume-hover-target" : isRadio ? "h-48 w-10" : "h-40 w-10 md:h-44 md:w-11"
         }`}
         aria-hidden="true"
       />

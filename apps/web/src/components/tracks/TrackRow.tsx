@@ -25,6 +25,8 @@ type SubtitleSummary = { status: string; id: string; [key: string]: any } | any;
 interface TrackRowProps {
   recordingId: string;
   index?: number;
+  /** Show a track number instead of artwork (album-style tracklist). */
+  numbered?: boolean;
   title: string;
   creator?: string | null;
   meta?: string | null;
@@ -59,6 +61,8 @@ interface TrackRowProps {
 
 export function TrackRow({
   recordingId,
+  index,
+  numbered,
   title,
   creator,
   meta,
@@ -290,6 +294,7 @@ export function TrackRow({
         isPlaying={trackIsPlaying}
         onPlay={onPlay ? handlePlaybackIntent : undefined}
         imageUrl={artworkUrl}
+        trackNumber={numbered && index != null ? index + 1 : undefined}
         titleSlot={titleSlot}
         subtitleSlot={
           <>

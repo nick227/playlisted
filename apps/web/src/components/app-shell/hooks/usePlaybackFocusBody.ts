@@ -5,7 +5,7 @@ import { isTheatreSwipeSuppressed } from "@/lib/gestures/swipeGesture";
 import { isBrowseSwipeNavigation } from "@/lib/browseNavigation/types";
 
 import { PLAYBACK_BODY_FOCUS_RETURN_EVENT } from "@/lib/playbackBodyFocus";
-import { getPlaybackFocusBodyFadeSuppressed } from "@/lib/playbackFocusBodyFade";
+import { getPlaybackFocusBodyFadeConfig } from "@/lib/playbackFocusBodyFade";
 import {
   displaySettingsBodyRevealSuppressRemainingMs,
   isDisplaySettingsBodyRevealSuppressed,
@@ -14,21 +14,20 @@ import {
 import { usePlaybackFocusSuppressed } from "@/lib/playbackFocusSuppression";
 import type { PlaybackFocusState } from "@/lib/playbackFocus/types";
 import { playbackFocusTiming, playbackFocusUserActivityEnabled } from "@/lib/playbackFocusTiming";
-import { useSubtitleDisplay } from "@/lib/subtitleDisplay";
-import { useAtmosphereFxVisibility } from "@/theatre/atmosphere";
-import { THEATRE_SHELVED } from "@/theatre/shelf";
-
-import { useTheatreMode } from "../useTheatreMode";
 
 type PlayFocusArmReason = "initial" | "activity";
 
 type UsePlaybackFocusBodyOptions = {
+  /** A retained playback context, including paused/stopped playback. */
   playFocusActive: boolean;
   focusTrackKey: string;
   currentTimeMsRef: RefObject<number>;
   scrollContainerRef?: RefObject<HTMLElement | null>;
   pathname: string;
   search: string;
+  /** Homepage radio section is on screen — the only place the body fade runs. */
+  radioStageVisible: boolean;
+  radioPlaying: boolean;
 };
 
 function isNativeInteractiveTarget(target: EventTarget | null): boolean {
@@ -63,11 +62,10 @@ export function usePlaybackFocusBody({
   scrollContainerRef,
   pathname,
   search,
+  radioStageVisible,
+  radioPlaying,
 }: UsePlaybackFocusBodyOptions) {
   const playbackFocusSuppressed = usePlaybackFocusSuppressed();
-  const { subtitlesEnabled } = useSubtitleDisplay();
-  const { theatreFxEnabled } = useTheatreMode();
-  const { visible: atmosphereVisible } = useAtmosphereFxVisibility();
   const location = useLocation();
 
   const bodyFocusTimerRef = useRef<number | null>(null);
@@ -76,7 +74,6 @@ export function usePlaybackFocusBody({
   const revealClickSuppressTimerRef = useRef<number | null>(null);
   const revealClickSuppressUntilRef = useRef(0);
   const bodyRestoreUntilRef = useRef(0);
-  const previousFocusTrackKeyRef = useRef(focusTrackKey);
   const previousLocationKeyRef = useRef(`${pathname}\n${search}`);
   const bodyFocusHiddenRef = useRef(false);
   const bodyFadeDisabledRef = useRef(false);
@@ -90,15 +87,9 @@ export function usePlaybackFocusBody({
   const [revealInteractionActive, setRevealInteractionActive] = useState(false);
   const [contentInputGuarded, setContentInputGuarded] = useState(false);
 
-  const fadeConfig = getPlaybackFocusBodyFadeSuppressed({
-    pathname,
-    subtitlesEnabled,
-    theatreFxEnabled: theatreFxEnabled || atmosphereVisible,
-  });
+  const fadeConfig = getPlaybackFocusBodyFadeConfig(pathname, { radioStageVisible, radioPlaying });
   const bodyFadeDisabled = fadeConfig.disabled;
   const customBodyDelayMs = fadeConfig.delayMs;
-  // Song art leads; content fades out once it has been up for a beat.
-  const songArtLeadMs = THEATRE_SHELVED && theatreFxEnabled ? playbackFocusTiming.songArt.contentFadeAfterMs : 0;
 
   useEffect(() => {
     bodyFocusHiddenRef.current = bodyFocusHidden;
@@ -171,7 +162,7 @@ export function usePlaybackFocusBody({
     const bodyDelayMs =
       (effectiveReason === "activity"
         ? playbackFocusTiming.body.restoreDelayMs
-        : (customBodyDelayMs ?? playbackFocusTiming.body.delayMs)) + songArtLeadMs;
+        : (customBodyDelayMs ?? playbackFocusTiming.body.delayMs));
 
     bodyFocusTimerRef.current = window.setTimeout(() => {
       setBodyFocusHidden(true);
@@ -187,7 +178,6 @@ export function usePlaybackFocusBody({
     customBodyDelayMs,
     playFocusActive,
     playbackFocusSuppressed,
-    songArtLeadMs,
   ]);
 
   const returnBodyForNavigation = useCallback(() => {
@@ -246,13 +236,19 @@ export function usePlaybackFocusBody({
     revealBody();
   }, [bodyFadeDisabled, clearFocusTimer, clearRevealClickSuppressTimer, playbackFocusSuppressed]);
 
-  // Re-arm on track/route change; clear immediately when playback stops.
+  // A new song restarts the focus presentation, never the page inactivity timer.
+  useEffect(() => {
+    if (!bodyFocusHiddenRef.current) return;
+    setBodyFadedAtTrackMs(0);
+    setTitleIntroStartedAtMs(0);
+    setTitleIntroStartedAtEpochMs(performance.now());
+  }, [focusTrackKey]);
+
+  // Navigation re-arms the page timer; song changes and pause do not.
   useEffect(() => {
     const locationKey = `${pathname}\n${search}`;
-    const trackChanged = previousFocusTrackKeyRef.current !== focusTrackKey;
     const locationChanged = previousLocationKeyRef.current !== locationKey;
 
-    previousFocusTrackKeyRef.current = focusTrackKey;
     previousLocationKeyRef.current = locationKey;
 
     if (
@@ -286,25 +282,6 @@ export function usePlaybackFocusBody({
       return;
     }
 
-    if (
-      trackChanged &&
-      !locationChanged &&
-      bodyFocusHiddenRef.current &&
-      !playbackFocusSuppressed &&
-      !bodyFadeDisabled
-    ) {
-      clearFocusTimer();
-      setBodyFadedAtTrackMs(0);
-      setTitleIntroStartedAtMs(0);
-      setTitleIntroStartedAtEpochMs(performance.now());
-      return () => {
-        clearFocusTimer();
-        clearSnapRevealTimer();
-        clearRevealInteractionTimer();
-        clearRevealClickSuppressTimer();
-      };
-    }
-
     armPlayFocus("initial");
     return () => {
       clearFocusTimer();
@@ -320,7 +297,6 @@ export function usePlaybackFocusBody({
     clearRevealInteractionTimer,
     clearSnapRevealTimer,
     currentTimeMsRef,
-    focusTrackKey,
     pathname,
     playbackFocusSuppressed,
     playFocusActive,
@@ -340,12 +316,14 @@ export function usePlaybackFocusBody({
 
     window.addEventListener("pointermove", onPageActivity, { passive: true });
     window.addEventListener("pointerdown", onPageActivity, { passive: true });
+    window.addEventListener("click", onPageActivity, { passive: true });
     window.addEventListener("wheel", onPageActivity, { passive: true });
     window.addEventListener("scroll", onPageActivity, { passive: true });
     scrollContainer?.addEventListener("scroll", onPageActivity, { passive: true });
     return () => {
       window.removeEventListener("pointermove", onPageActivity);
       window.removeEventListener("pointerdown", onPageActivity);
+      window.removeEventListener("click", onPageActivity);
       window.removeEventListener("wheel", onPageActivity);
       window.removeEventListener("scroll", onPageActivity);
       scrollContainer?.removeEventListener("scroll", onPageActivity);

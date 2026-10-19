@@ -55,7 +55,7 @@ export interface CollectionViewProps {
 }
 
 const typeLabels: Record<string, string> = {
-  PLAYLIST: "Playlist",
+  PLAYLIST: "Collection",
   ALBUM: "Album",
   PODCAST_CHANNEL: "Podcast",
   RELEASE: "Release",
@@ -392,7 +392,7 @@ export function CollectionView({
   }
 
   return (
-    <div className={`mx-auto sm:m-auto flex flex-col justify-center bg-[var(--color-canvas)]/80 px-4 rounded-lg py-4 max-w-3xl`}>
+    <div className={`mx-auto sm:m-auto flex flex-col justify-center px-4 rounded-lg py-4 w-full`}>
       {isEdit && editToolbar ? (
         <div className="mb-6 flex flex-wrap items-center gap-3">{editToolbar}</div>
       ) : null}
@@ -474,7 +474,7 @@ export function CollectionView({
               {onGenreChange ? (
                 <div className="mt-4 max-w-2xl">
                   <label className="mb-2 block text-xs font-semibold uppercase tracking-widest text-[var(--color-text-muted)]">
-                    Primary playlist genre
+                    Primary genre
                   </label>
                   <GenreSmartInput
                     selectedGenreId={selectedGenreId}
@@ -569,7 +569,6 @@ export function CollectionView({
       </div>
         </div>
       </div>
-      <h2 className="mt-4">Tracks</h2>
       <div className="mt-2">
         {isEdit ? (
           <div className="min-h-[16px]">

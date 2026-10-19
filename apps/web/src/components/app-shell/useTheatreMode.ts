@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 
+import { THEATRE_SHELVED } from "@/theatre/shelf";
+
 import theatreController from "@/theatre/controller/lazyController";
 
 export function useTheatreMode() {
-  const [canEnterTheatre, setCanEnterTheatre] = useState(theatreController.state.canEnter);
+  const [canEnterTheatre, setCanEnterTheatre] = useState(THEATRE_SHELVED || theatreController.state.canEnter);
   /** User preference from the top-bar toggle — not the same as runtime `active`. */
   const [theatreFxEnabled, setTheatreFxEnabled] = useState(theatreController.state.fxEnabled);
   /** True when theatre visuals are actually mounted (background or immersive). */
@@ -12,7 +14,7 @@ export function useTheatreMode() {
 
   useEffect(() => {
     const sync = () => {
-      setCanEnterTheatre(theatreController.state.canEnter);
+      setCanEnterTheatre(THEATRE_SHELVED || theatreController.state.canEnter);
       setTheatreFxEnabled(theatreController.state.fxEnabled);
       setTheatreActive(theatreController.state.active);
     };

@@ -1,13 +1,15 @@
 import type { UserDetail } from "@playlisted/client-sdk";
+import { Pause, Pencil, Play } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 
 import type { CollectionRecording } from "@/components/collection/collectionTypes";
-import { Skeleton } from "@/components/feedback/Skeleton";
 import { TrackList } from "@/components/tracks/TrackList";
+import { WaveformTrackRowSkeleton } from "@/components/tracks/WaveformTrackRow";
 import { useAddCollectionPlaylist, useCollectionPlaylists } from "@/hooks/useCollections";
 import { useAuthAction } from "@/hooks/useAuthAction";
 import { usePlaylistByUsernameSlug } from "@/hooks/usePlaylistByUsernameSlug";
+import { formatDurationLong } from "@/lib/format";
 import { artistProfileTrackOrigin } from "@/lib/playbackOrigin";
 import { coverFallback, playlistPath, studioCollectionEditPath } from "@/lib/routes";
 import { useAudioPlayer, type QueueTrack } from "@/providers/AudioPlayerProvider";
@@ -48,9 +50,15 @@ export function ArtistProfileCollectionPanel({ playlist, owner, editHref }: Arti
   }));
   const description = playlist.description?.trim() || detail?.description?.trim() || "";
 
-  const bannerBackgroundStyle = playlist.coverArtUrl
+  const coverStyle = playlist.coverArtUrl
     ? { backgroundImage: `url(${playlist.coverArtUrl})` }
     : { background: coverFallback(playlist.title) };
+  const releaseDate = playlist.publishedAt ?? playlist.createdAt;
+  const metadata = [
+    releaseDate ? String(new Date(releaseDate).getFullYear()) : "",
+    `${playlist.itemCount} ${playlist.itemCount === 1 ? "song" : "songs"}`,
+    playlist.totalDurationSeconds > 0 ? formatDurationLong(playlist.totalDurationSeconds) : "",
+  ].filter(Boolean);
 
   useEffect(() => {
     if (!pendingPlayRef.current || recordings.length === 0) return;
@@ -71,6 +79,36 @@ export function ArtistProfileCollectionPanel({ playlist, owner, editHref }: Arti
       },
     );
   }, [recordings, owner.username, playlist.id, playlist.slug, playlist.title, queueTracks, setQueue]);
+
+  function playAll() {
+    if (isActive) {
+      if (isPlaying) {
+        togglePlay();
+      } else {
+        ensurePlayback();
+      }
+      return;
+    }
+    if (queueTracks.length === 0) {
+      pendingPlayRef.current = true;
+      return;
+    }
+    setQueue(
+      queueTracks,
+      0,
+      {
+        playlistId: playlist.id,
+        playlistOwnerUsername: owner.username,
+        playlistSlug: playlist.slug,
+        sourceContext: "artist-profile",
+      },
+      {
+        segmentLabel: playlist.title,
+        playbackOrigin: artistProfileTrackOrigin(playlist.id, queueTracks[0].id),
+        originScope: "track",
+      },
+    );
+  }
 
   function playTrack(recording: CollectionRecording, index: number) {
     const playbackOrigin = artistProfileTrackOrigin(playlist.id, recording.id);
@@ -109,83 +147,75 @@ export function ArtistProfileCollectionPanel({ playlist, owner, editHref }: Arti
   });
 
   return (
-    <article
-      className={[
-        "min-w-0 overflow-x-clip pb-20",
-        isActive ? "bg-[var(--color-canvas)]" : "",
-      ].join(" ")}
-    >
-      <div className="playlist-hero-card relative">
+    <article className="grid min-w-0 gap-5 py-6 md:grid-cols-[100px_minmax(0,1fr)] md:gap-6 lg:grid-cols-[120px_minmax(0,1fr)]">
+      <Link to={href} className="block w-44 self-start md:w-full" aria-label={playlist.title}>
         <div
-          className="absolute inset-0 scale-105 bg-cover bg-center transition-transform duration-700"
-          style={bannerBackgroundStyle}
+          className="aspect-square w-full rounded-md bg-cover bg-center"
+          style={coverStyle}
           aria-hidden="true"
         />
-        <div
-          className={[
-            "collection-banner-shade absolute",
-            isPlaying ? "is-playing" : "",
-          ].join(" ")}
-          aria-hidden="true"
-        />
+      </Link>
 
-        <span
-          className={[
-            "collection-banner-glow",
-            isActive ? "is-active" : "",
-            isPlaying ? "is-playing" : "",
-          ].join(" ")}
-          aria-hidden="true"
-        />
+      <div className="min-w-0">
+        <header className="mb-5">
+          {metadata.length > 0 ? (
+            <p className="text-[11px] tracking-wide text-[var(--color-text-muted)] md:text-xs">{metadata.join(" · ")}</p>
+          ) : null}
 
-        <div className="relative z-10 flex min-h-[220px] flex-col p-5 md:p-7">
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0 max-w-[min(100%,28rem)] pr-2">
-              {description ? (
-                <p className="mt-2 line-clamp-2 text-base leading-snug text-white/75 drop-shadow-[0_1px_8px_rgba(0,0,0,0.45)] md:text-lg">
-                  {description}
-                </p>
-              ) : null}
-            </div>
+          <h3 className="mt-1 text-[22px] font-bold leading-tight tracking-tight text-[var(--color-text)] md:text-2xl">
+            <Link
+              to={href}
+              className={[
+                "break-words transition hover:text-[var(--color-brand)]",
+                isActive ? "text-[var(--color-brand)]" : "",
+              ].join(" ")}
+            >
+              {playlist.title}
+            </Link>
+          </h3>
 
-            <div className="flex shrink-0 items-center gap-2">
-              {isOwner ? (
-                <Link
-                  to={editHref ?? studioCollectionEditPath(playlist.id)}
-                  className="rounded-full border border-white/20 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-sm transition hover:border-[var(--color-brand)] hover:text-[var(--color-brand)]"
-                >
-                  Edit
-                </Link>
-              ) : null}
-              {status === "authenticated" && !isOwner ? (
-                <button
-                  type="button"
-                  onClick={handleFollow}
-                  disabled={addCollection.isPending || isFollowing}
-                  className="rounded-full border border-white/20 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-sm transition hover:border-white/50 disabled:opacity-50"
-                >
-                  {isFollowing ? "Following" : addCollection.isPending ? "Following…" : "Follow"}
-                </button>
-              ) : null}
-            </div>
+          {description ? (
+            <p className="mt-2 line-clamp-2 max-w-2xl text-sm leading-snug text-[var(--color-text-muted)]">
+              {description}
+            </p>
+          ) : null}
+
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={playAll}
+              disabled={!isLoading && recordings.length === 0}
+              className="inline-flex h-9 items-center gap-2 rounded-full bg-white px-5 text-sm font-semibold text-black transition hover:scale-[1.02] hover:bg-white/90 disabled:opacity-40"
+            >
+              {isPlaying ? <Pause size={16} fill="currentColor" /> : <Play size={16} fill="currentColor" />}
+              {isPlaying ? "Pause" : "Play album"}
+            </button>
+            {status === "authenticated" && !isOwner ? (
+              <button
+                type="button"
+                onClick={handleFollow}
+                disabled={addCollection.isPending || isFollowing}
+                className="inline-flex h-9 items-center rounded-full border border-white/20 px-4 text-sm font-semibold text-white transition hover:border-white/50 disabled:opacity-50"
+              >
+                {isFollowing ? "Following" : addCollection.isPending ? "Following…" : "+ Follow"}
+              </button>
+            ) : null}
+            {isOwner ? (
+              <Link
+                to={editHref ?? studioCollectionEditPath(playlist.id)}
+                className="inline-flex h-9 items-center gap-1.5 px-2 text-sm font-medium text-[var(--color-text-muted)] transition hover:text-white"
+              >
+                <Pencil size={14} aria-hidden="true" />
+                Edit
+              </Link>
+            ) : null}
           </div>
-        </div>
-      </div>
+        </header>
 
-      <h3 className="text-3xl font-semibold leading-[1.05] tracking-tight text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.55)] md:text-4xl py-4">
-        <Link
-          to={href}
-          className="break-words transition hover:text-[var(--color-brand)]"
-        >
-          {playlist.title}
-        </Link>
-      </h3>
-
-      <div className="px-1">
         {isLoading ? (
-          <div className="space-y-2">
-            {Array.from({ length: Math.min(playlist.itemCount, 4) }).map((_, index) => (
-              <Skeleton key={index} className="h-14 w-full rounded-lg" />
+          <div className="flex flex-col divide-y divide-white/[0.06] border-y border-white/[0.06]">
+            {Array.from({ length: playlist.itemCount }).map((_, index) => (
+              <WaveformTrackRowSkeleton key={index} />
             ))}
           </div>
         ) : recordings.length === 0 ? (
@@ -204,6 +234,7 @@ export function ArtistProfileCollectionPanel({ playlist, owner, editHref }: Arti
             onPlay={playTrack}
             playbackOriginForTrack={(recording) => artistProfileTrackOrigin(playlist.id, recording.id)}
             activeWhenTrackMatches={playlistContainsCurrentTrack}
+            numbered
           />
         )}
       </div>

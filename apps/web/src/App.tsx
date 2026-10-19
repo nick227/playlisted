@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes, useLocation, useParams } from "
 
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AppShell } from "@/components/app-shell/AppShell";
+import { genrePath } from "@/lib/browsePaths";
 import { RadioPlayerProvider } from "@/providers/RadioPlayerProvider";
 
 const AuthLayout = lazy(() => import("@/components/auth/AuthLayout").then((mod) => ({ default: mod.AuthLayout })));
@@ -11,15 +12,12 @@ const RegisterPage = lazy(() => import("@/pages/RegisterPage").then((mod) => ({ 
 
 const HomePage = lazy(() => import("@/pages/HomePage").then((mod) => ({ default: mod.HomePage })));
 const SearchPage = lazy(() => import("@/pages/SearchPage").then((mod) => ({ default: mod.SearchPage })));
-const RadioPage = lazy(() => import("@/pages/RadioPage").then((mod) => ({ default: mod.RadioPage })));
 const ChatPage = lazy(() => import("@/pages/ChatPage").then((mod) => ({ default: mod.ChatPage })));
 const CanonicalPlaylistPage = lazy(() =>
   import("@/pages/CanonicalPlaylistPage").then((mod) => ({ default: mod.CanonicalPlaylistPage })),
 );
 const PlaylistPage = lazy(() => import("@/pages/PlaylistPage").then((mod) => ({ default: mod.PlaylistPage })));
 const MemberPage = lazy(() => import("@/pages/MemberPage").then((mod) => ({ default: mod.MemberPage })));
-const LibraryPage = lazy(() => import("@/pages/LibraryPage").then((mod) => ({ default: mod.LibraryPage })));
-const FavoritesPage = lazy(() => import("@/pages/FavoritesPage").then((mod) => ({ default: mod.FavoritesPage })));
 
 const LibraryPlaylistsPage = lazy(() =>
   import("@/pages/library/LibraryBrowsePages").then((mod) => ({ default: mod.LibraryPlaylistsPage })),
@@ -99,9 +97,21 @@ function LegacyProfileRedirect() {
   return <Navigate to={`/@/${encodeURIComponent(username ?? "")}`} replace />;
 }
 
+/** Charts and personal favorites now live on the homepage. */
 function LegacyChartsRedirect() {
   const location = useLocation();
-  return <Navigate to={`/favorites${location.search}`} replace />;
+  const params = new URLSearchParams(location.search);
+  const section = params.get("view") === "personal" ? "personal" : "charts";
+  params.delete("view");
+  const query = params.toString();
+  return <Navigate to={`/${query ? `?${query}` : ""}#${section}`} replace />;
+}
+
+/** The library feed is now part of the homepage; `?genre=` still deep-links to the genre page. */
+function LegacyLibraryRedirect() {
+  const location = useLocation();
+  const genre = new URLSearchParams(location.search).get("genre")?.trim();
+  return <Navigate to={genre ? genrePath(genre) : "/"} replace />;
 }
 
 function RouteLoadingFallback() {
@@ -138,7 +148,7 @@ function MainRoutes() {
           <Route path="/" element={<HomePage />} />
           <Route path="/charts" element={<LegacyChartsRedirect />} />
           <Route path="/search" element={<SearchPage />} />
-          <Route path="/radio" element={<RadioPage />} />
+          <Route path="/radio" element={<Navigate to="/#radio" replace />} />
           <Route path="/chat" element={<ChatPage />} />
           <Route path="/@:username" element={<LegacyProfileRedirect />} />
           <Route path="/@/:username/:slug" element={<CanonicalPlaylistPage />} />
@@ -147,7 +157,7 @@ function MainRoutes() {
           <Route path="/@/:username" element={<MemberPage />} />
           <Route path="/members/:userId" element={<MemberPage />} />
           <Route path="/explore" element={<Navigate to="/" replace />} />
-          <Route path="/trending" element={<Navigate to="/favorites" replace />} />
+          <Route path="/trending" element={<Navigate to="/#charts" replace />} />
           <Route path="/musicians" element={<MusiciansPage />} />
           <Route path="/developers" element={<DevelopersPage />} />
           <Route path="/advertising" element={<AdvertisingPage />} />
@@ -155,9 +165,9 @@ function MainRoutes() {
           <Route path="/jobs" element={<JobsPage />} />
           <Route path="/media" element={<MediaPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
-          <Route path="/library" element={<LibraryPage />} />
-          <Route path="/favorites" element={<FavoritesPage />} />
-          <Route path="/library/favorites" element={<Navigate to="/favorites" replace />} />
+          <Route path="/library" element={<LegacyLibraryRedirect />} />
+          <Route path="/favorites" element={<LegacyChartsRedirect />} />
+          <Route path="/library/favorites" element={<Navigate to="/#personal" replace />} />
           <Route path="/songs" element={<LibrarySongsPage />} />
           <Route path="/genres" element={<LibraryGenresPage />} />
           <Route path="/genres/:slug" element={<LibraryGenrePage />} />

@@ -43,7 +43,7 @@ export function AdminRadioPage() {
           </p>
         </div>
         <Link
-          to="/radio"
+          to="/#radio"
           className="inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] px-4 py-2 text-sm font-semibold text-white transition hover:border-amber-400"
         >
           <Radio size={16} />

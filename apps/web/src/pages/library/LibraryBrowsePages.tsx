@@ -9,7 +9,15 @@ import {
   PlaylistsPanel,
   SongsPanel,
 } from "@/components/library/libraryPanels";
-import { useLibraryGenres } from "@/hooks/useLibrary";
+import { useHoldRouteUntilCached } from "@/hooks/useHoldRouteUntilCached";
+import {
+  libraryArtistsQueryOptions,
+  libraryGenresQueryOptions,
+  libraryPlaylistGenresQueryOptions,
+  libraryPlaylistsQueryOptions,
+  librarySongsQueryOptions,
+  useLibraryGenres,
+} from "@/hooks/useLibrary";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import {
   artistsBrowseCrumbs,
@@ -22,6 +30,7 @@ import { profilePath } from "@/lib/routes";
 
 export function LibrarySongsPage() {
   usePageMeta({ title: "Songs", description: "Browse every public recording in the catalog." });
+  useHoldRouteUntilCached(librarySongsQueryOptions(null));
   return (
     <LibraryBrowseLayout crumbs={songsBrowseCrumbs()}>
       <SongsPanel />
@@ -31,6 +40,7 @@ export function LibrarySongsPage() {
 
 export function LibraryGenresPage() {
   usePageMeta({ title: "Genres", description: "Browse music by genre." });
+  useHoldRouteUntilCached(libraryGenresQueryOptions());
   return (
     <LibraryBrowseLayout crumbs={genresBrowseCrumbs()}>
       <GenresPanel />
@@ -45,6 +55,7 @@ export function LibraryGenrePage() {
   const name = genre?.name ?? slug;
 
   usePageMeta({ title: name, description: `Browse ${name} recordings in the catalog.` });
+  useHoldRouteUntilCached(libraryGenresQueryOptions(), librarySongsQueryOptions(slug));
 
   if (data && !genre) {
     return <EmptyState title="Genre not found" />;
@@ -59,6 +70,7 @@ export function LibraryGenrePage() {
 
 export function LibraryArtistsPage() {
   usePageMeta({ title: "Artists", description: "Browse artists in the catalog." });
+  useHoldRouteUntilCached(libraryArtistsQueryOptions());
   return (
     <LibraryBrowseLayout crumbs={artistsBrowseCrumbs()}>
       <ArtistsPanel />
@@ -73,6 +85,7 @@ export function LibraryArtistRedirect() {
 
 export function LibraryPlaylistsPage() {
   usePageMeta({ title: "Playlists", description: "Browse curated playlists from the community." });
+  useHoldRouteUntilCached(libraryPlaylistsQueryOptions(null), libraryPlaylistGenresQueryOptions());
   return (
     <LibraryBrowseLayout crumbs={playlistsBrowseCrumbs()}>
       <PlaylistsPanel />

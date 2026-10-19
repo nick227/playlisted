@@ -1,5 +1,4 @@
 import {
-  Heart,
   Settings,
   RadioIcon,
   Music,
@@ -17,7 +16,6 @@ import { DEFAULT_COLLECTION_TITLE } from "@/components/studio/studioCollectionUt
 import { authedApi } from "@/lib/authedApi";
 import { playbackFocusTiming } from "@/lib/playbackFocusTiming";
 import { usePlaybackFocusSuppressed } from "@/lib/playbackFocusSuppression";
-import { FAVORITES_PATH, LIBRARY_PATH } from "@/lib/browsePaths";
 import { ADMIN_PATH, currentUserProfilePath, panelPathForRole, playlistPath, studioCollectionEditPath } from "@/lib/routes";
 import { useAuth } from "@/providers/AuthProvider";
 
@@ -27,7 +25,7 @@ interface SidebarProps {
 }
 
 const discoverLinks = [
-  { to: "/", label: "Radio", icon: RadioIcon, end: true },
+  { to: "/", label: "Home", icon: RadioIcon, end: true },
 ] as const;
 
 const baseNavClass = "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition";
@@ -65,6 +63,7 @@ function NavItem({
 }
 
 export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
+  const sidebarRef = useRef<HTMLElement | null>(null);
   const blurTimerRef = useRef<number | null>(null);
   const playbackFocusSuppressed = usePlaybackFocusSuppressed();
   const { user, accessToken } = useAuth();
@@ -121,7 +120,10 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
 
   const scheduleNavFade = useCallback(() => {
     clearBlurTimer();
-    if (mobileOpen || playbackFocusSuppressed) return;
+    if (mobileOpen || playbackFocusSuppressed) {
+      setNavDimmed(false);
+      return;
+    }
     blurTimerRef.current = window.setTimeout(() => {
       setNavDimmed(true);
       blurTimerRef.current = null;
@@ -144,6 +146,20 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
     return clearBlurTimer;
   }, [clearBlurTimer, mobileOpen, scheduleNavFade, showNav]);
 
+  useEffect(() => {
+    const handleOutsidePointerDown = (event: PointerEvent) => {
+      if (!(event.target instanceof Node) || sidebarRef.current?.contains(event.target)) return;
+      if (mobileOpen) {
+        onClose();
+      } else {
+        scheduleNavFade();
+      }
+    };
+
+    document.addEventListener("pointerdown", handleOutsidePointerDown, true);
+    return () => document.removeEventListener("pointerdown", handleOutsidePointerDown, true);
+  }, [mobileOpen, onClose, scheduleNavFade]);
+
   const sidebar = (
     <>
       {mobileOpen ? (
@@ -155,6 +171,7 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
         />
       ) : null}
       <aside
+        ref={sidebarRef}
         onMouseEnter={showNav}
         onMouseLeave={scheduleNavFade}
         onFocus={showNav}
@@ -174,7 +191,7 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
               to="/"
               end
               onClick={onClose}
-              className="flex items-center gap-2 text-4xl font-bold tracking-tight text-white"
+              className="flex items-center gap-2 text-2xl font-bold tracking-tight text-white"
             >
               Play<span className="text-[var(--color-brand)]">listed</span> <RadioIcon size={20} />
             </NavLink>
@@ -187,8 +204,6 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
               {discoverLinks.map((link) => (
                 <NavItem key={link.to} {...link} onClick={onClose} />
               ))}
-              <NavItem to={LIBRARY_PATH} label="Library" icon={Heart} onClick={onClose} end />
-              <NavItem to={FAVORITES_PATH} label="Charts" icon={Heart} onClick={onClose} end />
               <NavItem to={profileNavPath} label="Profile" icon={Home} onClick={onClose} end />
               {showAdminLink ? (
                 <NavItem

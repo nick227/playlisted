@@ -25,9 +25,18 @@ import theatreController from "@/theatre/controller/lazyController";
 import { setRadioPlaybackActive } from "@/theatre/radioPlaybackBridge";
 import { useTheatreTrackRotation } from "@/theatre/useTheatreTrackRotation";
 
+export function radioStationQueryOptions(stationSlug: string | null) {
+  return {
+    queryKey: ["radio", "public", stationSlug],
+    queryFn: () => api.radio.get(stationSlug ? { station: stationSlug } : undefined),
+  };
+}
+
 interface RadioPlayerContextValue {
   audioRef: RefObject<HTMLAudioElement | null>;
   playing: boolean;
+  /** Retained on pause and transitions; cleared when the listening session ends. */
+  hasPlaybackSession: boolean;
   volume: number;
   setVolume: (volume: number) => void;
   togglePlayback: () => Promise<void>;
@@ -79,6 +88,7 @@ export function RadioPlayerProvider({ children }: { children: ReactNode }) {
   const chatMountCountRef = useRef(0);
 
   const [playing, setPlaying] = useState(false);
+  const [hasPlaybackSession, setHasPlaybackSession] = useState(false);
   const { volume, setVolume } = usePlaybackVolume();
   const [uiMounted, setUiMounted] = useState(false);
   const [chatMounted, setChatMounted] = useState(false);
@@ -96,8 +106,7 @@ export function RadioPlayerProvider({ children }: { children: ReactNode }) {
   const radioDataNeeded = playing || uiMounted || chatMounted || requestedStationSlug !== undefined;
   const radioPollInterval = playing || chatMounted ? 10_000 : false;
   const radioQuery = useQuery({
-    queryKey: ["radio", "public", activeStationSlug],
-    queryFn: () => api.radio.get(activeStationSlug ? { station: activeStationSlug } : undefined),
+    ...radioStationQueryOptions(activeStationSlug),
     enabled: radioDataNeeded,
     refetchInterval: radioPollInterval,
   });
@@ -220,6 +229,7 @@ export function RadioPlayerProvider({ children }: { children: ReactNode }) {
         }
 
         await audio.play();
+        setHasPlaybackSession(true);
         setPlaying(true);
         return true;
       } catch {
@@ -241,6 +251,8 @@ export function RadioPlayerProvider({ children }: { children: ReactNode }) {
         void refetchRadio().then(async ({ data }) => {
           const nextTrack = data?.status === "LIVE" ? data.nowPlaying : null;
           if (!nextTrack?.audioUrl) {
+            // A failed fetch is not confirmation that the listening session ended.
+            if (data) setHasPlaybackSession(false);
             setPlaying(false);
             unbindTheatreFromRadio();
             return;
@@ -252,8 +264,14 @@ export function RadioPlayerProvider({ children }: { children: ReactNode }) {
             audio.src === getAudioHref(nextTrack.audioUrl) &&
             isRadioElapsedAtEnd(nextTrack.elapsedSeconds, nextTrack.durationSeconds);
 
-          if (stillWaitingForNextTrack && attempt < RADIO_TRANSITION_MAX_RETRIES) {
-            scheduleTransitionRefetch(attempt + 1);
+          if (stillWaitingForNextTrack) {
+            if (attempt < RADIO_TRANSITION_MAX_RETRIES) {
+              scheduleTransitionRefetch(attempt + 1);
+            } else {
+              setHasPlaybackSession(false);
+              setPlaying(false);
+              unbindTheatreFromRadio();
+            }
             return;
           }
 
@@ -273,6 +291,7 @@ export function RadioPlayerProvider({ children }: { children: ReactNode }) {
     if (!stationNowPlaying?.audioUrl || station?.status !== "LIVE") {
       clearTransitionRetry();
       audioRef.current?.pause();
+      setHasPlaybackSession(false);
       setPlaying(false);
       unbindTheatreFromRadio();
       return;
@@ -381,6 +400,7 @@ export function RadioPlayerProvider({ children }: { children: ReactNode }) {
     const requestedTrack = station?.status === "LIVE" ? station.nowPlaying : null;
     if (!requestedTrack?.audioUrl) {
       setRequestedStationSlug(undefined);
+      setHasPlaybackSession(false);
       setPlaying(false);
       window.setTimeout(() => {
         suppressNextSitePauseRef.current = false;
@@ -404,6 +424,7 @@ export function RadioPlayerProvider({ children }: { children: ReactNode }) {
 
   function handleRadioPlay(el: HTMLAudioElement) {
     if (siteControlledRef.current) return;
+    setHasPlaybackSession(true);
     setPlaying(true);
     bindTheatreToRadio(el);
   }
@@ -426,6 +447,7 @@ export function RadioPlayerProvider({ children }: { children: ReactNode }) {
     () => ({
       audioRef,
       playing,
+      hasPlaybackSession,
       volume,
       setVolume,
       togglePlayback,
@@ -445,7 +467,7 @@ export function RadioPlayerProvider({ children }: { children: ReactNode }) {
       activeStationSlug,
       setActiveStationSlug,
     }),
-    [playing, volume, setVolume, togglePlayback, skipRadioTrack, playStation, pauseRadio, registerRadioUi, unregisterRadioUi, uiMounted, registerChatUi, unregisterChatUi, listenerId, radioQuery, station, nowPlaying, isLive, activeStationSlug],
+    [playing, hasPlaybackSession, volume, setVolume, togglePlayback, skipRadioTrack, playStation, pauseRadio, registerRadioUi, unregisterRadioUi, uiMounted, registerChatUi, unregisterChatUi, listenerId, radioQuery, station, nowPlaying, isLive, activeStationSlug],
   );
 
   return (

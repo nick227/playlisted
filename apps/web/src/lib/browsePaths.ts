@@ -1,18 +1,15 @@
 import { profilePath } from "@/lib/routes";
-import { THEATRE_SHELVED } from "@/theatre/shelf";
 
-export const LIBRARY_PATH = "/library";
+/** Top-level page: radio, top ten, personal favorites, and the library feed. */
+export const HOME_PATH = "/";
 export const SONGS_PATH = "/songs";
 export const CHAT_PATH = "/chat";
 export const GENRES_PATH = "/genres";
 export const ARTISTS_PATH = "/artists";
 export const PLAYLISTS_PATH = "/playlists";
-export const FAVORITES_PATH = "/favorites";
 
 /** Shared max-width for browse breadcrumbs and collection content. Translucent while the song-art background is on. */
-export const BROWSE_LAYOUT_CLASS = `mx-auto w-full min-w-0 max-w-6xl shrink-0 overflow-x-clip ${
-  THEATRE_SHELVED ? "bg-transparent" : "bg-[var(--color-canvas)]/100"
-} p-2`;
+export const BROWSE_LAYOUT_CLASS = `mx-auto bg-black/50 w-full min-w-0 max-w-7xl shrink-0 overflow-x-clip bg-[var(--color-canvas)]/100 px-4 py-2`;
 
 /** Wider layout for the library feed root. */
 export const LIBRARY_FEED_LAYOUT_CLASS =
@@ -35,12 +32,7 @@ export function artistPath(username: string): string {
 }
 
 export function libraryCrumb(): BrowseCrumb {
-  return { label: "Library", to: LIBRARY_PATH };
-}
-
-/** Root `/library` — current page only, styled like the terminal crumb on inner pages. */
-export function libraryRootCrumbs(): BrowseCrumb[] {
-  return [{ label: "Library /" }];
+  return { label: "Home", to: HOME_PATH };
 }
 
 export function songsBrowseCrumbs(): BrowseCrumb[] {
@@ -65,10 +57,6 @@ export function artistDetailCrumbs(displayName: string): BrowseCrumb[] {
 
 export function playlistsBrowseCrumbs(): BrowseCrumb[] {
   return [libraryCrumb(), { label: "Playlists", to: PLAYLISTS_PATH }];
-}
-
-export function favoritesBrowseCrumbs(): BrowseCrumb[] {
-  return [libraryCrumb(), { label: "Charts", to: FAVORITES_PATH }];
 }
 
 export function playlistBrowseCrumbs(

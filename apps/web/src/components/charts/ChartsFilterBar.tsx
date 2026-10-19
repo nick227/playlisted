@@ -33,24 +33,8 @@ export function ChartsFilterBar({
 }: ChartsFilterBarProps) {
   return (
     <div className="border-b border-[var(--color-border)] px-4 py-3">
-      <div className="flex flex-wrap items-center gap-2" role="tablist" aria-label="Chart category">
-        {TAB_OPTIONS.map((option) => (
-          <button
-            key={option.value}
-            type="button"
-            role="tab"
-            aria-selected={tab === option.value}
-            data-active={tab === option.value}
-            className={filterChipClass}
-            onClick={() => onTabChange(option.value)}
-          >
-            {option.label}
-          </button>
-        ))}
-      </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <span className="text-xs text-[var(--color-text-subtle)]">Period</span>
         {CHARTS_PAGE_RANGE_OPTIONS.map((option) => (
           <button
             key={option.value}
@@ -62,28 +46,8 @@ export function ChartsFilterBar({
             {option.label}
           </button>
         ))}
-      </div>
 
-      {tab === "songs" && genres.length > 0 ? (
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <label htmlFor="charts-genre" className="text-xs text-[var(--color-text-subtle)]">
-            Genre
-          </label>
-          <select
-            id="charts-genre"
-            value={genre ?? ""}
-            onChange={(e) => onGenreChange(e.target.value || null)}
-            className="rounded-lg border border-white/10 px-2.5 py-1.5 text-xs outline-none focus:border-[var(--color-brand)]/50"
-          >
-            <option value="">All genres</option>
-            {genres.map((g) => (
-              <option key={g.id} value={g.slug}>
-                {g.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      ) : null}
+      </div>
     </div>
   );
 }

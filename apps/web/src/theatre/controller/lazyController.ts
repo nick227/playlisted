@@ -9,6 +9,8 @@
  * change their import path.
  */
 
+import { THEATRE_SHELVED } from '../shelf'
+
 import { getAtmosphereFxVisibility, subscribeAtmosphereFxVisibility } from '../atmosphere/atmosphereFxStore'
 
 interface RealTheatreController extends EventTarget {
@@ -122,7 +124,7 @@ class LazyTheatreController extends EventTarget {
   }
 
   private _runtimeRequested(): boolean {
-    return this.state.fxEnabled || this._atmosphereFxRequested()
+    return !THEATRE_SHELVED && (this.state.fxEnabled || this._atmosphereFxRequested())
   }
 
   private async _load(): Promise<RealTheatreController> {
@@ -227,7 +229,7 @@ class LazyTheatreController extends EventTarget {
       return
     }
 
-    if (track) {
+    if (track && !THEATRE_SHELVED) {
       void this._load().then(real => {
         if (this._pendingTrackContext !== undefined) {
           real.setTrackContext(this._pendingTrackContext)
@@ -243,7 +245,7 @@ class LazyTheatreController extends EventTarget {
       this._real.setSongAtmosphereFx(song)
       return
     }
-    if (song) {
+    if (song && !THEATRE_SHELVED) {
       void this._load().then(real => {
         real.setSongAtmosphereFx(song)
       })
@@ -280,7 +282,7 @@ class LazyTheatreController extends EventTarget {
     this.state.fxEnabled = enabled
     this.dispatchEvent(new Event('change'))
 
-    if (!enabled) return
+    if (!enabled || THEATRE_SHELVED) return
 
     if (this.state.canEnter) {
       const real = await this._load()
@@ -296,18 +298,22 @@ class LazyTheatreController extends EventTarget {
   // ── Heavy methods — trigger load ──────────────────────────────────────────
 
   public async toggle() {
+    if (THEATRE_SHELVED) return
     return (await this._load()).toggle()
   }
 
   public async enter() {
+    if (THEATRE_SHELVED) return
     return (await this._load()).enter()
   }
 
   public async enterBackground() {
+    if (THEATRE_SHELVED) return
     return (await this._load()).enterBackground()
   }
 
   public changePreset(id: string) {
+    if (THEATRE_SHELVED) return
     void this._load().then(real => real.changePreset(id))
   }
 
@@ -318,6 +324,7 @@ class LazyTheatreController extends EventTarget {
   }
 
   public async onPlaybackSegmentChanged() {
+    if (THEATRE_SHELVED) return
     if (this._real) return this._real.onPlaybackSegmentChanged()
     return (await this._load()).onPlaybackSegmentChanged()
   }

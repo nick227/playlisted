@@ -2,8 +2,16 @@ import { useEffect } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 
 import { PlaylistAccessEmptyState } from "@/components/feedback/PlaylistAccessEmptyState";
-import { PlaylistDetailView, PlaylistPageSkeleton } from "@/components/playlists/PlaylistDetailView";
-import { usePlaylistByUsernameSlug } from "@/hooks/usePlaylistByUsernameSlug";
+import {
+  PlaylistDetailView,
+  PlaylistPageSkeleton,
+  useRelatedPlaylistsQueryOptions,
+} from "@/components/playlists/PlaylistDetailView";
+import { useHoldRouteUntilCached } from "@/hooks/useHoldRouteUntilCached";
+import {
+  usePlaylistByUsernameSlug,
+  usePlaylistByUsernameSlugQueryOptions,
+} from "@/hooks/usePlaylistByUsernameSlug";
 import { usePlaylistPageMeta } from "@/hooks/usePlaylistPageMeta";
 import { playlistPath } from "@/lib/routes";
 
@@ -32,6 +40,12 @@ export function CanonicalPlaylistPage() {
       { replace: true },
     );
   }, [hash, isPlaceholderData, navigate, playlist, username, slug]);
+
+  // Last hook: suspending anywhere earlier would change the hook list between attempts.
+  useHoldRouteUntilCached(
+    usePlaylistByUsernameSlugQueryOptions(username, slug),
+    useRelatedPlaylistsQueryOptions(),
+  );
 
   if ((isLoading || isPlaceholderData) && !isError) {
     return <PlaylistPageSkeleton />;

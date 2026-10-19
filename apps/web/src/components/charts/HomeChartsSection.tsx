@@ -2,7 +2,7 @@ import type { TopArtistItem, TopPlaylistItem, TopSongItem } from "@playlisted/cl
 
 import { useTopArtists, useTopPlaylists, useTopSongs } from "@/hooks/useCharts";
 import { useIsMdUp } from "@/hooks/useIsMdUp";
-import { FAVORITES_PATH } from "@/lib/browsePaths";
+import { HOME_PATH } from "@/lib/browsePaths";
 import { homeChartSongOrigin } from "@/lib/playbackOrigin";
 import { playlistPath, profilePath } from "@/lib/routes";
 
@@ -56,7 +56,7 @@ export function HomeChartsSection() {
         <ChartPanelContainer
           title="Top Songs"
           subtitle={`Most-played — ${rangeLabel}`}
-          viewAllHref={`${FAVORITES_PATH}?tab=songs`}
+          viewAllHref={`${HOME_PATH}?tab=songs#charts`}
         >
           {songs.map((item: TopSongItem) => (
             <ChartSongPanelRow
@@ -83,7 +83,7 @@ export function HomeChartsSection() {
         <ChartPanelContainer
           title="Top Playlists"
           subtitle={`Most-played collections — ${rangeLabel}`}
-          viewAllHref={`${FAVORITES_PATH}?tab=playlists`}
+          viewAllHref={`${HOME_PATH}?tab=playlists#charts`}
         >
           {playlists.map((item: TopPlaylistItem) => (
             <ChartPanelRow
@@ -116,7 +116,7 @@ export function HomeChartsSection() {
         <ChartPanelContainer
           title="Top Artists"
           subtitle={`Creators driving the most plays — ${rangeLabel}`}
-          viewAllHref={`${FAVORITES_PATH}?tab=artists`}
+          viewAllHref={`${HOME_PATH}?tab=artists#charts`}
         >
           {artists.map((item: TopArtistItem) => (
             <ChartPanelRow

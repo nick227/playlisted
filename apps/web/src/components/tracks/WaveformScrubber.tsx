@@ -5,17 +5,21 @@ import { useAudioWaveformPeaks } from "../song-visual-editor/hooks/useAudioWavef
 interface WaveformScrubberProps {
   audioUrl?: string | null;
   isActive?: boolean;
+  /** Shorter, quieter bars for dense tracklists where titles should lead. */
+  compact?: boolean;
 }
 
-export function WaveformScrubber({ audioUrl, isActive }: WaveformScrubberProps) {
+export function WaveformScrubber({ audioUrl, isActive, compact }: WaveformScrubberProps) {
   const { data, loading } = useAudioWaveformPeaks(audioUrl);
   const transport = useContext(PlaybackTransportContext);
   const containerRef = useRef<HTMLDivElement>(null);
   const gradientId = "grad-" + useId().replace(/:/g, "");
+  const heightClass = compact ? "h-4" : "h-7";
+  const unplayedColor = compact ? "rgba(255, 255, 255, 0.12)" : "rgba(255, 255, 255, 0.2)";
 
   if (loading || !data) {
     return (
-      <div className="flex h-7 w-full items-center justify-center opacity-50">
+      <div className={`flex ${heightClass} w-full items-center justify-center opacity-50`}>
         <div className="h-0.5 w-full bg-[var(--color-text-muted)] opacity-30" />
       </div>
     );
@@ -39,7 +43,7 @@ export function WaveformScrubber({ audioUrl, isActive }: WaveformScrubberProps) 
   return (
     <div 
       ref={containerRef}
-      className="group relative flex h-7 w-full cursor-pointer items-end"
+      className={`group relative flex ${heightClass} w-full cursor-pointer items-end`}
       onPointerDown={(e) => {
         // Prevent event from bubbling up and triggering track row play/pause
         e.stopPropagation();
@@ -53,7 +57,7 @@ export function WaveformScrubber({ audioUrl, isActive }: WaveformScrubberProps) 
         style={{
           // Use CSS variables for easy theming
           '--waveform-played': 'var(--color-brand)',
-          '--waveform-unplayed': isActive ? 'color-mix(in srgb, var(--color-brand) 50%, transparent)' : 'rgba(255, 255, 255, 0.2)',
+          '--waveform-unplayed': isActive ? 'color-mix(in srgb, var(--color-brand) 50%, transparent)' : unplayedColor,
         } as React.CSSProperties}
       >
         <defs>

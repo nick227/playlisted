@@ -1001,47 +1001,6 @@ a.focus-lane__overlay-primary:hover {
   }
 }
 
-/* Artist profile collection banner — lift shade when playing */
-.collection-banner-shade {
-  z-index: 2;
-  transition: opacity 480ms ease;
-}
-
-.collection-banner-shade.is-playing {
-  opacity: 0;
-}
-
-.collection-banner-glow {
-  position: absolute;
-  inset: 0;
-  z-index: 3;
-  pointer-events: none;
-  border-radius: inherit;
-  opacity: 0;
-  background:
-    radial-gradient(circle at 82% 72%, color-mix(in srgb, var(--color-brand) 38%, transparent), transparent 38%),
-    linear-gradient(to top, rgba(124, 77, 255, 0.18), transparent 52%);
-  mix-blend-mode: screen;
-  transition: opacity 220ms ease;
-  box-shadow: 
-    /* Layer 1: Core intense light spill directly behind the sides */
-    0px 0px 4px 5px rgba(255, 255, 255, 0.4),
-    
-    /* Layer 2: Massive, diffused ambient horizontal scatter */
-    0px 0px 12px 5px rgba(255, 255, 255, 0.15);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .collection-banner-shade {
-    transition: none;
-  }
-
-  .collection-banner-glow.is-playing {
-    animation: none;
-    opacity: 0.72;
-  }
-}
-
 .main-player-padding {
   transition: padding-bottom var(--duration-player-enter) var(--ease-player-enter);
 }

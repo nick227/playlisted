@@ -22,6 +22,8 @@ interface TrackListProps {
   onPlay: (recording: Recording, index: number) => void;
   playbackOriginForTrack?: (recording: Recording, index: number) => string | undefined;
   activeWhenTrackMatches?: boolean;
+  /** Album-style rows: track numbers instead of artwork, divided full-width rows. */
+  numbered?: boolean;
   editMode?: boolean;
   onRemove?: (recordingId: string) => void;
   onMoveUp?: (recordingId: string) => void;
@@ -44,6 +46,7 @@ export function TrackList({
   onPlay,
   playbackOriginForTrack,
   activeWhenTrackMatches,
+  numbered,
   editMode,
   onRemove,
   onMoveUp,
@@ -63,7 +66,7 @@ export function TrackList({
   }
 
   return (
-    <div className="flex flex-col gap-0.5 rounded-2xl">
+    <div className={numbered ? "flex flex-col divide-y divide-white/[0.06] border-y border-white/[0.06]" : "flex flex-col gap-0.5 rounded-2xl"}>
       {recordings.map((recording, index) => {
         const displayOwner = ownerName ?? recording.uploader?.displayName ?? playlistContext?.ownerDisplayName;
         const trackContext = playlistContext
@@ -81,6 +84,7 @@ export function TrackList({
             <TrackRow
             recordingId={recording.id}
             index={index}
+            numbered={numbered}
             title={recording.title}
             creator={displayOwner}
             meta={recording.recordingType}

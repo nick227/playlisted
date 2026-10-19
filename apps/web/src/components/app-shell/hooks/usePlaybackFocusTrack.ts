@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { resolvePlaybackArtwork } from "@/lib/playbackArtwork";
 import { usePlaybackTransport } from "@/hooks/usePlaybackTransport";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 import { useRadioPlayer } from "@/providers/RadioPlayerProvider";
@@ -24,9 +25,11 @@ export function usePlaybackFocusTrack() {
     currentTrack,
     isPlaying,
     playbackContext,
+    state: playerState,
   } = useAudioPlayer();
   const {
     playing: radioPlaying,
+    hasPlaybackSession: radioHasPlaybackSession,
     nowPlaying: radioNowPlaying,
     audioRef: radioAudioRef,
   } = useRadioPlayer();
@@ -68,7 +71,7 @@ export function usePlaybackFocusTrack() {
         playlistTitle: radioNowPlaying.playlist.title,
         playlistSlug: radioNowPlaying.playlist.slug,
         sourceLabel: "Radio",
-        sourceHref: "/radio",
+        sourceHref: "/#radio",
       };
     }
 
@@ -91,7 +94,16 @@ export function usePlaybackFocusTrack() {
 
   const focusTrackKey = `${focusTrack?.sourceLabel ?? "player"}:${focusTrack?.id ?? "none"}`;
 
+  // Artwork follows the retained listening session, not the UI focus timer.
+  // Site close/queue exhaustion clears currentTrack; radio retains station metadata.
+  const artworkUrl = resolvePlaybackArtwork({
+    track: focusTrack,
+    playerState,
+    radioHasPlaybackSession,
+  });
+
   return {
+    artworkUrl,
     focusTrack,
     focusTrackKey,
     playFocusActive: isPlaying || radioPlaying,

@@ -186,8 +186,8 @@ export function ArtistProfileHero({
 
   return (
     <section className="min-w-0 overflow-x-clip rounded-lg px-4 pt-4">
-      <div className="grid min-w-0 gap-6 md:grid-cols-[minmax(140px,180px)_1fr] md:gap-10 md:items-start">
-        <div className="relative group/avatar w-full md:max-w-[180px]">
+      <div className="grid min-w-0 gap-6 md:grid-cols-[minmax(140px,280px)_1fr] md:gap-10 md:items-start">
+        <div className="relative group/avatar w-full md:max-w-[280px]">
           {user.avatarUrl ? (
             <img
               src={user.avatarUrl}
@@ -231,12 +231,12 @@ export function ArtistProfileHero({
           )}
         </div>
 
-        <div className="min-w-0 space-y-5">
+        <div className="min-w-0">
           <p className="text-sm text-[var(--color-text-muted)]">@{username}</p>
 
           <div className="flex min-w-0 flex-wrap items-center gap-3">
             <h1
-              className="min-w-0 max-w-full break-words text-3xl font-light leading-tight tracking-tight text-white md:text-4xl lg:text-5xl outline-none focus:bg-white/5 rounded px-1 -ml-1 py-0.5 transition-colors"
+              className="min-w-0 max-w-full break-words text-2xl font-light leading-tight tracking-tight text-white md:text-4xl lg:text-5xl outline-none focus:bg-white/5 rounded px-1 -ml-1 py-0.5 transition-colors"
               contentEditable={isOwner && !preview}
               suppressContentEditableWarning={true}
               onBlur={isOwner && !preview ? handleNameBlur : undefined}
@@ -295,7 +295,7 @@ export function ArtistProfileHero({
             </p>
           )}
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3 mt-4">
             {profileLinks.length > 0 && !editingLinks ? (
               <nav aria-label={`${displayName} links`} className="flex flex-wrap gap-2">
                 {profileLinks.map((link) => {
@@ -411,7 +411,7 @@ export function ArtistProfileHero({
             </div>
           )}
 
-          <div className="collection-controls mt-6 flex min-w-0 flex-wrap items-center gap-2 flex-nowrap sm:overflow-x-auto">
+          <div className="collection-controls mt-6 flex min-w-0 flex-wrap items-center gap-2 flex-nowrap">
             
             {isOwner && !preview && !editingLinks ? (
               <button

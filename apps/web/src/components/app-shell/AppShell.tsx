@@ -15,7 +15,6 @@ import { usePlaybackFocusTrack } from "./hooks/usePlaybackFocusTrack";
 import { usePlayerSpacebarShortcut } from "./hooks/usePlayerSpacebarShortcut";
 import { useResumePlaybackAfterNav } from "./hooks/useResumePlaybackAfterNav";
 import { useRouteScrollReset } from "./hooks/useRouteScrollReset";
-import { useSongArtIdleReveal } from "./hooks/useSongArtIdleReveal";
 import { useTheatreSkipGesture } from "./hooks/useTheatreSkipGesture";
 import { PlaybackFocusLane } from "./PlaybackFocusLane/PlaybackFocusLane";
 import { QueuePanel } from "./QueuePanel";
@@ -40,9 +39,9 @@ export function AppShell({ children }: AppShellProps) {
 
   // --- Playback source -------------------------------------------------------
   const {
+    artworkUrl,
     focusTrack,
     focusTrackKey,
-    playFocusActive,
     currentTimeMsRef,
     radioPlaying,
     radioNowPlaying,
@@ -53,12 +52,14 @@ export function AppShell({ children }: AppShellProps) {
 
   // --- Cinematic body fade + focus lane --------------------------------------
   const playbackFocus = usePlaybackFocusBody({
-    playFocusActive,
+    playFocusActive: Boolean(focusTrack),
     focusTrackKey,
     currentTimeMsRef,
     scrollContainerRef: mainRef,
     pathname: location.pathname,
     search: location.search,
+    radioStageVisible: radioUiMounted,
+    radioPlaying,
   });
 
   useSyncPlaybackBodyFocusHidden(playbackFocus.bodyFocusMode);
@@ -86,12 +87,6 @@ export function AppShell({ children }: AppShellProps) {
     onSkip: skipPlayback,
   });
 
-  const songArtVisible = useSongArtIdleReveal({
-    enabled: THEATRE_SHELVED && theatreFxEnabled,
-    playFocusActive,
-    pathname: location.pathname,
-  });
-
   // --- Global shortcuts + navigation side effects ----------------------------
   useResumePlaybackAfterNav(location.pathname, radioPlaying);
   usePlayerSpacebarShortcut({
@@ -107,18 +102,16 @@ export function AppShell({ children }: AppShellProps) {
   const radioShellActive = isRadioShellActive(
     radioPlaying,
     Boolean(radioNowPlaying),
-    location.pathname,
     radioUiMounted,
   );
   const shellHasPlayer = playerShellActive || radioShellActive;
-  const reservePlayerSpace = shellHasPlayer || location.pathname === "/radio";
   const isChatPage = location.pathname === "/chat";
   const mainClassName = buildMainContentClassName({
     bodyFocusMode: playbackFocus.bodyFocusMode,
     snapReveal: playbackFocus.snapReveal,
     contentInputGuarded: playbackFocus.contentInputGuarded,
     isChatPage,
-    shellHasPlayer: reservePlayerSpace,
+    shellHasPlayer,
   });
 
   // Keep the docked player minimized whenever playback focus owns the viewport.
@@ -128,8 +121,7 @@ export function AppShell({ children }: AppShellProps) {
 
   return (
     <div className="relative flex h-dvh min-h-0 w-full max-w-full overflow-hidden bg-transparent">
-      {/* Art stays up while content is faded, so only a real reveal clears it. */}
-      <BackgroundLayer songArtVisible={!THEATRE_SHELVED || songArtVisible || playbackFocus.bodyFocusMode} />
+      <BackgroundLayer artworkUrl={artworkUrl} songArtEnabled={theatreFxEnabled} />
 
       <Sidebar mobileOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 

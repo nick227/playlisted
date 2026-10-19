@@ -49,6 +49,14 @@ export function useUserRandomPlaylists(limit = 10, enabled = true) {
   });
 }
 
+export function topArtistsQueryOptions(range: ChartRange = "7d", limit = 10) {
+  return {
+    queryKey: ["charts", "top-artists", range, limit],
+    queryFn: (): Promise<TopArtistsResponse> => api.charts.topArtists({ range, limit }),
+    staleTime: 2 * 60_000,
+  };
+}
+
 export function useTopArtists(
   range: ChartRange = "7d",
   limit = 10,
@@ -56,10 +64,8 @@ export function useTopArtists(
   keepPrevious = false,
 ) {
   return useQuery<TopArtistsResponse>({
-    queryKey: ["charts", "top-artists", range, limit],
-    queryFn: () => api.charts.topArtists({ range, limit }),
+    ...topArtistsQueryOptions(range, limit),
     enabled,
-    staleTime: 2 * 60_000,
     placeholderData: keepPrevious ? keepPreviousData : undefined,
   });
 }

@@ -1,0 +1,32 @@
+/* On-air light: a slow, quiet breathe rather than a ping. */
+.radio-live-dot {
+  animation: radio-live-breathe 2.8s ease-in-out infinite;
+}
+
+@keyframes radio-live-breathe {
+  50% { opacity: 0.35; }
+}
+
+/* New cover fades in when the track changes (the link is keyed by track id). */
+.radio-cover {
+  animation: radio-cover-in 400ms ease-out;
+}
+
+@keyframes radio-cover-in {
+  from { opacity: 0; }
+}
+
+.radio-station-scroller {
+  scrollbar-width: none;
+}
+
+.radio-station-scroller::-webkit-scrollbar {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .radio-live-dot,
+  .radio-cover {
+    animation: none;
+  }
+}

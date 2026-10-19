@@ -86,7 +86,8 @@ export function SearchPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="mx-auto max-w-7xl bg-[var(--color-canvas)]/80 px-4 py-6 sm:px-6 md:py-8 lg:px-8 shrink-0 overflow-x-clip">
+      <div className="row"><a className="text-xs underline" href="/">home</a></div>
       <h1 className="mb-8 text-2xl font-bold">
         Results for <span className="text-[var(--color-brand)]">{q}</span>
       </h1>

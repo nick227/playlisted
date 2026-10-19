@@ -1,8 +1,6 @@
 /**
- * Theatre is shelved: the background renders full-screen song art only.
- * Scene rotation, video/user-media clips, atmosphere FX, and sitewide
- * swipe-to-skip are off. The cinematic body fade, focus lanes, and subtitle
- * display still run, staggered behind the song art (see useSongArtIdleReveal).
- * Flip to false to restore the full theatre — every gate reads this one flag.
+ * Full theatre is shelved. AppShell renders persistent song artwork directly;
+ * page inactivity owns Radio's content fade independently of artwork.
+ * Animated scenes, video backgrounds, and atmosphere FX remain disabled.
  */
 export const THEATRE_SHELVED = true

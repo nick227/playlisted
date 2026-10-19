@@ -5,7 +5,6 @@ import {
   EMPTY_LIBRARY_SONGS,
   EMPTY_PLAYLISTS,
 } from "@/components/library/libraryFilterUtils";
-import { LibraryBrowseLayout } from "@/components/library/LibraryBrowseLayout";
 import { MuseumFeed } from "@/components/library/museum/MuseumFeed";
 import { PanelSkeleton } from "@/components/library/libraryPanels";
 import {
@@ -13,9 +12,9 @@ import {
   useLibraryPlaylists,
   useLibrarySongs,
 } from "@/hooks/useLibrary";
-import { LIBRARY_FEED_LAYOUT_CLASS } from "@/lib/browsePaths";
 
-export function SpatialLibraryBrowser() {
+/** Infinite library discovery feed (artists, songs, playlists). */
+export function LibraryFeedSection() {
   const artistsQuery = useLibraryArtists();
   const playlistsQuery = useLibraryPlaylists();
   const songsQuery = useLibrarySongs(null, true, 100);
@@ -38,17 +37,9 @@ export function SpatialLibraryBrowser() {
     playlistsQuery.isLoading ||
     songsQuery.isLoading;
 
-  if (isLoading) {
-    return (
-      <LibraryBrowseLayout crumbs={[]} layoutClass={LIBRARY_FEED_LAYOUT_CLASS}>
-        <PanelSkeleton />
-      </LibraryBrowseLayout>
-    );
-  }
-
   return (
-    <LibraryBrowseLayout crumbs={[]} layoutClass={LIBRARY_FEED_LAYOUT_CLASS}>
-      <MuseumFeed pools={pools} />
-    </LibraryBrowseLayout>
+    <section id="library" aria-label="Library" className="scroll-mt-4">
+      {isLoading ? <PanelSkeleton /> : <MuseumFeed pools={pools} />}
+    </section>
   );
 }

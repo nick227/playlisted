@@ -67,7 +67,7 @@ export function RegisterPage() {
         displayName: displayName.trim(),
         password,
       });
-      navigate(panelPathForRole(newUser.role) ?? "/", { replace: true });
+      navigate(from !== "/" ? from : panelPathForRole(newUser.role) ?? "/", { replace: true });
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {

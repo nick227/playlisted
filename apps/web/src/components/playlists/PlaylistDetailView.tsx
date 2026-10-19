@@ -11,7 +11,7 @@ import { Skeleton } from "@/components/feedback/Skeleton";
 import { useAddCollectionPlaylist, useCollectionPlaylists } from "@/hooks/useCollections";
 import { useIsMdUp } from "@/hooks/useIsMdUp";
 import { usePlaylistHashTrack } from "@/hooks/usePlaylistHashTrack";
-import { usePlaylists } from "@/hooks/usePlaylists";
+import { usePlaylists, usePlaylistsQueryOptions } from "@/hooks/usePlaylists";
 import { BROWSE_LAYOUT_CLASS, playlistBrowseCrumbs } from "@/lib/browsePaths";
 import { resolvePlaylistBrowseSequence } from "@/lib/browseNavigation/resolvePlaylistNeighbors";
 import { collectionTrackOrigin } from "@/lib/playbackOrigin";
@@ -24,9 +24,19 @@ type PlaylistDetailViewProps = {
   isRefreshing?: boolean;
 };
 
+/** The "More playlists" row; playlist routes hold for it so it never pops in under the fold line. */
+export function useRelatedPlaylistsQueryOptions() {
+  const isMdUp = useIsMdUp();
+  return usePlaylistsQueryOptions(relatedPlaylistLimitFor(isMdUp) + 1);
+}
+
+function relatedPlaylistLimitFor(isMdUp: boolean) {
+  return isMdUp ? 4 : 6;
+}
+
 export function PlaylistDetailView({ playlist, isRefreshing = false }: PlaylistDetailViewProps) {
   const isMdUp = useIsMdUp();
-  const relatedPlaylistLimit = isMdUp ? 4 : 6;
+  const relatedPlaylistLimit = relatedPlaylistLimitFor(isMdUp);
   const { data: related } = usePlaylists(relatedPlaylistLimit + 1);
   const { setQueue, currentTrack, togglePlay, ensurePlayback, playbackContext, state } = useAudioPlayer();
   const { status, user } = useAuth();

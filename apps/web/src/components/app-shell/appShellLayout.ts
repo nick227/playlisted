@@ -11,10 +11,9 @@ type MainContentLayoutOptions = {
 export function isRadioShellActive(
   radioPlaying: boolean,
   hasRadioNowPlaying: boolean,
-  pathname: string,
   radioUiMounted: boolean,
 ): boolean {
-  return radioPlaying && hasRadioNowPlaying && pathname !== "/radio" && !radioUiMounted;
+  return radioPlaying && hasRadioNowPlaying && !radioUiMounted;
 }
 
 export function buildMainContentClassName({

@@ -97,15 +97,7 @@ export function SettingsPage() {
   const canSave = hasChanges && !saveMutation.isPending && Boolean(username.trim()) && !error;
 
   return (
-    <div className="mx-auto max-w-2xl space-y-10 px-4 py-12 sm:px-6 lg:px-8 min-h-screen">
-      <div>
-        <h1 className="mt-2 text-3xl font-black tracking-tighter text-white md:text-4xl">
-          Control Panel
-        </h1>
-        <p className="mt-2 text-sm text-[var(--color-text-muted)]">
-          Manage your account settings, username, and password.
-        </p>
-      </div>
+    <div className="mx-auto max-w-6xl w-full bg-[var(--color-canvas)]/100 space-y-10 px-4 py-12 sm:px-6 lg:px-8 min-h-screen">
 
       <div className="space-y-8 rounded-2xl border border-white/10 bg-[var(--color-surface)]/50 p-6 shadow-xl">
         <section>

@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { Link, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 import { FavoriteHeartButton } from "@/components/media/FavoriteHeartButton";
 import { VerticalVolumeControl } from "@/components/playback/VerticalVolumeControl";
@@ -16,6 +16,7 @@ import { usePlaybackTransport } from "@/hooks/usePlaybackTransport";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
 import { usePlaybackVolume } from "@/providers/PlaybackVolumeProvider";
 import { useRadioPlayer } from "@/providers/RadioPlayerProvider";
+import { isRadioShellActive } from "./appShellLayout";
 
 type PlayerDisplayTrack = {
   id: string;
@@ -39,7 +40,6 @@ type BottomPlayerProps = {
 };
 
 export function BottomPlayer({ collapsedByFocusLane = false }: BottomPlayerProps) {
-  const location = useLocation();
   const {
     currentTrack,
     playerDismissSnapshot,
@@ -68,7 +68,7 @@ export function BottomPlayer({ collapsedByFocusLane = false }: BottomPlayerProps
   const [radioCurrentTime, setRadioCurrentTime] = useState(0);
 
   const radioShellActive =
-    radioPlaying && Boolean(radioNowPlaying) && location.pathname !== "/radio" && !radioUiMounted;
+    isRadioShellActive(radioPlaying, Boolean(radioNowPlaying), radioUiMounted);
   const radioDisplayTrack = useMemo<PlayerDisplayTrack | null>(() => {
     if (!radioShellActive || !radioNowPlaying) return null;
     return {
