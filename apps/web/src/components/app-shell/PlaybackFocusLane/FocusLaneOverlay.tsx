@@ -11,7 +11,6 @@ import {
 import { PlaybackBars } from "@/features/playback-indicators/PlaybackBars";
 import { PLAYBACK_FOCUS_INTERACTIVE_ATTR, stopPlaybackFocusBubble } from "@/lib/playbackFocus/interactiveTarget";
 import { FocusLaneLink, type GenreLink } from "./artistVisualLinks";
-import { PlaybackFocusReactionBar } from "./PlaybackFocusReactionBar";
 
 const CONTROLS_IDLE_MS = 4000;
 const ART_RELOAD_MS = 2000;
@@ -241,7 +240,6 @@ export function FocusLaneOverlay({
 
 /** Persistent focus-mode chrome, intentionally independent of center content. */
 export function FocusLanePersistentControls({
-  recordingId,
   withPlayer = true,
   playerCollapsed = false,
 }: FocusLanePersistentControlsProps) {
