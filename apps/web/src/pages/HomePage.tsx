@@ -49,11 +49,11 @@ export function HomePage() {
   return (
     <div className={`${LIBRARY_FEED_LAYOUT_CLASS} flex flex-col gap-10 md:gap-12`}>
       <WelcomeSection />
+      <SiteTopTenSection />
       <RadioSection />
       <PersonalFavoritesSection />
-      <SiteTopTenSection />
-      <HomeIntro />
       <LibraryFeedSection />
+      <HomeIntro />
     </div>
   );
 }
