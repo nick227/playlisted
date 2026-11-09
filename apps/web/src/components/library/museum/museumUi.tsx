@@ -404,6 +404,9 @@ export function MuseumSectionHeader({
   return (
     <div className="mb-4 flex min-h-8 items-center justify-between gap-4 md:mb-5">
       <div className="min-w-0">
+        <h2 className="text-[1.375rem] font-bold tracking-tight leading-tight text-white md:text-[1.75rem]">
+          {label}
+        </h2>
       </div>
       {href ? (
         <Link

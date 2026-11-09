@@ -6,18 +6,28 @@ function randomVisitorId() {
   return btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 
+let ephemeralVisitorId: string | null = null;
+
 export function getTrafficVisitorId() {
+  let candidate = ephemeralVisitorId;
   try {
     const existing = localStorage.getItem(STORAGE_KEY);
     if (existing && /^[a-zA-Z0-9_-]{12,64}$/.test(existing)) {
       return existing;
     }
 
-    const next = randomVisitorId();
-    localStorage.setItem(STORAGE_KEY, next);
-    return next;
+    if (!candidate) {
+      candidate = randomVisitorId();
+    }
+    localStorage.setItem(STORAGE_KEY, candidate);
+    ephemeralVisitorId = null;
+    return candidate;
   } catch {
-    return randomVisitorId();
+    if (!candidate) {
+      candidate = randomVisitorId();
+    }
+    ephemeralVisitorId = candidate;
+    return candidate;
   }
 }
 
