@@ -289,7 +289,7 @@ export function PersonalFavoritesSection() {
 
   return (
     <section id="personal" className="scroll-mt-4">
-      <MuseumSectionHeader label="Your favorites" />
+      <MuseumSectionHeader />
       {status === "authenticated" ? (
         <PersonalFavoritesBody />
       ) : (

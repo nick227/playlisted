@@ -397,7 +397,7 @@ export function MuseumSectionHeader({
   href,
   hrefLabel = "View all",
 }: {
-  label: string;
+  label?: string;
   href?: string;
   hrefLabel?: string;
 }) {

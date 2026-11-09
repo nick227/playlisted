@@ -333,20 +333,7 @@ export function HomeIntro() {
     <section aria-labelledby="home-intro-heading" className="flex flex-col gap-8">
       <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
         <div className="max-w-xl">
-        </div>
-        <div className="flex items-center gap-2">
-          <Link
-            to={ARTISTS_PATH}
-            className="inline-flex h-10 items-center gap-1.5 rounded-full px-4 text-sm font-medium text-white/80 transition hover:bg-white/5 hover:text-white"
-          >
-            All artists <ArrowRight size={15} aria-hidden="true" />
-          </Link>
-          <Link
-            to={postHref}
-            className="inline-flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-semibold text-white transition hover:bg-[var(--color-brand-hover)]"
-          >
-            Post your music <ArrowUpRight size={15} aria-hidden="true" />
-          </Link>
+          <h1 className="text-4xl font-semibold text-white">PlayListed</h1>
         </div>
       </header>
 

@@ -219,7 +219,7 @@ export function RadioSection() {
         onLostPointerCapture={swipeHandlers.onLostPointerCapture}
         onClickCapture={swipeHandlers.onClick}
       >
-        <div data-radio-gesture-surface className="w-[min(100%,clamp(9rem,24vh,17.5rem))]">
+        <div data-radio-gesture-surface className="w-[min(100%,clamp(40rem,44vh,20.5rem))]">
           {playlistUrl ? (
             <Link
               key={nowPlaying?.id}

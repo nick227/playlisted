@@ -27,7 +27,7 @@ export function SiteTopTenSection() {
 
   return (
     <section id="charts" className="scroll-mt-4">
-      <MuseumSectionHeader label="Top ten" />
+      <MuseumSectionHeader label="Charts" />
       <div className="overflow-hidden rounded-xl bg-[var(--color-canvas)]/80">
         <ChartsFilterBar
           range={chartState.range}

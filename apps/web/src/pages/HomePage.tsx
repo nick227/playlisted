@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 
 import { SiteTopTenSection } from "@/components/charts/SiteTopTenSection";
 import { HomeIntro } from "@/components/home/HomeIntro";
+import { WelcomeSection } from "@/components/home/WelcomeSection";
 import { LibraryFeedSection } from "@/components/library/LibraryFeedSection";
 import { PersonalFavoritesSection } from "@/components/library/PersonalFavoritesSection";
 import { RadioSection } from "@/components/radio/RadioSection";
@@ -47,10 +48,11 @@ export function HomePage() {
 
   return (
     <div className={`${LIBRARY_FEED_LAYOUT_CLASS} flex flex-col gap-10 md:gap-12`}>
+      <WelcomeSection />
       <RadioSection />
       <PersonalFavoritesSection />
-      <HomeIntro />
       <SiteTopTenSection />
+      <HomeIntro />
       <LibraryFeedSection />
     </div>
   );
