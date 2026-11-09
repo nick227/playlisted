@@ -1,14 +1,13 @@
 import type { LibraryArtist, LibrarySong } from "@playlisted/client-sdk";
-import { ArrowRight, ArrowUpRight, Pause, Play } from "lucide-react";
+import { Pause, Play } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { useLibraryArtists, useLibraryGenres, useLibrarySongs } from "@/hooks/useLibrary";
-import { ARTISTS_PATH, genrePath } from "@/lib/browsePaths";
+import { genrePath } from "@/lib/browsePaths";
 import { librarySongToQueueTrack } from "@/lib/queueTrack";
 import { coverFallback, profilePath } from "@/lib/routes";
 import { useAudioPlayer } from "@/providers/AudioPlayerProvider";
-import { useAuth } from "@/providers/AuthProvider";
 
 const FEATURED_ARTIST_COUNT = 5;
 const NEW_SONG_COUNT = 6;
@@ -324,10 +323,8 @@ function NewSongs({ songs }: { songs: LibrarySong[] }) {
 
 /** Landing section: featured artists, their newest songs, and genres — all from the live catalog. */
 export function HomeIntro() {
-  const { user } = useAuth();
   const { artists, newSongs, genres } = useLandingContent();
   const [lead, ...rest] = artists;
-  const postHref = user ? "/studio/collections" : "/register?from=%2Fstudio%2Fcollections";
 
   return (
     <section aria-labelledby="home-intro-heading" className="flex flex-col gap-8">
