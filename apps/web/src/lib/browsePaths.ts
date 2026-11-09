@@ -13,7 +13,7 @@ export const BROWSE_LAYOUT_CLASS = `mx-auto bg-black/50 w-full min-w-0 max-w-7xl
 
 /** Wider layout for the library feed root. */
 export const LIBRARY_FEED_LAYOUT_CLASS =
-  "mx-auto w-full min-w-0 max-w-6xl px-4 py-6 sm:px-6 md:py-8 lg:px-8 shrink-0 overflow-x-clip bg-[var(--color-canvas)]/80";
+  "mx-auto w-full min-w-0 max-w-8xl px-4 py-6 sm:px-6 md:py-8 lg:px-8 shrink-0 overflow-x-clip bg-[var(--color-canvas)]/80";
 
 /** Artist profile breadcrumbs align with the wider profile layout below. */
 export const ARTIST_PROFILE_LAYOUT_CLASS = "mx-auto max-w-7xl";

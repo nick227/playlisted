@@ -333,12 +333,6 @@ export function HomeIntro() {
     <section aria-labelledby="home-intro-heading" className="flex flex-col gap-8">
       <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
         <div className="max-w-xl">
-          <h1 id="home-intro-heading" className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
-            Artists on Playlisted
-          </h1>
-          <p className="mt-1.5 text-sm leading-relaxed text-[var(--color-text-muted)]">
-            Independent artists posting human-made and AI-assisted music. Press play on anyone.
-          </p>
         </div>
         <div className="flex items-center gap-2">
           <Link
